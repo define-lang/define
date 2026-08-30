@@ -58,6 +58,9 @@ class TestExecution:
         guarantees.trigger_position_gateway__action_other.guarantee_position_trigger_pos.append(
             self.create_position_gateway__action_other__position_trigger_pos_2
         )
+        guarantees.trigger_position_gateway__action_other_2.guarantee_position_output__global_position_a.append(
+            self.destroy_position_gateway__action_other__position_output__global_position_a_2
+        )
         self.execution_trigger_position_gateway__action_other: local.my_domain_com.my_lib.other.OtherExecution
         self.execution_trigger_position_gateway__action_other_2: local.my_domain_com.my_lib.other.OtherExecution
         self.join_for_trigger_position_gateway__action_other__when_empty_position_output__global_position_a = self.scheduler.create_join(2)
@@ -135,6 +138,24 @@ class TestExecution:
         self.scheduler.submit(self.trigger_position_gateway__action_other_2__for_empty_rule_position_trigger_pos)
         self.scheduler.submit(self.trigger_position_gateway__action_other_2__when_empty_position_output__global_position_a)
         self.trigger_position_gateway__action_other_2__for_empty_rule_position_trigger_pos()
+
+    def destroy_position_gateway__action_other__position_output__global_position_a_2(self):
+        self.action.get_interface_position(
+            "position<gateway>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.other.Other
+        ).get_interface_position(
+            "position<output>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.a.A
+        ).destroy_particle()
+        self.action.get_interface_position(
+            "position<gateway>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.other.Other
+        ).get_interface_position(
+            "position<output>"
+        ).destroy_particle()
 
     def trigger_position_gateway__action_other__when_empty_position_output__global_position_a(self):
         if not self.join_for_trigger_position_gateway__action_other__when_empty_position_output__global_position_a.arrive():

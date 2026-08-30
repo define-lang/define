@@ -34,7 +34,7 @@ class DestructorExecution:
         self.join_for_trigger_action_filler__when_empty_global_position_implied = self.scheduler.create_join(2)
         self.join_for_trigger_action_filler__for_empty_rule_position_trigger_pos = self.scheduler.create_join(2)
 
-    def accept_when_empty_action_filler__position_trigger_pos(self):
+    def accept_action_parent(self):
         self.create_action_filler__position_trigger_pos()
 
     def accept_when_empty_global_position_implied(self):

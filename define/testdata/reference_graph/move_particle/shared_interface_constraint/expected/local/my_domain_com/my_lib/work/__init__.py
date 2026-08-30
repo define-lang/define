@@ -38,7 +38,9 @@ class Work(literal.Action):
 @final
 class WorkGuarantees:
     def __init__(self):
-        self.guarantee_position_source__move__position_dest: list[literal.Task] = []
+        self.guarantee_position_source: list[literal.Task] = []
+        self.guarantee_position_dest: list[literal.Task] = []
+        self.guarantee_position_run: list[literal.Task] = []
 
 
 @final
@@ -48,10 +50,13 @@ class WorkExecution:
         action: Work,
         scheduler: literal.Scheduler,
         guarantees: WorkGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
         self.join_for_move_position_source_to_position_dest = self.scheduler.create_join(2)
 
     def accept_when_empty_position_source(self):
@@ -60,9 +65,17 @@ class WorkExecution:
     def accept_when_empty_position_dest(self):
         self.move_position_source_to_position_dest()
 
+    def accept_for_empty_rule_position_run(self):
+        self.destroy_position_run()
+
     def create_position_source(self):
         self.action.get_interface_position(
             "position<source>"
+        ).create_particle()
+        self.action.get_interface_position(
+            "position<source>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.shared.Shared
         ).create_particle()
         self.move_position_source_to_position_dest()
 
@@ -76,4 +89,25 @@ class WorkExecution:
                 "position<dest>"
             )
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_position_source__move__position_dest)
+        self.scheduler.submit(self.destroy_position_dest__global_position_shared)
+        self.scheduler.continue_with(self.guarantees.guarantee_position_source)
+
+    def destroy_position_dest__global_position_shared(self):
+        self.action.get_interface_position(
+            "position<dest>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.shared.Shared
+        ).destroy_particle()
+        self.action.get_interface_position(
+            "position<dest>"
+        ).destroy_particle()
+        self.scheduler.continue_with(self.guarantees.guarantee_position_dest)
+
+    def destroy_position_run(self):
+        literal.continue_destruction(self.continue_destroy_position_run)
+
+    def continue_destroy_position_run(self):
+        self.action.get_interface_position(
+            "position<run>"
+        ).destroy_particle()
+        self.scheduler.continue_with(self.guarantees.guarantee_position_run)

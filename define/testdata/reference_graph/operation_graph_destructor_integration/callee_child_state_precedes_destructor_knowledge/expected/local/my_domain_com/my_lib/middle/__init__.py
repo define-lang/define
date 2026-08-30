@@ -72,7 +72,7 @@ class MiddleExecution:
     def accept_for_empty_rule_position_target(self):
         self.move_position_target_to_action_destroyer__position_target()
 
-    def accept_when_empty_action_destroyer__position_trigger(self):
+    def accept_action_parent(self):
         self.create_action_destroyer__position_trigger()
 
     def accept_for_empty_rule_position_trigger(self):

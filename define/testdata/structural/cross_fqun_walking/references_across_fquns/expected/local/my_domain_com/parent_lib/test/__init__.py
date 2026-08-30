@@ -19,9 +19,17 @@ class Test(literal.EntryPoint):
         execution = TestExecution(
             self,
             scheduler,
+            TestGuarantees(),
         )
         execution.scheduler.submit(execution.create_action_do_thing__position_trigger_pos)
         execution.create_action_my_domain_com_child_lib_do_thing__position_trigger_pos()
+
+
+@final
+class TestGuarantees:
+    def __init__(self):
+        self.trigger_action_do_thing = local.my_domain_com.parent_lib.do_thing.DoThingGuarantees()
+        self.trigger_action_my_domain_com_child_lib_do_thing = local.my_domain_com.child_lib.do_thing.DoThingGuarantees()
 
 
 @final
@@ -30,11 +38,15 @@ class TestExecution:
         self,
         action: Test,
         scheduler: literal.Scheduler,
+        guarantees: TestGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
+        self.guarantees = guarantees
         self.execution_trigger_action_do_thing: local.my_domain_com.parent_lib.do_thing.DoThingExecution
         self.execution_trigger_action_my_domain_com_child_lib_do_thing: local.my_domain_com.child_lib.do_thing.DoThingExecution
+        self.join_for_trigger_action_do_thing__for_empty_rule_position_trigger_pos = self.scheduler.create_join(2)
+        self.join_for_trigger_action_my_domain_com_child_lib_do_thing__for_empty_rule_position_trigger_pos = self.scheduler.create_join(2)
 
     def create_action_do_thing__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -43,9 +55,15 @@ class TestExecution:
             "position<trigger_pos>"
         ).create_particle()
         self.execution_trigger_action_do_thing = local.my_domain_com.parent_lib.do_thing.DoThingExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.parent_lib.do_thing.DoThing
+            ),
             self.scheduler,
+            self.guarantees.trigger_action_do_thing,
         )
-        self.trigger_action_do_thing__action_parent()
+        self.scheduler.submit(self.trigger_action_do_thing__for_empty_rule_position_trigger_pos)
+        self.scheduler.submit(self.trigger_action_do_thing__action_parent)
+        self.trigger_action_do_thing__for_empty_rule_position_trigger_pos()
 
     def create_action_my_domain_com_child_lib_do_thing__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -54,12 +72,28 @@ class TestExecution:
             "position<trigger_pos>"
         ).create_particle()
         self.execution_trigger_action_my_domain_com_child_lib_do_thing = local.my_domain_com.child_lib.do_thing.DoThingExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.child_lib.do_thing.DoThing
+            ),
             self.scheduler,
+            self.guarantees.trigger_action_my_domain_com_child_lib_do_thing,
         )
-        self.trigger_action_my_domain_com_child_lib_do_thing__action_parent()
+        self.scheduler.submit(self.trigger_action_my_domain_com_child_lib_do_thing__for_empty_rule_position_trigger_pos)
+        self.scheduler.submit(self.trigger_action_my_domain_com_child_lib_do_thing__action_parent)
+        self.trigger_action_my_domain_com_child_lib_do_thing__for_empty_rule_position_trigger_pos()
 
     def trigger_action_do_thing__action_parent(self):
         self.execution_trigger_action_do_thing.accept_action_parent()
 
+    def trigger_action_do_thing__for_empty_rule_position_trigger_pos(self):
+        if not self.join_for_trigger_action_do_thing__for_empty_rule_position_trigger_pos.arrive():
+            return
+        self.execution_trigger_action_do_thing.accept_for_empty_rule_position_trigger_pos()
+
     def trigger_action_my_domain_com_child_lib_do_thing__action_parent(self):
         self.execution_trigger_action_my_domain_com_child_lib_do_thing.accept_action_parent()
+
+    def trigger_action_my_domain_com_child_lib_do_thing__for_empty_rule_position_trigger_pos(self):
+        if not self.join_for_trigger_action_my_domain_com_child_lib_do_thing__for_empty_rule_position_trigger_pos.arrive():
+            return
+        self.execution_trigger_action_my_domain_com_child_lib_do_thing.accept_for_empty_rule_position_trigger_pos()

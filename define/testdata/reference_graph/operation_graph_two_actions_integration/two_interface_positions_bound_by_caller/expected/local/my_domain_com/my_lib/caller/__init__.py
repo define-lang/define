@@ -40,8 +40,7 @@ class CallerGuarantees:
     def __init__(self):
         self.guarantee_position_first_gateway: list[literal.Task] = []
         self.guarantee_position_second_gateway: list[literal.Task] = []
-        self.guarantee_position_first_gateway__action_worker__position_first: list[literal.Task] = []
-        self.guarantee_position_second_gateway__action_worker__position_first: list[literal.Task] = []
+        self.guarantee_position_run: list[literal.Task] = []
         self.trigger_position_first_gateway__action_worker = local.my_domain_com.my_lib.worker.WorkerGuarantees()
         self.trigger_position_second_gateway__action_worker = local.my_domain_com.my_lib.worker.WorkerGuarantees()
 
@@ -53,12 +52,29 @@ class CallerExecution:
         action: Caller,
         scheduler: literal.Scheduler,
         guarantees: CallerGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
+        guarantees.trigger_position_first_gateway__action_worker.guarantee_position_second.append(
+            self.destroy_position_first_gateway
+        )
+        guarantees.trigger_position_first_gateway__action_worker.guarantee_position_third.append(
+            self.destroy_position_first_gateway
+        )
+        guarantees.trigger_position_second_gateway__action_worker.guarantee_position_second.append(
+            self.destroy_position_second_gateway
+        )
+        guarantees.trigger_position_second_gateway__action_worker.guarantee_position_third.append(
+            self.destroy_position_second_gateway
+        )
         self.execution_trigger_position_first_gateway__action_worker: local.my_domain_com.my_lib.worker.WorkerExecution
         self.execution_trigger_position_second_gateway__action_worker: local.my_domain_com.my_lib.worker.WorkerExecution
+        self.join_for_destroy_position_first_gateway = self.scheduler.create_join(3)
+        self.join_for_destroy_position_second_gateway = self.scheduler.create_join(3)
         self.join_for_trigger_position_first_gateway__action_worker__for_empty_rule_position_second = self.scheduler.create_join(2)
         self.join_for_trigger_position_first_gateway__action_worker__for_empty_rule_position_third = self.scheduler.create_join(2)
         self.join_for_trigger_position_second_gateway__action_worker__for_empty_rule_position_second = self.scheduler.create_join(2)
@@ -70,14 +86,16 @@ class CallerExecution:
     def accept_when_empty_position_second_gateway(self):
         self.create_position_second_gateway()
 
+    def accept_for_empty_rule_position_run(self):
+        self.destroy_position_run()
+
     def create_position_first_gateway(self):
         self.action.get_interface_position(
             "position<first_gateway>"
         ).create_particle()
         self.scheduler.submit(self.create_position_first_gateway__action_worker__position_second)
         self.scheduler.submit(self.create_position_first_gateway__action_worker__position_third)
-        self.scheduler.submit(self.create_position_first_gateway__action_worker__position_first)
-        self.scheduler.continue_with(self.guarantees.guarantee_position_first_gateway)
+        self.create_position_first_gateway__action_worker__position_first()
 
     def create_position_first_gateway__action_worker__position_second(self):
         self.action.get_interface_position(
@@ -116,9 +134,19 @@ class CallerExecution:
             self.scheduler,
             self.guarantees.trigger_position_first_gateway__action_worker,
         )
-        self.scheduler.submit_all(self.guarantees.guarantee_position_first_gateway__action_worker__position_first)
+        self.scheduler.submit(self.destroy_position_first_gateway__action_worker__position_first)
         self.scheduler.submit(self.trigger_position_first_gateway__action_worker__for_empty_rule_position_second)
         self.trigger_position_first_gateway__action_worker__for_empty_rule_position_third()
+
+    def destroy_position_first_gateway__action_worker__position_first(self):
+        self.action.get_interface_position(
+            "position<first_gateway>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.worker.Worker
+        ).get_interface_position(
+            "position<first>"
+        ).destroy_particle()
+        self.destroy_position_first_gateway()
 
     def create_position_second_gateway(self):
         self.action.get_interface_position(
@@ -126,8 +154,7 @@ class CallerExecution:
         ).create_particle()
         self.scheduler.submit(self.create_position_second_gateway__action_worker__position_second)
         self.scheduler.submit(self.create_position_second_gateway__action_worker__position_third)
-        self.scheduler.submit(self.create_position_second_gateway__action_worker__position_first)
-        self.scheduler.continue_with(self.guarantees.guarantee_position_second_gateway)
+        self.create_position_second_gateway__action_worker__position_first()
 
     def create_position_second_gateway__action_worker__position_second(self):
         self.action.get_interface_position(
@@ -166,9 +193,44 @@ class CallerExecution:
             self.scheduler,
             self.guarantees.trigger_position_second_gateway__action_worker,
         )
-        self.scheduler.submit_all(self.guarantees.guarantee_position_second_gateway__action_worker__position_first)
+        self.scheduler.submit(self.destroy_position_second_gateway__action_worker__position_first)
         self.scheduler.submit(self.trigger_position_second_gateway__action_worker__for_empty_rule_position_second)
         self.trigger_position_second_gateway__action_worker__for_empty_rule_position_third()
+
+    def destroy_position_second_gateway__action_worker__position_first(self):
+        self.action.get_interface_position(
+            "position<second_gateway>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.worker.Worker
+        ).get_interface_position(
+            "position<first>"
+        ).destroy_particle()
+        self.destroy_position_second_gateway()
+
+    def destroy_position_first_gateway(self):
+        if not self.join_for_destroy_position_first_gateway.arrive():
+            return
+        self.action.get_interface_position(
+            "position<first_gateway>"
+        ).destroy_particle()
+        self.scheduler.continue_with(self.guarantees.guarantee_position_first_gateway)
+
+    def destroy_position_second_gateway(self):
+        if not self.join_for_destroy_position_second_gateway.arrive():
+            return
+        self.action.get_interface_position(
+            "position<second_gateway>"
+        ).destroy_particle()
+        self.scheduler.continue_with(self.guarantees.guarantee_position_second_gateway)
+
+    def destroy_position_run(self):
+        literal.continue_destruction(self.continue_destroy_position_run)
+
+    def continue_destroy_position_run(self):
+        self.action.get_interface_position(
+            "position<run>"
+        ).destroy_particle()
+        self.scheduler.continue_with(self.guarantees.guarantee_position_run)
 
     def trigger_position_first_gateway__action_worker__for_empty_rule_position_second(self):
         if not self.join_for_trigger_position_first_gateway__action_worker__for_empty_rule_position_second.arrive():

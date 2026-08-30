@@ -6,5 +6,6 @@ define the potential action<my.domain.com:my_lib:/act> {
         define the position<a>.
         create a particle in position<a>.
         destroy the particle in position<a>.
+        destroy the particle in position<trigger>.
     }
 }

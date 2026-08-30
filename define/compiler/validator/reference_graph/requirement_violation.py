@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from define.compiler import ast, diagnostics
 from define.compiler.validator.reference_graph import (
     action_contract,
-    particle_tracker,
+    particle_info,
 )
 
 
@@ -36,7 +36,7 @@ def trigger_violation(
     definition: ast.QualityDefinition,
     full_caller_chain: ast.PositionReference,
     acting_on_position: ast.PositionReference,
-    occupant: particle_tracker.ParticleInfo | None,
+    occupant: particle_info.ParticleInfo | None,
     action_assignment: action_contract.ActionAssignment | None,
 ) -> diagnostics.InferredRequirementViolationDiagnostic:
     """Build the diagnostic for an unmet requirement of an action this body runs."""
@@ -84,7 +84,7 @@ def direct_destructor(
     req: action_contract.PositionRequirement,
     definition: ast.QualityDefinition,
     full_caller_chain: ast.PositionReference,
-    occupant: particle_tracker.ParticleInfo | None,
+    occupant: particle_info.ParticleInfo | None,
     destructor: action_contract.CascadeDestructor,
     auto_destruction_target: ast.PositionReference | None,
 ) -> diagnostics.InferredRequirementViolationDiagnostic:
@@ -150,7 +150,7 @@ def contract_destructor(
     destroying_definition: ast.ActionDefinition,
     destruction_contract: action_contract.DestructionContract,
     particle_position: ast.PositionReference,
-    particle: particle_tracker.ParticleInfo,
+    particle: particle_info.ParticleInfo,
     trigger_step: action_contract.PropagationStep,
     destructor_quality: ast.GlobalTypedNameReference,
 ) -> diagnostics.InferredRequirementViolationDiagnostic:

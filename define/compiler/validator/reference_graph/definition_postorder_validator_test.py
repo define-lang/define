@@ -221,39 +221,6 @@ class TestImpliedPositionRequirementInference:
             == action_contract.PositionOccupancyState.OCCUPIED
         )
 
-    def test_create_in_implied_action_iface_infers_empty(self):
-        source = (
-            "define the potential action<my.domain.com:my_lib:/sub> {\n"
-            "    define the position<iface>.\n"
-            "    define the position<run>.\n"
-            "    it happens when {\n"
-            "        the position<run> has a particle.\n"
-            "    } and it does {\n"
-            "        create a particle in position<iface>.\n"
-            "    }\n"
-            "}\n"
-            "define the potential action<my.domain.com:my_lib:/test> {\n"
-            "    it also assigns the action</sub>.\n"
-            "    define the position<run>.\n"
-            "    it happens when {\n"
-            "        the position<run> has a particle.\n"
-            "    } and it does {\n"
-            "        create a particle in action</sub>::position<iface>.\n"
-            "    }\n"
-            "}\n"
-        )
-        contracts = get_contracts(source)
-        assert contracts.keys() == {
-            "action<my.domain.com:my_lib:/sub>",
-            "action<my.domain.com:my_lib:/test>",
-        }
-        contract = contracts["action<my.domain.com:my_lib:/test>"]
-        leaf_key = ("action<my.domain.com:my_lib:/sub>", "position<iface>")
-        assert leaf_key in contract.requirements
-        leaf = contract.requirements[leaf_key]
-        assert leaf.required_state == action_contract.PositionOccupancyState.EMPTY
-        assert leaf.position.source_chained_name == "action</sub>::position<iface>"
-
 
 class TestGuaranteeGeneration:
     def test_created_position_occupied_at_end(self):

@@ -4,7 +4,9 @@ from typing import final
 
 from define.runtime import literal
 
+import local.my_domain_com.my_lib.destructor
 import local.my_domain_com.my_lib.inner
+import local.my_domain_com.my_lib.marker
 
 
 class Middle(literal.Action):
@@ -14,9 +16,10 @@ class Middle(literal.Action):
             on_particle,
             interface_positions=[
                 literal.LocalPosition(
-                    "position<box>",
+                    "position<result>",
                     constraints=(
-                        local.my_domain_com.my_lib.inner.Inner,
+                        local.my_domain_com.my_lib.destructor.Destructor,
+                        local.my_domain_com.my_lib.marker.Marker,
                     ),
                     scheduler=on_particle.scheduler,
                 ),
@@ -31,8 +34,8 @@ class Middle(literal.Action):
 @final
 class MiddleGuarantees:
     def __init__(self):
-        self.guarantee_position_box: list[literal.Task] = []
-        self.guarantee_position_box__action_inner__position_run: list[literal.Task] = []
+        self.guarantee_position_result: list[literal.Task] = []
+        self.guarantee_position_result__global_position_marker: list[literal.Task] = []
         self.trigger_position_box__action_inner = local.my_domain_com.my_lib.inner.InnerGuarantees()
 
 
@@ -47,39 +50,100 @@ class MiddleExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.local_position_box = literal.LocalPosition(
+            "position<box>",
+            constraints=(
+                local.my_domain_com.my_lib.inner.Inner,
+            ),
+            scheduler=self.scheduler,
+        )
+        self.local_position_held_marker = literal.LocalPosition(
+            "position<held_marker>",
+            scheduler=self.scheduler,
+        )
+        guarantees.trigger_position_box__action_inner.guarantee_position_result__global_position_marker.append(
+            self.move_position_box__action_inner__position_result__global_position_marker_to_position_held_marker
+        )
         self.execution_trigger_position_box__action_inner: local.my_domain_com.my_lib.inner.InnerExecution
+        self.join_for_move_position_box__action_inner__position_result_to_position_result = self.scheduler.create_join(2)
+        self.join_for_destroy_position_box = self.scheduler.create_join(2)
         self.join_for_trigger_position_box__action_inner__when_empty_position_result = self.scheduler.create_join(2)
 
-    def accept_when_empty_position_box(self):
+    def accept_action_parent(self):
         self.create_position_box()
 
+    def accept_when_empty_position_result(self):
+        self.move_position_box__action_inner__position_result_to_position_result()
+
     def create_position_box(self):
-        self.action.get_interface_position(
-            "position<box>"
-        ).create_particle()
+        self.local_position_box.create_particle()
         self.scheduler.submit(self.create_position_box__action_inner__position_run)
-        self.scheduler.submit(self.trigger_position_box__action_inner__when_empty_position_result)
-        self.scheduler.continue_with(self.guarantees.guarantee_position_box)
+        self.trigger_position_box__action_inner__when_empty_position_result()
 
     def create_position_box__action_inner__position_run(self):
-        self.action.get_interface_position(
-            "position<box>"
-        ).particle.get_action(
+        self.local_position_box.particle.get_action(
             local.my_domain_com.my_lib.inner.Inner
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         self.execution_trigger_position_box__action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
-            self.action.get_interface_position(
-                "position<box>"
-            ).particle.get_action(
+            self.local_position_box.particle.get_action(
                 local.my_domain_com.my_lib.inner.Inner
             ),
             self.scheduler,
             self.guarantees.trigger_position_box__action_inner,
         )
-        self.scheduler.submit_all(self.guarantees.guarantee_position_box__action_inner__position_run)
+        self.scheduler.submit(self.destroy_position_box__action_inner__position_run)
         self.trigger_position_box__action_inner__when_empty_position_result()
+
+    def move_position_box__action_inner__position_result__global_position_marker_to_position_held_marker(self):
+        self.local_position_box.particle.get_action(
+            local.my_domain_com.my_lib.inner.Inner
+        ).get_interface_position(
+            "position<result>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.marker.Marker
+        ).move_particle_to(self.local_position_held_marker)
+        self.move_position_box__action_inner__position_result_to_position_result()
+
+    def move_position_box__action_inner__position_result_to_position_result(self):
+        if not self.join_for_move_position_box__action_inner__position_result_to_position_result.arrive():
+            return
+        self.local_position_box.particle.get_action(
+            local.my_domain_com.my_lib.inner.Inner
+        ).get_interface_position(
+            "position<result>"
+        ).move_particle_to(
+            self.action.get_interface_position(
+                "position<result>"
+            )
+        )
+        self.scheduler.submit(self.move_position_held_marker_to_position_result__global_position_marker)
+        self.scheduler.submit(self.destroy_position_box)
+        self.scheduler.continue_with(self.guarantees.guarantee_position_result)
+
+    def move_position_held_marker_to_position_result__global_position_marker(self):
+        self.local_position_held_marker.move_particle_to(
+            self.action.get_interface_position(
+                "position<result>"
+            ).particle.get_position(
+                local.my_domain_com.my_lib.marker.Marker
+            )
+        )
+        self.scheduler.continue_with(self.guarantees.guarantee_position_result__global_position_marker)
+
+    def destroy_position_box__action_inner__position_run(self):
+        self.local_position_box.particle.get_action(
+            local.my_domain_com.my_lib.inner.Inner
+        ).get_interface_position(
+            "position<run>"
+        ).destroy_particle()
+        self.destroy_position_box()
+
+    def destroy_position_box(self):
+        if not self.join_for_destroy_position_box.arrive():
+            return
+        self.local_position_box.destroy_particle()
 
     def trigger_position_box__action_inner__when_empty_position_result(self):
         if not self.join_for_trigger_position_box__action_inner__when_empty_position_result.arrive():

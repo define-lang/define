@@ -55,6 +55,9 @@ class TestExecution:
         guarantees.trigger_position_gw__action_maker.guarantee_position_held__global_position_c.append(
             self.destroy_position_gw__action_maker__position_held__global_position_c
         )
+        guarantees.trigger_position_gw__action_maker_2.guarantee_position_held__global_position_c.append(
+            self.destroy_position_gw__action_maker__position_held__global_position_c_2
+        )
         self.execution_trigger_position_gw__action_maker: local.my_domain_com.my_lib.maker.MakerExecution
         self.execution_trigger_position_gw__action_maker_2: local.my_domain_com.my_lib.maker.MakerExecution
         self.join_for_trigger_position_gw__action_maker__when_empty_position_held__global_position_c = self.scheduler.create_join(2)
@@ -133,7 +136,35 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_position_gw__action_maker_2,
         )
+        self.scheduler.submit(self.destroy_position_gw__action_maker__position_trigger_pos_2)
         self.trigger_position_gw__action_maker_2__when_empty_position_held__global_position_c()
+
+    def destroy_position_gw__action_maker__position_held__global_position_c_2(self):
+        self.action.get_interface_position(
+            "position<gw>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.maker.Maker
+        ).get_interface_position(
+            "position<held>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.c.C
+        ).destroy_particle()
+        self.action.get_interface_position(
+            "position<gw>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.maker.Maker
+        ).get_interface_position(
+            "position<held>"
+        ).destroy_particle()
+
+    def destroy_position_gw__action_maker__position_trigger_pos_2(self):
+        self.action.get_interface_position(
+            "position<gw>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.maker.Maker
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
 
     def trigger_position_gw__action_maker__when_empty_position_held__global_position_c(self):
         if not self.join_for_trigger_position_gw__action_maker__when_empty_position_held__global_position_c.arrive():

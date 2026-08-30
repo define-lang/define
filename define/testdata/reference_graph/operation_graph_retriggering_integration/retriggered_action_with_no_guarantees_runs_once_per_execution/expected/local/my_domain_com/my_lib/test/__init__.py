@@ -86,7 +86,17 @@ class TestExecution:
         self.execution_trigger_position_gw__action_worker_2 = local.my_domain_com.my_lib.worker.WorkerExecution(
             self.scheduler,
         )
+        self.scheduler.submit(self.destroy_position_gw__action_worker__position_trigger_pos_2)
         self.trigger_position_gw__action_worker_2__action_parent()
+
+    def destroy_position_gw__action_worker__position_trigger_pos_2(self):
+        self.action.get_interface_position(
+            "position<gw>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.worker.Worker
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
 
     def trigger_position_gw__action_worker__action_parent(self):
         if not self.join_for_trigger_position_gw__action_worker__action_parent.arrive():

@@ -1,13 +1,21 @@
 define the potential action<my.domain.com:my_lib:/middle> {
     define the position<input> {
         it may only contain particles where {
-            it has the action</inner>.
+            it has the position</child>.
         }
     }
     define the position<run>.
     it happens when {
         the position<run> has a particle.
     } and it does {
-        create a particle in position<input>::action</inner>::position<run>.
+        define the position<inner_holder> {
+            it may only contain particles where {
+                it has the action</inner>.
+            }
+        }
+        create a particle in position<inner_holder>.
+        move the particle in position<input> to position<inner_holder>::action</inner>::position<input>.
+        create a particle in position<inner_holder>::action</inner>::position<run>.
+        destroy the particle in position<run>.
     }
 }

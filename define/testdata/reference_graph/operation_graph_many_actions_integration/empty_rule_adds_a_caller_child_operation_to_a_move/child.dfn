@@ -6,5 +6,6 @@ define the potential action<my.domain.com:my_lib:/child> {
         define the position<scratch>.
         create a particle in position<scratch>.
         destroy the particle in position<scratch>.
+        destroy the particle in position<trigger_pos>.
     }
 }

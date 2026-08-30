@@ -56,14 +56,12 @@ class MiddleExecution:
         self.join_for_move_position_source_to_position_holder = self.scheduler.create_join(2)
         self.join_for_trigger_position_source__action_child__action_parent = self.scheduler.create_join(2)
 
-    def accept_when_empty_position_source__action_child__position_trigger_pos(self):
-        self.create_position_source__action_child__position_trigger_pos()
+    def accept_when_occupied_position_source(self):
+        self.scheduler.submit(self.create_position_source__action_child__position_trigger_pos)
+        self.trigger_position_source__action_child__action_parent()
 
     def accept_for_empty_rule_position_source(self):
         self.move_position_source_to_position_holder()
-
-    def accept_when_occupied_position_source(self):
-        self.trigger_position_source__action_child__action_parent()
 
     def create_position_source__action_child__position_trigger_pos(self):
         self.action.get_interface_position(
@@ -89,7 +87,17 @@ class MiddleExecution:
                 "position<holder>"
             )
         )
+        self.scheduler.submit(self.destroy_position_holder__action_child__position_trigger_pos)
         self.scheduler.continue_with(self.guarantees.guarantee_position_source__move__position_holder)
+
+    def destroy_position_holder__action_child__position_trigger_pos(self):
+        self.action.get_interface_position(
+            "position<holder>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.child.Child
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
 
     def trigger_position_source__action_child__action_parent(self):
         if not self.join_for_trigger_position_source__action_child__action_parent.arrive():

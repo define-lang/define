@@ -41,7 +41,7 @@ class TestExecution:
             scheduler=self.scheduler,
         )
         self.execution_trigger_position_box__action_destructor: local.my_domain_com.my_lib.destructor.DestructorExecution
-        self.join_for_trigger_position_box__action_destructor__when_empty_action_filler__position_trigger_pos = self.scheduler.create_join(2)
+        self.join_for_trigger_position_box__action_destructor__action_parent = self.scheduler.create_join(2)
         self.join_for_trigger_position_box__action_destructor__when_empty_global_position_implied = self.scheduler.create_join(2)
 
     def create_position_box(self):
@@ -54,18 +54,18 @@ class TestExecution:
             self.guarantees.trigger_position_box__action_destructor,
         )
         self.scheduler.submit(self.destroy_position_box)
-        self.scheduler.submit(self.trigger_position_box__action_destructor__when_empty_action_filler__position_trigger_pos)
+        self.scheduler.submit(self.trigger_position_box__action_destructor__action_parent)
         self.scheduler.submit(self.trigger_position_box__action_destructor__when_empty_global_position_implied)
-        self.scheduler.submit(self.trigger_position_box__action_destructor__when_empty_action_filler__position_trigger_pos)
+        self.scheduler.submit(self.trigger_position_box__action_destructor__action_parent)
         self.trigger_position_box__action_destructor__when_empty_global_position_implied()
 
     def destroy_position_box(self):
         self.local_position_box.destroy_particle()
 
-    def trigger_position_box__action_destructor__when_empty_action_filler__position_trigger_pos(self):
-        if not self.join_for_trigger_position_box__action_destructor__when_empty_action_filler__position_trigger_pos.arrive():
+    def trigger_position_box__action_destructor__action_parent(self):
+        if not self.join_for_trigger_position_box__action_destructor__action_parent.arrive():
             return
-        self.execution_trigger_position_box__action_destructor.accept_when_empty_action_filler__position_trigger_pos()
+        self.execution_trigger_position_box__action_destructor.accept_action_parent()
 
     def trigger_position_box__action_destructor__when_empty_global_position_implied(self):
         if not self.join_for_trigger_position_box__action_destructor__when_empty_global_position_implied.arrive():

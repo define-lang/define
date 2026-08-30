@@ -31,8 +31,6 @@ class Middle(literal.Action):
 class MiddleGuarantees:
     def __init__(self):
         self.guarantee_global_position_shared__global_position_marker: list[literal.Task] = []
-        self.guarantee_global_position_shared__action_child_a__position_trigger_pos: list[literal.Task] = []
-        self.guarantee_global_position_shared__action_child_b__position_trigger_pos: list[literal.Task] = []
 
 
 @final
@@ -54,13 +52,9 @@ class MiddleExecution:
     def accept_when_empty_global_position_shared__global_position_marker(self):
         self.create_global_position_shared__global_position_marker()
 
-    def accept_when_empty_global_position_shared__action_child_a__position_trigger_pos(self):
-        self.create_global_position_shared__action_child_a__position_trigger_pos()
-
-    def accept_when_empty_global_position_shared__action_child_b__position_trigger_pos(self):
-        self.create_global_position_shared__action_child_b__position_trigger_pos()
-
     def accept_when_occupied_global_position_shared(self):
+        self.scheduler.submit(self.create_global_position_shared__action_child_a__position_trigger_pos)
+        self.scheduler.submit(self.create_global_position_shared__action_child_b__position_trigger_pos)
         self.scheduler.submit(self.trigger_global_position_shared__action_child_a__action_parent)
         self.trigger_global_position_shared__action_child_b__action_parent()
 
@@ -83,7 +77,7 @@ class MiddleExecution:
         self.execution_trigger_global_position_shared__action_child_a = local.my_domain_com.my_lib.child_a.ChildAExecution(
             self.scheduler,
         )
-        self.scheduler.submit_all(self.guarantees.guarantee_global_position_shared__action_child_a__position_trigger_pos)
+        self.scheduler.submit(self.destroy_global_position_shared__action_child_a__position_trigger_pos)
         self.trigger_global_position_shared__action_child_a__action_parent()
 
     def create_global_position_shared__action_child_b__position_trigger_pos(self):
@@ -97,8 +91,26 @@ class MiddleExecution:
         self.execution_trigger_global_position_shared__action_child_b = local.my_domain_com.my_lib.child_b.ChildBExecution(
             self.scheduler,
         )
-        self.scheduler.submit_all(self.guarantees.guarantee_global_position_shared__action_child_b__position_trigger_pos)
+        self.scheduler.submit(self.destroy_global_position_shared__action_child_b__position_trigger_pos)
         self.trigger_global_position_shared__action_child_b__action_parent()
+
+    def destroy_global_position_shared__action_child_a__position_trigger_pos(self):
+        self.action.on_particle.get_position(
+            local.my_domain_com.my_lib.shared.Shared
+        ).particle.get_action(
+            local.my_domain_com.my_lib.child_a.ChildA
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
+
+    def destroy_global_position_shared__action_child_b__position_trigger_pos(self):
+        self.action.on_particle.get_position(
+            local.my_domain_com.my_lib.shared.Shared
+        ).particle.get_action(
+            local.my_domain_com.my_lib.child_b.ChildB
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
 
     def trigger_global_position_shared__action_child_a__action_parent(self):
         if not self.join_for_trigger_global_position_shared__action_child_a__action_parent.arrive():

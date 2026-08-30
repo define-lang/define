@@ -16,7 +16,6 @@ class Implier(literal.Action):
 @final
 class ImplierGuarantees:
     def __init__(self):
-        self.guarantee_action_implied__position_run: list[literal.Task] = []
         self.trigger_action_implied = local.my_domain_com.my_lib.implied.ImpliedGuarantees()
 
 
@@ -33,8 +32,9 @@ class ImplierExecution:
         self.guarantees = guarantees
         self.execution_trigger_action_implied: local.my_domain_com.my_lib.implied.ImpliedExecution
         self.join_for_trigger_action_implied__when_empty_global_position_transitive_implied = self.scheduler.create_join(2)
+        self.join_for_trigger_action_implied__for_empty_rule_position_run = self.scheduler.create_join(2)
 
-    def accept_when_empty_action_implied__position_run(self):
+    def accept_action_parent(self):
         self.create_action_implied__position_run()
 
     def accept_when_empty_global_position_transitive_implied(self):
@@ -53,10 +53,16 @@ class ImplierExecution:
             self.scheduler,
             self.guarantees.trigger_action_implied,
         )
-        self.scheduler.submit_all(self.guarantees.guarantee_action_implied__position_run)
-        self.trigger_action_implied__when_empty_global_position_transitive_implied()
+        self.scheduler.submit(self.trigger_action_implied__for_empty_rule_position_run)
+        self.scheduler.submit(self.trigger_action_implied__when_empty_global_position_transitive_implied)
+        self.trigger_action_implied__for_empty_rule_position_run()
 
     def trigger_action_implied__when_empty_global_position_transitive_implied(self):
         if not self.join_for_trigger_action_implied__when_empty_global_position_transitive_implied.arrive():
             return
         self.execution_trigger_action_implied.accept_when_empty_global_position_transitive_implied()
+
+    def trigger_action_implied__for_empty_rule_position_run(self):
+        if not self.join_for_trigger_action_implied__for_empty_rule_position_run.arrive():
+            return
+        self.execution_trigger_action_implied.accept_for_empty_rule_position_run()

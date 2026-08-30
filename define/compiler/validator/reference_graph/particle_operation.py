@@ -220,18 +220,14 @@ class ParticleOperationExecutor:
     def _check_parents_occupied(
         self, target: ast.PositionReference
     ) -> list[diagnostics.Diagnostic]:
-        """Walk parent positions leaf-to-root, emitting one diagnostic per empty parent."""
-        diags: list[diagnostics.Diagnostic] = []
-        current = target.parent_position()
-        while current is not None:
-            if self._tracker.is_occupied(current):
-                break
-            diags.append(
-                diagnostics.ParentPositionNotOccupiedDiagnostic(
-                    location=target.location,
-                    position_name=target.source_chained_name,
-                    parent_position_name=current.source_chained_name,
-                )
+        """Report the first unoccupied parent position in chained-name order."""
+        parent_position = self._tracker.first_unoccupied_parent(target)
+        if parent_position is None:
+            return []
+        return [
+            diagnostics.ParentPositionNotOccupiedDiagnostic(
+                location=target.location,
+                position_name=target.source_chained_name,
+                parent_position_name=parent_position.source_chained_name,
             )
-            current = current.parent_position()
-        return diags
+        ]

@@ -32,7 +32,8 @@ class Runner(literal.Action):
 @final
 class RunnerGuarantees:
     def __init__(self):
-        self.guarantee_position_wrapper__action_middle__position_run: list[literal.Task] = []
+        self.guarantee_position_wrapper: list[literal.Task] = []
+        self.guarantee_position_run: list[literal.Task] = []
         self.trigger_position_wrapper__action_middle__position_box__action_implier = local.my_domain_com.my_lib.implier.ImplierGuarantees()
         self.trigger_position_wrapper__action_middle = local.my_domain_com.my_lib.middle.MiddleGuarantees()
 
@@ -44,31 +45,47 @@ class RunnerExecution:
         action: Runner,
         scheduler: literal.Scheduler,
         guarantees: RunnerGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
+        guarantees.trigger_position_wrapper__action_middle.guarantee_position_box.append(
+            self.destroy_position_wrapper
+        )
+        guarantees.trigger_position_wrapper__action_middle.guarantee_position_final.append(
+            self.destroy_position_wrapper
+        )
+        guarantees.trigger_position_wrapper__action_middle.guarantee_position_run.append(
+            self.destroy_position_wrapper
+        )
         guarantees.trigger_position_wrapper__action_middle__position_box__action_implier.guarantee_global_position_implied.append(
             self.trigger_position_wrapper__action_middle__for_empty_rule_position_box
         )
         self.execution_trigger_position_wrapper__action_middle__position_box__action_implier: local.my_domain_com.my_lib.implier.ImplierExecution
         self.execution_trigger_position_wrapper__action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
+        self.join_for_destroy_position_wrapper = self.scheduler.create_join(4)
         self.join_for_trigger_position_wrapper__action_middle__position_box__action_implier__when_empty_global_position_implied = self.scheduler.create_join(2)
         self.join_for_trigger_position_wrapper__action_middle__action_parent = self.scheduler.create_join(2)
         self.join_for_trigger_position_wrapper__action_middle__for_empty_rule_position_box = self.scheduler.create_join(2)
         self.join_for_trigger_position_wrapper__action_middle__when_empty_position_final = self.scheduler.create_join(2)
-
-    def accept_when_empty_position_wrapper__action_middle__position_box(self):
-        self.create_position_wrapper__action_middle__position_box()
-
-    def accept_when_empty_position_wrapper__action_middle__position_run(self):
-        self.create_position_wrapper__action_middle__position_run()
+        self.join_for_trigger_position_wrapper__action_middle__for_empty_rule_position_run = self.scheduler.create_join(2)
 
     def accept_when_occupied_position_wrapper(self):
+        self.scheduler.submit(self.create_position_wrapper__action_middle__position_box)
+        self.scheduler.submit(self.create_position_wrapper__action_middle__position_run)
         self.trigger_position_wrapper__action_middle__action_parent()
 
     def accept_when_empty_position_wrapper__action_middle__position_final(self):
         self.trigger_position_wrapper__action_middle__when_empty_position_final()
+
+    def accept_for_empty_rule_position_wrapper(self):
+        self.destroy_position_wrapper()
+
+    def accept_for_empty_rule_position_run(self):
+        self.destroy_position_run()
 
     def create_position_wrapper__action_middle__position_box(self):
         self.action.get_interface_position(
@@ -111,10 +128,31 @@ class RunnerExecution:
             self.scheduler,
             self.guarantees.trigger_position_wrapper__action_middle,
         )
-        self.scheduler.submit_all(self.guarantees.guarantee_position_wrapper__action_middle__position_run)
+        self.scheduler.submit(self.trigger_position_wrapper__action_middle__for_empty_rule_position_run)
         self.scheduler.submit(self.trigger_position_wrapper__action_middle__action_parent)
         self.scheduler.submit(self.trigger_position_wrapper__action_middle__for_empty_rule_position_box)
-        self.trigger_position_wrapper__action_middle__when_empty_position_final()
+        self.scheduler.submit(self.trigger_position_wrapper__action_middle__when_empty_position_final)
+        self.trigger_position_wrapper__action_middle__for_empty_rule_position_run()
+
+    def destroy_position_wrapper(self):
+        if not self.join_for_destroy_position_wrapper.arrive():
+            return
+        literal.continue_destruction(self.continue_destroy_position_wrapper)
+
+    def continue_destroy_position_wrapper(self):
+        self.action.get_interface_position(
+            "position<wrapper>"
+        ).destroy_particle()
+        self.scheduler.continue_with(self.guarantees.guarantee_position_wrapper)
+
+    def destroy_position_run(self):
+        literal.continue_destruction(self.continue_destroy_position_run)
+
+    def continue_destroy_position_run(self):
+        self.action.get_interface_position(
+            "position<run>"
+        ).destroy_particle()
+        self.scheduler.continue_with(self.guarantees.guarantee_position_run)
 
     def trigger_position_wrapper__action_middle__position_box__action_implier__when_empty_global_position_implied(self):
         if not self.join_for_trigger_position_wrapper__action_middle__position_box__action_implier__when_empty_global_position_implied.arrive():
@@ -135,3 +173,8 @@ class RunnerExecution:
         if not self.join_for_trigger_position_wrapper__action_middle__when_empty_position_final.arrive():
             return
         self.execution_trigger_position_wrapper__action_middle.accept_when_empty_position_final()
+
+    def trigger_position_wrapper__action_middle__for_empty_rule_position_run(self):
+        if not self.join_for_trigger_position_wrapper__action_middle__for_empty_rule_position_run.arrive():
+            return
+        self.execution_trigger_position_wrapper__action_middle.accept_for_empty_rule_position_run()

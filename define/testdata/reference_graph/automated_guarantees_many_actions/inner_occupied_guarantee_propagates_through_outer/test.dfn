@@ -1,7 +1,7 @@
-# /inner creates in position<item>, guaranteeing it occupied.
+# /inner creates in implied position</item>, guaranteeing it occupied.
 #
 # /outer triggers /inner. /test triggers /outer, then moves from
-# position<item> — which should succeed because /inner's occupied guarantee
+# position</item> — which should succeed because /inner's occupied guarantee
 # propagates through /outer.
 define the potential action<my.domain.com:my_lib:/test> {
     define the position<run>.
@@ -16,6 +16,6 @@ define the potential action<my.domain.com:my_lib:/test> {
         define the position<dest>.
         create a particle in position<box>.
         create a particle in position<box>::action</outer>::position<trigger_pos>.
-        move the particle in position<box>::action</outer>::position<iface>::action</inner>::position<item> to position<dest>.
+        move the particle in position<box>::action</outer>::position<iface>::position</item> to position<dest>.
     }
 }

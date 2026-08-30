@@ -14,5 +14,7 @@ define the potential action<my.domain.com:my_lib:/outer> {
         the position<trigger_pos> has a particle.
     } and it does {
         move the particle in position<source> to position<iface>::action</inner>::position<trigger_pos>.
+        destroy the particle in position<iface>.
+        destroy the particle in position<trigger_pos>.
     }
 }

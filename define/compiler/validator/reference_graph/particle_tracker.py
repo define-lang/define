@@ -11,8 +11,10 @@ from define.compiler.validator.reference_graph import (
     action_contract,
     operation_graph,
     operation_graph_model,
+    particle_info,
     quality_assignment,
 )
+from define.compiler.validator.reference_graph.dead_code import dead_interface_tracker
 
 if typing.TYPE_CHECKING:
     from collections.abc import (
@@ -23,24 +25,6 @@ if typing.TYPE_CHECKING:
     )
 
 
-@dataclass(slots=True, eq=False)
-class ParticleInfo:
-    """Information about a tracked particle."""
-
-    # The last position reference written in the code for the last
-    # statement that relocated or created this particle.
-    last_position: ast.PositionReference
-    # The qualities we know that this particle has, in
-    # assignment order.
-    qualities: quality_assignment.QualityAssignments
-    # The position where this particle was created or first arrived through an
-    # occupied Action Requirement. DLP 42 uses it to attribute constraint uses
-    # after the particle moves.
-    origin_position: ast.PositionReference
-    # Whether this particle was passed in by the caller (trigger/inferred) vs created in the body.
-    from_caller: bool = False
-
-
 @dataclass(frozen=True, slots=True)
 class OccupancyInfo:
     """A position's error state and occupant, resolved together in one lookup."""
@@ -48,7 +32,7 @@ class OccupancyInfo:
     # When an ancestor is in an error condition we ignore the position entirely,
     # so the occupant is meaningless and left None.
     has_error: bool
-    occupant: ParticleInfo | None
+    occupant: particle_info.ParticleInfo | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -72,13 +56,17 @@ class PropagatedRequirement:
 class _NodeState:
     """Mutable state for a position in the state trie."""
 
-    particle_info: ParticleInfo | None = None
+    particle_info: particle_info.ParticleInfo | None = None
     emptied_by: ast.PositionReference | None = None
     # Keeping the exact-position operation with the state makes it follow moves,
     # so child-operation snapshots only need to be built when an operation uses one.
     # TODO: Reconsider the boundary between particle tracking and operation-graph
     # construction; this is operation-graph metadata stored here for reparenting.
     operation_node: operation_graph_model.ConcreteOperationNode | None = None
+
+
+def _node_is_occupied(state: _NodeState) -> bool:
+    return state.particle_info is not None
 
 
 @dataclass
@@ -339,7 +327,7 @@ class _CurrentActionNestedGuarantees:
     def discard_for_destroyed_particle(self, position: tuple[str, ...]):
         """Discard nested guarantees belonging to a destroyed particle."""
         if position in self._by_action_chain:
-            del self._by_action_chain[position]
+            self._by_action_chain.delete_subtree(position)
 
     def pop_subtrees(
         self, positions: Iterable[tuple[str, ...]]
@@ -374,6 +362,15 @@ class _CurrentActionNestedGuarantees:
             key=lambda item: item[1].execution.trigger_operation.operation_order
         )
         return tuple(result)
+
+    def action_chains_with_most_recent_trigger(
+        self,
+    ) -> Iterator[tuple[ast.ChainedNameTuple, ast.GlobalTypedNameReference]]:
+        """Yield each triggered action chain and its most recent direct trigger."""
+        for action_chain, nested_guarantees in self._by_action_chain.items():
+            if not nested_guarantees:
+                continue
+            yield action_chain, nested_guarantees[-1].execution.callee_action_name
 
 
 _ACTION_KEY_PREFIX = f"{ast.NameType.ACTION.value}<"
@@ -423,17 +420,38 @@ class _ParticleStateStore:
         state = self._state.get(key)
         return state is not None and state.particle_info is not None
 
-    def occupant(self, key: tuple[str, ...]) -> ParticleInfo:
+    def occupant(self, key: tuple[str, ...]) -> particle_info.ParticleInfo:
         """Return the particle at this position, raising KeyError if it is empty."""
         state = self._state[key]
         if state.particle_info is None:
             raise KeyError(key)
         return state.particle_info
 
-    def occupant_or_none(self, key: tuple[str, ...]) -> ParticleInfo | None:
+    def occupant_or_none(
+        self, key: tuple[str, ...]
+    ) -> particle_info.ParticleInfo | None:
         """Return the particle at this position, or None if it is empty."""
         state = self._state.get(key)
         return state.particle_info if state is not None else None
+
+    def callees_with_occupied_interface_child_position(
+        self, position: ast.ChainedNameTuple
+    ) -> list[tuple[particle_info.ParticleInfo | None, str]]:
+        """Return callees whose interface position has an occupied child position with an action in its chained name."""
+        callees: list[tuple[particle_info.ParticleInfo | None, str]] = []
+        previous_action_index: int | None = None
+        for name_index, name in enumerate(position):
+            if not name.startswith(_ACTION_KEY_PREFIX):
+                continue
+            if previous_action_index is not None:
+                parent_particle = (
+                    None
+                    if previous_action_index == 0
+                    else self.occupant(position[:previous_action_index])
+                )
+                callees.append((parent_particle, position[previous_action_index]))
+            previous_action_index = name_index
+        return callees
 
     def emptied_by(self, key: tuple[str, ...]) -> ast.PositionReference | None:
         """Return the position reference that emptied this position, if it is known-empty."""
@@ -456,14 +474,22 @@ class _ParticleStateStore:
             is not None
         )
 
+    def has_error_at(self, key: tuple[str, ...]) -> bool:
+        """Return whether this exact position has error occupancy state."""
+        state = self._error.get(key)
+        return state is not None and state.caused_by is not None
+
     def nearest_occupied_ancestors(
         self, keys: Sequence[tuple[str, ...]]
-    ) -> dict[tuple[str, ...], tuple[tuple[str, ...], ParticleInfo] | None]:
+    ) -> dict[
+        tuple[str, ...], tuple[tuple[str, ...], particle_info.ParticleInfo] | None
+    ]:
         """Return the nearest occupied ancestor for each distinct key."""
-        ancestor_keys = self._state.find_longest_prefixes_where(
-            keys, lambda node_state: node_state.particle_info is not None
-        )
-        results: dict[tuple[str, ...], tuple[tuple[str, ...], ParticleInfo] | None] = {}
+        ancestor_keys = self._state.find_longest_prefixes_where(keys, _node_is_occupied)
+        results: dict[
+            tuple[str, ...],
+            tuple[tuple[str, ...], particle_info.ParticleInfo] | None,
+        ] = {}
         for key, ancestor_key in ancestor_keys.items():
             if ancestor_key is None:
                 results[key] = None
@@ -594,15 +620,79 @@ class ParticleTracker:
     def __init__(self, action: ast.GlobalTypedName):
         """Initialize an empty particle tracker."""
         self._store: _ParticleStateStore = _ParticleStateStore()
+        self._interface_arrival_tracker: dead_interface_tracker.InterfaceArrivalTracker = dead_interface_tracker.InterfaceArrivalTracker()
+        self._interface_child_tracker: dead_interface_tracker.OccupiedInterfaceChildPositionTracker = dead_interface_tracker.OccupiedInterfaceChildPositionTracker()
         self._pending: _PendingNestedGuarantees = _PendingNestedGuarantees()
         self._nested_guarantees: _CurrentActionNestedGuarantees = (
             _CurrentActionNestedGuarantees()
         )
-        # Monotonic body-operation counter, advanced once per body mutation and
-        # once per trigger.
         self._body_operation_number: int = 0
         self._operation_graph_builder: operation_graph.OperationGraphBuilder = (
             operation_graph.OperationGraphBuilder(action)
+        )
+
+    def _register_occupied_interface_child_position(
+        self,
+        position: ast.ChainedNameTuple,
+        particle: particle_info.ParticleInfo,
+        location: ast.SourceLocation,
+    ):
+        """Register relevant interface occupancy for a new particle."""
+        callees = self._store.callees_with_occupied_interface_child_position(position)
+        if not callees:
+            return
+        self._interface_child_tracker.register(
+            particle,
+            position,
+            location,
+            callees,
+        )
+
+    def _replace_occupied_interface_child_position(
+        self,
+        position: ast.ChainedNameTuple,
+        particle: particle_info.ParticleInfo,
+        location: ast.SourceLocation,
+    ):
+        """Replace relevant interface occupancy for an existing particle."""
+        self._interface_child_tracker.replace(
+            particle,
+            position,
+            location,
+            self._store.callees_with_occupied_interface_child_position(position),
+        )
+
+    def _register_explicit_action_interface_arrival(
+        self,
+        position: ast.PositionReference,
+        particle: particle_info.ParticleInfo,
+    ):
+        """Register a body Create or Move whose target names an action interface."""
+        action_chain = position.get_chain_to_last_action()
+        if action_chain is None:
+            return
+        parent_position = action_chain.parent_position()
+        parent_particle = (
+            self.get_occupant(parent_position) if parent_position is not None else None
+        )
+        self._interface_arrival_tracker.register(
+            action_chain.get_last_action().full_typed_name,
+            position,
+            parent_particle,
+            particle,
+        )
+
+    def _mark_removed_occupant_destroyed(self, state: _NodeState):
+        """Mark the particle at a removed position as destroyed."""
+        if state.particle_info is not None:
+            self._interface_arrival_tracker.mark_particle_departed(state.particle_info)
+            self._interface_child_tracker.mark_particle_destroyed(state.particle_info)
+
+    def _delete_particle_state_subtree(self, key: ast.ChainedNameTuple):
+        """Delete particle state while preserving interface-rule history."""
+        self._store.state.delete_subtree(
+            key,
+            removed_value_callback=self._mark_removed_occupant_destroyed,
         )
 
     @property
@@ -679,11 +769,78 @@ class ParticleTracker:
             occupant=self._store.occupant_or_none(key),
         )
 
+    def unconsumed_action_interfaces(
+        self,
+    ) -> Iterator[tuple[ast.GlobalTypedNameReference, ast.ChainedNameTuple]]:
+        """Yield occupied interfaces of callees directly triggered by this action."""
+        for (
+            action_chain,
+            action,
+        ) in self._nested_guarantees.action_chains_with_most_recent_trigger():
+            if self._store.has_error_in_chain(action_chain):
+                continue
+            for position, state in self._store.state.direct_child_items(action_chain):
+                if state.particle_info is None or self._store.has_error_at(position):
+                    continue
+                yield action, position
+
+    def dead_action_interface_arrivals(self) -> Iterator[ast.PositionReference]:
+        """Yield explicit interface arrivals not satisfied by a callee trigger."""
+        return self._interface_arrival_tracker.dead_arrivals()
+
+    def _new_occupied_interface_child_position_violations(
+        self,
+        action: ast.GlobalTypedNameReference,
+        parent_particle: particle_info.ParticleInfo | None,
+    ) -> list[tuple[ast.ChainedNameTuple, ast.SourceLocation]]:
+        """Return newly reportable occupied interface child positions for one trigger."""
+        violations: list[tuple[ast.ChainedNameTuple, ast.SourceLocation]] = []
+        occupied_positions = (
+            self._interface_child_tracker.pop_occupied_interface_child_positions(
+                action.full_typed_name, parent_particle
+            )
+        )
+        for position, location in occupied_positions:
+            if self._store.has_error_in_chain(position):
+                continue
+            violations.append((position, location))
+        return violations
+
     def is_occupied(self, in_position: ast.PositionReference) -> bool:
         """Return whether a particle exists at this position."""
         key = in_position.canonical_chained_name_tuple
         self._apply_pending_guarantees_up_to(key)
         return self._store.is_occupied(key)
+
+    def first_unoccupied_parent(
+        self, position: ast.PositionReference
+    ) -> ast.PositionReference | None:
+        """Return the first unoccupied parent position in chained-name order.
+
+        The caller must pass a validated chained name.
+        """
+        immediate_parent = position.parent_position()
+        if immediate_parent is None:
+            return None
+        parent_key = immediate_parent.canonical_chained_name_tuple
+        self._apply_pending_guarantees_up_to(parent_key)
+        deepest_occupied_parent = self._store.state.find_longest_prefix_where(
+            parent_key, _node_is_occupied
+        )
+        occupied_name_count = (
+            len(deepest_occupied_parent) if deepest_occupied_parent is not None else 0
+        )
+        unoccupied_name_count = occupied_name_count + 1
+        if unoccupied_name_count == len(position.typed_names):
+            return None
+        if (
+            position.typed_names[unoccupied_name_count - 1].name_type
+            == ast.NameType.ACTION
+        ):
+            unoccupied_name_count += 1
+        if unoccupied_name_count == len(position.typed_names):
+            return None
+        return position.position_prefix(unoccupied_name_count)
 
     def has_been_touched(self, in_position: ast.PositionReference) -> bool:
         """Return whether a guarantee or particle statement has decided this position's state."""
@@ -703,7 +860,12 @@ class ParticleTracker:
             position.starts_with_global
             or position.typed_names[0].full_typed_name in interface_position_names
         )
-        canonical_position_prefixes = position.canonical_position_prefixes()
+        canonical_position_prefixes: list[ast.ChainedNameTuple] = []
+        canonical_position = position.canonical_chained_name_tuple
+        for name_index, typed_name in enumerate(position.typed_names):
+            if typed_name.name_type == ast.NameType.ACTION:
+                break
+            canonical_position_prefixes.append(canonical_position[: name_index + 1])
         resolved_positions: list[ResolvedRequirementPosition] = []
         for requirement_index, nearest_particle in self._requirement_indices_for_caller(
             canonical_position_prefixes
@@ -794,7 +956,9 @@ class ParticleTracker:
     def _requirement_indices_for_caller(
         self,
         canonical_positions: Sequence[ast.ChainedNameTuple],
-    ) -> Iterator[tuple[int, tuple[tuple[str, ...], ParticleInfo] | None]]:
+    ) -> Iterator[
+        tuple[int, tuple[tuple[str, ...], particle_info.ParticleInfo] | None]
+    ]:
         """Yield indices of requirements that the caller must fulfill.
 
         Each requirement index is paired with the nearest particle passed in by
@@ -828,7 +992,7 @@ class ParticleTracker:
     def _contracted_position_for_requirement(
         self,
         position: ast.PositionReference,
-        nearest_particle: tuple[tuple[str, ...], ParticleInfo] | None,
+        nearest_particle: tuple[tuple[str, ...], particle_info.ParticleInfo] | None,
     ) -> ast.PositionReference:
         if nearest_particle is None:
             return position
@@ -847,7 +1011,7 @@ class ParticleTracker:
         self,
         contracted_position: ast.PositionReference,
         required_state: action_contract.PositionOccupancyState,
-        nearest_particle: tuple[tuple[str, ...], ParticleInfo] | None,
+        nearest_particle: tuple[tuple[str, ...], particle_info.ParticleInfo] | None,
     ):
         if nearest_particle is not None:
             particle = nearest_particle[1]
@@ -861,7 +1025,9 @@ class ParticleTracker:
             contracted_position, required_state
         )
 
-    def get_occupant(self, in_position: ast.PositionReference) -> ParticleInfo:
+    def get_occupant(
+        self, in_position: ast.PositionReference
+    ) -> particle_info.ParticleInfo:
         """Return the info for the particle at this position."""
         key = in_position.canonical_chained_name_tuple
         self._apply_pending_guarantees_up_to(key)
@@ -981,7 +1147,7 @@ class ParticleTracker:
         operation_node: operation_graph_model.CreateNode | None = None
         if from_caller is None:
             operation_node = self._operation_graph_builder.record_create(in_position)
-        info = ParticleInfo(
+        info = particle_info.ParticleInfo(
             last_position=in_position,
             qualities=qualities,
             origin_position=from_caller if from_caller is not None else in_position,
@@ -995,6 +1161,11 @@ class ParticleTracker:
             self._store.state[key] = _NodeState(
                 particle_info=info, operation_node=operation_node
             )
+        self._register_occupied_interface_child_position(
+            key, info, in_position.location
+        )
+        if from_caller is None:
+            self._register_explicit_action_interface_arrival(in_position, info)
 
     def destroy(self, in_position: ast.PositionReference):
         """Remove a particle from this position.
@@ -1051,7 +1222,7 @@ class ParticleTracker:
     ) -> tuple[
         tuple[str, ...],
         operation_graph_model.PrecedingChildOperations,
-        ParticleInfo,
+        particle_info.ParticleInfo,
     ]:
         """Validate a destruction and capture its child operations."""
         key = in_position.canonical_chained_name_tuple
@@ -1070,11 +1241,11 @@ class ParticleTracker:
         operation_node: operation_graph_model.DestroyNode,
     ):
         """Record the empty state produced by a Destroy operation."""
-        # We have to del to remove all the children in the trie.
-        del self._store.state[key]
+        # Destroying the particle also destroys all particles at child positions.
+        self._delete_particle_state_subtree(key)
         # Destroying puts all children back into a known state (they don't exist).
         if key in self._store.error:
-            del self._store.error[key]
+            self._store.error.delete_subtree(key)
         self._nested_guarantees.discard_for_destroyed_particle(key)
         self._record_body_write(key)
         self._store.state[key] = _NodeState(
@@ -1110,6 +1281,7 @@ class ParticleTracker:
         source_info = self._store.state[from_key].particle_info
         if source_info is None:
             raise ValueError(f"source position {from_key} is empty")
+        self._interface_arrival_tracker.mark_particle_departed(source_info)
         operation_node = self._operation_graph_builder.record_move(
             source, target, self._preceding_child_operations(from_key)
         )
@@ -1125,16 +1297,25 @@ class ParticleTracker:
                 raise ValueError(f"destination position {to_key} is already occupied")
             # The target may already exist as an empty node (previously
             # destroyed). Delete it before moving so move_subtree succeeds.
-            del self._store.state[to_key]
+            self._delete_particle_state_subtree(to_key)
 
         # Empty Rule Collection treats this Move as the most recent Particle
         # Operation on every transitive child position of the moved particle.
-        def record_move_on_position(moved_state: _NodeState):
+        def record_move_on_position(
+            moved_position: ast.ChainedNameTuple,
+            moved_state: _NodeState,
+        ):
             if (
                 moved_state.particle_info is not None
                 or moved_state.emptied_by is not None
             ):
                 moved_state.operation_node = operation_node
+            if moved_state.particle_info is not None:
+                self._replace_occupied_interface_child_position(
+                    moved_position,
+                    moved_state.particle_info,
+                    target.location,
+                )
 
         self._store.state.move_subtree(
             from_key,
@@ -1146,6 +1327,7 @@ class ParticleTracker:
         )
         self._store.rekey_records_for_move(from_key, to_key)
         self._nested_guarantees.move(from_key, to_key)
+        self._register_explicit_action_interface_arrival(target, source_info)
 
     def generate_own_guarantees(
         self,
@@ -1166,19 +1348,16 @@ class ParticleTracker:
             include_callee_derived=False,
         )
 
-    def generate_flattened_guarantees(
+    def generate_destructor_guarantees(
         self,
         interface_names: tuple[ast.TypedName, ...],
         implied_quality_names: tuple[ast.GlobalTypedNameReference, ...],
         requirements: dict[tuple[str, ...], action_contract.PositionRequirement],
     ) -> list[action_contract.GuaranteePair]:
-        """Produce every guarantee this block makes, with all triggered guarantees flattened in.
+        """Produce every guarantee a destructor makes on its contracted positions.
 
-        Unlike generate_own_guarantees, the guarantees of triggered actions are
-        expanded into the base state and surfaced (callee-derived keys included)
-        rather than deferred behind nested guarantees. A destructor needs this:
-        it may not change any contracted position, including via a triggered
-        action, so every such guarantee must be visible for checking (DLP 41).
+        Guarantees about implied positions from triggered actions are expanded
+        into the destructor's state rather than deferred.
         """
         self._fully_resolve_pending_guarantees(())
         return self._collect_contracted_position_guarantees(
@@ -1202,13 +1381,17 @@ class ParticleTracker:
         }
 
         # generate_own_guarantees excludes keys that came only from our caleees.
-        # generate_flattened_guarantees includes all keys.
+        # generate_destructor_guarantees includes callee-derived keys.
         all_keys = self._store.keys_for_guarantees(
             include_callee_derived=include_callee_derived
         )
 
         guarantees: list[action_contract.GuaranteePair] = []
         for key in all_keys:
+            # A callee's interface guarantees must be consumed in this Action
+            # Statements Block, so they cannot become guarantees of this action.
+            if any(name.startswith(_ACTION_KEY_PREFIX) for name in key):
+                continue
             first_element = key[0]
             # Any position that starts with a global is contracted, even if it was updated
             # by an implied action and we can't see it directly.
@@ -1349,10 +1532,11 @@ class ParticleTracker:
         requirements_in_caller: Sequence[action_contract.PositionRequirementInCaller],
         *,
         is_destructor: bool,
+        parent_particle: particle_info.ParticleInfo | None,
         destruction_contract_contributions: Sequence[
             operation_graph_model.DestructionContractContribution
         ] = (),
-    ) -> operation_graph_model.ActionExecution:
+    ) -> list[tuple[ast.ChainedNameTuple, ast.SourceLocation]]:
         """Record an Action Execution and apply the triggered action's guarantees.
 
         The callee's own guarantees are applied immediately. Any nested guarantees
@@ -1384,8 +1568,17 @@ class ParticleTracker:
         # Do not repeat these deferral experiments unless the prototype preserves
         # the ordering behavior above and remains memory-efficient on the largest
         # dense action call graph.
-        self._body_operation_number += 1
         action_chain_key = action_chain.canonical_chained_name_tuple
+        action = action_chain.get_last_action()
+        occupied_interface_child_position_violations = (
+            self._new_occupied_interface_child_position_violations(
+                action, parent_particle
+            )
+        )
+        self._interface_arrival_tracker.mark_action_triggered(
+            action.full_typed_name, parent_particle
+        )
+        self._body_operation_number += 1
         # We have to record the Action Execution when particles are still
         # in their requirements positions, because applying pending guarantees
         # will trigger the guarantees of the callee in the operation graph.
@@ -1431,7 +1624,7 @@ class ParticleTracker:
             ),
         )
         self._apply_pending_guarantee(callee_guarantees)
-        return execution
+        return occupied_interface_child_position_violations
 
     def nested_guarantees(
         self,
@@ -1648,6 +1841,7 @@ class ParticleTracker:
         operation_graph_guarantees: list[
             operation_graph_model.OperationGraphGuarantee
         ] = []
+        source_location = pending_guarantee.execution.callee_action_name.location
 
         # Make a list of only the origin_positions for OccupiedByExistingGuarantee.
         # We need this list later to know what to "save" before we apply guarantees.
@@ -1752,9 +1946,9 @@ class ParticleTracker:
                 # its guarantee.
                 # An UnchangedGuarantee leaves the caller's state as it found it, so
                 # it keeps whatever subtree is there.
-                del self._store.state[key]
+                self._delete_particle_state_subtree(key)
                 if key in self._store.error:
-                    del self._store.error[key]
+                    self._store.error.delete_subtree(key)
                 self._nested_guarantees.discard_for_destroyed_particle(key)
 
             match guarantee:
@@ -1770,19 +1964,24 @@ class ParticleTracker:
                 case action_contract.EmptyGuarantee():
                     self._store.state[key] = _NodeState(emptied_by=guarantee.caused_by)
                 case action_contract.OccupiedByNewGuarantee():
-                    new_info = ParticleInfo(
+                    new_info = particle_info.ParticleInfo(
                         last_position=guarantee.caused_by,
                         qualities=guarantee.qualities,
                         origin_position=guarantee.origin_position,
                     )
                     self._store.state[key] = _NodeState(particle_info=new_info)
+                    self._register_occupied_interface_child_position(
+                        key,
+                        new_info,
+                        source_location,
+                    )
                 case action_contract.ErrorGuarantee():
                     self._store.error[key] = _ErrorState(caused_by=guarantee.caused_by)
                 case action_contract.UnchangedGuarantee():
-                    # The position is unchanged from its entry state, which the
-                    # caller's store already reflects (the cleanup above kept any
-                    # occupant). The write record above still supersedes a
-                    # conflicting nested guarantee.
+                    # The position is unchanged from before the callee triggered,
+                    # which the caller's store already reflects (the cleanup above
+                    # kept any occupant). The write record above still supersedes
+                    # a conflicting nested guarantee.
                     pass
                 case _:
                     raise TypeError(f"Unexpected guarantee type: {type(guarantee)}")
@@ -1851,9 +2050,26 @@ class ParticleTracker:
 
         moved_info = origin_state.particle_info
         moved_info.last_position = guarantee.caused_by
+        self._interface_arrival_tracker.mark_particle_departed(moved_info)
+        source_location = pending_guarantee.execution.callee_action_name.location
+
+        def record_guaranteed_position(
+            position: ast.ChainedNameTuple,
+            state: _NodeState,
+        ):
+            if state.particle_info is not None:
+                self._replace_occupied_interface_child_position(
+                    position,
+                    state.particle_info,
+                    source_location,
+                )
+
         if saved_tree is not None:
             self._store.state.restore_subtree(
-                dest_key, saved_tree, _NodeState(particle_info=moved_info)
+                dest_key,
+                saved_tree,
+                _NodeState(particle_info=moved_info),
+                restored_value_callback=record_guaranteed_position,
             )
             saved_nested_subtree = saved_nested_guarantees.pop(origin_key, None)
             if saved_nested_subtree is not None:
@@ -1861,7 +2077,11 @@ class ParticleTracker:
                     origin_key, dest_key, saved_nested_subtree
                 )
         else:
-            self._store.state.move_subtree(origin_key, dest_key)
+            self._store.state.move_subtree(
+                origin_key,
+                dest_key,
+                moved_value_callback=record_guaranteed_position,
+            )
             self._store.state[dest_key] = _NodeState(particle_info=moved_info)
             self._nested_guarantees.move(origin_key, dest_key)
 

@@ -1,0 +1,14 @@
+define the potential action<my.domain.com:my_lib:/child> {
+    define the position<run>.
+    define the position<result_a>.
+    define the position<result_b>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<result_a>.
+        create a particle in position<result_a>.
+        destroy the particle in position<result_b>.
+        create a particle in position<result_b>.
+        destroy the particle in position<run>.
+    }
+}

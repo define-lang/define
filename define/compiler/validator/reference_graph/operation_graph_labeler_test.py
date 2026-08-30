@@ -161,6 +161,7 @@ define the potential action<my.domain.com:my_lib:/first> {
         }
         create a particle in position<gateway>.
         create a particle in position<gateway>::action</worker>::position<trigger_pos>.
+        destroy the particle in position<trigger_pos>.
     }
 }
 """,
@@ -177,6 +178,7 @@ define the potential action<my.domain.com:my_lib:/second> {
         }
         create a particle in position<gateway>.
         create a particle in position<gateway>::action</worker>::position<trigger_pos>.
+        destroy the particle in position<trigger_pos>.
     }
 }
 """,
@@ -201,12 +203,14 @@ define the potential action<my.domain.com:my_lib:/worker> {
         "test.create(holder_second::/second::trigger_pos)",
         "first.create(gateway)",
         "first.create(gateway::/worker::trigger_pos)",
+        "first.destroy(trigger_pos)",
         "first.destroy(gateway::/worker::trigger_pos)",
         "first.destroy(gateway)",
         "first:worker.create(work)",
         "first:worker.destroy(work)",
         "second.create(gateway)",
         "second.create(gateway::/worker::trigger_pos)",
+        "second.destroy(trigger_pos)",
         "second.destroy(gateway::/worker::trigger_pos)",
         "second.destroy(gateway)",
         "second:worker.create(work)",

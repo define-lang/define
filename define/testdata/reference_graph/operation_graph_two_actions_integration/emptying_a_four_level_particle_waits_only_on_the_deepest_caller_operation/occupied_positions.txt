@@ -1,5 +1,0 @@
-action<local.my_domain_com.my_lib.other.Other>::position<trigger_pos>
-action<local.my_domain_com.my_lib.other.Other>::position<out>
-action<local.my_domain_com.my_lib.other.Other>::position<out>::position<local.my_domain_com.my_lib.child.Child>
-action<local.my_domain_com.my_lib.other.Other>::position<out>::position<local.my_domain_com.my_lib.child.Child>::position<local.my_domain_com.my_lib.grandchild.Grandchild>
-action<local.my_domain_com.my_lib.other.Other>::position<out>::position<local.my_domain_com.my_lib.child.Child>::position<local.my_domain_com.my_lib.grandchild.Grandchild>::position<local.my_domain_com.my_lib.greatgrandchild.Greatgrandchild>

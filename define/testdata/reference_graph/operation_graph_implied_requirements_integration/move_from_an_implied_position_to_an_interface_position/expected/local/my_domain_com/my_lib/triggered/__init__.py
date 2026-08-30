@@ -32,6 +32,7 @@ class Triggered(literal.Action):
 class TriggeredGuarantees:
     def __init__(self):
         self.guarantee_global_position_implied__move__position_dest: list[literal.Task] = []
+        self.guarantee_position_run: list[literal.Task] = []
 
 
 @final
@@ -41,13 +42,19 @@ class TriggeredExecution:
         action: Triggered,
         scheduler: literal.Scheduler,
         guarantees: TriggeredGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
 
     def accept_for_empty_rule_global_position_implied(self):
         self.move_global_position_implied_to_position_dest()
+
+    def accept_for_empty_rule_position_run(self):
+        self.destroy_position_run()
 
     def move_global_position_implied_to_position_dest(self):
         self.action.on_particle.get_position(
@@ -58,3 +65,12 @@ class TriggeredExecution:
             )
         )
         self.scheduler.continue_with(self.guarantees.guarantee_global_position_implied__move__position_dest)
+
+    def destroy_position_run(self):
+        literal.continue_destruction(self.continue_destroy_position_run)
+
+    def continue_destroy_position_run(self):
+        self.action.get_interface_position(
+            "position<run>"
+        ).destroy_particle()
+        self.scheduler.continue_with(self.guarantees.guarantee_position_run)

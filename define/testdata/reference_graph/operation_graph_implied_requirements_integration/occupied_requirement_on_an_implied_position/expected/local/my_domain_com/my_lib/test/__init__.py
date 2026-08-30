@@ -44,6 +44,7 @@ class TestExecution:
         self.guarantees = guarantees
         self.execution_trigger_action_triggered: local.my_domain_com.my_lib.triggered.TriggeredExecution
         self.join_for_trigger_action_triggered__for_empty_rule_global_position_implied = self.scheduler.create_join(2)
+        self.join_for_trigger_action_triggered__for_empty_rule_position_run = self.scheduler.create_join(2)
 
     def create_global_position_implied(self):
         self.action.on_particle.get_position(
@@ -64,9 +65,16 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_action_triggered,
         )
-        self.trigger_action_triggered__for_empty_rule_global_position_implied()
+        self.scheduler.submit(self.trigger_action_triggered__for_empty_rule_position_run)
+        self.scheduler.submit(self.trigger_action_triggered__for_empty_rule_global_position_implied)
+        self.trigger_action_triggered__for_empty_rule_position_run()
 
     def trigger_action_triggered__for_empty_rule_global_position_implied(self):
         if not self.join_for_trigger_action_triggered__for_empty_rule_global_position_implied.arrive():
             return
         self.execution_trigger_action_triggered.accept_for_empty_rule_global_position_implied()
+
+    def trigger_action_triggered__for_empty_rule_position_run(self):
+        if not self.join_for_trigger_action_triggered__for_empty_rule_position_run.arrive():
+            return
+        self.execution_trigger_action_triggered.accept_for_empty_rule_position_run()

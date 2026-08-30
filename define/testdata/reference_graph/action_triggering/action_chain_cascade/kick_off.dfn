@@ -12,6 +12,7 @@ define the potential action<my.domain.com:my_lib:/kick_off> {
         create a particle in position<output>.
         create a particle in position<output>::action</react_a>::position<trigger>.
         create a particle in position<output>::action</react_b>::position<trigger>.
+        destroy the particle in position<output>.
         destroy the particle in position<trigger>.
     }
 }

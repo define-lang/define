@@ -12,6 +12,7 @@ from define.compiler.validator import scope_tracker
 from define.compiler.validator.reference_graph import (
     action_contract,
     operation_graph_model,
+    particle_info,
     particle_operation,
     particle_tracker,
     quality_assignment,
@@ -20,7 +21,6 @@ from define.compiler.validator.reference_graph import (
 )
 from define.compiler.validator.reference_graph.dead_code import (
     dead_constraint_tracker,
-    dead_interface_tracker,
 )
 
 if typing.TYPE_CHECKING:
@@ -111,7 +111,7 @@ def _verified_destructor_guarantees(
 class _PendingDestructionContract:
     """Contract data retained until the explicit Destroy operation is recorded."""
 
-    particle: particle_tracker.ParticleInfo
+    particle: particle_info.ParticleInfo
     child_state: dict[tuple[str, ...], action_contract.ChildOccupancy]
 
 
@@ -128,7 +128,6 @@ class ActionPostorderValidator:
     _inferred_requirements: dict[tuple[str, ...], action_contract.PositionRequirement]
     _destruction_contracts: list[action_contract.DestructionContract]
     _dead_constraint_tracker: dead_constraint_tracker.DeadConstraintTracker
-    _dead_interface_tracker: dead_interface_tracker.DeadInterfaceTracker
 
     def __init__(
         self,
@@ -147,7 +146,6 @@ class ActionPostorderValidator:
         self._inferred_requirements = {}
         self._destruction_contracts = []
         self._dead_constraint_tracker = dead_constraint_tracker.DeadConstraintTracker()
-        self._dead_interface_tracker = dead_interface_tracker.DeadInterfaceTracker()
 
     @property
     def _definition(self) -> ast.QualityDefinition:
@@ -348,7 +346,7 @@ class ActionPostorderValidator:
     def _execute_destruction_cascade(
         self,
         position: ast.PositionReference,
-        particle: particle_tracker.ParticleInfo,
+        particle: particle_info.ParticleInfo,
         destruction_fact: operation_graph_model.DestructionFact,
         scope: scope_tracker.ScopeTracker,
         *,
@@ -405,7 +403,6 @@ class ActionPostorderValidator:
                         has_active_destruction_fact=has_active_destruction_fact,
                     )
         if destroy_particle:
-            self._dead_interface_tracker.mark_particle_departed(particle)
             if has_active_destruction_fact:
                 self._tracker.destroy_for_destruction_fact(
                     position,
@@ -456,7 +453,7 @@ class ActionPostorderValidator:
 
     def _record_destruction_contract(
         self,
-        particle: particle_tracker.ParticleInfo,
+        particle: particle_info.ParticleInfo,
         child_state: dict[tuple[str, ...], action_contract.ChildOccupancy],
         destruction_fact: operation_graph_model.DestructionFact,
         destroyed_particle_position: ast.PositionReference,
@@ -498,10 +495,7 @@ class ActionPostorderValidator:
         if contract is None:
             return
         action_chain = destructor.position.with_action_suffix(destructor_name)
-        self._dead_interface_tracker.mark_action_triggered(
-            destructor_name,
-            self._tracker.get_occupant(destructor.position),
-        )
+        parent_particle = self._tracker.get_occupant(destructor.position)
         requirements_in_caller = contract.requirements_in_caller(action_chain)
         self._mark_callee_contract_constraints_alive(requirements_in_caller, scope)
         self._propagate_action_requirements(
@@ -515,12 +509,17 @@ class ActionPostorderValidator:
             requirements_in_caller,
             auto_destruction_target=auto_destruction_target,
         )
-        _ = self._tracker.trigger_action(
+        occupied_interface_child_position_violations = self._tracker.trigger_action(
             action_chain,
             contract.guarantees,
             destructor.position,
             requirements_in_caller,
             is_destructor=True,
+            parent_particle=parent_particle,
+        )
+        self._record_occupied_interface_child_position_violations(
+            destructor_name,
+            occupied_interface_child_position_violations,
         )
         self._action_edges.append(
             action_call_graph.ActionGraphEdge(
@@ -543,12 +542,6 @@ class ActionPostorderValidator:
             self._tracker.get_occupant(parent_position)
             if parent_position is not None
             else None
-        )
-        self._dead_interface_tracker.register_arrival(
-            action,
-            position,
-            parent_particle,
-            particle,
         )
         contract = self._validation_state.get_contract_or_none(action)
         if contract is None:
@@ -582,9 +575,10 @@ class ActionPostorderValidator:
         scope: scope_tracker.ScopeTracker,
         *,
         current_position: ast.PositionReference | None,
-        parent_particle: particle_tracker.ParticleInfo | None,
+        parent_particle: particle_info.ParticleInfo | None,
         action_assignment: action_contract.ActionAssignment | None = None,
     ):
+        action = action_chain.get_last_action()
         # Requirement propagation, requirement checking, and the operation graph
         # each need every requirement's position from the caller's perspective
         # (req.position.in_caller(action_chain)). Deriving it is a fresh
@@ -607,21 +601,24 @@ class ActionPostorderValidator:
             contract,
             action_chain,
         )
-        action = action_chain.get_last_action()
-        self._dead_interface_tracker.mark_action_triggered(action, parent_particle)
         origin_position = (
             parent_particle.origin_position if parent_particle is not None else None
         )
         self._dead_constraint_tracker.mark_action_alive(
             action, current_position, origin_position
         )
-        _ = self._tracker.trigger_action(
+        occupied_interface_child_position_violations = self._tracker.trigger_action(
             action_chain,
             contract.guarantees,
             acting_on_position,
             requirements_in_caller,
             is_destructor=False,
+            parent_particle=parent_particle,
             destruction_contract_contributions=destruction_contract_contributions,
+        )
+        self._record_occupied_interface_child_position_violations(
+            action,
+            occupied_interface_child_position_violations,
         )
         self._action_edges.append(
             action_call_graph.ActionGraphEdge(
@@ -629,6 +626,25 @@ class ActionPostorderValidator:
                 target=action.full_typed_name,
             )
         )
+
+    def _record_occupied_interface_child_position_violations(
+        self,
+        action: ast.GlobalTypedNameReference,
+        occupied_interface_child_position_violations: Sequence[
+            tuple[ast.ChainedNameTuple, ast.SourceLocation]
+        ],
+    ):
+        """Record occupied interface child positions found when one callee triggers."""
+        for position, location in occupied_interface_child_position_violations:
+            self._diagnostics.append(
+                diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic(
+                    location=location,
+                    action_name=action.source_typed_name,
+                    position_name=ast.source_form_chained_name(
+                        position, self._enclosing_fqun.canonical
+                    ),
+                )
+            )
 
     def _check_requirements(
         self,
@@ -673,7 +689,7 @@ class ActionPostorderValidator:
         self,
         full_caller_chain: ast.PositionReference,
         req: action_contract.PositionRequirement,
-    ) -> tuple[bool, particle_tracker.ParticleInfo | None]:
+    ) -> tuple[bool, particle_info.ParticleInfo | None]:
         occupancy = self._tracker.get_occupancy_info(full_caller_chain)
         if occupancy.has_error:
             return False, None
@@ -877,7 +893,7 @@ class ActionPostorderValidator:
     def _re_record_destruction_contract(
         self,
         destruction_contract: action_contract.DestructionContract,
-        caller_particle: particle_tracker.ParticleInfo,
+        caller_particle: particle_info.ParticleInfo,
         merged_child_state: dict[tuple[str, ...], action_contract.ChildOccupancy],
         newly_verified: list[ast.GlobalTypedNameReference],
         trigger_step: action_contract.PropagationStep,
@@ -1066,7 +1082,7 @@ class ActionPostorderValidator:
         *,
         destructor_quality: ast.GlobalTypedNameReference,
         destruction_contract_position: operation_graph_model.DestructionContractPosition,
-        particle: particle_tracker.ParticleInfo,
+        particle: particle_info.ParticleInfo,
         destruction_contract: action_contract.DestructionContract,
         destroying_definition: ast.ActionDefinition,
         caller_prefix_length: int,
@@ -1318,9 +1334,6 @@ class ActionPostorderValidator:
         self._maybe_infer_requirements_on_chain(
             action_contract.PositionOccupancyState.OCCUPIED, stmt.target_position, scope
         )
-        departing_particle = self._tracker.get_occupancy_info(
-            stmt.target_position
-        ).occupant
         destruction_fact = operation_graph_model.DestructionFact(
             destroyed_position_in_destroyer=stmt.target_position,
             destroying_action=self._definition.typed_name,
@@ -1343,9 +1356,6 @@ class ActionPostorderValidator:
         self._diagnostics.extend(diags)
         if diags:
             return
-        self._dead_interface_tracker.mark_particle_departed(
-            typing.cast("particle_tracker.ParticleInfo", departing_particle)
-        )
         if pending_contract is None:
             return
         self._record_destruction_contract(
@@ -1413,8 +1423,6 @@ class ActionPostorderValidator:
         if move_diagnostics:
             self._diagnostics.extend(move_diagnostics)
             return
-        departing_particle = self._tracker.get_occupant(to_pos)
-        self._dead_interface_tracker.mark_particle_departed(departing_particle)
         self._check_trigger(to_pos, scope)
 
     def _validate_chained_name(
@@ -1628,7 +1636,7 @@ class ActionPostorderValidator:
     def _mark_contract_position_constraints_alive(
         self,
         position: ast.PositionReference,
-        particle: particle_tracker.ParticleInfo,
+        particle: particle_info.ParticleInfo,
         scope: scope_tracker.ScopeTracker,
     ):
         if not self._dead_constraint_tracker.has_constraint_candidates():
@@ -1668,7 +1676,10 @@ class ActionPostorderValidator:
                     implied_action_name=implied_action.source_typed_name,
                 )
             )
-        for action, position in self._dead_interface_tracker.dead_arrivals():
+        for position in self._tracker.dead_action_interface_arrivals():
+            action = typing.cast(
+                "ast.GlobalTypedNameReference", position.get_last_action()
+            )
             self._diagnostics.append(
                 diagnostics.UntriggeredActionInterfaceDiagnostic(
                     location=action.location,
@@ -1880,11 +1891,25 @@ class ActionPostorderValidator:
 
         scope.enter_child_scope()
         self._analyze_statements(definition.action_statements, scope)
+        self._check_unconsumed_action_interfaces()
 
         contract = self._generate_contract()
         self._mark_own_contract_guarantees_alive(contract.guarantees.own, scope)
         self._check_dead_constraints()
         return contract
+
+    def _check_unconsumed_action_interfaces(self):
+        """Diagnose occupied interface positions of actions triggered by this action."""
+        for action, position in self._tracker.unconsumed_action_interfaces():
+            self._diagnostics.append(
+                diagnostics.UnconsumedActionInterfaceDiagnostic(
+                    location=action.location,
+                    action_name=action.source_typed_name,
+                    position_name=ast.source_form_chained_name(
+                        position, self._enclosing_fqun.canonical
+                    ),
+                )
+            )
 
     def _generate_contract(self) -> action_contract.ActionContract:
         """Generate the action contract from inferred requirements and final tracker state."""
@@ -1917,7 +1942,7 @@ class ActionPostorderValidator:
         consumer of the contract. The destructor's guarantees are fully expanded
         (no nested references), so the returned contract has no nested guarantees.
         """
-        produced = self._tracker.generate_flattened_guarantees(
+        produced = self._tracker.generate_destructor_guarantees(
             self._action_definition.interface_position_names,
             self._implied_quality_list,
             self._inferred_requirements,

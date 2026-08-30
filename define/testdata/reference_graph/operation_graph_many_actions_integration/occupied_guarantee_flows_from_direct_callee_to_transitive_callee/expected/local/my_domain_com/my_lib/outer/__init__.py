@@ -27,7 +27,6 @@ class Outer(literal.Action):
 @final
 class OuterGuarantees:
     def __init__(self):
-        self.guarantee_action_middle__position_trigger_pos: list[literal.Task] = []
         self.trigger_action_middle = local.my_domain_com.my_lib.middle.MiddleGuarantees()
 
 
@@ -46,14 +45,12 @@ class OuterExecution:
         self.guarantees = guarantees
         self.destruction_connections = destruction_connections
         self.execution_trigger_action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
-        self.join_for_trigger_action_middle__when_empty_action_empty_item__position_trigger_pos = self.scheduler.create_join(2)
+        self.join_for_trigger_action_middle__action_parent = self.scheduler.create_join(2)
         self.join_for_trigger_action_middle__for_empty_rule_global_position_item = self.scheduler.create_join(2)
 
-    def accept_when_empty_action_middle__position_trigger_pos(self):
-        self.create_action_middle__position_trigger_pos()
-
-    def accept_when_empty_action_empty_item__position_trigger_pos(self):
-        self.trigger_action_middle__when_empty_action_empty_item__position_trigger_pos()
+    def accept_action_parent(self):
+        self.scheduler.submit(self.create_action_middle__position_trigger_pos)
+        self.trigger_action_middle__action_parent()
 
     def accept_for_empty_rule_global_position_item(self):
         self.trigger_action_middle__for_empty_rule_global_position_item()
@@ -72,14 +69,21 @@ class OuterExecution:
             self.guarantees.trigger_action_middle,
             destruction_connections=self.destruction_connections,
         )
-        self.scheduler.submit_all(self.guarantees.guarantee_action_middle__position_trigger_pos)
-        self.scheduler.submit(self.trigger_action_middle__when_empty_action_empty_item__position_trigger_pos)
+        self.scheduler.submit(self.destroy_action_middle__position_trigger_pos)
+        self.scheduler.submit(self.trigger_action_middle__action_parent)
         self.trigger_action_middle__for_empty_rule_global_position_item()
 
-    def trigger_action_middle__when_empty_action_empty_item__position_trigger_pos(self):
-        if not self.join_for_trigger_action_middle__when_empty_action_empty_item__position_trigger_pos.arrive():
+    def destroy_action_middle__position_trigger_pos(self):
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.middle.Middle
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
+
+    def trigger_action_middle__action_parent(self):
+        if not self.join_for_trigger_action_middle__action_parent.arrive():
             return
-        self.execution_trigger_action_middle.accept_when_empty_action_empty_item__position_trigger_pos()
+        self.execution_trigger_action_middle.accept_action_parent()
 
     def trigger_action_middle__for_empty_rule_global_position_item(self):
         if not self.join_for_trigger_action_middle__for_empty_rule_global_position_item.arrive():

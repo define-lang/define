@@ -15,5 +15,6 @@ define the potential action<my.domain.com:my_lib:/class_var> {
         create a particle in position<super>.
         create a particle in position<type>.
         create a particle in position<typing>.
+        destroy the particle in position<trigger_pos>.
     }
 }

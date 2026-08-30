@@ -42,8 +42,12 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        guarantees.trigger_action_triggered.guarantee_position_input__global_position_child__global_position_grandchild.append(
+            self.destroy_action_triggered__position_input__global_position_child
+        )
         self.execution_trigger_action_triggered: local.my_domain_com.my_lib.triggered.TriggeredExecution
         self.join_for_trigger_action_triggered__for_empty_rule_position_input__global_position_child__global_position_grandchild = self.scheduler.create_join(2)
+        self.join_for_trigger_action_triggered__for_empty_rule_position_run = self.scheduler.create_join(2)
 
     def create_action_triggered__position_input(self):
         self.action.on_particle.get_action(
@@ -82,9 +86,30 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_action_triggered,
         )
-        self.trigger_action_triggered__for_empty_rule_position_input__global_position_child__global_position_grandchild()
+        self.scheduler.submit(self.trigger_action_triggered__for_empty_rule_position_run)
+        self.scheduler.submit(self.trigger_action_triggered__for_empty_rule_position_input__global_position_child__global_position_grandchild)
+        self.trigger_action_triggered__for_empty_rule_position_run()
+
+    def destroy_action_triggered__position_input__global_position_child(self):
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.triggered.Triggered
+        ).get_interface_position(
+            "position<input>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.child.Child
+        ).destroy_particle()
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.triggered.Triggered
+        ).get_interface_position(
+            "position<input>"
+        ).destroy_particle()
 
     def trigger_action_triggered__for_empty_rule_position_input__global_position_child__global_position_grandchild(self):
         if not self.join_for_trigger_action_triggered__for_empty_rule_position_input__global_position_child__global_position_grandchild.arrive():
             return
         self.execution_trigger_action_triggered.accept_for_empty_rule_position_input__global_position_child__global_position_grandchild()
+
+    def trigger_action_triggered__for_empty_rule_position_run(self):
+        if not self.join_for_trigger_action_triggered__for_empty_rule_position_run.arrive():
+            return
+        self.execution_trigger_action_triggered.accept_for_empty_rule_position_run()

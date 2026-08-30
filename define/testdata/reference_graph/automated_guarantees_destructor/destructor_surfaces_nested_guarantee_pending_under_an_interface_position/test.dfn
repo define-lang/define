@@ -1,16 +1,12 @@
-# /test triggers /a, which triggered /b through interface position<box>; /b's guarantee that it fills position<out> is still pending at generate, and the destructor must surface it.
-# position<box> is /a's own trigger, so nothing needs to clean it up.
-# /a triggers /b through it and cleans up only its own trigger fill.
-# The interface position whose occupancy makes /b's guarantee defer to a
-# non-empty prefix in the first place; it must stay filled for the one below.
-# Surfaced only because the destructor drains the nested guarantee still
-# pending under position<box> at generate time. Without that drain, this
-# diagnostic disappears and only the position<box> one above remains.
+# A destructor must surface a transitive implied-position guarantee after the
+# direct caller moves its callee's interface particle to an implied position.
 define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the action</a>.
+    it also assigns the position</saved>.
     it happens when {
         this particle is being destroyed.
     } and it does {
         create a particle in action</a>::position<box>.
+        move the particle in action</a>::position<box> to position</saved>.
     }
 }

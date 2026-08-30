@@ -1,7 +1,0 @@
-action<local.my_domain_com.my_lib.filler.Filler>::position<trigger_pos>
-action<local.my_domain_com.my_lib.mover.Mover>::position<trigger_pos>
-action<local.my_domain_com.my_lib.mover.Mover>::position<dest>
-action<local.my_domain_com.my_lib.mover.Mover>::position<dest>::position<local.my_domain_com.my_lib.child_a.ChildA>
-action<local.my_domain_com.my_lib.mover.Mover>::position<dest>::position<local.my_domain_com.my_lib.child_a.ChildA>::position<local.my_domain_com.my_lib.gc.Gc>
-action<local.my_domain_com.my_lib.mover.Mover>::position<dest>::position<local.my_domain_com.my_lib.child_b.ChildB>
-action<local.my_domain_com.my_lib.mover.Mover>::position<dest>::position<local.my_domain_com.my_lib.child_b.ChildB>::position<local.my_domain_com.my_lib.gc.Gc>

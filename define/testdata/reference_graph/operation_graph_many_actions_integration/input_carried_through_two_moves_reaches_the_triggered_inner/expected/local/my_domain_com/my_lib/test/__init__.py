@@ -59,6 +59,9 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        guarantees.trigger_position_outer_holder__action_outer.trigger_position_middle_holder__action_middle.guarantee_position_input.append(
+            self.destroy_position_outer_holder__action_outer__position_middle_holder
+        )
         self.execution_trigger_position_outer_holder__action_outer: local.my_domain_com.my_lib.outer.OuterExecution
         self.join_for_move_position_box_to_position_outer_holder__action_outer__position_input = self.scheduler.create_join(2)
         self.join_for_trigger_position_outer_holder__action_outer__when_empty_position_middle_holder = self.scheduler.create_join(2)
@@ -116,8 +119,27 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_position_outer_holder__action_outer,
         )
+        self.scheduler.submit(self.destroy_position_outer_holder__action_outer__position_run)
         self.scheduler.submit(self.trigger_position_outer_holder__action_outer__when_empty_position_middle_holder)
         self.trigger_position_outer_holder__action_outer__for_empty_rule_position_input()
+
+    def destroy_position_outer_holder__action_outer__position_middle_holder(self):
+        self.action.get_interface_position(
+            "position<outer_holder>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.outer.Outer
+        ).get_interface_position(
+            "position<middle_holder>"
+        ).destroy_particle()
+
+    def destroy_position_outer_holder__action_outer__position_run(self):
+        self.action.get_interface_position(
+            "position<outer_holder>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.outer.Outer
+        ).get_interface_position(
+            "position<run>"
+        ).destroy_particle()
 
     def trigger_position_outer_holder__action_outer__when_empty_position_middle_holder(self):
         if not self.join_for_trigger_position_outer_holder__action_outer__when_empty_position_middle_holder.arrive():

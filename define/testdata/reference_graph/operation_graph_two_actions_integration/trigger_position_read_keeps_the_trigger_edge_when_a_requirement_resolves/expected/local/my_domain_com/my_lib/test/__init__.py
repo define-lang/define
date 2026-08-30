@@ -57,6 +57,9 @@ class TestExecution:
         guarantees.trigger_position_gw__action_worker.guarantee_position_in__move__position_out.append(
             self.create_position_gw__action_worker__position_in
         )
+        guarantees.trigger_position_gw__action_worker_2.guarantee_position_in__move__position_out.append(
+            self.destroy_position_gw__action_worker__position_out_2
+        )
         self.execution_trigger_position_gw__action_worker: local.my_domain_com.my_lib.worker.WorkerExecution
         self.execution_trigger_position_gw__action_worker_2: local.my_domain_com.my_lib.worker.WorkerExecution
         self.join_for_trigger_position_gw__action_worker__for_empty_rule_position_in = self.scheduler.create_join(2)
@@ -114,6 +117,15 @@ class TestExecution:
         )
         self.scheduler.submit(self.trigger_position_gw__action_worker_2__for_empty_rule_position_in)
         self.trigger_position_gw__action_worker_2__for_empty_rule_position_in()
+
+    def destroy_position_gw__action_worker__position_out_2(self):
+        self.action.get_interface_position(
+            "position<gw>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.worker.Worker
+        ).get_interface_position(
+            "position<out>"
+        ).destroy_particle()
 
     def trigger_position_gw__action_worker__for_empty_rule_position_in(self):
         if not self.join_for_trigger_position_gw__action_worker__for_empty_rule_position_in.arrive():

@@ -44,6 +44,7 @@ class TestExecution:
         self.guarantees = guarantees
         self.execution_trigger_action_act: local.my_domain_com.my_lib.act.ActExecution
         self.join_for_trigger_action_act__for_empty_rule_position_chain_src__global_position_mid__global_position_end = self.scheduler.create_join(2)
+        self.join_for_trigger_action_act__for_empty_rule_position_trigger = self.scheduler.create_join(2)
 
     def create_action_act__position_chain_src(self):
         self.action.on_particle.get_action(
@@ -82,9 +83,24 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_action_act,
         )
-        self.trigger_action_act__for_empty_rule_position_chain_src__global_position_mid__global_position_end()
+        self.scheduler.submit(self.trigger_action_act__for_empty_rule_position_trigger)
+        self.scheduler.submit(self.trigger_action_act__for_empty_rule_position_chain_src__global_position_mid__global_position_end)
+        self.scheduler.submit(self.trigger_action_act__for_empty_rule_position_chain_src__global_position_mid)
+        self.scheduler.submit(self.trigger_action_act__for_empty_rule_position_chain_src)
+        self.trigger_action_act__for_empty_rule_position_trigger()
 
     def trigger_action_act__for_empty_rule_position_chain_src__global_position_mid__global_position_end(self):
         if not self.join_for_trigger_action_act__for_empty_rule_position_chain_src__global_position_mid__global_position_end.arrive():
             return
         self.execution_trigger_action_act.accept_for_empty_rule_position_chain_src__global_position_mid__global_position_end()
+
+    def trigger_action_act__for_empty_rule_position_chain_src__global_position_mid(self):
+        self.execution_trigger_action_act.accept_for_empty_rule_position_chain_src__global_position_mid()
+
+    def trigger_action_act__for_empty_rule_position_chain_src(self):
+        self.execution_trigger_action_act.accept_for_empty_rule_position_chain_src()
+
+    def trigger_action_act__for_empty_rule_position_trigger(self):
+        if not self.join_for_trigger_action_act__for_empty_rule_position_trigger.arrive():
+            return
+        self.execution_trigger_action_act.accept_for_empty_rule_position_trigger()

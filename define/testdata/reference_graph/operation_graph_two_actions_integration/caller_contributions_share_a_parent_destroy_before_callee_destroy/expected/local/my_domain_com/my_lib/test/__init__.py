@@ -119,6 +119,7 @@ class TestExecution:
             },
             ),
         )
+        self.scheduler.submit(self.destroy_action_destroyer__position_trigger_pos)
         self.trigger_action_destroyer__for_empty_rule_position_parent()
 
     def destroy_action_destroyer__position_parent__global_position_branch__global_position_b(self):
@@ -134,6 +135,13 @@ class TestExecution:
             return
         self.destruction_position_action_destroyer__position_parent__global_position_branch.destroy_particle()
         self.destruction_connection_trigger_action_destroyer.complete()
+
+    def destroy_action_destroyer__position_trigger_pos(self):
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.destroyer.Destroyer
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
 
     def trigger_action_destroyer__for_empty_rule_position_parent(self):
         if not self.join_for_trigger_action_destroyer__for_empty_rule_position_parent.arrive():

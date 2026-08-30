@@ -22,5 +22,6 @@ define the potential action<my.domain.com:my_lib:/caller_b> {
         create a particle in position<carrier>::position</marker>.
         move the particle in position<carrier> to position<destroyer_particle>::action</destroyer>::position<target>.
         create a particle in position<destroyer_particle>::action</destroyer>::position<trigger_pos>.
+        destroy the particle in position<trigger_pos>.
     }
 }

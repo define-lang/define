@@ -20,12 +20,25 @@ class DoThing(literal.Action):
 
 
 @final
+class DoThingGuarantees:
+    def __init__(self):
+        self.guarantee_position_trigger_pos: list[literal.Task] = []
+
+
+@final
 class DoThingExecution:
     def __init__(
         self,
+        action: DoThing,
         scheduler: literal.Scheduler,
+        guarantees: DoThingGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
+        self.action = action
         self.scheduler = scheduler
+        self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
         self.local_position_local_pos = literal.LocalPosition(
             "position<local_pos>",
             scheduler=self.scheduler,
@@ -34,6 +47,18 @@ class DoThingExecution:
     def accept_action_parent(self):
         self.create_position_local_pos()
 
+    def accept_for_empty_rule_position_trigger_pos(self):
+        self.destroy_position_trigger_pos()
+
     def create_position_local_pos(self):
         self.local_position_local_pos.create_particle()
         self.local_position_local_pos.destroy_particle()
+
+    def destroy_position_trigger_pos(self):
+        literal.continue_destruction(self.continue_destroy_position_trigger_pos)
+
+    def continue_destroy_position_trigger_pos(self):
+        self.action.get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
+        self.scheduler.continue_with(self.guarantees.guarantee_position_trigger_pos)

@@ -237,9 +237,9 @@ def test_pending_guarantees_on_shared_and_separate_position_chains_violate_later
         parent_marker_diagnostic,
         diagnostics.InferredRequirementViolationDiagnostic,
     )
-    assert parent_marker_diagnostic.location.line == 21
+    assert parent_marker_diagnostic.location.line == 33
     assert parent_marker_diagnostic.location.column == 30
-    assert parent_marker_diagnostic.location.end_line == 21
+    assert parent_marker_diagnostic.location.end_line == 33
     assert parent_marker_diagnostic.location.end_column == 93
     assert parent_marker_diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -262,7 +262,7 @@ def test_pending_guarantees_on_shared_and_separate_position_chains_violate_later
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _CONSUME_COMBINED,
-            "line": 21,
+            "line": 33,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -277,7 +277,7 @@ def test_pending_guarantees_on_shared_and_separate_position_chains_violate_later
     )
     assert parent_marker_diagnostic.propagation_chain[0].location.end_line == 7
     assert parent_marker_diagnostic.propagation_chain[0].location.end_column == 54
-    assert parent_marker_diagnostic.propagation_chain[1].location.end_line == 21
+    assert parent_marker_diagnostic.propagation_chain[1].location.end_line == 33
     assert parent_marker_diagnostic.propagation_chain[1].location.end_column == 93
     assert parent_marker_diagnostic.propagation_chain[2].location.end_line == 16
     assert parent_marker_diagnostic.propagation_chain[2].location.end_column == 97
@@ -287,9 +287,9 @@ def test_pending_guarantees_on_shared_and_separate_position_chains_violate_later
         child_marker_diagnostic,
         diagnostics.InferredRequirementViolationDiagnostic,
     )
-    assert child_marker_diagnostic.location.line == 21
+    assert child_marker_diagnostic.location.line == 33
     assert child_marker_diagnostic.location.column == 30
-    assert child_marker_diagnostic.location.end_line == 21
+    assert child_marker_diagnostic.location.end_line == 33
     assert child_marker_diagnostic.location.end_column == 93
     assert child_marker_diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -312,7 +312,7 @@ def test_pending_guarantees_on_shared_and_separate_position_chains_violate_later
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _CONSUME_COMBINED,
-            "line": 21,
+            "line": 33,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -327,7 +327,7 @@ def test_pending_guarantees_on_shared_and_separate_position_chains_violate_later
     )
     assert child_marker_diagnostic.propagation_chain[0].location.end_line == 7
     assert child_marker_diagnostic.propagation_chain[0].location.end_column == 53
-    assert child_marker_diagnostic.propagation_chain[1].location.end_line == 21
+    assert child_marker_diagnostic.propagation_chain[1].location.end_line == 33
     assert child_marker_diagnostic.propagation_chain[1].location.end_column == 93
     assert child_marker_diagnostic.propagation_chain[2].location.end_line == 17
     assert child_marker_diagnostic.propagation_chain[2].location.end_column == 114
@@ -336,9 +336,9 @@ def test_pending_guarantees_on_shared_and_separate_position_chains_violate_later
     assert isinstance(
         item_diagnostic, diagnostics.InferredRequirementViolationDiagnostic
     )
-    assert item_diagnostic.location.line == 21
+    assert item_diagnostic.location.line == 33
     assert item_diagnostic.location.column == 30
-    assert item_diagnostic.location.end_line == 21
+    assert item_diagnostic.location.end_line == 33
     assert item_diagnostic.location.end_column == 93
     assert item_diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -361,7 +361,7 @@ def test_pending_guarantees_on_shared_and_separate_position_chains_violate_later
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _CONSUME_COMBINED,
-            "line": 21,
+            "line": 33,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -376,7 +376,7 @@ def test_pending_guarantees_on_shared_and_separate_position_chains_violate_later
     )
     assert item_diagnostic.propagation_chain[0].location.end_line == 7
     assert item_diagnostic.propagation_chain[0].location.end_column == 45
-    assert item_diagnostic.propagation_chain[1].location.end_line == 21
+    assert item_diagnostic.propagation_chain[1].location.end_line == 33
     assert item_diagnostic.propagation_chain[1].location.end_column == 93
     assert item_diagnostic.propagation_chain[2].location.end_line == 18
     assert item_diagnostic.propagation_chain[2].location.end_column == 83

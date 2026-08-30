@@ -34,6 +34,7 @@ class Destroyer(literal.Action):
 class DestroyerGuarantees:
     def __init__(self):
         self.guarantee_position_parent: list[literal.Task] = []
+        self.guarantee_position_trigger_pos: list[literal.Task] = []
         self.trigger_position_parent__action_maker = local.my_domain_com.my_lib.maker.MakerGuarantees()
 
 
@@ -67,7 +68,7 @@ class DestroyerExecution:
         self.join_for_trigger_position_parent__action_maker__when_empty_position_result = self.scheduler.create_join(2)
         self.join_for_trigger_position_parent__action_maker__for_empty_rule_position_trigger_pos = self.scheduler.create_join(2)
 
-    def accept_when_empty_position_parent__action_maker__position_trigger_pos(self):
+    def accept_when_occupied_position_parent(self):
         self.create_position_parent__action_maker__position_trigger_pos()
 
     def accept_when_empty_position_parent__action_maker__position_result(self):
@@ -78,6 +79,9 @@ class DestroyerExecution:
 
     def accept_for_empty_rule_position_parent(self):
         self.destroy_position_parent()
+
+    def accept_for_empty_rule_position_trigger_pos(self):
+        self.destroy_position_trigger_pos()
 
     def create_position_parent__action_maker__position_trigger_pos(self):
         self.action.get_interface_position(
@@ -151,6 +155,15 @@ class DestroyerExecution:
             "position<parent>"
         ).destroy_particle()
         self.scheduler.continue_with(self.guarantees.guarantee_position_parent)
+
+    def destroy_position_trigger_pos(self):
+        literal.continue_destruction(self.continue_destroy_position_trigger_pos)
+
+    def continue_destroy_position_trigger_pos(self):
+        self.action.get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
+        self.scheduler.continue_with(self.guarantees.guarantee_position_trigger_pos)
 
     def trigger_position_parent__action_maker__when_empty_position_result(self):
         if not self.join_for_trigger_position_parent__action_maker__when_empty_position_result.arrive():

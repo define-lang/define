@@ -123,8 +123,9 @@ class TestExecution:
             },
             ),
         )
+        self.scheduler.submit(self.destroy_action_middle__position_trigger_pos)
         self.scheduler.submit(self.trigger_action_middle__for_empty_rule_global_position_parent__global_position_child__global_position_grandchild)
-        self.scheduler.submit(self.trigger_action_middle__when_empty_action_inner__position_trigger_pos)
+        self.scheduler.submit(self.trigger_action_middle__action_parent)
         self.trigger_action_middle__for_empty_rule_global_position_parent()
 
     def destroy_global_position_parent__global_position_child__global_position_grandchild__global_position_greatgrandchild(self):
@@ -134,6 +135,13 @@ class TestExecution:
     def destroy_global_position_parent__global_position_sibling(self):
         self.destruction_position_global_position_parent__global_position_sibling.destroy_particle()
         self.destruction_connection_trigger_action_middle_2.complete()
+
+    def destroy_action_middle__position_trigger_pos(self):
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.middle.Middle
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
 
     def trigger_action_middle__for_empty_rule_global_position_parent__global_position_child__global_position_grandchild(self):
         if not self.join_for_trigger_action_middle__for_empty_rule_global_position_parent__global_position_child__global_position_grandchild.arrive():
@@ -149,8 +157,8 @@ class TestExecution:
         )
         self.execution_trigger_action_middle.accept_for_empty_rule_global_position_parent__global_position_child__global_position_grandchild()
 
-    def trigger_action_middle__when_empty_action_inner__position_trigger_pos(self):
-        self.execution_trigger_action_middle.accept_when_empty_action_inner__position_trigger_pos()
+    def trigger_action_middle__action_parent(self):
+        self.execution_trigger_action_middle.accept_action_parent()
 
     def trigger_action_middle__for_empty_rule_global_position_parent(self):
         if not self.join_for_trigger_action_middle__for_empty_rule_global_position_parent.arrive():

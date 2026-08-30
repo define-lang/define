@@ -163,6 +163,7 @@ class TestExecution:
             },
             ),
         )
+        self.scheduler.submit(self.destroy_position_gateway__action_other__position_trigger_pos)
         self.scheduler.submit(self.trigger_position_gateway__action_other__for_empty_rule_position_parent__global_position_child__global_position_grandchild)
         self.scheduler.submit(self.trigger_position_gateway__action_other__for_empty_rule_position_parent__global_position_child)
         self.trigger_position_gateway__action_other__for_empty_rule_position_parent()
@@ -174,6 +175,15 @@ class TestExecution:
     def destroy_position_gateway__action_other__position_parent__global_position_child__global_position_sibling(self):
         self.destruction_position_position_gateway__action_other__position_parent__global_position_child__global_position_sibling.destroy_particle()
         self.destruction_connection_trigger_position_gateway__action_other_2.complete()
+
+    def destroy_position_gateway__action_other__position_trigger_pos(self):
+        self.action.get_interface_position(
+            "position<gateway>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.other.Other
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
 
     def trigger_position_gateway__action_other__for_empty_rule_position_parent__global_position_child__global_position_grandchild(self):
         if not self.join_for_trigger_position_gateway__action_other__for_empty_rule_position_parent__global_position_child__global_position_grandchild.arrive():

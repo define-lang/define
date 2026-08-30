@@ -1,7 +1,6 @@
-# middle triggers inner, and inner's <out> propagates to test as a nested
-# guarantee, so test's move consumes an output produced two levels down.
-# The move must wait on inner's final operation on <out>, resolved within
-# the middle instance test triggered.
+# Middle triggers Inner and explicitly shuttles Inner's <out> particle to its
+# own <out> position. Test's move consumes a particle produced two actions down,
+# so it must wait on Inner's fill through Middle's shuttle.
 define the potential action<my.domain.com:my_lib:/test> {
     define the position<result>.
     define the position<box> {
@@ -15,6 +14,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         create a particle in position<box>.
         create a particle in position<box>::action</middle>::position<gw>.
         create a particle in position<box>::action</middle>::position<trigger_pos>.
-        move the particle in position<box>::action</middle>::position<gw>::action</inner>::position<out> to position<result>.
+        move the particle in position<box>::action</middle>::position<out> to position<result>.
+        destroy the particle in position<box>::action</middle>::position<trigger_pos>.
     }
 }

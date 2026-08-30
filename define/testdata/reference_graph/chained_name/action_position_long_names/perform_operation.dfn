@@ -11,5 +11,7 @@ define the potential action<my.domain.com:my_library_collection:/perform_operati
         define the position<result>.
         create a particle in position<result>.
         destroy the particle in position<operation_trigger>::position</inner_position>.
+        destroy the particle in position<operation_trigger>.
+        destroy the particle in position<run>.
     }
 }

@@ -1,4 +1,5 @@
-# Child's guarantee follows its Action Parent through both moves in Middle.
+# Child's implied-position guarantee follows the particle to which Child is
+# assigned through both moves in Middle.
 define the potential action<my.domain.com:my_lib:/test> {
     define the position<result>.
     define the position<gateway> {
@@ -13,6 +14,8 @@ define the potential action<my.domain.com:my_lib:/test> {
         create a particle in position<gateway>::action</middle>::position<source>.
         create a particle in position<gateway>::action</middle>::position<source>::position</marker>.
         create a particle in position<gateway>::action</middle>::position<trigger_pos>.
-        move the particle in position<gateway>::action</middle>::position<holder>::action</child>::position<result> to position<result>.
+        move the particle in position<gateway>::action</middle>::position<holder>::position</result> to position<result>.
+        destroy the particle in position<gateway>::action</middle>::position<holder>.
+        destroy the particle in position<gateway>::action</middle>::position<trigger_pos>.
     }
 }

@@ -157,8 +157,14 @@ def test_retriggered_action_resolves_requirements_within_each_invocation(
         "test.create(gw::/maker::trigger_pos)#2": [
             "test.destroy(gw::/maker::trigger_pos)"
         ],
+        # The Create from the second time /maker is triggered waits for the
+        # caller to move the particle from the first time out of the interface
+        # position.
         "maker#2.create(out)": ["test.move(gw::/maker::out, first_result)"],
         "test.move(gw::/maker::out, second_result)": ["maker#2.create(out)"],
+        "test.destroy(gw::/maker::trigger_pos)#2": [
+            "test.create(gw::/maker::trigger_pos)#2"
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -172,6 +178,8 @@ def test_retriggered_action_resolves_both_triggers_to_the_one_parent_fill(
         "test.create(gw)": [],
         "test.create(gw::/maker::held)": ["test.create(gw)"],
         "test.create(gw::/maker::trigger_pos)": ["test.create(gw)"],
+        # The caller's one parent Create satisfies /maker's occupied requirement
+        # both times it is triggered.
         "maker.create(held::/c)": ["test.create(gw::/maker::held)"],
         "test.destroy(gw::/maker::held::/c)": ["maker.create(held::/c)"],
         "test.destroy(gw::/maker::trigger_pos)": [
@@ -180,7 +188,14 @@ def test_retriggered_action_resolves_both_triggers_to_the_one_parent_fill(
         "test.create(gw::/maker::trigger_pos)#2": [
             "test.destroy(gw::/maker::trigger_pos)"
         ],
+        # The caller's Destroy of the first particle precedes the second Create
+        # at the same child position.
         "maker#2.create(held::/c)": ["test.destroy(gw::/maker::held::/c)"],
+        "test.destroy(gw::/maker::held::/c)#2": ["maker#2.create(held::/c)"],
+        "test.destroy(gw::/maker::held)": ["test.destroy(gw::/maker::held::/c)#2"],
+        "test.destroy(gw::/maker::trigger_pos)#2": [
+            "test.create(gw::/maker::trigger_pos)#2"
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -205,6 +220,7 @@ def test_retriggered_action_uses_prior_unchanged_interface_guarantee(
         "worker#2.destroy(trigger_pos)": [
             "test.create(gateway::/worker::trigger_pos)#2"
         ],
+        "test.destroy(gateway::/worker::item)": ["worker#2.move(holder, item)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -225,8 +241,13 @@ def test_retriggered_action_with_no_guarantees_runs_once_per_execution(
         ],
         "worker.create(scratch)": ["test.create(gw)"],
         "worker.destroy(scratch)": ["worker.create(scratch)"],
+        # The second trigger produces the worker's operations a second time even
+        # though the action has no guarantees.
         "worker#2.create(scratch)": ["test.create(gw)"],
         "worker#2.destroy(scratch)": ["worker#2.create(scratch)"],
+        "test.destroy(gw::/worker::trigger_pos)#2": [
+            "test.create(gw::/worker::trigger_pos)#2"
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -242,6 +263,12 @@ def test_two_actions_each_triggering_one_action_twice_number_its_invocations_acr
         "test.create(holder_second)": [],
         "test.create(holder_second::/second::trigger_pos)": [
             "test.create(holder_second)"
+        ],
+        "test.destroy(holder_first::/first::trigger_pos)": [
+            "test.create(holder_first::/first::trigger_pos)"
+        ],
+        "test.destroy(holder_second::/second::trigger_pos)": [
+            "test.create(holder_second::/second::trigger_pos)"
         ],
         "first.create(gw)": ["test.create(holder_first)"],
         "first.create(gw::/worker::trigger_pos)": ["first.create(gw)"],
@@ -269,10 +296,14 @@ def test_two_actions_each_triggering_one_action_twice_number_its_invocations_acr
         "second.destroy(gw)": ["second.destroy(gw::/worker::trigger_pos)#2"],
         "first:worker.create(scratch)": ["first.create(gw)"],
         "first:worker.destroy(scratch)": ["first:worker.create(scratch)"],
+        # The worker action runs twice when /first is triggered; these are its
+        # second run's operations.
         "first:worker#2.create(scratch)": ["first.create(gw)"],
         "first:worker#2.destroy(scratch)": ["first:worker#2.create(scratch)"],
         "second:worker.create(scratch)": ["second.create(gw)"],
         "second:worker.destroy(scratch)": ["second:worker.create(scratch)"],
+        # The worker action also runs twice when /second is triggered; these are
+        # its second run's operations.
         "second:worker#2.create(scratch)": ["second.create(gw)"],
         "second:worker#2.destroy(scratch)": ["second:worker#2.create(scratch)"],
     }
@@ -323,7 +354,12 @@ def test_retriggered_action_that_retriggers_an_action_names_its_callee_per_invoc
         "middle#2.destroy(gw)": ["middle#2.destroy(gw::/worker::trigger_pos)#2"],
         "middle#2:worker.create(scratch)": ["middle#2.create(gw)"],
         "middle#2:worker.destroy(scratch)": ["middle#2:worker.create(scratch)"],
+        # When /middle runs for the second time, it triggers /worker twice; these
+        # are the fourth worker run's operations.
         "middle#2:worker#2.create(scratch)": ["middle#2.create(gw)"],
         "middle#2:worker#2.destroy(scratch)": ["middle#2:worker#2.create(scratch)"],
+        "test.destroy(holder::/middle::trigger_pos)#2": [
+            "test.create(holder::/middle::trigger_pos)#2"
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)

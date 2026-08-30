@@ -32,7 +32,8 @@ class Act(literal.Action):
 @final
 class ActGuarantees:
     def __init__(self):
-        self.guarantee_position_chain_src__global_position_mid__global_position_end: list[literal.Task] = []
+        self.guarantee_position_chain_src: list[literal.Task] = []
+        self.guarantee_position_trigger: list[literal.Task] = []
 
 
 @final
@@ -49,9 +50,20 @@ class ActExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.destruction_connections = destruction_connections
+        self.join_for_destroy_position_chain_src__global_position_mid = self.scheduler.create_join(2)
+        self.join_for_destroy_position_chain_src = self.scheduler.create_join(2)
 
     def accept_for_empty_rule_position_chain_src__global_position_mid__global_position_end(self):
         self.destroy_position_chain_src__global_position_mid__global_position_end()
+
+    def accept_for_empty_rule_position_chain_src__global_position_mid(self):
+        self.destroy_position_chain_src__global_position_mid()
+
+    def accept_for_empty_rule_position_chain_src(self):
+        self.destroy_position_chain_src()
+
+    def accept_for_empty_rule_position_trigger(self):
+        self.destroy_position_trigger()
 
     def destroy_position_chain_src__global_position_mid__global_position_end(self):
         literal.continue_destruction(self.continue_destroy_position_chain_src__global_position_mid__global_position_end)
@@ -64,4 +76,37 @@ class ActExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.end.End
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_chain_src__global_position_mid__global_position_end)
+        self.destroy_position_chain_src__global_position_mid()
+
+    def destroy_position_chain_src__global_position_mid(self):
+        if not self.join_for_destroy_position_chain_src__global_position_mid.arrive():
+            return
+        literal.continue_destruction(self.continue_destroy_position_chain_src__global_position_mid)
+
+    def continue_destroy_position_chain_src__global_position_mid(self):
+        self.action.get_interface_position(
+            "position<chain_src>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.mid.Mid
+        ).destroy_particle()
+        self.destroy_position_chain_src()
+
+    def destroy_position_chain_src(self):
+        if not self.join_for_destroy_position_chain_src.arrive():
+            return
+        literal.continue_destruction(self.continue_destroy_position_chain_src)
+
+    def continue_destroy_position_chain_src(self):
+        self.action.get_interface_position(
+            "position<chain_src>"
+        ).destroy_particle()
+        self.scheduler.continue_with(self.guarantees.guarantee_position_chain_src)
+
+    def destroy_position_trigger(self):
+        literal.continue_destruction(self.continue_destroy_position_trigger)
+
+    def continue_destroy_position_trigger(self):
+        self.action.get_interface_position(
+            "position<trigger>"
+        ).destroy_particle()
+        self.scheduler.continue_with(self.guarantees.guarantee_position_trigger)

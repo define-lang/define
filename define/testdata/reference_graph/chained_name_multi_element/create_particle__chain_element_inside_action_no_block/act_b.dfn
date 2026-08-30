@@ -5,5 +5,6 @@ define the potential action<my.domain.com:my_lib:/act_b> {
     } and it does {
         define the position<__noop>.
         create a particle in position<__noop>.
+        destroy the particle in position<_noop>.
     }
 }

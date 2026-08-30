@@ -60,6 +60,7 @@ class TestExecution:
             self.trace_execution,
             "first",
         )
+        self.scheduler.submit(self.destroy_action_first__position_trigger_pos)
         self.trigger_action_first__action_parent()
 
     def create_action_second__position_trigger_pos(self):
@@ -78,7 +79,32 @@ class TestExecution:
             self.trace_execution,
             "second",
         )
+        self.scheduler.submit(self.destroy_action_second__position_trigger_pos)
         self.trigger_action_second__action_parent()
+
+    def destroy_action_first__position_trigger_pos(self):
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.first.First
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
+        self.scheduler.destroy_completed(
+            self.trace_execution,
+            "/first::trigger_pos",
+            1,
+        )
+
+    def destroy_action_second__position_trigger_pos(self):
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.second.Second
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
+        self.scheduler.destroy_completed(
+            self.trace_execution,
+            "/second::trigger_pos",
+            1,
+        )
 
     def trigger_action_first__action_parent(self):
         self.execution_trigger_action_first.accept_action_parent()

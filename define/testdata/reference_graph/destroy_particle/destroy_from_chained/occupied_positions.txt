@@ -1,3 +1,0 @@
-action<local.my_domain_com.my_lib.act.Act>::position<trigger>
-action<local.my_domain_com.my_lib.act.Act>::position<chain_src>
-action<local.my_domain_com.my_lib.act.Act>::position<chain_src>::position<local.my_domain_com.my_lib.mid.Mid>

@@ -11,5 +11,7 @@ define the potential action<my.domain.com:my_lib:/middle> {
         create a particle in position<gw>::action</inner>::position<trigger_pos>.
         destroy the particle in position<gw>::action</inner>::position<slot>.
         create a particle in position<gw>::action</inner>::position<trigger_pos>.
+        destroy the particle in position<gw>::action</inner>::position<slot>.
+        destroy the particle in position<gw>.
     }
 }

@@ -51,8 +51,7 @@ class TestExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.execution_trigger_position_box__action_host: local.my_domain_com.my_lib.host.HostExecution
-        self.join_for_trigger_position_box__action_host__when_empty_action_worker__position_input = self.scheduler.create_join(2)
-        self.join_for_trigger_position_box__action_host__when_empty_action_worker__position_run = self.scheduler.create_join(2)
+        self.join_for_trigger_position_box__action_host__action_parent = self.scheduler.create_join(2)
 
     def create_position_box(self):
         self.action.get_interface_position(
@@ -67,17 +66,10 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_position_box__action_host,
         )
-        self.scheduler.submit(self.trigger_position_box__action_host__when_empty_action_worker__position_input)
-        self.scheduler.submit(self.trigger_position_box__action_host__when_empty_action_worker__position_run)
-        self.scheduler.submit(self.trigger_position_box__action_host__when_empty_action_worker__position_input)
-        self.trigger_position_box__action_host__when_empty_action_worker__position_run()
+        self.scheduler.submit(self.trigger_position_box__action_host__action_parent)
+        self.trigger_position_box__action_host__action_parent()
 
-    def trigger_position_box__action_host__when_empty_action_worker__position_input(self):
-        if not self.join_for_trigger_position_box__action_host__when_empty_action_worker__position_input.arrive():
+    def trigger_position_box__action_host__action_parent(self):
+        if not self.join_for_trigger_position_box__action_host__action_parent.arrive():
             return
-        self.execution_trigger_position_box__action_host.accept_when_empty_action_worker__position_input()
-
-    def trigger_position_box__action_host__when_empty_action_worker__position_run(self):
-        if not self.join_for_trigger_position_box__action_host__when_empty_action_worker__position_run.arrive():
-            return
-        self.execution_trigger_position_box__action_host.accept_when_empty_action_worker__position_run()
+        self.execution_trigger_position_box__action_host.accept_action_parent()

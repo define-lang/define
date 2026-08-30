@@ -12,5 +12,8 @@ define the potential action<my.domain.com:my_lib:/middle> {
         move the particle in position<gateway>::position</source_particle> to position<gateway>::action</inner>::position<source>.
         create a particle in position<gateway>::action</inner>::position<source>::position</child>.
         create a particle in position<gateway>::action</inner>::position<trigger_pos>.
+        destroy the particle in position<gateway>::action</inner>::position<destination>.
+        destroy the particle in position<gateway>::action</inner>::position<trigger_pos>.
+        destroy the particle in position<gateway>.
     }
 }

@@ -311,14 +311,17 @@ def test_caller_violates_empty_via_create_in_iface_of_implied_action(
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == _INNER
     assert all_diags[0].required_empty is True
-    assert all_diags[0].position_name == "position<box>::action</sub>::position<iface>"
+    assert (
+        all_diags[0].position_name
+        == "position<box>::position</payload>::position</value>"
+    )
     assert_propagation_chain(
         all_diags[0],
         {
             "kind": action_contract.PropagationKind.FILL_SITE,
-            "enclosing_quality_name": "position<box>::action</sub>::position<iface>",
+            "enclosing_quality_name": "position<box>::position</payload>::position</value>",
             "triggered_quality_name": None,
-            "line": 13,
+            "line": 14,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -331,18 +334,25 @@ def test_caller_violates_empty_via_create_in_iface_of_implied_action(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _INNER,
-            "triggered_quality_name": None,
-            "line": 7,
+            "triggered_quality_name": _SUB,
+            "line": 9,
             "column": 30,
             "file_path": "inner.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _SUB,
+            "triggered_quality_name": None,
+            "line": 11,
+            "column": 30,
+            "file_path": "sub.dfn",
         },
     )
     assert action_graph_set(result.operation_graphs) == {
         (_INNER, _SUB),
         (_TEST, _INNER),
-        (_TEST, _SUB),
     }
 
 
@@ -354,29 +364,40 @@ def test_caller_violates_occupied_via_move_from_iface_of_implied_action(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 12
+    assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == _INNER
     assert all_diags[0].required_empty is False
-    assert all_diags[0].position_name == "position<box>::action</sub>::position<iface>"
+    assert (
+        all_diags[0].position_name
+        == "position<box>::position</payload>::position</value>"
+    )
     assert_propagation_chain(
         all_diags[0],
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _INNER,
-            "line": 12,
+            "line": 14,
             "column": 30,
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _INNER,
-            "triggered_quality_name": None,
-            "line": 8,
+            "triggered_quality_name": _SUB,
+            "line": 9,
             "column": 30,
             "file_path": "inner.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _SUB,
+            "triggered_quality_name": None,
+            "line": 12,
+            "column": 30,
+            "file_path": "sub.dfn",
         },
     )
     assert action_graph_set(result.operation_graphs) == {
@@ -393,29 +414,40 @@ def test_caller_violates_occupied_via_destroy_in_iface_of_implied_action(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 12
+    assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == _INNER
     assert all_diags[0].required_empty is False
-    assert all_diags[0].position_name == "position<box>::action</sub>::position<iface>"
+    assert (
+        all_diags[0].position_name
+        == "position<box>::position</payload>::position</value>"
+    )
     assert_propagation_chain(
         all_diags[0],
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _INNER,
-            "line": 12,
+            "line": 14,
             "column": 30,
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _INNER,
-            "triggered_quality_name": None,
-            "line": 7,
-            "column": 33,
+            "triggered_quality_name": _SUB,
+            "line": 9,
+            "column": 30,
             "file_path": "inner.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _SUB,
+            "triggered_quality_name": None,
+            "line": 11,
+            "column": 33,
+            "file_path": "sub.dfn",
         },
     )
     assert action_graph_set(result.operation_graphs) == {
@@ -439,15 +471,15 @@ def test_caller_violates_empty_via_create_in_child_of_iface_of_implied_action(
     assert all_diags[0].required_empty is True
     assert (
         all_diags[0].position_name
-        == "position<box>::action</sub>::position<iface>::position</child>"
+        == "position<box>::position</payload>::position</child>::position</value>"
     )
     assert_propagation_chain(
         all_diags[0],
         {
             "kind": action_contract.PropagationKind.FILL_SITE,
-            "enclosing_quality_name": "position<box>::action</sub>::position<iface>::position</child>",
+            "enclosing_quality_name": "position<box>::position</payload>::position</child>::position</value>",
             "triggered_quality_name": None,
-            "line": 14,
+            "line": 15,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -460,18 +492,25 @@ def test_caller_violates_empty_via_create_in_child_of_iface_of_implied_action(
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _INNER,
-            "triggered_quality_name": None,
-            "line": 7,
+            "triggered_quality_name": _SUB,
+            "line": 9,
             "column": 30,
             "file_path": "inner.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _SUB,
+            "triggered_quality_name": None,
+            "line": 11,
+            "column": 30,
+            "file_path": "sub.dfn",
         },
     )
     assert action_graph_set(result.operation_graphs) == {
         (_INNER, _SUB),
         (_TEST, _INNER),
-        (_TEST, _SUB),
     }
 
 
@@ -490,7 +529,7 @@ def test_caller_violates_occupied_via_move_from_child_of_iface_of_implied_action
     assert all_diags[0].required_empty is False
     assert (
         all_diags[0].position_name
-        == "position<box>::action</sub>::position<iface>::position</child>"
+        == "position<box>::position</payload>::position</child>::position</value>"
     )
     assert_propagation_chain(
         all_diags[0],
@@ -503,18 +542,25 @@ def test_caller_violates_occupied_via_move_from_child_of_iface_of_implied_action
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _INNER,
-            "triggered_quality_name": None,
-            "line": 8,
+            "triggered_quality_name": _SUB,
+            "line": 9,
             "column": 30,
             "file_path": "inner.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _SUB,
+            "triggered_quality_name": None,
+            "line": 12,
+            "column": 30,
+            "file_path": "sub.dfn",
         },
     )
     assert action_graph_set(result.operation_graphs) == {
         (_INNER, _SUB),
         (_TEST, _INNER),
-        (_TEST, _SUB),
     }
 
 
@@ -533,7 +579,7 @@ def test_caller_violates_occupied_via_destroy_in_child_of_iface_of_implied_actio
     assert all_diags[0].required_empty is False
     assert (
         all_diags[0].position_name
-        == "position<box>::action</sub>::position<iface>::position</child>"
+        == "position<box>::position</payload>::position</child>::position</value>"
     )
     assert_propagation_chain(
         all_diags[0],
@@ -546,16 +592,23 @@ def test_caller_violates_occupied_via_destroy_in_child_of_iface_of_implied_actio
             "file_path": "test.dfn",
         },
         {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _INNER,
-            "triggered_quality_name": None,
-            "line": 7,
-            "column": 33,
+            "triggered_quality_name": _SUB,
+            "line": 9,
+            "column": 30,
             "file_path": "inner.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _SUB,
+            "triggered_quality_name": None,
+            "line": 11,
+            "column": 33,
+            "file_path": "sub.dfn",
         },
     )
     assert action_graph_set(result.operation_graphs) == {
         (_INNER, _SUB),
         (_TEST, _INNER),
-        (_TEST, _SUB),
     }

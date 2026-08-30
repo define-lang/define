@@ -12,5 +12,7 @@ define the potential action<my.domain.com:my_lib:/consume_item> {
         destroy the particle in position<input>::position</item>.
         destroy the particle in position<input>.
         create a particle in position<input>.
+        destroy the particle in position<input>.
+        destroy the particle in position<trigger_pos>.
     }
 }

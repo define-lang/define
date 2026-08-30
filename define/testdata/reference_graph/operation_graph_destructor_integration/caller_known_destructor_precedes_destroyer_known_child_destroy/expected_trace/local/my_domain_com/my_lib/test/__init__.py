@@ -65,7 +65,7 @@ class TestExecution:
         self.execution_trigger_action_destroyer: local.my_domain_com.my_lib.destroyer.DestroyerExecution
         self.destruction_connection_trigger_action_destroyer: tracing.DestructionConnection
         self.execution_trigger_action_destroyer__position_parent__action_destruct: local.my_domain_com.my_lib.destruct.DestructExecution
-        self.join_for_trigger_action_destroyer__when_empty_position_parent__action_maker__position_trigger_pos = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__when_occupied_position_parent = self.scheduler.create_join(2)
         self.join_for_trigger_action_destroyer__when_empty_position_parent__action_maker__position_result = self.scheduler.create_join(2)
         self.join_for_trigger_action_destroyer__position_parent__action_destruct__for_empty_rule_global_position_required = self.scheduler.create_join(2)
 
@@ -105,7 +105,7 @@ class TestExecution:
             "destruct",
             self.guarantees.trigger_action_destroyer__position_parent__action_destruct,
         )
-        self.scheduler.submit(self.trigger_action_destroyer__when_empty_position_parent__action_maker__position_trigger_pos)
+        self.scheduler.submit(self.trigger_action_destroyer__when_occupied_position_parent)
         self.scheduler.submit(self.trigger_action_destroyer__when_empty_position_parent__action_maker__position_result)
         self.trigger_action_destroyer__position_parent__action_destruct__for_empty_rule_global_position_required()
 
@@ -142,15 +142,28 @@ class TestExecution:
             },
             ),
         )
-        self.scheduler.submit(self.trigger_action_destroyer__when_empty_position_parent__action_maker__position_trigger_pos)
+        self.scheduler.submit(self.destroy_action_destroyer__position_trigger_pos)
+        self.scheduler.submit(self.trigger_action_destroyer__when_occupied_position_parent)
         self.scheduler.submit(self.trigger_action_destroyer__when_empty_position_parent__action_maker__position_result)
         self.scheduler.submit(self.trigger_action_destroyer__when_empty_position_parent__global_position_required)
         self.trigger_action_destroyer__for_empty_rule_position_parent()
 
-    def trigger_action_destroyer__when_empty_position_parent__action_maker__position_trigger_pos(self):
-        if not self.join_for_trigger_action_destroyer__when_empty_position_parent__action_maker__position_trigger_pos.arrive():
+    def destroy_action_destroyer__position_trigger_pos(self):
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.destroyer.Destroyer
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
+        self.scheduler.destroy_completed(
+            self.trace_execution,
+            "/destroyer::trigger_pos",
+            1,
+        )
+
+    def trigger_action_destroyer__when_occupied_position_parent(self):
+        if not self.join_for_trigger_action_destroyer__when_occupied_position_parent.arrive():
             return
-        self.execution_trigger_action_destroyer.accept_when_empty_position_parent__action_maker__position_trigger_pos()
+        self.execution_trigger_action_destroyer.accept_when_occupied_position_parent()
 
     def trigger_action_destroyer__when_empty_position_parent__action_maker__position_result(self):
         if not self.join_for_trigger_action_destroyer__when_empty_position_parent__action_maker__position_result.arrive():

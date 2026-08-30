@@ -79,6 +79,14 @@ def test_deep_diamond_operations_on_the_same_implied_position_with_destructor(
         # fires the directly known destructor.
         "destructor.create(_noop)": ["left_child.create(/marker)"],
         "destructor.destroy(_noop)": ["destructor.create(_noop)"],
+        "left.destroy(/left_child::trigger_pos)": [
+            "left.create(/left_child::trigger_pos)"
+        ],
+        "right.destroy(/right_child::trigger_pos)": [
+            "right.create(/right_child::trigger_pos)"
+        ],
+        "test.destroy(/left::trigger_pos)": ["test.create(/left::trigger_pos)"],
+        "test.destroy(/right::trigger_pos)": ["test.create(/right::trigger_pos)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -157,6 +165,8 @@ def test_diamond_callers_order_added_destructor_around_known_destructor(
             "caller_b.destroy(destroyer_particle::/destroyer::trigger_pos)",
             "caller_b:destroyer.destroy(target)",
         ],
+        "test.destroy(/caller_a::trigger_pos)": ["test.create(/caller_a::trigger_pos)"],
+        "test.destroy(/caller_b::trigger_pos)": ["test.create(/caller_b::trigger_pos)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -210,6 +220,7 @@ def test_diamond_callers_serialize_added_destructor_around_known_destructor(
             "caller_a.destroy(destroyer_particle::/destroyer::trigger_pos)",
             "caller_a:destroyer.destroy(target)",
         ],
+        "caller_a.destroy(trigger_pos)": ["test.create(/caller_a::trigger_pos)"],
         "caller_b.create(destroyer_particle)": [],
         "caller_b.create(carrier)": [],
         "caller_b.create(carrier::/marker)": ["caller_b.create(carrier)"],
@@ -247,6 +258,7 @@ def test_diamond_callers_serialize_added_destructor_around_known_destructor(
             "caller_b.destroy(destroyer_particle::/destroyer::trigger_pos)",
             "caller_b:destroyer.destroy(target)",
         ],
+        "caller_b.destroy(trigger_pos)": ["test.create(/caller_b::trigger_pos)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -832,6 +844,9 @@ def test_caller_contributed_child_destructor_depends_on_callee_guarantee(
             "maker.destroy(trigger_pos)",
             "destroyer.destroy(parent::/required)",
         ],
+        "test.destroy(/destroyer::trigger_pos)": [
+            "test.create(/destroyer::trigger_pos)"
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -873,6 +888,9 @@ def test_caller_known_destructor_precedes_destroyer_known_child_destroy(
         "destroyer.destroy(parent)": [
             "destroyer.destroy(parent::/required)",
             "maker.destroy(trigger_pos)",
+        ],
+        "test.destroy(/destroyer::trigger_pos)": [
+            "test.create(/destroyer::trigger_pos)"
         ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
@@ -933,6 +951,9 @@ def test_two_caller_known_destructors_precede_same_child_destroy(
             "maker.destroy(trigger_pos)",
             "destroyer.destroy(parent::/required)",
         ],
+        "test.destroy(/destroyer::trigger_pos)": [
+            "test.create(/destroyer::trigger_pos)"
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -991,6 +1012,7 @@ def test_caller_known_child_destroy_and_destructor_precede_parent_destroy(
             "destroyer.destroy(parent::/sibling)",
             "destroyer.destroy(parent::/required)",
         ],
+        "destroyer.destroy(trigger_pos)": ["test.create(/destroyer::trigger_pos)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -1019,6 +1041,9 @@ def test_contributed_destructor_operates_on_child_of_occupied_requirement(
         "destruct.destroy(/required::/work)": ["destruct.create(/required::/work)"],
         "destroyer.destroy(parent::/required)": ["destruct.destroy(/required::/work)"],
         "destroyer.destroy(parent)": ["destroyer.destroy(parent::/required)"],
+        "test.destroy(/destroyer::trigger_pos)": [
+            "test.create(/destroyer::trigger_pos)"
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -1066,6 +1091,7 @@ def test_contributed_destructor_depends_on_callee_move_with_two_dependencies(
         "destruct.destroy(/required::/work)": ["destruct.create(/required::/work)"],
         "destroyer.destroy(parent::/required)": ["destruct.destroy(/required::/work)"],
         "destroyer.destroy(parent)": ["destroyer.destroy(parent::/required)"],
+        "destroyer.destroy(trigger_pos)": ["test.create(/destroyer::trigger_pos)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -1113,6 +1139,9 @@ def test_callee_child_destroy_depends_on_contributed_destructor_and_sibling_dest
             "destroyer.destroy(parent::/required::/extra_a)",
         ],
         "destroyer.destroy(parent)": ["destroyer.destroy(parent::/required)"],
+        "test.destroy(/destroyer::trigger_pos)": [
+            "test.create(/destroyer::trigger_pos)"
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -1191,6 +1220,9 @@ def test_default_empty_destructor_position_uses_parent_fill(
         # the parent particle supplies the destructor's empty requirement.
         "destructor.create(/marker)": ["test.create(carrier::/callee::src)"],
         "destructor.destroy(/marker)": ["destructor.create(/marker)"],
+        "test.destroy(carrier::/callee::trigger_pos)": [
+            "test.create(carrier::/callee::trigger_pos)"
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -1215,6 +1247,9 @@ def test_caller_emptied_destructor_position_uses_child_destroy(
         # move depends on that destroy and supplies the destructor requirement.
         "destructor.create(/marker)": ["test.move(source, carrier::/callee::src)"],
         "destructor.destroy(/marker)": ["destructor.create(/marker)"],
+        "test.destroy(carrier::/callee::trigger_pos)": [
+            "test.create(carrier::/callee::trigger_pos)"
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -1355,30 +1390,40 @@ def test_destructor_on_particle_from_transitive_callee_guarantee(
         "middle.create(box::/inner::run)": ["middle.create(box)"],
         "inner.create(result)": ["middle.create(box)"],
         "inner.create(result::/marker)": ["inner.create(result)"],
-        # The transitive result Guarantee fires the destructor and is the caller
-        # operation bound to the destructor's Action Parent Binding Hole.
-        "destructor.create(_noop)": ["inner.create(result)"],
+        "middle.move(box::/inner::result::/marker, held_marker)": [
+            "inner.create(result::/marker)"
+        ],
+        "middle.move(box::/inner::result, result)": [
+            "middle.move(box::/inner::result::/marker, held_marker)"
+        ],
+        "middle.move(held_marker, result::/marker)": [
+            "middle.move(box::/inner::result, result)"
+        ],
+        "middle.destroy(box::/inner::run)": ["middle.create(box::/inner::run)"],
+        "middle.destroy(box)": [
+            "middle.move(box::/inner::result, result)",
+            "middle.destroy(box::/inner::run)",
+        ],
+        # The explicitly transferred result guarantee fires the Destructor and
+        # supplies the particle bound to its Action Parent Binding Hole.
+        "destructor.create(_noop)": ["middle.move(box::/inner::result, result)"],
         "destructor.destroy(_noop)": ["destructor.create(_noop)"],
-        # The child guarantee supplies the destructor's occupied requirement.
-        "destructor.move(/marker, holder)": ["inner.create(result::/marker)"],
+        # Explicitly transferring the child supplies the Destructor's occupied
+        # requirement without exposing /inner's interface position to /test.
+        "destructor.move(/marker, holder)": [
+            "middle.move(held_marker, result::/marker)"
+        ],
         "destructor.move(holder, /marker)": ["destructor.move(/marker, holder)"],
-        "test.destroy(gateway::/middle::box::/inner::result::/marker)": [
+        "test.destroy(gateway::/middle::result::/marker)": [
             "destructor.move(holder, /marker)"
         ],
-        "test.destroy(gateway::/middle::box::/inner::result)": [
-            "test.destroy(gateway::/middle::box::/inner::result::/marker)"
+        "test.destroy(gateway::/middle::result)": [
+            "test.destroy(gateway::/middle::result::/marker)"
         ],
         "test.destroy(gateway::/middle::run)": ["test.create(gateway::/middle::run)"],
-        "test.destroy(gateway::/middle::box::/inner::run)": [
-            "middle.create(box::/inner::run)"
-        ],
-        "test.destroy(gateway::/middle::box)": [
-            "test.destroy(gateway::/middle::box::/inner::result)",
-            "test.destroy(gateway::/middle::box::/inner::run)",
-        ],
         "test.destroy(gateway)": [
+            "test.destroy(gateway::/middle::result)",
             "test.destroy(gateway::/middle::run)",
-            "test.destroy(gateway::/middle::box)",
         ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
@@ -1397,13 +1442,12 @@ def test_destructor_on_implied_position_from_transitive_callee_guarantee(
         # The transitive implied-position guarantee fires the destructor.
         "destructor.create(_noop)": ["inner.create(/child)"],
         "destructor.destroy(_noop)": ["destructor.create(_noop)"],
+        "middle.destroy(/inner::run)": ["middle.create(/inner::run)"],
         "test.destroy(box::/child)": ["inner.create(/child)"],
         "test.destroy(box::/middle::run)": ["test.create(box::/middle::run)"],
-        "test.destroy(box::/inner::run)": ["middle.create(/inner::run)"],
         "test.destroy(box)": [
             "test.destroy(box::/child)",
             "test.destroy(box::/middle::run)",
-            "test.destroy(box::/inner::run)",
         ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
@@ -2590,12 +2634,12 @@ def test_creator_reverse_child_order_is_canonical_across_three_actions(
     expected = {
         "test.create(carrier)": [],
         "test.create(carrier::/third)": ["test.create(carrier)"],
-        "worker.create(first_interface)": ["test.create(carrier)"],
-        "worker.create(second_interface)": ["test.create(carrier)"],
+        "worker.create(/first_interface)": ["test.create(carrier)"],
+        "worker.create(/second_interface)": ["test.create(carrier)"],
         "test.move(carrier, /middle::target)": [
             "test.create(carrier::/third)",
-            "worker.create(first_interface)",
-            "worker.create(second_interface)",
+            "worker.create(/first_interface)",
+            "worker.create(/second_interface)",
         ],
         "middle.create(target::/first)": ["test.move(carrier, /middle::target)"],
         "middle.create(target::/second)": ["test.move(carrier, /middle::target)"],
@@ -2645,10 +2689,10 @@ def test_creator_reverse_child_order_is_canonical_across_three_actions(
         "third_destructor.create(/marker)": ["second_destructor.destroy(/marker)"],
         "third_destructor.destroy(/marker)": ["third_destructor.create(/marker)"],
         "destroyer.destroy(target::/third)": ["third_destructor.move(holder, /third)"],
-        "destroyer.destroy(target::/worker::second_interface)": [
+        "destroyer.destroy(target::/second_interface)": [
             "middle.move(target, /destroyer::target)"
         ],
-        "destroyer.destroy(target::/worker::first_interface)": [
+        "destroyer.destroy(target::/first_interface)": [
             "middle.move(target, /destroyer::target)"
         ],
         "fourth_destructor.move(/fourth, holder)": [
@@ -2675,8 +2719,8 @@ def test_creator_reverse_child_order_is_canonical_across_three_actions(
             "destroyer.destroy(target::/first)",
             "destroyer.destroy(target::/second)",
             "destroyer.destroy(target::/third)",
-            "destroyer.destroy(target::/worker::second_interface)",
-            "destroyer.destroy(target::/worker::first_interface)",
+            "destroyer.destroy(target::/second_interface)",
+            "destroyer.destroy(target::/first_interface)",
             "destroyer.destroy(target::/fourth)",
             "destroyer.destroy(target::/fifth)",
             "fifth_destructor.destroy(/marker)",
@@ -2697,12 +2741,12 @@ def test_creator_nonoverlapping_child_order_is_canonical_across_three_actions(
     expected = {
         "test.create(carrier)": [],
         "test.create(carrier::/third)": ["test.create(carrier)"],
-        "worker.create(first_interface)": ["test.create(carrier)"],
-        "worker.create(second_interface)": ["test.create(carrier)"],
+        "worker.create(/first_interface)": ["test.create(carrier)"],
+        "worker.create(/second_interface)": ["test.create(carrier)"],
         "test.move(carrier, /middle::target)": [
             "test.create(carrier::/third)",
-            "worker.create(first_interface)",
-            "worker.create(second_interface)",
+            "worker.create(/first_interface)",
+            "worker.create(/second_interface)",
         ],
         "middle.create(target::/first)": ["test.move(carrier, /middle::target)"],
         "middle.create(target::/second)": ["test.move(carrier, /middle::target)"],
@@ -2772,10 +2816,10 @@ def test_creator_nonoverlapping_child_order_is_canonical_across_three_actions(
         "third_destructor.create(/marker)": ["fifth_destructor.destroy(/marker)"],
         "third_destructor.destroy(/marker)": ["third_destructor.create(/marker)"],
         "destroyer.destroy(target::/third)": ["third_destructor.move(holder, /third)"],
-        "destroyer.destroy(target::/worker::second_interface)": [
+        "destroyer.destroy(target::/second_interface)": [
             "middle.move(target, /destroyer::target)"
         ],
-        "destroyer.destroy(target::/worker::first_interface)": [
+        "destroyer.destroy(target::/first_interface)": [
             "middle.move(target, /destroyer::target)"
         ],
         "destroyer.destroy(target)": [
@@ -2784,8 +2828,8 @@ def test_creator_nonoverlapping_child_order_is_canonical_across_three_actions(
             "destroyer.destroy(target::/second)",
             "destroyer.destroy(target::/fifth)",
             "destroyer.destroy(target::/third)",
-            "destroyer.destroy(target::/worker::second_interface)",
-            "destroyer.destroy(target::/worker::first_interface)",
+            "destroyer.destroy(target::/second_interface)",
+            "destroyer.destroy(target::/first_interface)",
             "third_destructor.destroy(/marker)",
         ],
     }
@@ -2821,6 +2865,7 @@ def test_two_destruction_facts_with_distinct_destructor_sets(
         ],
         "shared_destructor#2.destroy(work)": ["shared_destructor#2.create(work)"],
         "destroyer.destroy(second)": ["test.move(second_source, /destroyer::second)"],
+        "test.destroy(/destroyer::run)": ["test.create(/destroyer::run)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -2920,6 +2965,7 @@ def test_destructor_requirements_resolved_across_three_callers(
             "destroyer.destroy(target::/creator_known)",
             "destructor.destroy(/middle_known)",
         ],
+        "destroyer.destroy(run)": ["middle.create(/destroyer::run)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 

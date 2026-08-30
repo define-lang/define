@@ -5,6 +5,7 @@ from typing import final, override
 from define.runtime import literal
 
 import local.my_domain_com.my_lib.worker
+import local.my_domain_com.my_lib.y
 
 
 class Test(literal.EntryPoint):
@@ -50,6 +51,9 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        guarantees.trigger_position_gw__action_worker.guarantee_position_in__move__position_box__global_position_y.append(
+            self.destroy_position_gw__action_worker__position_box__global_position_y
+        )
         self.execution_trigger_position_gw__action_worker: local.my_domain_com.my_lib.worker.WorkerExecution
         self.join_for_trigger_position_gw__action_worker__for_empty_rule_position_in = self.scheduler.create_join(3)
 
@@ -89,6 +93,24 @@ class TestExecution:
         )
         self.scheduler.submit(self.trigger_position_gw__action_worker__for_empty_rule_position_in)
         self.trigger_position_gw__action_worker__for_empty_rule_position_in()
+
+    def destroy_position_gw__action_worker__position_box__global_position_y(self):
+        self.action.get_interface_position(
+            "position<gw>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.worker.Worker
+        ).get_interface_position(
+            "position<box>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.y.Y
+        ).destroy_particle()
+        self.action.get_interface_position(
+            "position<gw>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.worker.Worker
+        ).get_interface_position(
+            "position<box>"
+        ).destroy_particle()
 
     def trigger_position_gw__action_worker__for_empty_rule_position_in(self):
         if not self.join_for_trigger_position_gw__action_worker__for_empty_rule_position_in.arrive():

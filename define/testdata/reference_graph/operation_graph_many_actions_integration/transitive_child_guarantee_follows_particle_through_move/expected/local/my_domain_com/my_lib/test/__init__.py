@@ -97,6 +97,7 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_position_gateway__action_outer,
         )
+        self.scheduler.submit(self.destroy_position_gateway__action_outer__position_trigger_pos)
         self.scheduler.submit(self.trigger_position_gateway__action_outer__action_parent)
         self.scheduler.submit(self.trigger_position_gateway__action_outer__for_empty_rule_position_source)
         self.trigger_position_gateway__action_outer__when_empty_position_destination()
@@ -115,6 +116,22 @@ class TestExecution:
                 "position<result>"
             )
         )
+        self.action.get_interface_position(
+            "position<gateway>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.outer.Outer
+        ).get_interface_position(
+            "position<destination>"
+        ).destroy_particle()
+
+    def destroy_position_gateway__action_outer__position_trigger_pos(self):
+        self.action.get_interface_position(
+            "position<gateway>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.outer.Outer
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
 
     def trigger_position_gateway__action_outer__action_parent(self):
         if not self.join_for_trigger_position_gateway__action_outer__action_parent.arrive():

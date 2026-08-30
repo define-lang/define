@@ -87,7 +87,17 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_position_gateway__action_other,
         )
+        self.scheduler.submit(self.destroy_position_gateway__action_other__position_trigger_pos)
         self.trigger_position_gateway__action_other__for_empty_rule_position_input()
+
+    def destroy_position_gateway__action_other__position_trigger_pos(self):
+        self.action.get_interface_position(
+            "position<gateway>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.other.Other
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
 
     def trigger_position_gateway__action_other__for_empty_rule_position_input(self):
         if not self.join_for_trigger_position_gateway__action_other__for_empty_rule_position_input.arrive():

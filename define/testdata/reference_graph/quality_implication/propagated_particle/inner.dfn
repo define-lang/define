@@ -14,5 +14,6 @@ define the potential action<my.domain.com:my_lib:/inner> {
         the position<run> has a particle.
     } and it does {
         move the particle in position<input> to position<output>.
+        destroy the particle in position<run>.
     }
 }

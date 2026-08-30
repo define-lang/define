@@ -31,7 +31,8 @@ class Act(literal.Action):
 @final
 class ActGuarantees:
     def __init__(self):
-        self.guarantee_position_trigger_pos__global_position_inner: list[literal.Task] = []
+        self.guarantee_position_trigger_pos: list[literal.Task] = []
+        self.guarantee_position_run: list[literal.Task] = []
 
 
 @final
@@ -52,12 +53,19 @@ class ActExecution:
             "position<result>",
             scheduler=self.scheduler,
         )
+        self.join_for_destroy_position_trigger_pos = self.scheduler.create_join(2)
 
     def accept_action_parent(self):
         self.create_position_result()
 
     def accept_for_empty_rule_position_trigger_pos__global_position_inner(self):
         self.destroy_position_trigger_pos__global_position_inner()
+
+    def accept_for_empty_rule_position_trigger_pos(self):
+        self.destroy_position_trigger_pos()
+
+    def accept_for_empty_rule_position_run(self):
+        self.destroy_position_run()
 
     def create_position_result(self):
         self.local_position_result.create_particle()
@@ -72,4 +80,24 @@ class ActExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.inner.Inner
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_trigger_pos__global_position_inner)
+        self.destroy_position_trigger_pos()
+
+    def destroy_position_trigger_pos(self):
+        if not self.join_for_destroy_position_trigger_pos.arrive():
+            return
+        literal.continue_destruction(self.continue_destroy_position_trigger_pos)
+
+    def continue_destroy_position_trigger_pos(self):
+        self.action.get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
+        self.scheduler.continue_with(self.guarantees.guarantee_position_trigger_pos)
+
+    def destroy_position_run(self):
+        literal.continue_destruction(self.continue_destroy_position_run)
+
+    def continue_destroy_position_run(self):
+        self.action.get_interface_position(
+            "position<run>"
+        ).destroy_particle()
+        self.scheduler.continue_with(self.guarantees.guarantee_position_run)

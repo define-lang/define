@@ -34,7 +34,6 @@ class Middle(literal.Action):
 class MiddleGuarantees:
     def __init__(self):
         self.guarantee_position_target: list[literal.Task] = []
-        self.guarantee_action_destroyer__position_run: list[literal.Task] = []
         self.trigger_action_destroyer = local.my_domain_com.my_lib.destroyer.DestroyerGuarantees()
 
 
@@ -55,6 +54,7 @@ class MiddleExecution:
         self.execution_trigger_action_destroyer: local.my_domain_com.my_lib.destroyer.DestroyerExecution
         self.join_for_move_position_target_to_action_destroyer__position_target = self.scheduler.create_join(2)
         self.join_for_trigger_action_destroyer__when_empty_position_target__global_position_callee_known = self.scheduler.create_join(2)
+        self.join_for_trigger_action_destroyer__for_empty_rule_position_run = self.scheduler.create_join(2)
 
     def accept_when_empty_position_target__global_position_middle_known(self):
         self.create_position_target__global_position_middle_known()
@@ -62,7 +62,7 @@ class MiddleExecution:
     def accept_for_empty_rule_position_target(self):
         self.move_position_target_to_action_destroyer__position_target()
 
-    def accept_when_empty_action_destroyer__position_run(self):
+    def accept_action_parent(self):
         self.create_action_destroyer__position_run()
 
     def create_position_target__global_position_middle_known(self):
@@ -107,9 +107,10 @@ class MiddleExecution:
             self.guarantees.trigger_action_destroyer,
             destruction_connections=self.destruction_connections,
         )
-        self.scheduler.submit_all(self.guarantees.guarantee_action_destroyer__position_run)
+        self.scheduler.submit(self.trigger_action_destroyer__for_empty_rule_position_run)
         self.scheduler.submit(self.trigger_action_destroyer__when_empty_position_target__global_position_callee_known)
-        self.trigger_action_destroyer__for_empty_rule_position_target()
+        self.scheduler.submit(self.trigger_action_destroyer__for_empty_rule_position_target)
+        self.trigger_action_destroyer__for_empty_rule_position_run()
 
     def trigger_action_destroyer__when_empty_position_target__global_position_callee_known(self):
         if not self.join_for_trigger_action_destroyer__when_empty_position_target__global_position_callee_known.arrive():
@@ -118,3 +119,8 @@ class MiddleExecution:
 
     def trigger_action_destroyer__for_empty_rule_position_target(self):
         self.execution_trigger_action_destroyer.accept_for_empty_rule_position_target()
+
+    def trigger_action_destroyer__for_empty_rule_position_run(self):
+        if not self.join_for_trigger_action_destroyer__for_empty_rule_position_run.arrive():
+            return
+        self.execution_trigger_action_destroyer.accept_for_empty_rule_position_run()

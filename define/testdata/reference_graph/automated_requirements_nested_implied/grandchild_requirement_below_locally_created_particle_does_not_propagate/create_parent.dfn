@@ -7,5 +7,6 @@ define the potential action<my.domain.com:my_lib:/create_parent> {
         create a particle in position</parent>.
         create a particle in position</parent>::action</inspect_grandchild>::position<child>.
         create a particle in position</parent>::action</inspect_grandchild>::position<run>.
+        destroy the particle in position<run>.
     }
 }

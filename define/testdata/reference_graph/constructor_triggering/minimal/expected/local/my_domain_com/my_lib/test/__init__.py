@@ -50,6 +50,9 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        guarantees.trigger_position_box__action_constructor.guarantee_position_output.append(
+            self.destroy_position_box__action_constructor__position_output
+        )
         self.execution_trigger_position_box__action_constructor: local.my_domain_com.my_lib.constructor.ConstructorExecution
         self.join_for_trigger_position_box__action_constructor__when_empty_position_output = self.scheduler.create_join(2)
 
@@ -68,6 +71,15 @@ class TestExecution:
         )
         self.scheduler.submit(self.trigger_position_box__action_constructor__when_empty_position_output)
         self.trigger_position_box__action_constructor__when_empty_position_output()
+
+    def destroy_position_box__action_constructor__position_output(self):
+        self.action.get_interface_position(
+            "position<box>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.constructor.Constructor
+        ).get_interface_position(
+            "position<output>"
+        ).destroy_particle()
 
     def trigger_position_box__action_constructor__when_empty_position_output(self):
         if not self.join_for_trigger_position_box__action_constructor__when_empty_position_output.arrive():

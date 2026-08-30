@@ -29,15 +29,8 @@ class Test(literal.EntryPoint):
         execution = TestExecution(
             self,
             scheduler,
-            TestGuarantees(),
         )
         execution.create_position_local()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_position_local__global_position_parent__action_middle = local.my_domain_com.my_lib.middle.MiddleGuarantees()
 
 
 @final
@@ -46,13 +39,10 @@ class TestExecution:
         self,
         action: Test,
         scheduler: literal.Scheduler,
-        guarantees: TestGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
         self.execution_trigger_position_local__global_position_parent__action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
-        self.join_for_trigger_position_local__global_position_parent__action_middle__when_empty_action_inner__position_trigger_pos = self.scheduler.create_join(2)
         self.join_for_trigger_position_local__global_position_parent__action_middle__action_parent = self.scheduler.create_join(2)
 
     def create_position_local(self):
@@ -65,7 +55,6 @@ class TestExecution:
             local.my_domain_com.my_lib.parent.Parent
         ).create_particle()
         self.scheduler.submit(self.create_position_local__global_position_parent__action_middle__position_trigger_pos)
-        self.scheduler.submit(self.trigger_position_local__global_position_parent__action_middle__when_empty_action_inner__position_trigger_pos)
         self.trigger_position_local__global_position_parent__action_middle__action_parent()
 
     def create_position_local__global_position_parent__action_middle__position_trigger_pos(self):
@@ -87,15 +76,20 @@ class TestExecution:
                 local.my_domain_com.my_lib.middle.Middle
             ),
             self.scheduler,
-            self.guarantees.trigger_position_local__global_position_parent__action_middle,
         )
-        self.scheduler.submit(self.trigger_position_local__global_position_parent__action_middle__when_empty_action_inner__position_trigger_pos)
+        self.scheduler.submit(self.destroy_position_local__global_position_parent__action_middle__position_trigger_pos)
         self.trigger_position_local__global_position_parent__action_middle__action_parent()
 
-    def trigger_position_local__global_position_parent__action_middle__when_empty_action_inner__position_trigger_pos(self):
-        if not self.join_for_trigger_position_local__global_position_parent__action_middle__when_empty_action_inner__position_trigger_pos.arrive():
-            return
-        self.execution_trigger_position_local__global_position_parent__action_middle.accept_when_empty_action_inner__position_trigger_pos()
+    def destroy_position_local__global_position_parent__action_middle__position_trigger_pos(self):
+        self.action.get_interface_position(
+            "position<local>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.parent.Parent
+        ).particle.get_action(
+            local.my_domain_com.my_lib.middle.Middle
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
 
     def trigger_position_local__global_position_parent__action_middle__action_parent(self):
         if not self.join_for_trigger_position_local__global_position_parent__action_middle__action_parent.arrive():

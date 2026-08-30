@@ -62,6 +62,9 @@ class TestExecution:
         guarantees.trigger_position_gateway__action_worker.guarantee_position_trigger_pos.append(
             self.create_position_gateway__action_worker__position_trigger_pos_2
         )
+        guarantees.trigger_position_gateway__action_worker_2.guarantee_position_item.append(
+            self.destroy_position_gateway__action_worker__position_item
+        )
         guarantees.trigger_position_gateway__action_worker.guarantee_position_item.append(
             self.trigger_position_gateway__action_worker_2__for_empty_rule_position_item
         )
@@ -154,6 +157,20 @@ class TestExecution:
         self.scheduler.submit(self.trigger_position_gateway__action_worker_2__for_empty_rule_position_trigger_pos)
         self.scheduler.submit(self.trigger_position_gateway__action_worker_2__for_empty_rule_position_item)
         self.trigger_position_gateway__action_worker_2__for_empty_rule_position_trigger_pos()
+
+    def destroy_position_gateway__action_worker__position_item(self):
+        self.action.get_interface_position(
+            "position<gateway>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.worker.Worker
+        ).get_interface_position(
+            "position<item>"
+        ).destroy_particle()
+        self.scheduler.destroy_completed(
+            self.trace_execution,
+            "gateway::/worker::item",
+            1,
+        )
 
     def trigger_position_gateway__action_worker__for_empty_rule_position_item(self):
         if not self.join_for_trigger_position_gateway__action_worker__for_empty_rule_position_item.arrive():

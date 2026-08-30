@@ -27,6 +27,7 @@ class Triggered(literal.Action):
 class TriggeredGuarantees:
     def __init__(self):
         self.guarantee_position_input: list[literal.Task] = []
+        self.guarantee_position_run: list[literal.Task] = []
 
 
 @final
@@ -47,6 +48,9 @@ class TriggeredExecution:
     def accept_for_empty_rule_position_input(self):
         self.destroy_position_input()
 
+    def accept_for_empty_rule_position_run(self):
+        self.destroy_position_run()
+
     def destroy_position_input(self):
         literal.continue_destruction(self.continue_destroy_position_input)
 
@@ -55,3 +59,12 @@ class TriggeredExecution:
             "position<input>"
         ).destroy_particle()
         self.scheduler.continue_with(self.guarantees.guarantee_position_input)
+
+    def destroy_position_run(self):
+        literal.continue_destruction(self.continue_destroy_position_run)
+
+    def continue_destroy_position_run(self):
+        self.action.get_interface_position(
+            "position<run>"
+        ).destroy_particle()
+        self.scheduler.continue_with(self.guarantees.guarantee_position_run)

@@ -78,6 +78,7 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_action_producer,
         )
+        self.scheduler.submit(self.destroy_action_producer__position_trigger_pos)
         self.trigger_action_producer__for_empty_rule_global_position_input__global_position_a()
 
     def move_global_position_holder_to_global_position_intermediate(self):
@@ -104,6 +105,13 @@ class TestExecution:
         ).destroy_particle()
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.input.Input
+        ).destroy_particle()
+
+    def destroy_action_producer__position_trigger_pos(self):
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.producer.Producer
+        ).get_interface_position(
+            "position<trigger_pos>"
         ).destroy_particle()
 
     def trigger_action_producer__for_empty_rule_global_position_input__global_position_a(self):

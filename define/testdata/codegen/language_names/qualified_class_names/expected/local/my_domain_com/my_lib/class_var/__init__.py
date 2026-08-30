@@ -20,12 +20,25 @@ class ClassVar(literal.Action):
 
 
 @final
+class ClassVarGuarantees:
+    def __init__(self):
+        self.guarantee_position_trigger_pos: list[literal.Task] = []
+
+
+@final
 class ClassVarExecution:
     def __init__(
         self,
+        action: ClassVar,
         scheduler: literal.Scheduler,
+        guarantees: ClassVarGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
+        self.action = action
         self.scheduler = scheduler
+        self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
         self.local_position_self = literal.LocalPosition(
             "position<self>",
             scheduler=self.scheduler,
@@ -59,6 +72,9 @@ class ClassVarExecution:
         self.scheduler.submit(self.create_position_type)
         self.create_position_typing()
 
+    def accept_for_empty_rule_position_trigger_pos(self):
+        self.destroy_position_trigger_pos()
+
     def create_position_self(self):
         self.local_position_self.create_particle()
         self.local_position_self.destroy_particle()
@@ -82,3 +98,12 @@ class ClassVarExecution:
     def create_position_typing(self):
         self.local_position_typing.create_particle()
         self.local_position_typing.destroy_particle()
+
+    def destroy_position_trigger_pos(self):
+        literal.continue_destruction(self.continue_destroy_position_trigger_pos)
+
+    def continue_destroy_position_trigger_pos(self):
+        self.action.get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
+        self.scheduler.continue_with(self.guarantees.guarantee_position_trigger_pos)

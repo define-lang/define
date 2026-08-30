@@ -10,5 +10,7 @@ define the potential action<my.domain.com:my_lib:/inspect_grandchild> {
     } and it does {
         define the position<_holder>.
         move the particle in position<child>::position</grandchild> to position<_holder>.
+        destroy the particle in position<child>.
+        destroy the particle in position<run>.
     }
 }

@@ -118,7 +118,22 @@ class TestExecution:
             self.trace_execution,
             "middle#2",
         )
+        self.scheduler.submit(self.destroy_position_holder__action_middle__position_trigger_pos_2)
         self.trigger_position_holder__action_middle_2__action_parent()
+
+    def destroy_position_holder__action_middle__position_trigger_pos_2(self):
+        self.action.get_interface_position(
+            "position<holder>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.middle.Middle
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
+        self.scheduler.destroy_completed(
+            self.trace_execution,
+            "holder::/middle::trigger_pos",
+            2,
+        )
 
     def trigger_position_holder__action_middle__action_parent(self):
         if not self.join_for_trigger_position_holder__action_middle__action_parent.arrive():

@@ -1,2 +1,0 @@
-action<local.my_domain_com.my_lib.middle_a.MiddleA>::position<run>
-action<local.my_domain_com.my_lib.middle_b.MiddleB>::position<run>

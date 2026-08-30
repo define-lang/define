@@ -258,6 +258,18 @@ class UnconsumedActionInterfaceDiagnostic(Diagnostic):
 
 
 @dataclass
+class OccupiedActionInterfaceWhenActionTriggersDiagnostic(Diagnostic):
+    """Diagnostic for an occupied action interface passed to another action."""
+
+    action_name: str
+    position_name: str
+    message_format: ClassVar[str] = (
+        "'{self.position_name}' contains a particle when '{self.action_name}' "
+        "triggers; move or destroy the particle before triggering that action."
+    )
+
+
+@dataclass
 class FqunMismatchDiagnostic(Diagnostic):
     """Diagnostic for when a definition's FQUN doesn't match the expected project FQUN."""
 

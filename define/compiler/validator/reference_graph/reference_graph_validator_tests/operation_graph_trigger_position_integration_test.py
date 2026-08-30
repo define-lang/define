@@ -45,7 +45,10 @@ def test_move_of_the_trigger_particle(
     assert_no_errors(result.program_result)
     expected = {
         "test.create(/triggered::run)": [],
+        # Moving the trigger particle waits for the caller operation that
+        # supplied it.
         "triggered.move(run, dest)": ["test.create(/triggered::run)"],
+        "test.destroy(/triggered::dest)": ["triggered.move(run, dest)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -84,7 +87,10 @@ def test_operation_on_a_child_of_the_trigger_position(
         "test.create(source)": [],
         "test.create(source::/child)": ["test.create(source)"],
         "test.move(source, /triggered::run)": ["test.create(source::/child)"],
+        # An operation on a child of the trigger position waits for the caller
+        # to move that child with its parent particle.
         "triggered.destroy(run::/child)": ["test.move(source, /triggered::run)"],
+        "test.destroy(/triggered::run)": ["triggered.destroy(run::/child)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 

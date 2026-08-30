@@ -43,6 +43,7 @@ class TestExecution:
         self.guarantees = guarantees
         self.execution_trigger_action_act: local.my_domain_com.my_lib.act.ActExecution
         self.join_for_trigger_action_act__for_empty_rule_position_trigger_pos__global_position_inner = self.scheduler.create_join(2)
+        self.join_for_trigger_action_act__for_empty_rule_position_run = self.scheduler.create_join(2)
 
     def create_action_act__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -72,8 +73,11 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_action_act,
         )
+        self.scheduler.submit(self.trigger_action_act__for_empty_rule_position_run)
         self.scheduler.submit(self.trigger_action_act__action_parent)
-        self.trigger_action_act__for_empty_rule_position_trigger_pos__global_position_inner()
+        self.scheduler.submit(self.trigger_action_act__for_empty_rule_position_trigger_pos__global_position_inner)
+        self.scheduler.submit(self.trigger_action_act__for_empty_rule_position_trigger_pos)
+        self.trigger_action_act__for_empty_rule_position_run()
 
     def trigger_action_act__action_parent(self):
         self.execution_trigger_action_act.accept_action_parent()
@@ -82,3 +86,11 @@ class TestExecution:
         if not self.join_for_trigger_action_act__for_empty_rule_position_trigger_pos__global_position_inner.arrive():
             return
         self.execution_trigger_action_act.accept_for_empty_rule_position_trigger_pos__global_position_inner()
+
+    def trigger_action_act__for_empty_rule_position_trigger_pos(self):
+        self.execution_trigger_action_act.accept_for_empty_rule_position_trigger_pos()
+
+    def trigger_action_act__for_empty_rule_position_run(self):
+        if not self.join_for_trigger_action_act__for_empty_rule_position_run.arrive():
+            return
+        self.execution_trigger_action_act.accept_for_empty_rule_position_run()

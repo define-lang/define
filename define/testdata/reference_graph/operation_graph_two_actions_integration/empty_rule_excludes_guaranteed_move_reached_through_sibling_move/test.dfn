@@ -12,5 +12,6 @@ define the potential action<my.domain.com:my_lib:/test> {
         move the particle in position</holder> to position</intermediate>.
         move the particle in position</intermediate> to position</input>::position</b>.
         destroy the particle in position</input>.
+        destroy the particle in action</producer>::position<trigger_pos>.
     }
 }

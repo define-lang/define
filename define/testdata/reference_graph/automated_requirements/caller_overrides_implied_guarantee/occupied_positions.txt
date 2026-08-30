@@ -1,4 +1,1 @@
 position<local.my_domain_com.my_lib.implied.Implied>
-action<local.my_domain_com.my_lib.callee.Callee>::position<run>
-action<local.my_domain_com.my_lib.caller.Caller>::position<run>
-action<local.my_domain_com.my_lib.outer.Outer>::position<run>

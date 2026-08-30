@@ -59,28 +59,24 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_action_run_both,
         )
-        self.scheduler.submit(self.trigger_action_run_both__when_empty_action_call_fill__position_trigger_pos)
-        self.scheduler.submit(self.trigger_action_run_both__when_empty_action_call_empty__position_trigger_pos)
-        self.scheduler.submit(self.trigger_action_run_both__when_empty_action_fill_item__position_trigger_pos)
-        self.scheduler.submit(self.trigger_action_run_both__when_empty_global_position_item)
-        self.trigger_action_run_both__when_empty_action_empty_item__position_trigger_pos()
+        self.scheduler.submit(self.destroy_action_run_both__position_trigger_pos)
+        self.scheduler.submit(self.trigger_action_run_both__action_parent)
+        self.trigger_action_run_both__when_empty_global_position_item()
 
     def create_global_position_item(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.item.Item
         ).create_particle()
 
-    def trigger_action_run_both__when_empty_action_call_fill__position_trigger_pos(self):
-        self.execution_trigger_action_run_both.accept_when_empty_action_call_fill__position_trigger_pos()
+    def destroy_action_run_both__position_trigger_pos(self):
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.run_both.RunBoth
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
 
-    def trigger_action_run_both__when_empty_action_call_empty__position_trigger_pos(self):
-        self.execution_trigger_action_run_both.accept_when_empty_action_call_empty__position_trigger_pos()
-
-    def trigger_action_run_both__when_empty_action_fill_item__position_trigger_pos(self):
-        self.execution_trigger_action_run_both.accept_when_empty_action_fill_item__position_trigger_pos()
+    def trigger_action_run_both__action_parent(self):
+        self.execution_trigger_action_run_both.accept_action_parent()
 
     def trigger_action_run_both__when_empty_global_position_item(self):
         self.execution_trigger_action_run_both.accept_when_empty_global_position_item()
-
-    def trigger_action_run_both__when_empty_action_empty_item__position_trigger_pos(self):
-        self.execution_trigger_action_run_both.accept_when_empty_action_empty_item__position_trigger_pos()

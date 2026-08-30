@@ -1,5 +1,1 @@
 action<local.my_domain_com.my_lib.test.Test>::position<gateway>
-action<local.my_domain_com.my_lib.test.Test>::position<gateway>::action<local.my_domain_com.my_lib.other.Other>::position<trigger_pos>
-action<local.my_domain_com.my_lib.test.Test>::position<gateway>::action<local.my_domain_com.my_lib.other.Other>::position<holder>
-action<local.my_domain_com.my_lib.test.Test>::position<gateway>::action<local.my_domain_com.my_lib.other.Other>::position<holder>::position<local.my_domain_com.my_lib.a.A>
-action<local.my_domain_com.my_lib.test.Test>::position<gateway>::action<local.my_domain_com.my_lib.other.Other>::position<holder>::position<local.my_domain_com.my_lib.b.B>

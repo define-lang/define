@@ -72,8 +72,16 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_action_inner,
         )
+        self.scheduler.submit(self.destroy_action_inner__position_trigger_pos)
         self.scheduler.submit(self.trigger_action_inner__when_empty_global_position_parent__global_position_child__global_position_grandchild1)
         self.trigger_action_inner__when_empty_global_position_parent__global_position_child__global_position_grandchild2()
+
+    def destroy_action_inner__position_trigger_pos(self):
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.inner.Inner
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
 
     def trigger_action_inner__when_empty_global_position_parent__global_position_child__global_position_grandchild1(self):
         if not self.join_for_trigger_action_inner__when_empty_global_position_parent__global_position_child__global_position_grandchild1.arrive():

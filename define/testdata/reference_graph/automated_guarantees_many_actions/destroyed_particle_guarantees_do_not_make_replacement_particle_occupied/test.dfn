@@ -4,17 +4,33 @@ define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         the position<run> has a particle.
     } and it does {
+        define the position<source> {
+            it may only contain particles where {
+                it has the action</empty_marker>.
+                it has the action</fill_marker>.
+                it has the position</marker>.
+            }
+        }
+        define the position<target> {
+            it may only contain particles where {
+                it has the action</empty_marker>.
+                it has the action</fill_marker>.
+                it has the position</marker>.
+            }
+        }
         define the position<gateway> {
             it may only contain particles where {
                 it has the action</middle>.
             }
         }
+        create a particle in position<source>.
+        create a particle in position<source>::position</marker>.
+        create a particle in position<target>.
         create a particle in position<gateway>.
-        create a particle in position<gateway>::action</middle>::position<source>.
-        create a particle in position<gateway>::action</middle>::position<source>::position</marker>.
-        create a particle in position<gateway>::action</middle>::position<target>.
-        create a particle in position<gateway>::action</middle>::position<source>::action</empty_marker>::position<trigger_pos>.
-        create a particle in position<gateway>::action</middle>::position<target>::action</fill_marker>::position<trigger_pos>.
+        create a particle in position<source>::action</empty_marker>::position<trigger_pos>.
+        create a particle in position<target>::action</fill_marker>::position<trigger_pos>.
+        move the particle in position<source> to position<gateway>::action</middle>::position<source>.
+        move the particle in position<target> to position<gateway>::action</middle>::position<target>.
         create a particle in position<gateway>::action</middle>::position<run>.
         destroy the particle in position<gateway>::action</middle>::position<target>::position</marker>.
     }

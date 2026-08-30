@@ -16,5 +16,8 @@ define the potential action<my.domain.com:my_lib:/consume_combined> {
         destroy the particle in position<left>::position</prepared_input>::position</parent_marker>.
         destroy the particle in position<left>::position</prepared_input>::position</child>::position</child_marker>.
         destroy the particle in position<right>::position</fillable>::position</item>.
+        destroy the particle in position<left>.
+        destroy the particle in position<right>.
+        destroy the particle in position<trigger_pos>.
     }
 }

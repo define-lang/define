@@ -70,10 +70,18 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_action_other,
         )
+        self.scheduler.submit(self.destroy_action_other__position_trigger_pos)
         self.scheduler.submit(self.trigger_action_other__for_empty_rule_global_position_input__global_position_a)
         self.scheduler.submit(self.trigger_action_other__when_empty_position_holder_b)
         self.scheduler.submit(self.trigger_action_other__when_empty_position_holder_c)
         self.trigger_action_other__for_empty_rule_global_position_input()
+
+    def destroy_action_other__position_trigger_pos(self):
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.other.Other
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
 
     def trigger_action_other__for_empty_rule_global_position_input__global_position_a(self):
         if not self.join_for_trigger_action_other__for_empty_rule_global_position_input__global_position_a.arrive():

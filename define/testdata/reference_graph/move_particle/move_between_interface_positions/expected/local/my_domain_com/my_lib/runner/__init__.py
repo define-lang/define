@@ -30,7 +30,9 @@ class Runner(literal.Action):
 @final
 class RunnerGuarantees:
     def __init__(self):
-        self.guarantee_position_source__move__position_dest: list[literal.Task] = []
+        self.guarantee_position_source: list[literal.Task] = []
+        self.guarantee_position_dest: list[literal.Task] = []
+        self.guarantee_position_run: list[literal.Task] = []
 
 
 @final
@@ -40,13 +42,19 @@ class RunnerExecution:
         action: Runner,
         scheduler: literal.Scheduler,
         guarantees: RunnerGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
 
     def accept_for_empty_rule_position_source(self):
         self.move_position_source_to_position_dest()
+
+    def accept_for_empty_rule_position_run(self):
+        self.destroy_position_run()
 
     def move_position_source_to_position_dest(self):
         self.action.get_interface_position(
@@ -56,4 +64,23 @@ class RunnerExecution:
                 "position<dest>"
             )
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_position_source__move__position_dest)
+        self.scheduler.submit(self.destroy_position_dest)
+        self.scheduler.continue_with(self.guarantees.guarantee_position_source)
+
+    def destroy_position_dest(self):
+        literal.continue_destruction(self.continue_destroy_position_dest)
+
+    def continue_destroy_position_dest(self):
+        self.action.get_interface_position(
+            "position<dest>"
+        ).destroy_particle()
+        self.scheduler.continue_with(self.guarantees.guarantee_position_dest)
+
+    def destroy_position_run(self):
+        literal.continue_destruction(self.continue_destroy_position_run)
+
+    def continue_destroy_position_run(self):
+        self.action.get_interface_position(
+            "position<run>"
+        ).destroy_particle()
+        self.scheduler.continue_with(self.guarantees.guarantee_position_run)

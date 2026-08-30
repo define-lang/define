@@ -120,9 +120,17 @@ class TestExecution:
             },
             ),
         )
+        self.scheduler.submit(self.destroy_action_destroyer__position_run)
         self.scheduler.submit(self.trigger_action_destroyer__for_empty_rule_position_first)
         self.scheduler.submit(self.trigger_action_destroyer__for_empty_rule_position_second)
         self.trigger_action_destroyer__when_occupied_position_first()
+
+    def destroy_action_destroyer__position_run(self):
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.destroyer.Destroyer
+        ).get_interface_position(
+            "position<run>"
+        ).destroy_particle()
 
     def trigger_action_destroyer__for_empty_rule_position_first(self):
         if not self.join_for_trigger_action_destroyer__for_empty_rule_position_first.arrive():

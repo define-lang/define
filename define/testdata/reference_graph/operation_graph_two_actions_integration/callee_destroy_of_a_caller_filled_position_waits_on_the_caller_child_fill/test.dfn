@@ -17,5 +17,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         create a particle in position<gateway>::action</other>::position<input>::position</item>.
         create a particle in position<gateway>::action</other>::position<input>::position</item>::position</deep>.
         create a particle in position<gateway>::action</other>::position<trigger_pos>.
+        destroy the particle in position<gateway>::action</other>::position<input>.
+        destroy the particle in position<gateway>::action</other>::position<trigger_pos>.
     }
 }

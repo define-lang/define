@@ -1,12 +1,12 @@
 # The box carried through two moves never had its input filled, so the triggered inner's occupied requirement is genuinely violated.
 # The box moved through /outer into /middle never had its input filled.
-# /outer recorded the missing child as its requirement on
-# input::/inner::input, so the violation lands on /test, which never fills
-# it. The chain traces through both moves to /inner's inference.
+# /outer recorded the missing child as its requirement on input::/child, so the
+# violation lands on /test, which never fills it. The chain traces through both
+# moves to /inner's inference.
 define the potential action<my.domain.com:my_lib:/test> {
     define the position<box> {
         it may only contain particles where {
-            it has the action</inner>.
+            it has the position</child>.
         }
     }
     define the position<outer_holder> {

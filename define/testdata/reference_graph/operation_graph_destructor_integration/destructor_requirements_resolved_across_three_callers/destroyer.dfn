@@ -10,5 +10,6 @@ define the potential action<my.domain.com:my_lib:/destroyer> {
     } and it does {
         create a particle in position<target>::position</callee_known>.
         destroy the particle in position<target>.
+        destroy the particle in position<run>.
     }
 }

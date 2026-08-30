@@ -13,5 +13,8 @@ define the potential action<my.domain.com:my_lib:/runner> {
         create a particle in position<wrapper>::action</middle>::position<run>.
         create a particle in position<wrapper>::action</middle>::position<box>::action</worker>::position<input>.
         create a particle in position<wrapper>::action</middle>::position<box>::action</worker>::position<run>.
+        destroy the particle in position<wrapper>::action</middle>::position<box>.
+        destroy the particle in position<wrapper>.
+        destroy the particle in position<run>.
     }
 }

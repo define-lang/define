@@ -592,44 +592,6 @@ class TestGetLastActionChildren:
         assert result.source_chained_name == "position<trigger>"
 
 
-class TestCanonicalPositionPrefixes:
-    def test_single_element(self):
-        position = _position_reference_for("position<local>")
-        assert position.canonical_position_prefixes() == [("position<local>",)]
-
-    def test_two_positions(self):
-        position = _position_reference_for("position<local>::position</x>")
-        assert position.canonical_position_prefixes() == [
-            ("position<local>",),
-            ("position<local>", f"position<{_FQUN}:/x>"),
-        ]
-
-    def test_position_action_position_position(self):
-        position = _position_reference_for(
-            "position<local>::action</act>::position<iface>::position</child>"
-        )
-        assert position.canonical_position_prefixes() == [
-            ("position<local>",),
-            ("position<local>", f"action<{_FQUN}:/act>", "position<iface>"),
-            (
-                "position<local>",
-                f"action<{_FQUN}:/act>",
-                "position<iface>",
-                f"position<{_FQUN}:/child>",
-            ),
-        ]
-
-    def test_three_positions_no_action(self):
-        position = _position_reference_for(
-            "position<local>::position</x>::position</y>"
-        )
-        assert position.canonical_position_prefixes() == [
-            ("position<local>",),
-            ("position<local>", f"position<{_FQUN}:/x>"),
-            ("position<local>", f"position<{_FQUN}:/x>", f"position<{_FQUN}:/y>"),
-        ]
-
-
 class TestPositionPrefix:
     def test_whole_chain_is_self(self):
         position = _position_reference_for("position<local>::position</x>")
@@ -639,9 +601,12 @@ class TestPositionPrefix:
         position = _position_reference_for(
             "position<local>::action</act>::position<iface>::position</child>"
         )
-        canonical_prefix = position.canonical_position_prefixes()[1]
-        position_prefix = position.position_prefix(len(canonical_prefix))
-        assert position_prefix.canonical_chained_name_tuple == canonical_prefix
+        position_prefix = position.position_prefix(3)
+        assert position_prefix.canonical_chained_name_tuple == (
+            "position<local>",
+            f"action<{_FQUN}:/act>",
+            "position<iface>",
+        )
         assert (
             position_prefix.source_chained_name
             == "position<local>::action</act>::position<iface>"

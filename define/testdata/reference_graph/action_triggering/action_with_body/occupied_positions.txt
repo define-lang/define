@@ -1,1 +1,0 @@
-action<local.my_domain_com.my_lib.do_thing.DoThing>::position<trigger_pos>

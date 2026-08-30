@@ -61,6 +61,7 @@ class TestExecution:
             self.trace_execution,
             "other",
         )
+        self.scheduler.submit(self.destroy_action_other__position_trigger_pos)
         self.trigger_action_other__action_parent()
 
     def create_position_local_item(self):
@@ -74,6 +75,18 @@ class TestExecution:
         self.scheduler.destroy_completed(
             self.trace_execution,
             "local_item",
+            1,
+        )
+
+    def destroy_action_other__position_trigger_pos(self):
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.other.Other
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
+        self.scheduler.destroy_completed(
+            self.trace_execution,
+            "/other::trigger_pos",
             1,
         )
 

@@ -37,6 +37,16 @@ _D2 = "action<my.domain.com:my_lib:/d2>"
 _FILES = {
     "p1.dfn": "define the potential position<my.domain.com:my_lib:/p1>.\n",
     "p2.dfn": "define the potential position<my.domain.com:my_lib:/p2>.\n",
+    "carrier.dfn": (
+        "define the potential position<my.domain.com:my_lib:/carrier> {\n"
+        "    it may only contain particles where {\n"
+        "        it has the action</d1>.\n"
+        "        it has the action</d2>.\n"
+        "        it has the position</p1>.\n"
+        "        it has the position</p2>.\n"
+        "    }\n"
+        "}\n"
+    ),
     "d1.dfn": (
         "define the potential action<my.domain.com:my_lib:/d1> {\n"
         "    it also assigns the position</p1>.\n"
@@ -106,6 +116,7 @@ _FILES = {
         "        create a particle in position<incoming>::position</p2>.\n"
         "        destroy the particle in position<incoming>::position</p2>.\n"
         "        move the particle in position<incoming> to action</triggered_by_outer_implied>::position<trigger_pos>.\n"
+        "        destroy the particle in position<run>.\n"
         "    }\n"
         "}\n"
     ),
@@ -182,24 +193,28 @@ _FILES = {
         "        the position<run> has a particle.\n"
         "    } and it does {\n"
         "        destroy the particle in position<to_destroy>.\n"
+        "        destroy the particle in position<run>.\n"
         "    }\n"
         "}\n"
     ),
-    # /outer moves the carrier out of holder::iface (where it can still see d2)
-    # into outer_implied::incoming (which hides d2), so /outer is the first
-    # caller that must verify d2. It then triggers outer_implied.
+    # /outer moves the carrier out of its implied position</carrier> (where it
+    # can still see d2) into outer_implied::incoming (which hides d2), so /outer
+    # is the first caller that must verify d2. It then triggers outer_implied.
     "outer.dfn": (
         "define the potential action<my.domain.com:my_lib:/outer> {\n"
         "    it also assigns the action</holder>.\n"
         "    it also assigns the action</outer_implied>.\n"
+        "    it also assigns the position</carrier>.\n"
         "    define the position<run>.\n"
         "    it happens when {\n"
         "        the position<run> has a particle.\n"
         "    } and it does {\n"
-        "        move the particle in action</holder>::position<iface> to action</outer_implied>::position<incoming>.\n"
+        "        move the particle in position</carrier> to action</outer_implied>::position<incoming>.\n"
         "        create a particle in action</holder>::position<iface>.\n"
         "        create a particle in action</holder>::position<run>.\n"
+        "        move the particle in action</holder>::position<iface> to position</carrier>.\n"
         "        create a particle in action</outer_implied>::position<run>.\n"
+        "        destroy the particle in position<run>.\n"
         "    }\n"
         "}\n"
     ),
@@ -207,12 +222,14 @@ _FILES = {
         "define the potential action<my.domain.com:my_lib:/test> {\n"
         "    it also assigns the action</holder>.\n"
         "    it also assigns the action</outer>.\n"
+        "    it also assigns the position</carrier>.\n"
         "    define the position<run>.\n"
         "    it happens when {\n"
         "        the position<run> has a particle.\n"
         "    } and it does {\n"
         "        create a particle in action</holder>::position<iface>.\n"
         "        create a particle in action</holder>::position<run>.\n"
+        "        move the particle in action</holder>::position<iface> to position</carrier>.\n"
         "        create a particle in action</outer>::position<run>.\n"
         "    }\n"
         "}\n"
@@ -282,24 +299,23 @@ def test_destruction_contract_traces_every_trigger_hop(
           'action<my.domain.com:my_lib:/d1>' infers this requirement:
             File "d1.dfn", line 6, column 30""")
 
-    # d2 is invisible everywhere below holder::iface, so the first caller that
-    # knows it is /outer (which moved the particle out of holder::iface). d2 must
-    # therefore be verified at /outer, with the attachment traced back to the
-    # holder::iface constraint and the chain running through every trigger hop
-    # down to 'do_destruction'.
+    # d2 is invisible everywhere below position</carrier>, so the first caller
+    # that knows it is /outer. d2 must therefore be verified at /outer, with the
+    # attachment traced back to the carrier constraint and the chain running
+    # through every trigger hop down to 'do_destruction'.
     assert d2_diag.format(_FILES["outer.dfn"].splitlines()) == textwrap.dedent("""\
-        File "outer.dfn", line 11, column 30
+        File "outer.dfn", line 13, column 30
                 create a particle in action</outer_implied>::position<run>.
                                      ^
         'action</outer_implied>::position<incoming>::position</p2>' must be occupied before 'action<my.domain.com:my_lib:/outer_implied>' runs, and it is not occupied.
 
         This error happens because:
-          'action<my.domain.com:my_lib:/d2>' is assigned to 'position<iface>':
-            File "holder.dfn", line 5, column 24
+          'action<my.domain.com:my_lib:/d2>' is assigned to 'position<my.domain.com:my_lib:/carrier>':
+            File "carrier.dfn", line 4, column 20
           the particle in 'action</outer_implied>::position<incoming>' comes from here:
-            File "outer.dfn", line 8, column 30
+            File "outer.dfn", line 9, column 30
           'action<my.domain.com:my_lib:/outer>' triggers 'action<my.domain.com:my_lib:/outer_implied>':
-            File "outer.dfn", line 11, column 30
+            File "outer.dfn", line 13, column 30
           'action<my.domain.com:my_lib:/outer_implied>' triggers 'action<my.domain.com:my_lib:/triggered_by_outer_implied>':
             File "outer_implied.dfn", line 18, column 52
           'action<my.domain.com:my_lib:/triggered_by_outer_implied>' triggers 'action<my.domain.com:my_lib:/do_nothing>':

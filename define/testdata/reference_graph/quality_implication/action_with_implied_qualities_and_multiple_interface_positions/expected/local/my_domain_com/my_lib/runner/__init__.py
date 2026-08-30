@@ -46,6 +46,7 @@ class RunnerGuarantees:
         self.guarantee_global_position_marker: list[literal.Task] = []
         self.guarantee_position_input_a: list[literal.Task] = []
         self.guarantee_position_input_b: list[literal.Task] = []
+        self.guarantee_position_run: list[literal.Task] = []
 
 
 @final
@@ -79,6 +80,9 @@ class RunnerExecution:
 
     def accept_for_empty_rule_position_input_b(self):
         self.destroy_position_input_b()
+
+    def accept_for_empty_rule_position_run(self):
+        self.destroy_position_run()
 
     def create_global_position_marker(self):
         self.action.on_particle.get_position(
@@ -145,3 +149,12 @@ class RunnerExecution:
             "position<input_b>"
         ).destroy_particle()
         self.scheduler.continue_with(self.guarantees.guarantee_position_input_b)
+
+    def destroy_position_run(self):
+        literal.continue_destruction(self.continue_destroy_position_run)
+
+    def continue_destroy_position_run(self):
+        self.action.get_interface_position(
+            "position<run>"
+        ).destroy_particle()
+        self.scheduler.continue_with(self.guarantees.guarantee_position_run)

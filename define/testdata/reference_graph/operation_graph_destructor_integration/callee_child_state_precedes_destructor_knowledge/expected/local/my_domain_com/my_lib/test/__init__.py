@@ -82,7 +82,7 @@ class TestExecution:
         )
         self.scheduler.submit(self.trigger_action_middle__for_empty_rule_position_trigger)
         self.scheduler.submit(self.trigger_action_middle__for_empty_rule_position_target)
-        self.scheduler.submit(self.trigger_action_middle__when_empty_action_destroyer__position_trigger)
+        self.scheduler.submit(self.trigger_action_middle__action_parent)
         self.trigger_action_middle__for_empty_rule_position_trigger()
 
     def trigger_action_middle__for_empty_rule_position_target(self):
@@ -90,8 +90,8 @@ class TestExecution:
             return
         self.execution_trigger_action_middle.accept_for_empty_rule_position_target()
 
-    def trigger_action_middle__when_empty_action_destroyer__position_trigger(self):
-        self.execution_trigger_action_middle.accept_when_empty_action_destroyer__position_trigger()
+    def trigger_action_middle__action_parent(self):
+        self.execution_trigger_action_middle.accept_action_parent()
 
     def trigger_action_middle__for_empty_rule_position_trigger(self):
         if not self.join_for_trigger_action_middle__for_empty_rule_position_trigger.arrive():

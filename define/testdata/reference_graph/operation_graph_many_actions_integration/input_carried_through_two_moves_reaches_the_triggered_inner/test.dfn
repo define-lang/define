@@ -21,5 +21,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         create a particle in position<outer_holder>.
         move the particle in position<box> to position<outer_holder>::action</outer>::position<input>.
         create a particle in position<outer_holder>::action</outer>::position<run>.
+        destroy the particle in position<outer_holder>::action</outer>::position<middle_holder>.
+        destroy the particle in position<outer_holder>::action</outer>::position<run>.
     }
 }

@@ -19,5 +19,8 @@ define the potential action<my.domain.com:my_lib:/act> {
         move the particle in position<src_a> to position<local_dest>.
         move the particle in position<src_b> to position<iface_dest>.
         move the particle in position<src_c> to position<chain_dest>::position</mid_dest>::position</end_dest>.
+        destroy the particle in position<iface_dest>.
+        destroy the particle in position<chain_dest>.
+        destroy the particle in position<trigger>.
     }
 }

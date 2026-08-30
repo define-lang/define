@@ -1,11 +1,13 @@
 define the potential action<my.domain.com:my_lib:/forwarder> {
     it also assigns the action</implied_action>.
+    it also assigns the position</forwarded>.
     define the position<run>.
     it happens when {
         the position<run> has a particle.
     } and it does {
         create a particle in action</implied_action>::position<in>.
         create a particle in action</implied_action>::position<trigger_pos>.
+        move the particle in action</implied_action>::position<out> to position</forwarded>.
         destroy the particle in position<run>.
     }
 }

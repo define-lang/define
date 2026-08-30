@@ -18,8 +18,15 @@ class Test(literal.EntryPoint):
         execution = TestExecution(
             self,
             scheduler,
+            TestGuarantees(),
         )
         execution.create_global_position_outer_position()
+
+
+@final
+class TestGuarantees:
+    def __init__(self):
+        self.trigger_global_position_outer_position__action_perform_operation = local.my_domain_com.my_library_collection.perform_operation.PerformOperationGuarantees()
 
 
 @final
@@ -28,11 +35,14 @@ class TestExecution:
         self,
         action: Test,
         scheduler: literal.Scheduler,
+        guarantees: TestGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
+        self.guarantees = guarantees
         self.execution_trigger_global_position_outer_position__action_perform_operation: local.my_domain_com.my_library_collection.perform_operation.PerformOperationExecution
         self.join_for_trigger_global_position_outer_position__action_perform_operation__action_parent = self.scheduler.create_join(2)
+        self.join_for_trigger_global_position_outer_position__action_perform_operation__for_empty_rule_position_operation_trigger = self.scheduler.create_join(2)
 
     def create_global_position_outer_position(self):
         self.action.on_particle.get_position(
@@ -50,11 +60,24 @@ class TestExecution:
             "position<operation_trigger>"
         ).create_particle()
         self.execution_trigger_global_position_outer_position__action_perform_operation = local.my_domain_com.my_library_collection.perform_operation.PerformOperationExecution(
+            self.action.on_particle.get_position(
+                local.my_domain_com.my_library_collection.outer_position.OuterPosition
+            ).particle.get_action(
+                local.my_domain_com.my_library_collection.perform_operation.PerformOperation
+            ),
             self.scheduler,
+            self.guarantees.trigger_global_position_outer_position__action_perform_operation,
         )
-        self.trigger_global_position_outer_position__action_perform_operation__action_parent()
+        self.scheduler.submit(self.trigger_global_position_outer_position__action_perform_operation__for_empty_rule_position_operation_trigger)
+        self.scheduler.submit(self.trigger_global_position_outer_position__action_perform_operation__action_parent)
+        self.trigger_global_position_outer_position__action_perform_operation__for_empty_rule_position_operation_trigger()
 
     def trigger_global_position_outer_position__action_perform_operation__action_parent(self):
         if not self.join_for_trigger_global_position_outer_position__action_perform_operation__action_parent.arrive():
             return
         self.execution_trigger_global_position_outer_position__action_perform_operation.accept_action_parent()
+
+    def trigger_global_position_outer_position__action_perform_operation__for_empty_rule_position_operation_trigger(self):
+        if not self.join_for_trigger_global_position_outer_position__action_perform_operation__for_empty_rule_position_operation_trigger.arrive():
+            return
+        self.execution_trigger_global_position_outer_position__action_perform_operation.accept_for_empty_rule_position_operation_trigger()

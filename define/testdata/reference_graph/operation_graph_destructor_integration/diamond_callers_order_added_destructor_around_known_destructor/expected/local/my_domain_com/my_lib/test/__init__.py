@@ -56,6 +56,7 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_action_caller_a,
         )
+        self.scheduler.submit(self.destroy_action_caller_a__position_trigger_pos)
         self.trigger_action_caller_a__action_parent()
 
     def create_action_caller_b__position_trigger_pos(self):
@@ -68,7 +69,22 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_action_caller_b,
         )
+        self.scheduler.submit(self.destroy_action_caller_b__position_trigger_pos)
         self.trigger_action_caller_b__action_parent()
+
+    def destroy_action_caller_a__position_trigger_pos(self):
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.caller_a.CallerA
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
+
+    def destroy_action_caller_b__position_trigger_pos(self):
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.caller_b.CallerB
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
 
     def trigger_action_caller_a__action_parent(self):
         self.execution_trigger_action_caller_a.accept_action_parent()

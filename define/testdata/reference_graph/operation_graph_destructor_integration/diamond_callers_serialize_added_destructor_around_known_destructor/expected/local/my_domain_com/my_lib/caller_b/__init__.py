@@ -27,6 +27,7 @@ class CallerB(literal.Action):
 @final
 class CallerBGuarantees:
     def __init__(self):
+        self.guarantee_position_trigger_pos: list[literal.Task] = []
         self.trigger_position_destroyer_particle__action_destroyer = local.my_domain_com.my_lib.destroyer.DestroyerGuarantees()
         self.trigger_position_destroyer_particle__action_destroyer__position_target__action_extra_destructor = local.my_domain_com.my_lib.extra_destructor.ExtraDestructorGuarantees()
 
@@ -35,11 +36,16 @@ class CallerBGuarantees:
 class CallerBExecution:
     def __init__(
         self,
+        action: CallerB,
         scheduler: literal.Scheduler,
         guarantees: CallerBGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
+        self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
         self.local_position_destroyer_particle = literal.LocalPosition(
             "position<destroyer_particle>",
             constraints=(
@@ -70,6 +76,9 @@ class CallerBExecution:
     def accept_action_parent(self):
         self.scheduler.submit(self.create_position_destroyer_particle)
         self.create_position_carrier()
+
+    def accept_for_empty_rule_position_trigger_pos(self):
+        self.destroy_position_trigger_pos()
 
     def create_position_destroyer_particle(self):
         self.local_position_destroyer_particle.create_particle()
@@ -126,6 +135,15 @@ class CallerBExecution:
         self.scheduler.submit(self.trigger_position_destroyer_particle__action_destroyer__for_empty_rule_position_target__global_position_marker)
         self.scheduler.submit(self.trigger_position_destroyer_particle__action_destroyer__for_empty_rule_position_target)
         self.trigger_position_destroyer_particle__action_destroyer__when_occupied_position_target()
+
+    def destroy_position_trigger_pos(self):
+        literal.continue_destruction(self.continue_destroy_position_trigger_pos)
+
+    def continue_destroy_position_trigger_pos(self):
+        self.action.get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
+        self.scheduler.continue_with(self.guarantees.guarantee_position_trigger_pos)
 
     def destroy_position_destroyer_particle__action_destroyer__position_trigger_pos(self):
         self.local_position_destroyer_particle.particle.get_action(

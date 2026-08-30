@@ -27,7 +27,6 @@ class Middle(literal.Action):
 @final
 class MiddleGuarantees:
     def __init__(self):
-        self.guarantee_action_empty_item__position_trigger_pos: list[literal.Task] = []
         self.trigger_action_empty_item = local.my_domain_com.my_lib.empty_item.EmptyItemGuarantees()
 
 
@@ -54,7 +53,7 @@ class MiddleExecution:
         self.execution_trigger_action_empty_item: local.my_domain_com.my_lib.empty_item.EmptyItemExecution
         self.join_for_trigger_action_empty_item__for_empty_rule_global_position_item = self.scheduler.create_join(2)
 
-    def accept_when_empty_action_empty_item__position_trigger_pos(self):
+    def accept_action_parent(self):
         self.create_action_empty_item__position_trigger_pos()
 
     def accept_for_empty_rule_global_position_item(self):
@@ -81,8 +80,20 @@ class MiddleExecution:
             self.guarantees.trigger_action_empty_item,
             destruction_connections=self.destruction_connections,
         )
-        self.scheduler.submit_all(self.guarantees.guarantee_action_empty_item__position_trigger_pos)
+        self.scheduler.submit(self.destroy_action_empty_item__position_trigger_pos)
         self.trigger_action_empty_item__for_empty_rule_global_position_item()
+
+    def destroy_action_empty_item__position_trigger_pos(self):
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.empty_item.EmptyItem
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
+        self.scheduler.destroy_completed(
+            self.trace_execution,
+            "/empty_item::trigger_pos",
+            1,
+        )
 
     def trigger_action_empty_item__for_empty_rule_global_position_item(self):
         if not self.join_for_trigger_action_empty_item__for_empty_rule_global_position_item.arrive():

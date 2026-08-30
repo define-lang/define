@@ -28,6 +28,7 @@ class Callee(literal.Action):
 class CalleeGuarantees:
     def __init__(self):
         self.guarantee_global_position_implied: list[literal.Task] = []
+        self.guarantee_position_run: list[literal.Task] = []
 
 
 @final
@@ -37,16 +38,31 @@ class CalleeExecution:
         action: Callee,
         scheduler: literal.Scheduler,
         guarantees: CalleeGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
 
     def accept_when_empty_global_position_implied(self):
         self.create_global_position_implied()
+
+    def accept_for_empty_rule_position_run(self):
+        self.destroy_position_run()
 
     def create_global_position_implied(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.implied.Implied
         ).create_particle()
         self.scheduler.continue_with(self.guarantees.guarantee_global_position_implied)
+
+    def destroy_position_run(self):
+        literal.continue_destruction(self.continue_destroy_position_run)
+
+    def continue_destroy_position_run(self):
+        self.action.get_interface_position(
+            "position<run>"
+        ).destroy_particle()
+        self.scheduler.continue_with(self.guarantees.guarantee_position_run)

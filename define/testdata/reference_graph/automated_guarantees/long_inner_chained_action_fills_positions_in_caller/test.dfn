@@ -9,11 +9,9 @@ define the potential action<my.domain.com:my_lib:/test> {
             }
         }
         define the position<dest>.
-        define the position<_sink>.
         create a particle in position<box>.
         create a particle in position<box>::action</outer>::position<iface>.
         create a particle in position<box>::action</outer>::position<iface>::action</inner>::position<trigger_pos>.
-        move the particle in position<box>::action</outer>::position<iface>::action</inner>::position<trigger_pos> to position<_sink>.
         move the particle in position<box>::action</outer>::position<iface>::action</inner>::position<output> to position<dest>.
         create a particle in position<box>::action</outer>::position<trigger_pos>.
     }

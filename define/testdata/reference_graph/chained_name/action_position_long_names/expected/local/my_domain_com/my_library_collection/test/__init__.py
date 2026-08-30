@@ -43,6 +43,7 @@ class TestExecution:
         self.guarantees = guarantees
         self.execution_trigger_action_perform_operation: local.my_domain_com.my_library_collection.perform_operation.PerformOperationExecution
         self.join_for_trigger_action_perform_operation__for_empty_rule_position_operation_trigger__global_position_inner_position = self.scheduler.create_join(2)
+        self.join_for_trigger_action_perform_operation__for_empty_rule_position_run = self.scheduler.create_join(2)
 
     def create_action_perform_operation__position_operation_trigger(self):
         self.action.on_particle.get_action(
@@ -72,8 +73,11 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_action_perform_operation,
         )
+        self.scheduler.submit(self.trigger_action_perform_operation__for_empty_rule_position_run)
         self.scheduler.submit(self.trigger_action_perform_operation__action_parent)
-        self.trigger_action_perform_operation__for_empty_rule_position_operation_trigger__global_position_inner_position()
+        self.scheduler.submit(self.trigger_action_perform_operation__for_empty_rule_position_operation_trigger__global_position_inner_position)
+        self.scheduler.submit(self.trigger_action_perform_operation__for_empty_rule_position_operation_trigger)
+        self.trigger_action_perform_operation__for_empty_rule_position_run()
 
     def trigger_action_perform_operation__action_parent(self):
         self.execution_trigger_action_perform_operation.accept_action_parent()
@@ -82,3 +86,11 @@ class TestExecution:
         if not self.join_for_trigger_action_perform_operation__for_empty_rule_position_operation_trigger__global_position_inner_position.arrive():
             return
         self.execution_trigger_action_perform_operation.accept_for_empty_rule_position_operation_trigger__global_position_inner_position()
+
+    def trigger_action_perform_operation__for_empty_rule_position_operation_trigger(self):
+        self.execution_trigger_action_perform_operation.accept_for_empty_rule_position_operation_trigger()
+
+    def trigger_action_perform_operation__for_empty_rule_position_run(self):
+        if not self.join_for_trigger_action_perform_operation__for_empty_rule_position_run.arrive():
+            return
+        self.execution_trigger_action_perform_operation.accept_for_empty_rule_position_run()

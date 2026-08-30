@@ -1,3 +1,1 @@
 action<local.my_domain_com.my_lib.test.Test>::position<gateway>
-action<local.my_domain_com.my_lib.test.Test>::position<gateway>::action<local.my_domain_com.my_lib.other.Other>::position<trigger_pos>
-action<local.my_domain_com.my_lib.test.Test>::position<gateway>::action<local.my_domain_com.my_lib.other.Other>::position<holder>

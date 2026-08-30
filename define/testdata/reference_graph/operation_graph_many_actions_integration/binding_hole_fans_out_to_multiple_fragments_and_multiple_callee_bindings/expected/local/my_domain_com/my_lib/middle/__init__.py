@@ -27,23 +27,14 @@ class Middle(literal.Action):
 
 
 @final
-class MiddleGuarantees:
-    def __init__(self):
-        self.guarantee_action_child_a__position_trigger_pos: list[literal.Task] = []
-        self.guarantee_action_child_b__position_trigger_pos: list[literal.Task] = []
-
-
-@final
 class MiddleExecution:
     def __init__(
         self,
         action: Middle,
         scheduler: literal.Scheduler,
-        guarantees: MiddleGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
         self.local_position_first = literal.LocalPosition(
             "position<first>",
             scheduler=self.scheduler,
@@ -60,14 +51,10 @@ class MiddleExecution:
     def accept_action_parent(self):
         self.scheduler.submit(self.create_position_first)
         self.scheduler.submit(self.create_position_second)
+        self.scheduler.submit(self.create_action_child_a__position_trigger_pos)
+        self.scheduler.submit(self.create_action_child_b__position_trigger_pos)
         self.scheduler.submit(self.trigger_action_child_a__action_parent)
         self.trigger_action_child_b__action_parent()
-
-    def accept_when_empty_action_child_a__position_trigger_pos(self):
-        self.create_action_child_a__position_trigger_pos()
-
-    def accept_when_empty_action_child_b__position_trigger_pos(self):
-        self.create_action_child_b__position_trigger_pos()
 
     def create_position_first(self):
         self.local_position_first.create_particle()
@@ -86,7 +73,7 @@ class MiddleExecution:
         self.execution_trigger_action_child_a = local.my_domain_com.my_lib.child_a.ChildAExecution(
             self.scheduler,
         )
-        self.scheduler.submit_all(self.guarantees.guarantee_action_child_a__position_trigger_pos)
+        self.scheduler.submit(self.destroy_action_child_a__position_trigger_pos)
         self.trigger_action_child_a__action_parent()
 
     def create_action_child_b__position_trigger_pos(self):
@@ -98,8 +85,22 @@ class MiddleExecution:
         self.execution_trigger_action_child_b = local.my_domain_com.my_lib.child_b.ChildBExecution(
             self.scheduler,
         )
-        self.scheduler.submit_all(self.guarantees.guarantee_action_child_b__position_trigger_pos)
+        self.scheduler.submit(self.destroy_action_child_b__position_trigger_pos)
         self.trigger_action_child_b__action_parent()
+
+    def destroy_action_child_a__position_trigger_pos(self):
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.child_a.ChildA
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
+
+    def destroy_action_child_b__position_trigger_pos(self):
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.child_b.ChildB
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
 
     def trigger_action_child_a__action_parent(self):
         if not self.join_for_trigger_action_child_a__action_parent.arrive():

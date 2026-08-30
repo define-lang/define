@@ -5,5 +5,6 @@ define the potential action<my.domain.com:my_lib:/fill_child> {
         the position<trigger_pos> has a particle.
     } and it does {
         create a particle in position</child_marker>.
+        destroy the particle in position<trigger_pos>.
     }
 }

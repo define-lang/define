@@ -25,29 +25,19 @@ class Middle(literal.Action):
 
 
 @final
-class MiddleGuarantees:
-    def __init__(self):
-        self.guarantee_action_inner__position_trigger_pos: list[literal.Task] = []
-
-
-@final
 class MiddleExecution:
     def __init__(
         self,
         action: Middle,
         scheduler: literal.Scheduler,
-        guarantees: MiddleGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
         self.execution_trigger_action_inner: local.my_domain_com.my_lib.inner.InnerExecution
         self.join_for_trigger_action_inner__action_parent = self.scheduler.create_join(2)
 
-    def accept_when_empty_action_inner__position_trigger_pos(self):
-        self.create_action_inner__position_trigger_pos()
-
     def accept_action_parent(self):
+        self.scheduler.submit(self.create_action_inner__position_trigger_pos)
         self.trigger_action_inner__action_parent()
 
     def create_action_inner__position_trigger_pos(self):
@@ -59,8 +49,15 @@ class MiddleExecution:
         self.execution_trigger_action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
             self.scheduler,
         )
-        self.scheduler.submit_all(self.guarantees.guarantee_action_inner__position_trigger_pos)
+        self.scheduler.submit(self.destroy_action_inner__position_trigger_pos)
         self.trigger_action_inner__action_parent()
+
+    def destroy_action_inner__position_trigger_pos(self):
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.inner.Inner
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
 
     def trigger_action_inner__action_parent(self):
         if not self.join_for_trigger_action_inner__action_parent.arrive():

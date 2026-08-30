@@ -16,7 +16,6 @@ class Host(literal.Action):
 @final
 class HostGuarantees:
     def __init__(self):
-        self.guarantee_action_worker__position_run: list[literal.Task] = []
         self.trigger_action_worker = local.my_domain_com.my_lib.worker.WorkerGuarantees()
 
 
@@ -33,11 +32,10 @@ class HostExecution:
         self.guarantees = guarantees
         self.execution_trigger_action_worker: local.my_domain_com.my_lib.worker.WorkerExecution
         self.join_for_trigger_action_worker__for_empty_rule_position_input = self.scheduler.create_join(2)
+        self.join_for_trigger_action_worker__for_empty_rule_position_run = self.scheduler.create_join(2)
 
-    def accept_when_empty_action_worker__position_input(self):
-        self.create_action_worker__position_input()
-
-    def accept_when_empty_action_worker__position_run(self):
+    def accept_action_parent(self):
+        self.scheduler.submit(self.create_action_worker__position_input)
         self.create_action_worker__position_run()
 
     def create_action_worker__position_input(self):
@@ -61,10 +59,16 @@ class HostExecution:
             self.scheduler,
             self.guarantees.trigger_action_worker,
         )
-        self.scheduler.submit_all(self.guarantees.guarantee_action_worker__position_run)
-        self.trigger_action_worker__for_empty_rule_position_input()
+        self.scheduler.submit(self.trigger_action_worker__for_empty_rule_position_run)
+        self.scheduler.submit(self.trigger_action_worker__for_empty_rule_position_input)
+        self.trigger_action_worker__for_empty_rule_position_run()
 
     def trigger_action_worker__for_empty_rule_position_input(self):
         if not self.join_for_trigger_action_worker__for_empty_rule_position_input.arrive():
             return
         self.execution_trigger_action_worker.accept_for_empty_rule_position_input()
+
+    def trigger_action_worker__for_empty_rule_position_run(self):
+        if not self.join_for_trigger_action_worker__for_empty_rule_position_run.arrive():
+            return
+        self.execution_trigger_action_worker.accept_for_empty_rule_position_run()

@@ -92,11 +92,12 @@ _ACTION_A = (
 _ACTION_B_TRIGGERED = (
     "define the potential action<my.domain.com:my_lib:/act_b> {\n"
     "    define the position<pp>.\n"
-    "    define the position<do_nothing>.\n"
     "    it happens when {\n"
     "        the position<pp> has a particle.\n"
     "    } and it does {\n"
+    "        define the position<do_nothing>.\n"
     "        create a particle in position<do_nothing>.\n"
+    "        destroy the particle in position<pp>.\n"
     "    }\n"
     "}\n"
 )
@@ -172,16 +173,17 @@ class TestRenderMermaid:
         action_b_chains = (
             "define the potential action<my.domain.com:my_lib:/act_b> {\n"
             "    define the position<pp>.\n"
-            "    define the position<gateway> {\n"
-            "        it may only contain particles where {\n"
-            "            it has the action</act_c>.\n"
-            "        }\n"
-            "    }\n"
             "    it happens when {\n"
             "        the position<pp> has a particle.\n"
             "    } and it does {\n"
+            "        define the position<gateway> {\n"
+            "            it may only contain particles where {\n"
+            "                it has the action</act_c>.\n"
+            "            }\n"
+            "        }\n"
             "        create a particle in position<gateway>.\n"
             "        create a particle in position<gateway>::action</act_c>::position<pp>.\n"
+            "        destroy the particle in position<pp>.\n"
             "    }\n"
             "}\n"
         )
@@ -193,6 +195,7 @@ class TestRenderMermaid:
             "    } and it does {\n"
             "        define the position<placeholder>.\n"
             "        create a particle in position<placeholder>.\n"
+            "        destroy the particle in position<pp>.\n"
             "    }\n"
             "}\n"
         )
@@ -242,6 +245,7 @@ class TestRenderMermaid:
             "    } and it does {\n"
             "        define the position<placeholder>.\n"
             "        create a particle in position<placeholder>.\n"
+            "        destroy the particle in position<pp>.\n"
             "    }\n"
             "}\n"
         )

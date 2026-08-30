@@ -23,6 +23,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer19_a0> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
     }
 }
 
@@ -33,6 +34,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer19_a1> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
     }
 }
 
@@ -47,6 +49,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer19_a2> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
     }
 }
 
@@ -57,6 +60,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer19_a3> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
     }
 }
 
@@ -71,6 +75,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer19_a4> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
     }
 }
 
@@ -81,6 +86,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer19_a5> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
     }
 }
 
@@ -95,6 +101,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer19_a6> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
     }
 }
 
@@ -105,6 +112,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer19_a7> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
     }
 }
 
@@ -119,6 +127,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer19_a8> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
     }
 }
 
@@ -129,6 +138,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer19_a9> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
     }
 }
 
@@ -157,6 +167,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer18_a0> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer19_a0>::position<src>.
         create a particle in position<out>::action</layer19_a0>::position<trigger>.
@@ -178,6 +189,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer18_a0> {
         create a particle in position<out>::action</layer19_a8>::position<trigger>.
         create a particle in position<out>::action</layer19_a9>::position<src>.
         create a particle in position<out>::action</layer19_a9>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -202,6 +214,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer18_a1> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer19_a1>::position<src>.
         create a particle in position<out>::action</layer19_a1>::position<trigger>.
@@ -223,6 +236,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer18_a1> {
         create a particle in position<out>::action</layer19_a9>::position<trigger>.
         create a particle in position<out>::action</layer19_a0>::position<src>.
         create a particle in position<out>::action</layer19_a0>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -251,6 +265,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer18_a2> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer19_a2>::position<src>.
         create a particle in position<out>::action</layer19_a2>::position<trigger>.
@@ -272,6 +287,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer18_a2> {
         create a particle in position<out>::action</layer19_a0>::position<trigger>.
         create a particle in position<out>::action</layer19_a1>::position<src>.
         create a particle in position<out>::action</layer19_a1>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -296,6 +312,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer18_a3> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer19_a3>::position<src>.
         create a particle in position<out>::action</layer19_a3>::position<trigger>.
@@ -317,6 +334,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer18_a3> {
         create a particle in position<out>::action</layer19_a1>::position<trigger>.
         create a particle in position<out>::action</layer19_a2>::position<src>.
         create a particle in position<out>::action</layer19_a2>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -345,6 +363,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer18_a4> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer19_a4>::position<src>.
         create a particle in position<out>::action</layer19_a4>::position<trigger>.
@@ -366,6 +385,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer18_a4> {
         create a particle in position<out>::action</layer19_a2>::position<trigger>.
         create a particle in position<out>::action</layer19_a3>::position<src>.
         create a particle in position<out>::action</layer19_a3>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -390,6 +410,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer18_a5> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer19_a5>::position<src>.
         create a particle in position<out>::action</layer19_a5>::position<trigger>.
@@ -411,6 +432,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer18_a5> {
         create a particle in position<out>::action</layer19_a3>::position<trigger>.
         create a particle in position<out>::action</layer19_a4>::position<src>.
         create a particle in position<out>::action</layer19_a4>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -439,6 +461,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer18_a6> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer19_a6>::position<src>.
         create a particle in position<out>::action</layer19_a6>::position<trigger>.
@@ -460,6 +483,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer18_a6> {
         create a particle in position<out>::action</layer19_a4>::position<trigger>.
         create a particle in position<out>::action</layer19_a5>::position<src>.
         create a particle in position<out>::action</layer19_a5>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -484,6 +508,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer18_a7> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer19_a7>::position<src>.
         create a particle in position<out>::action</layer19_a7>::position<trigger>.
@@ -505,6 +530,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer18_a7> {
         create a particle in position<out>::action</layer19_a5>::position<trigger>.
         create a particle in position<out>::action</layer19_a6>::position<src>.
         create a particle in position<out>::action</layer19_a6>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -533,6 +559,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer18_a8> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer19_a8>::position<src>.
         create a particle in position<out>::action</layer19_a8>::position<trigger>.
@@ -554,6 +581,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer18_a8> {
         create a particle in position<out>::action</layer19_a6>::position<trigger>.
         create a particle in position<out>::action</layer19_a7>::position<src>.
         create a particle in position<out>::action</layer19_a7>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -578,6 +606,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer18_a9> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer19_a9>::position<src>.
         create a particle in position<out>::action</layer19_a9>::position<trigger>.
@@ -599,6 +628,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer18_a9> {
         create a particle in position<out>::action</layer19_a7>::position<trigger>.
         create a particle in position<out>::action</layer19_a8>::position<src>.
         create a particle in position<out>::action</layer19_a8>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -627,6 +657,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer17_a0> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer18_a0>::position<src>.
         create a particle in position<out>::action</layer18_a0>::position<trigger>.
@@ -648,6 +679,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer17_a0> {
         create a particle in position<out>::action</layer18_a8>::position<trigger>.
         create a particle in position<out>::action</layer18_a9>::position<src>.
         create a particle in position<out>::action</layer18_a9>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -672,6 +704,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer17_a1> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer18_a1>::position<src>.
         create a particle in position<out>::action</layer18_a1>::position<trigger>.
@@ -693,6 +726,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer17_a1> {
         create a particle in position<out>::action</layer18_a9>::position<trigger>.
         create a particle in position<out>::action</layer18_a0>::position<src>.
         create a particle in position<out>::action</layer18_a0>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -721,6 +755,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer17_a2> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer18_a2>::position<src>.
         create a particle in position<out>::action</layer18_a2>::position<trigger>.
@@ -742,6 +777,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer17_a2> {
         create a particle in position<out>::action</layer18_a0>::position<trigger>.
         create a particle in position<out>::action</layer18_a1>::position<src>.
         create a particle in position<out>::action</layer18_a1>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -766,6 +802,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer17_a3> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer18_a3>::position<src>.
         create a particle in position<out>::action</layer18_a3>::position<trigger>.
@@ -787,6 +824,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer17_a3> {
         create a particle in position<out>::action</layer18_a1>::position<trigger>.
         create a particle in position<out>::action</layer18_a2>::position<src>.
         create a particle in position<out>::action</layer18_a2>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -815,6 +853,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer17_a4> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer18_a4>::position<src>.
         create a particle in position<out>::action</layer18_a4>::position<trigger>.
@@ -836,6 +875,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer17_a4> {
         create a particle in position<out>::action</layer18_a2>::position<trigger>.
         create a particle in position<out>::action</layer18_a3>::position<src>.
         create a particle in position<out>::action</layer18_a3>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -860,6 +900,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer17_a5> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer18_a5>::position<src>.
         create a particle in position<out>::action</layer18_a5>::position<trigger>.
@@ -881,6 +922,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer17_a5> {
         create a particle in position<out>::action</layer18_a3>::position<trigger>.
         create a particle in position<out>::action</layer18_a4>::position<src>.
         create a particle in position<out>::action</layer18_a4>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -909,6 +951,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer17_a6> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer18_a6>::position<src>.
         create a particle in position<out>::action</layer18_a6>::position<trigger>.
@@ -930,6 +973,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer17_a6> {
         create a particle in position<out>::action</layer18_a4>::position<trigger>.
         create a particle in position<out>::action</layer18_a5>::position<src>.
         create a particle in position<out>::action</layer18_a5>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -954,6 +998,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer17_a7> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer18_a7>::position<src>.
         create a particle in position<out>::action</layer18_a7>::position<trigger>.
@@ -975,6 +1020,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer17_a7> {
         create a particle in position<out>::action</layer18_a5>::position<trigger>.
         create a particle in position<out>::action</layer18_a6>::position<src>.
         create a particle in position<out>::action</layer18_a6>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -1003,6 +1049,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer17_a8> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer18_a8>::position<src>.
         create a particle in position<out>::action</layer18_a8>::position<trigger>.
@@ -1024,6 +1071,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer17_a8> {
         create a particle in position<out>::action</layer18_a6>::position<trigger>.
         create a particle in position<out>::action</layer18_a7>::position<src>.
         create a particle in position<out>::action</layer18_a7>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -1048,6 +1096,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer17_a9> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer18_a9>::position<src>.
         create a particle in position<out>::action</layer18_a9>::position<trigger>.
@@ -1069,6 +1118,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer17_a9> {
         create a particle in position<out>::action</layer18_a7>::position<trigger>.
         create a particle in position<out>::action</layer18_a8>::position<src>.
         create a particle in position<out>::action</layer18_a8>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -1097,6 +1147,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer16_a0> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer17_a0>::position<src>.
         create a particle in position<out>::action</layer17_a0>::position<trigger>.
@@ -1118,6 +1169,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer16_a0> {
         create a particle in position<out>::action</layer17_a8>::position<trigger>.
         create a particle in position<out>::action</layer17_a9>::position<src>.
         create a particle in position<out>::action</layer17_a9>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -1142,6 +1194,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer16_a1> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer17_a1>::position<src>.
         create a particle in position<out>::action</layer17_a1>::position<trigger>.
@@ -1163,6 +1216,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer16_a1> {
         create a particle in position<out>::action</layer17_a9>::position<trigger>.
         create a particle in position<out>::action</layer17_a0>::position<src>.
         create a particle in position<out>::action</layer17_a0>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -1191,6 +1245,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer16_a2> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer17_a2>::position<src>.
         create a particle in position<out>::action</layer17_a2>::position<trigger>.
@@ -1212,6 +1267,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer16_a2> {
         create a particle in position<out>::action</layer17_a0>::position<trigger>.
         create a particle in position<out>::action</layer17_a1>::position<src>.
         create a particle in position<out>::action</layer17_a1>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -1236,6 +1292,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer16_a3> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer17_a3>::position<src>.
         create a particle in position<out>::action</layer17_a3>::position<trigger>.
@@ -1257,6 +1314,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer16_a3> {
         create a particle in position<out>::action</layer17_a1>::position<trigger>.
         create a particle in position<out>::action</layer17_a2>::position<src>.
         create a particle in position<out>::action</layer17_a2>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -1285,6 +1343,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer16_a4> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer17_a4>::position<src>.
         create a particle in position<out>::action</layer17_a4>::position<trigger>.
@@ -1306,6 +1365,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer16_a4> {
         create a particle in position<out>::action</layer17_a2>::position<trigger>.
         create a particle in position<out>::action</layer17_a3>::position<src>.
         create a particle in position<out>::action</layer17_a3>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -1330,6 +1390,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer16_a5> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer17_a5>::position<src>.
         create a particle in position<out>::action</layer17_a5>::position<trigger>.
@@ -1351,6 +1412,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer16_a5> {
         create a particle in position<out>::action</layer17_a3>::position<trigger>.
         create a particle in position<out>::action</layer17_a4>::position<src>.
         create a particle in position<out>::action</layer17_a4>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -1379,6 +1441,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer16_a6> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer17_a6>::position<src>.
         create a particle in position<out>::action</layer17_a6>::position<trigger>.
@@ -1400,6 +1463,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer16_a6> {
         create a particle in position<out>::action</layer17_a4>::position<trigger>.
         create a particle in position<out>::action</layer17_a5>::position<src>.
         create a particle in position<out>::action</layer17_a5>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -1424,6 +1488,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer16_a7> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer17_a7>::position<src>.
         create a particle in position<out>::action</layer17_a7>::position<trigger>.
@@ -1445,6 +1510,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer16_a7> {
         create a particle in position<out>::action</layer17_a5>::position<trigger>.
         create a particle in position<out>::action</layer17_a6>::position<src>.
         create a particle in position<out>::action</layer17_a6>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -1473,6 +1539,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer16_a8> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer17_a8>::position<src>.
         create a particle in position<out>::action</layer17_a8>::position<trigger>.
@@ -1494,6 +1561,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer16_a8> {
         create a particle in position<out>::action</layer17_a6>::position<trigger>.
         create a particle in position<out>::action</layer17_a7>::position<src>.
         create a particle in position<out>::action</layer17_a7>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -1518,6 +1586,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer16_a9> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer17_a9>::position<src>.
         create a particle in position<out>::action</layer17_a9>::position<trigger>.
@@ -1539,6 +1608,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer16_a9> {
         create a particle in position<out>::action</layer17_a7>::position<trigger>.
         create a particle in position<out>::action</layer17_a8>::position<src>.
         create a particle in position<out>::action</layer17_a8>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -1567,6 +1637,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer15_a0> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer16_a0>::position<src>.
         create a particle in position<out>::action</layer16_a0>::position<trigger>.
@@ -1588,6 +1659,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer15_a0> {
         create a particle in position<out>::action</layer16_a8>::position<trigger>.
         create a particle in position<out>::action</layer16_a9>::position<src>.
         create a particle in position<out>::action</layer16_a9>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -1612,6 +1684,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer15_a1> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer16_a1>::position<src>.
         create a particle in position<out>::action</layer16_a1>::position<trigger>.
@@ -1633,6 +1706,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer15_a1> {
         create a particle in position<out>::action</layer16_a9>::position<trigger>.
         create a particle in position<out>::action</layer16_a0>::position<src>.
         create a particle in position<out>::action</layer16_a0>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -1661,6 +1735,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer15_a2> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer16_a2>::position<src>.
         create a particle in position<out>::action</layer16_a2>::position<trigger>.
@@ -1682,6 +1757,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer15_a2> {
         create a particle in position<out>::action</layer16_a0>::position<trigger>.
         create a particle in position<out>::action</layer16_a1>::position<src>.
         create a particle in position<out>::action</layer16_a1>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -1706,6 +1782,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer15_a3> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer16_a3>::position<src>.
         create a particle in position<out>::action</layer16_a3>::position<trigger>.
@@ -1727,6 +1804,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer15_a3> {
         create a particle in position<out>::action</layer16_a1>::position<trigger>.
         create a particle in position<out>::action</layer16_a2>::position<src>.
         create a particle in position<out>::action</layer16_a2>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -1755,6 +1833,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer15_a4> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer16_a4>::position<src>.
         create a particle in position<out>::action</layer16_a4>::position<trigger>.
@@ -1776,6 +1855,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer15_a4> {
         create a particle in position<out>::action</layer16_a2>::position<trigger>.
         create a particle in position<out>::action</layer16_a3>::position<src>.
         create a particle in position<out>::action</layer16_a3>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -1800,6 +1880,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer15_a5> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer16_a5>::position<src>.
         create a particle in position<out>::action</layer16_a5>::position<trigger>.
@@ -1821,6 +1902,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer15_a5> {
         create a particle in position<out>::action</layer16_a3>::position<trigger>.
         create a particle in position<out>::action</layer16_a4>::position<src>.
         create a particle in position<out>::action</layer16_a4>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -1849,6 +1931,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer15_a6> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer16_a6>::position<src>.
         create a particle in position<out>::action</layer16_a6>::position<trigger>.
@@ -1870,6 +1953,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer15_a6> {
         create a particle in position<out>::action</layer16_a4>::position<trigger>.
         create a particle in position<out>::action</layer16_a5>::position<src>.
         create a particle in position<out>::action</layer16_a5>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -1894,6 +1978,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer15_a7> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer16_a7>::position<src>.
         create a particle in position<out>::action</layer16_a7>::position<trigger>.
@@ -1915,6 +2000,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer15_a7> {
         create a particle in position<out>::action</layer16_a5>::position<trigger>.
         create a particle in position<out>::action</layer16_a6>::position<src>.
         create a particle in position<out>::action</layer16_a6>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -1943,6 +2029,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer15_a8> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer16_a8>::position<src>.
         create a particle in position<out>::action</layer16_a8>::position<trigger>.
@@ -1964,6 +2051,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer15_a8> {
         create a particle in position<out>::action</layer16_a6>::position<trigger>.
         create a particle in position<out>::action</layer16_a7>::position<src>.
         create a particle in position<out>::action</layer16_a7>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -1988,6 +2076,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer15_a9> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer16_a9>::position<src>.
         create a particle in position<out>::action</layer16_a9>::position<trigger>.
@@ -2009,6 +2098,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer15_a9> {
         create a particle in position<out>::action</layer16_a7>::position<trigger>.
         create a particle in position<out>::action</layer16_a8>::position<src>.
         create a particle in position<out>::action</layer16_a8>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -2037,6 +2127,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer14_a0> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer15_a0>::position<src>.
         create a particle in position<out>::action</layer15_a0>::position<trigger>.
@@ -2058,6 +2149,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer14_a0> {
         create a particle in position<out>::action</layer15_a8>::position<trigger>.
         create a particle in position<out>::action</layer15_a9>::position<src>.
         create a particle in position<out>::action</layer15_a9>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -2082,6 +2174,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer14_a1> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer15_a1>::position<src>.
         create a particle in position<out>::action</layer15_a1>::position<trigger>.
@@ -2103,6 +2196,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer14_a1> {
         create a particle in position<out>::action</layer15_a9>::position<trigger>.
         create a particle in position<out>::action</layer15_a0>::position<src>.
         create a particle in position<out>::action</layer15_a0>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -2131,6 +2225,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer14_a2> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer15_a2>::position<src>.
         create a particle in position<out>::action</layer15_a2>::position<trigger>.
@@ -2152,6 +2247,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer14_a2> {
         create a particle in position<out>::action</layer15_a0>::position<trigger>.
         create a particle in position<out>::action</layer15_a1>::position<src>.
         create a particle in position<out>::action</layer15_a1>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -2176,6 +2272,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer14_a3> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer15_a3>::position<src>.
         create a particle in position<out>::action</layer15_a3>::position<trigger>.
@@ -2197,6 +2294,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer14_a3> {
         create a particle in position<out>::action</layer15_a1>::position<trigger>.
         create a particle in position<out>::action</layer15_a2>::position<src>.
         create a particle in position<out>::action</layer15_a2>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -2225,6 +2323,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer14_a4> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer15_a4>::position<src>.
         create a particle in position<out>::action</layer15_a4>::position<trigger>.
@@ -2246,6 +2345,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer14_a4> {
         create a particle in position<out>::action</layer15_a2>::position<trigger>.
         create a particle in position<out>::action</layer15_a3>::position<src>.
         create a particle in position<out>::action</layer15_a3>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -2270,6 +2370,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer14_a5> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer15_a5>::position<src>.
         create a particle in position<out>::action</layer15_a5>::position<trigger>.
@@ -2291,6 +2392,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer14_a5> {
         create a particle in position<out>::action</layer15_a3>::position<trigger>.
         create a particle in position<out>::action</layer15_a4>::position<src>.
         create a particle in position<out>::action</layer15_a4>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -2319,6 +2421,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer14_a6> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer15_a6>::position<src>.
         create a particle in position<out>::action</layer15_a6>::position<trigger>.
@@ -2340,6 +2443,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer14_a6> {
         create a particle in position<out>::action</layer15_a4>::position<trigger>.
         create a particle in position<out>::action</layer15_a5>::position<src>.
         create a particle in position<out>::action</layer15_a5>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -2364,6 +2468,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer14_a7> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer15_a7>::position<src>.
         create a particle in position<out>::action</layer15_a7>::position<trigger>.
@@ -2385,6 +2490,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer14_a7> {
         create a particle in position<out>::action</layer15_a5>::position<trigger>.
         create a particle in position<out>::action</layer15_a6>::position<src>.
         create a particle in position<out>::action</layer15_a6>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -2413,6 +2519,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer14_a8> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer15_a8>::position<src>.
         create a particle in position<out>::action</layer15_a8>::position<trigger>.
@@ -2434,6 +2541,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer14_a8> {
         create a particle in position<out>::action</layer15_a6>::position<trigger>.
         create a particle in position<out>::action</layer15_a7>::position<src>.
         create a particle in position<out>::action</layer15_a7>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -2458,6 +2566,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer14_a9> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer15_a9>::position<src>.
         create a particle in position<out>::action</layer15_a9>::position<trigger>.
@@ -2479,6 +2588,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer14_a9> {
         create a particle in position<out>::action</layer15_a7>::position<trigger>.
         create a particle in position<out>::action</layer15_a8>::position<src>.
         create a particle in position<out>::action</layer15_a8>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -2507,6 +2617,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer13_a0> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer14_a0>::position<src>.
         create a particle in position<out>::action</layer14_a0>::position<trigger>.
@@ -2528,6 +2639,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer13_a0> {
         create a particle in position<out>::action</layer14_a8>::position<trigger>.
         create a particle in position<out>::action</layer14_a9>::position<src>.
         create a particle in position<out>::action</layer14_a9>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -2552,6 +2664,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer13_a1> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer14_a1>::position<src>.
         create a particle in position<out>::action</layer14_a1>::position<trigger>.
@@ -2573,6 +2686,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer13_a1> {
         create a particle in position<out>::action</layer14_a9>::position<trigger>.
         create a particle in position<out>::action</layer14_a0>::position<src>.
         create a particle in position<out>::action</layer14_a0>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -2601,6 +2715,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer13_a2> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer14_a2>::position<src>.
         create a particle in position<out>::action</layer14_a2>::position<trigger>.
@@ -2622,6 +2737,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer13_a2> {
         create a particle in position<out>::action</layer14_a0>::position<trigger>.
         create a particle in position<out>::action</layer14_a1>::position<src>.
         create a particle in position<out>::action</layer14_a1>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -2646,6 +2762,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer13_a3> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer14_a3>::position<src>.
         create a particle in position<out>::action</layer14_a3>::position<trigger>.
@@ -2667,6 +2784,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer13_a3> {
         create a particle in position<out>::action</layer14_a1>::position<trigger>.
         create a particle in position<out>::action</layer14_a2>::position<src>.
         create a particle in position<out>::action</layer14_a2>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -2695,6 +2813,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer13_a4> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer14_a4>::position<src>.
         create a particle in position<out>::action</layer14_a4>::position<trigger>.
@@ -2716,6 +2835,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer13_a4> {
         create a particle in position<out>::action</layer14_a2>::position<trigger>.
         create a particle in position<out>::action</layer14_a3>::position<src>.
         create a particle in position<out>::action</layer14_a3>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -2740,6 +2860,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer13_a5> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer14_a5>::position<src>.
         create a particle in position<out>::action</layer14_a5>::position<trigger>.
@@ -2761,6 +2882,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer13_a5> {
         create a particle in position<out>::action</layer14_a3>::position<trigger>.
         create a particle in position<out>::action</layer14_a4>::position<src>.
         create a particle in position<out>::action</layer14_a4>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -2789,6 +2911,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer13_a6> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer14_a6>::position<src>.
         create a particle in position<out>::action</layer14_a6>::position<trigger>.
@@ -2810,6 +2933,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer13_a6> {
         create a particle in position<out>::action</layer14_a4>::position<trigger>.
         create a particle in position<out>::action</layer14_a5>::position<src>.
         create a particle in position<out>::action</layer14_a5>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -2834,6 +2958,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer13_a7> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer14_a7>::position<src>.
         create a particle in position<out>::action</layer14_a7>::position<trigger>.
@@ -2855,6 +2980,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer13_a7> {
         create a particle in position<out>::action</layer14_a5>::position<trigger>.
         create a particle in position<out>::action</layer14_a6>::position<src>.
         create a particle in position<out>::action</layer14_a6>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -2883,6 +3009,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer13_a8> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer14_a8>::position<src>.
         create a particle in position<out>::action</layer14_a8>::position<trigger>.
@@ -2904,6 +3031,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer13_a8> {
         create a particle in position<out>::action</layer14_a6>::position<trigger>.
         create a particle in position<out>::action</layer14_a7>::position<src>.
         create a particle in position<out>::action</layer14_a7>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -2928,6 +3056,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer13_a9> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer14_a9>::position<src>.
         create a particle in position<out>::action</layer14_a9>::position<trigger>.
@@ -2949,6 +3078,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer13_a9> {
         create a particle in position<out>::action</layer14_a7>::position<trigger>.
         create a particle in position<out>::action</layer14_a8>::position<src>.
         create a particle in position<out>::action</layer14_a8>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -2977,6 +3107,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer12_a0> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer13_a0>::position<src>.
         create a particle in position<out>::action</layer13_a0>::position<trigger>.
@@ -2998,6 +3129,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer12_a0> {
         create a particle in position<out>::action</layer13_a8>::position<trigger>.
         create a particle in position<out>::action</layer13_a9>::position<src>.
         create a particle in position<out>::action</layer13_a9>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -3022,6 +3154,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer12_a1> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer13_a1>::position<src>.
         create a particle in position<out>::action</layer13_a1>::position<trigger>.
@@ -3043,6 +3176,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer12_a1> {
         create a particle in position<out>::action</layer13_a9>::position<trigger>.
         create a particle in position<out>::action</layer13_a0>::position<src>.
         create a particle in position<out>::action</layer13_a0>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -3071,6 +3205,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer12_a2> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer13_a2>::position<src>.
         create a particle in position<out>::action</layer13_a2>::position<trigger>.
@@ -3092,6 +3227,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer12_a2> {
         create a particle in position<out>::action</layer13_a0>::position<trigger>.
         create a particle in position<out>::action</layer13_a1>::position<src>.
         create a particle in position<out>::action</layer13_a1>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -3116,6 +3252,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer12_a3> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer13_a3>::position<src>.
         create a particle in position<out>::action</layer13_a3>::position<trigger>.
@@ -3137,6 +3274,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer12_a3> {
         create a particle in position<out>::action</layer13_a1>::position<trigger>.
         create a particle in position<out>::action</layer13_a2>::position<src>.
         create a particle in position<out>::action</layer13_a2>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -3165,6 +3303,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer12_a4> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer13_a4>::position<src>.
         create a particle in position<out>::action</layer13_a4>::position<trigger>.
@@ -3186,6 +3325,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer12_a4> {
         create a particle in position<out>::action</layer13_a2>::position<trigger>.
         create a particle in position<out>::action</layer13_a3>::position<src>.
         create a particle in position<out>::action</layer13_a3>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -3210,6 +3350,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer12_a5> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer13_a5>::position<src>.
         create a particle in position<out>::action</layer13_a5>::position<trigger>.
@@ -3231,6 +3372,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer12_a5> {
         create a particle in position<out>::action</layer13_a3>::position<trigger>.
         create a particle in position<out>::action</layer13_a4>::position<src>.
         create a particle in position<out>::action</layer13_a4>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -3259,6 +3401,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer12_a6> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer13_a6>::position<src>.
         create a particle in position<out>::action</layer13_a6>::position<trigger>.
@@ -3280,6 +3423,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer12_a6> {
         create a particle in position<out>::action</layer13_a4>::position<trigger>.
         create a particle in position<out>::action</layer13_a5>::position<src>.
         create a particle in position<out>::action</layer13_a5>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -3304,6 +3448,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer12_a7> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer13_a7>::position<src>.
         create a particle in position<out>::action</layer13_a7>::position<trigger>.
@@ -3325,6 +3470,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer12_a7> {
         create a particle in position<out>::action</layer13_a5>::position<trigger>.
         create a particle in position<out>::action</layer13_a6>::position<src>.
         create a particle in position<out>::action</layer13_a6>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -3353,6 +3499,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer12_a8> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer13_a8>::position<src>.
         create a particle in position<out>::action</layer13_a8>::position<trigger>.
@@ -3374,6 +3521,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer12_a8> {
         create a particle in position<out>::action</layer13_a6>::position<trigger>.
         create a particle in position<out>::action</layer13_a7>::position<src>.
         create a particle in position<out>::action</layer13_a7>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -3398,6 +3546,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer12_a9> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer13_a9>::position<src>.
         create a particle in position<out>::action</layer13_a9>::position<trigger>.
@@ -3419,6 +3568,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer12_a9> {
         create a particle in position<out>::action</layer13_a7>::position<trigger>.
         create a particle in position<out>::action</layer13_a8>::position<src>.
         create a particle in position<out>::action</layer13_a8>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -3447,6 +3597,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer11_a0> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer12_a0>::position<src>.
         create a particle in position<out>::action</layer12_a0>::position<trigger>.
@@ -3468,6 +3619,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer11_a0> {
         create a particle in position<out>::action</layer12_a8>::position<trigger>.
         create a particle in position<out>::action</layer12_a9>::position<src>.
         create a particle in position<out>::action</layer12_a9>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -3492,6 +3644,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer11_a1> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer12_a1>::position<src>.
         create a particle in position<out>::action</layer12_a1>::position<trigger>.
@@ -3513,6 +3666,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer11_a1> {
         create a particle in position<out>::action</layer12_a9>::position<trigger>.
         create a particle in position<out>::action</layer12_a0>::position<src>.
         create a particle in position<out>::action</layer12_a0>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -3541,6 +3695,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer11_a2> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer12_a2>::position<src>.
         create a particle in position<out>::action</layer12_a2>::position<trigger>.
@@ -3562,6 +3717,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer11_a2> {
         create a particle in position<out>::action</layer12_a0>::position<trigger>.
         create a particle in position<out>::action</layer12_a1>::position<src>.
         create a particle in position<out>::action</layer12_a1>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -3586,6 +3742,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer11_a3> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer12_a3>::position<src>.
         create a particle in position<out>::action</layer12_a3>::position<trigger>.
@@ -3607,6 +3764,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer11_a3> {
         create a particle in position<out>::action</layer12_a1>::position<trigger>.
         create a particle in position<out>::action</layer12_a2>::position<src>.
         create a particle in position<out>::action</layer12_a2>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -3635,6 +3793,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer11_a4> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer12_a4>::position<src>.
         create a particle in position<out>::action</layer12_a4>::position<trigger>.
@@ -3656,6 +3815,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer11_a4> {
         create a particle in position<out>::action</layer12_a2>::position<trigger>.
         create a particle in position<out>::action</layer12_a3>::position<src>.
         create a particle in position<out>::action</layer12_a3>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -3680,6 +3840,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer11_a5> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer12_a5>::position<src>.
         create a particle in position<out>::action</layer12_a5>::position<trigger>.
@@ -3701,6 +3862,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer11_a5> {
         create a particle in position<out>::action</layer12_a3>::position<trigger>.
         create a particle in position<out>::action</layer12_a4>::position<src>.
         create a particle in position<out>::action</layer12_a4>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -3729,6 +3891,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer11_a6> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer12_a6>::position<src>.
         create a particle in position<out>::action</layer12_a6>::position<trigger>.
@@ -3750,6 +3913,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer11_a6> {
         create a particle in position<out>::action</layer12_a4>::position<trigger>.
         create a particle in position<out>::action</layer12_a5>::position<src>.
         create a particle in position<out>::action</layer12_a5>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -3774,6 +3938,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer11_a7> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer12_a7>::position<src>.
         create a particle in position<out>::action</layer12_a7>::position<trigger>.
@@ -3795,6 +3960,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer11_a7> {
         create a particle in position<out>::action</layer12_a5>::position<trigger>.
         create a particle in position<out>::action</layer12_a6>::position<src>.
         create a particle in position<out>::action</layer12_a6>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -3823,6 +3989,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer11_a8> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer12_a8>::position<src>.
         create a particle in position<out>::action</layer12_a8>::position<trigger>.
@@ -3844,6 +4011,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer11_a8> {
         create a particle in position<out>::action</layer12_a6>::position<trigger>.
         create a particle in position<out>::action</layer12_a7>::position<src>.
         create a particle in position<out>::action</layer12_a7>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -3868,6 +4036,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer11_a9> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer12_a9>::position<src>.
         create a particle in position<out>::action</layer12_a9>::position<trigger>.
@@ -3889,6 +4058,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer11_a9> {
         create a particle in position<out>::action</layer12_a7>::position<trigger>.
         create a particle in position<out>::action</layer12_a8>::position<src>.
         create a particle in position<out>::action</layer12_a8>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -3917,6 +4087,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer10_a0> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer11_a0>::position<src>.
         create a particle in position<out>::action</layer11_a0>::position<trigger>.
@@ -3938,6 +4109,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer10_a0> {
         create a particle in position<out>::action</layer11_a8>::position<trigger>.
         create a particle in position<out>::action</layer11_a9>::position<src>.
         create a particle in position<out>::action</layer11_a9>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -3962,6 +4134,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer10_a1> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer11_a1>::position<src>.
         create a particle in position<out>::action</layer11_a1>::position<trigger>.
@@ -3983,6 +4156,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer10_a1> {
         create a particle in position<out>::action</layer11_a9>::position<trigger>.
         create a particle in position<out>::action</layer11_a0>::position<src>.
         create a particle in position<out>::action</layer11_a0>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -4011,6 +4185,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer10_a2> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer11_a2>::position<src>.
         create a particle in position<out>::action</layer11_a2>::position<trigger>.
@@ -4032,6 +4207,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer10_a2> {
         create a particle in position<out>::action</layer11_a0>::position<trigger>.
         create a particle in position<out>::action</layer11_a1>::position<src>.
         create a particle in position<out>::action</layer11_a1>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -4056,6 +4232,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer10_a3> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer11_a3>::position<src>.
         create a particle in position<out>::action</layer11_a3>::position<trigger>.
@@ -4077,6 +4254,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer10_a3> {
         create a particle in position<out>::action</layer11_a1>::position<trigger>.
         create a particle in position<out>::action</layer11_a2>::position<src>.
         create a particle in position<out>::action</layer11_a2>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -4105,6 +4283,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer10_a4> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer11_a4>::position<src>.
         create a particle in position<out>::action</layer11_a4>::position<trigger>.
@@ -4126,6 +4305,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer10_a4> {
         create a particle in position<out>::action</layer11_a2>::position<trigger>.
         create a particle in position<out>::action</layer11_a3>::position<src>.
         create a particle in position<out>::action</layer11_a3>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -4150,6 +4330,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer10_a5> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer11_a5>::position<src>.
         create a particle in position<out>::action</layer11_a5>::position<trigger>.
@@ -4171,6 +4352,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer10_a5> {
         create a particle in position<out>::action</layer11_a3>::position<trigger>.
         create a particle in position<out>::action</layer11_a4>::position<src>.
         create a particle in position<out>::action</layer11_a4>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -4199,6 +4381,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer10_a6> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer11_a6>::position<src>.
         create a particle in position<out>::action</layer11_a6>::position<trigger>.
@@ -4220,6 +4403,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer10_a6> {
         create a particle in position<out>::action</layer11_a4>::position<trigger>.
         create a particle in position<out>::action</layer11_a5>::position<src>.
         create a particle in position<out>::action</layer11_a5>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -4244,6 +4428,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer10_a7> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer11_a7>::position<src>.
         create a particle in position<out>::action</layer11_a7>::position<trigger>.
@@ -4265,6 +4450,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer10_a7> {
         create a particle in position<out>::action</layer11_a5>::position<trigger>.
         create a particle in position<out>::action</layer11_a6>::position<src>.
         create a particle in position<out>::action</layer11_a6>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -4293,6 +4479,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer10_a8> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer11_a8>::position<src>.
         create a particle in position<out>::action</layer11_a8>::position<trigger>.
@@ -4314,6 +4501,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer10_a8> {
         create a particle in position<out>::action</layer11_a6>::position<trigger>.
         create a particle in position<out>::action</layer11_a7>::position<src>.
         create a particle in position<out>::action</layer11_a7>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -4338,6 +4526,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer10_a9> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer11_a9>::position<src>.
         create a particle in position<out>::action</layer11_a9>::position<trigger>.
@@ -4359,6 +4548,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer10_a9> {
         create a particle in position<out>::action</layer11_a7>::position<trigger>.
         create a particle in position<out>::action</layer11_a8>::position<src>.
         create a particle in position<out>::action</layer11_a8>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -4387,6 +4577,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer9_a0> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer10_a0>::position<src>.
         create a particle in position<out>::action</layer10_a0>::position<trigger>.
@@ -4408,6 +4599,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer9_a0> {
         create a particle in position<out>::action</layer10_a8>::position<trigger>.
         create a particle in position<out>::action</layer10_a9>::position<src>.
         create a particle in position<out>::action</layer10_a9>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -4432,6 +4624,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer9_a1> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer10_a1>::position<src>.
         create a particle in position<out>::action</layer10_a1>::position<trigger>.
@@ -4453,6 +4646,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer9_a1> {
         create a particle in position<out>::action</layer10_a9>::position<trigger>.
         create a particle in position<out>::action</layer10_a0>::position<src>.
         create a particle in position<out>::action</layer10_a0>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -4481,6 +4675,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer9_a2> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer10_a2>::position<src>.
         create a particle in position<out>::action</layer10_a2>::position<trigger>.
@@ -4502,6 +4697,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer9_a2> {
         create a particle in position<out>::action</layer10_a0>::position<trigger>.
         create a particle in position<out>::action</layer10_a1>::position<src>.
         create a particle in position<out>::action</layer10_a1>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -4526,6 +4722,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer9_a3> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer10_a3>::position<src>.
         create a particle in position<out>::action</layer10_a3>::position<trigger>.
@@ -4547,6 +4744,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer9_a3> {
         create a particle in position<out>::action</layer10_a1>::position<trigger>.
         create a particle in position<out>::action</layer10_a2>::position<src>.
         create a particle in position<out>::action</layer10_a2>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -4575,6 +4773,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer9_a4> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer10_a4>::position<src>.
         create a particle in position<out>::action</layer10_a4>::position<trigger>.
@@ -4596,6 +4795,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer9_a4> {
         create a particle in position<out>::action</layer10_a2>::position<trigger>.
         create a particle in position<out>::action</layer10_a3>::position<src>.
         create a particle in position<out>::action</layer10_a3>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -4620,6 +4820,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer9_a5> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer10_a5>::position<src>.
         create a particle in position<out>::action</layer10_a5>::position<trigger>.
@@ -4641,6 +4842,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer9_a5> {
         create a particle in position<out>::action</layer10_a3>::position<trigger>.
         create a particle in position<out>::action</layer10_a4>::position<src>.
         create a particle in position<out>::action</layer10_a4>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -4669,6 +4871,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer9_a6> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer10_a6>::position<src>.
         create a particle in position<out>::action</layer10_a6>::position<trigger>.
@@ -4690,6 +4893,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer9_a6> {
         create a particle in position<out>::action</layer10_a4>::position<trigger>.
         create a particle in position<out>::action</layer10_a5>::position<src>.
         create a particle in position<out>::action</layer10_a5>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -4714,6 +4918,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer9_a7> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer10_a7>::position<src>.
         create a particle in position<out>::action</layer10_a7>::position<trigger>.
@@ -4735,6 +4940,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer9_a7> {
         create a particle in position<out>::action</layer10_a5>::position<trigger>.
         create a particle in position<out>::action</layer10_a6>::position<src>.
         create a particle in position<out>::action</layer10_a6>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -4763,6 +4969,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer9_a8> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer10_a8>::position<src>.
         create a particle in position<out>::action</layer10_a8>::position<trigger>.
@@ -4784,6 +4991,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer9_a8> {
         create a particle in position<out>::action</layer10_a6>::position<trigger>.
         create a particle in position<out>::action</layer10_a7>::position<src>.
         create a particle in position<out>::action</layer10_a7>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -4808,6 +5016,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer9_a9> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer10_a9>::position<src>.
         create a particle in position<out>::action</layer10_a9>::position<trigger>.
@@ -4829,6 +5038,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer9_a9> {
         create a particle in position<out>::action</layer10_a7>::position<trigger>.
         create a particle in position<out>::action</layer10_a8>::position<src>.
         create a particle in position<out>::action</layer10_a8>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -4857,6 +5067,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer8_a0> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer9_a0>::position<src>.
         create a particle in position<out>::action</layer9_a0>::position<trigger>.
@@ -4878,6 +5089,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer8_a0> {
         create a particle in position<out>::action</layer9_a8>::position<trigger>.
         create a particle in position<out>::action</layer9_a9>::position<src>.
         create a particle in position<out>::action</layer9_a9>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -4902,6 +5114,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer8_a1> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer9_a1>::position<src>.
         create a particle in position<out>::action</layer9_a1>::position<trigger>.
@@ -4923,6 +5136,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer8_a1> {
         create a particle in position<out>::action</layer9_a9>::position<trigger>.
         create a particle in position<out>::action</layer9_a0>::position<src>.
         create a particle in position<out>::action</layer9_a0>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -4951,6 +5165,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer8_a2> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer9_a2>::position<src>.
         create a particle in position<out>::action</layer9_a2>::position<trigger>.
@@ -4972,6 +5187,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer8_a2> {
         create a particle in position<out>::action</layer9_a0>::position<trigger>.
         create a particle in position<out>::action</layer9_a1>::position<src>.
         create a particle in position<out>::action</layer9_a1>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -4996,6 +5212,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer8_a3> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer9_a3>::position<src>.
         create a particle in position<out>::action</layer9_a3>::position<trigger>.
@@ -5017,6 +5234,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer8_a3> {
         create a particle in position<out>::action</layer9_a1>::position<trigger>.
         create a particle in position<out>::action</layer9_a2>::position<src>.
         create a particle in position<out>::action</layer9_a2>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -5045,6 +5263,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer8_a4> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer9_a4>::position<src>.
         create a particle in position<out>::action</layer9_a4>::position<trigger>.
@@ -5066,6 +5285,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer8_a4> {
         create a particle in position<out>::action</layer9_a2>::position<trigger>.
         create a particle in position<out>::action</layer9_a3>::position<src>.
         create a particle in position<out>::action</layer9_a3>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -5090,6 +5310,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer8_a5> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer9_a5>::position<src>.
         create a particle in position<out>::action</layer9_a5>::position<trigger>.
@@ -5111,6 +5332,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer8_a5> {
         create a particle in position<out>::action</layer9_a3>::position<trigger>.
         create a particle in position<out>::action</layer9_a4>::position<src>.
         create a particle in position<out>::action</layer9_a4>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -5139,6 +5361,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer8_a6> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer9_a6>::position<src>.
         create a particle in position<out>::action</layer9_a6>::position<trigger>.
@@ -5160,6 +5383,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer8_a6> {
         create a particle in position<out>::action</layer9_a4>::position<trigger>.
         create a particle in position<out>::action</layer9_a5>::position<src>.
         create a particle in position<out>::action</layer9_a5>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -5184,6 +5408,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer8_a7> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer9_a7>::position<src>.
         create a particle in position<out>::action</layer9_a7>::position<trigger>.
@@ -5205,6 +5430,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer8_a7> {
         create a particle in position<out>::action</layer9_a5>::position<trigger>.
         create a particle in position<out>::action</layer9_a6>::position<src>.
         create a particle in position<out>::action</layer9_a6>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -5233,6 +5459,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer8_a8> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer9_a8>::position<src>.
         create a particle in position<out>::action</layer9_a8>::position<trigger>.
@@ -5254,6 +5481,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer8_a8> {
         create a particle in position<out>::action</layer9_a6>::position<trigger>.
         create a particle in position<out>::action</layer9_a7>::position<src>.
         create a particle in position<out>::action</layer9_a7>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -5278,6 +5506,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer8_a9> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer9_a9>::position<src>.
         create a particle in position<out>::action</layer9_a9>::position<trigger>.
@@ -5299,6 +5528,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer8_a9> {
         create a particle in position<out>::action</layer9_a7>::position<trigger>.
         create a particle in position<out>::action</layer9_a8>::position<src>.
         create a particle in position<out>::action</layer9_a8>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -5327,6 +5557,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer7_a0> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer8_a0>::position<src>.
         create a particle in position<out>::action</layer8_a0>::position<trigger>.
@@ -5348,6 +5579,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer7_a0> {
         create a particle in position<out>::action</layer8_a8>::position<trigger>.
         create a particle in position<out>::action</layer8_a9>::position<src>.
         create a particle in position<out>::action</layer8_a9>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -5372,6 +5604,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer7_a1> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer8_a1>::position<src>.
         create a particle in position<out>::action</layer8_a1>::position<trigger>.
@@ -5393,6 +5626,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer7_a1> {
         create a particle in position<out>::action</layer8_a9>::position<trigger>.
         create a particle in position<out>::action</layer8_a0>::position<src>.
         create a particle in position<out>::action</layer8_a0>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -5421,6 +5655,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer7_a2> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer8_a2>::position<src>.
         create a particle in position<out>::action</layer8_a2>::position<trigger>.
@@ -5442,6 +5677,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer7_a2> {
         create a particle in position<out>::action</layer8_a0>::position<trigger>.
         create a particle in position<out>::action</layer8_a1>::position<src>.
         create a particle in position<out>::action</layer8_a1>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -5466,6 +5702,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer7_a3> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer8_a3>::position<src>.
         create a particle in position<out>::action</layer8_a3>::position<trigger>.
@@ -5487,6 +5724,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer7_a3> {
         create a particle in position<out>::action</layer8_a1>::position<trigger>.
         create a particle in position<out>::action</layer8_a2>::position<src>.
         create a particle in position<out>::action</layer8_a2>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -5515,6 +5753,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer7_a4> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer8_a4>::position<src>.
         create a particle in position<out>::action</layer8_a4>::position<trigger>.
@@ -5536,6 +5775,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer7_a4> {
         create a particle in position<out>::action</layer8_a2>::position<trigger>.
         create a particle in position<out>::action</layer8_a3>::position<src>.
         create a particle in position<out>::action</layer8_a3>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -5560,6 +5800,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer7_a5> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer8_a5>::position<src>.
         create a particle in position<out>::action</layer8_a5>::position<trigger>.
@@ -5581,6 +5822,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer7_a5> {
         create a particle in position<out>::action</layer8_a3>::position<trigger>.
         create a particle in position<out>::action</layer8_a4>::position<src>.
         create a particle in position<out>::action</layer8_a4>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -5609,6 +5851,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer7_a6> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer8_a6>::position<src>.
         create a particle in position<out>::action</layer8_a6>::position<trigger>.
@@ -5630,6 +5873,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer7_a6> {
         create a particle in position<out>::action</layer8_a4>::position<trigger>.
         create a particle in position<out>::action</layer8_a5>::position<src>.
         create a particle in position<out>::action</layer8_a5>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -5654,6 +5898,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer7_a7> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer8_a7>::position<src>.
         create a particle in position<out>::action</layer8_a7>::position<trigger>.
@@ -5675,6 +5920,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer7_a7> {
         create a particle in position<out>::action</layer8_a5>::position<trigger>.
         create a particle in position<out>::action</layer8_a6>::position<src>.
         create a particle in position<out>::action</layer8_a6>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -5703,6 +5949,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer7_a8> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer8_a8>::position<src>.
         create a particle in position<out>::action</layer8_a8>::position<trigger>.
@@ -5724,6 +5971,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer7_a8> {
         create a particle in position<out>::action</layer8_a6>::position<trigger>.
         create a particle in position<out>::action</layer8_a7>::position<src>.
         create a particle in position<out>::action</layer8_a7>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -5748,6 +5996,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer7_a9> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer8_a9>::position<src>.
         create a particle in position<out>::action</layer8_a9>::position<trigger>.
@@ -5769,6 +6018,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer7_a9> {
         create a particle in position<out>::action</layer8_a7>::position<trigger>.
         create a particle in position<out>::action</layer8_a8>::position<src>.
         create a particle in position<out>::action</layer8_a8>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -5797,6 +6047,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer6_a0> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer7_a0>::position<src>.
         create a particle in position<out>::action</layer7_a0>::position<trigger>.
@@ -5818,6 +6069,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer6_a0> {
         create a particle in position<out>::action</layer7_a8>::position<trigger>.
         create a particle in position<out>::action</layer7_a9>::position<src>.
         create a particle in position<out>::action</layer7_a9>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -5842,6 +6094,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer6_a1> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer7_a1>::position<src>.
         create a particle in position<out>::action</layer7_a1>::position<trigger>.
@@ -5863,6 +6116,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer6_a1> {
         create a particle in position<out>::action</layer7_a9>::position<trigger>.
         create a particle in position<out>::action</layer7_a0>::position<src>.
         create a particle in position<out>::action</layer7_a0>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -5891,6 +6145,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer6_a2> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer7_a2>::position<src>.
         create a particle in position<out>::action</layer7_a2>::position<trigger>.
@@ -5912,6 +6167,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer6_a2> {
         create a particle in position<out>::action</layer7_a0>::position<trigger>.
         create a particle in position<out>::action</layer7_a1>::position<src>.
         create a particle in position<out>::action</layer7_a1>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -5936,6 +6192,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer6_a3> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer7_a3>::position<src>.
         create a particle in position<out>::action</layer7_a3>::position<trigger>.
@@ -5957,6 +6214,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer6_a3> {
         create a particle in position<out>::action</layer7_a1>::position<trigger>.
         create a particle in position<out>::action</layer7_a2>::position<src>.
         create a particle in position<out>::action</layer7_a2>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -5985,6 +6243,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer6_a4> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer7_a4>::position<src>.
         create a particle in position<out>::action</layer7_a4>::position<trigger>.
@@ -6006,6 +6265,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer6_a4> {
         create a particle in position<out>::action</layer7_a2>::position<trigger>.
         create a particle in position<out>::action</layer7_a3>::position<src>.
         create a particle in position<out>::action</layer7_a3>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -6030,6 +6290,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer6_a5> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer7_a5>::position<src>.
         create a particle in position<out>::action</layer7_a5>::position<trigger>.
@@ -6051,6 +6312,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer6_a5> {
         create a particle in position<out>::action</layer7_a3>::position<trigger>.
         create a particle in position<out>::action</layer7_a4>::position<src>.
         create a particle in position<out>::action</layer7_a4>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -6079,6 +6341,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer6_a6> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer7_a6>::position<src>.
         create a particle in position<out>::action</layer7_a6>::position<trigger>.
@@ -6100,6 +6363,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer6_a6> {
         create a particle in position<out>::action</layer7_a4>::position<trigger>.
         create a particle in position<out>::action</layer7_a5>::position<src>.
         create a particle in position<out>::action</layer7_a5>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -6124,6 +6388,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer6_a7> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer7_a7>::position<src>.
         create a particle in position<out>::action</layer7_a7>::position<trigger>.
@@ -6145,6 +6410,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer6_a7> {
         create a particle in position<out>::action</layer7_a5>::position<trigger>.
         create a particle in position<out>::action</layer7_a6>::position<src>.
         create a particle in position<out>::action</layer7_a6>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -6173,6 +6439,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer6_a8> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer7_a8>::position<src>.
         create a particle in position<out>::action</layer7_a8>::position<trigger>.
@@ -6194,6 +6461,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer6_a8> {
         create a particle in position<out>::action</layer7_a6>::position<trigger>.
         create a particle in position<out>::action</layer7_a7>::position<src>.
         create a particle in position<out>::action</layer7_a7>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -6218,6 +6486,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer6_a9> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer7_a9>::position<src>.
         create a particle in position<out>::action</layer7_a9>::position<trigger>.
@@ -6239,6 +6508,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer6_a9> {
         create a particle in position<out>::action</layer7_a7>::position<trigger>.
         create a particle in position<out>::action</layer7_a8>::position<src>.
         create a particle in position<out>::action</layer7_a8>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -6267,6 +6537,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer5_a0> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer6_a0>::position<src>.
         create a particle in position<out>::action</layer6_a0>::position<trigger>.
@@ -6288,6 +6559,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer5_a0> {
         create a particle in position<out>::action</layer6_a8>::position<trigger>.
         create a particle in position<out>::action</layer6_a9>::position<src>.
         create a particle in position<out>::action</layer6_a9>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -6312,6 +6584,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer5_a1> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer6_a1>::position<src>.
         create a particle in position<out>::action</layer6_a1>::position<trigger>.
@@ -6333,6 +6606,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer5_a1> {
         create a particle in position<out>::action</layer6_a9>::position<trigger>.
         create a particle in position<out>::action</layer6_a0>::position<src>.
         create a particle in position<out>::action</layer6_a0>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -6361,6 +6635,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer5_a2> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer6_a2>::position<src>.
         create a particle in position<out>::action</layer6_a2>::position<trigger>.
@@ -6382,6 +6657,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer5_a2> {
         create a particle in position<out>::action</layer6_a0>::position<trigger>.
         create a particle in position<out>::action</layer6_a1>::position<src>.
         create a particle in position<out>::action</layer6_a1>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -6406,6 +6682,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer5_a3> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer6_a3>::position<src>.
         create a particle in position<out>::action</layer6_a3>::position<trigger>.
@@ -6427,6 +6704,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer5_a3> {
         create a particle in position<out>::action</layer6_a1>::position<trigger>.
         create a particle in position<out>::action</layer6_a2>::position<src>.
         create a particle in position<out>::action</layer6_a2>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -6455,6 +6733,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer5_a4> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer6_a4>::position<src>.
         create a particle in position<out>::action</layer6_a4>::position<trigger>.
@@ -6476,6 +6755,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer5_a4> {
         create a particle in position<out>::action</layer6_a2>::position<trigger>.
         create a particle in position<out>::action</layer6_a3>::position<src>.
         create a particle in position<out>::action</layer6_a3>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -6500,6 +6780,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer5_a5> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer6_a5>::position<src>.
         create a particle in position<out>::action</layer6_a5>::position<trigger>.
@@ -6521,6 +6802,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer5_a5> {
         create a particle in position<out>::action</layer6_a3>::position<trigger>.
         create a particle in position<out>::action</layer6_a4>::position<src>.
         create a particle in position<out>::action</layer6_a4>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -6549,6 +6831,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer5_a6> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer6_a6>::position<src>.
         create a particle in position<out>::action</layer6_a6>::position<trigger>.
@@ -6570,6 +6853,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer5_a6> {
         create a particle in position<out>::action</layer6_a4>::position<trigger>.
         create a particle in position<out>::action</layer6_a5>::position<src>.
         create a particle in position<out>::action</layer6_a5>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -6594,6 +6878,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer5_a7> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer6_a7>::position<src>.
         create a particle in position<out>::action</layer6_a7>::position<trigger>.
@@ -6615,6 +6900,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer5_a7> {
         create a particle in position<out>::action</layer6_a5>::position<trigger>.
         create a particle in position<out>::action</layer6_a6>::position<src>.
         create a particle in position<out>::action</layer6_a6>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -6643,6 +6929,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer5_a8> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer6_a8>::position<src>.
         create a particle in position<out>::action</layer6_a8>::position<trigger>.
@@ -6664,6 +6951,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer5_a8> {
         create a particle in position<out>::action</layer6_a6>::position<trigger>.
         create a particle in position<out>::action</layer6_a7>::position<src>.
         create a particle in position<out>::action</layer6_a7>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -6688,6 +6976,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer5_a9> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer6_a9>::position<src>.
         create a particle in position<out>::action</layer6_a9>::position<trigger>.
@@ -6709,6 +6998,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer5_a9> {
         create a particle in position<out>::action</layer6_a7>::position<trigger>.
         create a particle in position<out>::action</layer6_a8>::position<src>.
         create a particle in position<out>::action</layer6_a8>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -6737,6 +7027,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer4_a0> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer5_a0>::position<src>.
         create a particle in position<out>::action</layer5_a0>::position<trigger>.
@@ -6758,6 +7049,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer4_a0> {
         create a particle in position<out>::action</layer5_a8>::position<trigger>.
         create a particle in position<out>::action</layer5_a9>::position<src>.
         create a particle in position<out>::action</layer5_a9>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -6782,6 +7074,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer4_a1> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer5_a1>::position<src>.
         create a particle in position<out>::action</layer5_a1>::position<trigger>.
@@ -6803,6 +7096,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer4_a1> {
         create a particle in position<out>::action</layer5_a9>::position<trigger>.
         create a particle in position<out>::action</layer5_a0>::position<src>.
         create a particle in position<out>::action</layer5_a0>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -6831,6 +7125,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer4_a2> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer5_a2>::position<src>.
         create a particle in position<out>::action</layer5_a2>::position<trigger>.
@@ -6852,6 +7147,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer4_a2> {
         create a particle in position<out>::action</layer5_a0>::position<trigger>.
         create a particle in position<out>::action</layer5_a1>::position<src>.
         create a particle in position<out>::action</layer5_a1>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -6876,6 +7172,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer4_a3> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer5_a3>::position<src>.
         create a particle in position<out>::action</layer5_a3>::position<trigger>.
@@ -6897,6 +7194,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer4_a3> {
         create a particle in position<out>::action</layer5_a1>::position<trigger>.
         create a particle in position<out>::action</layer5_a2>::position<src>.
         create a particle in position<out>::action</layer5_a2>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -6925,6 +7223,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer4_a4> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer5_a4>::position<src>.
         create a particle in position<out>::action</layer5_a4>::position<trigger>.
@@ -6946,6 +7245,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer4_a4> {
         create a particle in position<out>::action</layer5_a2>::position<trigger>.
         create a particle in position<out>::action</layer5_a3>::position<src>.
         create a particle in position<out>::action</layer5_a3>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -6970,6 +7270,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer4_a5> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer5_a5>::position<src>.
         create a particle in position<out>::action</layer5_a5>::position<trigger>.
@@ -6991,6 +7292,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer4_a5> {
         create a particle in position<out>::action</layer5_a3>::position<trigger>.
         create a particle in position<out>::action</layer5_a4>::position<src>.
         create a particle in position<out>::action</layer5_a4>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -7019,6 +7321,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer4_a6> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer5_a6>::position<src>.
         create a particle in position<out>::action</layer5_a6>::position<trigger>.
@@ -7040,6 +7343,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer4_a6> {
         create a particle in position<out>::action</layer5_a4>::position<trigger>.
         create a particle in position<out>::action</layer5_a5>::position<src>.
         create a particle in position<out>::action</layer5_a5>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -7064,6 +7368,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer4_a7> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer5_a7>::position<src>.
         create a particle in position<out>::action</layer5_a7>::position<trigger>.
@@ -7085,6 +7390,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer4_a7> {
         create a particle in position<out>::action</layer5_a5>::position<trigger>.
         create a particle in position<out>::action</layer5_a6>::position<src>.
         create a particle in position<out>::action</layer5_a6>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -7113,6 +7419,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer4_a8> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer5_a8>::position<src>.
         create a particle in position<out>::action</layer5_a8>::position<trigger>.
@@ -7134,6 +7441,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer4_a8> {
         create a particle in position<out>::action</layer5_a6>::position<trigger>.
         create a particle in position<out>::action</layer5_a7>::position<src>.
         create a particle in position<out>::action</layer5_a7>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -7158,6 +7466,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer4_a9> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer5_a9>::position<src>.
         create a particle in position<out>::action</layer5_a9>::position<trigger>.
@@ -7179,6 +7488,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer4_a9> {
         create a particle in position<out>::action</layer5_a7>::position<trigger>.
         create a particle in position<out>::action</layer5_a8>::position<src>.
         create a particle in position<out>::action</layer5_a8>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -7207,6 +7517,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer3_a0> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer4_a0>::position<src>.
         create a particle in position<out>::action</layer4_a0>::position<trigger>.
@@ -7228,6 +7539,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer3_a0> {
         create a particle in position<out>::action</layer4_a8>::position<trigger>.
         create a particle in position<out>::action</layer4_a9>::position<src>.
         create a particle in position<out>::action</layer4_a9>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -7252,6 +7564,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer3_a1> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer4_a1>::position<src>.
         create a particle in position<out>::action</layer4_a1>::position<trigger>.
@@ -7273,6 +7586,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer3_a1> {
         create a particle in position<out>::action</layer4_a9>::position<trigger>.
         create a particle in position<out>::action</layer4_a0>::position<src>.
         create a particle in position<out>::action</layer4_a0>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -7301,6 +7615,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer3_a2> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer4_a2>::position<src>.
         create a particle in position<out>::action</layer4_a2>::position<trigger>.
@@ -7322,6 +7637,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer3_a2> {
         create a particle in position<out>::action</layer4_a0>::position<trigger>.
         create a particle in position<out>::action</layer4_a1>::position<src>.
         create a particle in position<out>::action</layer4_a1>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -7346,6 +7662,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer3_a3> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer4_a3>::position<src>.
         create a particle in position<out>::action</layer4_a3>::position<trigger>.
@@ -7367,6 +7684,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer3_a3> {
         create a particle in position<out>::action</layer4_a1>::position<trigger>.
         create a particle in position<out>::action</layer4_a2>::position<src>.
         create a particle in position<out>::action</layer4_a2>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -7395,6 +7713,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer3_a4> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer4_a4>::position<src>.
         create a particle in position<out>::action</layer4_a4>::position<trigger>.
@@ -7416,6 +7735,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer3_a4> {
         create a particle in position<out>::action</layer4_a2>::position<trigger>.
         create a particle in position<out>::action</layer4_a3>::position<src>.
         create a particle in position<out>::action</layer4_a3>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -7440,6 +7760,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer3_a5> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer4_a5>::position<src>.
         create a particle in position<out>::action</layer4_a5>::position<trigger>.
@@ -7461,6 +7782,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer3_a5> {
         create a particle in position<out>::action</layer4_a3>::position<trigger>.
         create a particle in position<out>::action</layer4_a4>::position<src>.
         create a particle in position<out>::action</layer4_a4>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -7489,6 +7811,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer3_a6> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer4_a6>::position<src>.
         create a particle in position<out>::action</layer4_a6>::position<trigger>.
@@ -7510,6 +7833,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer3_a6> {
         create a particle in position<out>::action</layer4_a4>::position<trigger>.
         create a particle in position<out>::action</layer4_a5>::position<src>.
         create a particle in position<out>::action</layer4_a5>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -7534,6 +7858,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer3_a7> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer4_a7>::position<src>.
         create a particle in position<out>::action</layer4_a7>::position<trigger>.
@@ -7555,6 +7880,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer3_a7> {
         create a particle in position<out>::action</layer4_a5>::position<trigger>.
         create a particle in position<out>::action</layer4_a6>::position<src>.
         create a particle in position<out>::action</layer4_a6>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -7583,6 +7909,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer3_a8> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer4_a8>::position<src>.
         create a particle in position<out>::action</layer4_a8>::position<trigger>.
@@ -7604,6 +7931,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer3_a8> {
         create a particle in position<out>::action</layer4_a6>::position<trigger>.
         create a particle in position<out>::action</layer4_a7>::position<src>.
         create a particle in position<out>::action</layer4_a7>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -7628,6 +7956,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer3_a9> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer4_a9>::position<src>.
         create a particle in position<out>::action</layer4_a9>::position<trigger>.
@@ -7649,6 +7978,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer3_a9> {
         create a particle in position<out>::action</layer4_a7>::position<trigger>.
         create a particle in position<out>::action</layer4_a8>::position<src>.
         create a particle in position<out>::action</layer4_a8>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -7677,6 +8007,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer2_a0> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer3_a0>::position<src>.
         create a particle in position<out>::action</layer3_a0>::position<trigger>.
@@ -7698,6 +8029,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer2_a0> {
         create a particle in position<out>::action</layer3_a8>::position<trigger>.
         create a particle in position<out>::action</layer3_a9>::position<src>.
         create a particle in position<out>::action</layer3_a9>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -7722,6 +8054,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer2_a1> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer3_a1>::position<src>.
         create a particle in position<out>::action</layer3_a1>::position<trigger>.
@@ -7743,6 +8076,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer2_a1> {
         create a particle in position<out>::action</layer3_a9>::position<trigger>.
         create a particle in position<out>::action</layer3_a0>::position<src>.
         create a particle in position<out>::action</layer3_a0>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -7771,6 +8105,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer2_a2> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer3_a2>::position<src>.
         create a particle in position<out>::action</layer3_a2>::position<trigger>.
@@ -7792,6 +8127,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer2_a2> {
         create a particle in position<out>::action</layer3_a0>::position<trigger>.
         create a particle in position<out>::action</layer3_a1>::position<src>.
         create a particle in position<out>::action</layer3_a1>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -7816,6 +8152,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer2_a3> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer3_a3>::position<src>.
         create a particle in position<out>::action</layer3_a3>::position<trigger>.
@@ -7837,6 +8174,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer2_a3> {
         create a particle in position<out>::action</layer3_a1>::position<trigger>.
         create a particle in position<out>::action</layer3_a2>::position<src>.
         create a particle in position<out>::action</layer3_a2>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -7865,6 +8203,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer2_a4> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer3_a4>::position<src>.
         create a particle in position<out>::action</layer3_a4>::position<trigger>.
@@ -7886,6 +8225,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer2_a4> {
         create a particle in position<out>::action</layer3_a2>::position<trigger>.
         create a particle in position<out>::action</layer3_a3>::position<src>.
         create a particle in position<out>::action</layer3_a3>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -7910,6 +8250,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer2_a5> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer3_a5>::position<src>.
         create a particle in position<out>::action</layer3_a5>::position<trigger>.
@@ -7931,6 +8272,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer2_a5> {
         create a particle in position<out>::action</layer3_a3>::position<trigger>.
         create a particle in position<out>::action</layer3_a4>::position<src>.
         create a particle in position<out>::action</layer3_a4>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -7959,6 +8301,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer2_a6> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer3_a6>::position<src>.
         create a particle in position<out>::action</layer3_a6>::position<trigger>.
@@ -7980,6 +8323,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer2_a6> {
         create a particle in position<out>::action</layer3_a4>::position<trigger>.
         create a particle in position<out>::action</layer3_a5>::position<src>.
         create a particle in position<out>::action</layer3_a5>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -8004,6 +8348,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer2_a7> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer3_a7>::position<src>.
         create a particle in position<out>::action</layer3_a7>::position<trigger>.
@@ -8025,6 +8370,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer2_a7> {
         create a particle in position<out>::action</layer3_a5>::position<trigger>.
         create a particle in position<out>::action</layer3_a6>::position<src>.
         create a particle in position<out>::action</layer3_a6>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -8053,6 +8399,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer2_a8> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer3_a8>::position<src>.
         create a particle in position<out>::action</layer3_a8>::position<trigger>.
@@ -8074,6 +8421,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer2_a8> {
         create a particle in position<out>::action</layer3_a6>::position<trigger>.
         create a particle in position<out>::action</layer3_a7>::position<src>.
         create a particle in position<out>::action</layer3_a7>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -8098,6 +8446,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer2_a9> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer3_a9>::position<src>.
         create a particle in position<out>::action</layer3_a9>::position<trigger>.
@@ -8119,6 +8468,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer2_a9> {
         create a particle in position<out>::action</layer3_a7>::position<trigger>.
         create a particle in position<out>::action</layer3_a8>::position<src>.
         create a particle in position<out>::action</layer3_a8>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -8147,6 +8497,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer1_a0> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer2_a0>::position<src>.
         create a particle in position<out>::action</layer2_a0>::position<trigger>.
@@ -8168,6 +8519,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer1_a0> {
         create a particle in position<out>::action</layer2_a8>::position<trigger>.
         create a particle in position<out>::action</layer2_a9>::position<src>.
         create a particle in position<out>::action</layer2_a9>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -8192,6 +8544,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer1_a1> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer2_a1>::position<src>.
         create a particle in position<out>::action</layer2_a1>::position<trigger>.
@@ -8213,6 +8566,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer1_a1> {
         create a particle in position<out>::action</layer2_a9>::position<trigger>.
         create a particle in position<out>::action</layer2_a0>::position<src>.
         create a particle in position<out>::action</layer2_a0>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -8241,6 +8595,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer1_a2> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer2_a2>::position<src>.
         create a particle in position<out>::action</layer2_a2>::position<trigger>.
@@ -8262,6 +8617,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer1_a2> {
         create a particle in position<out>::action</layer2_a0>::position<trigger>.
         create a particle in position<out>::action</layer2_a1>::position<src>.
         create a particle in position<out>::action</layer2_a1>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -8286,6 +8642,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer1_a3> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer2_a3>::position<src>.
         create a particle in position<out>::action</layer2_a3>::position<trigger>.
@@ -8307,6 +8664,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer1_a3> {
         create a particle in position<out>::action</layer2_a1>::position<trigger>.
         create a particle in position<out>::action</layer2_a2>::position<src>.
         create a particle in position<out>::action</layer2_a2>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -8335,6 +8693,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer1_a4> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer2_a4>::position<src>.
         create a particle in position<out>::action</layer2_a4>::position<trigger>.
@@ -8356,6 +8715,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer1_a4> {
         create a particle in position<out>::action</layer2_a2>::position<trigger>.
         create a particle in position<out>::action</layer2_a3>::position<src>.
         create a particle in position<out>::action</layer2_a3>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -8380,6 +8740,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer1_a5> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer2_a5>::position<src>.
         create a particle in position<out>::action</layer2_a5>::position<trigger>.
@@ -8401,6 +8762,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer1_a5> {
         create a particle in position<out>::action</layer2_a3>::position<trigger>.
         create a particle in position<out>::action</layer2_a4>::position<src>.
         create a particle in position<out>::action</layer2_a4>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -8429,6 +8791,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer1_a6> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer2_a6>::position<src>.
         create a particle in position<out>::action</layer2_a6>::position<trigger>.
@@ -8450,6 +8813,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer1_a6> {
         create a particle in position<out>::action</layer2_a4>::position<trigger>.
         create a particle in position<out>::action</layer2_a5>::position<src>.
         create a particle in position<out>::action</layer2_a5>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -8474,6 +8838,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer1_a7> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer2_a7>::position<src>.
         create a particle in position<out>::action</layer2_a7>::position<trigger>.
@@ -8495,6 +8860,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer1_a7> {
         create a particle in position<out>::action</layer2_a5>::position<trigger>.
         create a particle in position<out>::action</layer2_a6>::position<src>.
         create a particle in position<out>::action</layer2_a6>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -8523,6 +8889,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer1_a8> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer2_a8>::position<src>.
         create a particle in position<out>::action</layer2_a8>::position<trigger>.
@@ -8544,6 +8911,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer1_a8> {
         create a particle in position<out>::action</layer2_a6>::position<trigger>.
         create a particle in position<out>::action</layer2_a7>::position<src>.
         create a particle in position<out>::action</layer2_a7>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -8568,6 +8936,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer1_a9> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer2_a9>::position<src>.
         create a particle in position<out>::action</layer2_a9>::position<trigger>.
@@ -8589,6 +8958,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer1_a9> {
         create a particle in position<out>::action</layer2_a7>::position<trigger>.
         create a particle in position<out>::action</layer2_a8>::position<src>.
         create a particle in position<out>::action</layer2_a8>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -8617,6 +8987,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer0_a0> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer1_a0>::position<src>.
         create a particle in position<out>::action</layer1_a0>::position<trigger>.
@@ -8638,6 +9009,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer0_a0> {
         create a particle in position<out>::action</layer1_a8>::position<trigger>.
         create a particle in position<out>::action</layer1_a9>::position<src>.
         create a particle in position<out>::action</layer1_a9>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -8662,6 +9034,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer0_a1> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer1_a1>::position<src>.
         create a particle in position<out>::action</layer1_a1>::position<trigger>.
@@ -8683,6 +9056,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer0_a1> {
         create a particle in position<out>::action</layer1_a9>::position<trigger>.
         create a particle in position<out>::action</layer1_a0>::position<src>.
         create a particle in position<out>::action</layer1_a0>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -8711,6 +9085,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer0_a2> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer1_a2>::position<src>.
         create a particle in position<out>::action</layer1_a2>::position<trigger>.
@@ -8732,6 +9107,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer0_a2> {
         create a particle in position<out>::action</layer1_a0>::position<trigger>.
         create a particle in position<out>::action</layer1_a1>::position<src>.
         create a particle in position<out>::action</layer1_a1>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -8756,6 +9132,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer0_a3> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer1_a3>::position<src>.
         create a particle in position<out>::action</layer1_a3>::position<trigger>.
@@ -8777,6 +9154,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer0_a3> {
         create a particle in position<out>::action</layer1_a1>::position<trigger>.
         create a particle in position<out>::action</layer1_a2>::position<src>.
         create a particle in position<out>::action</layer1_a2>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -8805,6 +9183,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer0_a4> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer1_a4>::position<src>.
         create a particle in position<out>::action</layer1_a4>::position<trigger>.
@@ -8826,6 +9205,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer0_a4> {
         create a particle in position<out>::action</layer1_a2>::position<trigger>.
         create a particle in position<out>::action</layer1_a3>::position<src>.
         create a particle in position<out>::action</layer1_a3>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -8850,6 +9230,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer0_a5> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer1_a5>::position<src>.
         create a particle in position<out>::action</layer1_a5>::position<trigger>.
@@ -8871,6 +9252,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer0_a5> {
         create a particle in position<out>::action</layer1_a3>::position<trigger>.
         create a particle in position<out>::action</layer1_a4>::position<src>.
         create a particle in position<out>::action</layer1_a4>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -8899,6 +9281,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer0_a6> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer1_a6>::position<src>.
         create a particle in position<out>::action</layer1_a6>::position<trigger>.
@@ -8920,6 +9303,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer0_a6> {
         create a particle in position<out>::action</layer1_a4>::position<trigger>.
         create a particle in position<out>::action</layer1_a5>::position<src>.
         create a particle in position<out>::action</layer1_a5>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -8944,6 +9328,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer0_a7> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer1_a7>::position<src>.
         create a particle in position<out>::action</layer1_a7>::position<trigger>.
@@ -8965,6 +9350,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer0_a7> {
         create a particle in position<out>::action</layer1_a5>::position<trigger>.
         create a particle in position<out>::action</layer1_a6>::position<src>.
         create a particle in position<out>::action</layer1_a6>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -8993,6 +9379,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer0_a8> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer1_a8>::position<src>.
         create a particle in position<out>::action</layer1_a8>::position<trigger>.
@@ -9014,6 +9401,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer0_a8> {
         create a particle in position<out>::action</layer1_a6>::position<trigger>.
         create a particle in position<out>::action</layer1_a7>::position<src>.
         create a particle in position<out>::action</layer1_a7>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 
@@ -9038,6 +9426,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer0_a9> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<src>.
+        destroy the particle in position<trigger>.
         create a particle in position<out>.
         create a particle in position<out>::action</layer1_a9>::position<src>.
         create a particle in position<out>::action</layer1_a9>::position<trigger>.
@@ -9059,6 +9448,7 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer0_a9> {
         create a particle in position<out>::action</layer1_a7>::position<trigger>.
         create a particle in position<out>::action</layer1_a8>::position<src>.
         create a particle in position<out>::action</layer1_a8>::position<trigger>.
+        destroy the particle in position<out>.
     }
 }
 

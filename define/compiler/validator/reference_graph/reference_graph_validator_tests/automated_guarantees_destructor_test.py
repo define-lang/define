@@ -107,24 +107,14 @@ def test_destructor_triggering_action_that_fills_a_contracted_position_is_forbid
     result = validate_testdata_project_with_reference_graph()
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 2
+    assert len(all_diags) == 1
     assert isinstance(
         all_diags[0], diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic
     )
-    assert all_diags[0].location.line == 7
-    assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
-    assert all_diags[0].position_name == "position<item>"
-    assert isinstance(
-        all_diags[1], diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic
-    )
-    assert all_diags[1].location.line == 10
-    assert all_diags[1].location.column == 30
-    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
-    assert (
-        all_diags[1].position_name
-        == "position<box>::action</other>::position<trigger_pos>"
-    )
+    assert all_diags[0].location.line == 12
+    assert all_diags[0].location.column == 79
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].position_name == "position</item>"
 
 
 def test_destructor_triggering_implied_action_that_fills_an_implied_position_is_forbidden(
@@ -133,21 +123,14 @@ def test_destructor_triggering_implied_action_that_fills_an_implied_position_is_
     result = validate_testdata_project_with_reference_graph()
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 2
+    assert len(all_diags) == 1
     assert isinstance(
         all_diags[0], diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic
     )
-    assert all_diags[0].location.line == 6
+    assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].position_name == "action</updater>::position<trigger_pos>"
-    assert isinstance(
-        all_diags[1], diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic
-    )
-    assert all_diags[1].location.line == 7
-    assert all_diags[1].location.column == 30
-    assert all_diags[1].location.file_path == PurePosixPath("updater.dfn")
-    assert all_diags[1].position_name == "position</marker>"
+    assert all_diags[0].location.file_path == PurePosixPath("updater.dfn")
+    assert all_diags[0].position_name == "position</marker>"
 
 
 def test_create_then_move_out_produces_no_guarantees(
@@ -177,11 +160,11 @@ def test_destructor_surfaces_nested_guarantee_pending_under_an_interface_positio
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("b.dfn")
-    assert all_diags[0].position_name == "position<out>"
+    assert all_diags[0].position_name == "position</out>"
     assert isinstance(
         all_diags[1], diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic
     )
-    assert all_diags[1].location.line == 14
-    assert all_diags[1].location.column == 30
+    assert all_diags[1].location.line == 10
+    assert all_diags[1].location.column == 59
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[1].position_name == "action</a>::position<box>"
+    assert all_diags[1].position_name == "position</saved>"

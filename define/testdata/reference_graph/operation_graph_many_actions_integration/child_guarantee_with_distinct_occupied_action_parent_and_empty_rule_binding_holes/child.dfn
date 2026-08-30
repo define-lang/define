@@ -1,12 +1,12 @@
 define the potential action<my.domain.com:my_lib:/child> {
+    it also assigns the position</result>.
     define the position<trigger_pos>.
-    define the position<result>.
     it happens when {
         the position<trigger_pos> has a particle.
     } and it does {
         define the position<scratch>.
         create a particle in position<scratch>.
         destroy the particle in position<scratch>.
-        create a particle in position<result>.
+        create a particle in position</result>.
     }
 }

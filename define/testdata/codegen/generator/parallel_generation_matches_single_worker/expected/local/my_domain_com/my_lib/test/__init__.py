@@ -43,12 +43,10 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
-        guarantees.trigger_action_left.trigger_action_shared.guarantee_position_trigger.append(
-            self.trigger_action_right__when_empty_action_shared__position_trigger
-        )
         self.execution_trigger_action_left: local.my_domain_com.my_lib.left.LeftExecution
         self.execution_trigger_action_right: local.my_domain_com.my_lib.right.RightExecution
-        self.join_for_trigger_action_right__when_empty_action_shared__position_trigger = self.scheduler.create_join(2)
+        self.join_for_trigger_action_left__for_empty_rule_position_trigger = self.scheduler.create_join(2)
+        self.join_for_trigger_action_right__for_empty_rule_position_trigger = self.scheduler.create_join(2)
 
     def create_action_left__position_trigger(self):
         self.action.on_particle.get_action(
@@ -63,7 +61,9 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_action_left,
         )
-        self.trigger_action_left__when_empty_action_shared__position_trigger()
+        self.scheduler.submit(self.trigger_action_left__for_empty_rule_position_trigger)
+        self.scheduler.submit(self.trigger_action_left__action_parent)
+        self.trigger_action_left__for_empty_rule_position_trigger()
 
     def create_action_right__position_trigger(self):
         self.action.on_particle.get_action(
@@ -78,12 +78,22 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_action_right,
         )
-        self.trigger_action_right__when_empty_action_shared__position_trigger()
+        self.scheduler.submit(self.trigger_action_right__for_empty_rule_position_trigger)
+        self.scheduler.submit(self.trigger_action_right__action_parent)
+        self.trigger_action_right__for_empty_rule_position_trigger()
 
-    def trigger_action_left__when_empty_action_shared__position_trigger(self):
-        self.execution_trigger_action_left.accept_when_empty_action_shared__position_trigger()
+    def trigger_action_left__action_parent(self):
+        self.execution_trigger_action_left.accept_action_parent()
 
-    def trigger_action_right__when_empty_action_shared__position_trigger(self):
-        if not self.join_for_trigger_action_right__when_empty_action_shared__position_trigger.arrive():
+    def trigger_action_left__for_empty_rule_position_trigger(self):
+        if not self.join_for_trigger_action_left__for_empty_rule_position_trigger.arrive():
             return
-        self.execution_trigger_action_right.accept_when_empty_action_shared__position_trigger()
+        self.execution_trigger_action_left.accept_for_empty_rule_position_trigger()
+
+    def trigger_action_right__action_parent(self):
+        self.execution_trigger_action_right.accept_action_parent()
+
+    def trigger_action_right__for_empty_rule_position_trigger(self):
+        if not self.join_for_trigger_action_right__for_empty_rule_position_trigger.arrive():
+            return
+        self.execution_trigger_action_right.accept_for_empty_rule_position_trigger()

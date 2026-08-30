@@ -1,8 +1,8 @@
-# An action whose body creates a particle at a chain that starts with an implied action quality (action</nested>::position<iface>::position</x>) records a guarantee on that chain.
+# An implied action's child guarantee must remain attached to its particle when
+# its direct caller moves that particle to a child of an implied position.
 #
-# When such an action is fired from a caller that reaches it through a
-# long position prefix, the resulting tracker key should include the
-# full caller-side prefix.
+# When a caller reaches that action through a long chained name, the guarantee
+# must appear at the full chained name from the caller's perspective.
 #
 # Filling the same fully-qualified position from the caller after the
 # trigger should fail with a CreateInOccupied diagnostic.
@@ -19,6 +19,6 @@ define the potential action<my.domain.com:my_lib:/test> {
         create a particle in position<host>.
         create a particle in position<host>::position</mid>.
         create a particle in position<host>::position</mid>::action</inner>::position<trigger_pos>.
-        create a particle in position<host>::position</mid>::action</nested>::position<iface>::position</x>.
+        create a particle in position<host>::position</mid>::position</result>::position</x>.
     }
 }

@@ -54,6 +54,7 @@ class TestExecution:
         self.join_for_trigger_action_act__for_empty_rule_position_chain_src_a__global_position_mid_src_a__global_position_end_src_a = self.scheduler.create_join(2)
         self.join_for_trigger_action_act__for_empty_rule_position_chain_src_b__global_position_mid_src_b__global_position_end_src_b = self.scheduler.create_join(2)
         self.join_for_trigger_action_act__for_empty_rule_position_chain_src_c__global_position_mid_src_c__global_position_end_src_c = self.scheduler.create_join(3)
+        self.join_for_trigger_action_act__for_empty_rule_position_trigger = self.scheduler.create_join(2)
 
     def create_action_act__position_chain_src_a(self):
         self.action.on_particle.get_action(
@@ -155,9 +156,19 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_action_act,
         )
+        self.scheduler.submit(self.trigger_action_act__for_empty_rule_position_trigger)
         self.scheduler.submit(self.trigger_action_act__for_empty_rule_position_chain_src_a__global_position_mid_src_a__global_position_end_src_a)
         self.scheduler.submit(self.trigger_action_act__for_empty_rule_position_chain_src_b__global_position_mid_src_b__global_position_end_src_b)
-        self.trigger_action_act__for_empty_rule_position_chain_src_c__global_position_mid_src_c__global_position_end_src_c()
+        self.scheduler.submit(self.trigger_action_act__for_empty_rule_position_chain_src_c__global_position_mid_src_c__global_position_end_src_c)
+        self.scheduler.submit(self.trigger_action_act__for_empty_rule_position_chain_src_a__global_position_mid_src_a)
+        self.scheduler.submit(self.trigger_action_act__for_empty_rule_position_chain_src_a)
+        self.scheduler.submit(self.trigger_action_act__for_empty_rule_position_chain_src_b__global_position_mid_src_b)
+        self.scheduler.submit(self.trigger_action_act__for_empty_rule_position_chain_src_b)
+        self.scheduler.submit(self.trigger_action_act__for_empty_rule_position_chain_src_c__global_position_mid_src_c)
+        self.scheduler.submit(self.trigger_action_act__for_empty_rule_position_chain_src_c)
+        self.scheduler.submit(self.trigger_action_act__for_empty_rule_position_chain_dest__global_position_mid_dest)
+        self.scheduler.submit(self.trigger_action_act__for_empty_rule_position_chain_dest)
+        self.trigger_action_act__for_empty_rule_position_trigger()
 
     def trigger_action_act__for_empty_rule_position_chain_src_a__global_position_mid_src_a__global_position_end_src_a(self):
         if not self.join_for_trigger_action_act__for_empty_rule_position_chain_src_a__global_position_mid_src_a__global_position_end_src_a.arrive():
@@ -173,3 +184,32 @@ class TestExecution:
         if not self.join_for_trigger_action_act__for_empty_rule_position_chain_src_c__global_position_mid_src_c__global_position_end_src_c.arrive():
             return
         self.execution_trigger_action_act.accept_for_empty_rule_position_chain_src_c__global_position_mid_src_c__global_position_end_src_c()
+
+    def trigger_action_act__for_empty_rule_position_chain_src_a__global_position_mid_src_a(self):
+        self.execution_trigger_action_act.accept_for_empty_rule_position_chain_src_a__global_position_mid_src_a()
+
+    def trigger_action_act__for_empty_rule_position_chain_src_a(self):
+        self.execution_trigger_action_act.accept_for_empty_rule_position_chain_src_a()
+
+    def trigger_action_act__for_empty_rule_position_chain_src_b__global_position_mid_src_b(self):
+        self.execution_trigger_action_act.accept_for_empty_rule_position_chain_src_b__global_position_mid_src_b()
+
+    def trigger_action_act__for_empty_rule_position_chain_src_b(self):
+        self.execution_trigger_action_act.accept_for_empty_rule_position_chain_src_b()
+
+    def trigger_action_act__for_empty_rule_position_chain_src_c__global_position_mid_src_c(self):
+        self.execution_trigger_action_act.accept_for_empty_rule_position_chain_src_c__global_position_mid_src_c()
+
+    def trigger_action_act__for_empty_rule_position_chain_src_c(self):
+        self.execution_trigger_action_act.accept_for_empty_rule_position_chain_src_c()
+
+    def trigger_action_act__for_empty_rule_position_chain_dest__global_position_mid_dest(self):
+        self.execution_trigger_action_act.accept_for_empty_rule_position_chain_dest__global_position_mid_dest()
+
+    def trigger_action_act__for_empty_rule_position_chain_dest(self):
+        self.execution_trigger_action_act.accept_for_empty_rule_position_chain_dest()
+
+    def trigger_action_act__for_empty_rule_position_trigger(self):
+        if not self.join_for_trigger_action_act__for_empty_rule_position_trigger.arrive():
+            return
+        self.execution_trigger_action_act.accept_for_empty_rule_position_trigger()

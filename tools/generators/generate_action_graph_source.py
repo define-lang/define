@@ -149,7 +149,10 @@ def _emit_action_body(target_paths: list[str]) -> list[str]:
     # The first reference to ``src`` is a destroy of a particle the action
     # did not create, which infers the occupancy requirement and records
     # the Destruction Contract.
-    lines = [f"{_INNER_INDENT}destroy the particle in position<src>."]
+    lines = [
+        f"{_INNER_INDENT}destroy the particle in position<src>.",
+        f"{_INNER_INDENT}destroy the particle in position<trigger>.",
+    ]
     if not target_paths:
         return lines
     lines.append(f"{_INNER_INDENT}create a particle in position<out>.")
@@ -157,6 +160,7 @@ def _emit_action_body(target_paths: list[str]) -> list[str]:
         chain = f"position<out>::action<{target_path}>"
         lines.append(f"{_INNER_INDENT}create a particle in {chain}::position<src>.")
         lines.append(f"{_INNER_INDENT}create a particle in {chain}::position<trigger>.")
+    lines.append(f"{_INNER_INDENT}destroy the particle in position<out>.")
     return lines
 
 
@@ -272,7 +276,7 @@ def generate_source_lines(
             global_index += 1
 
     lines.extend(_emit_root(fqun_prefix, width))
-    return lines
+    return lines[:-1]
 
 
 def write_to_path(

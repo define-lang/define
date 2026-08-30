@@ -11,5 +11,6 @@ define the potential action<my.domain.com:my_lib:/middle> {
         create a particle in position</box>.
         create a particle in position</box>::action</worker>::position<trigger_pos>.
         move the particle in position</shared> to position</box>::position</destination>.
+        destroy the particle in position<trigger_pos>.
     }
 }

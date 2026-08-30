@@ -9,5 +9,6 @@ define the potential action<my.domain.com:my_lib:/inner> {
     } and it does {
         define the position<_sink>.
         move the particle in position<trigger_pos>::position</x> to position<_sink>.
+        destroy the particle in position<trigger_pos>.
     }
 }

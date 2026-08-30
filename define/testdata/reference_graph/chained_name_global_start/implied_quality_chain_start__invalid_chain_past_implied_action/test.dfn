@@ -6,5 +6,6 @@ define the potential action<my.domain.com:my_lib:/test> {
     } and it does {
         create a particle in action</b>::position<run>.
         create a particle in action</b>::position<not_iface>.
+        destroy the particle in action</b>::position<iface>.
     }
 }

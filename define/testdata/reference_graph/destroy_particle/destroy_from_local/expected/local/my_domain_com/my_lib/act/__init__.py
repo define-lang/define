@@ -20,12 +20,25 @@ class Act(literal.Action):
 
 
 @final
+class ActGuarantees:
+    def __init__(self):
+        self.guarantee_position_trigger: list[literal.Task] = []
+
+
+@final
 class ActExecution:
     def __init__(
         self,
+        action: Act,
         scheduler: literal.Scheduler,
+        guarantees: ActGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
+        self.action = action
         self.scheduler = scheduler
+        self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
         self.local_position_a = literal.LocalPosition(
             "position<a>",
             scheduler=self.scheduler,
@@ -34,6 +47,18 @@ class ActExecution:
     def accept_action_parent(self):
         self.create_position_a()
 
+    def accept_for_empty_rule_position_trigger(self):
+        self.destroy_position_trigger()
+
     def create_position_a(self):
         self.local_position_a.create_particle()
         self.local_position_a.destroy_particle()
+
+    def destroy_position_trigger(self):
+        literal.continue_destruction(self.continue_destroy_position_trigger)
+
+    def continue_destroy_position_trigger(self):
+        self.action.get_interface_position(
+            "position<trigger>"
+        ).destroy_particle()
+        self.scheduler.continue_with(self.guarantees.guarantee_position_trigger)

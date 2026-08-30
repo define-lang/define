@@ -6,6 +6,7 @@ from define.runtime import literal
 
 import local.my_domain_com.my_lib.child
 import local.my_domain_com.my_lib.filler
+import local.my_domain_com.my_lib.gc
 import local.my_domain_com.my_lib.mover
 import local.my_domain_com.my_lib.parent
 
@@ -47,6 +48,9 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        guarantees.trigger_action_mover.guarantee_global_position_parent__global_position_child__move__position_dest.append(
+            self.destroy_action_mover__position_dest__global_position_gc
+        )
         guarantees.trigger_action_filler.guarantee_global_position_parent__global_position_child__global_position_gc.append(
             self.trigger_action_mover__for_empty_rule_global_position_parent__global_position_child
         )
@@ -79,6 +83,7 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_action_filler,
         )
+        self.scheduler.submit(self.destroy_action_filler__position_trigger_pos)
         self.trigger_action_filler__when_empty_global_position_parent__global_position_child__global_position_gc()
 
     def create_action_mover__position_trigger_pos(self):
@@ -94,7 +99,36 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_action_mover,
         )
+        self.scheduler.submit(self.destroy_action_mover__position_trigger_pos)
         self.trigger_action_mover__for_empty_rule_global_position_parent__global_position_child()
+
+    def destroy_action_filler__position_trigger_pos(self):
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.filler.Filler
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
+
+    def destroy_action_mover__position_dest__global_position_gc(self):
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.mover.Mover
+        ).get_interface_position(
+            "position<dest>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.gc.Gc
+        ).destroy_particle()
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.mover.Mover
+        ).get_interface_position(
+            "position<dest>"
+        ).destroy_particle()
+
+    def destroy_action_mover__position_trigger_pos(self):
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.mover.Mover
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
 
     def trigger_action_filler__when_empty_global_position_parent__global_position_child__global_position_gc(self):
         if not self.join_for_trigger_action_filler__when_empty_global_position_parent__global_position_child__global_position_gc.arrive():

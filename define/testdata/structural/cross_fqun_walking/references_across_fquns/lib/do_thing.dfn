@@ -5,5 +5,6 @@ define the potential action<my.domain.com:child_lib:/do_thing> {
     } and it does {
         define the position<local_pos>.
         create a particle in position<local_pos>.
+        destroy the particle in position<trigger_pos>.
     }
 }

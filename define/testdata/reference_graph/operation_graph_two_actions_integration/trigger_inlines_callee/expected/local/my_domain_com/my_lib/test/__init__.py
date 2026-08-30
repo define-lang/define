@@ -50,6 +50,9 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        guarantees.trigger_position_gateway__action_other.guarantee_position_output.append(
+            self.destroy_position_gateway__action_other__position_output
+        )
         self.execution_trigger_position_gateway__action_other: local.my_domain_com.my_lib.other.OtherExecution
         self.join_for_trigger_position_gateway__action_other__when_empty_position_output = self.scheduler.create_join(2)
 
@@ -77,7 +80,26 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_position_gateway__action_other,
         )
+        self.scheduler.submit(self.destroy_position_gateway__action_other__position_trigger_pos)
         self.trigger_position_gateway__action_other__when_empty_position_output()
+
+    def destroy_position_gateway__action_other__position_output(self):
+        self.action.get_interface_position(
+            "position<gateway>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.other.Other
+        ).get_interface_position(
+            "position<output>"
+        ).destroy_particle()
+
+    def destroy_position_gateway__action_other__position_trigger_pos(self):
+        self.action.get_interface_position(
+            "position<gateway>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.other.Other
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
 
     def trigger_position_gateway__action_other__when_empty_position_output(self):
         if not self.join_for_trigger_position_gateway__action_other__when_empty_position_output.arrive():

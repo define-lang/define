@@ -52,6 +52,9 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        guarantees.trigger_position_gateway__action_other.guarantee_position_source__move__position_holder.append(
+            self.destroy_position_gateway__action_other__position_holder__global_position_a__global_position_deep
+        )
         self.execution_trigger_position_gateway__action_other: local.my_domain_com.my_lib.other.OtherExecution
         self.join_for_trigger_position_gateway__action_other__for_empty_rule_position_source = self.scheduler.create_join(2)
 
@@ -109,7 +112,46 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_position_gateway__action_other,
         )
+        self.scheduler.submit(self.destroy_position_gateway__action_other__position_trigger_pos)
         self.trigger_position_gateway__action_other__for_empty_rule_position_source()
+
+    def destroy_position_gateway__action_other__position_holder__global_position_a__global_position_deep(self):
+        self.action.get_interface_position(
+            "position<gateway>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.other.Other
+        ).get_interface_position(
+            "position<holder>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.a.A
+        ).particle.get_position(
+            local.my_domain_com.my_lib.deep.Deep
+        ).destroy_particle()
+        self.action.get_interface_position(
+            "position<gateway>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.other.Other
+        ).get_interface_position(
+            "position<holder>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.a.A
+        ).destroy_particle()
+        self.action.get_interface_position(
+            "position<gateway>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.other.Other
+        ).get_interface_position(
+            "position<holder>"
+        ).destroy_particle()
+
+    def destroy_position_gateway__action_other__position_trigger_pos(self):
+        self.action.get_interface_position(
+            "position<gateway>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.other.Other
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
 
     def trigger_position_gateway__action_other__for_empty_rule_position_source(self):
         if not self.join_for_trigger_position_gateway__action_other__for_empty_rule_position_source.arrive():

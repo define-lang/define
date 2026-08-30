@@ -53,8 +53,15 @@ class KickOffExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.destruction_connections = destruction_connections
+        guarantees.trigger_position_output__action_react_a.guarantee_position_trigger.append(
+            self.destroy_position_output
+        )
+        guarantees.trigger_position_output__action_react_b.guarantee_position_trigger.append(
+            self.destroy_position_output
+        )
         self.execution_trigger_position_output__action_react_a: local.my_domain_com.my_lib.react_a.ReactAExecution
         self.execution_trigger_position_output__action_react_b: local.my_domain_com.my_lib.react_b.ReactBExecution
+        self.join_for_destroy_position_output = self.scheduler.create_join(2)
         self.join_for_trigger_position_output__action_react_a__when_empty_position_result = self.scheduler.create_join(2)
         self.join_for_trigger_position_output__action_react_a__for_empty_rule_position_trigger = self.scheduler.create_join(2)
         self.join_for_trigger_position_output__action_react_b__action_parent = self.scheduler.create_join(2)
@@ -73,8 +80,7 @@ class KickOffExecution:
         self.scheduler.submit(self.create_position_output__action_react_a__position_trigger)
         self.scheduler.submit(self.create_position_output__action_react_b__position_trigger)
         self.scheduler.submit(self.trigger_position_output__action_react_a__when_empty_position_result)
-        self.scheduler.submit(self.trigger_position_output__action_react_b__action_parent)
-        self.scheduler.continue_with(self.guarantees.guarantee_position_output)
+        self.trigger_position_output__action_react_b__action_parent()
 
     def create_position_output__action_react_a__position_trigger(self):
         self.action.get_interface_position(
@@ -117,6 +123,14 @@ class KickOffExecution:
         self.scheduler.submit(self.trigger_position_output__action_react_b__for_empty_rule_position_trigger)
         self.scheduler.submit(self.trigger_position_output__action_react_b__action_parent)
         self.trigger_position_output__action_react_b__for_empty_rule_position_trigger()
+
+    def destroy_position_output(self):
+        if not self.join_for_destroy_position_output.arrive():
+            return
+        self.action.get_interface_position(
+            "position<output>"
+        ).destroy_particle()
+        self.scheduler.continue_with(self.guarantees.guarantee_position_output)
 
     def destroy_position_trigger(self):
         literal.continue_destruction(self.continue_destroy_position_trigger)

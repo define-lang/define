@@ -9,5 +9,7 @@ define the potential action<my.domain.com:my_lib:/inner> {
         the position<run> has a particle.
     } and it does {
         destroy the particle in position<input>::position</data>.
+        destroy the particle in position<input>.
+        destroy the particle in position<run>.
     }
 }

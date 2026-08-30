@@ -31,7 +31,8 @@ class Inner(literal.Action):
 @final
 class InnerGuarantees:
     def __init__(self):
-        self.guarantee_position_input__global_position_data: list[literal.Task] = []
+        self.guarantee_position_input: list[literal.Task] = []
+        self.guarantee_position_run: list[literal.Task] = []
 
 
 @final
@@ -48,9 +49,16 @@ class InnerExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.destruction_connections = destruction_connections
+        self.join_for_destroy_position_input = self.scheduler.create_join(2)
 
     def accept_for_empty_rule_position_input__global_position_data(self):
         self.destroy_position_input__global_position_data()
+
+    def accept_for_empty_rule_position_input(self):
+        self.destroy_position_input()
+
+    def accept_for_empty_rule_position_run(self):
+        self.destroy_position_run()
 
     def destroy_position_input__global_position_data(self):
         literal.continue_destruction(self.continue_destroy_position_input__global_position_data)
@@ -61,4 +69,24 @@ class InnerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.data.Data
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_input__global_position_data)
+        self.destroy_position_input()
+
+    def destroy_position_input(self):
+        if not self.join_for_destroy_position_input.arrive():
+            return
+        literal.continue_destruction(self.continue_destroy_position_input)
+
+    def continue_destroy_position_input(self):
+        self.action.get_interface_position(
+            "position<input>"
+        ).destroy_particle()
+        self.scheduler.continue_with(self.guarantees.guarantee_position_input)
+
+    def destroy_position_run(self):
+        literal.continue_destruction(self.continue_destroy_position_run)
+
+    def continue_destroy_position_run(self):
+        self.action.get_interface_position(
+            "position<run>"
+        ).destroy_particle()
+        self.scheduler.continue_with(self.guarantees.guarantee_position_run)

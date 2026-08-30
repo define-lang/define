@@ -28,5 +28,11 @@ define the potential action<my.domain.com:my_lib:/act> {
         move the particle in position<chain_src_a>::position</mid_src_a>::position</end_src_a> to position<local_dest>.
         move the particle in position<chain_src_b>::position</mid_src_b>::position</end_src_b> to position<iface_dest>.
         move the particle in position<chain_src_c>::position</mid_src_c>::position</end_src_c> to position<chain_dest>::position</mid_dest>::position</end_dest>.
+        destroy the particle in position<chain_src_a>.
+        destroy the particle in position<chain_src_b>.
+        destroy the particle in position<chain_src_c>.
+        destroy the particle in position<iface_dest>.
+        destroy the particle in position<chain_dest>.
+        destroy the particle in position<trigger>.
     }
 }

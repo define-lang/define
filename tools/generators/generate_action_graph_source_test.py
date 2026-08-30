@@ -58,12 +58,18 @@ class TestGenerateSourceLines:
         assert "it may only contain particles where" in source
         assert "this particle is being destroyed" in source
         assert "destroy the particle in position<src>." in source
+        assert "destroy the particle in position<trigger>." in source
+        assert "destroy the particle in position<out>." in source
         assert "create a particle in position<out>::action</layer1_a0>::" in source
 
     def test_no_destructors_when_fraction_zero(self):
         source = "\n".join(gen.generate_source_lines(destructor_fraction=0))
         assert "this particle is being destroyed" not in source
         assert "marker_destructor" not in source
+
+    def test_output_does_not_end_with_blank_line(self):
+        lines = gen.generate_source_lines(layers=2, width=1, fan_out=1)
+        assert lines[-1] == "}"
 
 
 class TestWriteToPath:

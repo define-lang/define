@@ -20,12 +20,25 @@ class DoThing(literal.Action):
 
 
 @final
+class DoThingGuarantees:
+    def __init__(self):
+        self.guarantee_position_pp: list[literal.Task] = []
+
+
+@final
 class DoThingExecution:
     def __init__(
         self,
+        action: DoThing,
         scheduler: literal.Scheduler,
+        guarantees: DoThingGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
+        self.action = action
         self.scheduler = scheduler
+        self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
         self.local_position_noop = literal.LocalPosition(
             "position<noop>",
             scheduler=self.scheduler,
@@ -34,6 +47,18 @@ class DoThingExecution:
     def accept_action_parent(self):
         self.create_position_noop()
 
+    def accept_for_empty_rule_position_pp(self):
+        self.destroy_position_pp()
+
     def create_position_noop(self):
         self.local_position_noop.create_particle()
         self.local_position_noop.destroy_particle()
+
+    def destroy_position_pp(self):
+        literal.continue_destruction(self.continue_destroy_position_pp)
+
+    def continue_destroy_position_pp(self):
+        self.action.get_interface_position(
+            "position<pp>"
+        ).destroy_particle()
+        self.scheduler.continue_with(self.guarantees.guarantee_position_pp)

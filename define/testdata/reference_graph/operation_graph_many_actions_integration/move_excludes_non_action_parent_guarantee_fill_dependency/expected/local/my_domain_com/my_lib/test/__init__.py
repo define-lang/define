@@ -73,6 +73,7 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_action_producer,
         )
+        self.scheduler.submit(self.destroy_action_producer__position_trigger_pos)
         self.trigger_action_producer__for_empty_rule_global_position_input()
 
     def create_action_consumer__position_trigger_pos(self):
@@ -88,8 +89,23 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_action_consumer,
         )
+        self.scheduler.submit(self.destroy_action_consumer__position_trigger_pos)
         self.scheduler.submit(self.trigger_action_consumer__when_empty_global_position_box__global_position_item)
         self.trigger_action_consumer__when_empty_global_position_box__global_position_destination()
+
+    def destroy_action_producer__position_trigger_pos(self):
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.producer.Producer
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
+
+    def destroy_action_consumer__position_trigger_pos(self):
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.consumer.Consumer
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
 
     def trigger_action_producer__for_empty_rule_global_position_input(self):
         if not self.join_for_trigger_action_producer__for_empty_rule_global_position_input.arrive():

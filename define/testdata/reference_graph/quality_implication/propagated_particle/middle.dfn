@@ -22,5 +22,8 @@ define the potential action<my.domain.com:my_lib:/middle> {
         move the particle in position<box> to position<inner_holder>::action</inner>::position<input>.
         create a particle in position<inner_holder>::action</inner>::position<run>.
         move the particle in position<inner_holder>::action</inner>::position<output> to position<final>.
+        destroy the particle in position<final>::position</implied>.
+        destroy the particle in position<final>.
+        destroy the particle in position<run>.
     }
 }

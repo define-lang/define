@@ -34,8 +34,7 @@ class Middle(literal.Action):
 @final
 class MiddleGuarantees:
     def __init__(self):
-        self.guarantee_position_gateway__global_position_source_particle: list[literal.Task] = []
-        self.guarantee_position_gateway__action_inner__position_trigger_pos: list[literal.Task] = []
+        self.guarantee_position_gateway: list[literal.Task] = []
         self.trigger_position_gateway__action_inner = local.my_domain_com.my_lib.inner.InnerGuarantees()
 
 
@@ -46,21 +45,31 @@ class MiddleExecution:
         action: Middle,
         scheduler: literal.Scheduler,
         guarantees: MiddleGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
+        guarantees.trigger_position_gateway__action_inner.guarantee_position_destination__global_position_child.append(
+            self.destroy_position_gateway__action_inner__position_destination
+        )
         self.execution_trigger_position_gateway__action_inner: local.my_domain_com.my_lib.inner.InnerExecution
+        self.join_for_destroy_position_gateway = self.scheduler.create_join(3)
         self.join_for_trigger_position_gateway__action_inner__for_empty_rule_position_source = self.scheduler.create_join(3)
 
     def accept_for_empty_rule_position_gateway__global_position_source_particle(self):
         self.move_position_gateway__global_position_source_particle_to_position_gateway__action_inner__position_source()
 
-    def accept_when_empty_position_gateway__action_inner__position_trigger_pos(self):
+    def accept_when_occupied_position_gateway(self):
         self.create_position_gateway__action_inner__position_trigger_pos()
 
     def accept_when_empty_position_gateway__action_inner__position_destination(self):
         self.trigger_position_gateway__action_inner__for_empty_rule_position_source()
+
+    def accept_for_empty_rule_position_gateway(self):
+        self.destroy_position_gateway()
 
     def move_position_gateway__global_position_source_particle_to_position_gateway__action_inner__position_source(self):
         self.action.get_interface_position(
@@ -76,10 +85,6 @@ class MiddleExecution:
                 "position<source>"
             )
         )
-        self.scheduler.submit(self.create_position_gateway__action_inner__position_source__global_position_child)
-        self.scheduler.continue_with(self.guarantees.guarantee_position_gateway__global_position_source_particle)
-
-    def create_position_gateway__action_inner__position_source__global_position_child(self):
         self.action.get_interface_position(
             "position<gateway>"
         ).particle.get_action(
@@ -108,8 +113,42 @@ class MiddleExecution:
             self.scheduler,
             self.guarantees.trigger_position_gateway__action_inner,
         )
-        self.scheduler.submit_all(self.guarantees.guarantee_position_gateway__action_inner__position_trigger_pos)
+        self.scheduler.submit(self.destroy_position_gateway__action_inner__position_trigger_pos)
         self.trigger_position_gateway__action_inner__for_empty_rule_position_source()
+
+    def destroy_position_gateway__action_inner__position_destination(self):
+        literal.continue_destruction(self.continue_destroy_position_gateway__action_inner__position_destination)
+
+    def continue_destroy_position_gateway__action_inner__position_destination(self):
+        self.action.get_interface_position(
+            "position<gateway>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.inner.Inner
+        ).get_interface_position(
+            "position<destination>"
+        ).destroy_particle()
+        self.destroy_position_gateway()
+
+    def destroy_position_gateway__action_inner__position_trigger_pos(self):
+        self.action.get_interface_position(
+            "position<gateway>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.inner.Inner
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
+        self.destroy_position_gateway()
+
+    def destroy_position_gateway(self):
+        if not self.join_for_destroy_position_gateway.arrive():
+            return
+        literal.continue_destruction(self.continue_destroy_position_gateway)
+
+    def continue_destroy_position_gateway(self):
+        self.action.get_interface_position(
+            "position<gateway>"
+        ).destroy_particle()
+        self.scheduler.continue_with(self.guarantees.guarantee_position_gateway)
 
     def trigger_position_gateway__action_inner__for_empty_rule_position_source(self):
         if not self.join_for_trigger_position_gateway__action_inner__for_empty_rule_position_source.arrive():

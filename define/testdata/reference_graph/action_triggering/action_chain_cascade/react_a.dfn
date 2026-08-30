@@ -10,6 +10,7 @@ define the potential action<my.domain.com:my_lib:/react_a> {
     } and it does {
         create a particle in position<result>.
         create a particle in position<result>::action</final>::position<trigger>.
+        destroy the particle in position<result>.
         destroy the particle in position<trigger>.
     }
 }

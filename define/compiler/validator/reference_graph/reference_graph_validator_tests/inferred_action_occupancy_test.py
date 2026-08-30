@@ -165,22 +165,3 @@ def test_3_item_position_chain_via_moved_local_infers_occupied(
     assert all_diags[0].populated_at.line == 17
     assert all_diags[0].populated_at.column == 30
     assert all_diags[0].populated_at.file_path == PurePosixPath("test.dfn")
-
-
-def test_4_depth_action_chain_via_moved_local_infers_occupied(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
-):
-    result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
-    all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
-    assert all_diags[0].location.line == 18
-    assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert (
-        all_diags[0].position_name == "position<local>::action</inner>::position<item>"
-    )
-    assert all_diags[0].populated_at.line == 17
-    assert all_diags[0].populated_at.column == 30
-    assert all_diags[0].populated_at.file_path == PurePosixPath("test.dfn")

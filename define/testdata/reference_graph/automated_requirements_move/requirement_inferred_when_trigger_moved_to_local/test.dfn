@@ -1,13 +1,10 @@
 # /outer moves its trigger position to a local, then creates in a child via local.
 #
-# The trigger position has from_caller=True. Moving it to a local preserves
-# that flag, so children of the local should still infer requirements remapped
-# through the trigger position.
+# A requirement inferred after the trigger particle moves to a local position
+# must still apply to that particle from the caller's perspective.
 #
-# The caller pre-fills position<extra> by constructing a particle in a spare position
-# and moving it into the trigger position. /inner does not use position<extra>,
-# so _propagate_inner_requirements does not propagate a requirement for it --
-# only _maybe_infer_requirement with from_caller tracking catches the violation.
+# /inner does not use its position<extra>, so the requirement can come only
+# from /outer's own reference to the child of its moved trigger particle.
 define the potential action<my.domain.com:my_lib:/test> {
     define the position<run>.
     it happens when {
@@ -20,15 +17,12 @@ define the potential action<my.domain.com:my_lib:/test> {
         }
         define the position<spare> {
             it may only contain particles where {
-                it has the action</inner>.
+                it has the position</extra_quality>.
             }
         }
         create a particle in position<box>.
         create a particle in position<spare>.
-        create a particle in position<spare>::action</inner>::position<extra>.
-        create a particle in position<spare>::action</inner>::position<trigger_pos>.
-        destroy the particle in position<spare>::action</inner>::position<item>.
-        destroy the particle in position<spare>::action</inner>::position<trigger_pos>.
+        create a particle in position<spare>::position</extra_quality>.
         move the particle in position<spare> to position<box>::action</outer>::position<trigger_pos>.
     }
 }

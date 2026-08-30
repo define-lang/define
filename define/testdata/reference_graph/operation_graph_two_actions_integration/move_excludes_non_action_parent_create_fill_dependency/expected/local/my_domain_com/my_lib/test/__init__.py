@@ -4,6 +4,7 @@ from typing import final, override
 
 from define.runtime import literal
 
+import local.my_domain_com.my_lib.destination
 import local.my_domain_com.my_lib.other
 
 
@@ -50,6 +51,9 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        guarantees.trigger_position_gateway__action_other.guarantee_position_box__global_position_item__move__position_box__global_position_destination.append(
+            self.destroy_position_gateway__action_other__position_box__global_position_destination
+        )
         self.execution_trigger_position_gateway__action_other: local.my_domain_com.my_lib.other.OtherExecution
         self.join_for_trigger_position_gateway__action_other__when_empty_position_box__global_position_item = self.scheduler.create_join(2)
 
@@ -87,8 +91,36 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_position_gateway__action_other,
         )
+        self.scheduler.submit(self.destroy_position_gateway__action_other__position_trigger_pos)
         self.scheduler.submit(self.trigger_position_gateway__action_other__when_empty_position_box__global_position_item)
         self.trigger_position_gateway__action_other__when_empty_position_box__global_position_destination()
+
+    def destroy_position_gateway__action_other__position_box__global_position_destination(self):
+        self.action.get_interface_position(
+            "position<gateway>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.other.Other
+        ).get_interface_position(
+            "position<box>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.destination.Destination
+        ).destroy_particle()
+        self.action.get_interface_position(
+            "position<gateway>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.other.Other
+        ).get_interface_position(
+            "position<box>"
+        ).destroy_particle()
+
+    def destroy_position_gateway__action_other__position_trigger_pos(self):
+        self.action.get_interface_position(
+            "position<gateway>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.other.Other
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
 
     def trigger_position_gateway__action_other__when_empty_position_box__global_position_item(self):
         if not self.join_for_trigger_position_gateway__action_other__when_empty_position_box__global_position_item.arrive():

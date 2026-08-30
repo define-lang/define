@@ -51,12 +51,10 @@ class TestExecution:
             action_name,
         )
         self.guarantees = guarantees
-        guarantees.trigger_action_middle_a.trigger_action_destroyer.guarantee_position_run.append(
-            self.trigger_action_middle_b__when_empty_action_destroyer__position_run
-        )
         self.execution_trigger_action_middle_a: local.my_domain_com.my_lib.middle_a.MiddleAExecution
         self.execution_trigger_action_middle_b: local.my_domain_com.my_lib.middle_b.MiddleBExecution
-        self.join_for_trigger_action_middle_b__when_empty_action_destroyer__position_run = self.scheduler.create_join(2)
+        self.join_for_trigger_action_middle_a__for_empty_rule_position_run = self.scheduler.create_join(2)
+        self.join_for_trigger_action_middle_b__for_empty_rule_position_run = self.scheduler.create_join(2)
 
     def create_action_middle_a__position_run(self):
         self.action.on_particle.get_action(
@@ -78,8 +76,9 @@ class TestExecution:
             "middle_a",
             self.guarantees.trigger_action_middle_a,
         )
+        self.scheduler.submit(self.trigger_action_middle_a__for_empty_rule_position_run)
         self.scheduler.submit(self.trigger_action_middle_a__action_parent)
-        self.trigger_action_middle_a__when_empty_action_destroyer__position_run()
+        self.trigger_action_middle_a__for_empty_rule_position_run()
 
     def create_action_middle_b__position_run(self):
         self.action.on_particle.get_action(
@@ -101,19 +100,22 @@ class TestExecution:
             "middle_b",
             self.guarantees.trigger_action_middle_b,
         )
+        self.scheduler.submit(self.trigger_action_middle_b__for_empty_rule_position_run)
         self.scheduler.submit(self.trigger_action_middle_b__action_parent)
-        self.trigger_action_middle_b__when_empty_action_destroyer__position_run()
+        self.trigger_action_middle_b__for_empty_rule_position_run()
 
     def trigger_action_middle_a__action_parent(self):
         self.execution_trigger_action_middle_a.accept_action_parent()
 
-    def trigger_action_middle_a__when_empty_action_destroyer__position_run(self):
-        self.execution_trigger_action_middle_a.accept_when_empty_action_destroyer__position_run()
+    def trigger_action_middle_a__for_empty_rule_position_run(self):
+        if not self.join_for_trigger_action_middle_a__for_empty_rule_position_run.arrive():
+            return
+        self.execution_trigger_action_middle_a.accept_for_empty_rule_position_run()
 
     def trigger_action_middle_b__action_parent(self):
         self.execution_trigger_action_middle_b.accept_action_parent()
 
-    def trigger_action_middle_b__when_empty_action_destroyer__position_run(self):
-        if not self.join_for_trigger_action_middle_b__when_empty_action_destroyer__position_run.arrive():
+    def trigger_action_middle_b__for_empty_rule_position_run(self):
+        if not self.join_for_trigger_action_middle_b__for_empty_rule_position_run.arrive():
             return
-        self.execution_trigger_action_middle_b.accept_when_empty_action_destroyer__position_run()
+        self.execution_trigger_action_middle_b.accept_for_empty_rule_position_run()

@@ -5,5 +5,6 @@ define the potential action<my.domain.com:my_lib:/middle> {
         the position<trigger_pos> has a particle.
     } and it does {
         create a particle in action</inner>::position<trigger_pos>.
+        destroy the particle in position<trigger_pos>.
     }
 }

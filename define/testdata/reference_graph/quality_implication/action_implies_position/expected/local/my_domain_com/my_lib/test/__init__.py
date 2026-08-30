@@ -40,6 +40,7 @@ class TestExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.execution_trigger_action_runner: local.my_domain_com.my_lib.runner.RunnerExecution
+        self.join_for_trigger_action_runner__for_empty_rule_position_run = self.scheduler.create_join(2)
 
     def create_action_runner__position_run(self):
         self.action.on_particle.get_action(
@@ -54,7 +55,14 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_action_runner,
         )
-        self.trigger_action_runner__when_empty_global_position_marker()
+        self.scheduler.submit(self.trigger_action_runner__for_empty_rule_position_run)
+        self.scheduler.submit(self.trigger_action_runner__when_empty_global_position_marker)
+        self.trigger_action_runner__for_empty_rule_position_run()
 
     def trigger_action_runner__when_empty_global_position_marker(self):
         self.execution_trigger_action_runner.accept_when_empty_global_position_marker()
+
+    def trigger_action_runner__for_empty_rule_position_run(self):
+        if not self.join_for_trigger_action_runner__for_empty_rule_position_run.arrive():
+            return
+        self.execution_trigger_action_runner.accept_for_empty_rule_position_run()

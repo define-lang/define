@@ -46,6 +46,7 @@ class TestGenerateSourceLines:
             "destroy the particle in position<completed_record>::position</temporary_metadata>."
             in source
         )
+        assert "destroy the particle in position<start>." in source
 
 
 class TestWriteToPath:

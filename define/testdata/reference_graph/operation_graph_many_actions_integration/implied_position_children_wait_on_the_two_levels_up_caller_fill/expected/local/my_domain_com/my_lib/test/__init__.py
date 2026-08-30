@@ -66,12 +66,20 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_action_middle,
         )
-        self.scheduler.submit(self.trigger_action_middle__when_empty_action_inner__position_trigger_pos)
+        self.scheduler.submit(self.destroy_action_middle__position_trigger_pos)
+        self.scheduler.submit(self.trigger_action_middle__action_parent)
         self.scheduler.submit(self.trigger_action_middle__when_empty_global_position_parent__global_position_child1)
         self.trigger_action_middle__when_empty_global_position_parent__global_position_child2()
 
-    def trigger_action_middle__when_empty_action_inner__position_trigger_pos(self):
-        self.execution_trigger_action_middle.accept_when_empty_action_inner__position_trigger_pos()
+    def destroy_action_middle__position_trigger_pos(self):
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.middle.Middle
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
+
+    def trigger_action_middle__action_parent(self):
+        self.execution_trigger_action_middle.accept_action_parent()
 
     def trigger_action_middle__when_empty_global_position_parent__global_position_child1(self):
         if not self.join_for_trigger_action_middle__when_empty_global_position_parent__global_position_child1.arrive():

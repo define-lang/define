@@ -90,6 +90,7 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_position_gateway__action_worker,
         )
+        self.scheduler.submit(self.destroy_position_gateway__action_worker__position_trigger)
         self.trigger_position_gateway__action_worker__for_empty_rule_position_input()
 
     def destroy_position_gateway__action_worker__position_output(self):
@@ -99,6 +100,15 @@ class TestExecution:
             local.my_domain_com.my_lib.worker.Worker
         ).get_interface_position(
             "position<output>"
+        ).destroy_particle()
+
+    def destroy_position_gateway__action_worker__position_trigger(self):
+        self.action.get_interface_position(
+            "position<gateway>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.worker.Worker
+        ).get_interface_position(
+            "position<trigger>"
         ).destroy_particle()
 
     def trigger_position_gateway__action_worker__for_empty_rule_position_input(self):

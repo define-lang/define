@@ -6,5 +6,6 @@ define the potential action<my.domain.com:my_lib:/runner> {
     } and it does {
         create a particle in position</marker>.
         destroy the particle in position</marker>.
+        destroy the particle in position<run>.
     }
 }

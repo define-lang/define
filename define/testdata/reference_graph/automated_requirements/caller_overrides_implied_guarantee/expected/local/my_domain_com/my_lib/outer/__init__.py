@@ -30,7 +30,7 @@ class Outer(literal.Action):
 class OuterGuarantees:
     def __init__(self):
         self.guarantee_global_position_implied: list[literal.Task] = []
-        self.guarantee_action_caller__position_run: list[literal.Task] = []
+        self.guarantee_position_run: list[literal.Task] = []
         self.trigger_action_caller = local.my_domain_com.my_lib.caller.CallerGuarantees()
 
 
@@ -41,25 +41,30 @@ class OuterExecution:
         action: Outer,
         scheduler: literal.Scheduler,
         guarantees: OuterGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
         guarantees.trigger_action_caller.guarantee_global_position_implied.append(
             self.create_global_position_implied
         )
         self.execution_trigger_action_caller: local.my_domain_com.my_lib.caller.CallerExecution
-        self.join_for_trigger_action_caller__when_empty_action_callee__position_run = self.scheduler.create_join(2)
+        self.join_for_trigger_action_caller__action_parent = self.scheduler.create_join(2)
+        self.join_for_trigger_action_caller__for_empty_rule_position_run = self.scheduler.create_join(2)
         self.join_for_trigger_action_caller__when_empty_global_position_implied = self.scheduler.create_join(2)
 
-    def accept_when_empty_action_caller__position_run(self):
-        self.create_action_caller__position_run()
+    def accept_action_parent(self):
+        self.scheduler.submit(self.create_action_caller__position_run)
+        self.trigger_action_caller__action_parent()
+
+    def accept_for_empty_rule_position_run(self):
+        self.destroy_position_run()
 
     def accept_when_empty_global_position_implied(self):
         self.trigger_action_caller__when_empty_global_position_implied()
-
-    def accept_when_empty_action_callee__position_run(self):
-        self.trigger_action_caller__when_empty_action_callee__position_run()
 
     def create_action_caller__position_run(self):
         self.action.on_particle.get_action(
@@ -74,8 +79,9 @@ class OuterExecution:
             self.scheduler,
             self.guarantees.trigger_action_caller,
         )
-        self.scheduler.submit_all(self.guarantees.guarantee_action_caller__position_run)
-        self.scheduler.submit(self.trigger_action_caller__when_empty_action_callee__position_run)
+        self.scheduler.submit(self.trigger_action_caller__for_empty_rule_position_run)
+        self.scheduler.submit(self.trigger_action_caller__action_parent)
+        self.scheduler.submit(self.trigger_action_caller__for_empty_rule_position_run)
         self.trigger_action_caller__when_empty_global_position_implied()
 
     def create_global_position_implied(self):
@@ -84,10 +90,24 @@ class OuterExecution:
         ).create_particle()
         self.scheduler.continue_with(self.guarantees.guarantee_global_position_implied)
 
-    def trigger_action_caller__when_empty_action_callee__position_run(self):
-        if not self.join_for_trigger_action_caller__when_empty_action_callee__position_run.arrive():
+    def destroy_position_run(self):
+        literal.continue_destruction(self.continue_destroy_position_run)
+
+    def continue_destroy_position_run(self):
+        self.action.get_interface_position(
+            "position<run>"
+        ).destroy_particle()
+        self.scheduler.continue_with(self.guarantees.guarantee_position_run)
+
+    def trigger_action_caller__action_parent(self):
+        if not self.join_for_trigger_action_caller__action_parent.arrive():
             return
-        self.execution_trigger_action_caller.accept_when_empty_action_callee__position_run()
+        self.execution_trigger_action_caller.accept_action_parent()
+
+    def trigger_action_caller__for_empty_rule_position_run(self):
+        if not self.join_for_trigger_action_caller__for_empty_rule_position_run.arrive():
+            return
+        self.execution_trigger_action_caller.accept_for_empty_rule_position_run()
 
     def trigger_action_caller__when_empty_global_position_implied(self):
         if not self.join_for_trigger_action_caller__when_empty_global_position_implied.arrive():

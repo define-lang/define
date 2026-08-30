@@ -1,5 +1,2 @@
 position<local.my_domain_com.my_lib.shared.Shared>
 position<local.my_domain_com.my_lib.shared.Shared>::position<local.my_domain_com.my_lib.marker.Marker>
-position<local.my_domain_com.my_lib.shared.Shared>::action<local.my_domain_com.my_lib.child_a.ChildA>::position<trigger_pos>
-position<local.my_domain_com.my_lib.shared.Shared>::action<local.my_domain_com.my_lib.child_b.ChildB>::position<trigger_pos>
-action<local.my_domain_com.my_lib.middle.Middle>::position<trigger_pos>

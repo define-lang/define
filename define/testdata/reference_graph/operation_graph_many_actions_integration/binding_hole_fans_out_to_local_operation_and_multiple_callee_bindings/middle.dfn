@@ -7,5 +7,7 @@ define the potential action<my.domain.com:my_lib:/middle> {
         create a particle in position</shared>::position</marker>.
         create a particle in position</shared>::action</child_a>::position<trigger_pos>.
         create a particle in position</shared>::action</child_b>::position<trigger_pos>.
+        destroy the particle in position</shared>::action</child_a>::position<trigger_pos>.
+        destroy the particle in position</shared>::action</child_b>::position<trigger_pos>.
     }
 }

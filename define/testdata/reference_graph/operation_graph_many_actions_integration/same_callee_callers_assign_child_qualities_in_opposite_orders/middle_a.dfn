@@ -1,5 +1,4 @@
 define the potential action<my.domain.com:my_lib:/middle_a> {
-    it also assigns the action</destroyer>.
     define the position<run>.
     it happens when {
         the position<run> has a particle.
@@ -10,9 +9,17 @@ define the potential action<my.domain.com:my_lib:/middle_a> {
                 it has the position</sibling>.
             }
         }
+        define the position<destroyer_holder> {
+            it may only contain particles where {
+                it has the action</destroyer>.
+            }
+        }
+        create a particle in position<destroyer_holder>.
         create a particle in position<box>.
         create a particle in position<box>::position</child>.
         create a particle in position<box>::position</sibling>.
-        move the particle in position<box> to action</destroyer>::position<run>.
+        move the particle in position<box> to position<destroyer_holder>::action</destroyer>::position<run>.
+        destroy the particle in position<destroyer_holder>.
+        destroy the particle in position<run>.
     }
 }

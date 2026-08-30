@@ -167,7 +167,7 @@ class TestExecution:
         self.scheduler.submit(self.trigger_action_middle__when_empty_position_target__global_position_middle_known)
         self.scheduler.submit(self.trigger_action_middle__when_empty_position_target__global_position_middle_known)
         self.scheduler.submit(self.trigger_action_middle__for_empty_rule_position_target)
-        self.trigger_action_middle__when_empty_action_destroyer__position_run()
+        self.trigger_action_middle__action_parent()
 
     def destroy_action_middle__position_target__global_position_creator_known(self):
         self.destruction_position_action_middle__position_target__global_position_creator_known.destroy_particle()
@@ -193,5 +193,5 @@ class TestExecution:
     def trigger_action_middle__for_empty_rule_position_target(self):
         self.execution_trigger_action_middle.accept_for_empty_rule_position_target()
 
-    def trigger_action_middle__when_empty_action_destroyer__position_run(self):
-        self.execution_trigger_action_middle.accept_when_empty_action_destroyer__position_run()
+    def trigger_action_middle__action_parent(self):
+        self.execution_trigger_action_middle.accept_action_parent()

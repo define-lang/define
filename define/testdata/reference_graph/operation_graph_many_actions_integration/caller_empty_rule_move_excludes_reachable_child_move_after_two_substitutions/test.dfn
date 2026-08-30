@@ -17,5 +17,6 @@ define the potential action<my.domain.com:my_lib:/test> {
         move the particle in position</input>::position</target> to position<holder_c>.
         destroy the particle in position<holder_c>.
         create a particle in action</middle_action>::position<trigger_pos>.
+        destroy the particle in action</middle_action>::position<trigger_pos>.
     }
 }

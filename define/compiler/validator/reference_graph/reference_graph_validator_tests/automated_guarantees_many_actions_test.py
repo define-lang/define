@@ -57,9 +57,9 @@ def test_destroyed_particle_guarantees_do_not_make_replacement_particle_occupied
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.DestroyInEmptyInterfacePositionDiagnostic)
-    assert diag.location.line == 19
+    assert diag.location.line == 35
     assert diag.location.column == 33
-    assert diag.location.end_line == 19
+    assert diag.location.end_line == 35
     assert diag.location.end_column == 104
     assert diag.location.file_path == PurePosixPath("test.dfn")
     assert (
@@ -175,7 +175,7 @@ def test_move_guarantee_creates_occupied_in_distant_caller(
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert (
         all_diags[0].position_name
-        == "position<box>::action</outer>::position<iface>::action</inner>::position<output>"
+        == "position<box>::action</outer>::position<iface>::position</output>"
     )
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30

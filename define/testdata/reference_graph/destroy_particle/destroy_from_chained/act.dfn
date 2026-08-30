@@ -9,5 +9,7 @@ define the potential action<my.domain.com:my_lib:/act> {
         the position<trigger> has a particle.
     } and it does {
         destroy the particle in position<chain_src>::position</mid>::position</end>.
+        destroy the particle in position<chain_src>.
+        destroy the particle in position<trigger>.
     }
 }

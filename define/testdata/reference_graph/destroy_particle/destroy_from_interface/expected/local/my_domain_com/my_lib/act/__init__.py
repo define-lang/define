@@ -27,6 +27,7 @@ class Act(literal.Action):
 class ActGuarantees:
     def __init__(self):
         self.guarantee_position_src: list[literal.Task] = []
+        self.guarantee_position_trigger: list[literal.Task] = []
 
 
 @final
@@ -47,6 +48,9 @@ class ActExecution:
     def accept_for_empty_rule_position_src(self):
         self.destroy_position_src()
 
+    def accept_for_empty_rule_position_trigger(self):
+        self.destroy_position_trigger()
+
     def destroy_position_src(self):
         literal.continue_destruction(self.continue_destroy_position_src)
 
@@ -55,3 +59,12 @@ class ActExecution:
             "position<src>"
         ).destroy_particle()
         self.scheduler.continue_with(self.guarantees.guarantee_position_src)
+
+    def destroy_position_trigger(self):
+        literal.continue_destruction(self.continue_destroy_position_trigger)
+
+    def continue_destroy_position_trigger(self):
+        self.action.get_interface_position(
+            "position<trigger>"
+        ).destroy_particle()
+        self.scheduler.continue_with(self.guarantees.guarantee_position_trigger)

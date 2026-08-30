@@ -3,6 +3,7 @@ define the potential action<my.domain.com:my_lib:/outer> {
     define the position<iface> {
         it may only contain particles where {
             it has the action</inner>.
+            it has the position</item>.
         }
     }
     it happens when {
@@ -10,5 +11,6 @@ define the potential action<my.domain.com:my_lib:/outer> {
     } and it does {
         create a particle in position<iface>.
         create a particle in position<iface>::action</inner>::position<trigger_pos>.
+        destroy the particle in position<trigger_pos>.
     }
 }

@@ -43,17 +43,17 @@ def test_caller_sees_requirement_when_interface_moved_to_local(
     assert all_diags[0].required_empty is True
     assert (
         all_diags[0].position_name
-        == "position<box>::action</outer>::position<iface>::action</inner>::position<item>"
+        == "position<box>::action</outer>::position<iface>::position</item>"
     )
     assert_propagation_chain(
         all_diags[0],
         {
             "kind": action_contract.PropagationKind.FILL_SITE,
-            "enclosing_quality_name": "position<box>::action</outer>::position<iface>::action</inner>::position<item>",
+            "enclosing_quality_name": "position<box>::action</outer>::position<iface>::position</item>",
             "triggered_quality_name": None,
-            "line": 7,
+            "line": 13,
             "column": 30,
-            "file_path": "inner.dfn",
+            "file_path": "test.dfn",
         },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
@@ -67,22 +67,21 @@ def test_caller_sees_requirement_when_interface_moved_to_local(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _OUTER,
             "triggered_quality_name": _INNER,
-            "line": 17,
-            "column": 30,
+            "line": 19,
+            "column": 49,
             "file_path": "outer.dfn",
         },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
-            "line": 7,
+            "line": 10,
             "column": 30,
             "file_path": "inner.dfn",
         },
     )
     assert action_graph_set(result.operation_graphs) == {
         (_OUTER, _INNER),
-        (_TEST, _INNER),
         (_TEST, _OUTER),
     }
 
@@ -155,15 +154,15 @@ def test_requirement_inferred_when_trigger_moved_to_local(
     assert diag.required_empty is True
     assert (
         diag.position_name
-        == "position<box>::action</outer>::position<trigger_pos>::action</inner>::position<extra>"
+        == "position<box>::action</outer>::position<trigger_pos>::position</extra_quality>"
     )
     assert_propagation_chain(
         diag,
         {
             "kind": action_contract.PropagationKind.FILL_SITE,
-            "enclosing_quality_name": "position<box>::action</outer>::position<trigger_pos>::action</inner>::position<extra>",
+            "enclosing_quality_name": "position<box>::action</outer>::position<trigger_pos>::position</extra_quality>",
             "triggered_quality_name": None,
-            "line": 28,
+            "line": 25,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -171,7 +170,7 @@ def test_requirement_inferred_when_trigger_moved_to_local(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OUTER,
-            "line": 32,
+            "line": 26,
             "column": 49,
             "file_path": "test.dfn",
         },
@@ -179,19 +178,18 @@ def test_requirement_inferred_when_trigger_moved_to_local(
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _OUTER,
             "triggered_quality_name": None,
-            "line": 16,
+            "line": 22,
             "column": 30,
             "file_path": "outer.dfn",
         },
     )
     assert isinstance(all_diags[1], diagnostics.UnreferencedPositionDiagnostic)
     assert all_diags[1].position_name == "position<extra>"
-    assert all_diags[1].location.line == 4
+    assert all_diags[1].location.line == 3
     assert all_diags[1].location.column == 25
     assert all_diags[1].location.file_path == PurePosixPath("inner.dfn")
     assert action_graph_set(result.operation_graphs) == {
         (_OUTER, _INNER),
-        (_TEST, _INNER),
         (_TEST, _OUTER),
     }
 
@@ -447,17 +445,17 @@ def test_caller_sees_requirement_when_implied_moved_to_interface(
     assert all_diags[0].required_empty is True
     assert (
         all_diags[0].position_name
-        == "position<box>::position</implied>::action</inner>::position<item>"
+        == "position<box>::position</implied>::position</item>"
     )
     assert_propagation_chain(
         all_diags[0],
         {
             "kind": action_contract.PropagationKind.FILL_SITE,
-            "enclosing_quality_name": "position<box>::position</implied>::action</inner>::position<item>",
+            "enclosing_quality_name": "position<box>::position</implied>::position</item>",
             "triggered_quality_name": None,
-            "line": 7,
+            "line": 14,
             "column": 30,
-            "file_path": "inner.dfn",
+            "file_path": "test.dfn",
         },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
@@ -471,22 +469,21 @@ def test_caller_sees_requirement_when_implied_moved_to_interface(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _OUTER,
             "triggered_quality_name": _INNER,
-            "line": 13,
-            "column": 30,
+            "line": 15,
+            "column": 49,
             "file_path": "outer.dfn",
         },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
-            "line": 7,
+            "line": 10,
             "column": 30,
             "file_path": "inner.dfn",
         },
     )
     assert action_graph_set(result.operation_graphs) == {
         (_OUTER, _INNER),
-        (_TEST, _INNER),
         (_TEST, _OUTER),
     }
 
@@ -731,17 +728,17 @@ def test_caller_sees_requirement_when_interface_moved_to_implied(
     assert all_diags[0].required_empty is True
     assert (
         all_diags[0].position_name
-        == "position<box>::action</outer>::position<iface>::action</inner>::position<item>"
+        == "position<box>::action</outer>::position<iface>::position</item>"
     )
     assert_propagation_chain(
         all_diags[0],
         {
             "kind": action_contract.PropagationKind.FILL_SITE,
-            "enclosing_quality_name": "position<box>::action</outer>::position<iface>::action</inner>::position<item>",
+            "enclosing_quality_name": "position<box>::action</outer>::position<iface>::position</item>",
             "triggered_quality_name": None,
-            "line": 7,
+            "line": 13,
             "column": 30,
-            "file_path": "inner.dfn",
+            "file_path": "test.dfn",
         },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
@@ -755,22 +752,21 @@ def test_caller_sees_requirement_when_interface_moved_to_implied(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _OUTER,
             "triggered_quality_name": _INNER,
-            "line": 13,
-            "column": 30,
+            "line": 19,
+            "column": 52,
             "file_path": "outer.dfn",
         },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": _INNER,
             "triggered_quality_name": None,
-            "line": 7,
+            "line": 10,
             "column": 30,
             "file_path": "inner.dfn",
         },
     )
     assert action_graph_set(result.operation_graphs) == {
         (_OUTER, _INNER),
-        (_TEST, _INNER),
         (_TEST, _OUTER),
     }
 

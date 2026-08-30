@@ -1,4 +1,5 @@
 define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</item>.
     define the position<box> {
         it may only contain particles where {
             it has the action</other>.
@@ -8,5 +9,6 @@ define the potential action<my.domain.com:my_lib:/test> {
         this particle is being destroyed.
     } and it does {
         create a particle in position<box>::action</other>::position<trigger_pos>.
+        move the particle in position<box>::action</other>::position<item> to position</item>.
     }
 }

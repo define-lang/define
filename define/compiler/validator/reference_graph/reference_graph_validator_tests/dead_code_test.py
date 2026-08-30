@@ -585,29 +585,46 @@ def test_action_on_occupied_interface_referenced_but_never_triggered_is_dead(
     result = validate_testdata_project_with_reference_graph()
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 1
+    assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
     assert all_diags[0].constraint_name == "action</worker>"
     assert all_diags[0].position_name == "position<box>"
     assert all_diags[0].location.line == 5
     assert all_diags[0].location.column == 24
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert isinstance(all_diags[1], diagnostics.UntriggeredActionInterfaceDiagnostic)
+    assert all_diags[1].action_name == "action</worker>"
+    assert (
+        all_diags[1].position_name == "position<box>::action</worker>::position<input>"
+    )
+    assert all_diags[1].location.line == 12
+    assert all_diags[1].location.column == 45
+    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert action_graph(result.operation_graphs) == []
 
 
-def test_move_from_inferred_action_interface_does_not_require_trigger(
+def test_move_from_empty_action_interface_does_not_mark_action_alive(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 1
+    assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
     assert all_diags[0].constraint_name == "action</worker>"
     assert all_diags[0].position_name == "position<box>"
     assert all_diags[0].location.line == 5
     assert all_diags[0].location.column == 24
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert isinstance(all_diags[1], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert (
+        all_diags[1].position_name == "position<box>::action</worker>::position<input>"
+    )
+    assert all_diags[1].is_action_interface_position is True
+    assert all_diags[1].inferred_at is None
+    assert all_diags[1].location.line == 12
+    assert all_diags[1].location.column == 30
+    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert action_graph(result.operation_graphs) == []
 
 
@@ -617,16 +634,28 @@ def test_transitive_action_interface_occupied_without_trigger_is_dead(
     result = validate_testdata_project_with_reference_graph()
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.UntriggeredActionInterfaceDiagnostic)
-    assert all_diags[0].action_name == "action</worker>"
+    assert len(all_diags) == 2
+    assert isinstance(
+        all_diags[0],
+        diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
+    )
+    assert all_diags[0].action_name == "action</middle>"
     assert (
         all_diags[0].position_name
         == "position<wrapper>::action</middle>::position<box>::action</worker>::position<input>"
     )
     assert all_diags[0].location.line == 12
-    assert all_diags[0].location.column == 81
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("runner.dfn")
+    assert isinstance(all_diags[1], diagnostics.UntriggeredActionInterfaceDiagnostic)
+    assert all_diags[1].action_name == "action</worker>"
+    assert (
+        all_diags[1].position_name
+        == "position<wrapper>::action</middle>::position<box>::action</worker>::position<input>"
+    )
+    assert all_diags[1].location.line == 12
+    assert all_diags[1].location.column == 81
+    assert all_diags[1].location.file_path == PurePosixPath("runner.dfn")
     assert action_graph(result.operation_graphs) == [
         (_MIDDLE, _WORKER),
         (_RUNNER, _MIDDLE),
@@ -651,19 +680,6 @@ def test_transitive_action_interface_particle_destroyed_before_trigger_is_dead(
     assert all_diags[0].location.file_path == PurePosixPath("runner.dfn")
     assert action_graph(result.operation_graphs) == [
         (_MIDDLE, _WORKER),
-        (_RUNNER, _MIDDLE),
-        (_TEST, _RUNNER),
-    ]
-
-
-def test_transitive_action_interface_occupied_then_triggered_is_alive(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
-):
-    result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [
-        (_MIDDLE, _WORKER),
-        (_RUNNER, _WORKER),
         (_RUNNER, _MIDDLE),
         (_TEST, _RUNNER),
     ]
@@ -715,13 +731,13 @@ def test_implied_action_referenced_but_never_triggered_is_dead(
     assert action_graph(result.operation_graphs) == []
 
 
-def test_implied_action_interface_parent_inferred_occupied_without_trigger_is_dead(
+def test_implied_action_interface_child_without_trigger_is_dead(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 2
+    assert len(all_diags) == 3
     assert isinstance(all_diags[0], diagnostics.UntriggeredImpliedActionDiagnostic)
     assert all_diags[0].implied_action_name == "action</worker>"
     assert all_diags[0].location.line == 2
@@ -729,16 +745,22 @@ def test_implied_action_interface_parent_inferred_occupied_without_trigger_is_de
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert isinstance(all_diags[1], diagnostics.UntriggeredActionInterfaceDiagnostic)
     assert all_diags[1].action_name == "action</worker>"
-    assert all_diags[1].position_name == (
-        "action</worker>::position<input>::position</child>"
-    )
+    assert all_diags[1].position_name == "action</worker>::position<input>"
     assert all_diags[1].location.line == 7
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert isinstance(all_diags[2], diagnostics.UntriggeredActionInterfaceDiagnostic)
+    assert all_diags[2].action_name == "action</worker>"
+    assert all_diags[2].position_name == (
+        "action</worker>::position<input>::position</child>"
+    )
+    assert all_diags[2].location.line == 8
+    assert all_diags[2].location.column == 30
+    assert all_diags[2].location.file_path == PurePosixPath("test.dfn")
     assert action_graph(result.operation_graphs) == []
 
 
-def test_implied_action_interface_parent_inferred_occupied_then_triggered_is_alive(
+def test_implied_action_interface_child_then_triggered_is_alive(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -805,12 +827,18 @@ def test_nested_trigger_marks_only_final_implied_action_alive(
     result = validate_testdata_project_with_reference_graph()
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 1
+    assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.UntriggeredImpliedActionDiagnostic)
     assert all_diags[0].implied_action_name == "action</runner>"
     assert all_diags[0].location.line == 2
     assert all_diags[0].location.column == 25
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert isinstance(all_diags[1], diagnostics.UntriggeredActionInterfaceDiagnostic)
+    assert all_diags[1].action_name == "action</runner>"
+    assert all_diags[1].position_name == "action</runner>::position<iface>"
+    assert all_diags[1].location.line == 7
+    assert all_diags[1].location.column == 30
+    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert action_graph(result.operation_graphs) == [
         (_RUNNER, _WORKER),
         (_TEST, _WORKER),
@@ -823,24 +851,26 @@ def test_nested_non_trigger_marks_no_implied_action_alive(
     result = validate_testdata_project_with_reference_graph()
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 2
-    runner_diagnostic = all_diags[0]
-    assert isinstance(runner_diagnostic, diagnostics.UntriggeredImpliedActionDiagnostic)
-    assert runner_diagnostic.implied_action_name == "action</runner>"
-    assert runner_diagnostic.location.line == 2
-    assert runner_diagnostic.location.column == 25
-    assert runner_diagnostic.location.file_path == PurePosixPath("test.dfn")
-    worker_diagnostic = all_diags[1]
-    assert isinstance(
-        worker_diagnostic, diagnostics.UntriggeredActionInterfaceDiagnostic
-    )
-    assert worker_diagnostic.action_name == "action</worker>"
-    assert worker_diagnostic.position_name == (
+    assert len(all_diags) == 3
+    assert isinstance(all_diags[0], diagnostics.UntriggeredImpliedActionDiagnostic)
+    assert all_diags[0].implied_action_name == "action</runner>"
+    assert all_diags[0].location.line == 2
+    assert all_diags[0].location.column == 25
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert isinstance(all_diags[1], diagnostics.UntriggeredActionInterfaceDiagnostic)
+    assert all_diags[1].action_name == "action</runner>"
+    assert all_diags[1].position_name == "action</runner>::position<iface>"
+    assert all_diags[1].location.line == 7
+    assert all_diags[1].location.column == 30
+    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert isinstance(all_diags[2], diagnostics.UntriggeredActionInterfaceDiagnostic)
+    assert all_diags[2].action_name == "action</worker>"
+    assert all_diags[2].position_name == (
         "action</runner>::position<iface>::action</worker>::position<non_trigger>"
     )
-    assert worker_diagnostic.location.line == 7
-    assert worker_diagnostic.location.column == 64
-    assert worker_diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[2].location.line == 8
+    assert all_diags[2].location.column == 64
+    assert all_diags[2].location.file_path == PurePosixPath("test.dfn")
     assert action_graph(result.operation_graphs) == [(_RUNNER, _WORKER)]
 
 

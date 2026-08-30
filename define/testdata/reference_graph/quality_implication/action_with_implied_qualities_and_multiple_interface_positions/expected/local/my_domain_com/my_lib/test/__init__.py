@@ -44,6 +44,7 @@ class TestExecution:
         self.execution_trigger_action_runner: local.my_domain_com.my_lib.runner.RunnerExecution
         self.join_for_trigger_action_runner__when_empty_position_input_a__global_position_quality_a = self.scheduler.create_join(2)
         self.join_for_trigger_action_runner__when_empty_position_input_b__global_position_quality_b = self.scheduler.create_join(2)
+        self.join_for_trigger_action_runner__for_empty_rule_position_run = self.scheduler.create_join(2)
 
     def create_action_runner__position_input_a(self):
         self.action.on_particle.get_action(
@@ -74,11 +75,13 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_action_runner,
         )
+        self.scheduler.submit(self.trigger_action_runner__for_empty_rule_position_run)
         self.scheduler.submit(self.trigger_action_runner__when_empty_global_position_marker)
         self.scheduler.submit(self.trigger_action_runner__when_empty_position_input_a__global_position_quality_a)
         self.scheduler.submit(self.trigger_action_runner__when_empty_position_input_b__global_position_quality_b)
         self.scheduler.submit(self.trigger_action_runner__for_empty_rule_position_input_a)
-        self.trigger_action_runner__for_empty_rule_position_input_b()
+        self.scheduler.submit(self.trigger_action_runner__for_empty_rule_position_input_b)
+        self.trigger_action_runner__for_empty_rule_position_run()
 
     def trigger_action_runner__when_empty_global_position_marker(self):
         self.execution_trigger_action_runner.accept_when_empty_global_position_marker()
@@ -98,3 +101,8 @@ class TestExecution:
 
     def trigger_action_runner__for_empty_rule_position_input_b(self):
         self.execution_trigger_action_runner.accept_for_empty_rule_position_input_b()
+
+    def trigger_action_runner__for_empty_rule_position_run(self):
+        if not self.join_for_trigger_action_runner__for_empty_rule_position_run.arrive():
+            return
+        self.execution_trigger_action_runner.accept_for_empty_rule_position_run()

@@ -104,46 +104,6 @@ def test_move_from_trigger_position_to_itself_does_not_retrigger(
     assert action_graph(result.operation_graphs) == [(_TEST, _OTHER)]
 
 
-def test_assumed_occupied_trigger_position_does_not_fire_the_action(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
-):
-    result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
-    assert action_graph(result.operation_graphs) == []
-    all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 3
-    untriggered = all_diags[0]
-    assert isinstance(untriggered, diagnostics.UntriggeredActionDiagnostic)
-    assert untriggered.constraint_name == "action</inner>"
-    assert untriggered.position_name == "position<box>"
-    assert untriggered.location.line == 8
-    assert untriggered.location.column == 24
-    assert untriggered.location.end_line == 8
-    assert untriggered.location.end_column == 38
-    assert untriggered.location.file_path == PurePosixPath("test.dfn")
-    untriggered_child = all_diags[1]
-    assert isinstance(
-        untriggered_child, diagnostics.UntriggeredActionInterfaceDiagnostic
-    )
-    assert untriggered_child.action_name == "action</inner>"
-    assert (
-        untriggered_child.position_name
-        == "position<box>::action</inner>::position<run>::position</a>"
-    )
-    assert untriggered_child.location.line == 14
-    assert untriggered_child.location.column == 45
-    assert untriggered_child.location.file_path == PurePosixPath("test.dfn")
-    dead_child = all_diags[2]
-    assert isinstance(dead_child, diagnostics.DeadChildPositionDiagnostic)
-    assert dead_child.constraint_name == "position</a>"
-    assert dead_child.position_name == "position<run>"
-    assert dead_child.location.line == 4
-    assert dead_child.location.column == 24
-    assert dead_child.location.end_line == 4
-    assert dead_child.location.end_column == 36
-    assert dead_child.location.file_path == PurePosixPath("inner.dfn")
-
-
 def test_cross_file_triggering(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):

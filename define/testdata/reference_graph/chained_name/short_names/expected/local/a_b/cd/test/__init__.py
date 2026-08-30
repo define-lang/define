@@ -18,8 +18,15 @@ class Test(literal.EntryPoint):
         execution = TestExecution(
             self,
             scheduler,
+            TestGuarantees(),
         )
         execution.create_global_position_a()
+
+
+@final
+class TestGuarantees:
+    def __init__(self):
+        self.trigger_global_position_a__action_b = local.a_b.cd.b.BGuarantees()
 
 
 @final
@@ -28,11 +35,14 @@ class TestExecution:
         self,
         action: Test,
         scheduler: literal.Scheduler,
+        guarantees: TestGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
+        self.guarantees = guarantees
         self.execution_trigger_global_position_a__action_b: local.a_b.cd.b.BExecution
         self.join_for_trigger_global_position_a__action_b__action_parent = self.scheduler.create_join(2)
+        self.join_for_trigger_global_position_a__action_b__for_empty_rule_position_t = self.scheduler.create_join(2)
 
     def create_global_position_a(self):
         self.action.on_particle.get_position(
@@ -50,11 +60,24 @@ class TestExecution:
             "position<t>"
         ).create_particle()
         self.execution_trigger_global_position_a__action_b = local.a_b.cd.b.BExecution(
+            self.action.on_particle.get_position(
+                local.a_b.cd.a.A
+            ).particle.get_action(
+                local.a_b.cd.b.B
+            ),
             self.scheduler,
+            self.guarantees.trigger_global_position_a__action_b,
         )
-        self.trigger_global_position_a__action_b__action_parent()
+        self.scheduler.submit(self.trigger_global_position_a__action_b__for_empty_rule_position_t)
+        self.scheduler.submit(self.trigger_global_position_a__action_b__action_parent)
+        self.trigger_global_position_a__action_b__for_empty_rule_position_t()
 
     def trigger_global_position_a__action_b__action_parent(self):
         if not self.join_for_trigger_global_position_a__action_b__action_parent.arrive():
             return
         self.execution_trigger_global_position_a__action_b.accept_action_parent()
+
+    def trigger_global_position_a__action_b__for_empty_rule_position_t(self):
+        if not self.join_for_trigger_global_position_a__action_b__for_empty_rule_position_t.arrive():
+            return
+        self.execution_trigger_global_position_a__action_b.accept_for_empty_rule_position_t()

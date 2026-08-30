@@ -5,6 +5,7 @@ define the potential action<my.domain.com:my_lib:/worker> {
     it happens when {
         the position<run> has a particle.
     } and it does {
+        move the particle in position<input> to position<result>.
         destroy the particle in position<run>.
     }
 }

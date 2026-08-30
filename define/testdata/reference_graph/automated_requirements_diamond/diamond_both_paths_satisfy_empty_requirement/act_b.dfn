@@ -16,5 +16,6 @@ define the potential action<my.domain.com:my_lib:/act_b> {
         create a particle in position<shared_holder>.
         move the particle in position<gateway> to position<shared_holder>::action</shared>::position<item>.
         create a particle in position<shared_holder>::action</shared>::position<trigger_pos>.
+        destroy the particle in position<pp>.
     }
 }

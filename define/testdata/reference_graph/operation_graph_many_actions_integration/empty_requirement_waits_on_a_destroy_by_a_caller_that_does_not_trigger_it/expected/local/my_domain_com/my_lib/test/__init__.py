@@ -64,17 +64,21 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_action_outer,
         )
+        self.scheduler.submit(self.destroy_action_outer__position_trigger_pos)
         self.scheduler.submit(self.trigger_action_outer__for_empty_rule_global_position_slot)
-        self.scheduler.submit(self.trigger_action_outer__when_empty_action_middle__position_trigger_pos)
-        self.trigger_action_outer__when_empty_action_inner__position_trigger_pos()
+        self.trigger_action_outer__action_parent()
+
+    def destroy_action_outer__position_trigger_pos(self):
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.outer.Outer
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
 
     def trigger_action_outer__for_empty_rule_global_position_slot(self):
         if not self.join_for_trigger_action_outer__for_empty_rule_global_position_slot.arrive():
             return
         self.execution_trigger_action_outer.accept_for_empty_rule_global_position_slot()
 
-    def trigger_action_outer__when_empty_action_middle__position_trigger_pos(self):
-        self.execution_trigger_action_outer.accept_when_empty_action_middle__position_trigger_pos()
-
-    def trigger_action_outer__when_empty_action_inner__position_trigger_pos(self):
-        self.execution_trigger_action_outer.accept_when_empty_action_inner__position_trigger_pos()
+    def trigger_action_outer__action_parent(self):
+        self.execution_trigger_action_outer.accept_action_parent()

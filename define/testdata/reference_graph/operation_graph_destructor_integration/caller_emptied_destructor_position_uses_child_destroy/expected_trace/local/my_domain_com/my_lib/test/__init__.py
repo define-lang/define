@@ -156,9 +156,24 @@ class TestExecution:
             "callee",
             self.guarantees.trigger_position_carrier__action_callee,
         )
+        self.scheduler.submit(self.destroy_position_carrier__action_callee__position_trigger_pos)
         self.scheduler.submit(self.trigger_position_carrier__action_callee__when_empty_position_src__global_position_marker)
         self.scheduler.submit(self.trigger_position_carrier__action_callee__for_empty_rule_position_src)
         self.trigger_position_carrier__action_callee__when_occupied_position_src()
+
+    def destroy_position_carrier__action_callee__position_trigger_pos(self):
+        self.action.get_interface_position(
+            "position<carrier>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.callee.Callee
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
+        self.scheduler.destroy_completed(
+            self.trace_execution,
+            "carrier::/callee::trigger_pos",
+            1,
+        )
 
     def trigger_position_carrier__action_callee__when_empty_position_src__global_position_marker(self):
         if not self.join_for_trigger_position_carrier__action_callee__when_empty_position_src__global_position_marker.arrive():

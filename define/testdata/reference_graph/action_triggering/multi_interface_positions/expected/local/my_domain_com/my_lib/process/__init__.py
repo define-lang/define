@@ -32,6 +32,7 @@ class ProcessGuarantees:
     def __init__(self):
         self.guarantee_position_input: list[literal.Task] = []
         self.guarantee_position_config: list[literal.Task] = []
+        self.guarantee_position_trigger: list[literal.Task] = []
 
 
 @final
@@ -62,6 +63,9 @@ class ProcessExecution:
     def accept_when_empty_position_config(self):
         self.create_position_config()
 
+    def accept_for_empty_rule_position_trigger(self):
+        self.destroy_position_trigger()
+
     def create_position_result(self):
         self.local_position_result.create_particle()
         self.local_position_result.destroy_particle()
@@ -79,4 +83,16 @@ class ProcessExecution:
         self.action.get_interface_position(
             "position<config>"
         ).create_particle()
+        self.action.get_interface_position(
+            "position<config>"
+        ).destroy_particle()
         self.scheduler.continue_with(self.guarantees.guarantee_position_config)
+
+    def destroy_position_trigger(self):
+        literal.continue_destruction(self.continue_destroy_position_trigger)
+
+    def continue_destroy_position_trigger(self):
+        self.action.get_interface_position(
+            "position<trigger>"
+        ).destroy_particle()
+        self.scheduler.continue_with(self.guarantees.guarantee_position_trigger)

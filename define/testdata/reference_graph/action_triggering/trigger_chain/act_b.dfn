@@ -10,5 +10,7 @@ define the potential action<my.domain.com:my_lib:/act_b> {
     } and it does {
         create a particle in position<gateway>.
         create a particle in position<gateway>::action</act_c>::position<trigger_c>.
+        destroy the particle in position<gateway>.
+        destroy the particle in position<trigger_b>.
     }
 }

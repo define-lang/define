@@ -10,5 +10,7 @@ define the potential action<my.domain.com:my_lib:/consume_chain> {
     } and it does {
         destroy the particle in position<input>::position</prepared_input>::position</parent_marker>.
         destroy the particle in position<input>::position</prepared_input>::position</child>::position</child_marker>.
+        destroy the particle in position<input>.
+        destroy the particle in position<trigger_pos>.
     }
 }

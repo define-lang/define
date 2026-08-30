@@ -20,5 +20,6 @@ define the potential action<my.domain.com:my_lib:/test> {
         create a particle in position<mw>::action</middle>::position<iface>.
         create a particle in position<mw>::action</middle>::position<iface>::position</parent>.
         create a particle in position<mw>::action</middle>::position<run>.
+        destroy the particle in position<mw>::action</middle>::position<run>.
     }
 }

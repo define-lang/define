@@ -109,14 +109,21 @@ class StrictReparentingTrie[V]:
         if not siblings:
             del self._children[parent]
 
-    def __delitem__(self, key: TrieKey):
-        """Remove key and all descendants. Raises KeyError if missing."""
+    def delete_subtree(
+        self,
+        key: TrieKey,
+        *,
+        removed_value_callback: Callable[[V], None] | None = None,
+    ):
+        """Remove a key and its descendants, optionally observing removed values."""
         if not key:
             raise EmptyKeyError("key must not be empty")
         if key not in self._values:
             raise KeyError(key)
         for node in self._collect_subtree(key):
-            del self._values[node]
+            value = self._values.pop(node)
+            if removed_value_callback is not None:
+                removed_value_callback(value)
             _ = self._children.pop(node, None)
         self._unlink_from_parent(key)
 
@@ -125,7 +132,7 @@ class StrictReparentingTrie[V]:
         source: TrieKey,
         target: TrieKey,
         *,
-        moved_value_callback: Callable[[V], None] | None = None,
+        moved_value_callback: Callable[[TrieKey, V], None] | None = None,
     ):
         """Detach the subtree at source and reattach it at target.
 
@@ -169,8 +176,8 @@ class StrictReparentingTrie[V]:
         self._unlink_from_parent(source)
         self._children.setdefault(target[:-1], set()).add(target)
         if moved_value_callback is not None:
-            for _, value, _ in moved:
-                moved_value_callback(value)
+            for new, value, _ in moved:
+                moved_value_callback(new, value)
 
     def pop_subtree(self, key: TrieKey) -> StrictReparentingTrie[V]:
         """Detach the subtree at key and return it as a new trie.
@@ -224,7 +231,12 @@ class StrictReparentingTrie[V]:
         return result
 
     def restore_subtree(
-        self, target: TrieKey, subtree: StrictReparentingTrie[V], root_value: V
+        self,
+        target: TrieKey,
+        subtree: StrictReparentingTrie[V],
+        root_value: V,
+        *,
+        restored_value_callback: Callable[[TrieKey, V], None] | None = None,
     ):
         """Consume a popped subtree and restore it at target with a new root value.
 
@@ -248,6 +260,8 @@ class StrictReparentingTrie[V]:
         self._values[target] = root_value
         if not subtree_values:
             self._children.setdefault(target[:-1], set()).add(target)
+            if restored_value_callback is not None:
+                restored_value_callback(target, root_value)
             return
 
         # Flat dictionary passes avoid the traversal bookkeeping that synthetic
@@ -263,10 +277,21 @@ class StrictReparentingTrie[V]:
         for old, old_children in subtree_children.items():
             self._children[new_keys[old]] = {new_keys[child] for child in old_children}
         self._children.setdefault(target[:-1], set()).add(target)
+        if restored_value_callback is not None:
+            restored_value_callback(target, root_value)
+            for old, value in subtree_values.items():
+                restored_value_callback(new_keys[old], value)
 
     def items(self) -> ItemsView[TrieKey, V]:
         """Yield all (key, value) pairs in the trie."""
         return self._values.items()
+
+    def direct_child_items(self, key: TrieKey) -> Iterator[tuple[TrieKey, V]]:
+        """Yield each direct child's full key and value in key order."""
+        if not key:
+            raise EmptyKeyError("key must not be empty")
+        for child in sorted(self._children.get(key, ())):
+            yield child, self._values[child]
 
     def subtree_items(self, key: TrieKey) -> list[tuple[TrieKey, V]]:
         """Return (relative_key, value) for every descendant of key.

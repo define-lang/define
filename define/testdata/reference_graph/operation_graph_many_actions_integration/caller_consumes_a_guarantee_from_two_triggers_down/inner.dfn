@@ -1,9 +1,9 @@
 define the potential action<my.domain.com:my_lib:/inner> {
+    it also assigns the position</inner_result>.
     define the position<trigger_pos>.
-    define the position<out>.
     it happens when {
         the position<trigger_pos> has a particle.
     } and it does {
-        create a particle in position<out>.
+        create a particle in position</inner_result>.
     }
 }

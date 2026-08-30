@@ -10,5 +10,6 @@ define the potential action<my.domain.com:my_lib:/inner> {
     } and it does {
         destroy the particle in position<input>::position</child>.
         destroy the particle in position<input>.
+        destroy the particle in position<run>.
     }
 }

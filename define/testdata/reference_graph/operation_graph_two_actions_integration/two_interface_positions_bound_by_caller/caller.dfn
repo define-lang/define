@@ -17,9 +17,14 @@ define the potential action<my.domain.com:my_lib:/caller> {
         create a particle in position<first_gateway>::action</worker>::position<second>.
         create a particle in position<first_gateway>::action</worker>::position<third>.
         create a particle in position<first_gateway>::action</worker>::position<first>.
+        destroy the particle in position<first_gateway>::action</worker>::position<first>.
         create a particle in position<second_gateway>.
         create a particle in position<second_gateway>::action</worker>::position<second>.
         create a particle in position<second_gateway>::action</worker>::position<third>.
         create a particle in position<second_gateway>::action</worker>::position<first>.
+        destroy the particle in position<second_gateway>::action</worker>::position<first>.
+        destroy the particle in position<first_gateway>.
+        destroy the particle in position<second_gateway>.
+        destroy the particle in position<run>.
     }
 }

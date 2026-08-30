@@ -25,12 +25,23 @@ def test_binding_hole_fans_out_to_multiple_fragments_and_multiple_callee_binding
         "middle.destroy(first)": ["middle.create(first)"],
         "middle.create(second)": ["test.create(gateway)"],
         "middle.destroy(second)": ["middle.create(second)"],
+        # The one caller fill supplies the Action Parent for both local
+        # operation fragments and both independently triggered child actions.
         "middle.create(/child_a::trigger_pos)": ["test.create(gateway)"],
         "child_a.create(scratch)": ["test.create(gateway)"],
         "child_a.destroy(scratch)": ["child_a.create(scratch)"],
         "middle.create(/child_b::trigger_pos)": ["test.create(gateway)"],
         "child_b.create(scratch)": ["test.create(gateway)"],
         "child_b.destroy(scratch)": ["child_b.create(scratch)"],
+        "middle.destroy(/child_a::trigger_pos)": [
+            "middle.create(/child_a::trigger_pos)"
+        ],
+        "middle.destroy(/child_b::trigger_pos)": [
+            "middle.create(/child_b::trigger_pos)"
+        ],
+        "test.destroy(gateway::/middle::trigger_pos)": [
+            "test.create(gateway::/middle::trigger_pos)"
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -43,6 +54,8 @@ def test_binding_hole_fans_out_to_local_operation_and_multiple_callee_bindings(
     expected = {
         "test.create(/shared)": [],
         "test.create(/middle::trigger_pos)": [],
+        # The caller's fill of the shared implied position is the common
+        # dependency of Middle's local operation and both child actions.
         "middle.create(/shared::/marker)": ["test.create(/shared)"],
         "middle.create(/shared::/child_a::trigger_pos)": ["test.create(/shared)"],
         "middle.create(/shared::/child_b::trigger_pos)": ["test.create(/shared)"],
@@ -50,6 +63,13 @@ def test_binding_hole_fans_out_to_local_operation_and_multiple_callee_bindings(
         "child_a.destroy(scratch)": ["child_a.create(scratch)"],
         "child_b.create(scratch)": ["test.create(/shared)"],
         "child_b.destroy(scratch)": ["child_b.create(scratch)"],
+        "middle.destroy(/shared::/child_a::trigger_pos)": [
+            "middle.create(/shared::/child_a::trigger_pos)"
+        ],
+        "middle.destroy(/shared::/child_b::trigger_pos)": [
+            "middle.create(/shared::/child_b::trigger_pos)"
+        ],
+        "test.destroy(/middle::trigger_pos)": ["test.create(/middle::trigger_pos)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -87,7 +107,14 @@ def test_action_execution_and_empty_rule_use_the_same_position(
         ],
         "child.create(scratch)": ["test.create(gateway::/middle::source)"],
         "child.destroy(scratch)": ["child.create(scratch)"],
+        # The trigger placed on the source particle is both what runs Child and
+        # the final operation Middle must wait for before emptying source.
         "middle.move(source, holder)": ["middle.create(source::/child::trigger_pos)"],
+        "middle.destroy(holder::/child::trigger_pos)": ["middle.move(source, holder)"],
+        "test.destroy(gateway::/middle::holder)": ["middle.move(source, holder)"],
+        "test.destroy(gateway::/middle::trigger_pos)": [
+            "test.create(gateway::/middle::trigger_pos)"
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -109,9 +136,17 @@ def test_empty_rule_adds_a_caller_child_operation_to_a_move(
         ],
         "child.create(scratch)": ["test.create(gateway::/middle::source)"],
         "child.destroy(scratch)": ["child.create(scratch)"],
+        "child.destroy(trigger_pos)": ["middle.create(source::/child::trigger_pos)"],
+        # Middle's Move waits on both the child-action operation and the
+        # caller's independent fill of the marker child.
         "middle.move(source, holder)": [
-            "middle.create(source::/child::trigger_pos)",
+            "child.destroy(trigger_pos)",
             "test.create(gateway::/middle::source::/marker)",
+        ],
+        "middle.destroy(holder::/marker)": ["middle.move(source, holder)"],
+        "middle.destroy(holder)": ["middle.destroy(holder::/marker)"],
+        "test.destroy(gateway::/middle::trigger_pos)": [
+            "test.create(gateway::/middle::trigger_pos)"
         ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
@@ -132,14 +167,27 @@ def test_caller_consumes_a_child_guarantee_after_an_empty_rule_move(
         "middle.create(source::/child::trigger_pos)": [
             "test.create(gateway::/middle::source)"
         ],
-        "child.create(result)": ["test.create(gateway::/middle::source)"],
+        "child.create(/result)": ["test.create(gateway::/middle::source)"],
+        # Child's implied-position guarantee and the independent marker fill
+        # both precede the Move that changes their parent name.
         "middle.move(source, holder)": [
             "middle.create(source::/child::trigger_pos)",
-            "child.create(result)",
+            "child.create(/result)",
             "test.create(gateway::/middle::source::/marker)",
         ],
-        "test.move(gateway::/middle::holder::/child::result, result)": [
+        "middle.destroy(holder::/child::trigger_pos)": ["middle.move(source, holder)"],
+        "test.move(gateway::/middle::holder::/result, result)": [
             "middle.move(source, holder)"
+        ],
+        "test.destroy(gateway::/middle::holder::/marker)": [
+            "middle.move(source, holder)"
+        ],
+        "test.destroy(gateway::/middle::holder)": [
+            "test.move(gateway::/middle::holder::/result, result)",
+            "test.destroy(gateway::/middle::holder::/marker)",
+        ],
+        "test.destroy(gateway::/middle::trigger_pos)": [
+            "test.create(gateway::/middle::trigger_pos)"
         ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
@@ -183,6 +231,9 @@ def test_moved_particle_requirement_does_not_affect_replacement_at_origin(
         "middle.create(source::/item)": ["middle.create(source)"],
         "middle.destroy(source::/item)": ["middle.create(source::/item)"],
         "middle.destroy(source)": ["middle.destroy(source::/item)"],
+        "test.destroy(gateway::/middle::trigger_pos)": [
+            "test.create(gateway::/middle::trigger_pos)"
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -215,6 +266,19 @@ def test_middle_child_operation_reaches_inner_move_and_destroy(
             "middle.create(gateway::/inner::source::/child)"
         ],
         "inner.destroy(destination::/child)": ["inner.move(source, destination)"],
+        "middle.destroy(gateway::/inner::destination)": [
+            "inner.destroy(destination::/child)"
+        ],
+        "middle.destroy(gateway::/inner::trigger_pos)": [
+            "middle.create(gateway::/inner::trigger_pos)"
+        ],
+        "middle.destroy(gateway)": [
+            "middle.destroy(gateway::/inner::destination)",
+            "middle.destroy(gateway::/inner::trigger_pos)",
+        ],
+        "test.destroy(box::/middle::trigger_pos)": [
+            "test.create(box::/middle::trigger_pos)"
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -234,15 +298,30 @@ def test_caller_consumes_a_child_guarantee_after_two_action_parent_moves(
         "middle.create(source::/child::trigger_pos)": [
             "test.create(gateway::/middle::source)"
         ],
-        "child.create(result)": ["test.create(gateway::/middle::source)"],
+        "child.create(/result)": ["test.create(gateway::/middle::source)"],
+        # Child's guarantee and the marker fill stay attached to the particle
+        # through both of Middle's Moves.
         "middle.move(source, intermediate)": [
             "middle.create(source::/child::trigger_pos)",
-            "child.create(result)",
+            "child.create(/result)",
             "test.create(gateway::/middle::source::/marker)",
         ],
         "middle.move(intermediate, holder)": ["middle.move(source, intermediate)"],
-        "test.move(gateway::/middle::holder::/child::result, result)": [
+        "middle.destroy(holder::/child::trigger_pos)": [
             "middle.move(intermediate, holder)"
+        ],
+        "test.move(gateway::/middle::holder::/result, result)": [
+            "middle.move(intermediate, holder)"
+        ],
+        "test.destroy(gateway::/middle::holder::/marker)": [
+            "middle.move(intermediate, holder)"
+        ],
+        "test.destroy(gateway::/middle::holder)": [
+            "test.move(gateway::/middle::holder::/result, result)",
+            "test.destroy(gateway::/middle::holder::/marker)",
+        ],
+        "test.destroy(gateway::/middle::trigger_pos)": [
+            "test.create(gateway::/middle::trigger_pos)"
         ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
@@ -265,14 +344,27 @@ def test_child_guarantee_with_distinct_occupied_action_parent_and_empty_rule_bin
         ],
         "child.create(scratch)": ["test.create(gateway::/middle::source)"],
         "child.destroy(scratch)": ["child.create(scratch)"],
-        "child.create(result)": ["test.create(gateway::/middle::source)"],
+        "child.create(/result)": ["test.create(gateway::/middle::source)"],
+        # The child action's independent local operation and its guarantee use
+        # the occupied parent, while Middle's Move also retains the marker fill.
         "middle.move(source, holder)": [
             "middle.create(source::/child::trigger_pos)",
-            "child.create(result)",
+            "child.create(/result)",
             "test.create(gateway::/middle::source::/marker)",
         ],
-        "test.move(gateway::/middle::holder::/child::result, result)": [
+        "middle.destroy(holder::/child::trigger_pos)": ["middle.move(source, holder)"],
+        "test.move(gateway::/middle::holder::/result, result)": [
             "middle.move(source, holder)"
+        ],
+        "test.destroy(gateway::/middle::holder::/marker)": [
+            "middle.move(source, holder)"
+        ],
+        "test.destroy(gateway::/middle::holder)": [
+            "test.move(gateway::/middle::holder::/result, result)",
+            "test.destroy(gateway::/middle::holder::/marker)",
+        ],
+        "test.destroy(gateway::/middle::trigger_pos)": [
+            "test.create(gateway::/middle::trigger_pos)"
         ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
@@ -298,10 +390,14 @@ def test_actions_with_identically_named_child_actions_have_distinct_instances(
             "second.create(box::/inner::trigger_pos)"
         ],
         "second.destroy(box)": ["second.destroy(box::/inner::trigger_pos)"],
+        # The two identically named Inner actions remain distinct because their
+        # dependencies resolve through different parent-action particles.
         "first:inner.create(scratch)": ["first.create(box)"],
         "first:inner.destroy(scratch)": ["first:inner.create(scratch)"],
         "second:inner.create(scratch)": ["second.create(box)"],
         "second:inner.destroy(scratch)": ["second:inner.create(scratch)"],
+        "test.destroy(/first::trigger_pos)": ["test.create(/first::trigger_pos)"],
+        "test.destroy(/second::trigger_pos)": ["test.create(/second::trigger_pos)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -323,6 +419,16 @@ def test_occupied_requirement_two_levels_up_waits_on_the_caller_create(
         # The inner Destroy waits for the particle created two Action Executions
         # earlier to be moved into its interface position.
         "inner.destroy(slot)": ["middle.move(gw::/value, gw::/inner::slot)"],
+        "middle.destroy(gw::/inner::trigger_pos)": [
+            "middle.create(gw::/inner::trigger_pos)"
+        ],
+        "middle.destroy(gw)": [
+            "middle.destroy(gw::/inner::trigger_pos)",
+            "inner.destroy(slot)",
+        ],
+        "test.destroy(box::/middle::trigger_pos)": [
+            "test.create(box::/middle::trigger_pos)"
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -348,6 +454,16 @@ def test_occupied_requirement_two_levels_up_waits_on_the_caller_move(
         # The inner Destroy waits for the particle moved two Action Executions
         # earlier to be moved into its interface position.
         "inner.destroy(slot)": ["middle.move(gw::/value, gw::/inner::slot)"],
+        "middle.destroy(gw::/inner::trigger_pos)": [
+            "middle.create(gw::/inner::trigger_pos)"
+        ],
+        "middle.destroy(gw)": [
+            "middle.destroy(gw::/inner::trigger_pos)",
+            "inner.destroy(slot)",
+        ],
+        "test.destroy(box::/middle::trigger_pos)": [
+            "test.create(box::/middle::trigger_pos)"
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -366,9 +482,13 @@ def test_empty_rule_propagates_an_intermediate_move_on_a_child_position(
             "test.create(/destination)",
         ],
         "middle.create(/inner::trigger_pos)": [],
+        # Inner's Move waits on Middle's operation on a child of the implied
+        # input position, even though the dependency crosses both actions.
         "inner.move(/input, /destination)": [
             "middle.move(/destination, /input::/marker)"
         ],
+        "middle.destroy(/inner::trigger_pos)": ["middle.create(/inner::trigger_pos)"],
+        "test.destroy(/middle::trigger_pos)": ["test.create(/middle::trigger_pos)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -406,6 +526,12 @@ def test_caller_empty_rule_move_excludes_reachable_child_move_after_two_substitu
             "test.move(/input::/target, holder_c)",
         ],
         "inner.destroy(holder)": ["inner.move(/input, holder)"],
+        "middle_action.destroy(/inner::trigger_pos)": [
+            "middle_action.create(/inner::trigger_pos)"
+        ],
+        "test.destroy(/middle_action::trigger_pos)": [
+            "test.create(/middle_action::trigger_pos)"
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -432,6 +558,12 @@ def test_caller_empty_rule_preserves_indirect_caller_move_through_intermediate_a
         # through the particle in the separate intermediate position. This is
         # still unresolved while the Empty Rule passes through middle_action.
         "inner.destroy(/input)": ["inner.move(/input::/b, /intermediate)"],
+        "middle_action.destroy(/inner::trigger_pos)": [
+            "middle_action.create(/inner::trigger_pos)"
+        ],
+        "test.destroy(/middle_action::trigger_pos)": [
+            "test.create(/middle_action::trigger_pos)"
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -454,11 +586,19 @@ def test_empty_requirement_waits_on_the_intermediate_callee_destroy_that_clears_
         # action has explicitly emptied it.
         "inner#2.create(slot)": ["middle.destroy(gw::/inner::slot)"],
         "inner#2.destroy(trigger_pos)": ["middle.create(gw::/inner::trigger_pos)#2"],
+        "middle.destroy(gw::/inner::slot)#2": ["inner#2.create(slot)"],
+        "middle.destroy(gw)": [
+            "middle.destroy(gw::/inner::slot)#2",
+            "inner#2.destroy(trigger_pos)",
+        ],
+        "test.destroy(box::/middle::trigger_pos)": [
+            "test.create(box::/middle::trigger_pos)"
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
-def test_empty_requirement_waits_on_the_intermediate_callee_destroy_of_an_interface_child(
+def test_empty_requirement_waits_on_the_intermediate_callee_destroy_of_an_implied_position_child(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -471,16 +611,24 @@ def test_empty_requirement_waits_on_the_intermediate_callee_destroy_of_an_interf
             "test.create(box::/middle::gw::/holder)"
         ],
         "test.create(box::/middle::trigger_pos)": ["test.create(box)"],
-        "middle.move(gw::/holder, gw::/inner::holder)": [
+        "middle.destroy(gw::/holder::/a)": [
             "test.create(box::/middle::gw::/holder::/a)"
-        ],
-        "middle.destroy(gw::/inner::holder::/a)": [
-            "middle.move(gw::/holder, gw::/inner::holder)"
         ],
         "middle.create(gw::/inner::trigger_pos)": ["test.create(box::/middle::gw)"],
         # The inner action cannot fill the child until the intermediate action
         # has explicitly emptied it.
-        "inner.create(holder::/a)": ["middle.destroy(gw::/inner::holder::/a)"],
+        "inner.create(/holder::/a)": ["middle.destroy(gw::/holder::/a)"],
+        "middle.destroy(gw::/inner::trigger_pos)": [
+            "middle.create(gw::/inner::trigger_pos)"
+        ],
+        "test.destroy(box::/middle::gw::/holder::/a)": ["inner.create(/holder::/a)"],
+        "test.destroy(box::/middle::gw::/holder)": [
+            "test.destroy(box::/middle::gw::/holder::/a)"
+        ],
+        "test.destroy(box::/middle::gw)": ["test.destroy(box::/middle::gw::/holder)"],
+        "test.destroy(box::/middle::trigger_pos)": [
+            "test.create(box::/middle::trigger_pos)"
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -502,6 +650,20 @@ def test_empty_by_default_interface_child_waits_on_the_two_levels_up_caller_fill
         # Filling the initially empty child waits until its parent reaches the
         # triggered inner action.
         "inner.create(holder::/a)": ["middle.move(gw::/holder, gw::/inner::holder)"],
+        "middle.destroy(gw::/inner::holder::/a)": ["inner.create(holder::/a)"],
+        "middle.destroy(gw::/inner::holder)": [
+            "middle.destroy(gw::/inner::holder::/a)"
+        ],
+        "middle.destroy(gw::/inner::trigger_pos)": [
+            "middle.create(gw::/inner::trigger_pos)"
+        ],
+        "middle.destroy(gw)": [
+            "middle.destroy(gw::/inner::holder)",
+            "middle.destroy(gw::/inner::trigger_pos)",
+        ],
+        "test.destroy(box::/middle::trigger_pos)": [
+            "test.create(box::/middle::trigger_pos)"
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -520,6 +682,9 @@ def test_empty_requirement_waits_on_a_destroy_by_a_caller_that_does_not_trigger_
         # The inner action cannot fill the implied position until the distant
         # caller has explicitly emptied it.
         "inner.create(/slot)": ["outer.destroy(/slot)"],
+        "middle.destroy(/inner::trigger_pos)": ["middle.create(/inner::trigger_pos)"],
+        "outer.destroy(/middle::trigger_pos)": ["outer.create(/middle::trigger_pos)"],
+        "test.destroy(/outer::trigger_pos)": ["test.create(/outer::trigger_pos)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -556,6 +721,8 @@ def test_move_excludes_non_action_parent_guarantee_fill_dependency(
         "consumer.move(/box::/item, /box::/destination)": [
             "consumer.create(/box::/item)"
         ],
+        "test.destroy(/producer::trigger_pos)": ["test.create(/producer::trigger_pos)"],
+        "test.destroy(/consumer::trigger_pos)": ["test.create(/consumer::trigger_pos)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -575,6 +742,8 @@ def test_caller_fill_dependency_is_removed_through_callee_guarantee(
         # The guaranteed Empty Dependency already reaches the caller's Fill
         # Dependency, so the final Move does not depend on it directly.
         "mover.move(/out, /destination)": ["helper.move(/slot, /out)"],
+        "mover.destroy(/helper::trigger_pos)": ["mover.create(/helper::trigger_pos)"],
+        "test.destroy(/mover::trigger_pos)": ["test.create(/mover::trigger_pos)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -608,6 +777,13 @@ def test_pending_move_rule_and_destroy_requirement_binding_holes_share_caller_op
             "test.move(source, gateway::/worker::source)",
             "test.move(state, gateway::/worker::state)",
         ],
+        "test.destroy(gateway::/worker::state::/target)": [
+            "worker.move(source, state::/target)"
+        ],
+        "test.destroy(gateway::/worker::state)": [
+            "test.destroy(gateway::/worker::state::/target)",
+            "worker.destroy(state::/occupied)",
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -620,7 +796,13 @@ def test_callee_operation_without_position_dependencies_waits_on_action_parent(
     expected = {
         "test.create(/box)": [],
         "test.create(/box::/worker::trigger_pos)": ["test.create(/box)"],
+        # With no Fill or Empty dependency of its own, Worker's Create waits on
+        # the particle to which Worker is assigned rather than on its trigger.
         "worker.create(result)": ["test.create(/box)"],
+        "test.destroy(/box::/worker::result)": ["worker.create(result)"],
+        "test.destroy(/box::/worker::trigger_pos)": [
+            "test.create(/box::/worker::trigger_pos)"
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -684,8 +866,12 @@ def test_implied_position_children_wait_on_the_two_levels_up_caller_fill(
         "test.create(/parent)": [],
         "test.create(/middle::trigger_pos)": [],
         "middle.create(/inner::trigger_pos)": [],
+        # Both child fills depend directly on the distant caller's fill of the
+        # implied parent position, and remain independent of each other.
         "inner.create(/parent::/child1)": ["test.create(/parent)"],
         "inner.create(/parent::/child2)": ["test.create(/parent)"],
+        "middle.destroy(/inner::trigger_pos)": ["middle.create(/inner::trigger_pos)"],
+        "test.destroy(/middle::trigger_pos)": ["test.create(/middle::trigger_pos)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -701,9 +887,15 @@ def test_implied_action_inherits_the_current_actions_parent_position(
         "test.create(local::/parent::/middle::trigger_pos)": [
             "test.create(local::/parent)"
         ],
+        # Inner inherits Middle's parent particle, so its independent operation
+        # waits on the fill of local::/parent rather than either trigger.
         "middle.create(/inner::trigger_pos)": ["test.create(local::/parent)"],
         "inner.create(scratch)": ["test.create(local::/parent)"],
         "inner.destroy(scratch)": ["inner.create(scratch)"],
+        "middle.destroy(/inner::trigger_pos)": ["middle.create(/inner::trigger_pos)"],
+        "test.destroy(local::/parent::/middle::trigger_pos)": [
+            "test.create(local::/parent::/middle::trigger_pos)"
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -718,8 +910,12 @@ def test_implied_position_grandchildren_wait_on_the_two_levels_up_caller_fill(
         "test.create(/parent::/child)": ["test.create(/parent)"],
         "test.create(/middle::trigger_pos)": [],
         "middle.create(/inner::trigger_pos)": [],
+        # Both grandchild fills depend directly on the caller's fill of their
+        # implied parent, and remain independent of each other.
         "inner.create(/parent::/child::/grandchild1)": ["test.create(/parent::/child)"],
         "inner.create(/parent::/child::/grandchild2)": ["test.create(/parent::/child)"],
+        "middle.destroy(/inner::trigger_pos)": ["middle.create(/inner::trigger_pos)"],
+        "test.destroy(/middle::trigger_pos)": ["test.create(/middle::trigger_pos)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -745,6 +941,8 @@ def test_intermediate_callee_operation_suppresses_only_its_caller_path(
             "middle.destroy(/parent::/child::/grandchild::/greatgrandchild)"
         ],
         "middle.create(/inner::trigger_pos)": [],
+        # Middle's operation supersedes the distant caller operations only on
+        # the child path; the independent sibling path remains a dependency.
         "inner.destroy(/parent::/sibling)": [
             "test.create(/parent::/sibling)",
         ],
@@ -755,6 +953,8 @@ def test_intermediate_callee_operation_suppresses_only_its_caller_path(
             "inner.destroy(/parent::/child)",
             "inner.destroy(/parent::/sibling)",
         ],
+        "middle.destroy(/inner::trigger_pos)": ["middle.create(/inner::trigger_pos)"],
+        "test.destroy(/middle::trigger_pos)": ["test.create(/middle::trigger_pos)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -775,6 +975,8 @@ def test_moved_in_parent_children_branch_from_the_carrying_move(
             "test.create(mw::/middle::iface::/parent)",
         ],
         "middle.create(gw::/inner::run)": ["middle.create(gw)"],
+        # The two child fills branch independently from the Move that brought
+        # their parent particle into Inner's contracted position.
         "inner.create(input::/parent::/a)": ["middle.move(iface, gw::/inner::input)"],
         "inner.create(input::/parent::/b)": ["middle.move(iface, gw::/inner::input)"],
         "middle.destroy(gw::/inner::input::/parent::/b)": [
@@ -795,6 +997,7 @@ def test_moved_in_parent_children_branch_from_the_carrying_move(
             "middle.destroy(gw::/inner::input)",
             "middle.destroy(gw::/inner::run)",
         ],
+        "test.destroy(mw::/middle::run)": ["test.create(mw::/middle::run)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -837,6 +1040,15 @@ def test_input_carried_through_two_moves_reaches_the_triggered_inner(
         "middle.destroy(inner_holder)": [
             "middle.destroy(inner_holder::/inner::run)",
             "inner.destroy(input)",
+        ],
+        "outer.destroy(middle_holder::/middle::run)": [
+            "outer.create(middle_holder::/middle::run)"
+        ],
+        "test.destroy(outer_holder::/outer::middle_holder)": [
+            "middle.move(input, inner_holder::/inner::input)"
+        ],
+        "test.destroy(outer_holder::/outer::run)": [
+            "test.create(outer_holder::/outer::run)"
         ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
@@ -886,7 +1098,20 @@ def test_caller_consumes_a_nested_guarantee(
         "test.create(box::/middle::trigger_pos)": ["test.create(box)"],
         "middle.create(gw::/inner::trigger_pos)": ["test.create(box::/middle::gw)"],
         "inner.create(out)": ["test.create(box::/middle::gw)"],
-        "test.move(box::/middle::gw::/inner::out, result)": ["inner.create(out)"],
+        # Middle explicitly shuttles Inner's guarantee to its own contracted
+        # position before Test consumes it.
+        "middle.move(gw::/inner::out, out)": ["inner.create(out)"],
+        "middle.destroy(gw::/inner::trigger_pos)": [
+            "middle.create(gw::/inner::trigger_pos)"
+        ],
+        "middle.destroy(gw)": [
+            "middle.move(gw::/inner::out, out)",
+            "middle.destroy(gw::/inner::trigger_pos)",
+        ],
+        "test.move(box::/middle::out, result)": ["middle.move(gw::/inner::out, out)"],
+        "test.destroy(box::/middle::trigger_pos)": [
+            "test.create(box::/middle::trigger_pos)"
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -914,6 +1139,20 @@ def test_callee_move_of_a_position_filled_two_levels_up_waits_on_the_caller_chil
         "inner.move(source, holder)": [
             "middle.move(gw::/source_particle, gw::/inner::source)",
         ],
+        "middle.destroy(gw::/inner::holder::/a)": ["inner.move(source, holder)"],
+        "middle.destroy(gw::/inner::holder)": [
+            "middle.destroy(gw::/inner::holder::/a)"
+        ],
+        "middle.destroy(gw::/inner::trigger_pos)": [
+            "middle.create(gw::/inner::trigger_pos)"
+        ],
+        "middle.destroy(gw)": [
+            "middle.destroy(gw::/inner::holder)",
+            "middle.destroy(gw::/inner::trigger_pos)",
+        ],
+        "test.destroy(box::/middle::trigger_pos)": [
+            "test.create(box::/middle::trigger_pos)"
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -929,7 +1168,13 @@ def test_callee_empty_waits_on_a_child_a_guaranteeing_action_filled(
         "test.create(/filler::trigger_pos)": [],
         "test.create(/mover::trigger_pos)": [],
         "filler.create(/parent::/child::/gc)": ["test.create(/parent::/child)"],
+        # Mover cannot empty the child until Filler's guarantee has filled its
+        # grandchild, so the Move waits directly on Filler's Create.
         "mover.move(/parent::/child, dest)": ["filler.create(/parent::/child::/gc)"],
+        "test.destroy(/filler::trigger_pos)": ["test.create(/filler::trigger_pos)"],
+        "test.destroy(/mover::dest::/gc)": ["mover.move(/parent::/child, dest)"],
+        "test.destroy(/mover::dest)": ["test.destroy(/mover::dest::/gc)"],
+        "test.destroy(/mover::trigger_pos)": ["test.create(/mover::trigger_pos)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -946,15 +1191,29 @@ def test_caller_consumes_a_guarantee_from_two_triggers_down(
         "outer.create(gw::/middle::igw)": ["test.create(box::/outer::gw)"],
         "outer.create(gw::/middle::trigger_pos)": ["test.create(box::/outer::gw)"],
         "middle.create(igw::/inner::trigger_pos)": ["outer.create(gw::/middle::igw)"],
-        "inner.create(out)": ["outer.create(gw::/middle::igw)"],
-        "middle.move(igw::/inner::out, igw::/out_value)": ["inner.create(out)"],
-        "outer.move(gw::/middle::igw::/out_value, gw::/out_value)": [
-            "middle.move(igw::/inner::out, igw::/out_value)"
+        "inner.create(/inner_result)": ["outer.create(gw::/middle::igw)"],
+        "middle.move(igw::/inner_result, out)": ["inner.create(/inner_result)"],
+        "middle.destroy(igw::/inner::trigger_pos)": [
+            "middle.create(igw::/inner::trigger_pos)"
+        ],
+        "middle.destroy(igw)": [
+            "middle.move(igw::/inner_result, out)",
+            "middle.destroy(igw::/inner::trigger_pos)",
+        ],
+        "outer.move(gw::/middle::out, out)": ["middle.move(igw::/inner_result, out)"],
+        "outer.destroy(gw::/middle::trigger_pos)": [
+            "outer.create(gw::/middle::trigger_pos)"
         ],
         # The caller consumes the guarantee after each intermediate action has
         # explicitly shuttled the particle through its own contracted position.
-        "test.move(box::/outer::gw::/out_value, result)": [
-            "outer.move(gw::/middle::igw::/out_value, gw::/out_value)"
+        "outer.destroy(gw)": [
+            "outer.move(gw::/middle::out, out)",
+            "outer.destroy(gw::/middle::trigger_pos)",
+            "middle.destroy(igw)",
+        ],
+        "test.move(box::/outer::out, result)": ["outer.move(gw::/middle::out, out)"],
+        "test.destroy(box::/outer::trigger_pos)": [
+            "test.create(box::/outer::trigger_pos)"
         ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
@@ -1025,6 +1284,12 @@ def test_transitive_child_guarantee_follows_particle_through_move(
         "test.move(gateway::/outer::destination::/result_value, result)": [
             "outer.move(result_holder, destination::/result_value)"
         ],
+        "test.destroy(gateway::/outer::destination)": [
+            "test.move(gateway::/outer::destination::/result_value, result)"
+        ],
+        "test.destroy(gateway::/outer::trigger_pos)": [
+            "test.create(gateway::/outer::trigger_pos)"
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -1042,7 +1307,22 @@ def test_later_transitive_guarantee_wins_between_sibling_calls(
         "call_fill.create(/fill_item::trigger_pos)": [],
         "fill_item.create(/item)": [],
         "call_empty.create(/empty_item::trigger_pos)": [],
+        # The later Empty guarantee supersedes the earlier Occupied guarantee,
+        # so Test's next fill waits only on EmptyItem's Destroy.
         "empty_item.destroy(/item)": ["fill_item.create(/item)"],
+        "call_fill.destroy(/fill_item::trigger_pos)": [
+            "call_fill.create(/fill_item::trigger_pos)"
+        ],
+        "call_empty.destroy(/empty_item::trigger_pos)": [
+            "call_empty.create(/empty_item::trigger_pos)"
+        ],
+        "run_both.destroy(/call_fill::trigger_pos)": [
+            "run_both.create(/call_fill::trigger_pos)"
+        ],
+        "run_both.destroy(/call_empty::trigger_pos)": [
+            "run_both.create(/call_empty::trigger_pos)"
+        ],
+        "test.destroy(/run_both::trigger_pos)": ["test.create(/run_both::trigger_pos)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -1061,6 +1341,14 @@ def test_occupied_guarantee_flows_from_direct_callee_to_transitive_callee(
         # The direct callee's occupied Guarantee crosses two later Action
         # Executions before satisfying the Empty Rule for this Destroy.
         "empty_item.destroy(/item)": ["fill_item.create(/item)"],
+        "middle.destroy(/empty_item::trigger_pos)": [
+            "middle.create(/empty_item::trigger_pos)"
+        ],
+        "outer.destroy(/middle::trigger_pos)": ["outer.create(/middle::trigger_pos)"],
+        "test.destroy(/fill_item::trigger_pos)": [
+            "test.create(/fill_item::trigger_pos)"
+        ],
+        "test.destroy(/outer::trigger_pos)": ["test.create(/outer::trigger_pos)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -1076,7 +1364,17 @@ def test_deep_diamond_operations_on_the_same_implied_position(
         "left.create(/left_child::trigger_pos)": [],
         "left_child.create(/marker)": [],
         "right.create(/right_child::trigger_pos)": [],
+        # Both paths converge on the same implied position, so the right path's
+        # Destroy waits on the left path's Create despite the deep diamond.
         "right_child.destroy(/marker)": ["left_child.create(/marker)"],
+        "left.destroy(/left_child::trigger_pos)": [
+            "left.create(/left_child::trigger_pos)"
+        ],
+        "right.destroy(/right_child::trigger_pos)": [
+            "right.create(/right_child::trigger_pos)"
+        ],
+        "test.destroy(/left::trigger_pos)": ["test.create(/left::trigger_pos)"],
+        "test.destroy(/right::trigger_pos)": ["test.create(/right::trigger_pos)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -1094,10 +1392,26 @@ def test_callee_move_empty_rule_binding_hole_binds_multiple_caller_guarantees(
         "test.create(/mover::trigger_pos)": [],
         "filler.create(/parent::/child_a::/gc)": ["test.create(/parent::/child_a)"],
         "filler.create(/parent::/child_b::/gc)": ["test.create(/parent::/child_b)"],
+        # Mover's one Empty Rule relationship binds both independent guarantee
+        # operations from Filler.
         "mover.move(/parent, dest)": [
             "filler.create(/parent::/child_a::/gc)",
             "filler.create(/parent::/child_b::/gc)",
         ],
+        "test.destroy(/filler::trigger_pos)": ["test.create(/filler::trigger_pos)"],
+        "test.destroy(/mover::dest::/child_a::/gc)": ["mover.move(/parent, dest)"],
+        "test.destroy(/mover::dest::/child_a)": [
+            "test.destroy(/mover::dest::/child_a::/gc)"
+        ],
+        "test.destroy(/mover::dest::/child_b::/gc)": ["mover.move(/parent, dest)"],
+        "test.destroy(/mover::dest::/child_b)": [
+            "test.destroy(/mover::dest::/child_b::/gc)"
+        ],
+        "test.destroy(/mover::dest)": [
+            "test.destroy(/mover::dest::/child_b)",
+            "test.destroy(/mover::dest::/child_a)",
+        ],
+        "test.destroy(/mover::trigger_pos)": ["test.create(/mover::trigger_pos)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -1161,23 +1475,34 @@ def test_destruction_cascade_includes_disjoint_child_paths_from_two_callers(
     expected = {
         "test.create(/middle_a::run)": [],
         "test.create(/middle_b::run)": [],
+        "middle_a.create(destroyer_holder)": [],
         "middle_a.create(box)": [],
         "middle_a.create(box::/a)": ["middle_a.create(box)"],
-        "middle_a.move(box, /destroyer::run)": ["middle_a.create(box::/a)"],
-        "middle_a:destroyer.destroy(run::/a)": ["middle_a.move(box, /destroyer::run)"],
-        "middle_a:destroyer.destroy(run)": [
-            "middle_a:destroyer.destroy(run::/a)",
+        "middle_a.move(box, destroyer_holder::/destroyer::run)": [
+            "middle_a.create(destroyer_holder)",
+            "middle_a.create(box::/a)",
         ],
+        # Each Destroyer invocation receives the child path contributed by its
+        # own caller rather than the union of both callers' occupied children.
+        "middle_a:destroyer.destroy(run::/a)": [
+            "middle_a.move(box, destroyer_holder::/destroyer::run)"
+        ],
+        "middle_a:destroyer.destroy(run)": ["middle_a:destroyer.destroy(run::/a)"],
+        "middle_a.destroy(destroyer_holder)": ["middle_a:destroyer.destroy(run)"],
+        "middle_a.destroy(run)": ["test.create(/middle_a::run)"],
+        "middle_b.create(destroyer_holder)": [],
         "middle_b.create(box)": [],
         "middle_b.create(box::/b)": ["middle_b.create(box)"],
-        "middle_b.move(box, /destroyer::run)": [
+        "middle_b.move(box, destroyer_holder::/destroyer::run)": [
+            "middle_b.create(destroyer_holder)",
             "middle_b.create(box::/b)",
-            "middle_a:destroyer.destroy(run)",
         ],
-        "middle_b:destroyer.destroy(run::/b)": ["middle_b.move(box, /destroyer::run)"],
-        "middle_b:destroyer.destroy(run)": [
-            "middle_b:destroyer.destroy(run::/b)",
+        "middle_b:destroyer.destroy(run::/b)": [
+            "middle_b.move(box, destroyer_holder::/destroyer::run)"
         ],
+        "middle_b:destroyer.destroy(run)": ["middle_b:destroyer.destroy(run::/b)"],
+        "middle_b.destroy(destroyer_holder)": ["middle_b:destroyer.destroy(run)"],
+        "middle_b.destroy(run)": ["test.create(/middle_b::run)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -1190,23 +1515,34 @@ def test_destruction_cascade_includes_shared_child_path_from_two_callers_once(
     expected = {
         "test.create(/middle_a::run)": [],
         "test.create(/middle_b::run)": [],
+        "middle_a.create(destroyer_holder)": [],
         "middle_a.create(box)": [],
         "middle_a.create(box::/child)": ["middle_a.create(box)"],
-        "middle_a.move(box, /destroyer::run)": ["middle_a.create(box::/child)"],
+        "middle_a.move(box, destroyer_holder::/destroyer::run)": [
+            "middle_a.create(destroyer_holder)",
+            "middle_a.create(box::/child)",
+        ],
+        # Each invocation has one Destroy for the shared child path contributed
+        # by its own caller; the two callers do not duplicate that path.
         "middle_a:destroyer.destroy(run::/child)": [
-            "middle_a.move(box, /destroyer::run)"
+            "middle_a.move(box, destroyer_holder::/destroyer::run)"
         ],
         "middle_a:destroyer.destroy(run)": ["middle_a:destroyer.destroy(run::/child)"],
+        "middle_a.destroy(destroyer_holder)": ["middle_a:destroyer.destroy(run)"],
+        "middle_a.destroy(run)": ["test.create(/middle_a::run)"],
+        "middle_b.create(destroyer_holder)": [],
         "middle_b.create(box)": [],
         "middle_b.create(box::/child)": ["middle_b.create(box)"],
-        "middle_b.move(box, /destroyer::run)": [
+        "middle_b.move(box, destroyer_holder::/destroyer::run)": [
+            "middle_b.create(destroyer_holder)",
             "middle_b.create(box::/child)",
-            "middle_a:destroyer.destroy(run)",
         ],
         "middle_b:destroyer.destroy(run::/child)": [
-            "middle_b.move(box, /destroyer::run)"
+            "middle_b.move(box, destroyer_holder::/destroyer::run)"
         ],
         "middle_b:destroyer.destroy(run)": ["middle_b:destroyer.destroy(run::/child)"],
+        "middle_b.destroy(destroyer_holder)": ["middle_b:destroyer.destroy(run)"],
+        "middle_b.destroy(run)": ["test.create(/middle_b::run)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -1238,6 +1574,9 @@ def test_caller_contribution_and_callee_guarantee_precede_parent_destroy(
             "destroyer.destroy(parent::/sibling)",
             "maker.destroy(result)",
             "destroyer.destroy(parent::/maker::trigger_pos)",
+        ],
+        "test.destroy(/destroyer::trigger_pos)": [
+            "test.create(/destroyer::trigger_pos)"
         ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
@@ -1292,20 +1631,22 @@ def test_same_callee_callers_assign_child_qualities_in_opposite_orders(
     expected = {
         "test.create(/middle_a::run)": [],
         "test.create(/middle_b::run)": [],
+        "middle_a.create(destroyer_holder)": [],
         "middle_a.create(box)": [],
         "middle_a.create(box::/child)": ["middle_a.create(box)"],
         "middle_a.create(box::/sibling)": ["middle_a.create(box)"],
-        "middle_a.move(box, /destroyer::run)": [
+        "middle_a.move(box, destroyer_holder::/destroyer::run)": [
+            "middle_a.create(destroyer_holder)",
             "middle_a.create(box::/child)",
             "middle_a.create(box::/sibling)",
         ],
         # Assigning /child before /sibling does not order the sibling Destroy and
         # the first Move of the child particle relative to each other.
         "middle_a:destroyer.destroy(run::/sibling)": [
-            "middle_a.move(box, /destroyer::run)"
+            "middle_a.move(box, destroyer_holder::/destroyer::run)"
         ],
         "middle_a:destroyer.move(run::/child, keeper)": [
-            "middle_a.move(box, /destroyer::run)"
+            "middle_a.move(box, destroyer_holder::/destroyer::run)"
         ],
         "middle_a:destroyer.move(keeper, run::/child)": [
             "middle_a:destroyer.move(run::/child, keeper)"
@@ -1318,21 +1659,24 @@ def test_same_callee_callers_assign_child_qualities_in_opposite_orders(
             "middle_a:destroyer.destroy(run::/sibling)",
             "middle_a:destroyer.destroy(run::/child)",
         ],
+        "middle_a.destroy(destroyer_holder)": ["middle_a:destroyer.destroy(run)"],
+        "middle_a.destroy(run)": ["test.create(/middle_a::run)"],
+        "middle_b.create(destroyer_holder)": [],
         "middle_b.create(box)": [],
         "middle_b.create(box::/sibling)": ["middle_b.create(box)"],
         "middle_b.create(box::/child)": ["middle_b.create(box)"],
-        "middle_b.move(box, /destroyer::run)": [
+        "middle_b.move(box, destroyer_holder::/destroyer::run)": [
+            "middle_b.create(destroyer_holder)",
             "middle_b.create(box::/sibling)",
             "middle_b.create(box::/child)",
-            "middle_a:destroyer.destroy(run)",
         ],
         # Assigning /sibling before /child produces the same independent
         # dependencies for the sibling Destroy and the first child Move.
         "middle_b:destroyer.destroy(run::/sibling)": [
-            "middle_b.move(box, /destroyer::run)"
+            "middle_b.move(box, destroyer_holder::/destroyer::run)"
         ],
         "middle_b:destroyer.move(run::/child, keeper)": [
-            "middle_b.move(box, /destroyer::run)"
+            "middle_b.move(box, destroyer_holder::/destroyer::run)"
         ],
         "middle_b:destroyer.move(keeper, run::/child)": [
             "middle_b:destroyer.move(run::/child, keeper)"
@@ -1345,5 +1689,7 @@ def test_same_callee_callers_assign_child_qualities_in_opposite_orders(
             "middle_b:destroyer.destroy(run::/sibling)",
             "middle_b:destroyer.destroy(run::/child)",
         ],
+        "middle_b.destroy(destroyer_holder)": ["middle_b:destroyer.destroy(run)"],
+        "middle_b.destroy(run)": ["test.create(/middle_b::run)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)

@@ -323,17 +323,17 @@ def test_inner_action_guarantee_through_implied_action_chain_attaches_to_full_ca
     assert all_diags[0].location.line == 22
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 22
-    assert all_diags[0].location.end_column == 108
+    assert all_diags[0].location.end_column == 93
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
         all_diags[0].position_name
-        == "position<host>::position</mid>::action</nested>::position<iface>::position</x>"
+        == "position<host>::position</mid>::position</result>::position</x>"
     )
     assert all_diags[0].populated_at.line == 11
-    assert all_diags[0].populated_at.column == 30
+    assert all_diags[0].populated_at.column == 80
     assert all_diags[0].populated_at.end_line == 11
-    assert all_diags[0].populated_at.end_column == 59
-    assert all_diags[0].populated_at.file_path == PurePosixPath("nested.dfn")
+    assert all_diags[0].populated_at.end_column == 111
+    assert all_diags[0].populated_at.file_path == PurePosixPath("inner.dfn")
 
 
 def test_sibling_action_guarantee_and_requirement_share_implied_position_key(

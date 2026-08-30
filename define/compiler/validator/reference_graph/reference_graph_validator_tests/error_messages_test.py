@@ -157,6 +157,7 @@ def test_deferred_action_chain_error_format(
                 "    } and it does {\n"
                 "        define the position<_noop>.\n"
                 "        create a particle in position<_noop>.\n"
+                "        destroy the particle in position<pos_c>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -420,29 +421,20 @@ def test_requirement_carried_through_two_moves_format(
     validate_project: ValidateProject,
 ):
     files = {
-        "inner.dfn": (
-            "define the potential action<my.domain.com:my_lib:/inner> {\n"
-            "    define the position<input>.\n"
-            "    define the position<run>.\n"
-            "    it happens when {\n"
-            "        the position<run> has a particle.\n"
-            "    } and it does {\n"
-            "        destroy the particle in position<input>.\n"
-            "    }\n"
-            "}\n"
-        ),
+        "required.dfn": "define the potential position<my.domain.com:my_lib:/required>.\n",
         "middle.dfn": (
             "define the potential action<my.domain.com:my_lib:/middle> {\n"
             "    define the position<input> {\n"
             "        it may only contain particles where {\n"
-            "            it has the action</inner>.\n"
+            "            it has the position</required>.\n"
             "        }\n"
             "    }\n"
             "    define the position<run>.\n"
             "    it happens when {\n"
             "        the position<run> has a particle.\n"
             "    } and it does {\n"
-            "        create a particle in position<input>::action</inner>::position<run>.\n"
+            "        destroy the particle in position<input>::position</required>.\n"
+            "        destroy the particle in position<run>.\n"
             "    }\n"
             "}\n"
         ),
@@ -450,7 +442,7 @@ def test_requirement_carried_through_two_moves_format(
             "define the potential action<my.domain.com:my_lib:/outer> {\n"
             "    define the position<input> {\n"
             "        it may only contain particles where {\n"
-            "            it has the action</inner>.\n"
+            "            it has the position</required>.\n"
             "        }\n"
             "    }\n"
             "    define the position<middle_holder> {\n"
@@ -465,6 +457,9 @@ def test_requirement_carried_through_two_moves_format(
             "        create a particle in position<middle_holder>.\n"
             "        move the particle in position<input> to position<middle_holder>::action</middle>::position<input>.\n"
             "        create a particle in position<middle_holder>::action</middle>::position<run>.\n"
+            "        destroy the particle in position<middle_holder>::action</middle>::position<input>.\n"
+            "        destroy the particle in position<middle_holder>.\n"
+            "        destroy the particle in position<run>.\n"
             "    }\n"
             "}\n"
         ),
@@ -472,7 +467,7 @@ def test_requirement_carried_through_two_moves_format(
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    define the position<box> {\n"
             "        it may only contain particles where {\n"
-            "            it has the action</inner>.\n"
+            "            it has the position</required>.\n"
             "        }\n"
             "    }\n"
             "    define the position<outer_holder> {\n"
@@ -496,29 +491,26 @@ def test_requirement_carried_through_two_moves_format(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     formatted = all_diags[0].format(files["test.dfn"].splitlines())
-    # The box moved through /outer into /middle never had its input filled.
+    # The box moved through /outer into /middle never had its required child.
     # The position names where /test sees it (through /outer's interface, not
-    # the move destinations), and the chain traces both moves down to /inner's
+    # the move destinations), and the chain traces both moves down to /middle's
     # inference.
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 19, column 30
                 create a particle in position<outer_holder>::action</outer>::position<run>.
                                      ^
-        'position<outer_holder>::action</outer>::position<input>::action</inner>::position<input>' must be occupied before 'action<my.domain.com:my_lib:/outer>' runs, and it is not occupied.
+        'position<outer_holder>::action</outer>::position<input>::position</required>' must be occupied before 'action<my.domain.com:my_lib:/outer>' runs, and it is not occupied.
 
         This error happens because:
           'action<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/outer>':
             File "test.dfn", line 19, column 30
           'action<my.domain.com:my_lib:/outer>' triggers 'action<my.domain.com:my_lib:/middle>':
             File "outer.dfn", line 18, column 30
-          'action<my.domain.com:my_lib:/middle>' triggers 'action<my.domain.com:my_lib:/inner>':
-            File "middle.dfn", line 11, column 30
-          'action<my.domain.com:my_lib:/inner>' infers this requirement:
-            File "inner.dfn", line 7, column 33""")
+          'action<my.domain.com:my_lib:/middle>' infers this requirement:
+            File "middle.dfn", line 11, column 33""")
     assert action_graph_set(result.operation_graphs) == {
         (_TEST, _OUTER),
         (_OUTER, _MIDDLE),
-        (_MIDDLE, _INNER),
     }
 
 

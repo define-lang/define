@@ -15,5 +15,8 @@ define the potential action<my.domain.com:my_lib:/consume_branches> {
     } and it does {
         destroy the particle in position<left>::position</fillable>::position</item>.
         destroy the particle in position<right>::position</fillable>::position</item>.
+        destroy the particle in position<left>.
+        destroy the particle in position<right>.
+        destroy the particle in position<trigger_pos>.
     }
 }

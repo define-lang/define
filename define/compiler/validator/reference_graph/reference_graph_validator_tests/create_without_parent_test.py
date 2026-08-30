@@ -41,13 +41,10 @@ def test_create_in_multilevel_chain_without_parents(
     result = validate_testdata_project_with_reference_graph()
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 2
+    assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ParentPositionNotOccupiedDiagnostic)
     assert all_diags[0].position_name == "position<local>::position</x>::position</y>"
-    assert all_diags[0].parent_position_name == "position<local>::position</x>"
-    assert isinstance(all_diags[1], diagnostics.ParentPositionNotOccupiedDiagnostic)
-    assert all_diags[1].position_name == "position<local>::position</x>::position</y>"
-    assert all_diags[1].parent_position_name == "position<local>"
+    assert all_diags[0].parent_position_name == "position<local>"
 
 
 def test_create_in_child_when_parent_occupied_but_grandchild_not(

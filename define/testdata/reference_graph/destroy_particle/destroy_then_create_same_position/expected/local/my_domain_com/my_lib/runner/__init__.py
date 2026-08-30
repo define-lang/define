@@ -27,6 +27,7 @@ class Runner(literal.Action):
 class RunnerGuarantees:
     def __init__(self):
         self.guarantee_position_slot: list[literal.Task] = []
+        self.guarantee_position_run: list[literal.Task] = []
 
 
 @final
@@ -47,6 +48,9 @@ class RunnerExecution:
     def accept_for_empty_rule_position_slot(self):
         self.destroy_position_slot()
 
+    def accept_for_empty_rule_position_run(self):
+        self.destroy_position_run()
+
     def destroy_position_slot(self):
         literal.continue_destruction(self.continue_destroy_position_slot)
 
@@ -57,4 +61,16 @@ class RunnerExecution:
         self.action.get_interface_position(
             "position<slot>"
         ).create_particle()
+        self.action.get_interface_position(
+            "position<slot>"
+        ).destroy_particle()
         self.scheduler.continue_with(self.guarantees.guarantee_position_slot)
+
+    def destroy_position_run(self):
+        literal.continue_destruction(self.continue_destroy_position_run)
+
+    def continue_destroy_position_run(self):
+        self.action.get_interface_position(
+            "position<run>"
+        ).destroy_particle()
+        self.scheduler.continue_with(self.guarantees.guarantee_position_run)

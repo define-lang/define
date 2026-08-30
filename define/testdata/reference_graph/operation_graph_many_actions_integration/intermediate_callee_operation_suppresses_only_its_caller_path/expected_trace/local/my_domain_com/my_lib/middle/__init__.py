@@ -32,7 +32,6 @@ class Middle(literal.Action):
 @final
 class MiddleGuarantees:
     def __init__(self):
-        self.guarantee_action_inner__position_trigger_pos: list[literal.Task] = []
         self.trigger_action_inner = local.my_domain_com.my_lib.inner.InnerGuarantees()
 
 
@@ -64,7 +63,7 @@ class MiddleExecution:
     def accept_for_empty_rule_global_position_parent__global_position_child__global_position_grandchild(self):
         self.destroy_global_position_parent__global_position_child__global_position_grandchild()
 
-    def accept_when_empty_action_inner__position_trigger_pos(self):
+    def accept_action_parent(self):
         self.create_action_inner__position_trigger_pos()
 
     def accept_for_empty_rule_global_position_parent(self):
@@ -120,7 +119,7 @@ class MiddleExecution:
             forwarded=self.destruction_connections,
             ),
         )
-        self.scheduler.submit_all(self.guarantees.guarantee_action_inner__position_trigger_pos)
+        self.scheduler.submit(self.destroy_action_inner__position_trigger_pos)
         self.trigger_action_inner__for_empty_rule_global_position_parent()
 
     def destroy_global_position_parent__global_position_child(self):
@@ -134,6 +133,18 @@ class MiddleExecution:
             1,
         )
         self.destruction_connection_trigger_action_inner.complete()
+
+    def destroy_action_inner__position_trigger_pos(self):
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.inner.Inner
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
+        self.scheduler.destroy_completed(
+            self.trace_execution,
+            "/inner::trigger_pos",
+            1,
+        )
 
     def trigger_action_inner__for_empty_rule_global_position_parent(self):
         if not self.join_for_trigger_action_inner__for_empty_rule_global_position_parent.arrive():

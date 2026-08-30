@@ -41,9 +41,8 @@ class TestExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.execution_trigger_action_runner: local.my_domain_com.my_lib.runner.RunnerExecution
-        self.join_for_trigger_action_runner__when_empty_position_wrapper__action_middle__position_box = self.scheduler.create_join(2)
-        self.join_for_trigger_action_runner__when_empty_position_wrapper__action_middle__position_run = self.scheduler.create_join(2)
         self.join_for_trigger_action_runner__when_occupied_position_wrapper = self.scheduler.create_join(2)
+        self.join_for_trigger_action_runner__for_empty_rule_position_run = self.scheduler.create_join(2)
 
     def create_action_runner__position_wrapper(self):
         self.action.on_particle.get_action(
@@ -51,8 +50,6 @@ class TestExecution:
         ).get_interface_position(
             "position<wrapper>"
         ).create_particle()
-        self.scheduler.submit(self.trigger_action_runner__when_empty_position_wrapper__action_middle__position_box)
-        self.scheduler.submit(self.trigger_action_runner__when_empty_position_wrapper__action_middle__position_run)
         self.trigger_action_runner__when_occupied_position_wrapper()
 
     def create_action_runner__position_run(self):
@@ -68,20 +65,11 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_action_runner,
         )
-        self.scheduler.submit(self.trigger_action_runner__when_empty_position_wrapper__action_middle__position_box)
-        self.scheduler.submit(self.trigger_action_runner__when_empty_position_wrapper__action_middle__position_run)
+        self.scheduler.submit(self.trigger_action_runner__for_empty_rule_position_run)
         self.scheduler.submit(self.trigger_action_runner__when_occupied_position_wrapper)
-        self.trigger_action_runner__when_empty_position_wrapper__action_middle__position_final()
-
-    def trigger_action_runner__when_empty_position_wrapper__action_middle__position_box(self):
-        if not self.join_for_trigger_action_runner__when_empty_position_wrapper__action_middle__position_box.arrive():
-            return
-        self.execution_trigger_action_runner.accept_when_empty_position_wrapper__action_middle__position_box()
-
-    def trigger_action_runner__when_empty_position_wrapper__action_middle__position_run(self):
-        if not self.join_for_trigger_action_runner__when_empty_position_wrapper__action_middle__position_run.arrive():
-            return
-        self.execution_trigger_action_runner.accept_when_empty_position_wrapper__action_middle__position_run()
+        self.scheduler.submit(self.trigger_action_runner__when_empty_position_wrapper__action_middle__position_final)
+        self.scheduler.submit(self.trigger_action_runner__for_empty_rule_position_wrapper)
+        self.trigger_action_runner__for_empty_rule_position_run()
 
     def trigger_action_runner__when_occupied_position_wrapper(self):
         if not self.join_for_trigger_action_runner__when_occupied_position_wrapper.arrive():
@@ -90,3 +78,11 @@ class TestExecution:
 
     def trigger_action_runner__when_empty_position_wrapper__action_middle__position_final(self):
         self.execution_trigger_action_runner.accept_when_empty_position_wrapper__action_middle__position_final()
+
+    def trigger_action_runner__for_empty_rule_position_wrapper(self):
+        self.execution_trigger_action_runner.accept_for_empty_rule_position_wrapper()
+
+    def trigger_action_runner__for_empty_rule_position_run(self):
+        if not self.join_for_trigger_action_runner__for_empty_rule_position_run.arrive():
+            return
+        self.execution_trigger_action_runner.accept_for_empty_rule_position_run()

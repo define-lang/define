@@ -12,5 +12,6 @@ define the potential action<my.domain.com:my_lib:/destroyer> {
         move the particle in position<parent>::position</required> to position<held_required>.
         move the particle in position<held_required> to position<parent>::position</required>.
         destroy the particle in position<parent>.
+        destroy the particle in position<trigger_pos>.
     }
 }

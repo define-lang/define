@@ -20,12 +20,25 @@ class PerformOperation(literal.Action):
 
 
 @final
+class PerformOperationGuarantees:
+    def __init__(self):
+        self.guarantee_position_operation_trigger: list[literal.Task] = []
+
+
+@final
 class PerformOperationExecution:
     def __init__(
         self,
+        action: PerformOperation,
         scheduler: literal.Scheduler,
+        guarantees: PerformOperationGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
+        self.action = action
         self.scheduler = scheduler
+        self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
         self.local_position_result = literal.LocalPosition(
             "position<result>",
             scheduler=self.scheduler,
@@ -34,6 +47,18 @@ class PerformOperationExecution:
     def accept_action_parent(self):
         self.create_position_result()
 
+    def accept_for_empty_rule_position_operation_trigger(self):
+        self.destroy_position_operation_trigger()
+
     def create_position_result(self):
         self.local_position_result.create_particle()
         self.local_position_result.destroy_particle()
+
+    def destroy_position_operation_trigger(self):
+        literal.continue_destruction(self.continue_destroy_position_operation_trigger)
+
+    def continue_destroy_position_operation_trigger(self):
+        self.action.get_interface_position(
+            "position<operation_trigger>"
+        ).destroy_particle()
+        self.scheduler.continue_with(self.guarantees.guarantee_position_operation_trigger)

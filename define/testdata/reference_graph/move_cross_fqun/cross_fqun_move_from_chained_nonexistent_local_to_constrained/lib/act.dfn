@@ -5,5 +5,7 @@ define the potential action<mv:define-lang.org:child:/act> {
         the position<trigger> has a particle.
     } and it does {
         create a particle in position<inner>.
+        destroy the particle in position<inner>.
+        destroy the particle in position<trigger>.
     }
 }

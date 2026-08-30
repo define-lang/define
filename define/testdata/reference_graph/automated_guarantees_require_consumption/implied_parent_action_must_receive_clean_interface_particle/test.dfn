@@ -1,0 +1,12 @@
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</parent>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in action</parent>::position<iface>.
+        create a particle in action</parent>::position<iface>::action</child>::position<result>.
+        create a particle in action</parent>::position<iface>::action</child>::position<run>.
+        create a particle in action</parent>::position<run>.
+    }
+}

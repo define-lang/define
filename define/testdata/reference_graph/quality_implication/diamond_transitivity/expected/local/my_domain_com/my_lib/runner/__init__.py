@@ -41,7 +41,9 @@ class Runner(literal.Action):
 @final
 class RunnerGuarantees:
     def __init__(self):
-        self.guarantee_position_source__move__position_dest: list[literal.Task] = []
+        self.guarantee_position_source: list[literal.Task] = []
+        self.guarantee_position_dest: list[literal.Task] = []
+        self.guarantee_position_run: list[literal.Task] = []
         self.trigger_position_source__action_implier_one = local.my_domain_com.my_lib.implier_one.ImplierOneGuarantees()
         self.trigger_position_source__action_implier_two = local.my_domain_com.my_lib.implier_two.ImplierTwoGuarantees()
 
@@ -53,10 +55,13 @@ class RunnerExecution:
         action: Runner,
         scheduler: literal.Scheduler,
         guarantees: RunnerGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
         guarantees.trigger_position_source__action_implier_one.guarantee_global_position_implied.append(
             self.trigger_position_source__action_implier_two__when_empty_global_position_implied
         )
@@ -71,6 +76,9 @@ class RunnerExecution:
 
     def accept_when_empty_position_dest(self):
         self.move_position_source_to_position_dest()
+
+    def accept_for_empty_rule_position_run(self):
+        self.destroy_position_run()
 
     def create_position_source(self):
         self.action.get_interface_position(
@@ -109,7 +117,33 @@ class RunnerExecution:
                 "position<dest>"
             )
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_position_source__move__position_dest)
+        self.scheduler.submit(self.create_position_dest__global_position_implied)
+        self.scheduler.continue_with(self.guarantees.guarantee_position_source)
+
+    def create_position_dest__global_position_implied(self):
+        self.action.get_interface_position(
+            "position<dest>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.implied.Implied
+        ).create_particle()
+        self.action.get_interface_position(
+            "position<dest>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.implied.Implied
+        ).destroy_particle()
+        self.action.get_interface_position(
+            "position<dest>"
+        ).destroy_particle()
+        self.scheduler.continue_with(self.guarantees.guarantee_position_dest)
+
+    def destroy_position_run(self):
+        literal.continue_destruction(self.continue_destroy_position_run)
+
+    def continue_destroy_position_run(self):
+        self.action.get_interface_position(
+            "position<run>"
+        ).destroy_particle()
+        self.scheduler.continue_with(self.guarantees.guarantee_position_run)
 
     def trigger_position_source__action_implier_one__when_empty_global_position_implied(self):
         if not self.join_for_trigger_position_source__action_implier_one__when_empty_global_position_implied.arrive():

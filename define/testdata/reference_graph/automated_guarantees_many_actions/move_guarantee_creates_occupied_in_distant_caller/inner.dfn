@@ -6,5 +6,6 @@ define the potential action<my.domain.com:my_lib:/inner> {
         the position<trigger_pos> has a particle.
     } and it does {
         move the particle in position<item> to position<output>.
+        destroy the particle in position<trigger_pos>.
     }
 }

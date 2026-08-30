@@ -53,8 +53,10 @@ class TestExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.execution_trigger_position_box__action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
+        self.destruction_connection_trigger_position_box__action_middle: literal.DestructionConnection
+        self.destruction_position_position_box__action_middle__position_gw__global_position_source_particle__global_position_a: literal.Position
         self.join_for_trigger_position_box__action_middle__for_empty_rule_position_gw__global_position_source_particle = self.scheduler.create_join(2)
-        self.join_for_trigger_position_box__action_middle__when_empty_position_gw__action_inner__position_trigger_pos = self.scheduler.create_join(2)
+        self.join_for_trigger_position_box__action_middle__when_occupied_position_gw = self.scheduler.create_join(2)
 
     def create_position_box(self):
         self.action.get_interface_position(
@@ -72,7 +74,7 @@ class TestExecution:
             "position<gw>"
         ).create_particle()
         self.scheduler.submit(self.create_position_box__action_middle__position_gw__global_position_source_particle)
-        self.trigger_position_box__action_middle__when_empty_position_gw__action_inner__position_trigger_pos()
+        self.trigger_position_box__action_middle__when_occupied_position_gw()
 
     def create_position_box__action_middle__position_gw__global_position_source_particle(self):
         self.action.get_interface_position(
@@ -105,6 +107,11 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
+        self.destruction_connection_trigger_position_box__action_middle = literal.DestructionConnection(
+            self.scheduler,
+            1,
+            self.destroy_position_box__action_middle__position_gw__global_position_source_particle__global_position_a,
+        )
         self.execution_trigger_position_box__action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
             self.action.get_interface_position(
                 "position<box>"
@@ -113,20 +120,54 @@ class TestExecution:
             ),
             self.scheduler,
             self.guarantees.trigger_position_box__action_middle,
+            destruction_connections=literal.DestructionConnections(
+            {
+                local.my_domain_com.my_lib.middle.MiddleExecution.continue_destroy_position_gw__action_inner__position_holder: self.destruction_connection_trigger_position_box__action_middle,
+            },
+            ),
         )
+        self.scheduler.submit(self.destroy_position_box__action_middle__position_trigger_pos)
         self.scheduler.submit(self.trigger_position_box__action_middle__for_empty_rule_position_gw__global_position_source_particle)
-        self.scheduler.submit(self.trigger_position_box__action_middle__when_empty_position_gw__action_inner__position_trigger_pos)
-        self.trigger_position_box__action_middle__when_empty_position_gw__action_inner__position_holder()
+        self.scheduler.submit(self.trigger_position_box__action_middle__when_occupied_position_gw)
+        self.scheduler.submit(self.trigger_position_box__action_middle__when_empty_position_gw__action_inner__position_holder)
+        self.trigger_position_box__action_middle__for_empty_rule_position_gw()
+
+    def destroy_position_box__action_middle__position_gw__global_position_source_particle__global_position_a(self):
+        self.destruction_position_position_box__action_middle__position_gw__global_position_source_particle__global_position_a.destroy_particle()
+        self.destruction_connection_trigger_position_box__action_middle.complete()
+
+    def destroy_position_box__action_middle__position_trigger_pos(self):
+        self.action.get_interface_position(
+            "position<box>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.middle.Middle
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
 
     def trigger_position_box__action_middle__for_empty_rule_position_gw__global_position_source_particle(self):
         if not self.join_for_trigger_position_box__action_middle__for_empty_rule_position_gw__global_position_source_particle.arrive():
             return
+        self.destruction_position_position_box__action_middle__position_gw__global_position_source_particle__global_position_a = self.action.get_interface_position(
+            "position<box>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.middle.Middle
+        ).get_interface_position(
+            "position<gw>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.source_particle.SourceParticle
+        ).particle.get_position(
+            local.my_domain_com.my_lib.a.A
+        )
         self.execution_trigger_position_box__action_middle.accept_for_empty_rule_position_gw__global_position_source_particle()
 
-    def trigger_position_box__action_middle__when_empty_position_gw__action_inner__position_trigger_pos(self):
-        if not self.join_for_trigger_position_box__action_middle__when_empty_position_gw__action_inner__position_trigger_pos.arrive():
+    def trigger_position_box__action_middle__when_occupied_position_gw(self):
+        if not self.join_for_trigger_position_box__action_middle__when_occupied_position_gw.arrive():
             return
-        self.execution_trigger_position_box__action_middle.accept_when_empty_position_gw__action_inner__position_trigger_pos()
+        self.execution_trigger_position_box__action_middle.accept_when_occupied_position_gw()
 
     def trigger_position_box__action_middle__when_empty_position_gw__action_inner__position_holder(self):
         self.execution_trigger_position_box__action_middle.accept_when_empty_position_gw__action_inner__position_holder()
+
+    def trigger_position_box__action_middle__for_empty_rule_position_gw(self):
+        self.execution_trigger_position_box__action_middle.accept_for_empty_rule_position_gw()

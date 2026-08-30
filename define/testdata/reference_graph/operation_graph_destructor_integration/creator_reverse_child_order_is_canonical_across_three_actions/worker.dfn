@@ -1,10 +1,10 @@
 define the potential action<my.domain.com:my_lib:/worker> {
-    define the position<first_interface>.
-    define the position<second_interface>.
+    it also assigns the position</first_interface>.
+    it also assigns the position</second_interface>.
     it happens when {
         this particle is created.
     } and it does {
-        create a particle in position<first_interface>.
-        create a particle in position<second_interface>.
+        create a particle in position</first_interface>.
+        create a particle in position</second_interface>.
     }
 }

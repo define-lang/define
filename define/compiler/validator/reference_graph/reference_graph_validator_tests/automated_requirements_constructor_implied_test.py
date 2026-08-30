@@ -24,7 +24,6 @@ _IMPLIED_ACTION = "action<my.domain.com:my_lib:/implied_action>"
 _DESTROY_CHILD = "action<my.domain.com:my_lib:/destroy_child>"
 _MOVE_CHILD = "action<my.domain.com:my_lib:/move_child>"
 _DESTROY_GRANDCHILD = "action<my.domain.com:my_lib:/destroy_grandchild>"
-_DESTROY_INTERFACE_PARTICLE = "action<my.domain.com:my_lib:/destroy_interface_particle>"
 _DESTROY_INTERFACE_CHILD = "action<my.domain.com:my_lib:/destroy_interface_child>"
 
 
@@ -357,56 +356,6 @@ def test_constructor_occupied_violation_via_destroy_of_grandchild_of_implied(
             "line": 6,
             "column": 33,
             "file_path": "destroy_grandchild.dfn",
-        },
-    )
-
-
-def test_constructor_occupied_violation_via_destroy_of_iface_of_action_in_implied_chain(
-    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
-):
-    result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_exceptions == []
-    all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 1
-    diag = all_diags[0]
-    assert isinstance(
-        diag,
-        diagnostics.InferredRequirementViolationDiagnostic,
-    )
-    assert diag.action_name == _DESTROY_INTERFACE_PARTICLE
-    assert diag.required_empty is False
-    assert (
-        diag.position_name
-        == "position<box>::position</q>::position</outer>::action</provide_interface>::position<iface>"
-    )
-    assert diag.location.line == 14
-    assert diag.location.column == 30
-    assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert_propagation_chain(
-        diag,
-        {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
-            "enclosing_quality_name": "position<box>",
-            "triggered_quality_name": _DESTROY_INTERFACE_PARTICLE,
-            "line": 11,
-            "column": 28,
-            "file_path": "test.dfn",
-        },
-        {
-            "kind": action_contract.PropagationKind.CONSTRUCTOR_TRIGGER,
-            "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
-            "triggered_quality_name": _DESTROY_INTERFACE_PARTICLE,
-            "line": 14,
-            "column": 30,
-            "file_path": "test.dfn",
-        },
-        {
-            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
-            "enclosing_quality_name": _DESTROY_INTERFACE_PARTICLE,
-            "triggered_quality_name": None,
-            "line": 6,
-            "column": 33,
-            "file_path": "destroy_interface_particle.dfn",
         },
     )
 

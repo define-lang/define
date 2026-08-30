@@ -135,6 +135,7 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_position_gw__action_maker_2,
         )
+        self.scheduler.submit(self.destroy_position_gw__action_maker__position_trigger_pos_2)
         self.trigger_position_gw__action_maker_2__when_empty_position_out()
 
     def move_position_gw__action_maker__position_out_to_position_second_result(self):
@@ -149,6 +150,15 @@ class TestExecution:
                 "position<second_result>"
             )
         )
+
+    def destroy_position_gw__action_maker__position_trigger_pos_2(self):
+        self.action.get_interface_position(
+            "position<gw>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.maker.Maker
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
 
     def trigger_position_gw__action_maker__when_empty_position_out(self):
         if not self.join_for_trigger_position_gw__action_maker__when_empty_position_out.arrive():

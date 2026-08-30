@@ -1,7 +1,7 @@
 define the potential action<my.domain.com:my_lib:/outer> {
     define the position<trigger_pos> {
         it may only contain particles where {
-            it has the action</inner>.
+            it has the position</extra_quality>.
         }
     }
     it happens when {
@@ -9,11 +9,17 @@ define the potential action<my.domain.com:my_lib:/outer> {
     } and it does {
         define the position<local> {
             it may only contain particles where {
+                it has the position</extra_quality>.
+            }
+        }
+        define the position<inner_holder> {
+            it may only contain particles where {
                 it has the action</inner>.
             }
         }
+        create a particle in position<inner_holder>.
         move the particle in position<trigger_pos> to position<local>.
-        create a particle in position<local>::action</inner>::position<extra>.
-        create a particle in position<local>::action</inner>::position<trigger_pos>.
+        create a particle in position<local>::position</extra_quality>.
+        move the particle in position<local> to position<inner_holder>::action</inner>::position<trigger_pos>.
     }
 }

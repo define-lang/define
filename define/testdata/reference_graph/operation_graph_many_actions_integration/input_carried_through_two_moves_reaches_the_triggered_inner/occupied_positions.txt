@@ -1,4 +1,1 @@
 action<local.my_domain_com.my_lib.test.Test>::position<outer_holder>
-action<local.my_domain_com.my_lib.test.Test>::position<outer_holder>::action<local.my_domain_com.my_lib.outer.Outer>::position<middle_holder>
-action<local.my_domain_com.my_lib.test.Test>::position<outer_holder>::action<local.my_domain_com.my_lib.outer.Outer>::position<middle_holder>::action<local.my_domain_com.my_lib.middle.Middle>::position<run>
-action<local.my_domain_com.my_lib.test.Test>::position<outer_holder>::action<local.my_domain_com.my_lib.outer.Outer>::position<run>

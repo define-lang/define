@@ -8,5 +8,6 @@ define the potential action<my.domain.com:my_lib:/mover> {
     } and it does {
         create a particle in action</helper>::position<trigger_pos>.
         move the particle in position</out> to position</destination>.
+        destroy the particle in action</helper>::position<trigger_pos>.
     }
 }

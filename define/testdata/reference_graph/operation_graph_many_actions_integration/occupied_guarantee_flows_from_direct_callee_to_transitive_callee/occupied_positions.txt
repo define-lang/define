@@ -1,4 +1,0 @@
-action<local.my_domain_com.my_lib.fill_item.FillItem>::position<trigger_pos>
-action<local.my_domain_com.my_lib.empty_item.EmptyItem>::position<trigger_pos>
-action<local.my_domain_com.my_lib.middle.Middle>::position<trigger_pos>
-action<local.my_domain_com.my_lib.outer.Outer>::position<trigger_pos>

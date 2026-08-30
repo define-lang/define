@@ -1,5 +1,1 @@
 position<local.my_domain_com.my_lib.parent.Parent>
-action<local.my_domain_com.my_lib.filler.Filler>::position<trigger_pos>
-action<local.my_domain_com.my_lib.mover.Mover>::position<trigger_pos>
-action<local.my_domain_com.my_lib.mover.Mover>::position<dest>
-action<local.my_domain_com.my_lib.mover.Mover>::position<dest>::position<local.my_domain_com.my_lib.gc.Gc>

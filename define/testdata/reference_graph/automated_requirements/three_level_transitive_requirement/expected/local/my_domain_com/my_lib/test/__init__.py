@@ -50,6 +50,7 @@ class TestExecution:
         )
         self.execution_trigger_action_outer: local.my_domain_com.my_lib.outer.OuterExecution
         self.join_for_trigger_action_outer__for_empty_rule_position_input = self.scheduler.create_join(2)
+        self.join_for_trigger_action_outer__for_empty_rule_position_run = self.scheduler.create_join(2)
 
     def create_position_box(self):
         self.local_position_box.create_particle()
@@ -78,8 +79,10 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_action_outer,
         )
+        self.scheduler.submit(self.trigger_action_outer__for_empty_rule_position_run)
         self.scheduler.submit(self.trigger_action_outer__action_parent)
-        self.trigger_action_outer__for_empty_rule_position_input()
+        self.scheduler.submit(self.trigger_action_outer__for_empty_rule_position_input)
+        self.trigger_action_outer__for_empty_rule_position_run()
 
     def trigger_action_outer__action_parent(self):
         self.execution_trigger_action_outer.accept_action_parent()
@@ -88,3 +91,8 @@ class TestExecution:
         if not self.join_for_trigger_action_outer__for_empty_rule_position_input.arrive():
             return
         self.execution_trigger_action_outer.accept_for_empty_rule_position_input()
+
+    def trigger_action_outer__for_empty_rule_position_run(self):
+        if not self.join_for_trigger_action_outer__for_empty_rule_position_run.arrive():
+            return
+        self.execution_trigger_action_outer.accept_for_empty_rule_position_run()

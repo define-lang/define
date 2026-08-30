@@ -11,5 +11,6 @@ define the potential action<my.domain.com:my_lib:/triggered> {
     } and it does {
         move the particle in position</implied> to position<dest>.
         destroy the particle in position<dest>::position</child>.
+        destroy the particle in position<run>.
     }
 }

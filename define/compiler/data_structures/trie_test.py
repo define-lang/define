@@ -54,42 +54,44 @@ class TestPointOps:
             t[("a", "b")] = 1
 
 
-class TestDelete:
-    def test_delitem(self):
+class TestDeleteSubtree:
+    def test_deletes_item(self):
         t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
         t[("a",)] = 1
-        del t[("a",)]
+        t.delete_subtree(("a",))
         assert ("a",) not in t
 
-    def test_delitem_missing_raises(self):
+    def test_missing_raises(self):
         t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
         with pytest.raises(KeyError):
-            del t[("a",)]
+            t.delete_subtree(("a",))
 
-    def test_delitem_cascades_to_children(self):
+    def test_cascades_to_children(self):
         t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
         t[("a",)] = 1
         t[("a", "b")] = 2
         t[("a", "b", "c")] = 3
-        del t[("a",)]
+        removed_values: list[int] = []
+        t.delete_subtree(("a",), removed_value_callback=removed_values.append)
         assert ("a",) not in t
         assert ("a", "b") not in t
         assert ("a", "b", "c") not in t
+        assert set(removed_values) == {1, 2, 3}
 
-    def test_delitem_preserves_siblings(self):
+    def test_preserves_siblings(self):
         t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
         t[("a",)] = 1
         t[("a", "b")] = 2
         t[("a", "c")] = 3
-        del t[("a", "b")]
+        t.delete_subtree(("a", "b"))
         assert ("a",) in t
         assert ("a", "c") in t
 
-    def test_delitem_then_reinsert_child(self):
+    def test_delete_then_reinsert_child(self):
         t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
         t[("a",)] = 1
         t[("a", "b")] = 2
-        del t[("a", "b")]
+        t.delete_subtree(("a", "b"))
         t[("a", "b")] = 3
         assert t[("a", "b")] == 3
 
@@ -108,7 +110,11 @@ class TestMoveSubtree:
         t[("a", "x")] = 2
         t[("a", "y")] = 3
         moved_values: list[int] = []
-        t.move_subtree(("a",), ("b",), moved_value_callback=moved_values.append)
+        t.move_subtree(
+            ("a",),
+            ("b",),
+            moved_value_callback=lambda _key, value: moved_values.append(value),
+        )
         assert ("a",) not in t
         assert ("a", "x") not in t
         assert ("a", "y") not in t
@@ -543,7 +549,7 @@ class TestIndependence:
         t[("a",)] = 0
         t[("a", "b")] = 1
         t[("a", "c")] = 2
-        del t[("a", "b")]
+        t.delete_subtree(("a", "b"))
         assert ("a", "b") not in t
         assert t[("a", "c")] == 2
 
@@ -563,7 +569,7 @@ class TestLenientSetitem:
     def test_auto_created_intermediate_links_into_child_index(self):
         t = _make_lenient()
         t[("a", "b", "c")] = 42
-        del t[("a",)]
+        t.delete_subtree(("a",))
         assert ("a", "b", "c") not in t
         assert ("a", "b") not in t
 
@@ -585,7 +591,7 @@ class TestLenientDelete:
     def test_delete_does_not_auto_create(self):
         t = _make_lenient()
         with pytest.raises(KeyError):
-            del t[("a", "b")]
+            t.delete_subtree(("a", "b"))
 
 
 class TestLenientMoveSubtree:

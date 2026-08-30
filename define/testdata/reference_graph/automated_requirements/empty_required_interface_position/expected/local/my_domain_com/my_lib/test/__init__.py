@@ -39,7 +39,11 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        guarantees.trigger_action_runner.guarantee_position_output.append(
+            self.destroy_action_runner__position_output
+        )
         self.execution_trigger_action_runner: local.my_domain_com.my_lib.runner.RunnerExecution
+        self.join_for_trigger_action_runner__for_empty_rule_position_run = self.scheduler.create_join(2)
 
     def create_action_runner__position_run(self):
         self.action.on_particle.get_action(
@@ -54,7 +58,21 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_action_runner,
         )
-        self.trigger_action_runner__when_empty_position_output()
+        self.scheduler.submit(self.trigger_action_runner__for_empty_rule_position_run)
+        self.scheduler.submit(self.trigger_action_runner__when_empty_position_output)
+        self.trigger_action_runner__for_empty_rule_position_run()
+
+    def destroy_action_runner__position_output(self):
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.runner.Runner
+        ).get_interface_position(
+            "position<output>"
+        ).destroy_particle()
 
     def trigger_action_runner__when_empty_position_output(self):
         self.execution_trigger_action_runner.accept_when_empty_position_output()
+
+    def trigger_action_runner__for_empty_rule_position_run(self):
+        if not self.join_for_trigger_action_runner__for_empty_rule_position_run.arrive():
+            return
+        self.execution_trigger_action_runner.accept_for_empty_rule_position_run()

@@ -44,8 +44,6 @@ class TestExecution:
         self.guarantees = guarantees
         self.execution_trigger_action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
         self.join_for_trigger_action_middle__when_empty_global_position_shared__global_position_marker = self.scheduler.create_join(2)
-        self.join_for_trigger_action_middle__when_empty_global_position_shared__action_child_a__position_trigger_pos = self.scheduler.create_join(2)
-        self.join_for_trigger_action_middle__when_empty_global_position_shared__action_child_b__position_trigger_pos = self.scheduler.create_join(2)
         self.join_for_trigger_action_middle__when_occupied_global_position_shared = self.scheduler.create_join(2)
 
     def create_global_position_shared(self):
@@ -53,8 +51,6 @@ class TestExecution:
             local.my_domain_com.my_lib.shared.Shared
         ).create_particle()
         self.scheduler.submit(self.trigger_action_middle__when_empty_global_position_shared__global_position_marker)
-        self.scheduler.submit(self.trigger_action_middle__when_empty_global_position_shared__action_child_a__position_trigger_pos)
-        self.scheduler.submit(self.trigger_action_middle__when_empty_global_position_shared__action_child_b__position_trigger_pos)
         self.trigger_action_middle__when_occupied_global_position_shared()
 
     def create_action_middle__position_trigger_pos(self):
@@ -70,25 +66,21 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_action_middle,
         )
+        self.scheduler.submit(self.destroy_action_middle__position_trigger_pos)
         self.scheduler.submit(self.trigger_action_middle__when_empty_global_position_shared__global_position_marker)
-        self.scheduler.submit(self.trigger_action_middle__when_empty_global_position_shared__action_child_a__position_trigger_pos)
-        self.scheduler.submit(self.trigger_action_middle__when_empty_global_position_shared__action_child_b__position_trigger_pos)
         self.trigger_action_middle__when_occupied_global_position_shared()
+
+    def destroy_action_middle__position_trigger_pos(self):
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.middle.Middle
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
 
     def trigger_action_middle__when_empty_global_position_shared__global_position_marker(self):
         if not self.join_for_trigger_action_middle__when_empty_global_position_shared__global_position_marker.arrive():
             return
         self.execution_trigger_action_middle.accept_when_empty_global_position_shared__global_position_marker()
-
-    def trigger_action_middle__when_empty_global_position_shared__action_child_a__position_trigger_pos(self):
-        if not self.join_for_trigger_action_middle__when_empty_global_position_shared__action_child_a__position_trigger_pos.arrive():
-            return
-        self.execution_trigger_action_middle.accept_when_empty_global_position_shared__action_child_a__position_trigger_pos()
-
-    def trigger_action_middle__when_empty_global_position_shared__action_child_b__position_trigger_pos(self):
-        if not self.join_for_trigger_action_middle__when_empty_global_position_shared__action_child_b__position_trigger_pos.arrive():
-            return
-        self.execution_trigger_action_middle.accept_when_empty_global_position_shared__action_child_b__position_trigger_pos()
 
     def trigger_action_middle__when_occupied_global_position_shared(self):
         if not self.join_for_trigger_action_middle__when_occupied_global_position_shared.arrive():

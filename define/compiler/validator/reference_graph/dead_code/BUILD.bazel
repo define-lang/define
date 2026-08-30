@@ -19,7 +19,7 @@ py_library(
     visibility = ["//define/compiler/validator/reference_graph:__pkg__"],
     deps = [
         "//define/compiler:ast",
-        "//define/compiler/validator/reference_graph:particle_tracker",
+        "//define/compiler/validator/reference_graph:particle_info",
     ],
 )
 

@@ -27,6 +27,7 @@ class Right(literal.Action):
 @final
 class RightGuarantees:
     def __init__(self):
+        self.guarantee_position_trigger: list[literal.Task] = []
         self.trigger_action_shared = local.my_domain_com.my_lib.shared.SharedGuarantees()
 
 
@@ -37,15 +38,21 @@ class RightExecution:
         action: Right,
         scheduler: literal.Scheduler,
         guarantees: RightGuarantees,
+        *,
+        destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.destruction_connections = destruction_connections
         self.execution_trigger_action_shared: local.my_domain_com.my_lib.shared.SharedExecution
         self.join_for_trigger_action_shared__for_empty_rule_position_trigger = self.scheduler.create_join(2)
 
-    def accept_when_empty_action_shared__position_trigger(self):
+    def accept_action_parent(self):
         self.create_action_shared__position_trigger()
+
+    def accept_for_empty_rule_position_trigger(self):
+        self.destroy_position_trigger()
 
     def create_action_shared__position_trigger(self):
         self.action.on_particle.get_action(
@@ -62,6 +69,15 @@ class RightExecution:
         )
         self.scheduler.submit(self.trigger_action_shared__for_empty_rule_position_trigger)
         self.trigger_action_shared__for_empty_rule_position_trigger()
+
+    def destroy_position_trigger(self):
+        literal.continue_destruction(self.continue_destroy_position_trigger)
+
+    def continue_destroy_position_trigger(self):
+        self.action.get_interface_position(
+            "position<trigger>"
+        ).destroy_particle()
+        self.scheduler.continue_with(self.guarantees.guarantee_position_trigger)
 
     def trigger_action_shared__for_empty_rule_position_trigger(self):
         if not self.join_for_trigger_action_shared__for_empty_rule_position_trigger.arrive():

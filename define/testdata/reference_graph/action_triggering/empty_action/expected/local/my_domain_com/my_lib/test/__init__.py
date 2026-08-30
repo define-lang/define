@@ -17,8 +17,15 @@ class Test(literal.EntryPoint):
         execution = TestExecution(
             self,
             scheduler,
+            TestGuarantees(),
         )
         execution.create_action_do_thing__position_pp()
+
+
+@final
+class TestGuarantees:
+    def __init__(self):
+        self.trigger_action_do_thing = local.my_domain_com.my_lib.do_thing.DoThingGuarantees()
 
 
 @final
@@ -27,10 +34,13 @@ class TestExecution:
         self,
         action: Test,
         scheduler: literal.Scheduler,
+        guarantees: TestGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
+        self.guarantees = guarantees
         self.execution_trigger_action_do_thing: local.my_domain_com.my_lib.do_thing.DoThingExecution
+        self.join_for_trigger_action_do_thing__for_empty_rule_position_pp = self.scheduler.create_join(2)
 
     def create_action_do_thing__position_pp(self):
         self.action.on_particle.get_action(
@@ -39,9 +49,20 @@ class TestExecution:
             "position<pp>"
         ).create_particle()
         self.execution_trigger_action_do_thing = local.my_domain_com.my_lib.do_thing.DoThingExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.do_thing.DoThing
+            ),
             self.scheduler,
+            self.guarantees.trigger_action_do_thing,
         )
-        self.trigger_action_do_thing__action_parent()
+        self.scheduler.submit(self.trigger_action_do_thing__for_empty_rule_position_pp)
+        self.scheduler.submit(self.trigger_action_do_thing__action_parent)
+        self.trigger_action_do_thing__for_empty_rule_position_pp()
 
     def trigger_action_do_thing__action_parent(self):
         self.execution_trigger_action_do_thing.accept_action_parent()
+
+    def trigger_action_do_thing__for_empty_rule_position_pp(self):
+        if not self.join_for_trigger_action_do_thing__for_empty_rule_position_pp.arrive():
+            return
+        self.execution_trigger_action_do_thing.accept_for_empty_rule_position_pp()

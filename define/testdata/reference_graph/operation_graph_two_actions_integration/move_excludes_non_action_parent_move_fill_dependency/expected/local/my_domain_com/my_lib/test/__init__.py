@@ -63,6 +63,9 @@ class TestExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        guarantees.trigger_position_gateway__action_other.guarantee_position_destination.append(
+            self.destroy_position_gateway__action_other__position_destination
+        )
         self.execution_trigger_position_gateway__action_other: local.my_domain_com.my_lib.other.OtherExecution
         self.join_for_move_position_destination_to_position_gateway__action_other__position_box = self.scheduler.create_join(2)
         self.join_for_trigger_position_gateway__action_other__when_empty_position_box__global_position_item = self.scheduler.create_join(2)
@@ -111,7 +114,17 @@ class TestExecution:
         )
         self.scheduler.submit(self.trigger_position_gateway__action_other__when_empty_position_box__global_position_item)
         self.scheduler.submit(self.trigger_position_gateway__action_other__when_empty_position_box__global_position_item)
-        self.trigger_position_gateway__action_other__when_empty_position_destination()
+        self.scheduler.submit(self.trigger_position_gateway__action_other__when_empty_position_destination)
+        self.trigger_position_gateway__action_other__for_empty_rule_position_box()
+
+    def destroy_position_gateway__action_other__position_destination(self):
+        self.action.get_interface_position(
+            "position<gateway>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.other.Other
+        ).get_interface_position(
+            "position<destination>"
+        ).destroy_particle()
 
     def trigger_position_gateway__action_other__when_empty_position_box__global_position_item(self):
         if not self.join_for_trigger_position_gateway__action_other__when_empty_position_box__global_position_item.arrive():
@@ -120,3 +133,6 @@ class TestExecution:
 
     def trigger_position_gateway__action_other__when_empty_position_destination(self):
         self.execution_trigger_position_gateway__action_other.accept_when_empty_position_destination()
+
+    def trigger_position_gateway__action_other__for_empty_rule_position_box(self):
+        self.execution_trigger_position_gateway__action_other.accept_for_empty_rule_position_box()

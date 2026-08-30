@@ -29,8 +29,6 @@ class Outer(literal.Action):
 @final
 class OuterGuarantees:
     def __init__(self):
-        self.guarantee_global_position_slot: list[literal.Task] = []
-        self.guarantee_action_middle__position_trigger_pos: list[literal.Task] = []
         self.trigger_action_middle = local.my_domain_com.my_lib.middle.MiddleGuarantees()
 
 
@@ -49,17 +47,15 @@ class OuterExecution:
         self.guarantees = guarantees
         self.destruction_connections = destruction_connections
         self.execution_trigger_action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
-        self.join_for_trigger_action_middle__when_empty_action_inner__position_trigger_pos = self.scheduler.create_join(2)
+        self.join_for_trigger_action_middle__action_parent = self.scheduler.create_join(2)
         self.join_for_trigger_action_middle__when_empty_global_position_slot = self.scheduler.create_join(2)
 
     def accept_for_empty_rule_global_position_slot(self):
         self.destroy_global_position_slot()
 
-    def accept_when_empty_action_middle__position_trigger_pos(self):
-        self.create_action_middle__position_trigger_pos()
-
-    def accept_when_empty_action_inner__position_trigger_pos(self):
-        self.trigger_action_middle__when_empty_action_inner__position_trigger_pos()
+    def accept_action_parent(self):
+        self.scheduler.submit(self.create_action_middle__position_trigger_pos)
+        self.trigger_action_middle__action_parent()
 
     def destroy_global_position_slot(self):
         literal.continue_destruction(self.continue_destroy_global_position_slot)
@@ -68,8 +64,7 @@ class OuterExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.slot.Slot
         ).destroy_particle()
-        self.scheduler.submit(self.trigger_action_middle__when_empty_global_position_slot)
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_slot)
+        self.trigger_action_middle__when_empty_global_position_slot()
 
     def create_action_middle__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -84,14 +79,21 @@ class OuterExecution:
             self.scheduler,
             self.guarantees.trigger_action_middle,
         )
-        self.scheduler.submit_all(self.guarantees.guarantee_action_middle__position_trigger_pos)
-        self.scheduler.submit(self.trigger_action_middle__when_empty_action_inner__position_trigger_pos)
+        self.scheduler.submit(self.destroy_action_middle__position_trigger_pos)
+        self.scheduler.submit(self.trigger_action_middle__action_parent)
         self.trigger_action_middle__when_empty_global_position_slot()
 
-    def trigger_action_middle__when_empty_action_inner__position_trigger_pos(self):
-        if not self.join_for_trigger_action_middle__when_empty_action_inner__position_trigger_pos.arrive():
+    def destroy_action_middle__position_trigger_pos(self):
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.middle.Middle
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
+
+    def trigger_action_middle__action_parent(self):
+        if not self.join_for_trigger_action_middle__action_parent.arrive():
             return
-        self.execution_trigger_action_middle.accept_when_empty_action_inner__position_trigger_pos()
+        self.execution_trigger_action_middle.accept_action_parent()
 
     def trigger_action_middle__when_empty_global_position_slot(self):
         if not self.join_for_trigger_action_middle__when_empty_global_position_slot.arrive():

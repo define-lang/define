@@ -6,6 +6,7 @@ from define.runtime import literal
 
 import local.my_domain_com.my_lib.child
 import local.my_domain_com.my_lib.marker
+import local.my_domain_com.my_lib.result
 
 
 class Middle(literal.Action):
@@ -23,6 +24,7 @@ class Middle(literal.Action):
                     constraints=(
                         local.my_domain_com.my_lib.child.Child,
                         local.my_domain_com.my_lib.marker.Marker,
+                        local.my_domain_com.my_lib.result.Result,
                     ),
                     scheduler=on_particle.scheduler,
                 ),
@@ -31,6 +33,7 @@ class Middle(literal.Action):
                     constraints=(
                         local.my_domain_com.my_lib.child.Child,
                         local.my_domain_com.my_lib.marker.Marker,
+                        local.my_domain_com.my_lib.result.Result,
                     ),
                     scheduler=on_particle.scheduler,
                 ),
@@ -56,18 +59,18 @@ class MiddleExecution:
         self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
-        guarantees.trigger_position_source__action_child.guarantee_position_result.append(
+        guarantees.trigger_position_source__action_child.guarantee_global_position_result.append(
             self.move_position_source_to_position_holder
         )
         self.execution_trigger_position_source__action_child: local.my_domain_com.my_lib.child.ChildExecution
         self.join_for_move_position_source_to_position_holder = self.scheduler.create_join(3)
-        self.join_for_trigger_position_source__action_child__when_empty_position_result = self.scheduler.create_join(2)
+        self.join_for_trigger_position_source__action_child__when_empty_global_position_result = self.scheduler.create_join(2)
 
-    def accept_when_empty_position_source__action_child__position_trigger_pos(self):
+    def accept_when_occupied_position_source(self):
         self.create_position_source__action_child__position_trigger_pos()
 
-    def accept_when_empty_position_source__action_child__position_result(self):
-        self.trigger_position_source__action_child__when_empty_position_result()
+    def accept_when_empty_position_source__global_position_result(self):
+        self.trigger_position_source__action_child__when_empty_global_position_result()
 
     def accept_for_empty_rule_position_source(self):
         self.move_position_source_to_position_holder()
@@ -90,7 +93,7 @@ class MiddleExecution:
             self.guarantees.trigger_position_source__action_child,
         )
         self.scheduler.submit(self.move_position_source_to_position_holder)
-        self.trigger_position_source__action_child__when_empty_position_result()
+        self.trigger_position_source__action_child__when_empty_global_position_result()
 
     def move_position_source_to_position_holder(self):
         if not self.join_for_move_position_source_to_position_holder.arrive():
@@ -102,9 +105,19 @@ class MiddleExecution:
                 "position<holder>"
             )
         )
+        self.scheduler.submit(self.destroy_position_holder__action_child__position_trigger_pos)
         self.scheduler.continue_with(self.guarantees.guarantee_position_source__move__position_holder)
 
-    def trigger_position_source__action_child__when_empty_position_result(self):
-        if not self.join_for_trigger_position_source__action_child__when_empty_position_result.arrive():
+    def destroy_position_holder__action_child__position_trigger_pos(self):
+        self.action.get_interface_position(
+            "position<holder>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.child.Child
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
+
+    def trigger_position_source__action_child__when_empty_global_position_result(self):
+        if not self.join_for_trigger_position_source__action_child__when_empty_global_position_result.arrive():
             return
-        self.execution_trigger_position_source__action_child.accept_when_empty_position_result()
+        self.execution_trigger_position_source__action_child.accept_when_empty_global_position_result()

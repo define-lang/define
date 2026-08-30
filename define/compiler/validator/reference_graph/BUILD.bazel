@@ -55,6 +55,7 @@ py_library(
         ":action_contract",
         ":operation_graph",
         ":operation_graph_model",
+        ":particle_info",
         ":particle_operation",
         ":particle_tracker",
         ":quality_assignment",
@@ -67,7 +68,6 @@ py_library(
         "//define/compiler/validator:scope_tracker",
         "//define/compiler/validator:validation_result",
         "//define/compiler/validator/reference_graph/dead_code:dead_constraint_tracker",
-        "//define/compiler/validator/reference_graph/dead_code:dead_interface_tracker",
     ],
 )
 
@@ -222,6 +222,16 @@ py_test(
 )
 
 py_library(
+    name = "particle_info",
+    srcs = ["particle_info.py"],
+    visibility = ["//define/compiler/validator/reference_graph:__subpackages__"],
+    deps = [
+        ":quality_assignment",
+        "//define/compiler:ast",
+    ],
+)
+
+py_library(
     name = "particle_operation",
     srcs = ["particle_operation.py"],
     visibility = ["//define/compiler:__subpackages__"],
@@ -242,9 +252,11 @@ py_library(
         ":action_contract",
         ":operation_graph",
         ":operation_graph_model",
+        ":particle_info",
         ":quality_assignment",
         "//define/compiler:ast",
         "//define/compiler/data_structures:trie",
+        "//define/compiler/validator/reference_graph/dead_code:dead_interface_tracker",
     ],
 )
 
@@ -346,7 +358,7 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         ":action_contract",
-        ":particle_tracker",
+        ":particle_info",
         "//define/compiler:ast",
         "//define/compiler:diagnostics",
     ],
@@ -397,6 +409,7 @@ pyright_test(
         ":operation_graph_rules",
         ":operation_graph_rules_test",
         ":operation_graph_test",
+        ":particle_info",
         ":particle_operation",
         ":particle_tracker",
         ":particle_tracker_test",

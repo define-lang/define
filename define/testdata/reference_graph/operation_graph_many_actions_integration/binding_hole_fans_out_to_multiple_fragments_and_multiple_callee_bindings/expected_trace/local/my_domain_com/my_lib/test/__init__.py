@@ -30,15 +30,8 @@ class Test(literal.EntryPoint):
             scheduler,
             None,
             "test",
-            TestGuarantees(),
         )
         execution.create_position_gateway()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_position_gateway__action_middle = local.my_domain_com.my_lib.middle.MiddleGuarantees()
 
 
 @final
@@ -49,7 +42,6 @@ class TestExecution:
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
-        guarantees: TestGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
@@ -57,11 +49,8 @@ class TestExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = guarantees
         self.execution_trigger_position_gateway__action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
         self.join_for_trigger_position_gateway__action_middle__action_parent = self.scheduler.create_join(2)
-        self.join_for_trigger_position_gateway__action_middle__when_empty_action_child_a__position_trigger_pos = self.scheduler.create_join(2)
-        self.join_for_trigger_position_gateway__action_middle__when_empty_action_child_b__position_trigger_pos = self.scheduler.create_join(2)
 
     def create_position_gateway(self):
         self.action.get_interface_position(
@@ -73,9 +62,7 @@ class TestExecution:
             1,
         )
         self.scheduler.submit(self.create_position_gateway__action_middle__position_trigger_pos)
-        self.scheduler.submit(self.trigger_position_gateway__action_middle__action_parent)
-        self.scheduler.submit(self.trigger_position_gateway__action_middle__when_empty_action_child_a__position_trigger_pos)
-        self.trigger_position_gateway__action_middle__when_empty_action_child_b__position_trigger_pos()
+        self.trigger_position_gateway__action_middle__action_parent()
 
     def create_position_gateway__action_middle__position_trigger_pos(self):
         self.action.get_interface_position(
@@ -99,23 +86,25 @@ class TestExecution:
             self.scheduler,
             self.trace_execution,
             "middle",
-            self.guarantees.trigger_position_gateway__action_middle,
         )
-        self.scheduler.submit(self.trigger_position_gateway__action_middle__action_parent)
-        self.scheduler.submit(self.trigger_position_gateway__action_middle__when_empty_action_child_a__position_trigger_pos)
-        self.trigger_position_gateway__action_middle__when_empty_action_child_b__position_trigger_pos()
+        self.scheduler.submit(self.destroy_position_gateway__action_middle__position_trigger_pos)
+        self.trigger_position_gateway__action_middle__action_parent()
+
+    def destroy_position_gateway__action_middle__position_trigger_pos(self):
+        self.action.get_interface_position(
+            "position<gateway>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.middle.Middle
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
+        self.scheduler.destroy_completed(
+            self.trace_execution,
+            "gateway::/middle::trigger_pos",
+            1,
+        )
 
     def trigger_position_gateway__action_middle__action_parent(self):
         if not self.join_for_trigger_position_gateway__action_middle__action_parent.arrive():
             return
         self.execution_trigger_position_gateway__action_middle.accept_action_parent()
-
-    def trigger_position_gateway__action_middle__when_empty_action_child_a__position_trigger_pos(self):
-        if not self.join_for_trigger_position_gateway__action_middle__when_empty_action_child_a__position_trigger_pos.arrive():
-            return
-        self.execution_trigger_position_gateway__action_middle.accept_when_empty_action_child_a__position_trigger_pos()
-
-    def trigger_position_gateway__action_middle__when_empty_action_child_b__position_trigger_pos(self):
-        if not self.join_for_trigger_position_gateway__action_middle__when_empty_action_child_b__position_trigger_pos.arrive():
-            return
-        self.execution_trigger_position_gateway__action_middle.accept_when_empty_action_child_b__position_trigger_pos()

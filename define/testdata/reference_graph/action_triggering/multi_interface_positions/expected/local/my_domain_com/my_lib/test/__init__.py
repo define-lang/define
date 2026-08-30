@@ -42,6 +42,7 @@ class TestExecution:
         self.guarantees = guarantees
         self.execution_trigger_action_process: local.my_domain_com.my_lib.process.ProcessExecution
         self.join_for_trigger_action_process__for_empty_rule_position_input = self.scheduler.create_join(2)
+        self.join_for_trigger_action_process__for_empty_rule_position_trigger = self.scheduler.create_join(2)
 
     def create_action_process__position_input(self):
         self.action.on_particle.get_action(
@@ -64,9 +65,11 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_action_process,
         )
+        self.scheduler.submit(self.trigger_action_process__for_empty_rule_position_trigger)
         self.scheduler.submit(self.trigger_action_process__action_parent)
         self.scheduler.submit(self.trigger_action_process__for_empty_rule_position_input)
-        self.trigger_action_process__when_empty_position_config()
+        self.scheduler.submit(self.trigger_action_process__when_empty_position_config)
+        self.trigger_action_process__for_empty_rule_position_trigger()
 
     def trigger_action_process__action_parent(self):
         self.execution_trigger_action_process.accept_action_parent()
@@ -78,3 +81,8 @@ class TestExecution:
 
     def trigger_action_process__when_empty_position_config(self):
         self.execution_trigger_action_process.accept_when_empty_position_config()
+
+    def trigger_action_process__for_empty_rule_position_trigger(self):
+        if not self.join_for_trigger_action_process__for_empty_rule_position_trigger.arrive():
+            return
+        self.execution_trigger_action_process.accept_for_empty_rule_position_trigger()

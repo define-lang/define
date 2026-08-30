@@ -340,6 +340,18 @@ def source_form_typed_name_parts(
     )
 
 
+def source_form_chained_name(
+    chained_name: ChainedNameTuple,
+    current_fqun: str,
+) -> str:
+    """Return a canonical chained-name tuple in source form for one universe."""
+    source_names: list[str] = []
+    for typed_name in chained_name:
+        parts = source_form_typed_name_parts(typed_name, current_fqun)
+        source_names.append(f"{parts.name_type.value}<{parts.source_name}>")
+    return "::".join(source_names)
+
+
 # A position's canonical chained name, as stored in tries, contracts, and the
 # operation graph.
 # TODO: Make this a real class with methods (starting with the chain_*
@@ -603,15 +615,6 @@ class PositionReference(ChainedName):
             raise ValueError(
                 f"Last element of a PositionReference must be a position: {self.source_chained_name}"
             )
-
-    def canonical_position_prefixes(self) -> list[ChainedNameTuple]:
-        """Return each position prefix in canonical chained-name form."""
-        canonical_chained_name = self.canonical_chained_name_tuple
-        position_prefixes: list[ChainedNameTuple] = []
-        for name_index, typed_name in enumerate(self.typed_names):
-            if typed_name.name_type != NameType.ACTION:
-                position_prefixes.append(canonical_chained_name[: name_index + 1])
-        return position_prefixes
 
     def position_prefix(self, name_count: int) -> PositionReference:
         """Return the position prefix containing ``name_count`` typed names."""

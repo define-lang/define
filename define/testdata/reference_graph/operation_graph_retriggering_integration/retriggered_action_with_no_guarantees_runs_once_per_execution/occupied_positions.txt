@@ -1,2 +1,1 @@
 action<local.my_domain_com.my_lib.test.Test>::position<gw>
-action<local.my_domain_com.my_lib.test.Test>::position<gw>::action<local.my_domain_com.my_lib.worker.Worker>::position<trigger_pos>

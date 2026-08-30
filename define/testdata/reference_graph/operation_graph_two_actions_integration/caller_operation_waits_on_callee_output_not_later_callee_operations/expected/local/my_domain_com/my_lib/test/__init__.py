@@ -82,6 +82,7 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_position_gateway__action_other,
         )
+        self.scheduler.submit(self.destroy_position_gateway__action_other__position_trigger_pos)
         self.scheduler.submit(self.trigger_position_gateway__action_other__when_empty_position_output)
         self.trigger_position_gateway__action_other__when_empty_position_late()
 
@@ -92,6 +93,15 @@ class TestExecution:
             local.my_domain_com.my_lib.other.Other
         ).get_interface_position(
             "position<output>"
+        ).destroy_particle()
+
+    def destroy_position_gateway__action_other__position_trigger_pos(self):
+        self.action.get_interface_position(
+            "position<gateway>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.other.Other
+        ).get_interface_position(
+            "position<trigger_pos>"
         ).destroy_particle()
 
     def trigger_position_gateway__action_other__when_empty_position_output(self):

@@ -8,8 +8,8 @@ define the potential action<my.domain.com:my_lib:/runner> {
     it happens when {
         the position<run> has a particle.
     } and it does {
-        create a particle in position<iface>.
         create a particle in position<iface>::action</worker>::position<run>.
+        destroy the particle in position<iface>::action</worker>::position<non_trigger>.
         destroy the particle in position<run>.
     }
 }

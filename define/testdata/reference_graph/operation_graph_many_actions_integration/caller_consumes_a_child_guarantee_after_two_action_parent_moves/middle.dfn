@@ -4,6 +4,7 @@ define the potential action<my.domain.com:my_lib:/middle> {
         it may only contain particles where {
             it has the action</child>.
             it has the position</marker>.
+            it has the position</result>.
         }
     }
     define the position<intermediate>.
@@ -11,6 +12,7 @@ define the potential action<my.domain.com:my_lib:/middle> {
         it may only contain particles where {
             it has the action</child>.
             it has the position</marker>.
+            it has the position</result>.
         }
     }
     it happens when {
@@ -19,5 +21,6 @@ define the potential action<my.domain.com:my_lib:/middle> {
         create a particle in position<source>::action</child>::position<trigger_pos>.
         move the particle in position<source> to position<intermediate>.
         move the particle in position<intermediate> to position<holder>.
+        destroy the particle in position<holder>::action</child>::position<trigger_pos>.
     }
 }

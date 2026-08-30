@@ -10,10 +10,22 @@ define the potential action<my.domain.com:my_lib:/test> {
         this particle is created.
     } and it does {
         create a particle in position<box>.
-        create a particle in position<box>::action</consume_branches>::position<left>.
-        create a particle in position<box>::action</consume_branches>::position<left>::position</fillable>.
-        create a particle in position<box>::action</consume_branches>::position<right>.
-        create a particle in position<box>::action</consume_branches>::position<right>::position</fillable>.
+        define the position<left_source> {
+            it may only contain particles where {
+                it has the position</fillable>.
+            }
+        }
+        define the position<right_source> {
+            it may only contain particles where {
+                it has the position</fillable>.
+            }
+        }
+        create a particle in position<left_source>.
+        create a particle in position<left_source>::position</fillable>.
+        create a particle in position<right_source>.
+        create a particle in position<right_source>::position</fillable>.
+        move the particle in position<left_source> to position<box>::action</consume_branches>::position<left>.
+        move the particle in position<right_source> to position<box>::action</consume_branches>::position<right>.
         create a particle in position<box>::action</consume_branches>::position<trigger_pos>.
     }
 }

@@ -1,4 +1,2 @@
 position<local.my_domain_com.my_lib.box.Box>
 position<local.my_domain_com.my_lib.box.Box>::position<local.my_domain_com.my_lib.destination.Destination>
-action<local.my_domain_com.my_lib.producer.Producer>::position<trigger_pos>
-action<local.my_domain_com.my_lib.consumer.Consumer>::position<trigger_pos>

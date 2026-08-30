@@ -50,6 +50,9 @@ class ReactAExecution:
         self.scheduler = scheduler
         self.guarantees = guarantees
         self.destruction_connections = destruction_connections
+        guarantees.trigger_position_result__action_final.guarantee_position_trigger.append(
+            self.destroy_position_result
+        )
         self.execution_trigger_position_result__action_final: local.my_domain_com.my_lib.final.FinalExecution
         self.join_for_trigger_position_result__action_final__action_parent = self.scheduler.create_join(2)
         self.join_for_trigger_position_result__action_final__for_empty_rule_position_trigger = self.scheduler.create_join(2)
@@ -65,8 +68,7 @@ class ReactAExecution:
             "position<result>"
         ).create_particle()
         self.scheduler.submit(self.create_position_result__action_final__position_trigger)
-        self.scheduler.submit(self.trigger_position_result__action_final__action_parent)
-        self.scheduler.continue_with(self.guarantees.guarantee_position_result)
+        self.trigger_position_result__action_final__action_parent()
 
     def create_position_result__action_final__position_trigger(self):
         self.action.get_interface_position(
@@ -88,6 +90,12 @@ class ReactAExecution:
         self.scheduler.submit(self.trigger_position_result__action_final__for_empty_rule_position_trigger)
         self.scheduler.submit(self.trigger_position_result__action_final__action_parent)
         self.trigger_position_result__action_final__for_empty_rule_position_trigger()
+
+    def destroy_position_result(self):
+        self.action.get_interface_position(
+            "position<result>"
+        ).destroy_particle()
+        self.scheduler.continue_with(self.guarantees.guarantee_position_result)
 
     def destroy_position_trigger(self):
         literal.continue_destruction(self.continue_destroy_position_trigger)

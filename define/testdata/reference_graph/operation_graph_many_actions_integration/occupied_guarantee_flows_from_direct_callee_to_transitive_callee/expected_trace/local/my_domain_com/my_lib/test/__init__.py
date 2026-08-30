@@ -78,6 +78,7 @@ class TestExecution:
             "fill_item",
             self.guarantees.trigger_action_fill_item,
         )
+        self.scheduler.submit(self.destroy_action_fill_item__position_trigger_pos)
         self.trigger_action_fill_item__when_empty_global_position_item()
 
     def create_action_outer__position_trigger_pos(self):
@@ -100,18 +101,39 @@ class TestExecution:
             "outer",
             self.guarantees.trigger_action_outer,
         )
-        self.scheduler.submit(self.trigger_action_outer__when_empty_action_middle__position_trigger_pos)
-        self.scheduler.submit(self.trigger_action_outer__when_empty_action_empty_item__position_trigger_pos)
+        self.scheduler.submit(self.destroy_action_outer__position_trigger_pos)
+        self.scheduler.submit(self.trigger_action_outer__action_parent)
         self.trigger_action_outer__for_empty_rule_global_position_item()
+
+    def destroy_action_fill_item__position_trigger_pos(self):
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.fill_item.FillItem
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
+        self.scheduler.destroy_completed(
+            self.trace_execution,
+            "/fill_item::trigger_pos",
+            1,
+        )
+
+    def destroy_action_outer__position_trigger_pos(self):
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.outer.Outer
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
+        self.scheduler.destroy_completed(
+            self.trace_execution,
+            "/outer::trigger_pos",
+            1,
+        )
 
     def trigger_action_fill_item__when_empty_global_position_item(self):
         self.execution_trigger_action_fill_item.accept_when_empty_global_position_item()
 
-    def trigger_action_outer__when_empty_action_middle__position_trigger_pos(self):
-        self.execution_trigger_action_outer.accept_when_empty_action_middle__position_trigger_pos()
-
-    def trigger_action_outer__when_empty_action_empty_item__position_trigger_pos(self):
-        self.execution_trigger_action_outer.accept_when_empty_action_empty_item__position_trigger_pos()
+    def trigger_action_outer__action_parent(self):
+        self.execution_trigger_action_outer.accept_action_parent()
 
     def trigger_action_outer__for_empty_rule_global_position_item(self):
         if not self.join_for_trigger_action_outer__for_empty_rule_global_position_item.arrive():

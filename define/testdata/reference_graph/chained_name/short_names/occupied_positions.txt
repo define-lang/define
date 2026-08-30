@@ -1,2 +1,1 @@
 position<local.a_b.cd.a.A>
-position<local.a_b.cd.a.A>::action<local.a_b.cd.b.B>::position<t>

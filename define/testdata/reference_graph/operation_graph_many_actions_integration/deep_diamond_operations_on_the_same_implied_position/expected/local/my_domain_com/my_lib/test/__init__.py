@@ -63,7 +63,8 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_action_left,
         )
-        self.scheduler.submit(self.trigger_action_left__when_empty_action_left_child__position_trigger_pos)
+        self.scheduler.submit(self.destroy_action_left__position_trigger_pos)
+        self.scheduler.submit(self.trigger_action_left__action_parent)
         self.trigger_action_left__when_empty_global_position_marker()
 
     def create_action_right__position_trigger_pos(self):
@@ -79,17 +80,32 @@ class TestExecution:
             self.scheduler,
             self.guarantees.trigger_action_right,
         )
-        self.scheduler.submit(self.trigger_action_right__when_empty_action_right_child__position_trigger_pos)
+        self.scheduler.submit(self.destroy_action_right__position_trigger_pos)
+        self.scheduler.submit(self.trigger_action_right__action_parent)
         self.trigger_action_right__for_empty_rule_global_position_marker()
 
-    def trigger_action_left__when_empty_action_left_child__position_trigger_pos(self):
-        self.execution_trigger_action_left.accept_when_empty_action_left_child__position_trigger_pos()
+    def destroy_action_left__position_trigger_pos(self):
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.left.Left
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
+
+    def destroy_action_right__position_trigger_pos(self):
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.right.Right
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
+
+    def trigger_action_left__action_parent(self):
+        self.execution_trigger_action_left.accept_action_parent()
 
     def trigger_action_left__when_empty_global_position_marker(self):
         self.execution_trigger_action_left.accept_when_empty_global_position_marker()
 
-    def trigger_action_right__when_empty_action_right_child__position_trigger_pos(self):
-        self.execution_trigger_action_right.accept_when_empty_action_right_child__position_trigger_pos()
+    def trigger_action_right__action_parent(self):
+        self.execution_trigger_action_right.accept_action_parent()
 
     def trigger_action_right__for_empty_rule_global_position_marker(self):
         if not self.join_for_trigger_action_right__for_empty_rule_global_position_marker.arrive():
