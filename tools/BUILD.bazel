@@ -130,6 +130,17 @@ py_binary(
     ],
 )
 
+py_test(
+    name = "regenerate_codegen_testdata_test",
+    size = "small",
+    srcs = ["regenerate_codegen_testdata_test.py"],
+    deps = [
+        ":regenerate_codegen_testdata",
+        "//define/compiler:driver",
+        "@pypi//pytest",
+    ],
+)
+
 prettier_bin.prettier_binary(
     name = "prettier",
     env = {
@@ -364,6 +375,7 @@ pyright_test(
         ":loop_coverage_test",
         ":profile_orchestration",
         ":regenerate_codegen_testdata",
+        ":regenerate_codegen_testdata_test",
         ":run_profile",
         ":run_profile_test",
         ":serve_report",
