@@ -61,10 +61,10 @@ def test_same_fqun_constraint_reference_in_move_must_use_short_form(
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
     assert diags[0].fqun == "mv:define-lang.org:test_files"
-    assert diags[0].location.line == 5
-    assert diags[0].location.column == 33
-    assert diags[0].location.end_line == 5
-    assert diags[0].location.end_column == 62
+    assert diags[0].location.line == 8
+    assert diags[0].location.column == 37
+    assert diags[0].location.end_line == 8
+    assert diags[0].location.end_column == 66
     assert diags[0].location.file_path is None
     assert isinstance(diags[1], diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
     assert diags[1].fqun == "mv:define-lang.org:test_files"

@@ -160,17 +160,17 @@ def test_local_name_leading_digit_position(
     assert isinstance(diags[0], diagnostics.InvalidLocalNameFormatDiagnostic)
     assert diags[0].local_name == "1bad"
     assert diags[0].char == "1"
-    assert diags[0].location.line == 3
-    assert diags[0].location.column == 25
-    assert diags[0].location.end_line == 3
-    assert diags[0].location.end_column == 29
+    assert diags[0].location.line == 6
+    assert diags[0].location.column == 29
+    assert diags[0].location.end_line == 6
+    assert diags[0].location.end_column == 33
     assert diags[0].location.file_path is None
     assert isinstance(diags[1], diagnostics.UnreferencedPositionDiagnostic)
     assert diags[1].position_name == "position<1bad>"
-    assert diags[1].location.line == 3
-    assert diags[1].location.column == 25
-    assert diags[1].location.end_line == 3
-    assert diags[1].location.end_column == 29
+    assert diags[1].location.line == 6
+    assert diags[1].location.column == 29
+    assert diags[1].location.end_line == 6
+    assert diags[1].location.end_column == 33
     assert diags[1].location.file_path is None
 
 
@@ -183,18 +183,18 @@ def test_local_name_special_character_position(
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.UnreferencedPositionDiagnostic)
     assert diags[0].position_name == "position<my@pos>"
-    assert diags[0].location.line == 3
-    assert diags[0].location.column == 25
-    assert diags[0].location.end_line == 3
-    assert diags[0].location.end_column == 31
+    assert diags[0].location.line == 6
+    assert diags[0].location.column == 29
+    assert diags[0].location.end_line == 6
+    assert diags[0].location.end_column == 35
     assert diags[0].location.file_path is None
     assert isinstance(diags[1], diagnostics.InvalidLocalNameFormatDiagnostic)
     assert diags[1].local_name == "my@pos"
     assert diags[1].char == "@"
-    assert diags[1].location.line == 3
-    assert diags[1].location.column == 27
-    assert diags[1].location.end_line == 3
-    assert diags[1].location.end_column == 31
+    assert diags[1].location.line == 6
+    assert diags[1].location.column == 31
+    assert diags[1].location.end_line == 6
+    assert diags[1].location.end_column == 35
     assert diags[1].location.file_path is None
 
 
@@ -208,17 +208,17 @@ def test_local_name_uppercase_position(
     assert isinstance(diags[0], diagnostics.InvalidLocalNameFormatDiagnostic)
     assert diags[0].local_name == "BadName"
     assert diags[0].char == "B"
-    assert diags[0].location.line == 3
-    assert diags[0].location.column == 25
-    assert diags[0].location.end_line == 3
-    assert diags[0].location.end_column == 32
+    assert diags[0].location.line == 6
+    assert diags[0].location.column == 29
+    assert diags[0].location.end_line == 6
+    assert diags[0].location.end_column == 36
     assert diags[0].location.file_path is None
     assert isinstance(diags[1], diagnostics.UnreferencedPositionDiagnostic)
     assert diags[1].position_name == "position<BadName>"
-    assert diags[1].location.line == 3
-    assert diags[1].location.column == 25
-    assert diags[1].location.end_line == 3
-    assert diags[1].location.end_column == 32
+    assert diags[1].location.line == 6
+    assert diags[1].location.column == 29
+    assert diags[1].location.end_line == 6
+    assert diags[1].location.end_column == 36
     assert diags[1].location.file_path is None
 
 

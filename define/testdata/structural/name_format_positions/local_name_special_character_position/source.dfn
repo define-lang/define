@@ -1,9 +1,9 @@
 define the potential action<mv:define-lang.org:test_files:/invalid/syntax/local_names/special_characters> {
     define the position<run>.
-    define the position<my@pos>.
     it happens when {
         the position<run> has a particle.
     } and it does {
+        define the position<my@pos>.
         define the position<_noop>.
         create a particle in position<_noop>.
     }
