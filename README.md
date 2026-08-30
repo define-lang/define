@@ -35,11 +35,6 @@ The language is currently in early prototyping stages.
 written in 2016 by @mkanat that explains the motivations and thoughts that were
 originally behind the language.
 
-### Writing Define
-
-Define has a basic [Style Guide](style.md) describing rules around how code
-should be structured in the language.
-
 ### Contributing
 
 We aren't yet accepting external contributions, but I've started to collect some
