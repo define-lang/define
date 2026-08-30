@@ -5,28 +5,15 @@ from typing import final, override
 from define.runtime import literal
 
 import local.my_domain_com.my_lib.combiner
+import local.my_domain_com.my_lib.first_marker
+import local.my_domain_com.my_lib.second_marker
 
 
 class Test(literal.EntryPoint):
 
-    def __init__(self, on_particle: literal.Particle):
-        super().__init__(
-            on_particle,
-            interface_positions=[
-                literal.LocalPosition(
-                    "position<box>",
-                    constraints=(
-                        local.my_domain_com.my_lib.combiner.Combiner,
-                    ),
-                    scheduler=on_particle.scheduler,
-                ),
-            ],
-        )
-
     @override
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
-            self,
             scheduler,
             TestGuarantees(),
         )
@@ -43,25 +30,33 @@ class TestGuarantees:
 class TestExecution:
     def __init__(
         self,
-        action: Test,
         scheduler: literal.Scheduler,
         guarantees: TestGuarantees,
     ):
-        self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.local_position_box = literal.LocalPosition(
+            "position<box>",
+            constraints=(
+                local.my_domain_com.my_lib.combiner.Combiner,
+            ),
+            scheduler=self.scheduler,
+        )
+        guarantees.trigger_position_box__action_combiner.guarantee_global_position_second_marker.append(
+            self.destroy_position_box__global_position_second_marker
+        )
+        guarantees.trigger_position_box__action_combiner.guarantee_global_position_first_marker.append(
+            self.destroy_position_box__global_position_first_marker
+        )
         self.execution_trigger_position_box__action_combiner: local.my_domain_com.my_lib.combiner.CombinerExecution
+        self.join_for_destroy_position_box = self.scheduler.create_join(2)
         self.join_for_trigger_position_box__action_combiner__when_empty_global_position_first_marker = self.scheduler.create_join(2)
         self.join_for_trigger_position_box__action_combiner__when_empty_global_position_second_marker = self.scheduler.create_join(2)
 
     def create_position_box(self):
-        self.action.get_interface_position(
-            "position<box>"
-        ).create_particle()
+        self.local_position_box.create_particle()
         self.execution_trigger_position_box__action_combiner = local.my_domain_com.my_lib.combiner.CombinerExecution(
-            self.action.get_interface_position(
-                "position<box>"
-            ).particle.get_action(
+            self.local_position_box.particle.get_action(
                 local.my_domain_com.my_lib.combiner.Combiner
             ),
             self.scheduler,
@@ -71,6 +66,23 @@ class TestExecution:
         self.scheduler.submit(self.trigger_position_box__action_combiner__when_empty_global_position_second_marker)
         self.scheduler.submit(self.trigger_position_box__action_combiner__when_empty_global_position_first_marker)
         self.trigger_position_box__action_combiner__when_empty_global_position_second_marker()
+
+    def destroy_position_box__global_position_second_marker(self):
+        self.local_position_box.particle.get_position(
+            local.my_domain_com.my_lib.second_marker.SecondMarker
+        ).destroy_particle()
+        self.destroy_position_box()
+
+    def destroy_position_box__global_position_first_marker(self):
+        self.local_position_box.particle.get_position(
+            local.my_domain_com.my_lib.first_marker.FirstMarker
+        ).destroy_particle()
+        self.destroy_position_box()
+
+    def destroy_position_box(self):
+        if not self.join_for_destroy_position_box.arrive():
+            return
+        self.local_position_box.destroy_particle()
 
     def trigger_position_box__action_combiner__when_empty_global_position_first_marker(self):
         if not self.join_for_trigger_position_box__action_combiner__when_empty_global_position_first_marker.arrive():

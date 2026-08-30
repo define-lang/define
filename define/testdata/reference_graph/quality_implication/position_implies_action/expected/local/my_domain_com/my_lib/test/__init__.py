@@ -9,24 +9,9 @@ import local.my_domain_com.my_lib.host
 
 class Test(literal.EntryPoint):
 
-    def __init__(self, on_particle: literal.Particle):
-        super().__init__(
-            on_particle,
-            interface_positions=[
-                literal.LocalPosition(
-                    "position<box>",
-                    constraints=(
-                        local.my_domain_com.my_lib.host.Host,
-                    ),
-                    scheduler=on_particle.scheduler,
-                ),
-            ],
-        )
-
     @override
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
-            self,
             scheduler,
             TestGuarantees(),
         )
@@ -43,24 +28,28 @@ class TestGuarantees:
 class TestExecution:
     def __init__(
         self,
-        action: Test,
         scheduler: literal.Scheduler,
         guarantees: TestGuarantees,
     ):
-        self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.local_position_box = literal.LocalPosition(
+            "position<box>",
+            constraints=(
+                local.my_domain_com.my_lib.host.Host,
+            ),
+            scheduler=self.scheduler,
+        )
+        guarantees.trigger_position_box__action_host.trigger_action_helper.guarantee_position_run.append(
+            self.destroy_position_box
+        )
         self.execution_trigger_position_box__action_host: local.my_domain_com.my_lib.host.HostExecution
         self.join_for_trigger_position_box__action_host__action_parent = self.scheduler.create_join(2)
 
     def create_position_box(self):
-        self.action.get_interface_position(
-            "position<box>"
-        ).create_particle()
+        self.local_position_box.create_particle()
         self.execution_trigger_position_box__action_host = local.my_domain_com.my_lib.host.HostExecution(
-            self.action.get_interface_position(
-                "position<box>"
-            ).particle.get_action(
+            self.local_position_box.particle.get_action(
                 local.my_domain_com.my_lib.host.Host
             ),
             self.scheduler,
@@ -68,6 +57,9 @@ class TestExecution:
         )
         self.scheduler.submit(self.trigger_position_box__action_host__action_parent)
         self.trigger_position_box__action_host__action_parent()
+
+    def destroy_position_box(self):
+        self.local_position_box.destroy_particle()
 
     def trigger_position_box__action_host__action_parent(self):
         if not self.join_for_trigger_position_box__action_host__action_parent.arrive():

@@ -1,16 +1,16 @@
 # Triggering /emptier then /filler, which give opposite guarantees on the same implied </shared>, leaves it occupied (the later /filler wins), so a create there fails.
 define the potential action<my.domain.com:my_lib:/test> {
     define the position<run>.
-    define the position<box> {
-        it may only contain particles where {
-            it has the position</shared>.
-            it has the action</filler>.
-            it has the action</emptier>.
-        }
-    }
     it happens when {
         the position<run> has a particle.
     } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the position</shared>.
+                it has the action</filler>.
+                it has the action</emptier>.
+            }
+        }
         create a particle in position<box>.
         create a particle in position<box>::position</shared>.
         create a particle in position<box>::action</emptier>::position<trigger_e>.

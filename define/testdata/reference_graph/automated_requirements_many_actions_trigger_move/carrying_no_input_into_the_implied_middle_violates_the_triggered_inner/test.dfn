@@ -1,19 +1,19 @@
 # The box moved into a /middle implied on outer's parent particle never had its input filled, so the violation lands on the caller.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<box> {
-        it may only contain particles where {
-            it has the position</child>.
-        }
-    }
-    define the position<outer_holder> {
-        it may only contain particles where {
-            it has the action</outer>.
-        }
-    }
     define the position<run>.
     it happens when {
         the position<run> has a particle.
     } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the position</child>.
+            }
+        }
+        define the position<outer_holder> {
+            it may only contain particles where {
+                it has the action</outer>.
+            }
+        }
         create a particle in position<box>.
         create a particle in position<outer_holder>.
         move the particle in position<box> to position<outer_holder>::action</outer>::position<input>.

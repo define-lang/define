@@ -1,14 +1,14 @@
 define the potential action<my.domain.com:my_lib:/test> {
     define the position<run>.
-    define the position<parent> {
-        it may only contain particles where {
-            it has the position</child>.
-            it has the position</sibling>.
-        }
-    }
     it happens when {
         the position<run> has a particle.
     } and it does {
+        define the position<parent> {
+            it may only contain particles where {
+                it has the position</child>.
+                it has the position</sibling>.
+            }
+        }
         create a particle in position<parent>.
         create a particle in position<parent>::position</child>.
         create a particle in position<parent>::position</child>::position</grandchild>.

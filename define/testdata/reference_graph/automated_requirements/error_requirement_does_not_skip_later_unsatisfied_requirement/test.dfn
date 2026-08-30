@@ -5,10 +5,10 @@
 # `continue` to skip the error one rather than `break` out of the loop.
 define the potential action<my.domain.com:my_lib:/test> {
     define the position<run>.
-    define the position<src>.
     it happens when {
         the position<run> has a particle.
     } and it does {
+        define the position<src>.
         define the position<box> {
             it may only contain particles where {
                 it has the action</inner>.

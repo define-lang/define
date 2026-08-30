@@ -1,15 +1,15 @@
 define the potential action<my.domain.com:my_lib:/test> {
     define the position<run>.
-    define the position<source> {
-        it may only contain particles where {
-            it has the action</implier>.
-            it has the position</implied>.
-        }
-    }
-    define the position<dest>.
     it happens when {
         the position<run> has a particle.
     } and it does {
+        define the position<source> {
+            it may only contain particles where {
+                it has the action</implier>.
+                it has the position</implied>.
+            }
+        }
+        define the position<dest>.
         create a particle in position<source>.
         move the particle in position<source>::position</implied> to position<dest>.
     }

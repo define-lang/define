@@ -34,9 +34,9 @@ def test_duplicate_direct_constraint_triggers_action_once(
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.DuplicatePositionConstraintDiagnostic)
     assert all_diags[0].constraint_name == "action</requirer>"
-    assert all_diags[0].first_constraint_line == 5
-    assert all_diags[0].location.line == 6
-    assert all_diags[0].location.column == 24
+    assert all_diags[0].first_constraint_line == 8
+    assert all_diags[0].location.line == 9
+    assert all_diags[0].location.column == 28
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[1].required_empty is False
@@ -51,8 +51,8 @@ def test_duplicate_direct_constraint_triggers_action_once(
             "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/requirer>",
-            "line": 5,
-            "column": 24,
+            "line": 8,
+            "column": 28,
             "file_path": "test.dfn",
         },
         {
@@ -239,8 +239,8 @@ def test_two_different_implier_constructors_conflict(
             "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/second_implier>",
-            "line": 6,
-            "column": 24,
+            "line": 9,
+            "column": 28,
             "file_path": "test.dfn",
         },
         {
@@ -300,8 +300,8 @@ def test_sibling_constructor_empty_guarantee_violates_later_occupied_requirement
             "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/requirer>",
-            "line": 6,
-            "column": 24,
+            "line": 9,
+            "column": 28,
             "file_path": "test.dfn",
         },
         {

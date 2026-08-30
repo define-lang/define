@@ -350,7 +350,7 @@ class TestMoveParticle:
         all_diags = result.program_result.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.PositionReferenceChainEndDiagnostic)
-        assert all_diags[0].location.line == 11
+        assert all_diags[0].location.line == 12
         assert all_diags[0].location.column == 69
         assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
 
@@ -415,9 +415,9 @@ class TestMoveParticle:
             all_diags[0].parent_name
             == "action<mv:define-lang.org:test_move_bad_action:/act_b>"
         )
-        assert all_diags[0].location.line == 13
+        assert all_diags[0].location.line == 14
         assert all_diags[0].location.column == 63
-        assert all_diags[0].location.end_line == 13
+        assert all_diags[0].location.end_line == 14
         assert all_diags[0].location.end_column == 80
         assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
 

@@ -4,10 +4,10 @@ define the potential action<my.domain.com:my_lib:/test> {
             it has the action</act_b>.
         }
     }
-    define the position<dest>.
     it happens when {
         the position<pos_a> has a particle.
     } and it does {
+        define the position<dest>.
         move the particle in position<pos_a>::action</act_b> to position<dest>.
         create a particle in position<pos_a>::action</act_b>::position<run>.
     }

@@ -56,8 +56,8 @@ def test_unresolved_constraint_is_not_reported_as_dead(
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
     assert all_diags[0].file_path == "missing.dfn"
-    assert all_diags[0].location.line == 5
-    assert all_diags[0].location.column == 33
+    assert all_diags[0].location.line == 8
+    assert all_diags[0].location.column == 37
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
 
 
@@ -589,8 +589,8 @@ def test_action_on_occupied_interface_referenced_but_never_triggered_is_dead(
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
     assert all_diags[0].constraint_name == "action</worker>"
     assert all_diags[0].position_name == "position<box>"
-    assert all_diags[0].location.line == 5
-    assert all_diags[0].location.column == 24
+    assert all_diags[0].location.line == 8
+    assert all_diags[0].location.column == 28
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert isinstance(all_diags[1], diagnostics.UntriggeredActionInterfaceDiagnostic)
     assert all_diags[1].action_name == "action</worker>"

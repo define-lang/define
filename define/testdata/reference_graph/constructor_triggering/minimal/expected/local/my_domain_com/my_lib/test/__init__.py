@@ -9,24 +9,9 @@ import local.my_domain_com.my_lib.constructor
 
 class Test(literal.EntryPoint):
 
-    def __init__(self, on_particle: literal.Particle):
-        super().__init__(
-            on_particle,
-            interface_positions=[
-                literal.LocalPosition(
-                    "position<box>",
-                    constraints=(
-                        local.my_domain_com.my_lib.constructor.Constructor,
-                    ),
-                    scheduler=on_particle.scheduler,
-                ),
-            ],
-        )
-
     @override
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
-            self,
             scheduler,
             TestGuarantees(),
         )
@@ -43,13 +28,18 @@ class TestGuarantees:
 class TestExecution:
     def __init__(
         self,
-        action: Test,
         scheduler: literal.Scheduler,
         guarantees: TestGuarantees,
     ):
-        self.action = action
         self.scheduler = scheduler
         self.guarantees = guarantees
+        self.local_position_box = literal.LocalPosition(
+            "position<box>",
+            constraints=(
+                local.my_domain_com.my_lib.constructor.Constructor,
+            ),
+            scheduler=self.scheduler,
+        )
         guarantees.trigger_position_box__action_constructor.guarantee_position_output.append(
             self.destroy_position_box__action_constructor__position_output
         )
@@ -57,13 +47,9 @@ class TestExecution:
         self.join_for_trigger_position_box__action_constructor__when_empty_position_output = self.scheduler.create_join(2)
 
     def create_position_box(self):
-        self.action.get_interface_position(
-            "position<box>"
-        ).create_particle()
+        self.local_position_box.create_particle()
         self.execution_trigger_position_box__action_constructor = local.my_domain_com.my_lib.constructor.ConstructorExecution(
-            self.action.get_interface_position(
-                "position<box>"
-            ).particle.get_action(
+            self.local_position_box.particle.get_action(
                 local.my_domain_com.my_lib.constructor.Constructor
             ),
             self.scheduler,
@@ -73,13 +59,12 @@ class TestExecution:
         self.trigger_position_box__action_constructor__when_empty_position_output()
 
     def destroy_position_box__action_constructor__position_output(self):
-        self.action.get_interface_position(
-            "position<box>"
-        ).particle.get_action(
+        self.local_position_box.particle.get_action(
             local.my_domain_com.my_lib.constructor.Constructor
         ).get_interface_position(
             "position<output>"
         ).destroy_particle()
+        self.local_position_box.destroy_particle()
 
     def trigger_position_box__action_constructor__when_empty_position_output(self):
         if not self.join_for_trigger_position_box__action_constructor__when_empty_position_output.arrive():

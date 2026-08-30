@@ -2,14 +2,14 @@
 # chain and another guarantee on the right chain. The consumer requires all
 # three positions empty, so one requirement batch reports all three conflicts.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<box> {
-        it may only contain particles where {
-            it has the action</consume_combined>.
-        }
-    }
     it happens when {
         this particle is created.
     } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</consume_combined>.
+            }
+        }
         create a particle in position<box>.
         define the position<left_source> {
             it may only contain particles where {

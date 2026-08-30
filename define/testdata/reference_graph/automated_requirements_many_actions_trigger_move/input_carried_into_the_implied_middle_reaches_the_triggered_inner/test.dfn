@@ -1,19 +1,19 @@
 # Outer moves its input into a /middle implied on its own parent particle, so the box's occupied child satisfies the triggered /inner.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<box> {
-        it may only contain particles where {
-            it has the position</child>.
-        }
-    }
-    define the position<outer_holder> {
-        it may only contain particles where {
-            it has the action</outer>.
-        }
-    }
     define the position<run>.
     it happens when {
         the position<run> has a particle.
     } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the position</child>.
+            }
+        }
+        define the position<outer_holder> {
+            it may only contain particles where {
+                it has the action</outer>.
+            }
+        }
         create a particle in position<box>.
         create a particle in position<box>::position</child>.
         create a particle in position<outer_holder>.

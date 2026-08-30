@@ -1,14 +1,14 @@
 # fill_child and fill_parent leave pending occupied guarantees at child and
 # parent names on one position chain. consume_chain applies both in one batch.
 define the potential action<my.domain.com:my_lib:/test> {
-    define the position<box> {
-        it may only contain particles where {
-            it has the action</consume_chain>.
-        }
-    }
     it happens when {
         this particle is created.
     } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</consume_chain>.
+            }
+        }
         create a particle in position<box>.
         define the position<source> {
             it may only contain particles where {

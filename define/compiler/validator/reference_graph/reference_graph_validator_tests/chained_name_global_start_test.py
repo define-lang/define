@@ -213,6 +213,6 @@ class TestMissingDefinitionInChain:
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
         assert all_diags[0].file_path == "middle.dfn"
-        assert all_diags[0].location.line == 5
-        assert all_diags[0].location.column == 33
+        assert all_diags[0].location.line == 8
+        assert all_diags[0].location.column == 37
         assert all_diags[0].location.file_path == PurePosixPath("test.dfn")

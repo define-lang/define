@@ -1,13 +1,13 @@
 define the potential action<mv:define-lang.org:parent:/test> {
     define the position<run>.
-    define the position<src> {
-        it may only contain particles where {
-            it has the action<mv:define-lang.org:child:/act>.
-        }
-    }
     it happens when {
         the position<run> has a particle.
     } and it does {
+        define the position<src> {
+            it may only contain particles where {
+                it has the action<mv:define-lang.org:child:/act>.
+            }
+        }
         define the position<dest> {
             it may only contain particles where {
                 it has the position<mv:define-lang.org:child:/quality>.

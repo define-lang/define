@@ -4,19 +4,19 @@
 # One requirement-violation diagnostic for the /act_c path at /test.
 define the potential action<my.domain.com:my_lib:/test> {
     define the position<run>.
-    define the position<box_b> {
-        it may only contain particles where {
-            it has the action</act_b>.
-        }
-    }
-    define the position<box_c> {
-        it may only contain particles where {
-            it has the action</act_c>.
-        }
-    }
     it happens when {
         the position<run> has a particle.
     } and it does {
+        define the position<box_b> {
+            it may only contain particles where {
+                it has the action</act_b>.
+            }
+        }
+        define the position<box_c> {
+            it may only contain particles where {
+                it has the action</act_c>.
+            }
+        }
         create a particle in position<box_b>.
         create a particle in position<box_b>::action</act_b>::position<gateway>.
         create a particle in position<box_b>::action</act_b>::position<gateway>::position</value>.

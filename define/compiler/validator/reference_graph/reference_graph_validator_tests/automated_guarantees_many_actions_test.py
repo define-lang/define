@@ -115,7 +115,7 @@ def test_occupied_guarantee_creates_empty_requirement(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].location.line == 13
+    assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/outer>"
@@ -130,7 +130,7 @@ def test_occupied_guarantee_creates_empty_requirement(
             "kind": action_contract.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<box>::action</outer>::position<iface>::position</item>",
             "triggered_quality_name": None,
-            "line": 12,
+            "line": 13,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -138,7 +138,7 @@ def test_occupied_guarantee_creates_empty_requirement(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _OUTER,
-            "line": 13,
+            "line": 14,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -177,7 +177,7 @@ def test_move_guarantee_creates_occupied_in_distant_caller(
         all_diags[0].position_name
         == "position<box>::action</outer>::position<iface>::position</output>"
     )
-    assert all_diags[0].location.line == 12
+    assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert action_graph_set(result.operation_graphs) == {

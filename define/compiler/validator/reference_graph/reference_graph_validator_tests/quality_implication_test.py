@@ -113,8 +113,8 @@ def test_diamond_transitivity_create_conflict_detected(
             "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<source>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/implier_two>",
-            "line": 10,
-            "column": 24,
+            "line": 18,
+            "column": 28,
             "file_path": "test.dfn",
         },
         {

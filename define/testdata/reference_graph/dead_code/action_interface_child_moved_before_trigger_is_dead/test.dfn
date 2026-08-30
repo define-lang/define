@@ -1,13 +1,13 @@
 define the potential action<my.domain.com:my_lib:/test> {
     define the position<run>.
-    define the position<box> {
-        it may only contain particles where {
-            it has the action</worker>.
-        }
-    }
     it happens when {
         the position<run> has a particle.
     } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</worker>.
+            }
+        }
         define the position<feeder>.
         define the position<sink>.
         create a particle in position<box>.
