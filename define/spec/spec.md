@@ -1715,13 +1715,16 @@ occurs from the compiler's viewpoint when starting a program:
 4. This triggers the constructor, and all code in the program executes from
    there.
 
-### Entry Points May Not Have Interface Positions
+### Entry Points Restrictions
 
 Proposals:
 
 - [DLP 45 (Interface Guarantees Must Be Consumed)](00045-interface-guarantees-must-be-consumed.md)
 
 The entry point action of a program must not define any interface positions.
+
+The entry point action of a program must not infer that any implied position is
+occupied.
 
 ## Ending Define Programs
 
