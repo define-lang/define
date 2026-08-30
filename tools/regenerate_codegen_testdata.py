@@ -8,6 +8,7 @@ from __future__ import annotations
 import contextlib
 import shutil
 import sys
+import tempfile
 from pathlib import Path
 
 from define.compiler import driver
@@ -25,21 +26,24 @@ def _compile_case(
     testdata_root: Path,
 ) -> bool:
     case_dir = expected_dir.parent
-    if expected_dir.exists():
-        shutil.rmtree(expected_dir)
-    with contextlib.chdir(case_dir):
-        result = driver.Driver().compile_program(
-            Path("test.dfn"),
-            expected_dir,
-            trace_operations=trace_operations,
-        )
-        if result.has_errors():
-            print(f"  {case_dir.relative_to(testdata_root)}: FAILED")
-            for exc in result.all_exceptions:
-                print(f"    {exc}")
-            for diag in result.all_diagnostics:
-                print(f"    {diag}")
-            return False
+    with tempfile.TemporaryDirectory(dir=case_dir) as temporary_dir:
+        regenerated_dir = Path(temporary_dir) / expected_dir.name
+        with contextlib.chdir(case_dir):
+            result = driver.Driver().compile_program(
+                Path("test.dfn"),
+                regenerated_dir,
+                trace_operations=trace_operations,
+            )
+            if result.has_errors():
+                print(f"  {case_dir.relative_to(testdata_root)}: FAILED")
+                for exc in result.all_exceptions:
+                    print(f"    {exc}")
+                for diag in result.all_diagnostics:
+                    print(f"    {diag}")
+                return False
+        if expected_dir.exists():
+            shutil.rmtree(expected_dir)
+        _ = regenerated_dir.replace(expected_dir)
     return True
 
 
@@ -63,12 +67,12 @@ def _run_case(
     return runtime_result
 
 
-def _regenerate_codegen_case(case_dir: Path) -> bool:
+def _regenerate_codegen_case(case_dir: Path, *, testdata_root: Path) -> bool:
     expected_dir = case_dir / "expected"
     if not _compile_case(
         expected_dir,
         trace_operations=False,
-        testdata_root=CODEGEN_TESTDATA_ROOT,
+        testdata_root=testdata_root,
     ):
         return False
 
@@ -79,7 +83,7 @@ def _regenerate_codegen_case(case_dir: Path) -> bool:
         return True
     runtime_result = _run_case(
         expected_dir,
-        testdata_root=CODEGEN_TESTDATA_ROOT,
+        testdata_root=testdata_root,
     )
     if runtime_result is None:
         return False
@@ -87,12 +91,12 @@ def _regenerate_codegen_case(case_dir: Path) -> bool:
     return True
 
 
-def _regenerate_tracing_case(case_dir: Path) -> bool:
+def _regenerate_tracing_case(case_dir: Path, *, testdata_root: Path) -> bool:
     expected_dir = case_dir / "expected_trace"
     if not _compile_case(
         expected_dir,
         trace_operations=True,
-        testdata_root=TRACING_TESTDATA_ROOT,
+        testdata_root=testdata_root,
     ):
         return False
 
@@ -104,7 +108,7 @@ def _regenerate_tracing_case(case_dir: Path) -> bool:
     return (
         _run_case(
             expected_dir,
-            testdata_root=TRACING_TESTDATA_ROOT,
+            testdata_root=testdata_root,
             operation_dependencies_file=operation_dependencies_file,
             max_threads=1,
         )
@@ -112,26 +116,36 @@ def _regenerate_tracing_case(case_dir: Path) -> bool:
     )
 
 
-def main():
+def main(
+    *,
+    codegen_testdata_root: Path = CODEGEN_TESTDATA_ROOT,
+    tracing_testdata_root: Path = TRACING_TESTDATA_ROOT,
+):
     """Regenerate ordinary and traced expected output files."""
     codegen_case_dirs = sorted(
-        test_file.parent for test_file in CODEGEN_TESTDATA_ROOT.glob("*/*/test.dfn")
+        test_file.parent for test_file in codegen_testdata_root.glob("*/*/test.dfn")
     )
     tracing_case_dirs = sorted(
-        test_file.parent for test_file in TRACING_TESTDATA_ROOT.glob("*/test.dfn")
+        test_file.parent for test_file in tracing_testdata_root.glob("*/test.dfn")
     )
-    print(f"Regenerating {len(codegen_case_dirs)} codegen test cases...")
+    regenerated_codegen_case_count = 0
+    regenerated_tracing_case_count = 0
     success = True
     for case_dir in codegen_case_dirs:
-        if not _regenerate_codegen_case(case_dir):
+        if _regenerate_codegen_case(case_dir, testdata_root=codegen_testdata_root):
+            regenerated_codegen_case_count += 1
+        else:
             success = False
-    print(f"Regenerating {len(tracing_case_dirs)} tracing test cases...")
     for case_dir in tracing_case_dirs:
-        if not _regenerate_tracing_case(case_dir):
+        if _regenerate_tracing_case(case_dir, testdata_root=tracing_testdata_root):
+            regenerated_tracing_case_count += 1
+        else:
             success = False
+    print(
+        f"Regenerated {regenerated_codegen_case_count} of {len(codegen_case_dirs)} codegen cases and {regenerated_tracing_case_count} of {len(tracing_case_dirs)} tracing cases."
+    )
     if not success:
         sys.exit(1)
-    print("Done.")
 
 
 if __name__ == "__main__":
