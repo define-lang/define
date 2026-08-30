@@ -1,14 +1,10 @@
-from typing import TypeVar
-
 from google.protobuf.message import Message
 
-_M = TypeVar("_M", bound=Message)
-
-def Parse(
+def Parse[MessageT: Message](  # noqa: N802
     text: str | bytes,
-    message: _M,
+    message: MessageT,
     allow_unknown_extension: bool = False,
     allow_field_number: bool = False,
     descriptor_pool: object | None = None,
     allow_unknown_field: bool = False,
-) -> _M: ...
+) -> MessageT: ...

@@ -3,6 +3,8 @@
 This prevents renaming or removing a test from leaving unused testdata behind.
 """
 
+from __future__ import annotations
+
 import ast
 import functools
 from pathlib import Path

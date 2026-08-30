@@ -183,7 +183,7 @@ def _kept_deps(lines: list[str], call: ast.Call, package: Path) -> frozenset[str
         except (SyntaxError, ValueError) as error:
             raise ValueError(f"Invalid # keep dependency: {line.strip()}") from error
         if not isinstance(value, str):
-            raise ValueError(f"Invalid # keep dependency: {line.strip()}")
+            raise TypeError(f"Invalid # keep dependency: {line.strip()}")
         kept.add(_absolute_label(package, value))
     return frozenset(kept)
 
@@ -502,7 +502,7 @@ def replace_deps(
     tree = ast.parse(text)
     call = tree.body[0]
     if not isinstance(call, ast.Expr) or not isinstance(call.value, ast.Call):
-        raise ValueError("Expected a rule call")
+        raise TypeError("Expected a rule call")
     deps_keyword = next(
         (keyword for keyword in call.value.keywords if keyword.arg == "deps"), None
     )

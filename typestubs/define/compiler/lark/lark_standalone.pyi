@@ -1,10 +1,7 @@
 from collections.abc import Callable, Iterable, Mapping
-from typing import Generic, Self, TypeVar
+from typing import Self, TypeVar
 
-_Leaf_T = TypeVar("_Leaf_T")
-_Return_T = TypeVar("_Return_T")
 _Label_T = TypeVar("_Label_T")
-_DecRetT = TypeVar("_DecRetT")
 
 class Meta:
     empty: bool
@@ -15,14 +12,14 @@ class Meta:
     end_column: int
     end_pos: int
 
-class Tree(Generic[_Leaf_T]):
+class Tree[LeafT]:
     data: str
-    children: list[_Leaf_T | Self | None]
+    children: list[LeafT | Self | None]
 
     def __init__(
         self,
         data: str,
-        children: list[_Leaf_T | Self],
+        children: list[LeafT | Self],
         meta: Meta | None = None,
     ) -> None: ...
     @property
@@ -40,7 +37,7 @@ class Token(str):
 
     def __new__(
         cls,
-        type: str,
+        type: str,  # noqa: A002
         value,
         start_pos: int | None = None,
         line: int | None = None,
@@ -48,9 +45,9 @@ class Token(str):
         end_line: int | None = None,
         end_column: int | None = None,
         end_pos: int | None = None,
-    ) -> Token: ...
+    ) -> Self: ...
 
-class UnexpectedInput(Exception):
+class UnexpectedInput(Exception):  # noqa: N818
     line: int
     column: int
 
@@ -89,15 +86,18 @@ class _DiscardType: ...
 
 Discard: _DiscardType
 
-class Transformer(Generic[_Leaf_T, _Return_T]):
-    def transform(self, tree: Tree[_Leaf_T]) -> _Return_T: ...
+class Transformer[LeafT, ReturnT]:
+    def transform(self, tree: Tree[LeafT]) -> ReturnT: ...
 
-def v_args(
+def v_args[DecoratorReturnT](
     inline: bool = False,
     meta: bool = False,
     tree: bool = False,
-    wrapper: Callable[[Callable[..., _DecRetT]], Callable[..., _DecRetT]] | None = None,
-) -> Callable[[Callable[..., _DecRetT]], Callable[..., _DecRetT]]: ...
+    wrapper: Callable[
+        [Callable[..., DecoratorReturnT]], Callable[..., DecoratorReturnT]
+    ]
+    | None = None,
+) -> Callable[[Callable[..., DecoratorReturnT]], Callable[..., DecoratorReturnT]]: ...
 
 class Lark:
     def parse(
@@ -107,4 +107,4 @@ class Lark:
         on_error: Callable[[UnexpectedInput], bool] | None = None,
     ) -> Tree[Token]: ...
 
-def Lark_StandAlone(**kwargs: object) -> Lark: ...
+def Lark_StandAlone(**kwargs: object) -> Lark: ...  # noqa: N802

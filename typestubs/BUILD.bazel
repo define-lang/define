@@ -3,6 +3,7 @@ load("//tools/bzl:format.bzl", "format_test")
 filegroup(
     name = "typestubs",
     srcs = glob(["**/*.pyi"]),
+    tags = ["lint-with-ruff"],
     visibility = ["//visibility:public"],
 )
 
