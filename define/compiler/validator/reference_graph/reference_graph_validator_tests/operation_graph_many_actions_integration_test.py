@@ -392,6 +392,10 @@ def test_parent_destroy_excludes_guaranteed_move_on_later_dependency_path(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason="a caller Destroy does not depend on a callee Destroy at a child position after the callee moves the parent particle",
+)
 def test_child_guarantee_with_distinct_occupied_action_parent_and_empty_rule_binding_holes(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -425,6 +429,7 @@ def test_child_guarantee_with_distinct_occupied_action_parent_and_empty_rule_bin
             "middle.move(source, holder)"
         ],
         "test.destroy(gateway::/middle::holder)": [
+            "middle.destroy(holder::/child::trigger_pos)",
             "test.move(gateway::/middle::holder::/result, result)",
             "test.destroy(gateway::/middle::holder::/marker)",
         ],

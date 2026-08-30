@@ -38,7 +38,13 @@ _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED = (
 _CALLER_ONLY_CHILD_DESTRUCTOR_NOT_GENERATED = (
     "a child Destructor known only through the creator is not generated"
 )
+_CALLEE_CHILD_DESTROY_DEPENDENCY_NOT_GENERATED = (
+    "a caller Destroy can race with a callee Destroy on a child position after "
+    "the callee moves the parent particle"
+)
 _UNSUPPORTED_RUNTIME_TEST_CASE_REASONS = {
+    "operation_graph_many_actions_integration/caller_consumes_a_child_guarantee_after_an_empty_rule_move": _CALLEE_CHILD_DESTROY_DEPENDENCY_NOT_GENERATED,
+    "operation_graph_many_actions_integration/child_guarantee_with_distinct_occupied_action_parent_and_empty_rule_binding_holes": _CALLEE_CHILD_DESTROY_DEPENDENCY_NOT_GENERATED,
     "operation_graph_destructor_integration/callee_child_destroy_depends_on_contributed_destructor_and_sibling_destroy": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
     "operation_graph_destructor_integration/caller_destructor_between_two_destroyer_known_destructors": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
     "operation_graph_destructor_integration/caller_interleaves_destructors_with_destroyer_known_destructors": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
