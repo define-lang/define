@@ -7,6 +7,7 @@
 
 typedef enum {
     benchmark_serial,
+    benchmark_idle,
     benchmark_wide,
     benchmark_steal,
     benchmark_skew,
@@ -81,6 +82,11 @@ static uint64_t run_benchmark_work(uint64_t value, unsigned int rounds) {
 
 static uint64_t run_benchmark_memory_work(SchedulerBenchmarkTask *task) {
     uint64_t value = task->value;
+    if (task->benchmark->memory_words_per_task == 0) {
+        // Parameter validation makes this unreachable without adding a hot
+        // conditional branch to every memory-work task.
+        __builtin_unreachable();
+    }
     for (unsigned int pass = 0; pass < task->work_amount; ++pass) {
         uint64_t increment = value + pass;
         for (size_t word = 0; word < task->benchmark->memory_words_per_task;
@@ -224,7 +230,8 @@ static LiteralSchedulerTask *run_benchmark_start(
     LiteralSchedulerWorker *worker, LiteralSchedulerTask *task
 ) {
     SchedulerBenchmark *benchmark = task->context;
-    if (benchmark->workload == benchmark_serial) {
+    if (benchmark->workload == benchmark_serial
+        || benchmark->workload == benchmark_idle) {
         return &benchmark->tasks[0].task;
     }
     for (size_t task_index = 0; task_index < benchmark->task_count;
@@ -254,7 +261,8 @@ static void configure_scheduler(
         config->processor_ids[0] = 0;
         return;
     }
-    if (workload == benchmark_steal) {
+    if (workload == benchmark_steal || workload == benchmark_idle) {
+#if LITERAL_MAXIMUM_WORKERS >= 8
         config->worker_count = 8;
         config->group_count = 1;
         for (size_t worker_index = 0; worker_index < config->worker_count;
@@ -262,8 +270,12 @@ static void configure_scheduler(
             config->processor_ids[worker_index] = (int)worker_index;
         }
         return;
+#else
+        fail_message("the benchmark was compiled without enough workers");
+#endif
     }
     if (workload == benchmark_steal_smt) {
+#if LITERAL_MAXIMUM_WORKERS >= 16
         config->worker_count = 16;
         config->group_count = 1;
         for (size_t worker_index = 0; worker_index < 8; ++worker_index) {
@@ -271,8 +283,12 @@ static void configure_scheduler(
             config->processor_ids[worker_index + 8] = (int)worker_index + 16;
         }
         return;
+#else
+        fail_message("the benchmark was compiled without enough workers for SMT");
+#endif
     }
     if (workload == benchmark_wide_smt || workload == benchmark_skew_smt) {
+#if LITERAL_MAXIMUM_WORKERS >= 4
         config->worker_count = 4;
         config->group_count = 2;
         config->processor_ids[0] = 0;
@@ -282,12 +298,19 @@ static void configure_scheduler(
         config->group_ids[2] = 1;
         config->group_ids[3] = 1;
         return;
+#else
+        fail_message("the benchmark was compiled without enough workers for SMT");
+#endif
     }
+#if LITERAL_MAXIMUM_WORKERS >= 2
     config->worker_count = 2;
     config->group_count = 2;
     config->processor_ids[0] = 0;
     config->processor_ids[1] = 8;
     config->group_ids[1] = 1;
+#else
+    fail_message("the benchmark was compiled without enough workers");
+#endif
 }
 
 static uint16_t preferred_group(
@@ -387,7 +410,9 @@ static void assign_slow_work(
 
 static uint64_t run_benchmark_sample(
     const BenchmarkParameters *parameters,
-    uint64_t *checksum
+    uint64_t *checksum,
+    uint64_t *expected_sample_checksum,
+    bool *has_expected_sample_checksum
 ) {
     SchedulerBenchmark benchmark = {
         .start = {
@@ -398,7 +423,8 @@ static uint64_t run_benchmark_sample(
         .workload = parameters->workload,
     };
     benchmark.start.context = &benchmark;
-    if (parameters->workload != benchmark_serial) {
+    if (parameters->workload != benchmark_serial
+        && parameters->workload != benchmark_idle) {
         literal_join_initialize(
             &benchmark.join, (unsigned int)parameters->task_count
         );
@@ -419,7 +445,8 @@ static uint64_t run_benchmark_sample(
     if (parameters->work_kind == benchmark_memory_work) {
         task_function = run_parallel_memory_benchmark_task;
     }
-    if (parameters->workload == benchmark_serial) {
+    if (parameters->workload == benchmark_serial
+        || parameters->workload == benchmark_idle) {
         task_function = run_serial_benchmark_task;
         if (parameters->work_kind == benchmark_memory_work) {
             task_function = run_serial_memory_benchmark_task;
@@ -471,6 +498,12 @@ static uint64_t run_benchmark_sample(
         sample_checksum = (sample_checksum ^ benchmark.memory[word])
             * UINT64_C(0x100000001b3);
     }
+    if (*has_expected_sample_checksum
+        && sample_checksum != *expected_sample_checksum) {
+        fail_message("benchmark result changed between samples");
+    }
+    *expected_sample_checksum = sample_checksum;
+    *has_expected_sample_checksum = true;
     *checksum += sample_checksum;
     free(benchmark.memory);
     free(benchmark.tasks);
@@ -486,6 +519,9 @@ static int compare_uint64(const void *left, const void *right) {
 static BenchmarkWorkload parse_workload(const char *name) {
     if (strcmp(name, "serial") == 0) {
         return benchmark_serial;
+    }
+    if (strcmp(name, "idle") == 0) {
+        return benchmark_idle;
     }
     if (strcmp(name, "wide") == 0) {
         return benchmark_wide;
@@ -568,8 +604,14 @@ static void validate_parameters(const BenchmarkParameters *parameters) {
         fail_message("benchmark tasks and samples must be nonzero");
     }
     if (parameters->workload != benchmark_serial
+        && parameters->workload != benchmark_idle
         && parameters->task_count > example_queue_capacity) {
         fail_message("parallel benchmark task count exceeds queue capacity");
+    }
+    if (parameters->workload != benchmark_serial
+        && parameters->workload != benchmark_idle
+        && parameters->task_count > UINT_MAX) {
+        fail_message("parallel benchmark task count exceeds the Join counter");
     }
     if (parameters->slow_task_count > parameters->task_count) {
         fail_message("slow task count exceeds total task count");
@@ -656,15 +698,27 @@ int main(int argument_count, char **arguments) {
     parameters.sample_count = (size_t)parsed_sample_count;
     validate_parameters(&parameters);
     uint64_t checksum = 0;
+    uint64_t expected_sample_checksum = 0;
+    bool has_expected_sample_checksum = false;
     for (size_t warmup = 0; warmup < parameters.warmup_count; ++warmup) {
-        (void)run_benchmark_sample(&parameters, &checksum);
+        (void)run_benchmark_sample(
+            &parameters,
+            &checksum,
+            &expected_sample_checksum,
+            &has_expected_sample_checksum
+        );
     }
     uint64_t *samples = calloc(parameters.sample_count, sizeof(*samples));
     if (samples == NULL) {
         fail_message("benchmark sample allocation failed");
     }
     for (size_t sample = 0; sample < parameters.sample_count; ++sample) {
-        samples[sample] = run_benchmark_sample(&parameters, &checksum);
+        samples[sample] = run_benchmark_sample(
+            &parameters,
+            &checksum,
+            &expected_sample_checksum,
+            &has_expected_sample_checksum
+        );
     }
     qsort(samples, parameters.sample_count, sizeof(*samples), compare_uint64);
     size_t p90_index = (parameters.sample_count / 10) * 9

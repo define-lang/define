@@ -19,16 +19,80 @@
 #include <immintrin.h>
 #endif
 
+#if !defined(LITERAL_QUEUE_CAPACITY)
+#define LITERAL_QUEUE_CAPACITY 65536
+#endif
+
+#if !defined(LITERAL_MAXIMUM_WORKERS)
+#define LITERAL_MAXIMUM_WORKERS 32
+#endif
+
+#if !defined(LITERAL_SINGLE_TOPOLOGY_GROUP)
+#define LITERAL_SINGLE_TOPOLOGY_GROUP 0
+#endif
+
+#if !defined(LITERAL_TWO_SINGLE_WORKER_GROUPS)
+#define LITERAL_TWO_SINGLE_WORKER_GROUPS 0
+#endif
+
+#if !defined(LITERAL_PROVEN_DEQUE_CAPACITY)
+#define LITERAL_PROVEN_DEQUE_CAPACITY 0
+#endif
+
+#if !defined(LITERAL_SHARED_VICTIM_LISTS)
+#define LITERAL_SHARED_VICTIM_LISTS 1
+#endif
+
+#if !defined(LITERAL_PROVEN_BOUNDED_SPMC_INJECTION)
+#define LITERAL_PROVEN_BOUNDED_SPMC_INJECTION 0
+#endif
+
+#if !defined(LITERAL_STEAL_BATCH_SIZE)
+#define LITERAL_STEAL_BATCH_SIZE 1
+#endif
+
+#if !defined(LITERAL_INJECTION_BATCH_SIZE)
+#define LITERAL_INJECTION_BATCH_SIZE 1
+#endif
+
+#if !defined(LITERAL_PRIVATE_TASK_BATCH)
+#define LITERAL_PRIVATE_TASK_BATCH 0
+#endif
+
+#if LITERAL_SINGLE_TOPOLOGY_GROUP && LITERAL_TWO_SINGLE_WORKER_GROUPS
+#error "the generated topology specializations are mutually exclusive"
+#endif
+
+#if LITERAL_STEAL_BATCH_SIZE < 1 || LITERAL_INJECTION_BATCH_SIZE < 1
+#error "scheduler batch sizes must be positive"
+#endif
+
+#if LITERAL_INJECTION_BATCH_SIZE > 1 \
+    && !LITERAL_PROVEN_BOUNDED_SPMC_INJECTION
+#error "batch injection requires a proven single producer and total bound"
+#endif
+
+#if LITERAL_STEAL_BATCH_SIZE > LITERAL_INJECTION_BATCH_SIZE
+#define LITERAL_PRIVATE_TASK_CAPACITY LITERAL_STEAL_BATCH_SIZE
+#else
+#define LITERAL_PRIVATE_TASK_CAPACITY LITERAL_INJECTION_BATCH_SIZE
+#endif
+
+#if LITERAL_PRIVATE_TASK_BATCH && LITERAL_PRIVATE_TASK_CAPACITY == 1
+#error "a private task batch requires a batch size greater than one"
+#endif
+
 enum {
     example_cache_line_alignment = 64,
     example_maximum_topology_groups = 2,
-    example_maximum_workers = 32,
-    example_queue_capacity = 65536,
+    example_maximum_workers = LITERAL_MAXIMUM_WORKERS,
+    example_queue_capacity = LITERAL_QUEUE_CAPACITY,
 };
 
 _Static_assert(
-    (example_queue_capacity & (example_queue_capacity - 1)) == 0,
-    "the benchmark queue capacity must be a power of two"
+    example_queue_capacity > 0
+        && (example_queue_capacity & (example_queue_capacity - 1)) == 0,
+    "the scheduler queue capacity must be a positive power of two"
 );
 
 typedef struct LiteralScheduler LiteralScheduler;
@@ -48,7 +112,7 @@ struct LiteralSchedulerTask {
 typedef struct {
     atomic_size_t sequence;
     LiteralSchedulerTask *task;
-} QueueCell;
+} InjectionQueueCell;
 
 typedef struct {
     alignas(example_cache_line_alignment) atomic_size_t enqueue_position;
@@ -59,9 +123,13 @@ typedef struct {
     unsigned char dequeue_padding[
         example_cache_line_alignment - sizeof(atomic_size_t)
     ];
-    QueueCell *cells;
+#if LITERAL_PROVEN_BOUNDED_SPMC_INJECTION
+    LiteralSchedulerTask **tasks;
+#else
+    InjectionQueueCell *cells;
+#endif
     size_t mask;
-} MpmcQueue;
+} InjectionQueue;
 
 typedef struct {
     alignas(example_cache_line_alignment) atomic_int_fast64_t top;
@@ -97,10 +165,24 @@ typedef struct {
 struct LiteralSchedulerWorker {
     WorkDeque deque;
     LiteralScheduler *scheduler;
+#if LITERAL_TWO_SINGLE_WORKER_GROUPS
     size_t index;
+#endif
+#if LITERAL_SHARED_VICTIM_LISTS && !LITERAL_TWO_SINGLE_WORKER_GROUPS
+    size_t same_group_victim_cursor;
+    size_t cross_group_victim_cursor;
+    size_t group_member_position;
+#elif !LITERAL_TWO_SINGLE_WORKER_GROUPS
     uint64_t random_state;
+#endif
+#if LITERAL_PRIVATE_TASK_BATCH
+    LiteralSchedulerTask *private_tasks[LITERAL_PRIVATE_TASK_CAPACITY - 1];
+    size_t private_task_count;
+#endif
     int processor_id;
+#if !LITERAL_SINGLE_TOPOLOGY_GROUP
     unsigned int failed_local_polls;
+#endif
     uint16_t group;
 };
 
@@ -108,10 +190,19 @@ struct LiteralScheduler {
     size_t worker_count;
     size_t group_count;
     LiteralSchedulerWorker workers[example_maximum_workers];
-    MpmcQueue group_injection[example_maximum_topology_groups];
-    pthread_barrier_t start_barrier;
+#if !LITERAL_SINGLE_TOPOLOGY_GROUP
+    InjectionQueue group_injection[example_maximum_topology_groups];
+#endif
+#if LITERAL_SHARED_VICTIM_LISTS && !LITERAL_TWO_SINGLE_WORKER_GROUPS
+    LiteralSchedulerWorker *group_workers[example_maximum_topology_groups][
+        example_maximum_workers
+    ];
+    size_t group_worker_counts[example_maximum_topology_groups];
+#endif
     PaddedBoolean done;
+#if !LITERAL_SINGLE_TOPOLOGY_GROUP
     unsigned int cross_group_poll_delay;
+#endif
 };
 
 [[noreturn]] static void fail_errno(const char *operation, int error_number) {
@@ -164,13 +255,6 @@ static void processor_relax(void) {
 #endif
 }
 
-static void wait_at_barrier(pthread_barrier_t *barrier) {
-    int error_number = pthread_barrier_wait(barrier);
-    if (error_number != 0 && error_number != PTHREAD_BARRIER_SERIAL_THREAD) {
-        fail_errno("pthread_barrier_wait", error_number);
-    }
-}
-
 static void pin_current_thread(int processor_id) {
     if (processor_id < 0) {
         return;
@@ -186,8 +270,14 @@ static void pin_current_thread(int processor_id) {
     }
 }
 
-static void initialize_mpmc_queue(MpmcQueue *queue) {
+[[maybe_unused]] static void initialize_injection_queue(InjectionQueue *queue) {
     queue->mask = example_queue_capacity - 1;
+#if LITERAL_PROVEN_BOUNDED_SPMC_INJECTION
+    queue->tasks = allocate_aligned(
+        example_cache_line_alignment,
+        example_queue_capacity * sizeof(*queue->tasks)
+    );
+#else
     queue->cells = allocate_aligned(
         example_cache_line_alignment,
         example_queue_capacity * sizeof(*queue->cells)
@@ -195,19 +285,33 @@ static void initialize_mpmc_queue(MpmcQueue *queue) {
     for (size_t position = 0; position < example_queue_capacity; ++position) {
         atomic_init(&queue->cells[position].sequence, position);
     }
+#endif
     atomic_init(&queue->enqueue_position, 0);
     atomic_init(&queue->dequeue_position, 0);
 }
 
-static void destroy_mpmc_queue(MpmcQueue *queue) {
+[[maybe_unused]] static void destroy_injection_queue(InjectionQueue *queue) {
+#if LITERAL_PROVEN_BOUNDED_SPMC_INJECTION
+    free(queue->tasks);
+#else
     free(queue->cells);
+#endif
 }
 
-static bool try_enqueue_mpmc(MpmcQueue *queue, LiteralSchedulerTask *task) {
-    QueueCell *cell;
+[[maybe_unused]] static bool try_enqueue_injection(
+    InjectionQueue *queue, LiteralSchedulerTask *task
+) {
     size_t position = atomic_load_explicit(
         &queue->enqueue_position, memory_order_relaxed
     );
+#if LITERAL_PROVEN_BOUNDED_SPMC_INJECTION
+    queue->tasks[position & queue->mask] = task;
+    atomic_store_explicit(
+        &queue->enqueue_position, position + 1, memory_order_release
+    );
+    return true;
+#else
+    InjectionQueueCell *cell;
     for (;;) {
         cell = &queue->cells[position & queue->mask];
         size_t sequence = atomic_load_explicit(&cell->sequence, memory_order_acquire);
@@ -233,13 +337,35 @@ static bool try_enqueue_mpmc(MpmcQueue *queue, LiteralSchedulerTask *task) {
     cell->task = task;
     atomic_store_explicit(&cell->sequence, position + 1, memory_order_release);
     return true;
+#endif
 }
 
-static LiteralSchedulerTask *try_dequeue_mpmc(MpmcQueue *queue) {
-    QueueCell *cell;
+[[maybe_unused]] static LiteralSchedulerTask *try_dequeue_injection(
+    InjectionQueue *queue
+) {
     size_t position = atomic_load_explicit(
         &queue->dequeue_position, memory_order_relaxed
     );
+#if LITERAL_PROVEN_BOUNDED_SPMC_INJECTION
+    for (;;) {
+        size_t enqueue_position = atomic_load_explicit(
+            &queue->enqueue_position, memory_order_acquire
+        );
+        if (position == enqueue_position) {
+            return NULL;
+        }
+        if (atomic_compare_exchange_weak_explicit(
+                &queue->dequeue_position,
+                &position,
+                position + 1,
+                memory_order_relaxed,
+                memory_order_relaxed
+            )) {
+            return queue->tasks[position & queue->mask];
+        }
+    }
+#else
+    InjectionQueueCell *cell;
     for (;;) {
         cell = &queue->cells[position & queue->mask];
         size_t sequence = atomic_load_explicit(&cell->sequence, memory_order_acquire);
@@ -267,6 +393,7 @@ static LiteralSchedulerTask *try_dequeue_mpmc(MpmcQueue *queue) {
         &cell->sequence, position + queue->mask + 1, memory_order_release
     );
     return task;
+#endif
 }
 
 static void initialize_work_deque(WorkDeque *deque) {
@@ -285,15 +412,111 @@ static void destroy_work_deque(WorkDeque *deque) {
 
 static void push_work_deque(WorkDeque *deque, LiteralSchedulerTask *task) {
     int64_t bottom = atomic_load_explicit(&deque->bottom, memory_order_relaxed);
+#if !LITERAL_PROVEN_DEQUE_CAPACITY
     int64_t top = atomic_load_explicit(&deque->top, memory_order_acquire);
     if (bottom - top >= example_queue_capacity) {
         fail_message("work deque capacity exceeded");
     }
+#endif
     atomic_store_explicit(
         &deque->tasks[bottom & deque->mask], task, memory_order_relaxed
     );
     atomic_thread_fence(memory_order_release);
     atomic_store_explicit(&deque->bottom, bottom + 1, memory_order_relaxed);
+}
+
+#if LITERAL_STEAL_BATCH_SIZE > 1 || LITERAL_INJECTION_BATCH_SIZE > 1
+static void retain_claimed_tasks(
+    LiteralSchedulerWorker *worker,
+    LiteralSchedulerTask **claimed_tasks,
+    size_t claim_count
+) {
+    if (claim_count == 1) {
+        return;
+    }
+#if LITERAL_PRIVATE_TASK_BATCH
+    for (size_t offset = 1; offset < claim_count; ++offset) {
+        worker->private_tasks[offset - 1] = claimed_tasks[offset];
+    }
+    worker->private_task_count = claim_count - 1;
+#else
+    WorkDeque *deque = &worker->deque;
+    int64_t bottom = atomic_load_explicit(
+        &deque->bottom, memory_order_relaxed
+    );
+#if !LITERAL_PROVEN_DEQUE_CAPACITY
+    int64_t top = atomic_load_explicit(&deque->top, memory_order_acquire);
+    if (bottom - top + (int64_t)claim_count - 1 > example_queue_capacity) {
+        fail_message("work deque capacity exceeded by a batch claim");
+    }
+#endif
+    for (size_t offset = 1; offset < claim_count; ++offset) {
+        atomic_store_explicit(
+            &deque->tasks[(bottom + (int64_t)offset - 1) & deque->mask],
+            claimed_tasks[offset],
+            memory_order_relaxed
+        );
+    }
+    atomic_thread_fence(memory_order_release);
+    atomic_store_explicit(
+        &deque->bottom,
+        bottom + (int64_t)claim_count - 1,
+        memory_order_relaxed
+    );
+#endif
+}
+#endif
+
+#if LITERAL_INJECTION_BATCH_SIZE > 1
+static LiteralSchedulerTask *dequeue_injection_batch(
+    LiteralSchedulerWorker *worker, InjectionQueue *queue
+) {
+    size_t position = atomic_load_explicit(
+        &queue->dequeue_position, memory_order_relaxed
+    );
+    size_t enqueue_position = atomic_load_explicit(
+        &queue->enqueue_position, memory_order_acquire
+    );
+    if (position == enqueue_position) {
+        return NULL;
+    }
+    size_t claim_count = (enqueue_position - position) / 2;
+    if (claim_count == 0) {
+        claim_count = 1;
+    }
+    if (claim_count > LITERAL_INJECTION_BATCH_SIZE) {
+        claim_count = LITERAL_INJECTION_BATCH_SIZE;
+    }
+    LiteralSchedulerTask *claimed_tasks[LITERAL_INJECTION_BATCH_SIZE];
+    for (size_t offset = 0; offset < claim_count; ++offset) {
+        claimed_tasks[offset] = queue->tasks[
+            (position + offset) & queue->mask
+        ];
+    }
+    size_t next_position = position + claim_count;
+    if (!atomic_compare_exchange_strong_explicit(
+            &queue->dequeue_position,
+            &position,
+            next_position,
+            memory_order_relaxed,
+            memory_order_relaxed
+        )) {
+        return NULL;
+    }
+    retain_claimed_tasks(worker, claimed_tasks, claim_count);
+    return claimed_tasks[0];
+}
+#endif
+
+[[maybe_unused]] static LiteralSchedulerTask *dequeue_injection_for_worker(
+    LiteralSchedulerWorker *worker, InjectionQueue *queue
+) {
+#if LITERAL_INJECTION_BATCH_SIZE > 1
+    return dequeue_injection_batch(worker, queue);
+#else
+    (void)worker;
+    return try_dequeue_injection(queue);
+#endif
 }
 
 static LiteralSchedulerTask *pop_work_deque(WorkDeque *deque) {
@@ -324,19 +547,42 @@ static LiteralSchedulerTask *pop_work_deque(WorkDeque *deque) {
     return NULL;
 }
 
-static LiteralSchedulerTask *steal_work_deque(WorkDeque *deque) {
-    int64_t top = atomic_load_explicit(&deque->top, memory_order_acquire);
+static LiteralSchedulerTask *steal_work_deque(
+    LiteralSchedulerWorker *thief, WorkDeque *victim_deque
+) {
+    int64_t top = atomic_load_explicit(
+        &victim_deque->top, memory_order_acquire
+    );
+#if !defined(__x86_64__) && !defined(__i386__)
     atomic_thread_fence(memory_order_seq_cst);
-    int64_t bottom = atomic_load_explicit(&deque->bottom, memory_order_acquire);
+#endif
+    int64_t bottom = atomic_load_explicit(
+        &victim_deque->bottom, memory_order_acquire
+    );
     if (top >= bottom) {
         return NULL;
     }
-    LiteralSchedulerTask *task = atomic_load_explicit(
-        &deque->tasks[top & deque->mask], memory_order_relaxed
-    );
-    int64_t next_top = top + 1;
+#if LITERAL_STEAL_BATCH_SIZE > 1
+    int64_t claim_count = (bottom - top) / 2;
+    if (claim_count == 0) {
+        claim_count = 1;
+    }
+    if (claim_count > LITERAL_STEAL_BATCH_SIZE) {
+        claim_count = LITERAL_STEAL_BATCH_SIZE;
+    }
+#else
+    int64_t claim_count = 1;
+#endif
+    LiteralSchedulerTask *claimed_tasks[LITERAL_STEAL_BATCH_SIZE];
+    for (int64_t offset = 0; offset < claim_count; ++offset) {
+        claimed_tasks[offset] = atomic_load_explicit(
+            &victim_deque->tasks[(top + offset) & victim_deque->mask],
+            memory_order_relaxed
+        );
+    }
+    int64_t next_top = top + claim_count;
     if (!atomic_compare_exchange_strong_explicit(
-            &deque->top,
+            &victim_deque->top,
             &top,
             next_top,
             memory_order_seq_cst,
@@ -344,7 +590,12 @@ static LiteralSchedulerTask *steal_work_deque(WorkDeque *deque) {
         )) {
         return NULL;
     }
-    return task;
+#if LITERAL_STEAL_BATCH_SIZE > 1
+    retain_claimed_tasks(thief, claimed_tasks, (size_t)claim_count);
+#else
+    (void)thief;
+#endif
+    return claimed_tasks[0];
 }
 
 static void literal_join_initialize(LiteralJoin *join, unsigned int arrivals) {
@@ -356,6 +607,7 @@ static bool literal_join_arrive(LiteralJoin *join) {
         == 1;
 }
 
+#if !LITERAL_SHARED_VICTIM_LISTS && !LITERAL_TWO_SINGLE_WORKER_GROUPS
 static uint64_t next_random(LiteralSchedulerWorker *worker) {
     uint64_t state = worker->random_state;
     state ^= state << 13;
@@ -364,35 +616,95 @@ static uint64_t next_random(LiteralSchedulerWorker *worker) {
     worker->random_state = state;
     return state;
 }
+#endif
 
 static void literal_scheduler_submit(
     LiteralSchedulerWorker *worker, LiteralSchedulerTask *task
 ) {
+#if LITERAL_SINGLE_TOPOLOGY_GROUP
+    push_work_deque(&worker->deque, task);
+#else
     LiteralScheduler *scheduler = worker->scheduler;
     if (task->preferred_group >= scheduler->group_count) {
         fail_message("scheduler task has an invalid preferred topology group");
     }
-    if (task->preferred_group != worker->group
-        && try_enqueue_mpmc(
+    if (task->preferred_group != worker->group) {
+#if LITERAL_PROVEN_BOUNDED_SPMC_INJECTION
+        (void)try_enqueue_injection(
             &scheduler->group_injection[task->preferred_group], task
-        )) {
+        );
         return;
+#else
+        if (try_enqueue_injection(
+                &scheduler->group_injection[task->preferred_group], task
+            )) {
+            return;
+        }
+#endif
     }
     push_work_deque(&worker->deque, task);
+#endif
 }
 
-static bool literal_scheduler_can_continue(
+[[maybe_unused]] static bool literal_scheduler_can_continue(
     const LiteralSchedulerWorker *worker,
     const LiteralSchedulerTask *continuation,
     bool prefer_topology_group
 ) {
+#if LITERAL_SINGLE_TOPOLOGY_GROUP
+    (void)worker;
+    (void)continuation;
+    (void)prefer_topology_group;
+    return true;
+#else
     return !prefer_topology_group || continuation->preferred_group == worker->group;
+#endif
 }
 
+#if !LITERAL_TWO_SINGLE_WORKER_GROUPS
 static LiteralSchedulerTask *try_steal_from_workers(
     LiteralSchedulerWorker *worker, bool same_group
 ) {
     LiteralScheduler *scheduler = worker->scheduler;
+#if LITERAL_SHARED_VICTIM_LISTS
+    uint16_t victim_group = worker->group;
+    size_t *stored_cursor = &worker->same_group_victim_cursor;
+    if (!same_group) {
+        if (scheduler->group_count == 1) {
+            return NULL;
+        }
+        victim_group = worker->group == 0 ? 1 : 0;
+        stored_cursor = &worker->cross_group_victim_cursor;
+    }
+    size_t victim_count = scheduler->group_worker_counts[victim_group];
+    if (victim_count == 0 || (same_group && victim_count == 1)) {
+        return NULL;
+    }
+    LiteralSchedulerWorker **victims = scheduler->group_workers[victim_group];
+    size_t start = *stored_cursor;
+    size_t cursor = start;
+    for (size_t offset = 0; offset < victim_count; ++offset) {
+        LiteralSchedulerWorker *victim = victims[cursor];
+        ++cursor;
+        if (cursor == victim_count) {
+            cursor = 0;
+        }
+        if (victim == worker) {
+            continue;
+        }
+        LiteralSchedulerTask *task = steal_work_deque(worker, &victim->deque);
+        if (task != NULL) {
+            *stored_cursor = cursor;
+            return task;
+        }
+    }
+    ++start;
+    if (start == victim_count) {
+        start = 0;
+    }
+    *stored_cursor = start;
+    return NULL;
+#else
     size_t start = next_random(worker) % scheduler->worker_count;
     for (size_t offset = 0; offset < scheduler->worker_count; ++offset) {
         size_t victim_index = (start + offset) % scheduler->worker_count;
@@ -403,15 +715,30 @@ static LiteralSchedulerTask *try_steal_from_workers(
         if ((victim->group == worker->group) != same_group) {
             continue;
         }
-        LiteralSchedulerTask *task = steal_work_deque(&victim->deque);
+        LiteralSchedulerTask *task = steal_work_deque(worker, &victim->deque);
         if (task != NULL) {
             return task;
         }
     }
     return NULL;
+#endif
 }
+#endif
 
 static LiteralSchedulerTask *next_scheduler_task(LiteralSchedulerWorker *worker) {
+#if LITERAL_PRIVATE_TASK_BATCH
+    if (worker->private_task_count != 0) {
+        --worker->private_task_count;
+        return worker->private_tasks[worker->private_task_count];
+    }
+#endif
+#if LITERAL_SINGLE_TOPOLOGY_GROUP
+    LiteralSchedulerTask *task = pop_work_deque(&worker->deque);
+    if (task != NULL) {
+        return task;
+    }
+    return try_steal_from_workers(worker, true);
+#else
     LiteralScheduler *scheduler = worker->scheduler;
     LiteralSchedulerTask *task = pop_work_deque(&worker->deque);
     if (task != NULL) {
@@ -419,17 +746,21 @@ static LiteralSchedulerTask *next_scheduler_task(LiteralSchedulerWorker *worker)
         return task;
     }
 
-    task = try_dequeue_mpmc(&scheduler->group_injection[worker->group]);
+    task = dequeue_injection_for_worker(
+        worker, &scheduler->group_injection[worker->group]
+    );
     if (task != NULL) {
         worker->failed_local_polls = 0;
         return task;
     }
 
+#if !LITERAL_TWO_SINGLE_WORKER_GROUPS
     task = try_steal_from_workers(worker, true);
     if (task != NULL) {
         worker->failed_local_polls = 0;
         return task;
     }
+#endif
 
     if (worker->failed_local_polls < scheduler->cross_group_poll_delay) {
         ++worker->failed_local_polls;
@@ -437,23 +768,39 @@ static LiteralSchedulerTask *next_scheduler_task(LiteralSchedulerWorker *worker)
     }
     worker->failed_local_polls = 0;
 
+#if LITERAL_TWO_SINGLE_WORKER_GROUPS
+    uint16_t other_group = worker->group == 0 ? 1 : 0;
+    task = dequeue_injection_for_worker(
+        worker, &scheduler->group_injection[other_group]
+    );
+    if (task != NULL) {
+        return task;
+    }
+    LiteralSchedulerWorker *victim = &scheduler->workers[
+        worker->index == 0 ? 1 : 0
+    ];
+    return steal_work_deque(worker, &victim->deque);
+#else
     for (size_t group = 0; group < scheduler->group_count; ++group) {
         if (group == worker->group) {
             continue;
         }
-        task = try_dequeue_mpmc(&scheduler->group_injection[group]);
+        task = dequeue_injection_for_worker(
+            worker, &scheduler->group_injection[group]
+        );
         if (task != NULL) {
             return task;
         }
     }
     return try_steal_from_workers(worker, false);
+#endif
+#endif
 }
 
 static void *run_scheduler_worker(void *opaque_worker) {
     LiteralSchedulerWorker *worker = opaque_worker;
     LiteralScheduler *scheduler = worker->scheduler;
     pin_current_thread(worker->processor_id);
-    wait_at_barrier(&scheduler->start_barrier);
 
     LiteralSchedulerTask *task = NULL;
     for (;;) {
@@ -484,19 +831,32 @@ static void literal_scheduler_initialize(
         || config->group_count > config->worker_count) {
         fail_message("invalid scheduler topology group count");
     }
+#if LITERAL_SINGLE_TOPOLOGY_GROUP
+    if (config->group_count != 1) {
+        fail_message("generated scheduler requires one topology group");
+    }
+#elif LITERAL_TWO_SINGLE_WORKER_GROUPS
+    if (config->worker_count != 2 || config->group_count != 2) {
+        fail_message("generated scheduler requires two one-worker groups");
+    }
+#endif
 
     memset(scheduler, 0, sizeof(*scheduler));
     scheduler->worker_count = config->worker_count;
     scheduler->group_count = config->group_count;
+#if !LITERAL_SINGLE_TOPOLOGY_GROUP
     scheduler->cross_group_poll_delay = config->cross_group_poll_delay;
+#endif
     atomic_init(&scheduler->done.value, false);
 
     require_lock_free_scheduler_atomics();
 
     bool group_has_worker[example_maximum_topology_groups] = {false};
+#if !LITERAL_SINGLE_TOPOLOGY_GROUP
     for (size_t group = 0; group < scheduler->group_count; ++group) {
-        initialize_mpmc_queue(&scheduler->group_injection[group]);
+        initialize_injection_queue(&scheduler->group_injection[group]);
     }
+#endif
     for (size_t worker_index = 0; worker_index < scheduler->worker_count;
          ++worker_index) {
         uint16_t group = config->group_ids[worker_index];
@@ -506,11 +866,20 @@ static void literal_scheduler_initialize(
         group_has_worker[group] = true;
         LiteralSchedulerWorker *worker = &scheduler->workers[worker_index];
         worker->scheduler = scheduler;
+#if LITERAL_TWO_SINGLE_WORKER_GROUPS
         worker->index = worker_index;
+#endif
         worker->processor_id = config->processor_ids[worker_index];
         worker->group = group;
+#if LITERAL_SHARED_VICTIM_LISTS && !LITERAL_TWO_SINGLE_WORKER_GROUPS
+        worker->group_member_position = scheduler->group_worker_counts[group];
+        scheduler->group_workers[group][
+            scheduler->group_worker_counts[group]++
+        ] = worker;
+#elif !LITERAL_TWO_SINGLE_WORKER_GROUPS
         worker->random_state = UINT64_C(0x2545f4914f6cdd1d)
             ^ (worker_index * UINT64_C(0x9e3779b97f4a7c15));
+#endif
         initialize_work_deque(&worker->deque);
     }
     for (size_t group = 0; group < scheduler->group_count; ++group) {
@@ -518,15 +887,22 @@ static void literal_scheduler_initialize(
             fail_message("scheduler topology group has no workers");
         }
     }
-
-    int error_number = pthread_barrier_init(
-        &scheduler->start_barrier,
-        NULL,
-        (unsigned int)scheduler->worker_count + 1
-    );
-    if (error_number != 0) {
-        fail_errno("pthread_barrier_init", error_number);
+#if LITERAL_SHARED_VICTIM_LISTS && !LITERAL_TWO_SINGLE_WORKER_GROUPS
+    for (size_t worker_index = 0; worker_index < scheduler->worker_count;
+         ++worker_index) {
+        LiteralSchedulerWorker *worker = &scheduler->workers[worker_index];
+        size_t same_group_count = scheduler->group_worker_counts[worker->group];
+        worker->same_group_victim_cursor = worker->group_member_position + 1;
+        if (worker->same_group_victim_cursor == same_group_count) {
+            worker->same_group_victim_cursor = 0;
+        }
+        if (scheduler->group_count == 2) {
+            uint16_t other_group = worker->group == 0 ? 1 : 0;
+            worker->cross_group_victim_cursor = worker_index
+                % scheduler->group_worker_counts[other_group];
+        }
     }
+#endif
 }
 
 static void literal_scheduler_finish(LiteralSchedulerWorker *worker) {
@@ -567,7 +943,6 @@ static void literal_scheduler_run(
             fail_errno("pthread_create", error_number);
         }
     }
-    wait_at_barrier(&scheduler->start_barrier);
     for (size_t worker_index = 0; worker_index < scheduler->worker_count;
          ++worker_index) {
         int error_number = pthread_join(threads[worker_index], NULL);
@@ -578,17 +953,15 @@ static void literal_scheduler_run(
 }
 
 static void literal_scheduler_destroy(LiteralScheduler *scheduler) {
-    int error_number = pthread_barrier_destroy(&scheduler->start_barrier);
-    if (error_number != 0) {
-        fail_errno("pthread_barrier_destroy", error_number);
-    }
     for (size_t worker_index = 0; worker_index < scheduler->worker_count;
          ++worker_index) {
         destroy_work_deque(&scheduler->workers[worker_index].deque);
     }
+#if !LITERAL_SINGLE_TOPOLOGY_GROUP
     for (size_t group = 0; group < scheduler->group_count; ++group) {
-        destroy_mpmc_queue(&scheduler->group_injection[group]);
+        destroy_injection_queue(&scheduler->group_injection[group]);
     }
+#endif
 }
 
 typedef struct ExampleGraph ExampleGraph;
@@ -629,6 +1002,9 @@ static LiteralSchedulerTask *run_example_leaf(
     if (!literal_join_arrive(&graph->join)) {
         return NULL;
     }
+#if LITERAL_SINGLE_TOPOLOGY_GROUP
+    return run_example_continuation(worker, &graph->continuation);
+#else
     if (literal_scheduler_can_continue(
             worker, &graph->continuation, true
         )) {
@@ -636,6 +1012,7 @@ static LiteralSchedulerTask *run_example_leaf(
     }
     literal_scheduler_submit(worker, &graph->continuation);
     return NULL;
+#endif
 }
 
 static LiteralSchedulerTask *run_example_start(

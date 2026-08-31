@@ -57,6 +57,15 @@ injection queue. Keeping static successors on the direct path reduces the
 frequency and target diversity of these indirect calls without inlining Action
 Fragments.
 
+When cost and cardinality facts justify it, a thief may claim a bounded batch
+with one compare-exchange and republish all but its directly executed task to
+its own deque with one release. The same policy applies to a proven
+single-producer, multiple-consumer injection queue whose total lifetime enqueue
+count cannot exceed its capacity. Unknown or strongly heterogeneous costs use
+single-task claims. A worker keeps a claimed batch private only when codegen can
+bound the batch's total cost tightly enough that preventing redistribution does
+not compromise useful concurrency.
+
 ### Topology policy
 
 Workers prefer same-group work before crossing a cache-coherence or NUMA
@@ -188,7 +197,10 @@ The plan must identify:
 - exact or bounded fan-in and fanout;
 - exact or bounded numbers of Action Executions; and
 - known upper bounds on simultaneously live Action Executions, Joins, and
-  runnable Action Fragments.
+  runnable Action Fragments;
+- exact producers and possible consumers for every generated injection queue;
+  and
+- bounds on both simultaneous queue occupancy and total lifetime enqueues.
 
 Every count should be classified as exact, bounded, or unbounded. These facts
 allow codegen to choose counter widths and storage representations without
@@ -373,7 +385,14 @@ samples for unrestricted stealing. GCC and Clang differed by approximately 0–3
 on the finalists and did not change the architectural choice.
 
 The benchmark harness passed AddressSanitizer, UndefinedBehaviorSanitizer, and
-ThreadSanitizer checks.
+ThreadSanitizer checks. The generic MPMC, one-group batched, one-group
+private-batched, and exact two-worker SPMC generated forms also passed GCC
+`-fanalyzer`, `cppcheck`, and Clang's analyzer, bugprone, performance, and
+portability checks. Analyzer diagnostics for intentional cache-line padding,
+including the reference implementation directly in the benchmark translation
+unit, standard `void *` allocation conversions, and bounded standard-library
+calls were classified as design constraints or false positives rather than
+source changes.
 
 ### Single-translation-unit compiler study
 
@@ -430,6 +449,169 @@ source controls produced no stable improvement across the workload set. In
 particular, `restrict`, forced Join inlining, and the final-arrival hint did not
 materially change generated code. No tuning directive from this study belongs in
 the example source.
+
+### Generated scheduler specialization study
+
+A subsequent study treated the scheduler as generated program-specific code
+rather than a reusable runtime library. Every candidate was compiled with both
+GCC and Clang at C23 `-O2 -march=native`, tested in both execution orders, and
+screened across workless, 64-round, mixed approximately one-millisecond, and
+private-memory Action Fragments. Candidates with only a favorable isolated run
+were rejected. The findings are recorded here so later decisions do not depend
+on benchmark binaries or conversation history.
+
+The strongest result was exact queue sizing. Reducing a 65,536-entry queue to a
+proven 128-entry capacity reduced complete-runtime time by approximately 80% for
+128 fine tasks: about 0.49 ms became 0.09 ms with eight workers, and about 1.0
+ms became 0.18--0.20 ms with 16 logical workers. It also improved a mixed
+approximately one-millisecond case by approximately 5% with physical workers and
+16% with SMT. The gain comes principally from avoiding allocation and
+initialization of queue state that the generated program cannot use. Codegen
+should therefore emit the smallest safe power-of-two capacity from a proven
+simultaneously queued-task bound. When no such bound exists, it must retain a
+runtime capacity policy.
+
+Removing the owner-deque capacity check after proving it unreachable was a
+repeatable 1.5--3% improvement with eight workers and 4--6% with 16 logical
+workers in queue-heavy cases, and was neutral for approximately one-millisecond
+Action Fragments. This check should be omitted only from a deque whose bound is
+proven. Removing the index mask as well was rejected: it helped some
+physical-worker cases but regressed GCC with SMT by 6--8% and Clang by as much
+as 3%.
+
+For topology groups of at most eight physical workers, one shared, prefiltered
+worker list per group was the best general victim representation. Compared with
+generating a random start and scanning every worker, it reduced workless
+two-group time by approximately 35--43%, topology-skewed time by approximately
+62--68%, two-group SMT time by approximately 27--31%, and one-group eight-worker
+time by approximately 6--13%. With 16 same-group logical workers, however, the
+original random scan was 2--10% faster. The generated scheduler should select
+between these representations from its exact worker topology; random-number
+generation is not useful by itself.
+
+When codegen proves that a program uses one topology group, omitting injection
+queues, cross-group search, and remote-submission routing was neutral to
+approximately 4% faster. It also avoids allocating semantically unreachable
+state. These paths should not be emitted for such a program even where their
+hot-path timing is neutral.
+
+The startup barrier was unnecessary because the initial task is published before
+thread creation. Removing it improved fine cases by approximately 5--16% and was
+neutral for 100-microsecond through one-millisecond work. The generated
+scheduler should not construct or wait at this barrier.
+
+On this x86-64 target, the sequentially consistent fence between the two acquire
+loads in the thief path compiled to a locked instruction. A target-specific x86
+version relying on load-load ordering removed that instruction. It improved
+physical-worker queue-heavy cases by approximately 2--3% and Clang's 16-worker
+case by 5--7%; longer reversed GCC runs at 16 workers were neutral within 0.5%,
+and realistic Action Fragment costs were neutral. This specialization is
+accepted only for x86. The portable C path retains the fence until an equivalent
+target-specific proof and measurement exist.
+
+Two topology groups containing one worker each permit direct generation of the
+only possible victim and the other group number. Removing the generic group
+loops and victim search helped some topology-skewed fine cases, hurt some
+balanced workless cases, and was neutral within approximately 1% once Action
+Fragments reached millisecond or private-memory scale. Fixed cross-group delays
+of 0, 1, 8, 64, and 256 polls were likewise indistinguishable for the realistic
+costs; zero or one poll usually won the 64-round cases, while no value won every
+workless sample. Exact topology still justifies removing impossible searches,
+but a locality delay requires program locality evidence or runtime feedback
+rather than a universal constant.
+
+An apparent SPSC injection-queue win was invalid: another group was also allowed
+to consume that queue. A corrected SPSC design prevented cross-group consumption
+but ceased to be work-conserving and took approximately twice as long when all
+expensive tasks preferred one group. It is rejected as a general queue. A
+single-producer, multiple-consumer candidate with a proven total enqueue bound
+retained cross-group help and removed per-cell sequence state; at 128 entries it
+was approximately neutral against the full bounded MPMC queue. At 65,536 entries
+it reduced workless time by approximately 35--45% and 64-round time by 6--14%,
+while 1,000-round and millisecond-scale work were neutral. This representation
+is accepted only when codegen proves both that the queue has one producer and
+that total lifetime enqueues cannot exceed its capacity. A bound only on
+simultaneous queued tasks is insufficient because the sequence-free cells cannot
+be reused safely.
+
+Batch claiming produced the largest hot-path improvement. A thief that claimed
+up to 64 tasks with one compare-exchange made 60,000 fine one-group tasks
+approximately three to four times faster, roughly halved the topology-skewed
+64-round case, improved a large mixed-cost case by approximately 3--5%, and was
+neutral for small millisecond and memory cases. Caps of 256 or 512 improved the
+uniform fine cases further. Applying the same technique to the proven-bound SPMC
+injection queue improved 60,000 balanced workless tasks by as much as
+approximately 2.5 times and the 64-round case by about 10%.
+
+A final post-cleanup confirmation compiled the retained source with both
+compilers and ran three reversed-order outer repetitions; each repetition was
+the median of 15 samples after two warmups. The following complete-runtime
+medians are in milliseconds. The selected form republishes a batch of at most
+256 tasks, uses the measured random victim scan for the 16-worker topology, and
+uses the proven-bound SPMC injection queue for the exact two-worker topology.
+
+| Topology and work                         | GCC single claim | GCC selected | Clang single claim | Clang selected |
+| ----------------------------------------- | ---------------: | -----------: | -----------------: | -------------: |
+| One group, 60,000 workless tasks          |             5.12 |         1.25 |               5.12 |           1.13 |
+| One group, 60,000 64-round tasks          |             4.61 |         1.39 |               4.61 |           1.40 |
+| One group, 128 mixed approximately 1 ms   |             9.23 |         9.26 |               9.22 |           9.22 |
+| One group, 64 mixed 256 KiB memory tasks  |             4.18 |         4.16 |               4.20 |           4.15 |
+| 16 logical workers, 60,000 workless tasks |             6.06 |         1.73 |               5.75 |           1.63 |
+| 16 logical workers, 60,000 64-round tasks |             6.20 |         1.61 |               5.54 |           1.60 |
+| Two one-worker groups, 60,000 workless    |             1.73 |         1.37 |               1.41 |           1.11 |
+| Two one-worker groups, 60,000 64-round    |             6.60 |         6.19 |               6.06 |           5.35 |
+| Two one-worker groups, mixed about 1 ms   |            37.20 |        37.22 |              35.36 |          35.20 |
+| Two one-worker groups, 256 KiB memory     |            16.26 |        16.26 |              16.31 |          16.14 |
+
+All paired task-and-memory checksums matched. The same rerun confirmed why
+private batches require a cost proof: they reduced the one-group workless case
+to approximately 0.86 ms, but increased the mixed one-millisecond case to
+approximately 31.3 ms and the memory case to approximately 14.9 ms with both
+compilers.
+
+Claimed tasks are normally republished to the thief's deque in one release so
+other workers can redistribute them. Keeping them in a private non-atomic batch
+saved another 10--30% for proven uniform fine work, but was two to seven times
+slower in the worst heterogeneous and memory cases. Codegen may use a private
+batch only when its total estimated cost is small and sufficiently uniform.
+Otherwise it must republish the batch. Task-count caps alone are not enough:
+batch size and private retention must account for estimated cost, order,
+locality, runnable breadth, and uncertainty. A conservative unknown-cost case
+uses single-task claims.
+
+Writing a whole statically known fanout and publishing its positions only once
+improved some large workless cases by 3--9% but regressed some 64-round cases by
+5--7% because the other workers could not begin promptly. Intermediate publish
+sizes had no stable cross-compiler winner. Per-task publication remains the
+reference; codegen may batch publication when its cost model predicts that
+position traffic dominates delayed visibility.
+
+Having the calling thread act as worker zero removed one thread creation and
+join and improved fine one-group fanout by 20--30%. It also delayed useful work
+until the other threads had been created, regressing heterogeneous
+millisecond-scale computation by approximately 30% and private-memory work by
+approximately 25%. It is rejected as the universal startup design. If the
+Operation Graph proves no runnable parallelism, codegen should omit the
+scheduler entirely. Choosing the first worker-activation point in a program with
+a serial prefix remains a generated-program investigation.
+
+The following candidates produced no stable gain and are not selected:
+
+- embedding deque storage in the scheduler or reducing only the statically
+  allocated maximum-worker count;
+- removing the task topology-group value or execution-state pointer while
+  retaining a 64-byte task stride to prevent false sharing;
+- replacing the owner pop's store-plus-fence with an atomic exchange;
+- moving the completion load later in the search;
+- adding a local-deque empty precheck, which regressed SMT cases by 12--18%;
+- replacing atomic deque slots with ordinary pointers;
+- replacing indirect recovery dispatch with the best-case homogeneous direct
+  dispatch, or replacing generic submission with statically selected submission
+  calls, neither of which changed performance robustly after inlining;
+- removing the runtime lock-free check, which the compilers already reduce to
+  negligible startup code; and
+- embedding a statically known initial-worker choice without changing the larger
+  startup sequence.
 
 ### Action Fragment cost and distribution study
 
@@ -512,11 +694,29 @@ gcc -std=c23 -O2 -march=native -mtune=native -pthread define/compiler/codegen/li
 clang -std=c23 -O2 -march=native -mtune=native -pthread define/compiler/codegen/literal/c/scheduler_and_join_benchmark.c -o /tmp/define-scheduler-benchmark-clang
 ```
 
+For example, the measured one-group generated finalist with republished batch
+claims is built by adding:
+
+```text
+-DLITERAL_MAXIMUM_WORKERS=8 -DLITERAL_SINGLE_TOPOLOGY_GROUP=1 -DLITERAL_PROVEN_DEQUE_CAPACITY=1 -DLITERAL_STEAL_BATCH_SIZE=256
+```
+
+The two one-worker-group finalist additionally replaces the single-group fact
+with `-DLITERAL_TWO_SINGLE_WORKER_GROUPS=1` and adds
+`-DLITERAL_PROVEN_BOUNDED_SPMC_INJECTION=1` and
+`-DLITERAL_INJECTION_BATCH_SIZE=256`. These are example facts and measured
+policy choices, not universal flags. In particular, the proven-bound SPMC flag
+asserts a single producer and a total lifetime enqueue bound, while the deque
+capacity flag must include tasks republished after a batch claim.
+`LITERAL_SHARED_VICTIM_LISTS=0` selects the measured random scan for a large
+same-group SMT topology; shared prefiltered lists are the default.
+
 The principal workloads can then be reproduced by substituting either binary in
 these commands:
 
 ```sh
 /tmp/define-scheduler-benchmark-gcc serial 2000000 compute 0 0 0 uniform 0 2 15
+/tmp/define-scheduler-benchmark-gcc idle 2000000 compute 0 0 0 uniform 0 2 15
 /tmp/define-scheduler-benchmark-gcc wide 60000 compute 64 64 0 uniform 0 3 15
 /tmp/define-scheduler-benchmark-gcc steal 128 compute 64 1000000 64 random 0 3 15
 /tmp/define-scheduler-benchmark-gcc steal-smt 128 compute 64 1000000 64 random 0 3 15
@@ -535,15 +735,20 @@ memory work amounts are passes over each task's private `memory-bytes` region.
 The distribution is `uniform`, `interleaved`, `random`, `clustered`, `late`,
 `group0`, or `group1`. A uniform run requires zero slow tasks. The `wide-smt`,
 `steal-smt`, and `skew-smt` workloads activate the SMT siblings of their
-corresponding physical workers.
+corresponding physical workers. The `idle` workload runs a direct serial chain
+with seven additional workers polling, exposing interference from workers that
+have no useful task.
 
 Timed samples include scheduler initialization and destruction but exclude task
-allocation, memory first-touch, and result validation. The current target
-configuration uses processor 0 for a serial chain, processors 0–7 as one
-topology group for same-group stealing, and processors 0 and 8 as separate
-topology groups for the wide and skewed cases. Their SMT siblings are processors
-16–23 and processors 16 and 24, respectively. Those assignments must be changed
-to match another machine before its results are compared.
+allocation, memory first-touch, and result validation. Every sample checks that
+its complete task-and-memory checksum matches the first sample, so a scheduler
+variant that loses, duplicates, or races work does not silently produce a
+favorable time. The current target configuration uses processor 0 for a serial
+chain, processors 0–7 as one topology group for same-group stealing, and
+processors 0 and 8 as separate topology groups for the wide and skewed cases.
+Their SMT siblings are processors 16–23 and processors 16 and 24, respectively.
+Those assignments must be changed to match another machine before its results
+are compared.
 
 A later layout analysis moved each worker's aligned deque before its remaining
 state. This reduced a worker from 320 to 256 bytes and the 32-worker scheduler
@@ -569,8 +774,6 @@ Define programs:
   adopting one synthetic-workload winner;
 - `restrict`, scalar replacement, and compiler assumptions derived from proven
   Particle aliasing, address-identity, lifetime, and queue-capacity facts;
-- removal of the owner deque's capacity-check load when the compiler proves that
-  its capacity cannot be exceeded for every reachable execution;
 - C23 fixed-underlying-type enums and `_BitInt` representations after codegen
   has real identity domains, cardinality bounds, and external-ABI requirements
   to measure;
@@ -632,10 +835,13 @@ activation therefore remains adaptive runtime policy.
   cache line when isolated from unrelated active counters.
 - Generated Action Fragment functions need a common scheduler-call signature so
   queued tasks can use one indirect dispatch path.
-- The fixed-capacity queues and fixed cross-group poll threshold in the
-  [C example](scheduler_and_join_example.c) are benchmark mechanisms, not final
-  production policies. Production queues need a proven capacity strategy, and
-  cross-group policy needs workload feedback.
+- The fallback queue capacity and fixed cross-group poll threshold in the
+  [C example](scheduler_and_join_example.c) are reference policies. Generated
+  queues need either a proven capacity or an explicit runtime capacity policy,
+  and cross-group policy ultimately needs workload feedback.
+- Batch claims preserve runnable tasks but can change when and where they run.
+  Their caps and private-versus-republished representation are codegen decisions
+  driven by proven bounds, estimated cost, locality, and uncertainty.
 - The synthetic measurements choose an initial architecture. Benchmarks of
   generated Define programs remain necessary before fixing constants or
   specializing Particle layout.
