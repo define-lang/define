@@ -13,3 +13,5 @@ Current studies:
 - [Pointer-free static execution design](pointer_free_static_design.md) and its
   retained [benchmark](pointer_free_static_benchmark.c)
 - [Configurable pointer-free reference implementation](pointer_free_static_example.c)
+- [Literal generated examples](generated_examples), derived from existing
+  Operation Graph fixtures

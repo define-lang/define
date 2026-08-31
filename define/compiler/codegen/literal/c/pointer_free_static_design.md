@@ -27,20 +27,18 @@ compile-time association from a Position reference to one of those identities.
   instruction.
 - Destroying a Particle performs every statically required destruction effect
   and ends the identity's lifetime.
-- A presence value is emitted only when later runtime behavior can observe or
-  depend on presence. If control and dependency facts prove presence, no value
-  is needed.
+- The strict literal form gives every Particle an ordinary presence byte and
+  emits every Create and Destroy as a write to that byte. The C optimizer may
+  remove a write after proving that no behavior observes it.
 - Storage may be reused for non-overlapping Particle identities when address
   identity is not externally observable.
 
-The fastest form of a statically proven Particle is therefore not a memory
-location containing `1`; it is no runtime presence storage at all. The generated
-operations and the storage required by live qualities are sufficient evidence of
-its existence. If presence is runtime-dependent, the next choices are a direct
-byte or a bit in an Action Execution-local word. An address should become the
-Particle identity only when generated or foreign behavior can observe that
-address. Otherwise, giving the Particle an address adds an identity operation
-that the semantics do not require.
+An optimizing backend could prove that control and dependencies make a presence
+value unnecessary and omit its storage. That is useful as a performance lower
+bound in this study, but it performs Define-level semantic optimization beyond
+the strict literal boundary. A literal backend should instead emit an ordinary,
+non-volatile byte and allow C's ordinary dead-store elimination to reach the
+same machine code when it can prove the complete use is unobservable.
 
 Quality implementation state is separate from Particle presence. The benchmark
 stores a value for every Particle only to give each simulated Particle Operation
@@ -84,8 +82,8 @@ The study compares these representations:
 
 1. **Direct generated control flow.** One caller executes a complete graph with
    direct calls and ordinary compact state. Positions, readiness, satisfied
-   Joins, completion atomics, and Particle presence proven by the graph all
-   disappear.
+   Joins, and completion atomics disappear. Literal Particle presence writes
+   remain in emitted C unless the C optimizer proves them unnecessary.
 2. **Contiguous direct ranges.** Each worker receives a contiguous range of
    complete Action Executions and runs the same direct control flow. This pays
    one atomic completion operation per worker, not per Action Execution.
@@ -213,7 +211,7 @@ than from the current compiler implementation:
 ### Three-operation chain
 
 Source:
-[`three_operation_chain`](../../../../testdata/codegen/operation_graph_single_action_integration/three_operation_chain/operation_dependencies.json)
+[`three_operation_chain`](../../../../testdata/reference_graph/operation_graph_single_action_integration/three_operation_chain/operation_dependencies.json)
 
 ```text
 create item -> move item to dest -> destroy dest
@@ -225,7 +223,7 @@ is used before and after it.
 ### Multiway Join and fanout
 
 Source:
-[`multiway_join_and_fan_out`](../../../../testdata/codegen/operation_graph_single_action_integration/multiway_join_and_fan_out/operation_dependencies.json)
+[`multiway_join_and_fan_out`](../../../../testdata/reference_graph/operation_graph_single_action_integration/multiway_join_and_fan_out/operation_dependencies.json)
 
 ```text
                               create b -> destroy b
@@ -239,7 +237,7 @@ destroy uses a two-arrival Join.
 ### Parallel local and triggered Action Execution chains
 
 Source:
-[`local_create_and_action_execution_run_in_parallel`](../../../../testdata/codegen/operation_graph_two_actions_integration/local_create_and_action_execution_run_in_parallel/operation_dependencies.json)
+[`local_create_and_action_execution_run_in_parallel`](../../../../testdata/reference_graph/operation_graph_two_actions_integration/local_create_and_action_execution_run_in_parallel/operation_dependencies.json)
 
 ```text
 create local item -> destroy local item
@@ -380,24 +378,25 @@ addressed presence bytes. Those bytes did not enlarge the already
 cache-line-separated concurrent state.
 
 For million-round work, all three presence choices were within measurement
-noise. Codegen should still remove presence first. If runtime presence remains,
-use direct bytes unless a measured state-layout benefit justifies an ordinary
-packed word, and avoid packing concurrently written presence merely to save
-bits.
+noise. The strict literal form should use direct bytes unless a measured
+state-layout benefit justifies an ordinary packed word, and should avoid packing
+concurrently written presence merely to save bits. The no-storage result bounds
+what a future optimizing backend could achieve by proving presence unnecessary.
 
 SIMD over presence words does not help these graphs: no bulk presence query
-exists, and the best proven representation has no presence word. Ordinary bit
+exists, and the fastest measured lower bound has no presence word. Ordinary bit
 instructions are useful for scanning readiness. SIMD becomes a candidate only if
 a future program performs a genuine bulk query over non-concurrently modified
 presence state.
 
 ### Generated instructions and compiler options
 
-The direct form's timed path contains no locked instruction, readiness access,
-Join operation, indirect call, or presence access. Its tight loop is scalar;
-compiler vectorization reports applied only to benchmark initialization outside
-the timed interval. The integer cursor adds one atomic fetch-add per claimed
-batch. The function-pointer control adds an indirect call for every unit.
+The benchmark's no-storage direct form contains no locked instruction, readiness
+access, Join operation, indirect call, or presence access in its timed path. Its
+tight loop is scalar; compiler vectorization reports applied only to benchmark
+initialization outside the timed interval. The integer cursor adds one atomic
+fetch-add per claimed batch. The function-pointer control adds an indirect call
+for every unit.
 
 `-O3` was not a universal improvement over `-O2`. It was neutral for direct
 moderate and expensive work, and both faster and slower for sub-millisecond
@@ -462,26 +461,29 @@ example-specific Action Execution state and Particle Operation functions with
 the program's resolved graph. All conditionals then disappear during C
 preprocessing and optimization.
 
-### Whole-program erasure of the fixtures
+### Literal fixture compilations
 
-No macro-free fixture compilations are retained. In all three original Define
-programs, no Particle Operation invokes observable quality behavior, no Particle
-occupancy survives program completion, and no Particle identity escapes.
-Removing those operations also removes every dependency, Join, and scheduling
-decision. The maximally optimized real compilation of each program is therefore
-the same empty successful `main`.
+The macro-free examples in [`generated_examples`](generated_examples) preserve
+the Particle Operations of three source fixtures. Every Particle has a
+statically named presence byte, each Create and Destroy writes `1` or `0`, a
+Move changes only the generated Position association, and action triggering is a
+direct C call. They contain no configurable preprocessor choices.
 
-Under both GCC and Clang, that `main` consists only of clearing the integer
-return register and returning on the measured x86-64 target. Keeping three
-copies of it would record no additional representation or code-generation
-decision.
+The selected direct schedule is a valid serial ordering of each resolved
+dependency graph. These fixtures contain too little work for worker creation,
+publication, or a runtime Join to repay its cost, and Define does not require
+independent Particle Operations to execute simultaneously. The fan-in is
+therefore satisfied by direct control flow: both predecessor chains complete
+before the final Destroy appears in the instruction stream.
 
-This does not imply that every pre-value Define program can erase. Termination
-is observable, so an unbounded action-trigger cycle cannot become a successful
-empty program. Particle state that crosses a caller or separate-compilation
-boundary must satisfy that boundary's contract, and tracing makes the traced
-events observable. Future value and foreign operations will introduce ordinary
-observable effects. However, a closed, terminating program whose complete
-resolved graph only changes temporary Particle occupancy is a valid candidate
-for whole-program erasure, regardless of how complicated that graph was before
-the proof.
+At `-O2`, GCC and Clang can inline the direct calls and prove that none of the
+ordinary, translation-unit-local presence writes is observed. On the measured
+x86-64 target, each optimized `main` then only clears the integer return
+register and returns. The emitted C remains literal; this erasure is C
+dead-store elimination rather than a Define-level proof that the Particle
+Operations may be removed.
+
+A Define code generator that emitted an empty `main` directly would need a
+whole-program semantic-effect and termination proof. That is a separate
+optimizing-backend feature, not a requirement or responsibility of literal C
+codegen.

@@ -149,6 +149,22 @@ Do not use `-Ofast` as a general Define build setting. It provided no stable
 scheduler improvement and permits transformations that may change numerical
 semantics in generated Action Fragments.
 
+Splitting generated actions across C translation units does not inherently
+prevent whole-program elimination. In a three-translation-unit version of the
+literal two-action fixture, both GCC 16.2 and Clang 22 retained the call from
+`main` without link-time optimization. Compiling and linking every file with
+`-O2 -flto` allowed both toolchains to reduce `main` to clearing its return
+register and returning, exactly as in the single-translation-unit build.
+
+This result depends on the final link seeing every relevant definition and being
+allowed to internalize it. An external ABI, symbol interposition, dynamically
+linked action implementation, escaped address, `volatile` access, or foreign
+behavior that can observe Particle state may require calls or state updates to
+remain. Codegen should keep generated symbols hidden when the compilation
+boundary permits it. Link-time optimization is therefore capable of preserving
+single-translation-unit optimization across per-action C files, but is not a
+substitute for declaring the compilation boundary accurately.
+
 ## Information required by C codegen
 
 C codegen should receive facts and constraints rather than representation
@@ -784,9 +800,12 @@ Define programs:
 - the release-decrement plus final-acquire-fence Join on weaker-memory-order
   targets with suitable race detection and hardware measurements.
 
-Link-time optimization, profile-guided optimization, and designs involving
-multiple C translation units were deliberately outside this study rather than
-deferred recommendations.
+Broader link-time-optimization performance, profile-guided optimization, and
+scheduler designs involving multiple C translation units were deliberately
+outside this study rather than deferred recommendations. The narrow
+multi-translation-unit check recorded above establishes only that full link-time
+optimization can recover cross-action elimination for a closed, effect-free
+fixture.
 
 ## Rejected alternatives
 
