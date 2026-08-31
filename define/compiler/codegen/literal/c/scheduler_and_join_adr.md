@@ -150,10 +150,10 @@ scheduler improvement and permits transformations that may change numerical
 semantics in generated Action Fragments.
 
 Splitting generated actions across C translation units does not inherently
-prevent whole-program elimination. In a three-translation-unit version of the
-literal two-action fixture, both GCC 16.2 and Clang 22 retained the call from
-`main` without link-time optimization. Compiling and linking every file with
-`-O2 -flto` allowed both toolchains to reduce `main` to clearing its return
+prevent whole-program elimination. In a three-translation-unit, serialized model
+of the literal two-action fixture, both GCC 16.2 and Clang 22 retained the call
+from `main` without link-time optimization. Compiling and linking every file
+with `-O2 -flto` allowed both toolchains to reduce `main` to clearing its return
 register and returning, exactly as in the single-translation-unit build.
 
 This result depends on the final link seeing every relevant definition and being
@@ -164,6 +164,15 @@ remain. Codegen should keep generated symbols hidden when the compilation
 boundary permits it. Link-time optimization is therefore capable of preserving
 single-translation-unit optimization across per-action C files, but is not a
 substitute for declaring the compilation boundary accurately.
+
+That narrow elimination result does not apply when emitted code preserves
+parallel fanout and Join execution. Full link-time optimization removes the
+unobserved Particle presence writes from the scheduled fixture compilations, but
+GCC and Clang both retain pthread creation and joining, readiness atomics, and
+Join arrivals. Splitting those scheduled actions across C translation units
+should not add an optimization barrier when full link-time optimization and
+visibility permit internalization, but it does not make the scheduler itself
+semantically removable.
 
 ## Information required by C codegen
 
@@ -804,8 +813,9 @@ Broader link-time-optimization performance, profile-guided optimization, and
 scheduler designs involving multiple C translation units were deliberately
 outside this study rather than deferred recommendations. The narrow
 multi-translation-unit check recorded above establishes only that full link-time
-optimization can recover cross-action elimination for a closed, effect-free
-fixture.
+optimization can recover cross-action elimination for a closed, serialized,
+effect-free model. It does not establish that a fully scheduled parallel fixture
+can erase.
 
 ## Rejected alternatives
 

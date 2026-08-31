@@ -463,25 +463,68 @@ preprocessing and optimization.
 
 ### Literal fixture compilations
 
-The macro-free examples in [`generated_examples`](generated_examples) preserve
-the Particle Operations of three source fixtures. Every Particle has a
+The fixture-specific examples in [`generated_examples`](generated_examples)
+preserve the Particle Operations of four source fixtures. Every Particle has a
 statically named presence byte, each Create and Destroy writes `1` or `0`, a
 Move changes only the generated Position association, and action triggering is a
-direct C call. They contain no configurable preprocessor choices.
+direct C call or a statically enumerated dependency. They contain no
+configurable preprocessor choices and no per-runnable function or state pointer.
 
-The selected direct schedule is a valid serial ordering of each resolved
-dependency graph. These fixtures contain too little work for worker creation,
-publication, or a runtime Join to repay its cost, and Define does not require
-independent Particle Operations to execute simultaneously. The fan-in is
-therefore satisfied by direct control flow: both predecessor chains complete
-before the final Destroy appears in the instruction stream.
+The emitted scheduling preserves every parallel relationship in the resolved
+Operation Graph:
 
-At `-O2`, GCC and Clang can inline the direct calls and prove that none of the
-ordinary, translation-unit-local presence writes is observed. On the measured
-x86-64 target, each optimized `main` then only clears the integer return
-register and returns. The emitted C remains literal; this erasure is C
-dead-store elimination rather than a Define-level proof that the Particle
-Operations may be removed.
+- `three_operation_chain` uses direct successors because only one Particle
+  Operation can be runnable at a time.
+- `multiway_join_and_fan_out` publishes one branch by integer identity, executes
+  the other branch directly, and releases the final Destroy through the
+  two-arrival atomic Join.
+- `local_create_and_action_execution_run_in_parallel` publishes one initially
+  runnable chain to a second worker while the calling worker directly executes
+  the other action's chain.
+- The
+  [`creator_reverse_child_order_is_canonical_across_three_actions`](../../../../testdata/reference_graph/operation_graph_destructor_integration/creator_reverse_child_order_is_canonical_across_three_actions/operation_dependencies.json)
+  fixture contains 36 Particle Operations across eight actions, 97 dependency
+  arrivals, 23 multi-arrival Joins, and a 15-arrival final Join. Its maximum
+  Operation Graph antichain has seven members, so the generated program uses six
+  pthread workers plus the calling worker. All ready work fits in one atomic
+  word.
+
+The complex compilation initializes its statically known Join counts in the C
+data image. A generated switch expresses successor topology directly. A worker
+keeps the first newly runnable successor on its direct path and publishes every
+additional successor by integer identity. One-predecessor successors bypass an
+atomic Join, and the unique terminal Particle Operation publishes completion so
+that no scheduler-wide remaining-operation decrement is needed.
+
+At `-O2`, GCC and Clang remove the unobserved ordinary Particle presence writes
+from all four programs. Only the serial chain reduces to clearing the integer
+return register and returning. The other programs retain the pthread calls,
+readiness atomics, and Join arrivals required to preserve parallel execution.
+Full link-time optimization produces the same distinction; it does not erase the
+fully scheduled programs.
+
+Representative whole-process means from 2,000 or 3,000 `hyperfine` runs were
+approximately 150--154 microseconds for the serial chain, 191--194 microseconds
+for the two-branch Join, 185--193 microseconds for the two-action parallel
+fixture, and 263--265 microseconds for the complex seven-worker fixture. These
+measurements include process and pthread startup, which dominate effect-free
+Particle Operations. GCC and Clang did not select a materially different
+representation.
+
+The complex fixture also confirmed several program-specific specializations.
+Using the calling thread as a worker instead of creating an equivalent extra
+worker reduced measured cycles by about 4%, instructions by 2%, cache references
+by 6%, and cache misses by 4% in the matched five-worker experiment. Static Join
+initialization removed about 220 startup instructions. Replacing successor
+tables with a generated switch removed about 1,100 instructions per process and
+was neutral in cycles. Replacing a decrement after every Particle Operation with
+one store from the unique terminal Particle Operation removed the locked
+decrements and was neutral at whole-process scale. The source retains all four
+changes because each removes work or runtime data without a measured regression.
+
+The emitted C remains literal even when ordinary presence writes disappear from
+machine code: that erasure is C dead-store elimination rather than a
+Define-level proof that the Particle Operations may be removed.
 
 A Define code generator that emitted an empty `main` directly would need a
 whole-program semantic-effect and termination proof. That is a separate
