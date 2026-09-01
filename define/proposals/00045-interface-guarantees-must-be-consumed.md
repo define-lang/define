@@ -232,6 +232,187 @@ positions.
 
 ## A Real Program
 
+Each program below is invalid. Comments identify the relevant interface position
+fills and the statements that violate the rules.
+
+### Unconsumed Interface Guarantee
+
+```define
+define the potential action<example.com:example:/worker> {
+    define the position<input>.
+    define the position<result>.
+
+    it happens when {
+        the position<input> has a particle.
+    } and it does {
+        # This fills the interface position that
+        # action</invalid_unconsumed> fails to empty.
+        move the particle in position<input> to position<result>.
+    }
+}
+
+define the potential action<example.com:example:/invalid_unconsumed> {
+    define the position<box> {
+        it may only contain particles where {
+            it has the action</worker>.
+        }
+    }
+    define the position<run>.
+
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+
+        # INVALID: action</worker> leaves position<result> occupied, but
+        # action</invalid_unconsumed> never empties it.
+        create a particle in position<box>::action</worker>::position<input>.
+    }
+}
+```
+
+### Action Interface Positions Passed Into a Parent Action
+
+```define
+define the potential action<example.com:example:/child> {
+    define the position<run>.
+    define the position<result>.
+
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<result>.
+        create a particle in position<result>.
+        destroy the particle in position<run>.
+    }
+}
+
+define the potential action<example.com:example:/parent> {
+    define the position<run>.
+    define the position<iface> {
+        it may only contain particles where {
+            it has the action</child>.
+        }
+    }
+
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position<iface>::action</child>::position<run>.
+        destroy the particle in position<iface>.
+        destroy the particle in position<run>.
+    }
+}
+
+define the potential action<example.com:example:/invalid_parent_call> {
+    define the position<box> {
+        it may only contain particles where {
+            it has the action</parent>.
+        }
+    }
+    define the position<run>.
+
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+        create a particle in position<box>::action</parent>::position<iface>.
+
+        # This fills action</child>::position<result>, which must be emptied
+        # before action</parent> triggers.
+        create a particle in position<box>::action</parent>::position<iface>::action</child>::position<result>.
+        create a particle in position<box>::action</parent>::position<iface>::action</child>::position<run>.
+
+        # INVALID: action</child>::position<result> is occupied when
+        # action</parent> triggers.
+        create a particle in position<box>::action</parent>::position<run>.
+    }
+}
+```
+
+### Requirement Inference After an Action
+
+```define
+define the potential position<example.com:example:/grandchild>.
+
+define the potential position<example.com:example:/child> {
+    it may only contain particles where {
+        it has the position</grandchild>.
+    }
+}
+
+define the potential action<example.com:example:/parent> {
+    define the position<run>.
+    define the position<input> {
+        it may only contain particles where {
+            it has the position</child>.
+        }
+    }
+
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position<input>.
+        create a particle in position<input>::position</child>.
+        create a particle in position<input>::position</child>::position</grandchild>.
+        destroy the particle in position<input>.
+        destroy the particle in position<run>.
+    }
+}
+
+define the potential action<example.com:example:/invalid_inference> {
+    define the position<box> {
+        it may only contain particles where {
+            it has the action</parent>.
+        }
+    }
+    define the position<run>.
+
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+
+        # INVALID: position<input> is empty; inference stops at action</parent>.
+        create a particle in position<box>::action</parent>::position<input>::position</child>::position</grandchild>.
+        create a particle in position<box>::action</parent>::position<run>.
+    }
+}
+```
+
+### Entry Point Interface Position
+
+```define
+define the potential action<example.com:example:/invalid_entry_point> {
+    # INVALID: an entry point may not define an interface position.
+    define the position<result>.
+
+    it happens when {
+        this particle is created.
+    } and it does {
+        # This fills the interface position that no caller can empty.
+        create a particle in position<result>.
+    }
+}
+```
+
+### Entry Point Occupied Implied Position Requirement
+
+```define
+define the potential position<example.com:example:/shared>.
+
+define the potential action<example.com:example:/invalid_entry_point> {
+    it also assigns the position</shared>.
+
+    it happens when {
+        this particle is created.
+    } and it does {
+        # INVALID: an entry point may not require an implied position to be occupied.
+        destroy the particle in position</shared>.
+    }
+}
+```
+
 ## Why This is the Right Solution
 
 So, I had actually done a _ton_ of work on the compiler to support propagating
