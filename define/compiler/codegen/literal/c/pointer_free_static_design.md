@@ -153,6 +153,28 @@ selected atomic integer width is lock-free and must select cache-line and worker
 topology facts for the target. A C implementation is allowed to implement an
 atomic operation with a library call or lock.
 
+The specialized generated scheduling paths demonstrated by the exact fixtures
+permit only atomics that the target guarantees are lock-free. They emit no
+mutex, semaphore, `atomic_flag` lock, or explicit atomic fence. On x86-64, the
+word `lock` still appears in the complex fixture's disassembly because
+`lock sub`, `lock or`, and `lock cmpxchg` are that ISA's atomic
+read-modify-write instructions. They are not software locks, and no separate
+`mfence`, `lfence`, or `sfence` is emitted. The serial and statically assigned
+small fixtures have no atomic instruction in their generated machine code.
+
+The reusable general scheduler is a different case. Its Chase-Lev deque uses
+explicit C fences, including a sequentially consistent fence that GCC emits as a
+locked dummy OR on the measured x86-64 target. The deque needs that ordering
+while an owner and thieves race. Static codegen can remove both the deque and
+its fences only when its Operation Graph and cardinality facts prove that the
+generated execution does not require that concurrent claiming behavior.
+
+Thread lifecycle is outside that guarantee. `pthread_create` and `pthread_join`
+may use libc and kernel synchronization internally. Replacing pthreads requires
+a target runtime that creates and waits for operating-system execution contexts;
+it cannot make parallel processors execute generated code using ordinary
+user-space instructions alone.
+
 The retained benchmark is Linux-only because it pins pthread workers with Linux
 affinity APIs. Its processor-relax operation has x86 and AArch64 forms and a
 portable compiler-fence fallback. These harness choices are not requirements of
@@ -182,6 +204,8 @@ represents them:
 - the resolved, transitively minimal Particle Operation dependency graph,
   including initially runnable operations, fanout, fan-in, and every point at
   which a caller may continue;
+- every dependency arrival's completing Particle Operation and multiplicity,
+  rather than only the total arrival count of its successor;
 - an upper bound on simultaneously live Action Executions and on concurrently
   distinguishable instances of each generated runnable unit;
 - Particle identity and lifetime facts, including which identities can overlap,
@@ -192,6 +216,10 @@ represents them:
   quality behavior;
 - whether each Particle Operation can invoke foreign behavior, block, create
   further work, or otherwise has a cost that cannot be bounded;
+- every terminal Particle Operation and whether all other reachable Particle
+  Operations transitively precede it;
+- the compilation and symbol-visibility boundary, including which Particle
+  addresses or generated functions can escape ordinary C optimization;
 - estimated cost bounds and variance for Particle Operations and complete Action
   Executions, not merely an average cost;
 - the number of independent Action Executions expected at each invocation and
@@ -463,53 +491,94 @@ preprocessing and optimization.
 
 ### Literal fixture compilations
 
-The fixture-specific examples in [`generated_examples`](generated_examples)
-preserve the Particle Operations of four source fixtures. Every Particle has a
-statically named presence byte, each Create and Destroy writes `1` or `0`, a
-Move changes only the generated Position association, and action triggering is a
-direct C call or a statically enumerated dependency. They contain no
-configurable preprocessor choices and no per-runnable function or state pointer.
+The fixture-specific examples in [`generated_examples`](generated_examples) are
+exact examples of C that literal codegen should emit for the four source
+fixtures, rather than configurable templates or deliberately conservative
+demonstrations. Every Particle has a statically named presence byte, each Create
+and Destroy writes `1` or `0`, a Move changes only the generated Position
+association, and action triggering is a direct C call or a statically enumerated
+dependency. They contain no configurable preprocessor choices, unused fallback
+paths, or per-runnable function or state pointer.
+
+The
+[scheduler ADR's static-justification table](scheduler_and_join_adr.md#static-justification-for-the-generated-fixtures)
+records the exact compiler proof or target-cost input that selects every
+specialization below. No choice depends on recognizing the fixture by name or on
+knowledge that exists only in the handwritten C example.
 
 The emitted scheduling preserves every parallel relationship in the resolved
 Operation Graph:
 
 - `three_operation_chain` uses direct successors because only one Particle
   Operation can be runnable at a time.
-- `multiway_join_and_fan_out` publishes one branch by integer identity, executes
-  the other branch directly, and releases the final Destroy through the
-  two-arrival atomic Join.
-- `local_create_and_action_execution_run_in_parallel` publishes one initially
-  runnable chain to a second worker while the calling worker directly executes
-  the other action's chain.
+- `multiway_join_and_fan_out` assigns one branch directly to its only pthread
+  worker and executes the other branch on the calling worker. The required
+  `pthread_join` proves both branches complete, so the two-arrival Join and
+  readiness word erase from this exact schedule.
+- `local_create_and_action_execution_run_in_parallel` likewise assigns its one
+  independent chain directly to its only pthread worker. No worker searches or
+  atomically claims work whose identity is already fixed by codegen.
 - The
   [`creator_reverse_child_order_is_canonical_across_three_actions`](../../../../testdata/reference_graph/operation_graph_destructor_integration/creator_reverse_child_order_is_canonical_across_three_actions/operation_dependencies.json)
   fixture contains 36 Particle Operations across eight actions, 97 dependency
-  arrivals, 23 multi-arrival Joins, and a 15-arrival final Join. Its maximum
-  Operation Graph antichain has seven members, so the generated program uses six
-  pthread workers plus the calling worker. All ready work fits in one atomic
-  word.
+  arrivals, 23 successors with multiple dependency arrivals, and a 15-arrival
+  final Join. Grouping arrivals contributed by the same completed Particle
+  Operation proves that only 13 successors require atomic Joins. Its maximum
+  Operation Graph antichain has seven members, which is an upper bound rather
+  than a mandate to create seven workers. All ready work and completion fit in
+  one atomic word.
 
 The complex compilation initializes its statically known Join counts in the C
 data image. A generated switch expresses successor topology directly. A worker
 keeps the first newly runnable successor on its direct path and publishes every
-additional successor by integer identity. One-predecessor successors bypass an
-atomic Join, and the unique terminal Particle Operation publishes completion so
-that no scheduler-wide remaining-operation decrement is needed.
+additional successor by integer identity. Multiple arrivals from one completed
+Particle Operation use one subtract by their exact multiplicity. If that one
+operation contributes every arrival, the atomic Join disappears. The generated
+program emits only the 13 remaining Join counters and keeps concurrently active
+counters on separate cache lines; the first two Joins share one line because the
+Operation Graph proves their lifetimes cannot overlap.
+
+One completion can make several successors runnable. Their bits are accumulated
+locally and published with one acquire-release OR after successor selection,
+rather than one atomic OR per successor. The unique terminal Particle Operation
+stores a reserved completion bit in the readiness word, eliminating both a
+scheduler-wide remaining-operation decrement and a second completion cache line.
+Independent publishers use acquire-release read-modify-write operations so that
+a claiming worker acquires the synchronization chain for every bit in a combined
+word.
+
+The antichain permits seven simultaneous workers, but 10,000-run worker-count
+matrices with both compilers selected one pthread worker plus the calling worker
+for this effect-free fixture. Two total workers were approximately 18% faster
+than seven with GCC and 57% faster with Clang in the first matrix, and remained
+the winner when the 2--4 worker candidates were measured in reverse order. The
+single readiness word still exposes every newly satisfied Particle Operation;
+worker count limits simultaneous execution without encoding additional
+dependencies.
 
 At `-O2`, GCC and Clang remove the unobserved ordinary Particle presence writes
 from all four programs. Only the serial chain reduces to clearing the integer
-return register and returning. The other programs retain the pthread calls,
-readiness atomics, and Join arrivals required to preserve parallel execution.
-Full link-time optimization produces the same distinction; it does not erase the
-fully scheduled programs.
+return register and returning. The two statically assigned parallel programs
+retain their pthread calls, while the complex program also retains its readiness
+atomics and Join arrivals. Full link-time optimization produces the same
+distinction; it does not erase the fully scheduled programs.
 
-Representative whole-process means from 2,000 or 3,000 `hyperfine` runs were
-approximately 150--154 microseconds for the serial chain, 191--194 microseconds
-for the two-branch Join, 185--193 microseconds for the two-action parallel
-fixture, and 263--265 microseconds for the complex seven-worker fixture. These
-measurements include process and pthread startup, which dominate effect-free
-Particle Operations. GCC and Clang did not select a materially different
-representation.
+Direct static pthread assignment removed 8--13 retired instructions and 68 bytes
+of BSS from each small parallel fixture. Reversed 2,000-run and 5,000-run
+hardware-counter measurements put their user-space cycles within approximately
+1% of the original forms, with the winning direction changing for only the
+local-chain fixture. Whole-process timing was mixed because pthread and process
+startup dominate the effect-free work. The smaller static form is retained
+because it eliminates the readiness read-modify-write operations and runtime
+state without a repeatable cycle regression.
+
+The fully specialized complex fixture improved by approximately 8% with GCC and
+22% with Clang relative to the original seven-worker compilation in a final
+reversed-order comparison. Its ELF text-plus-data-plus-BSS size fell from 10,706
+to 4,782 bytes with GCC and from 7,682 to 4,307 bytes with Clang. Process and
+pthread startup also dominate this fixture, so the retained decisions require
+the individual transformation results below rather than one noisy whole-process
+comparison.
 
 The complex fixture also confirmed several program-specific specializations.
 Using the calling thread as a worker instead of creating an equivalent extra
@@ -521,6 +590,28 @@ was neutral in cycles. Replacing a decrement after every Particle Operation with
 one store from the unique terminal Particle Operation removed the locked
 decrements and was neutral at whole-process scale. The source retains all four
 changes because each removes work or runtime data without a measured regression.
+
+The subsequent exact-output study removed still more generated work. Grouping
+same-predecessor arrivals reduced emitted locked decrements and improved GCC
+whole-process time by about 11% while remaining neutral under Clang. Emitting
+only the 13 real atomic Joins reduced initialized data by 1,532 bytes and was
+neutral or faster. Publishing all additional successors from one completion with
+one atomic OR improved GCC by about 15% in its direct comparison and was neutral
+under Clang. Sharing the readiness and completion word improved both compilers
+by about 2%. A critical-path-based direct-successor reordering was rejected: it
+improved GCC by 5--9% but repeatedly slowed Clang by 3--4%. C23 `uint8_t`
+underlying types for the closed operation and claim-result enums were also
+rejected: they left GCC's binary size unchanged, reduced Clang's by 88 bytes,
+and slowed both compilers by approximately 6--8% in both execution orders. A
+6-bit unsigned `_BitInt` operation identity enlarged both binaries and added 40
+instructions under GCC and 197 under Clang. In 2,000-run hardware-counter
+measurements it also added approximately 0.2--0.3% cycles.
+
+Restricting the complex process to one measured cache topology group was neutral
+to slower, including a roughly 28% Clang loss in the seven-worker comparison.
+Generated affinity is therefore absent from this fixture; knowing a locality
+relationship does not justify paying affinity costs when effect-free work has no
+Particle working set to preserve.
 
 The emitted C remains literal even when ordinary presence writes disappear from
 machine code: that erasure is C dead-store elimination rather than a

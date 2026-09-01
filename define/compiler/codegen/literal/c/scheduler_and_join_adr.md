@@ -115,18 +115,39 @@ and the runtime's race-checking strategy accounts for fence synchronization.
 Do not construct a one-arrival Join. Preserve the shared execution design's
 direct call for that case.
 
+Dependency-arrival multiplicity does not necessarily imply multiple completing
+predecessors. When one completed Particle Operation contributes `count` arrivals
+to the same successor, emit one acquire-release subtraction by `count` and
+proceed when the previous value equals `count`. If that Particle Operation
+contributes every arrival, no atomic Join is required. Codegen must therefore
+retain the predecessor identity and multiplicity of every arrival rather than
+reducing a dependency to its total count too early.
+
 Keep unrelated concurrently active Join counters on separate cache lines to
-avoid false sharing. Do not pad every Particle or every scheduler task.
+avoid false sharing. Joins whose lifetimes provably cannot overlap may share a
+cache line. Do not pad every Particle or every scheduler task.
+
+When one Particle Operation completion makes several successors runnable in the
+same readiness word, accumulate their bits locally and publish them with one
+acquire-release read-modify-write operation. Keep one newly satisfied successor
+on the direct path. Independent publishers of the same readiness word still
+require an acquire-release synchronization chain.
 
 ### Worker activation
 
-Processor count is a runtime policy. Start with one worker per physical core for
-fine, coherence-heavy work. Activate SMT siblings only when runnable breadth
-exceeds the physical-worker count and the estimated working set is unlikely to
-saturate shared caches or memory bandwidth. Long Action Fragments alone are not
-sufficient evidence: SMT improved dependency-heavy computation with abundant
-runnable work, but hurt sparse computation and large per-worker memory regions.
-The generated Operation Graph is unchanged by this choice.
+Available processor count is a target or runtime fact; active worker count is a
+program-specific decision. Runnable breadth and physical cores are upper bounds,
+not requirements to create that many workers. For work substantial enough to
+amortize activation, start with at most one worker per physical core. The
+effect-free 36-operation generated fixture was fastest with two total workers
+despite an antichain width of seven.
+
+Activate SMT siblings only when runnable breadth exceeds the physical-worker
+count and the estimated working set is unlikely to saturate shared caches or
+memory bandwidth. Long Action Fragments alone are not sufficient evidence: SMT
+improved dependency-heavy computation with abundant runnable work, but hurt
+sparse computation and large per-worker memory regions. The generated Operation
+Graph is unchanged by this choice.
 
 ### Compilation policy
 
@@ -168,11 +189,13 @@ substitute for declaring the compilation boundary accurately.
 That narrow elimination result does not apply when emitted code preserves
 parallel fanout and Join execution. Full link-time optimization removes the
 unobserved Particle presence writes from the scheduled fixture compilations, but
-GCC and Clang both retain pthread creation and joining, readiness atomics, and
-Join arrivals. Splitting those scheduled actions across C translation units
-should not add an optimization barrier when full link-time optimization and
-visibility permit internalization, but it does not make the scheduler itself
-semantically removable.
+GCC and Clang retain pthread creation and joining. They also retain readiness
+atomics and Join arrivals when codegen cannot replace them with a static worker
+assignment and the required pthread join, as it can for the small fixed-fanout
+fixtures. Splitting scheduled actions across C translation units should not add
+an optimization barrier when full link-time optimization and visibility permit
+internalization, but it does not make required scheduling semantically
+removable.
 
 ## Information required by C codegen
 
@@ -188,7 +211,8 @@ The Action Plan must provide:
 
 - every Action Fragment and Binding Hole fanout;
 - exact predecessor and successor relationships;
-- Join dependency counts;
+- the identity and multiplicity of every dependency arrival, along with total
+  Join dependency counts;
 - which successors are statically known;
 - which branches may become runnable concurrently; and
 - Action Execution initialization, Guarantee publication, and destruction
@@ -310,6 +334,47 @@ The execution and storage plan is accompanied by target information describing:
 Target information is not a Define semantic property. It can vary between C
 builds or at runtime without changing the Action Plan.
 
+### Generated synchronization contract
+
+This contract applies to the specialized generated paths demonstrated by the
+exact fixtures, not to the reusable general scheduler. Those paths use no mutex,
+read-write lock, semaphore, `atomic_flag` lock, or explicit C atomic fence. They
+use only ordinary memory, lock-free C atomic loads and stores, and lock-free
+atomic read-modify-write operations selected from the proven dependency shape. A
+target on which a required C atomic type is not lock-free cannot silently use
+the C library's lock-based fallback while claiming to satisfy this contract;
+codegen must choose another representation or reject that target configuration.
+
+On x86-64, the complex generated fixture's atomic subtract, OR, and
+compare-exchange operations appear in disassembly as `lock decl`, `lock subl`,
+`lock or`, and `lock cmpxchg`. The `lock` prefix is the processor's atomic
+read-modify-write mechanism, not a generated software lock. GCC and Clang emit
+no `mfence`, `lfence`, or `sfence` for these fixtures. The serial fixture and
+the two statically assigned parallel fixtures emit no lock-prefixed instruction
+at all.
+
+The reusable scheduler does contain explicit release and sequentially consistent
+C fences required by its current Chase-Lev work deque. On the measured x86-64
+target, its sequentially consistent fence compiles to a locked dummy OR rather
+than `mfence`; the release fences require no machine instruction there. Removing
+these fences without changing the deque algorithm would be incorrect. A
+generated path that proves it does not need concurrent deque ownership or
+stealing can omit the deque and its fences, as the exact fixtures do.
+
+This is an algorithmic contract, not a promise about library implementation. The
+current examples call `pthread_create` and `pthread_join`; libc and the kernel
+may use locks, futexes, barriers, or scheduler operations while creating,
+waiting for, and destroying operating-system threads. A target-specific worker
+runtime can move that cost outside Action Execution, but it cannot create
+parallel execution contexts without using an operating-system facility at some
+boundary.
+
+Acquire, release, and acquire-release are required semantic relationships even
+when the target needs no separate fence instruction. A weaker-memory-order ISA
+may encode them in its atomic or load/store instructions or may require an
+explicit barrier. Avoiding all target barrier instructions is therefore a
+measured target property, not a portable C guarantee.
+
 ### Platform boundary
 
 The flat Join, scheduler task representation, Chase-Lev deque, bounded
@@ -367,6 +432,38 @@ additional information needed for optimal C representation is primarily Particle
 access and lifetime data, cardinality bounds, identity-domain constraints, cost
 and profile evidence, abstract locality relationships, and the target
 description.
+
+### Static justification for the generated fixtures
+
+Every specialization in the fixture-specific output follows from a compiler fact
+or an explicitly identified target-cost decision:
+
+| Generated decision                                            | Information codegen must receive or prove                                                                                                                                                                                                                    |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Direct calls for the serial chain                             | Exactly one initially runnable Particle Operation, at most one newly satisfied successor after every completion, and no foreign or runtime-selected work                                                                                                     |
+| Direct pthread assignment in each small parallel fixture      | Exactly two independent chains, one invocation of each chain, one dedicated worker, and no other work that could use shared claiming                                                                                                                         |
+| Use `pthread_join` as the final dependency satisfaction       | Every operation assigned to the pthread precedes the final continuation or the end of the Action Execution, the calling worker completes the other predecessor chain, and joining is already required before the Action Execution state can cease to be used |
+| Omit a readiness word for statically assigned work            | The producer, only consumer, publication point, and single lifetime of the runnable identity are all exact                                                                                                                                                   |
+| Group several arrivals into one subtraction                   | Dependency arrivals retain their completing predecessor identity and multiplicity, so codegen knows that one completion contributes the entire group                                                                                                         |
+| Omit ten nominal multi-arrival Joins                          | After grouping, each successor has exactly one distinct completing predecessor                                                                                                                                                                               |
+| Emit the remaining 13 Join counters in the C data image       | Their distinct completing-predecessor counts are exact, the compiled program creates one bounded instance of each, and initialization precedes publication of all predecessor work                                                                           |
+| Share one cache line between the first two Joins              | Their exact liveness intervals cannot overlap; every other concurrently writable Join relationship remains isolated                                                                                                                                          |
+| Keep one successor direct and publish the others              | Every successor identity and publication point is static, and no dependency requires the direct successor to re-enter a queue first                                                                                                                          |
+| Publish several newly satisfied identities with one atomic OR | One completing worker discovers all of those identities, they occupy distinct bits of the same ready word, and one release can publish the same predecessor effects for the group                                                                            |
+| Use acquire-release publication                               | More than one worker may publish into the same word, so publishers must form the synchronization chain acquired by a claimant                                                                                                                                |
+| Reserve a completion bit in the readiness word                | The identity domain uses at most 63 bits, there is one terminal Particle Operation, every other Particle Operation transitively precedes it, and no ready identity can remain when it completes                                                              |
+| Use two total workers although antichain width is seven       | Seven is a proven concurrency upper bound; static operation costs, absence of blocking and foreign behavior, target thread-activation costs, and benchmark evidence select the smaller active count                                                          |
+| Omit generated affinity                                       | The exact Particle access sets contain no retained working set whose locality repays affinity setup on the measured target                                                                                                                                   |
+| Use ordinary compact Particle presence bytes                  | Presence addresses do not escape, no foreign behavior observes them, and the closed `-O2` compilation boundary lets ordinary C dead-store elimination remove unobserved writes                                                                               |
+| Use one 64-bit ready word instead of queues                   | There are only 36 static identities, at most one unclaimed instance of each exists, Action Executions do not overlap, and no operation creates unbounded or runtime-selected work                                                                            |
+| Retain ordinary C enums                                       | The identity domains are closed, but target measurements rejected the smaller fixed-enum and `_BitInt` representations                                                                                                                                       |
+
+The dependency, identity, lifetime, terminal, and escape statements in this
+table are correctness proofs. Worker count, affinity, enum representation, and
+similar cost choices are target-policy decisions and require measurements or a
+calibrated target cost model. Codegen must not turn a cost estimate into a
+semantic assumption: when a proof is unavailable it must retain claimability,
+separate live state, and the required synchronization.
 
 ### Example scope
 
@@ -799,9 +896,6 @@ Define programs:
   adopting one synthetic-workload winner;
 - `restrict`, scalar replacement, and compiler assumptions derived from proven
   Particle aliasing, address-identity, lifetime, and queue-capacity facts;
-- C23 fixed-underlying-type enums and `_BitInt` representations after codegen
-  has real identity domains, cardinality bounds, and external-ABI requirements
-  to measure;
 - function multiversioning and runtime target selection when one binary must run
   efficiently on materially different processors;
 - scheduler behavior at generated-program scale, including large live task and
@@ -854,6 +948,20 @@ simultaneous fan-in.
 
 SMT helped computation-heavy balanced trees but hurt fine wide Joins. Worker
 activation therefore remains adaptive runtime policy.
+
+### Use the smallest fixed underlying enum type
+
+The complex generated fixture has a closed 36-value operation identity domain,
+so C23 `uint8_t` underlying types were tested for its operation and claim-result
+enums. GCC's binary size was unchanged and Clang's fell by 88 bytes, but both
+compilers were approximately 6--8% slower in both execution orders. Keep the
+implementation-selected enum representation unless a future generated workload
+demonstrates a runtime benefit or an external representation requires a fixed
+width.
+
+The same fixture also rejected a 6-bit unsigned `_BitInt` operation identity. It
+enlarged both binaries, added 40 instructions under GCC and 197 under Clang, and
+added approximately 0.2--0.3% cycles in 2,000-run hardware-counter measurements.
 
 ## Consequences and boundaries
 

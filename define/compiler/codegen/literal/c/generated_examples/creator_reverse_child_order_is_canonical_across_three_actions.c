@@ -11,8 +11,10 @@
 enum {
     cache_line_size = 64,
     operation_count = 36,
-    worker_count = 7,
+    worker_count = 2,
 };
+
+static const uint64_t program_complete_bit = UINT64_C(1) << 63;
 
 enum OperationIdentity {
     operation_test_create_carrier,
@@ -58,92 +60,96 @@ static_assert(
     (int)operation_no_direct_successor == operation_count,
     "every Operation identity must have generated topology"
 );
-
-typedef struct {
-    alignas(cache_line_size) atomic_uint remaining;
-} OperationDependencies;
-
 static_assert(
-    sizeof(OperationDependencies) == cache_line_size,
-    "concurrently updated Joins must not share a cache line"
+    operation_count <= 63,
+    "operation identities must not overlap the completion bit"
 );
 
-static const uint8_t predecessor_counts[operation_count] = {
-    0, 1, 2, 2, 3, 2, 2, 2, 4, 2, 1, 2, 2, 1, 2, 1, 3, 1,
-    1, 4, 1, 3, 1, 3, 1, 1, 5, 5, 5, 1, 5, 1, 4, 4, 4, 15,
-};
+static unsigned char test_particle;
+static unsigned char carrier_particle;
+static unsigned char third_particle;
+static unsigned char worker_second_interface_particle;
+static unsigned char worker_first_interface_particle;
+static unsigned char first_particle;
+static unsigned char second_particle;
+static unsigned char fifth_particle;
+static unsigned char fourth_particle;
+static unsigned char fourth_destructor_marker_particle;
+static unsigned char second_destructor_marker_particle;
+static unsigned char fifth_destructor_marker_particle;
+static unsigned char first_destructor_marker_particle;
 
-alignas(cache_line_size) static unsigned char test_particle;
-alignas(cache_line_size) static unsigned char carrier_particle;
-alignas(cache_line_size) static unsigned char third_particle;
-alignas(cache_line_size) static unsigned char worker_second_interface_particle;
-alignas(cache_line_size) static unsigned char worker_first_interface_particle;
-alignas(cache_line_size) static unsigned char first_particle;
-alignas(cache_line_size) static unsigned char second_particle;
-alignas(cache_line_size) static unsigned char fifth_particle;
-alignas(cache_line_size) static unsigned char fourth_particle;
-alignas(cache_line_size) static unsigned char fourth_destructor_marker_particle;
-alignas(cache_line_size) static unsigned char second_destructor_marker_particle;
-alignas(cache_line_size) static unsigned char fifth_destructor_marker_particle;
-alignas(cache_line_size) static unsigned char first_destructor_marker_particle;
-alignas(cache_line_size) static OperationDependencies
-    operation_dependencies[operation_count] = {
-        [operation_worker_create_second_interface] = {.remaining = 2},
-        [operation_worker_create_first_interface] = {.remaining = 2},
-        [operation_test_move_carrier_to_middle] = {.remaining = 3},
-        [operation_middle_create_first] = {.remaining = 2},
-        [operation_middle_create_second] = {.remaining = 2},
-        [operation_middle_create_fifth] = {.remaining = 2},
-        [operation_middle_move_target_to_destroyer] = {.remaining = 4},
-        [operation_destroyer_move_second_to_holder_first] = {.remaining = 2},
-        [operation_destroyer_create_fourth] = {.remaining = 2},
-        [operation_fifth_destructor_move_fifth_to_holder] = {.remaining = 2},
-        [operation_first_destructor_move_first_to_holder] = {.remaining = 2},
-        [operation_fourth_destructor_move_fourth_to_holder] = {.remaining = 3},
-        [operation_fourth_destructor_create_marker] = {.remaining = 4},
-        [operation_second_destructor_create_marker] = {.remaining = 3},
-        [operation_second_destructor_move_second_to_holder] = {.remaining = 3},
-        [operation_destroyer_destroy_fifth] = {.remaining = 5},
-        [operation_destroyer_destroy_first] = {.remaining = 5},
-        [operation_fifth_destructor_create_marker] = {.remaining = 5},
-        [operation_first_destructor_create_marker] = {.remaining = 5},
-        [operation_destroyer_destroy_worker_second_interface] = {
-            .remaining = 4,
-        },
-        [operation_destroyer_destroy_worker_first_interface] = {
-            .remaining = 4,
-        },
-        [operation_destroyer_destroy_third] = {.remaining = 4},
-        [operation_destroyer_destroy_target] = {.remaining = 15},
-    };
+typedef struct {
+    atomic_uint test_move_carrier_to_middle;
+    atomic_uint middle_move_target_to_destroyer;
+} SequentialJoins;
+
+alignas(cache_line_size) static SequentialJoins sequential_joins = {
+    .test_move_carrier_to_middle = 3,
+    .middle_move_target_to_destroyer = 4,
+};
+alignas(cache_line_size) static atomic_uint
+    join_fourth_destructor_move_fourth_to_holder = 3;
+alignas(cache_line_size) static atomic_uint
+    join_second_destructor_create_marker = 3;
+alignas(cache_line_size) static atomic_uint
+    join_second_destructor_move_second_to_holder = 3;
+alignas(cache_line_size) static atomic_uint join_destroyer_destroy_fifth = 5;
+alignas(cache_line_size) static atomic_uint join_destroyer_destroy_first = 5;
+alignas(cache_line_size) static atomic_uint
+    join_fifth_destructor_create_marker = 5;
+alignas(cache_line_size) static atomic_uint
+    join_first_destructor_create_marker = 5;
+alignas(cache_line_size) static atomic_uint
+    join_destroyer_destroy_worker_second_interface = 4;
+alignas(cache_line_size) static atomic_uint
+    join_destroyer_destroy_worker_first_interface = 4;
+alignas(cache_line_size) static atomic_uint join_destroyer_destroy_third = 4;
+alignas(cache_line_size) static atomic_uint join_destroyer_destroy_target = 15;
 alignas(cache_line_size) static _Atomic uint64_t ready_operations;
-alignas(cache_line_size) static atomic_bool program_complete;
 
 [[noreturn]] static void fail_thread_operation(
     const char *operation, int error_number
 ) {
     errno = error_number;
     perror(operation);
-    exit(EXIT_FAILURE);
+    _Exit(EXIT_FAILURE);
 }
 
 static void publish_operation(enum OperationIdentity operation_identity) {
     uint64_t operation_bit = UINT64_C(1)
         << (unsigned int)operation_identity;
     (void)atomic_fetch_or_explicit(
-        &ready_operations, operation_bit, memory_order_release
+        &ready_operations, operation_bit, memory_order_acq_rel
     );
 }
 
-static bool claim_operation(
+typedef struct {
+    enum OperationIdentity operation_identity;
+    uint64_t published_operations;
+} NewlySatisfiedOperations;
+
+enum ClaimResult {
+    claim_result_none,
+    claim_result_operation,
+    claim_result_program_complete,
+};
+
+static enum ClaimResult claim_operation(
     enum OperationIdentity *claimed_operation_identity
 ) {
     uint64_t observed = atomic_load_explicit(
-        &ready_operations, memory_order_relaxed
+        &ready_operations, memory_order_acquire
     );
-    while (observed != 0) {
+    for (;;) {
+        if ((observed & program_complete_bit) != 0) {
+            return claim_result_program_complete;
+        }
+        if (observed == 0) {
+            return claim_result_none;
+        }
         unsigned int bit_index = (unsigned int)__builtin_ctzll(observed);
-        uint64_t desired = observed & (observed - 1);
+        uint64_t desired = observed & ~(UINT64_C(1) << bit_index);
         if (atomic_compare_exchange_weak_explicit(
                 &ready_operations,
                 &observed,
@@ -153,10 +159,9 @@ static bool claim_operation(
             )) {
             *claimed_operation_identity =
                 (enum OperationIdentity)bit_index;
-            return true;
+            return claim_result_operation;
         }
     }
-    return false;
 }
 
 static void execute_operation(enum OperationIdentity operation_identity) {
@@ -251,56 +256,108 @@ static void execute_operation(enum OperationIdentity operation_identity) {
     }
 }
 
-static bool satisfy_operation(enum OperationIdentity operation_identity) {
-    if (predecessor_counts[operation_identity] == 1) {
-        return true;
+static bool satisfy_operation(
+    enum OperationIdentity operation_identity, unsigned int arrival_count
+) {
+    atomic_uint *remaining;
+    switch (operation_identity) {
+        case operation_test_move_carrier_to_middle:
+            remaining = &sequential_joins.test_move_carrier_to_middle;
+            break;
+        case operation_middle_move_target_to_destroyer:
+            remaining = &sequential_joins.middle_move_target_to_destroyer;
+            break;
+        case operation_fourth_destructor_move_fourth_to_holder:
+            remaining = &join_fourth_destructor_move_fourth_to_holder;
+            break;
+        case operation_second_destructor_create_marker:
+            remaining = &join_second_destructor_create_marker;
+            break;
+        case operation_second_destructor_move_second_to_holder:
+            remaining = &join_second_destructor_move_second_to_holder;
+            break;
+        case operation_destroyer_destroy_fifth:
+            remaining = &join_destroyer_destroy_fifth;
+            break;
+        case operation_destroyer_destroy_first:
+            remaining = &join_destroyer_destroy_first;
+            break;
+        case operation_fifth_destructor_create_marker:
+            remaining = &join_fifth_destructor_create_marker;
+            break;
+        case operation_first_destructor_create_marker:
+            remaining = &join_first_destructor_create_marker;
+            break;
+        case operation_destroyer_destroy_worker_second_interface:
+            remaining = &join_destroyer_destroy_worker_second_interface;
+            break;
+        case operation_destroyer_destroy_worker_first_interface:
+            remaining = &join_destroyer_destroy_worker_first_interface;
+            break;
+        case operation_destroyer_destroy_third:
+            remaining = &join_destroyer_destroy_third;
+            break;
+        case operation_destroyer_destroy_target:
+            remaining = &join_destroyer_destroy_target;
+            break;
+        default:
+            return true;
     }
-    OperationDependencies *dependencies =
-        &operation_dependencies[operation_identity];
     unsigned int previous = atomic_fetch_sub_explicit(
-        &dependencies->remaining, 1, memory_order_acq_rel
+        remaining, arrival_count, memory_order_acq_rel
     );
-    return previous == 1;
+    return previous == arrival_count;
+}
+
+static void select_successor_arrivals(
+    enum OperationIdentity successor,
+    unsigned int arrival_count,
+    NewlySatisfiedOperations *newly_satisfied
+) {
+    if (!satisfy_operation(successor, arrival_count)) {
+        return;
+    }
+    if (newly_satisfied->operation_identity == operation_no_direct_successor) {
+        newly_satisfied->operation_identity = successor;
+    } else {
+        newly_satisfied->published_operations |= UINT64_C(1)
+            << (unsigned int)successor;
+    }
 }
 
 static void select_successor(
     enum OperationIdentity successor,
-    enum OperationIdentity *direct_successor
+    NewlySatisfiedOperations *newly_satisfied
 ) {
-    if (!satisfy_operation(successor)) {
-        return;
-    }
-    if (*direct_successor == operation_no_direct_successor) {
-        *direct_successor = successor;
-    } else {
-        publish_operation(successor);
-    }
+    select_successor_arrivals(successor, 1, newly_satisfied);
 }
 
 static enum OperationIdentity complete_operation(
     enum OperationIdentity operation_identity
 ) {
     if (operation_identity == operation_destroyer_destroy_target) {
-        atomic_store_explicit(&program_complete, true, memory_order_release);
+        atomic_store_explicit(
+            &ready_operations, program_complete_bit, memory_order_release
+        );
         return operation_no_direct_successor;
     }
-    enum OperationIdentity direct_successor = operation_no_direct_successor;
+    NewlySatisfiedOperations direct_successor = {
+        .operation_identity = operation_no_direct_successor,
+    };
     switch (operation_identity) {
         case operation_test_create_carrier:
             select_successor(
                 operation_test_create_third, &direct_successor
             );
-            select_successor(
-                operation_worker_create_second_interface, &direct_successor
+            select_successor_arrivals(
+                operation_worker_create_second_interface,
+                2,
+                &direct_successor
             );
-            select_successor(
-                operation_worker_create_second_interface, &direct_successor
-            );
-            select_successor(
-                operation_worker_create_first_interface, &direct_successor
-            );
-            select_successor(
-                operation_worker_create_first_interface, &direct_successor
+            select_successor_arrivals(
+                operation_worker_create_first_interface,
+                2,
+                &direct_successor
             );
             break;
         case operation_test_create_third:
@@ -311,23 +368,14 @@ static enum OperationIdentity complete_operation(
             );
             break;
         case operation_test_move_carrier_to_middle:
-            select_successor(
-                operation_middle_create_first, &direct_successor
+            select_successor_arrivals(
+                operation_middle_create_first, 2, &direct_successor
             );
-            select_successor(
-                operation_middle_create_first, &direct_successor
+            select_successor_arrivals(
+                operation_middle_create_second, 2, &direct_successor
             );
-            select_successor(
-                operation_middle_create_second, &direct_successor
-            );
-            select_successor(
-                operation_middle_create_second, &direct_successor
-            );
-            select_successor(
-                operation_middle_create_fifth, &direct_successor
-            );
-            select_successor(
-                operation_middle_create_fifth, &direct_successor
+            select_successor_arrivals(
+                operation_middle_create_fifth, 2, &direct_successor
             );
             select_successor(
                 operation_middle_move_target_to_destroyer, &direct_successor
@@ -341,68 +389,42 @@ static enum OperationIdentity complete_operation(
             );
             break;
         case operation_middle_move_target_to_destroyer:
-            select_successor(
+            select_successor_arrivals(
                 operation_destroyer_move_second_to_holder_first,
+                2,
                 &direct_successor
             );
-            select_successor(
-                operation_destroyer_move_second_to_holder_first,
-                &direct_successor
+            select_successor_arrivals(
+                operation_destroyer_create_fourth, 2, &direct_successor
             );
-            select_successor(
-                operation_destroyer_create_fourth, &direct_successor
-            );
-            select_successor(
-                operation_destroyer_create_fourth, &direct_successor
-            );
-            select_successor(
+            select_successor_arrivals(
                 operation_fifth_destructor_move_fifth_to_holder,
+                2,
                 &direct_successor
             );
-            select_successor(
-                operation_fifth_destructor_move_fifth_to_holder,
-                &direct_successor
-            );
-            select_successor(
+            select_successor_arrivals(
                 operation_first_destructor_move_first_to_holder,
+                2,
                 &direct_successor
             );
-            select_successor(
-                operation_first_destructor_move_first_to_holder,
-                &direct_successor
-            );
-            select_successor(
+            select_successor_arrivals(
                 operation_fourth_destructor_move_fourth_to_holder,
+                2,
                 &direct_successor
             );
-            select_successor(
-                operation_fourth_destructor_move_fourth_to_holder,
+            select_successor_arrivals(
+                operation_fourth_destructor_create_marker,
+                4,
                 &direct_successor
             );
-            select_successor(
-                operation_fourth_destructor_create_marker, &direct_successor
+            select_successor_arrivals(
+                operation_second_destructor_create_marker,
+                2,
+                &direct_successor
             );
-            select_successor(
-                operation_fourth_destructor_create_marker, &direct_successor
-            );
-            select_successor(
-                operation_fourth_destructor_create_marker, &direct_successor
-            );
-            select_successor(
-                operation_fourth_destructor_create_marker, &direct_successor
-            );
-            select_successor(
-                operation_second_destructor_create_marker, &direct_successor
-            );
-            select_successor(
-                operation_second_destructor_create_marker, &direct_successor
-            );
-            select_successor(
+            select_successor_arrivals(
                 operation_second_destructor_move_second_to_holder,
-                &direct_successor
-            );
-            select_successor(
-                operation_second_destructor_move_second_to_holder,
+                2,
                 &direct_successor
             );
             select_successor(
@@ -411,17 +433,15 @@ static enum OperationIdentity complete_operation(
             select_successor(
                 operation_destroyer_destroy_first, &direct_successor
             );
-            select_successor(
-                operation_fifth_destructor_create_marker, &direct_successor
+            select_successor_arrivals(
+                operation_fifth_destructor_create_marker,
+                2,
+                &direct_successor
             );
-            select_successor(
-                operation_fifth_destructor_create_marker, &direct_successor
-            );
-            select_successor(
-                operation_first_destructor_create_marker, &direct_successor
-            );
-            select_successor(
-                operation_first_destructor_create_marker, &direct_successor
+            select_successor_arrivals(
+                operation_first_destructor_create_marker,
+                2,
+                &direct_successor
             );
             select_successor(
                 operation_destroyer_destroy_worker_second_interface,
@@ -434,11 +454,8 @@ static enum OperationIdentity complete_operation(
             select_successor(
                 operation_destroyer_destroy_third, &direct_successor
             );
-            select_successor(
-                operation_destroyer_destroy_target, &direct_successor
-            );
-            select_successor(
-                operation_destroyer_destroy_target, &direct_successor
+            select_successor_arrivals(
+                operation_destroyer_destroy_target, 2, &direct_successor
             );
             break;
         case operation_destroyer_move_second_to_holder_first:
@@ -518,11 +535,8 @@ static enum OperationIdentity complete_operation(
             select_successor(
                 operation_destroyer_destroy_third, &direct_successor
             );
-            select_successor(
-                operation_destroyer_destroy_target, &direct_successor
-            );
-            select_successor(
-                operation_destroyer_destroy_target, &direct_successor
+            select_successor_arrivals(
+                operation_destroyer_destroy_target, 2, &direct_successor
             );
             break;
         case operation_fourth_destructor_create_marker:
@@ -576,14 +590,25 @@ static enum OperationIdentity complete_operation(
         case operation_no_direct_successor:
             __builtin_unreachable();
     }
-    return direct_successor;
+    if (direct_successor.published_operations != 0) {
+        (void)atomic_fetch_or_explicit(
+            &ready_operations,
+            direct_successor.published_operations,
+            memory_order_acq_rel
+        );
+    }
+    return direct_successor.operation_identity;
 }
 
 static void *run_operations(void *unused) {
     (void)unused;
-    while (!atomic_load_explicit(&program_complete, memory_order_acquire)) {
+    for (;;) {
         enum OperationIdentity operation_identity;
-        if (!claim_operation(&operation_identity)) {
+        enum ClaimResult claim_result = claim_operation(&operation_identity);
+        if (claim_result == claim_result_program_complete) {
+            return NULL;
+        }
+        if (claim_result == claim_result_none) {
             _mm_pause();
             continue;
         }
@@ -592,7 +617,6 @@ static void *run_operations(void *unused) {
             operation_identity = complete_operation(operation_identity);
         } while (operation_identity != operation_no_direct_successor);
     }
-    return NULL;
 }
 
 int main(void) {
