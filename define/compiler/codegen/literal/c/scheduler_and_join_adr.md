@@ -57,14 +57,16 @@ injection queue. Keeping static successors on the direct path reduces the
 frequency and target diversity of these indirect calls without inlining Action
 Fragments.
 
-When cost and cardinality facts justify it, a thief may claim a bounded batch
-with one compare-exchange and republish all but its directly executed task to
-its own deque with one release. The same policy applies to a proven
-single-producer, multiple-consumer injection queue whose total lifetime enqueue
-count cannot exceed its capacity. Unknown or strongly heterogeneous costs use
-single-task claims. A worker keeps a claimed batch private only when codegen can
-bound the batch's total cost tightly enough that preventing redistribution does
-not compromise useful concurrency.
+When cost and cardinality facts justify it, a thief may claim several tasks with
+a bounded sequence of ordinary single-task Chase-Lev compare-exchanges without
+restarting victim selection. It republishes all but its directly executed task
+to its own deque with one release. A range claim using one compare-exchange is
+not correct for a Chase-Lev deque because its owner can pop into the proposed
+range without changing `top`. A proven single-producer, multiple-consumer
+injection queue whose total lifetime enqueue count cannot exceed its capacity
+may safely reserve a range with one compare-exchange. Unknown or strongly
+heterogeneous costs use single-task claims. Claimed tasks remain visible for
+redistribution; private batches are not selected.
 
 ### Topology policy
 
@@ -565,6 +567,9 @@ or an explicitly identified target-cost decision:
 | Use ordinary compact Particle presence bytes                  | Presence addresses do not escape, no foreign behavior observes them, and the closed `-O2` compilation boundary lets ordinary C dead-store elimination remove unobserved writes                                                                               |
 | Use one 64-bit ready word instead of queues                   | There are only 36 static identities, at most one unclaimed instance of each exists, Action Executions do not overlap, and no operation creates unbounded or runtime-selected work                                                                            |
 | Retain ordinary C enums                                       | The identity domains are closed, but target measurements rejected the smaller fixed-enum and `_BitInt` representations                                                                                                                                       |
+| Activate physical workers or their SMT siblings               | Runnable breadth over time, Action Fragment cost and variance, estimated per-worker working sets and memory traffic, target sibling topology and shared-cache capacity, and target measurements of activation and contention                                 |
+| Group repeated Chase-Lev steals                               | A runnable-count bound, cost and variance estimates, maximum deque occupancy including republished tasks, and target measurements select the cap; every task still receives an individual compare-exchange and every additional claim is republished         |
+| Use shared victim lists or a generated victim scan            | Exact active-worker and topology-group membership, group cardinality, and target measurements; this changes only how workers search and never weakens claimability                                                                                           |
 | Select direct serial, fresh threads, or a persistent pool     | Runnable breadth, estimated path costs and variance, expected invocation count, pool lifetime, and calibrated creation and coordination costs                                                                                                                |
 | Publish directly to selected persistent workers               | The worker assignment and exact active subset are known, no unassigned worker must claim the work, and target measurements prefer handoff lines for spinning or a sparse parked subset                                                                       |
 | Publish one broadcast generation                              | Every retained worker is selected or waking additional workers is cheaper than publishing and waking individual words, as established by target measurements for the parked dense case                                                                       |
@@ -597,29 +602,31 @@ and can validate the shared boundary.
 
 ### Measured system
 
-| Component           | Recorded value                                                                                                                                                                                                                                               |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Host and firmware   | System76 Thelio Mira r4; American Megatrends 4.10.SP01 BIOS dated February 23, 2026                                                                                                                                                                          |
-| Processor           | AMD Ryzen 9 9950X, x86-64 family `0x1a`, model `0x44`, stepping `0`, microcode `0xb404035`; one socket, 16 physical cores, 32 logical processors; SMT enabled; no hypervisor                                                                                 |
-| Cache               | 64-byte coherence lines; 32 KiB L1 instruction, 48 KiB L1 data, and 1 MiB L2 per physical core; two 32 MiB L3 groups                                                                                                                                         |
-| Processor topology  | NUMA/cache group 0: processors `0-7,16-23`; group 1: processors `8-15,24-31`; processor `n + 16` is the SMT sibling of processor `n`                                                                                                                         |
-| Frequency policy    | `amd-pstate-epp` driver, `powersave` governor, `balance_performance` energy preference, and frequency boost enabled; reported policy limits 624.1940--5756.4521 MHz; frequency was not fixed during measurement                                              |
-| Idle policy         | `acpi_idle` driver with the `menu` governor; enabled POLL, C1, C2, and C3 states reporting 0, 1, 18, and 350 us exit latency respectively; actual state residency was not controlled or recorded                                                             |
-| Memory              | Linux `MemTotal` 63,422,700 KiB, approximately 60.5 GiB usable                                                                                                                                                                                               |
-| Operating system    | Fedora Linux 44 (COSMIC), glibc 2.43, 4 KiB base pages, transparent huge pages in `madvise` mode, automatic NUMA balancing enabled, and TSC clock source                                                                                                     |
-| Kernel              | `Linux 7.1.8-200.fc44.x86_64 #1 SMP PREEMPT_DYNAMIC Mon Aug 10 03:35:23 UTC 2026 GNU/Linux`; default Fedora vulnerability mitigations, with no mitigation-disabling or processor-isolation kernel arguments                                                  |
-| Compiler toolchains | GCC `16.2.1 20260819 (Red Hat 16.2.1-2)` and Clang `22.1.8 (Fedora 22.1.8-4.fc44)`, targeting `x86_64-redhat-linux-gnu`; the initial scheduler comparison used `-O3 -march=native -mtune=native`, and later studies state their differing options explicitly |
-| Measurement tools   | Linux `perf 7.1.10-200.fc44.x86_64` and AMD uProf 5.3.521.0                                                                                                                                                                                                  |
+| Component                | Recorded value                                                                                                                                                                                                                                               |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Host and firmware        | System76 Thelio Mira r4; American Megatrends 4.10.SP01 BIOS dated February 23, 2026                                                                                                                                                                          |
+| Processor                | AMD Ryzen 9 9950X, x86-64 family `0x1a`, model `0x44`, stepping `0`, microcode `0xb404035`; one socket, 16 physical cores, 32 logical processors; SMT enabled; no hypervisor                                                                                 |
+| Cache                    | 64-byte coherence lines; 32 KiB L1 instruction, 48 KiB L1 data, and 1 MiB L2 per physical core; two 32 MiB L3 groups                                                                                                                                         |
+| Processor topology       | NUMA/cache group 0: processors `0-7,16-23`; group 1: processors `8-15,24-31`; processor `n + 16` is the SMT sibling of processor `n`                                                                                                                         |
+| Initial frequency policy | `amd-pstate-epp` driver, `powersave` governor, `balance_performance` energy preference, and frequency boost enabled; reported policy limits 624.1940--5756.4521 MHz; frequency was not fixed during the initial measurements                                 |
+| Controlled rerun policy  | System76 `Performance` profile, `performance` governor and energy preference, frequency boost disabled, and every processor policy constrained to a 4300.000 MHz minimum and maximum; all other system services and idle-state policy remained active        |
+| Idle policy              | `acpi_idle` driver with the `menu` governor; enabled POLL, C1, C2, and C3 states reporting 0, 1, 18, and 350 us exit latency respectively; actual state residency was not controlled or recorded                                                             |
+| Memory                   | Linux `MemTotal` 63,422,700 KiB, approximately 60.5 GiB usable                                                                                                                                                                                               |
+| Operating system         | Fedora Linux 44 (COSMIC), glibc 2.43, 4 KiB base pages, transparent huge pages in `madvise` mode, automatic NUMA balancing enabled, and TSC clock source                                                                                                     |
+| Kernel                   | `Linux 7.1.8-200.fc44.x86_64 #1 SMP PREEMPT_DYNAMIC Mon Aug 10 03:35:23 UTC 2026 GNU/Linux`; default Fedora vulnerability mitigations, with no mitigation-disabling or processor-isolation kernel arguments                                                  |
+| Compiler toolchains      | GCC `16.2.1 20260819 (Red Hat 16.2.1-2)` and Clang `22.1.8 (Fedora 22.1.8-4.fc44)`, targeting `x86_64-redhat-linux-gnu`; the initial scheduler comparison used `-O3 -march=native -mtune=native`, and later studies state their differing options explicitly |
+| Measurement tools        | Linux `perf 7.1.10-200.fc44.x86_64` and AMD uProf 5.3.521.0                                                                                                                                                                                                  |
 
 The harness used bounded multi-producer, multi-consumer queues, C-race-free
 Chase-Lev deques, worker affinity, direct-successor bypass, flat and two-level
 Joins, and synthetic serial, wide fanout, and balanced binary fork-Join graphs.
 Benchmark candidates ran one at a time with the caller and workers pinned as
-described by each workload. No deliberate competing compute workload, real-time
-scheduling, fixed-frequency mode, CPU isolation, or shutdown of normal
-operating-system and user-session services was used. Each study below records
-its warmup and sampling policy; reported comparisons use medians rather than
-best-case samples.
+described by each workload. The initial comparisons used no deliberate competing
+compute workload, real-time scheduling, fixed-frequency mode, CPU isolation, or
+shutdown of normal operating-system and user-session services. The controlled
+rerun changed only the frequency policy described in the table. Each study below
+records its warmup and sampling policy; reported comparisons use medians rather
+than best-case samples.
 
 DIMM count, channel population, transfer rate, timings, ambient temperature,
 processor temperature, package power limits, idle-state residency, and the
@@ -649,15 +656,48 @@ four times as many cycle samples and three times as many L1 refill and L2 access
 samples for unrestricted stealing. GCC and Clang differed by approximately 0–3%
 on the finalists and did not change the architectural choice.
 
-The benchmark harness passed AddressSanitizer, UndefinedBehaviorSanitizer, and
-ThreadSanitizer checks. The generic MPMC, one-group batched, one-group
-private-batched, and exact two-worker SPMC generated forms also passed GCC
-`-fanalyzer`, `cppcheck`, and Clang's analyzer, bugprone, performance, and
-portability checks. Analyzer diagnostics for intentional cache-line padding,
-including the reference implementation directly in the benchmark translation
-unit, standard `void *` allocation conversions, and bounded standard-library
-calls were classified as design constraints or false positives rather than
-source changes.
+The initial benchmark harness passed AddressSanitizer,
+UndefinedBehaviorSanitizer, and ThreadSanitizer checks. The corrected grouped
+deque form described below passed Clang AddressSanitizer,
+UndefinedBehaviorSanitizer, and ThreadSanitizer, GCC `-fanalyzer`, `cppcheck`,
+and Clang's analyzer. The installed GCC sanitizer libraries were unavailable for
+the corrected rerun. The later exact-execution builds also passed Clang
+AddressSanitizer, UndefinedBehaviorSanitizer, and ThreadSanitizer across the
+physical-worker, SMT, and exact two-worker specializations. Analyzer diagnostics
+for intentional cache-line padding, including the reference implementation
+directly in the benchmark translation unit, standard `void *` allocation
+conversions, and bounded standard-library calls remain classified as design
+constraints or false positives rather than source changes.
+
+### Controlled-frequency confirmation
+
+The decision-sensitive scheduler cases were rerun on September 1, 2026 with all
+32 processor policies constrained to the nominal 4.30 GHz frequency described
+above. A 9.38-second, eight-worker confirmation measured 323,048,451,435 core
+cycles, 321,397,636,649 reference cycles, and 74.875 seconds of aggregate task
+clock. These correspond to approximately 4.314 GHz of core cycles and 4.292 GHz
+of reference cycles per busy processor. The immediately subsequent processor
+control temperature was 46.875 degrees Celsius. This does not capture a peak
+temperature, but the counter ratio and stable sample times provide no evidence
+of frequency throttling during the confirmation.
+
+Fixed frequency preserved the scheduler's architectural decisions. The SMT and
+physical-worker tables below replace the earlier dynamic-frequency SMT tables.
+The corrected same-group 4 MiB private-memory workload made SMT approximately
+2.04--2.27 times slower across both compilers and optimization levels. Parking
+measurements remain subject to the ordinary `menu` idle governor and C-state
+wake latency; frequency control does not normalize those effects.
+
+The thread-runtime choices also survived the controlled rerun. On the dense
+short-work mixture, spin-only workers improved wall time by approximately 0.5%
+and consumed similar process CPU because all workers remained active. On the
+imbalanced millisecond mixture, that same wall-time difference cost about 10.385
+ms of process CPU instead of 2.615 ms with targeted parking. After a 1 ms idle
+interval with only two of eight workers active, spin-only wakeup was
+approximately 0.1--0.18 microseconds rather than 4.5--4.9 microseconds, but used
+about 7.33 ms of process CPU instead of approximately 3.3 microseconds. Targeted
+parking therefore remains the generated default; spin-only waiting is a latency
+policy that explicitly accepts orders of magnitude more idle CPU.
 
 ### Single-translation-unit compiler study
 
@@ -725,24 +765,26 @@ private-memory Action Fragments. Candidates with only a favorable isolated run
 were rejected. The findings are recorded here so later decisions do not depend
 on benchmark binaries or conversation history.
 
-The strongest result was exact queue sizing. Reducing a 65,536-entry queue to a
-proven 128-entry capacity reduced complete-runtime time by approximately 80% for
-128 fine tasks: about 0.49 ms became 0.09 ms with eight workers, and about 1.0
-ms became 0.18--0.20 ms with 16 logical workers. It also improved a mixed
-approximately one-millisecond case by approximately 5% with physical workers and
-16% with SMT. The gain comes principally from avoiding allocation and
-initialization of queue state that the generated program cannot use. Codegen
-should therefore emit the smallest safe power-of-two capacity from a proven
-simultaneously queued-task bound. When no such bound exists, it must retain a
-runtime capacity policy.
+The strongest result was exact queue sizing. In the controlled-frequency rerun,
+reducing a 65,536-entry queue to a proven 128-entry capacity reduced
+complete-runtime time by approximately 82--84% for 128 fine tasks: about 0.60 ms
+became 0.09--0.10 ms with eight workers, and about 1.21--1.22 ms became
+0.21--0.22 ms with 16 logical workers. It improved a mixed approximately
+one-millisecond case by approximately 4% with physical workers and 15% with SMT.
+The gain comes principally from avoiding allocation and initialization of queue
+state that the generated program cannot use. Codegen should therefore emit the
+smallest safe power-of-two capacity from a proven simultaneously queued-task
+bound. When no such bound exists, it must retain a runtime capacity policy.
 
-Removing the owner-deque capacity check after proving it unreachable was a
-repeatable 1.5--3% improvement with eight workers and 4--6% with 16 logical
-workers in queue-heavy cases, and was neutral for approximately one-millisecond
-Action Fragments. This check should be omitted only from a deque whose bound is
-proven. Removing the index mask as well was rejected: it helped some
-physical-worker cases but regressed GCC with SMT by 6--8% and Clang by as much
-as 3%.
+Removing the owner-deque capacity checks after proving them unreachable became
+more important with safe grouped stealing. In fine workloads it improved
+complete-runtime time by approximately 20--72%, depending on compiler, topology,
+and Action Fragment cost, because every stolen group is republished through that
+path. It remained neutral for approximately one-millisecond and private-memory
+Action Fragments. These checks must be omitted only from a deque whose bound
+includes republished stolen tasks. Removing the index mask as well remains
+rejected: it helped some physical-worker cases but regressed GCC with SMT by
+6--8% and Clang by as much as 3%.
 
 For topology groups of at most eight physical workers, one shared, prefiltered
 worker list per group was the best general victim representation. Compared with
@@ -799,50 +841,63 @@ that total lifetime enqueues cannot exceed its capacity. A bound only on
 simultaneous queued tasks is insufficient because the sequence-free cells cannot
 be reused safely.
 
-Batch claiming produced the largest hot-path improvement. A thief that claimed
-up to 64 tasks with one compare-exchange made 60,000 fine one-group tasks
-approximately three to four times faster, roughly halved the topology-skewed
-64-round case, improved a large mixed-cost case by approximately 3--5%, and was
-neutral for small millisecond and memory cases. Caps of 256 or 512 improved the
-uniform fine cases further. Applying the same technique to the proven-bound SPMC
-injection queue improved 60,000 balanced workless tasks by as much as
-approximately 2.5 times and the 64-round case by about 10%.
+The original batch experiment was invalid. It read a proposed range from a
+Chase-Lev deque and advanced `top` over the whole range with one
+compare-exchange. A concurrent owner can pop from the opposite end into that
+range without changing `top`; the thief's compare-exchange can then succeed and
+execute some tasks twice. Longer controlled-frequency runs exposed this as
+nondeterministic checksums in both the checked and proven-capacity forms. Zero
+rounds could not expose the error because executing a task zero or multiple
+times left its value unchanged.
 
-A final post-cleanup confirmation compiled the retained source with both
-compilers and ran three reversed-order outer repetitions; each repetition was
-the median of 15 samples after two warmups. The following complete-runtime
-medians are in milliseconds. The selected form republishes a batch of at most
-256 tasks, uses the measured random victim scan for the 16-worker topology, and
-uses the proven-bound SPMC injection queue for the exact two-worker topology.
+The corrected thief selects a victim once, then claims each task with the
+ordinary single-task Chase-Lev compare-exchange before republishing the group to
+its deque with one release. This preserves lock-free deque semantics while
+amortizing victim selection and publication. Caps from 2 through 32,768 were
+screened. Fine-work performance plateaued at approximately 4,096 tasks; larger
+caps did not improve robustly and required larger temporary worker stacks. A
+compiler may emit a smaller cap when its proven runnable bound is smaller. A
+proven-bound SPMC injection queue still reserves a range with one
+compare-exchange because its monotonic dequeue reservation prevents the owner
+overlap that invalidates a Chase-Lev range claim.
+
+A final controlled-frequency confirmation compiled the corrected retained source
+with both compilers and ran three reversed-order outer repetitions; each
+repetition was the median of 15 samples after three warmups. The following
+complete-runtime medians are in milliseconds. The selected one-group form
+republishes a safely claimed group of at most 4,096 tasks. The 16-worker form
+uses the measured random victim scan, and the exact two-worker form uses a
+proven-bound SPMC injection queue with a 256-task reservation cap.
 
 | Topology and work                         | GCC single claim | GCC selected | Clang single claim | Clang selected |
 | ----------------------------------------- | ---------------: | -----------: | -----------------: | -------------: |
-| One group, 60,000 workless tasks          |             5.12 |         1.25 |               5.12 |           1.13 |
-| One group, 60,000 64-round tasks          |             4.61 |         1.39 |               4.61 |           1.40 |
-| One group, 128 mixed approximately 1 ms   |             9.23 |         9.26 |               9.22 |           9.22 |
-| One group, 64 mixed 256 KiB memory tasks  |             4.18 |         4.16 |               4.20 |           4.15 |
-| 16 logical workers, 60,000 workless tasks |             6.06 |         1.73 |               5.75 |           1.63 |
-| 16 logical workers, 60,000 64-round tasks |             6.20 |         1.61 |               5.54 |           1.60 |
-| Two one-worker groups, 60,000 workless    |             1.73 |         1.37 |               1.41 |           1.11 |
-| Two one-worker groups, 60,000 64-round    |             6.60 |         6.19 |               6.06 |           5.35 |
-| Two one-worker groups, mixed about 1 ms   |            37.20 |        37.22 |              35.36 |          35.20 |
-| Two one-worker groups, 256 KiB memory     |            16.26 |        16.26 |              16.31 |          16.14 |
+| One group, 60,000 workless tasks          |             6.52 |         1.54 |               6.35 |           1.52 |
+| One group, 60,000 64-round tasks          |             5.90 |         1.75 |               5.57 |           1.72 |
+| One group, 128 mixed approximately 1 ms   |            11.77 |        11.76 |              11.76 |          11.78 |
+| One group, 64 mixed 256 KiB memory tasks  |             5.16 |         5.14 |               5.16 |           5.12 |
+| 16 logical workers, 60,000 workless tasks |             7.42 |         2.06 |               7.12 |           2.04 |
+| 16 logical workers, 60,000 64-round tasks |             7.79 |         2.05 |               7.05 |           2.05 |
+| Two one-worker groups, 60,000 workless    |             1.68 |         1.39 |               1.53 |           1.38 |
+| Two one-worker groups, 60,000 64-round    |             5.87 |         5.41 |               6.55 |           5.96 |
+| Two one-worker groups, mixed about 1 ms   |            45.00 |        44.96 |              44.95 |          44.97 |
+| Two one-worker groups, 256 KiB memory     |            19.78 |        19.77 |              19.82 |          19.81 |
 
-All paired task-and-memory checksums matched. The same rerun confirmed why
-private batches require a cost proof: they reduced the one-group workless case
-to approximately 0.86 ms, but increased the mixed one-millisecond case to
-approximately 31.3 ms and the memory case to approximately 14.9 ms with both
-compilers.
+All paired task-and-memory checksums matched. The selected 4,096-task deque form
+additionally completed 400 independent stress processes and 12,400 measured
+64-round samples across both compilers and both one-group worker topologies
+without a checksum failure. Separate exact-execution builds counted every task
+atomically and required a count of exactly one after each sample. GCC and Clang
+each passed the physical-worker, SMT, and exact two-worker configurations with
+both workless and 64-round tasks: 540 independent processes and 5,940 checked
+samples including warmups. The performance binaries omit this instrumentation
+and were byte-for-byte identical before and after exact checking was added.
 
-Claimed tasks are normally republished to the thief's deque in one release so
-other workers can redistribute them. Keeping them in a private non-atomic batch
-saved another 10--30% for proven uniform fine work, but was two to seven times
-slower in the worst heterogeneous and memory cases. Codegen may use a private
-batch only when its total estimated cost is small and sufficiently uniform.
-Otherwise it must republish the batch. Task-count caps alone are not enough:
-batch size and private retention must account for estimated cost, order,
-locality, runnable breadth, and uncertainty. A conservative unknown-cost case
-uses single-task claims.
+Keeping safely claimed tasks in a private non-atomic batch is rejected. It was
+approximately three times slower for workless fine tasks, neutral at best for
+64-round physical-worker work, more than twice as slow with SMT, and three to
+six times slower for heterogeneous millisecond and memory work. Republish
+claimed tasks so that other workers can redistribute them. A conservative
+unknown-cost case uses single-task claims rather than a large group.
 
 Writing a whole statically known fanout and publishing its positions only once
 improved some large workless cases by 3--9% but regressed some 64-round cases by
@@ -888,57 +943,61 @@ Memory cases used either a 256 KiB region for approximately one millisecond or a
 first-touched by a thread pinned to the task's preferred topology group before
 the timed interval.
 
-The following GCC `-O2` medians show the effect of adding the eight SMT siblings
-to eight physical workers in one topology group. The task counts supplied enough
-runnable work to keep every logical worker busy:
+The corrected scheduler was compiled at `-O2` and `-O3` with GCC and Clang and
+rerun at fixed frequency. Each result is the median of three reversed-order
+outer runs; each outer run took the median of nine samples after two warmups.
+The following GCC `-O2` complete-runtime medians show the effect of adding the
+eight SMT siblings to eight physical workers in one topology group:
 
-| Uniform Action Fragment work | 8 physical workers | 16 logical workers | SMT speedup |
-| ---------------------------- | -----------------: | -----------------: | ----------: |
-| Approximately 1 us compute   |            2.11 ms |            1.94 ms |       1.09x |
-| Approximately 100 us compute |            9.47 ms |            4.61 ms |       2.05x |
-| Approximately 1 ms compute   |           18.14 ms |           10.14 ms |       1.79x |
-| Approximately 10 ms compute  |           44.13 ms |           23.88 ms |       1.85x |
-| 256 KiB private memory       |            8.15 ms |            6.09 ms |       1.34x |
-| 4 MiB private memory         |           12.55 ms |           27.67 ms |       0.45x |
+| Uniform Action Fragment work | Tasks | 8 physical workers | 16 logical workers | SMT speedup |
+| ---------------------------- | ----: | -----------------: | -----------------: | ----------: |
+| Approximately 1 us compute   | 8,192 |           2.049 ms |           2.175 ms |       0.94x |
+| Approximately 100 us compute |   512 |           9.582 ms |           6.102 ms |       1.57x |
+| Approximately 1 ms compute   |   128 |          23.056 ms |          12.827 ms |       1.80x |
+| Approximately 10 ms compute  |    32 |          56.322 ms |          29.543 ms |       1.91x |
+| 256 KiB private memory       |    64 |           9.981 ms |           7.253 ms |       1.38x |
+| 4 MiB private memory         |    32 |          12.732 ms |          27.797 ms |       0.46x |
 
-Clang and `-O3` produced the same architectural pattern. SMT approximately
-doubled throughput for the dependency-heavy compute loop once work was large
-enough to dominate scheduler overhead. It provided a smaller benefit for the 256
-KiB regions and made the same-group 4 MiB case more than twice as slow due to
-shared-cache and memory pressure.
+The other compiler and optimization combinations reproduced the
+workload-dependent pattern. Their SMT speedups ranged from 0.94--1.03x at
+approximately 1 us, 1.57--1.64x at 100 us, 1.75--1.80x at 1 ms, 1.83--1.91x at
+10 ms, and 1.17--1.38x for 256 KiB. For 4 MiB they ranged from 0.44--0.49x: SMT
+was approximately 2.04--2.27 times slower. SMT therefore helped abundant
+dependency-heavy computation once work dominated scheduler startup, provided a
+smaller and compiler-sensitive benefit for 256 KiB regions, and lost decisively
+when the private working sets saturated the shared cache and memory path.
 
-Runnable breadth changed the SMT decision even at millisecond scale. These GCC
-`-O2` random-distribution medians compare the same eight physical workers with
-their SMT siblings:
+Runnable breadth changed the SMT decision even at millisecond scale. These
+fixed-frequency GCC `-O2` random-distribution medians compare the same eight
+physical workers with their SMT siblings:
 
-| Mixed-cost case                      | 8 physical workers | 16 logical workers | SMT speedup |
-| ------------------------------------ | -----------------: | -----------------: | ----------: |
-| 64 approximately 1 ms compute tasks  |           11.75 ms |            5.61 ms |       2.09x |
-| 8 approximately 10 ms compute tasks  |           11.89 ms |           13.04 ms |       0.91x |
-| 32 approximately 1 ms, 256 KiB tasks |            4.21 ms |            3.19 ms |       1.32x |
-| 4 approximately 1 ms, 256 KiB tasks  |            5.15 ms |            6.30 ms |       0.82x |
+| Mixed-cost work             | Total tasks | Slow tasks | 8 physical workers | 16 logical workers | SMT speedup |
+| --------------------------- | ----------: | ---------: | -----------------: | -----------------: | ----------: |
+| Approximately 1 ms          |         128 |         64 |          11.863 ms |           7.124 ms |       1.67x |
+| Approximately 10 ms         |         800 |          8 |          14.583 ms |          16.343 ms |       0.89x |
+| Approximately 1 ms, 256 KiB |          64 |         32 |           5.140 ms |           3.819 ms |       1.35x |
+| Approximately 1 ms, 256 KiB |         400 |          4 |           4.460 ms |           6.371 ms |       0.70x |
 
-When the number of expensive tasks already matched the physical-worker count,
-SMT added contention without exposing additional useful parallelism. Across GCC,
-Clang, `-O2`, and `-O3`, the sparse compute case lost 9–16% and the sparse
-memory case lost 18–33% in the one-group scheduler.
+Across all four compiler settings, the respective speedup ranges were
+1.64--1.67x, 0.88--0.90x, 1.16--1.35x, and 0.66--0.70x. When the number of
+expensive tasks already matched the physical-worker count, SMT added contention
+without exposing additional useful parallelism.
 
-With SMT disabled, eight physical workers were approximately 3.8 times as fast
-as two physical workers for the 256 KiB memory case, but only about 1.2 times as
-fast for the 4 MiB case. This is real-world saturation that a scheduler decision
-based only on the number of runnable Action Fragments would miss.
+The corrected fixed-frequency comparison also measured eight physical workers
+against two physical workers. Eight workers were 3.92--3.96 times as fast for
+the 256 KiB workload but only 1.34--1.39 times as fast for the 4 MiB workload
+across GCC, Clang, `-O2`, and `-O3`. This saturation is invisible to a scheduler
+decision based only on runnable Action Fragment count.
 
-Interleaved, deterministic-random, early-clustered, late-clustered, and
-topology-correlated slow tasks were also compared. With enough expensive tasks,
-work stealing usually kept compute distributions within a few percent of one
-another. Sparse mixtures showed 5–16% spreads, with one repeated GCC case
-reaching 28%, because publication order and deque direction affected when the
-few expensive tasks began. In the memory study, clustering the expensive tasks
-at the stealing end of the deque made an eight-of-eighty mixture 20–35% slower
-than the other placements. This does not establish one universally optimal deque
-order; it establishes that codegen should provide cost estimates and that the
-scheduler may eventually use them when publishing a strongly heterogeneous
-fanout.
+Interleaved, deterministic-random, early-clustered, and late-clustered slow
+tasks were rerun with the corrected grouped-steal scheduler. Each result was the
+median of three outer runs with at least five samples after warmup. Across dense
+and sparse one- and ten-millisecond compute mixtures, distribution changed the
+median by at most 3% for every compiler setting. For the eight-of-eighty 256 KiB
+memory mixture, the spread was 7--10%; interleaving was consistently slowest.
+Publication order therefore still has a measurable memory-locality effect.
+Codegen should provide cost and locality estimates so a future generated
+publication policy can exploit those program facts.
 
 At one- and ten-millisecond compute costs, GCC and Clang and `-O2` and `-O3`
 were generally within measurement noise for the uniform cases. The generated
@@ -1001,42 +1060,33 @@ than relying on later samples in one invocation.
 
 The [retained benchmark](scheduler_and_join_benchmark.c) includes the reference
 implementation directly so that it measures the exact scheduler and Join code in
-this ADR. From the workspace root, build the two provisional configurations
+this ADR. The measured physical-worker, SMT, and exact two-worker configurations
+are distinct generated specializations. From the workspace root, build them
 with:
 
 ```sh
-gcc -std=c23 -O2 -march=native -mtune=native -pthread define/compiler/codegen/literal/c/scheduler_and_join_benchmark.c -o /tmp/define-scheduler-benchmark-gcc
-clang -std=c23 -O2 -march=native -mtune=native -pthread define/compiler/codegen/literal/c/scheduler_and_join_benchmark.c -o /tmp/define-scheduler-benchmark-clang
+gcc -std=c23 -O2 -march=native -mtune=native -pthread -Wall -Wextra -Wpedantic -Werror -DLITERAL_MAXIMUM_WORKERS=8 -DLITERAL_SINGLE_TOPOLOGY_GROUP=1 -DLITERAL_PROVEN_DEQUE_CAPACITY=1 -DLITERAL_SHARED_VICTIM_LISTS=1 -DLITERAL_STEAL_BATCH_SIZE=4096 define/compiler/codegen/literal/c/scheduler_and_join_benchmark.c -o /tmp/define-scheduler-physical
+gcc -std=c23 -O2 -march=native -mtune=native -pthread -Wall -Wextra -Wpedantic -Werror -DLITERAL_MAXIMUM_WORKERS=16 -DLITERAL_SINGLE_TOPOLOGY_GROUP=1 -DLITERAL_PROVEN_DEQUE_CAPACITY=1 -DLITERAL_SHARED_VICTIM_LISTS=0 -DLITERAL_STEAL_BATCH_SIZE=4096 define/compiler/codegen/literal/c/scheduler_and_join_benchmark.c -o /tmp/define-scheduler-smt
+gcc -std=c23 -O2 -march=native -mtune=native -pthread -Wall -Wextra -Wpedantic -Werror -DLITERAL_MAXIMUM_WORKERS=2 -DLITERAL_TWO_SINGLE_WORKER_GROUPS=1 -DLITERAL_PROVEN_DEQUE_CAPACITY=1 -DLITERAL_PROVEN_BOUNDED_SPMC_INJECTION=1 -DLITERAL_STEAL_BATCH_SIZE=4096 -DLITERAL_INJECTION_BATCH_SIZE=256 define/compiler/codegen/literal/c/scheduler_and_join_benchmark.c -o /tmp/define-scheduler-two
 ```
 
-For example, the measured one-group generated finalist with republished batch
-claims is built by adding:
+Clang accepts the same commands. These flags combine generated proof facts with
+measured policy choices; they are not universal settings. In particular, the
+proven-bound SPMC flag asserts a single producer and a total lifetime enqueue
+bound, while the deque-capacity fact must include tasks republished after a
+grouped steal. Shared prefiltered victim lists won for eight physical workers;
+the measured random scan won for the larger same-group SMT topology.
 
-```text
--DLITERAL_MAXIMUM_WORKERS=8 -DLITERAL_SINGLE_TOPOLOGY_GROUP=1 -DLITERAL_PROVEN_DEQUE_CAPACITY=1 -DLITERAL_STEAL_BATCH_SIZE=256
-```
-
-The two one-worker-group finalist additionally replaces the single-group fact
-with `-DLITERAL_TWO_SINGLE_WORKER_GROUPS=1` and adds
-`-DLITERAL_PROVEN_BOUNDED_SPMC_INJECTION=1` and
-`-DLITERAL_INJECTION_BATCH_SIZE=256`. These are example facts and measured
-policy choices, not universal flags. In particular, the proven-bound SPMC flag
-asserts a single producer and a total lifetime enqueue bound, while the deque
-capacity flag must include tasks republished after a batch claim.
-`LITERAL_SHARED_VICTIM_LISTS=0` selects the measured random scan for a large
-same-group SMT topology; shared prefiltered lists are the default.
-
-The principal workloads can then be reproduced by substituting either binary in
-these commands:
+The principal workloads map to the compatible generated binaries as follows:
 
 ```sh
-/tmp/define-scheduler-benchmark-gcc serial 2000000 compute 0 0 0 uniform 0 2 15
-/tmp/define-scheduler-benchmark-gcc idle 2000000 compute 0 0 0 uniform 0 2 15
-/tmp/define-scheduler-benchmark-gcc wide 60000 compute 64 64 0 uniform 0 3 15
-/tmp/define-scheduler-benchmark-gcc steal 128 compute 64 1000000 64 random 0 3 15
-/tmp/define-scheduler-benchmark-gcc steal-smt 128 compute 64 1000000 64 random 0 3 15
-/tmp/define-scheduler-benchmark-gcc steal 64 memory 1 160 32 random 262144 3 15
-/tmp/define-scheduler-benchmark-gcc steal-smt 64 memory 1 160 32 random 262144 3 15
+/tmp/define-scheduler-physical serial 2000000 compute 0 0 0 uniform 0 2 15
+/tmp/define-scheduler-physical idle 2000000 compute 0 0 0 uniform 0 2 15
+/tmp/define-scheduler-two wide 60000 compute 64 64 0 uniform 0 3 15
+/tmp/define-scheduler-physical steal 128 compute 64 1000000 64 random 0 3 15
+/tmp/define-scheduler-smt steal-smt 128 compute 64 1000000 64 random 0 3 15
+/tmp/define-scheduler-physical steal 64 memory 1 160 32 random 262144 3 15
+/tmp/define-scheduler-smt steal-smt 64 memory 1 160 32 random 262144 3 15
 ```
 
 The command format is:
@@ -1055,11 +1105,14 @@ with seven additional workers polling, exposing interference from workers that
 have no useful task.
 
 Timed samples include scheduler initialization and destruction but exclude task
-allocation, memory first-touch, and result validation. Every sample checks that
-its complete task-and-memory checksum matches the first sample, so a scheduler
-variant that loses, duplicates, or races work does not silently produce a
-favorable time. The current target configuration uses processor 0 for a serial
-chain, processors 0–7 as one topology group for same-group stealing, and
+allocation, memory first-touch, and result validation. The ordinary performance
+build checks that the complete task-and-memory checksum remains stable across
+samples. For correctness and stress runs, add
+`-DLITERAL_BENCHMARK_EXACT_EXECUTION_CHECKS=1`; this instruments every task with
+an atomic execution count and requires exactly one execution. Do not time that
+build because the instrumentation intentionally adds shared state and an atomic
+operation to every task. The current target configuration uses processor 0 for a
+serial chain, processors 0–7 as one topology group for same-group stealing, and
 processors 0 and 8 as separate topology groups for the wide and skewed cases.
 Their SMT siblings are processors 16–23 and processors 16 and 24, respectively.
 Those assignments must be changed to match another machine before its results
@@ -1168,7 +1221,8 @@ simultaneous fan-in.
 ### Always activate SMT siblings
 
 SMT helped computation-heavy balanced trees but hurt fine wide Joins. Worker
-activation therefore remains adaptive runtime policy.
+activation is therefore a generated target-and-program policy selected from
+runnable breadth, cost, and working-set evidence.
 
 ### Use the smallest fixed underlying enum type
 
@@ -1202,9 +1256,12 @@ added approximately 0.2--0.3% cycles in 2,000-run hardware-counter measurements.
   [C example](scheduler_and_join_example.c) are reference policies. Generated
   queues need either a proven capacity or an explicit runtime capacity policy,
   and cross-group policy ultimately needs workload feedback.
-- Batch claims preserve runnable tasks but can change when and where they run.
-  Their caps and private-versus-republished representation are codegen decisions
-  driven by proven bounds, estimated cost, locality, and uncertainty.
+- Grouped steals preserve runnable tasks but can change when and where they run.
+  Their caps are generated policy choices driven by proven bounds, estimated
+  cost, locality, and uncertainty. Each Chase-Lev task is still claimed with its
+  own compare-exchange, and all additional claimed tasks are republished. Only a
+  proven bounded SPMC injection queue may reserve a range with one
+  compare-exchange.
 - The synthetic measurements choose an initial architecture. Benchmarks of
   generated Define programs remain necessary before fixing constants or
   specializing Particle layout.

@@ -55,10 +55,6 @@
 #define LITERAL_INJECTION_BATCH_SIZE 1
 #endif
 
-#if !defined(LITERAL_PRIVATE_TASK_BATCH)
-#define LITERAL_PRIVATE_TASK_BATCH 0
-#endif
-
 #if LITERAL_SINGLE_TOPOLOGY_GROUP && LITERAL_TWO_SINGLE_WORKER_GROUPS
 #error "the generated topology specializations are mutually exclusive"
 #endif
@@ -70,16 +66,6 @@
 #if LITERAL_INJECTION_BATCH_SIZE > 1 \
     && !LITERAL_PROVEN_BOUNDED_SPMC_INJECTION
 #error "batch injection requires a proven single producer and total bound"
-#endif
-
-#if LITERAL_STEAL_BATCH_SIZE > LITERAL_INJECTION_BATCH_SIZE
-#define LITERAL_PRIVATE_TASK_CAPACITY LITERAL_STEAL_BATCH_SIZE
-#else
-#define LITERAL_PRIVATE_TASK_CAPACITY LITERAL_INJECTION_BATCH_SIZE
-#endif
-
-#if LITERAL_PRIVATE_TASK_BATCH && LITERAL_PRIVATE_TASK_CAPACITY == 1
-#error "a private task batch requires a batch size greater than one"
 #endif
 
 enum {
@@ -174,10 +160,6 @@ struct LiteralSchedulerWorker {
     size_t group_member_position;
 #elif !LITERAL_TWO_SINGLE_WORKER_GROUPS
     uint64_t random_state;
-#endif
-#if LITERAL_PRIVATE_TASK_BATCH
-    LiteralSchedulerTask *private_tasks[LITERAL_PRIVATE_TASK_CAPACITY - 1];
-    size_t private_task_count;
 #endif
     int processor_id;
 #if !LITERAL_SINGLE_TOPOLOGY_GROUP
@@ -434,12 +416,6 @@ static void retain_claimed_tasks(
     if (claim_count == 1) {
         return;
     }
-#if LITERAL_PRIVATE_TASK_BATCH
-    for (size_t offset = 1; offset < claim_count; ++offset) {
-        worker->private_tasks[offset - 1] = claimed_tasks[offset];
-    }
-    worker->private_task_count = claim_count - 1;
-#else
     WorkDeque *deque = &worker->deque;
     int64_t bottom = atomic_load_explicit(
         &deque->bottom, memory_order_relaxed
@@ -447,7 +423,7 @@ static void retain_claimed_tasks(
 #if !LITERAL_PROVEN_DEQUE_CAPACITY
     int64_t top = atomic_load_explicit(&deque->top, memory_order_acquire);
     if (bottom - top + (int64_t)claim_count - 1 > example_queue_capacity) {
-        fail_message("work deque capacity exceeded by a batch claim");
+        fail_message("work deque capacity exceeded by a grouped steal");
     }
 #endif
     for (size_t offset = 1; offset < claim_count; ++offset) {
@@ -463,7 +439,6 @@ static void retain_claimed_tasks(
         bottom + (int64_t)claim_count - 1,
         memory_order_relaxed
     );
-#endif
 }
 #endif
 
@@ -547,9 +522,7 @@ static LiteralSchedulerTask *pop_work_deque(WorkDeque *deque) {
     return NULL;
 }
 
-static LiteralSchedulerTask *steal_work_deque(
-    LiteralSchedulerWorker *thief, WorkDeque *victim_deque
-) {
+static LiteralSchedulerTask *steal_one_work_deque(WorkDeque *victim_deque) {
     int64_t top = atomic_load_explicit(
         &victim_deque->top, memory_order_acquire
     );
@@ -562,25 +535,10 @@ static LiteralSchedulerTask *steal_work_deque(
     if (top >= bottom) {
         return NULL;
     }
-#if LITERAL_STEAL_BATCH_SIZE > 1
-    int64_t claim_count = (bottom - top) / 2;
-    if (claim_count == 0) {
-        claim_count = 1;
-    }
-    if (claim_count > LITERAL_STEAL_BATCH_SIZE) {
-        claim_count = LITERAL_STEAL_BATCH_SIZE;
-    }
-#else
-    int64_t claim_count = 1;
-#endif
-    LiteralSchedulerTask *claimed_tasks[LITERAL_STEAL_BATCH_SIZE];
-    for (int64_t offset = 0; offset < claim_count; ++offset) {
-        claimed_tasks[offset] = atomic_load_explicit(
-            &victim_deque->tasks[(top + offset) & victim_deque->mask],
-            memory_order_relaxed
-        );
-    }
-    int64_t next_top = top + claim_count;
+    LiteralSchedulerTask *task = atomic_load_explicit(
+        &victim_deque->tasks[top & victim_deque->mask], memory_order_relaxed
+    );
+    int64_t next_top = top + 1;
     if (!atomic_compare_exchange_strong_explicit(
             &victim_deque->top,
             &top,
@@ -590,12 +548,44 @@ static LiteralSchedulerTask *steal_work_deque(
         )) {
         return NULL;
     }
+    return task;
+}
+
+static LiteralSchedulerTask *steal_work_deque(
+    LiteralSchedulerWorker *thief, WorkDeque *victim_deque
+) {
 #if LITERAL_STEAL_BATCH_SIZE > 1
-    retain_claimed_tasks(thief, claimed_tasks, (size_t)claim_count);
+    int64_t top = atomic_load_explicit(
+        &victim_deque->top, memory_order_acquire
+    );
+    int64_t bottom = atomic_load_explicit(
+        &victim_deque->bottom, memory_order_acquire
+    );
+    int64_t claim_limit = (bottom - top) / 2;
+    if (claim_limit < 1) {
+        claim_limit = 1;
+    }
+    if (claim_limit > LITERAL_STEAL_BATCH_SIZE) {
+        claim_limit = LITERAL_STEAL_BATCH_SIZE;
+    }
+    LiteralSchedulerTask *claimed_tasks[LITERAL_STEAL_BATCH_SIZE];
+    size_t claim_count = 0;
+    while (claim_count < (size_t)claim_limit) {
+        LiteralSchedulerTask *task = steal_one_work_deque(victim_deque);
+        if (task == NULL) {
+            break;
+        }
+        claimed_tasks[claim_count++] = task;
+    }
+    if (claim_count == 0) {
+        return NULL;
+    }
+    retain_claimed_tasks(thief, claimed_tasks, claim_count);
+    return claimed_tasks[0];
 #else
     (void)thief;
+    return steal_one_work_deque(victim_deque);
 #endif
-    return claimed_tasks[0];
 }
 
 static void literal_join_initialize(LiteralJoin *join, unsigned int arrivals) {
@@ -726,12 +716,6 @@ static LiteralSchedulerTask *try_steal_from_workers(
 #endif
 
 static LiteralSchedulerTask *next_scheduler_task(LiteralSchedulerWorker *worker) {
-#if LITERAL_PRIVATE_TASK_BATCH
-    if (worker->private_task_count != 0) {
-        --worker->private_task_count;
-        return worker->private_tasks[worker->private_task_count];
-    }
-#endif
 #if LITERAL_SINGLE_TOPOLOGY_GROUP
     LiteralSchedulerTask *task = pop_work_deque(&worker->deque);
     if (task != NULL) {

@@ -309,8 +309,9 @@ create local item -> destroy local item
 create trigger Particle -> create other item -> destroy other item
 ```
 
-Both roots are initially runnable. Benchmark completion joins the two chains so
-that the harness can validate the complete Action Execution.
+Both initially runnable Particle Operations begin together. Benchmark completion
+joins the two chains so that the harness can validate the complete Action
+Execution.
 
 ## Benchmark method
 
@@ -371,6 +372,26 @@ for the chain; at 64 rounds it measured 11.52 versus 1.56 ms. The two compilers
 therefore agree on the representation decision even when their exact fine-work
 timings differ.
 
+The initial results above used the ordinary dynamic-frequency policy recorded in
+the scheduler ADR. A September 1, 2026 rerun constrained every processor to 4.30
+GHz. These GCC `-O2` medians use the same 60,000 Action Executions and show
+direct / eight-range complete-runtime milliseconds:
+
+| work |          chain |       fan/Join |       parallel |
+| ---: | -------------: | -------------: | -------------: |
+|    0 |  0.025 / 0.108 |  0.049 / 0.165 |  0.057 / 0.109 |
+|    1 |  0.110 / 0.116 |  0.205 / 0.167 |  0.177 / 0.126 |
+|    4 |  0.504 / 0.165 |  0.912 / 0.223 |  0.784 / 0.202 |
+|   64 | 15.185 / 2.006 | 29.526 / 3.804 | 25.116 / 3.250 |
+
+Clang reproduced the same result. At one round, its ranges were 1.14, 1.90, and
+1.29 times faster for the chain, fan/Join, and parallel graphs. GCC's chain
+remained 6% faster as direct control at that cost, while its other two graphs
+favored ranges. Holding frequency constant therefore preserved the
+representation decision but moved the fine-work crossover earlier by removing
+the single-active-processor boost advantage. Codegen needs a target-calibrated
+cost threshold; the number of synthetic rounds is not a portable boundary.
+
 ### Mixed costs
 
 For 128 Action Executions with half at zero rounds and half at one million
@@ -391,32 +412,49 @@ claims for a favorable clustered order, but took about 39 ms for the random
 chain and 65 ms for the random parallel graph. Source or identity order is not a
 cost proof.
 
+The 4.30 GHz rerun preserved this decision. Across GCC and Clang, ranges were
+1.11--1.25 times slower than single claims for the random distributions and
+almost exactly twice as slow for the clustered distributions. Absolute
+single-claim times were approximately 33.5 ms for the chain, 75.2 ms for the
+fan/Join random case, and 55.8 ms for the parallel graph.
+
 ### Outer and inner parallelism
 
 With one fan/Join Action Execution whose Particle Operations each perform one
 million rounds, direct execution took about 6.4 ms while exposing the two
 branches to two workers took about 4.3 ms. The parallel-chain graph measured
 about 5.4 versus 3.3 ms. Whole-word and eight-bit claims lost that parallelism
-by giving both expensive roots to one worker.
+by giving both expensive initially runnable Particle Operations to one worker.
 
 At eight uniformly expensive Action Executions, contiguous direct ranges already
 occupied eight workers and matched the individually claimable forms. Thus the
 generated decision is based on runnable breadth, not merely whether an Operation
 Graph contains parallel Particle Operations.
 
+At fixed frequency, one fan/Join Action Execution measured 8.35 ms directly and
+5.60 ms with its independent Particle Operations exposed to two workers. The
+parallel-chain graph measured 6.96 and 4.23 ms. Both compilers reproduced the
+respective 1.49 and 1.64--1.65 times speedups.
+
 ### Integer identity versus function pointers
 
 The function-pointer form adds a 16-byte table entry per initially runnable unit
-and leaves an indirect `call` in GCC and Clang assembly. It offered no
-repeatable speedup. With 64-unit claims, the workless chain took 0.45-0.56 ms
-with integer identities and 0.71-0.86 ms with function pointers under GCC. The
-workless parallel graph took 0.77-0.81 versus 1.23-1.44 ms. At million-round
-costs the forms became indistinguishable because generated operation work
-dominated both dispatch paths.
+and leaves an indirect `call` in GCC and Clang assembly. Initial measurements
+favored integer identity: with 64-unit claims, the workless chain took
+0.45--0.56 ms with integer identities and 0.71--0.86 ms with function pointers
+under GCC, while the workless parallel graph took 0.77--0.81 versus 1.23--1.44
+ms.
 
-Use integer identities and generated direct dispatch. A function pointer is a
-fallback for code that cannot be statically enumerated, not the fast literal
-representation.
+The controlled-frequency rerun showed why this is not a universal dispatch
+result. Integer identity was 37--39% faster for the workless chain, but the
+function table was 26% faster for the workless parallel graph. That result is
+consistent with avoiding an integer-identity branch while this regular call
+sequence made the indirect target predictable. At 64 rounds, integer identity
+was equal to 10% faster across both graphs and compilers. Generated direct
+control or generated ranges avoid both costs when statically eligible. When
+dynamic claimability is required, retain integer identity as the pointer-free
+representation and treat function control as a target-measured alternative, not
+as either a guaranteed penalty or a generally optimal form.
 
 ### Particle presence
 
@@ -426,11 +464,12 @@ The three presence variants all produce the same checksum:
 - one byte on each directly addressed Particle state; and
 - one bit per Particle in an Action Execution-local word.
 
-No storage was consistently fastest and always smallest. For compact direct
+No storage was fastest in direct control and always smallest. For compact direct
 fan/Join state, it used 56 bytes per Action Execution and a workless run took
 about 0.038 ms. Byte presence increased the state to 80 bytes and the run to
 about 0.052 ms. A sequential packed word retained the 56-byte state and took
-about 0.048-0.054 ms.
+about 0.048--0.054 ms. At fixed frequency, GCC measured 0.048, 0.062, and 0.061
+ms for no storage, bytes, and bits; Clang measured 0.057, 0.066, and 0.070 ms.
 
 Packed bits are not a free runtime win even when Particle Operations are
 sequential. In the eight-worker direct-range fan/Join case, GCC measured about
@@ -443,7 +482,10 @@ addressed presence bytes. Those bytes did not enlarge the already
 cache-line-separated concurrent state.
 
 For million-round work, all three presence choices were within measurement
-noise. The strict literal form should use direct bytes unless a measured
+noise. The fixed-frequency workless range runs were bimodal because worker wake
+time dominated their approximately 0.1--0.16 ms duration; they established no
+repeatable benefit from retaining presence that the Operation Graph proves
+unnecessary. The strict literal form should use direct bytes unless a measured
 state-layout benefit justifies an ordinary packed word, and should avoid packing
 concurrently written presence merely to save bits. The no-storage result bounds
 what a future optimizing backend could achieve by proving presence unnecessary.
@@ -465,10 +507,11 @@ for every unit.
 
 `-O3` was not a universal improvement over `-O2`. It was neutral for direct
 moderate and expensive work, and both faster and slower for sub-millisecond
-scheduler cases depending on graph and compiler. The representation choices were
-unchanged. Keep `-O2` as the benchmark baseline and retain optimization level as
-a per-program item to measure. This study intentionally excludes LTO and
-profile-guided optimization.
+scheduler cases depending on graph and compiler. It did not change the broad
+choice among direct control, ranges, and individually claimable work, but fine
+thresholds remain target measurements. Keep `-O2` as the benchmark baseline and
+retain optimization level as a per-program item to measure. This study
+intentionally excludes LTO and profile-guided optimization.
 
 ## Reproducing the benchmark
 

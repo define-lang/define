@@ -5,6 +5,15 @@
 #include <limits.h>
 #include <time.h>
 
+#if !defined(LITERAL_BENCHMARK_EXACT_EXECUTION_CHECKS)
+#define LITERAL_BENCHMARK_EXACT_EXECUTION_CHECKS 0
+#endif
+
+#if LITERAL_BENCHMARK_EXACT_EXECUTION_CHECKS < 0 \
+    || LITERAL_BENCHMARK_EXACT_EXECUTION_CHECKS > 1
+#error "exact execution checks must be zero or one"
+#endif
+
 typedef enum {
     benchmark_serial,
     benchmark_idle,
@@ -53,6 +62,9 @@ typedef struct {
     uint64_t value;
     uint64_t *memory;
     unsigned int work_amount;
+#if LITERAL_BENCHMARK_EXACT_EXECUTION_CHECKS
+    atomic_uchar execution_count;
+#endif
 } SchedulerBenchmarkTask;
 
 struct SchedulerBenchmark {
@@ -98,6 +110,19 @@ static uint64_t run_benchmark_memory_work(SchedulerBenchmarkTask *task) {
         ];
     }
     return value;
+}
+
+static void record_benchmark_task_execution(SchedulerBenchmarkTask *task) {
+#if LITERAL_BENCHMARK_EXACT_EXECUTION_CHECKS
+    if (atomic_fetch_add_explicit(
+            &task->execution_count, 1, memory_order_relaxed
+        )
+        != 0) {
+        fail_message("benchmark task executed more than once");
+    }
+#else
+    (void)task;
+#endif
 }
 
 static void *initialize_benchmark_memory(void *opaque_initializer) {
@@ -175,6 +200,7 @@ static LiteralSchedulerTask *run_parallel_benchmark_task(
 ) {
     SchedulerBenchmarkTask *benchmark_task = task->context;
     SchedulerBenchmark *benchmark = benchmark_task->benchmark;
+    record_benchmark_task_execution(benchmark_task);
     benchmark_task->value = run_benchmark_work(
         benchmark_task->value, benchmark_task->work_amount
     );
@@ -189,6 +215,7 @@ static LiteralSchedulerTask *run_parallel_memory_benchmark_task(
 ) {
     SchedulerBenchmarkTask *benchmark_task = task->context;
     SchedulerBenchmark *benchmark = benchmark_task->benchmark;
+    record_benchmark_task_execution(benchmark_task);
     benchmark_task->value = run_benchmark_memory_work(benchmark_task);
     if (literal_join_arrive(&benchmark->join)) {
         literal_scheduler_finish(worker);
@@ -201,6 +228,7 @@ static LiteralSchedulerTask *run_serial_benchmark_task(
 ) {
     SchedulerBenchmarkTask *benchmark_task = task->context;
     SchedulerBenchmark *benchmark = benchmark_task->benchmark;
+    record_benchmark_task_execution(benchmark_task);
     benchmark_task->value = run_benchmark_work(
         benchmark_task->value, benchmark_task->work_amount
     );
@@ -217,6 +245,7 @@ static LiteralSchedulerTask *run_serial_memory_benchmark_task(
 ) {
     SchedulerBenchmarkTask *benchmark_task = task->context;
     SchedulerBenchmark *benchmark = benchmark_task->benchmark;
+    record_benchmark_task_execution(benchmark_task);
     benchmark_task->value = run_benchmark_memory_work(benchmark_task);
     size_t next_index = benchmark_task->index + 1;
     if (next_index == benchmark->task_count) {
@@ -459,6 +488,9 @@ static uint64_t run_benchmark_sample(
         benchmark_task->index = task_index;
         benchmark_task->value = task_index + UINT64_C(0x9e3779b97f4a7c15);
         benchmark_task->work_amount = parameters->fast_work_amount;
+#if LITERAL_BENCHMARK_EXACT_EXECUTION_CHECKS
+        atomic_init(&benchmark_task->execution_count, 0);
+#endif
         if (benchmark.memory != NULL) {
             benchmark_task->memory = benchmark.memory
                 + task_index * benchmark.memory_words_per_task;
@@ -488,6 +520,15 @@ static uint64_t run_benchmark_sample(
     uint64_t sample_checksum = 0;
     for (size_t task_index = 0; task_index < parameters->task_count;
          ++task_index) {
+#if LITERAL_BENCHMARK_EXACT_EXECUTION_CHECKS
+        if (atomic_load_explicit(
+                &benchmark.tasks[task_index].execution_count,
+                memory_order_relaxed
+            )
+            != 1) {
+            fail_message("benchmark task was not executed exactly once");
+        }
+#endif
         sample_checksum = (
             sample_checksum ^ benchmark.tasks[task_index].value
         ) * UINT64_C(0x100000001b3);
