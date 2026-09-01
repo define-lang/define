@@ -175,13 +175,28 @@ a target runtime that creates and waits for operating-system execution contexts;
 it cannot make parallel processors execute generated code using ordinary
 user-space instructions alone.
 
-The retained benchmark is Linux-only because it pins pthread workers with Linux
-affinity APIs. Its processor-relax operation has x86 and AArch64 forms and a
-portable compiler-fence fallback. These harness choices are not requirements of
-the generated representation; another target needs a small threading, affinity,
-and processor-relax adapter. GCC and Clang accepting the C source does not by
-itself guarantee that every target has the same operating-system facilities or
-atomic costs.
+The retained [thread-runtime benchmark](thread_runtime_benchmark.c) establishes
+that thread creation and hot scheduling should be selected independently. A
+persistent pthread worker performs no pthread operation during Action Execution;
+it can use the same targeted atomic publication, completion generations, and
+direct futex parking independently of its pthread lifecycle. A sparse or hybrid
+parking policy can use same-word waiter bits to avoid unnecessary wake calls; a
+pure-parking policy can instead use release stores and unconditional wakes to
+remove those atomic read-modify-write operations.
+
+Use pthreads for worker lifecycle. Raw clone did not improve steady-state
+execution, and its small, inconsistent cold-start improvement did not justify
+owning the Linux thread ABI or excluding libc, foreign behavior, thread-local
+storage, sanitizers, stack protection, and asynchronous signal handling. The raw
+variants remain only as controls in the retained benchmark; codegen does not
+select them.
+
+The thread-runtime benchmark is Linux x86-64-only because it includes Linux
+affinity and futex calls plus an x86-64 raw-clone trampoline. These harness
+choices are not requirements of the generated representation; another target
+needs threading, affinity, waiting, and processor-relax implementations for its
+operating system and ISA. GCC and Clang accepting C23 does not by itself
+guarantee that every target has the same facilities or atomic costs.
 
 ## General fallback
 
@@ -195,6 +210,13 @@ boundary.
 A generated program may use both representations. Direct successor calls and a
 static readiness bitset can cover most of one action, while a dynamic boundary
 submits an integer-bearing runnable unit to the general scheduler.
+
+Persistent static scheduling also has generated subforms. Per-worker generation
+and completion values avoid both task pointers and a broadcast cache line when
+the assignment is exact. A waiter-bit completion counter replaces completion
+values when the caller may need to park. Dense pure-parking schedules can use a
+broadcast generation and unconditional wakes instead. The general dynamic
+scheduler remains necessary when a worker must claim runtime-selected work.
 
 ## Facts codegen needs
 
@@ -224,6 +246,21 @@ represents them:
   Executions, not merely an average cost;
 - the number of independent Action Executions expected at each invocation and
   whether their cost ordering is known; and
+- the expected number and lifetime of parallel Action Executions over which a
+  persistent worker pool can be amortized;
+- the maximum retained worker count and exact active worker subset at each
+  statically scheduled publication;
+- estimated time until each selected worker completes and until it can receive
+  its next publication, so caller waiting and worker waiting can use independent
+  spin or park policies;
+- whether each park is expected to find a waiter, and the selected fraction of
+  the retained pool, so codegen can choose conditional or unconditional wakes
+  and targeted or broadcast publication together;
+- whether generated workers can access libc, foreign behavior, thread-local
+  storage, sanitizer runtimes, stack-protector paths, or asynchronous signal
+  handlers;
+- a maximum generated worker stack use when unguarded mapped or static stacks
+  are considered; and
 - target facts that affect the decision, including available physical
   processors, cache-line size, cache and NUMA topology, and atomic-operation
   costs.

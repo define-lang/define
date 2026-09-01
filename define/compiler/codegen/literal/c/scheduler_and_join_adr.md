@@ -149,6 +149,114 @@ improved dependency-heavy computation with abundant runnable work, but hurt
 sparse computation and large per-worker memory regions. The generated Operation
 Graph is unchanged by this choice.
 
+### Worker lifetime, publication, and waiting
+
+Do not force every generated Operation Graph through one worker-lifecycle or
+scheduling policy. Codegen selects the least general eligible member of this
+portfolio:
+
+1. direct serial control flow when parallel coordination cannot repay its cost;
+2. fresh operating-system threads with direct static assignment for substantial
+   one-shot parallel work;
+3. persistent workers with generated static publication and completion when the
+   runnable identities and worker assignments are bounded; and
+4. the claimable deque and injection-queue scheduler when work identity, cost,
+   or cardinality remains uncertain.
+
+On Linux, create a persistent pool with pthreads. The pthread workers use no
+pthread synchronization operation during Action Execution. Their generated hot
+path is ordinary memory, lock-free C atomics, processor relax instructions, and
+direct futex system calls when parking is selected. Pool creation and
+destruction remain outside Action Execution.
+
+Spinning and parking are separate generated policies, not two implementations of
+an otherwise fixed scheduler. Use independent thresholds for:
+
+- a worker awaiting its next publication, whose arrival may depend on later or
+  externally initiated Action Executions; and
+- the caller awaiting known predecessors in its current Action Execution, whose
+  remaining critical-path cost can be estimated from the Operation Graph.
+
+Parking has two correct generated protocols. A hybrid spin-then-park policy can
+atomically OR a waiter bit into the generation word. Publication atomically
+replaces that complete word; the returned previous value proves whether a wake
+is mandatory. The completion counter can likewise reserve its high bit for the
+caller: the caller atomically ORs the bit before waiting, and the final
+completing worker's atomic increment proves whether it must wake the caller.
+
+A generated pure-parking policy can remove those waiter-bit read-modify-write
+operations. A worker waits on the exact old generation while the publisher
+performs a release store and an unconditional futex wake. If publication wins
+the race before the worker enters the kernel, the futex value comparison fails
+instead of sleeping. The caller can similarly wait on the observed completion
+count while the final completing worker always wakes. This trades potentially
+unnecessary futex wake system calls for fewer atomic instructions. Neither form
+uses a mutex or explicit atomic fence. A separately published Boolean is not a
+correct conditional-wake protocol.
+
+The final x86-64 disassembly makes the distinction precise. The direct and
+fresh-thread benchmark executables contain no generated lock-prefixed or
+memory-operand `xchg` instruction. Targeted spinning with completion generations
+contains one locked increment for pool-startup readiness and none during Action
+Execution. Dense broadcast pure parking contains that startup increment plus the
+shared completion counter's locked addition; generation publication and caller
+waiting use ordinary atomic stores and loads around futex calls. The waiter-bit
+form necessarily adds atomic exchanges and compare-exchange loops. Neither GCC
+nor Clang emits `mfence`, `lfence`, or `sfence` for these paths.
+
+Generated static publication uses a cache-line handoff per selected worker when
+workers are spinning. A worker polls its own generation, writes its completion
+generation to the same handoff line, and the caller reads only the workers
+assigned to that Action Execution. This was faster than one broadcast generation
+word even when every tested worker was active: the broadcast writer repeatedly
+invalidated a line cached by every polling processor. With two to sixteen
+workers, targeted publication reduced the effect-free phase by approximately
+17--60% under both GCC and Clang.
+
+Parking changes the publication choice. With two active workers in an
+eight-worker pool, targeted waiter-bit publication took approximately 2.24--2.33
+us in the stable GCC and Clang runs, while broadcasting to all eight workers
+took approximately 2.83--3.30 us and consumed far more processor time. When
+every worker was active, one broadcast word plus unconditional wakes beat
+per-worker publication: approximately 2.63--2.79 us at eight workers, 7.44--7.66
+us at sixteen, and 12.0--12.1 us at thirty-two. The generated active subset,
+park policy, and target measurements therefore select publication together.
+Topology-group publication remains a later candidate between one global word and
+one word per worker.
+
+When the caller will spin until statically assigned workers finish, use
+per-worker completion generations. They are release stores and acquire loads, so
+they contain no atomic read-modify-write operation on x86-64. With targeted
+publication they beat the shared completion counter at every tested width from
+two through sixteen workers. Retain the shared counter when the caller may park,
+when the final completing worker is not statically identified, or when the
+general scheduler must represent a true multi-arrival Join.
+
+The following GCC and Clang `-O2` medians show why selection requires the whole
+scheduler/runtime pair. The synthetic work amounts are xorshift rounds; 800,000
+rounds were approximately one millisecond on the measured processor.
+
+| Action Execution shape                                     | Direct serial | Fresh pthreads | Selected persistent scheduler |
+| ---------------------------------------------------------- | ------------: | -------------: | ----------------------------: |
+| Two effect-free assigned workers                           |       2--4 ns |    about 10 us |                     35--48 ns |
+| Eight effect-free assigned workers                         |      7--15 ns |      47--48 us |                    83--107 ns |
+| Eight workers, two approximately 13 us Particle Operations |       31.9 us |        49.6 us |               12.69--12.72 us |
+| Eight approximately 1 ms Particle Operations               |       7.85 ms |  1.03--1.05 ms |                 about 1.01 ms |
+| Eight workers, two approximately 1 ms Particle Operations  |       1.97 ms |        1.03 ms |                 about 1.01 ms |
+
+In the last row, continuous spinning consumed approximately 8.07 ms of total
+processor time per Action Execution. Parking the early workers and caller with
+the waiter-bit completion counter preserved the approximately 1.01 ms wall time
+while reducing processor time to approximately 2.03 ms. With a one-millisecond
+gap and only two active workers in an eight-worker pool, targeted spinning
+responded in approximately 0.11--0.13 us but consumed approximately 7.3 ms of
+processor time. Targeted parking responded in approximately 2.6--2.7 us and
+consumed approximately 4.2 us.
+
+The worker-creation experiment rejected raw `clone3`; its retained variants are
+benchmark controls, not codegen options. The measurements and rationale are
+recorded under Rejected alternatives.
+
 ### Compilation policy
 
 Use C23 with a current GCC or Clang when the target toolchain supports it. The
@@ -457,6 +565,14 @@ or an explicitly identified target-cost decision:
 | Use ordinary compact Particle presence bytes                  | Presence addresses do not escape, no foreign behavior observes them, and the closed `-O2` compilation boundary lets ordinary C dead-store elimination remove unobserved writes                                                                               |
 | Use one 64-bit ready word instead of queues                   | There are only 36 static identities, at most one unclaimed instance of each exists, Action Executions do not overlap, and no operation creates unbounded or runtime-selected work                                                                            |
 | Retain ordinary C enums                                       | The identity domains are closed, but target measurements rejected the smaller fixed-enum and `_BitInt` representations                                                                                                                                       |
+| Select direct serial, fresh threads, or a persistent pool     | Runnable breadth, estimated path costs and variance, expected invocation count, pool lifetime, and calibrated creation and coordination costs                                                                                                                |
+| Publish directly to selected persistent workers               | The worker assignment and exact active subset are known, no unassigned worker must claim the work, and target measurements prefer handoff lines for spinning or a sparse parked subset                                                                       |
+| Publish one broadcast generation                              | Every retained worker is selected or waking additional workers is cheaper than publishing and waking individual words, as established by target measurements for the parked dense case                                                                       |
+| Use per-worker completion generations                         | Each selected worker completes exactly once, the caller will spin rather than park, and no runtime-selected worker can contribute an arrival                                                                                                                 |
+| Use the shared completion counter                             | More than one selected worker can complete last and estimated remaining time justifies allowing the caller to park                                                                                                                                           |
+| Use conditional waiter-bit wakes                              | The generated policy may finish during its spin interval, so avoiding unnecessary futex wake calls repays the additional lock-free atomic read-modify-write operations on the target                                                                         |
+| Use unconditional futex wakes                                 | The generated policy expects pure parking, and target measurements show that removing waiter-bit read-modify-write operations repays any wake call that finds no waiter                                                                                      |
+| Choose separate worker and caller spin limits                 | Estimated time to current dependency satisfaction, expected time to the next publication, target pause and futex costs, and whether the later invocation time is unknown                                                                                     |
 
 The dependency, identity, lifetime, terminal, and escape statements in this
 table are correctness proofs. Worker count, affinity, enum representation, and
@@ -479,12 +595,39 @@ and can validate the shared boundary.
 
 ## Benchmark basis
 
-The decision was tested on an AMD Ryzen 9 9950X with 16 physical cores, 32
-logical processors, and two cache-coherence/NUMA groups. The harness used
-bounded multi-producer, multi-consumer queues, C-race-free Chase-Lev deques,
-worker affinity, direct-successor bypass, flat and two-level Joins, and
-synthetic serial, wide fanout, and balanced binary fork-Join graphs. It was
-compiled with GCC 16.2.1 and Clang 22.1.8 at `-O3 -march=native -mtune=native`.
+### Measured system
+
+| Component           | Recorded value                                                                                                                                                                                                                                               |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Host and firmware   | System76 Thelio Mira r4; American Megatrends 4.10.SP01 BIOS dated February 23, 2026                                                                                                                                                                          |
+| Processor           | AMD Ryzen 9 9950X, x86-64 family `0x1a`, model `0x44`, stepping `0`, microcode `0xb404035`; one socket, 16 physical cores, 32 logical processors; SMT enabled; no hypervisor                                                                                 |
+| Cache               | 64-byte coherence lines; 32 KiB L1 instruction, 48 KiB L1 data, and 1 MiB L2 per physical core; two 32 MiB L3 groups                                                                                                                                         |
+| Processor topology  | NUMA/cache group 0: processors `0-7,16-23`; group 1: processors `8-15,24-31`; processor `n + 16` is the SMT sibling of processor `n`                                                                                                                         |
+| Frequency policy    | `amd-pstate-epp` driver, `powersave` governor, `balance_performance` energy preference, and frequency boost enabled; reported policy limits 624.1940--5756.4521 MHz; frequency was not fixed during measurement                                              |
+| Idle policy         | `acpi_idle` driver with the `menu` governor; enabled POLL, C1, C2, and C3 states reporting 0, 1, 18, and 350 us exit latency respectively; actual state residency was not controlled or recorded                                                             |
+| Memory              | Linux `MemTotal` 63,422,700 KiB, approximately 60.5 GiB usable                                                                                                                                                                                               |
+| Operating system    | Fedora Linux 44 (COSMIC), glibc 2.43, 4 KiB base pages, transparent huge pages in `madvise` mode, automatic NUMA balancing enabled, and TSC clock source                                                                                                     |
+| Kernel              | `Linux 7.1.8-200.fc44.x86_64 #1 SMP PREEMPT_DYNAMIC Mon Aug 10 03:35:23 UTC 2026 GNU/Linux`; default Fedora vulnerability mitigations, with no mitigation-disabling or processor-isolation kernel arguments                                                  |
+| Compiler toolchains | GCC `16.2.1 20260819 (Red Hat 16.2.1-2)` and Clang `22.1.8 (Fedora 22.1.8-4.fc44)`, targeting `x86_64-redhat-linux-gnu`; the initial scheduler comparison used `-O3 -march=native -mtune=native`, and later studies state their differing options explicitly |
+| Measurement tools   | Linux `perf 7.1.10-200.fc44.x86_64` and AMD uProf 5.3.521.0                                                                                                                                                                                                  |
+
+The harness used bounded multi-producer, multi-consumer queues, C-race-free
+Chase-Lev deques, worker affinity, direct-successor bypass, flat and two-level
+Joins, and synthetic serial, wide fanout, and balanced binary fork-Join graphs.
+Benchmark candidates ran one at a time with the caller and workers pinned as
+described by each workload. No deliberate competing compute workload, real-time
+scheduling, fixed-frequency mode, CPU isolation, or shutdown of normal
+operating-system and user-session services was used. Each study below records
+its warmup and sampling policy; reported comparisons use medians rather than
+best-case samples.
+
+DIMM count, channel population, transfer rate, timings, ambient temperature,
+processor temperature, package power limits, idle-state residency, and the
+runtime selection of the kernel's dynamic preemption mode were not captured
+during the measurements and cannot be reconstructed reliably afterward. Results
+involving dynamic boost, parking, or memory traffic should therefore be treated
+as measurements of this ordinary interactive configuration, not as
+frequency-locked laboratory results.
 
 The reported task cost is total elapsed wall time divided by all executed
 scheduler tasks, so it measures aggregate throughput rather than individual task
@@ -804,6 +947,56 @@ compiler at those costs. This reinforces `-O2` as a reasonable provisional
 default but does not predict the optimizer behavior of real generated Action
 Fragments.
 
+### Retained thread-runtime benchmark
+
+The [thread-runtime benchmark](thread_runtime_benchmark.c) retains the complete
+serial, fresh-pthread, persistent-pthread, spin, futex, publication, and
+completion variants used above, plus the rejected raw-clone comparison controls.
+It deliberately assigns known work directly to workers; the existing scheduler
+benchmark remains the evidence for runtime claiming and work stealing.
+
+For example, build the selected targeted spinning pthread form, a sparse
+targeted waiter-bit parking form, and a dense broadcast unconditional-wake form
+with:
+
+```sh
+gcc -std=c23 -O2 -march=native -mtune=native -fno-stack-protector -DDEFINE_THREAD_RUNTIME=2 -DDEFINE_COMPLETION=2 -DDEFINE_PUBLICATION=2 -pthread define/compiler/codegen/literal/c/thread_runtime_benchmark.c -o /tmp/define-thread-spin
+gcc -std=c23 -O2 -march=native -mtune=native -fno-stack-protector -DDEFINE_THREAD_RUNTIME=3 -DDEFINE_COMPLETION=1 -DDEFINE_PUBLICATION=2 -pthread define/compiler/codegen/literal/c/thread_runtime_benchmark.c -o /tmp/define-thread-sparse-park
+gcc -std=c23 -O2 -march=native -mtune=native -fno-stack-protector -DDEFINE_THREAD_RUNTIME=3 -DDEFINE_COMPLETION=1 -DDEFINE_PUBLICATION=1 -DDEFINE_GENERATION_WAKE=2 -DDEFINE_COMPLETION_WAKE=2 -pthread define/compiler/codegen/literal/c/thread_runtime_benchmark.c -o /tmp/define-thread-dense-park
+```
+
+Clang accepts the same commands. `DEFINE_THREAD_RUNTIME=1` selects fresh
+pthreads and `DEFINE_THREAD_RUNTIME=6` selects direct serial execution.
+Completion value `1` is the shared counter and value `2` is per-worker
+completion generations. Publication value `1` is broadcast and value `2` is
+targeted. Generation-wake and completion-wake value `1` uses the waiter-bit
+conditional-wake protocol; value `2` uses unconditional wake. Raw-stack values
+`1`, `2`, and `3` select guarded mapped, unguarded mapped, and static generated
+stacks respectively when reproducing the rejected raw-clone comparison.
+
+The command format is:
+
+```text
+benchmark workers active-workers executions fast-work slow-work slow-workers idle-microseconds worker-spin caller-spin warmups samples
+```
+
+For example, these reproduce the dense short mixture, the imbalanced millisecond
+mixture, and the sparse one-millisecond idle interval:
+
+```sh
+/tmp/define-thread-spin 8 8 10000 1000 10000 2 0 1000 1000 10000 9
+/tmp/define-thread-dense-park 8 8 100 1000 800000 2 0 0 0 50 9
+/tmp/define-thread-sparse-park 8 2 200 0 0 0 1000 0 0 10 9
+```
+
+Every sample verifies that each active worker executes exactly once per Action
+Execution, that inactive workers execute zero times, and that checksums match
+across samples. It reports median cold-pool startup, wall time and total process
+CPU time per Action Execution, shutdown, and startup/shutdown-amortized wall
+time. Because glibc caches pthread stacks within a process, cold-process
+lifecycle comparisons require repeated one-sample process invocations rather
+than relying on later samples in one invocation.
+
 ### Retained benchmark
 
 The [retained benchmark](scheduler_and_join_benchmark.c) includes the reference
@@ -900,6 +1093,8 @@ Define programs:
   efficiently on materially different processors;
 - scheduler behavior at generated-program scale, including large live task and
   Join populations and Action Fragment target diversity; and
+- topology-group generation publication between the measured per-worker and
+  global forms for dense parked pools above eight workers;
 - the release-decrement plus final-acquire-fence Join on weaker-memory-order
   targets with suitable race detection and hardware measurements.
 
@@ -913,6 +1108,24 @@ can erase.
 
 ## Rejected alternatives
 
+### Bypass pthreads with raw clone
+
+Raw `clone3` did not change steady-state scheduling performance. In the
+stabilized short mixed-cost case, pthread and raw-clone workers both took
+approximately 12.74--12.75 us under GCC and Clang. Across independent cold
+processes with seven background workers, persistent pthread lifecycle cost
+approximately 116 us before useful work. Proof-gated unguarded mapped or static
+raw stacks sometimes reduced that to approximately 80--98 us, but the winning
+stack representation changed between GCC and Clang, and guarded raw stacks did
+not improve the cost consistently.
+
+The small, inconsistent cold-start improvement does not justify owning the Linux
+thread ABI. Correct raw workers require generated stacks, blocked asynchronous
+signals, custom termination and waiting, and the exclusion or implementation of
+libc access, foreign behavior, thread-local storage, sanitizers, and stack
+protection. Use pthreads for worker lifecycle. The raw variants remain in the
+benchmark only to reproduce this decision; codegen does not select them.
+
 ### Queue every runnable task
 
 Queueing serial continuations cost two to three orders of magnitude more than
@@ -923,6 +1136,14 @@ another worker.
 
 A global queue made its enqueue and dequeue positions coherence bottlenecks and
 discarded the useful locality already present in fork-Join graphs.
+
+### Publish a separate futex waiter flag
+
+A separate Boolean can remain observably false after a worker has decided to
+park, allowing a concurrent publisher to omit the wake and leave completed work
+sleeping indefinitely. Generation and completion protocols instead encode the
+waiter bit in the atomic word whose transition publishes work or completion, so
+the returned previous value proves whether a wake is required.
 
 ### Unrestricted cross-group stealing
 
@@ -966,6 +1187,11 @@ added approximately 0.2--0.3% cycles in 2,000-run hardware-counter measurements.
 ## Consequences and boundaries
 
 - The common serial path performs no queue operation.
+- Pthreads are a selected Linux worker-lifecycle boundary, not a required Action
+  Execution synchronization mechanism; persistent workers execute the generated
+  hot path without pthread calls.
+- Raw-clone workers are retained only as a benchmark control for a rejected
+  alternative; codegen does not select them.
 - The scheduler preserves every concurrency opportunity represented by the
   Action Plan; topology preference changes placement, not dependencies.
 - Flat Join state is small, but a concurrently active Join normally consumes a

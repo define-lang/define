@@ -10,6 +10,10 @@ Current studies:
 
 - [Scheduler and Join ADR](scheduler_and_join_adr.md) and its retained
   [benchmark](scheduler_and_join_benchmark.c)
+- [Thread scheduler and runtime benchmark](thread_runtime_benchmark.c), covering
+  direct serial execution, fresh and persistent pthread workers, spinning, futex
+  parking, conditional and unconditional wakes, generated publication and
+  completion specializations, and rejected raw-clone comparison controls
 - [Pointer-free static execution design](pointer_free_static_design.md) and its
   retained [benchmark](pointer_free_static_benchmark.c)
 - [Configurable pointer-free reference implementation](pointer_free_static_example.c)
