@@ -1,0 +1,8 @@
+deps: {
+  local: [
+    {
+      universe_name: "mv:define-lang.org:child_universe"
+      path: "lib/inner"
+    }
+  ]
+}

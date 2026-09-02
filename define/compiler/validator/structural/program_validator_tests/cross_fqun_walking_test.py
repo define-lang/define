@@ -64,6 +64,36 @@ def test_cross_fqun_walks_into_sub_root(
     assert result.file_results[1].file_path == define_path.DefinePath("lib/target.dfn")
 
 
+def test_direct_nested_sub_root(
+    validate_testdata_structural: ValidateTestdataStructural,
+):
+    result = validate_testdata_structural(max_workers=1)
+    assert len(result.file_results) == 4
+    assert_no_errors(result)
+    assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
+    assert result.file_results[1].file_path == define_path.DefinePath(
+        "lib/inner/target.dfn"
+    )
+    assert result.file_results[2].file_path == define_path.DefinePath(
+        "ordinary/target.dfn"
+    )
+    assert result.file_results[3].file_path == define_path.DefinePath(
+        "lib/inner/leaf.dfn"
+    )
+
+
+def test_same_universe_reference_in_ordinary_directory(
+    validate_testdata_structural: ValidateTestdataStructural,
+):
+    result = validate_testdata_structural()
+    assert len(result.file_results) == 2
+    assert_no_errors(result)
+    assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
+    assert result.file_results[1].file_path == define_path.DefinePath(
+        "ordinary/target.dfn"
+    )
+
+
 def test_cross_fqun_file_not_found(
     validate_testdata_structural: ValidateTestdataStructural,
 ):

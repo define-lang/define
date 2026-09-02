@@ -75,7 +75,6 @@ py_library(
     deps = [
         "//define/compiler:config",
         "//define/compiler/data_structures:define_path",
-        "@pypi//pygtrie",
     ],
 )
 

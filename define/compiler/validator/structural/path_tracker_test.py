@@ -175,10 +175,20 @@ class TestSubRootTracking:
 
 
 class TestConflictDetection:
-    def test_find_enclosing_root_no_roots_raises(self):
+    def test_is_under_failed_root_returns_false_without_failed_root(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
-        with pytest.raises(KeyError, match="no project root registered"):
-            tracker.find_enclosing_root(define_path.DefinePath("foo/bar.dfn"))
+        tracker.register_project_root(
+            define_path.DefinePath("lib"),
+            config.ProjectRootConfig(fqun="lib.uni", sub_roots={}),
+        )
+        assert not tracker.is_under_failed_root(define_path.DefinePath("lib"))
+        assert not tracker.is_under_failed_root(define_path.DefinePath("lib/a.dfn"))
+
+    def test_is_under_failed_root_returns_true_for_descendant(self):
+        tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
+        tracker.mark_root_failed(define_path.DefinePath("lib"))
+        assert tracker.is_under_failed_root(define_path.DefinePath("lib/a.dfn"))
+        assert not tracker.is_under_failed_root(define_path.DefinePath("other/a.dfn"))
 
     def test_find_enclosing_root_returns_project_root(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
@@ -243,6 +253,17 @@ class TestConflictDetection:
         tracker.mark_in_progress(define_path.DefinePath("lib/target.dfn"))
         result = tracker.first_tracked_file_under(define_path.DefinePath("lib"))
         assert result == (define_path.DefinePath("lib/target.dfn"), "root.uni")
+
+    def test_first_tracked_file_under_returns_first_match(self):
+        tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
+        tracker.register_project_root(
+            define_path.EMPTY,
+            config.ProjectRootConfig(fqun="root.uni", sub_roots={}),
+        )
+        tracker.mark_in_progress(define_path.DefinePath("lib/first.dfn"))
+        tracker.mark_in_progress(define_path.DefinePath("lib/second.dfn"))
+        result = tracker.first_tracked_file_under(define_path.DefinePath("lib"))
+        assert result == (define_path.DefinePath("lib/first.dfn"), "root.uni")
 
     def test_first_tracked_file_under_returns_nested_sub_root_owner(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()

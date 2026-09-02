@@ -2,29 +2,41 @@
 
 from __future__ import annotations
 
-from collections import OrderedDict
-from typing import TYPE_CHECKING, override
-
-import pygtrie
-
-from define.compiler.data_structures import define_path
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, cast, final
 
 if TYPE_CHECKING:
     from define.compiler import config
+    from define.compiler.data_structures import define_path
 
 
-class _PathTrie[V](pygtrie.Trie[define_path.DefinePath, V]):
-    """A trie keyed by DefinePath, with slash-separated path components."""
+@final
+@dataclass(slots=True, eq=False)
+class _ProjectRootNode:
+    children: dict[str, _ProjectRootNode] | None = None
+    failed: bool = False
+    project_root: tuple[define_path.DefinePath, config.ProjectRootConfig] | None = None
 
-    @override
-    def _path_from_key(self, key: define_path.DefinePath) -> list[str]:
-        return ["", *key.parts]
+    def get_child(self, part: str) -> _ProjectRootNode | None:
+        if self.children is None:
+            return None
+        return self.children.get(part)
 
-    @override
-    def _key_from_path(self, path: tuple[str, ...]) -> define_path.DefinePath:
-        if len(path) <= 1:
-            return define_path.EMPTY
-        return define_path.DefinePath("/".join(path[1:]))
+    def get_or_create_child(self, part: str) -> _ProjectRootNode:
+        if self.children is None:
+            self.children = {}
+        child = self.children.get(part)
+        if child is None:
+            child = _ProjectRootNode()
+            self.children[part] = child
+        return child
+
+
+@final
+@dataclass(slots=True, eq=False)
+class _TrackedFileNode:
+    children: dict[str, _TrackedFileNode] | None = None
+    first_file: define_path.DefinePath | None = None
 
 
 class PathTracker[T]:
@@ -40,15 +52,63 @@ class PathTracker[T]:
 
     def __init__(self):
         """Initialize empty path tracking state."""
-        self._results: OrderedDict[define_path.DefinePath, T | None] = OrderedDict()
+        self._results: dict[define_path.DefinePath, T | None] = {}
         self._not_found: set[define_path.DefinePath] = set()
-        self._project_roots: _PathTrie[config.ProjectRootConfig] = _PathTrie()
+        self._project_roots: _ProjectRootNode = _ProjectRootNode()
+        self._tracked_files: _TrackedFileNode = _TrackedFileNode()
         self._fqun_to_root: dict[str, define_path.DefinePath] = {}
-        self._tracked_files: pygtrie.PrefixSet[define_path.DefinePath] = (
-            pygtrie.PrefixSet(factory=_PathTrie)
-        )
-        self._failed_roots: pygtrie.PrefixSet[define_path.DefinePath] = (
-            pygtrie.PrefixSet(factory=_PathTrie)
+
+    def _get_project_root_node(
+        self, path: define_path.DefinePath
+    ) -> _ProjectRootNode | None:
+        node = self._project_roots
+        for part in path.parts:
+            node = node.get_child(part)
+            if node is None:
+                return None
+        return node
+
+    def _get_or_create_project_root_node(
+        self, path: define_path.DefinePath
+    ) -> _ProjectRootNode:
+        node = self._project_roots
+        for part in path.parts:
+            node = node.get_or_create_child(part)
+        return node
+
+    def _get_tracked_file_node(
+        self, path: define_path.DefinePath
+    ) -> _TrackedFileNode | None:
+        node = self._tracked_files
+        for part in path.parts:
+            children = node.children
+            if children is None:
+                return None
+            child = children.get(part)
+            if child is None:
+                return None
+            node = child
+        return node
+
+    def _project_root_for_path(
+        self, path: define_path.DefinePath
+    ) -> tuple[define_path.DefinePath, config.ProjectRootConfig]:
+        node = self._project_roots
+        project_root = node.project_root
+        parts = path.parts
+        del parts[-1]
+        for part in parts:
+            children = node.children
+            if children is None:
+                break
+            child = children.get(part)
+            if child is None:
+                break
+            node = child
+            if node.project_root is not None:
+                project_root = node.project_root
+        return cast(
+            "tuple[define_path.DefinePath, config.ProjectRootConfig]", project_root
         )
 
     def is_tracked(self, path: define_path.DefinePath) -> bool:
@@ -58,7 +118,23 @@ class PathTracker[T]:
     def mark_in_progress(self, path: define_path.DefinePath):
         """Record that validation of this path has begun."""
         self._results[path] = None
-        self._tracked_files.add(path)
+        node = self._tracked_files
+        if node.first_file is None:
+            node.first_file = path
+        parts = path.parts
+        del parts[-1]
+        for part in parts:
+            children = node.children
+            if children is None:
+                children = {}
+                node.children = children
+            child = children.get(part)
+            if child is None:
+                child = _TrackedFileNode()
+                children[part] = child
+            node = child
+            if node.first_file is None:
+                node.first_file = path
 
     def set_result(self, path: define_path.DefinePath, result: T):
         """Store the completed result for a previously-started path."""
@@ -95,11 +171,24 @@ class PathTracker[T]:
 
     def mark_root_failed(self, root: define_path.DefinePath):
         """Record that a project root's config failed to load."""
-        self._failed_roots.add(root)
+        self._get_or_create_project_root_node(root).failed = True
 
     def is_under_failed_root(self, path: define_path.DefinePath) -> bool:
         """Return True if path is under a root with a known-bad config."""
-        return path in self._failed_roots
+        node = self._project_roots
+        parts = path.parts
+        del parts[-1]
+        for part in parts:
+            children = node.children
+            if children is None:
+                return False
+            child = children.get(part)
+            if child is None:
+                return False
+            node = child
+            if node.failed:
+                return True
+        return False
 
     def register_project_root(
         self,
@@ -118,14 +207,16 @@ class PathTracker[T]:
         Raises:
             ValueError: If root is already registered.
         """
-        if root in self._project_roots:
+        node = self._get_or_create_project_root_node(root)
+        if node.project_root is not None:
             raise ValueError(f"sub_root already registered: {root}")
-        self._project_roots[root] = root_config
+        node.project_root = (root, root_config)
         self._fqun_to_root[root_config.fqun] = root
 
     def project_root_loaded(self, root: define_path.DefinePath) -> bool:
         """Return True if a project root has been registered at this path."""
-        return root in self._project_roots
+        node = self._get_project_root_node(root)
+        return node is not None and node.project_root is not None
 
     def root_for_fqun(self, fqun: str) -> define_path.DefinePath | None:
         """Return the root path registered for a given FQUN, or None."""
@@ -135,9 +226,10 @@ class PathTracker[T]:
         self, root: define_path.DefinePath
     ) -> config.ProjectRootConfig | None:
         """Return the resolved config registered for an exact project root path, or None."""
-        if root not in self._project_roots:
+        node = self._get_project_root_node(root)
+        if node is None or node.project_root is None:
             return None
-        return self._project_roots[root]
+        return node.project_root[1]
 
     def fqun_for_root(self, root: define_path.DefinePath) -> str | None:
         """Return the FQUN registered for an exact project root path, or None."""
@@ -146,7 +238,10 @@ class PathTracker[T]:
 
     def has_sub_root(self, fqun: str, parent_root: define_path.DefinePath) -> bool:
         """Return True if fqun is a configured sub_root of parent_root."""
-        return fqun in self._project_roots[parent_root].sub_roots
+        root_config = self.config_for_root(parent_root)
+        if root_config is None:
+            raise KeyError(parent_root)
+        return fqun in root_config.sub_roots
 
     def sub_root_location(
         self, fqun: str, parent_root: define_path.DefinePath
@@ -157,7 +252,9 @@ class PathTracker[T]:
             KeyError: If parent_root is not registered or fqun is not a
                 configured sub_root under it.
         """
-        info = self._project_roots[parent_root]
+        info = self.config_for_root(parent_root)
+        if info is None:
+            raise KeyError(parent_root)
         return info.sub_roots[fqun]
 
     def find_enclosing_root(
@@ -166,14 +263,8 @@ class PathTracker[T]:
         """Find the innermost project root containing this path.
 
         At least one project root must be registered.
-
-        Raises:
-            KeyError: If no project root has been registered.
         """
-        step = self._project_roots.longest_prefix(path)
-        if not step or step.key is None:
-            raise KeyError(f"no project root registered for path: {path}")
-        return step.key
+        return self._project_root_for_path(path)[0]
 
     def first_tracked_file_under(
         self, sub_root_path: define_path.DefinePath
@@ -182,9 +273,8 @@ class PathTracker[T]:
 
         Returns (file_path, owner_universe) or None.
         """
-        try:
-            file_path = next(iter(self._tracked_files.iter(sub_root_path)))
-        except StopIteration:
+        node = self._get_tracked_file_node(sub_root_path)
+        if node is None or node.first_file is None:
             return (None, None)
-        owner_step = self._project_roots.longest_prefix(file_path)
-        return (file_path, owner_step.value.fqun)
+        file_path = node.first_file
+        return (file_path, self._project_root_for_path(file_path)[1].fqun)
