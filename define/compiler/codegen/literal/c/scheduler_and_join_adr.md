@@ -1178,8 +1178,36 @@ unchanged.
 
 ## Deferred investigations
 
-Revisit the following areas when literal C codegen can emit representative
-Define programs:
+These gaps do not block an initial literal C backend. Revisit them when codegen
+can emit representative Define programs or when the required target is
+available:
+
+- Action Execution state allocation, initialization, and reuse. The retained
+  pointer-free benchmarks intentionally place Particle-state allocation and
+  initialization outside their timed regions. Compare stack allocation,
+  statically bounded reusable pools, per-worker arenas, and general allocation
+  across state sizes and overlapping Action Executions;
+- readiness representations larger than one atomic word. Compare flat rotating
+  scans, hierarchical atomic summary bitsets, and integer-identity queues from
+  64 through millions of identities, with sparse and dense readiness, multiple
+  publishers, and overlapping Action Executions;
+- exceptionally large Join fan-in. Compare one flat counter with statically
+  partitioned topology-local or tree reductions at thousands to tens of
+  thousands of arrivals. The rejection of a two-level Join as the default at
+  ordinary fan-in does not establish the crossover at Define's intended scale;
+- critical-path scheduling in a graph with one expensive dependency chain and
+  abundant cheaper parallel work. Measure which successor should remain on the
+  direct path, publication order, the first persistent-worker activation point
+  after a serial prefix, individual Action Execution latency, and throughput
+  across overlapping Action Executions;
+- value-bearing Action Execution layout and locality. Compare schedule-aware
+  Particle field placement, frequently and infrequently accessed state
+  separation, first-touch placement, topology affinity, scalar replacement,
+  `restrict`, and compiler assumptions derived from proven Particle aliasing,
+  address identity, lifetime, and queue-capacity facts;
+- scheduler behavior at generated-program scale with value-bearing Action
+  Fragments, large simultaneously live Particle Operation and Join populations,
+  allocation included in the timed path, and diverse targets;
 
 - selective Action Fragment inlining and direct-call expansion with real value
   behavior; the retained synthetic generated-code study establishes the
@@ -1187,12 +1215,8 @@ Define programs:
 - optimization-level and code-alignment selection against realistic mixtures of
   Action Fragment cost, fanout, Join fan-in, and topology preference rather than
   adopting one synthetic-workload winner;
-- `restrict`, scalar replacement, and compiler assumptions derived from proven
-  Particle aliasing, address-identity, lifetime, and queue-capacity facts;
 - function multiversioning and runtime target selection when one binary must run
   efficiently on materially different processors;
-- scheduler behavior at generated-program scale with value-bearing Action
-  Fragments, large live task and Join populations, and target diversity;
 - topology-group generation publication between the measured per-worker and
   global forms for dense parked pools above eight workers;
 - the release-decrement plus final-acquire-fence Join on weaker-memory-order
