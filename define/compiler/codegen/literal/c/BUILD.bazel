@@ -1,0 +1,33 @@
+load("@aspect_rules_py//py:defs.bzl", "py_binary")
+load("//tools/bzl:format.bzl", "format_test")
+load("//tools/bzl:py_test.bzl", "py_test")
+load("//tools/bzl:pyright.bzl", "pyright_test")
+
+py_binary(
+    name = "generate_large_literal_c",
+    srcs = ["generate_large_literal_c.py"],
+)
+
+py_test(
+    name = "generate_large_literal_c_test",
+    size = "small",
+    srcs = ["generate_large_literal_c_test.py"],
+    deps = [
+        ":generate_large_literal_c",
+        "@pypi//pytest",
+    ],
+)
+
+format_test(
+    name = "format_test",
+    srcs = glob(["*.py"]),
+    python = "@multitool//tools/ruff",
+)
+
+pyright_test(
+    name = "pyright_test",
+    deps = [
+        ":generate_large_literal_c",
+        ":generate_large_literal_c_test",
+    ],
+)

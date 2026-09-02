@@ -110,6 +110,15 @@ The study compares these representations:
     record and executes through an indirect call. It is a control measurement
     for the integer representation.
 
+Direct control need not be one monolithic C function. Codegen may divide a
+statically ordered path into target-calibrated direct-call regions without
+introducing a runtime work pointer. At larger scale it may encode a regular
+family of operations as compact constant operands consumed by one generated
+loop. This also remains pointer-free: the operation number determines each
+Particle identity and behavior through generated arithmetic or tables rather
+than a queued function or state address. The retained large-code study measures
+these code-layout forms separately from scheduling.
+
 The static and cursor forms are not substitutes for dynamic readiness. They
 remove readiness work only for Particle Operations that the Operation Graph
 proves are runnable at Action Execution initialization. Direct ranges are
@@ -152,6 +161,14 @@ C23. Their performance is not target-independent: codegen must know that the
 selected atomic integer width is lock-free and must select cache-line and worker
 topology facts for the target. A C implementation is allowed to implement an
 atomic operation with a library call or lock.
+
+Static AArch64 builds of the selected forms run correctly under QEMU. In gem5's
+Neoverse V2 model, a 256-operation direct body used 36.2% fewer cycles than the
+compact form, agreeing with the native small-code direction. gem5
+syscall-emulation pthread barriers did not reach the concurrent measured region
+reliably, so no modeled AArch64 concurrency value is accepted. Physical hardware
+or full-system simulation is still required for target thresholds involving
+Joins or hybrid regions.
 
 The specialized generated scheduling paths demonstrated by the exact fixtures
 permit only atomics that the target guarantees are lock-free. They emit no
@@ -211,6 +228,14 @@ A generated program may use both representations. Direct successor calls and a
 static readiness bitset can cover most of one action, while a dynamic boundary
 submits an integer-bearing runnable unit to the general scheduler.
 
+That boundary may occur between generated regions within one action. Fixed-cost
+regions can use direct static assignment while sparse runtime-variable regions
+remain individually claimable. On the measured target, a 4,096-branch schedule
+with only 64 uncertain branches was 9--11% faster as this hybrid than as either
+a completely static or completely dynamic schedule for one Action Execution.
+With uniform fine work or sufficient similarly costly Action Executions, static
+regions or whole-execution ranges remained faster.
+
 Persistent static scheduling also has generated subforms. Per-worker generation
 and completion values avoid both task pointers and a broadcast cache line when
 the assignment is exact. A waiter-bit completion counter replaces completion
@@ -245,7 +270,13 @@ represents them:
 - estimated cost bounds and variance for Particle Operations and complete Action
   Executions, not merely an average cost;
 - the number of independent Action Executions expected at each invocation and
-  whether their cost ordering is known; and
+  whether their cost ordering is known;
+- the number of Particle Operations and expected generated instructions in each
+  hot direct region, natural dependency boundaries between regions, and whether
+  a regular family can be represented by compact operands;
+- compile-time and compiler-memory budgets, plus the selected compiler, version,
+  optimization level, target instruction-front-end capacity, and calibrated
+  direct-region and compact-data thresholds;
 - the expected number and lifetime of parallel Action Executions over which a
   persistent worker pool can be amortized;
 - the maximum retained worker count and exact active worker subset at each
@@ -504,6 +535,25 @@ tight loop is scalar; compiler vectorization reports applied only to benchmark
 initialization outside the timed interval. The integer cursor adds one atomic
 fetch-add per claimed batch. The function-pointer control adds an indirect call
 for every unit.
+
+Pointer-free direct code also has a scale boundary. In the retained generated
+study, straight-line or bounded direct-region code was fastest through
+approximately 4,096--16,384 synthetic Particle Operations, depending on compiler
+and region size. At 65,536, a compact constant-operand loop held nearly constant
+runtime while generated instruction bodies slowed: compact data was 55% faster
+than GCC direct code and 26% faster than Clang's best measured direct-region
+size. GCC hardware counters recorded approximately 0.93 million L1 instruction
+misses for direct code versus about 6,100 for the compact loop over the measured
+work.
+
+A function per Particle Operation and a giant generated switch both had poor
+large-scale compile and runtime behavior. GCC's 65,536-operation function table
+emitted 5.25 MiB of text and ran at about 15.9 ns per Particle Operation, versus
+0.527 ns for compact operands. Clang did not finish the corresponding monolithic
+direct compile within 60 seconds, while compact data compiled in 0.08 seconds.
+The literal backend therefore remains pointer-free while changing code layout:
+small hot regions use direct C operations, and sufficiently regular large
+regions use integer identity and compact operands.
 
 `-O3` was not a universal improvement over `-O2`. It was neutral for direct
 moderate and expensive work, and both faster and slower for sub-millisecond

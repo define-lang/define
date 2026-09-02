@@ -135,6 +135,24 @@ acquire-release read-modify-write operation. Keep one newly satisfied successor
 on the direct path. Independent publishers of the same readiness word still
 require an acquire-release synchronization chain.
 
+When one Particle Operation contributes to two or more independent Joins,
+codegen may instead pack their small counters into unsigned lanes of one
+lock-free atomic word. One acquire-release subtraction updates every selected
+lane, and the returned lane values identify every newly satisfied Join. This is
+valid only with exact arrival membership, sufficient lane widths, no subtraction
+from a lane after it reaches zero, and compatible counter lifetimes. Compact
+packing cut the workless eight-Join case by approximately 55% under both GCC and
+Clang, but was neutral once each continuation performed 64 synthetic work
+iterations. Cache-line-isolating the packed word enlarged Action Execution state
+enough to erase part of the gain at a large working set.
+
+Use the returned satisfaction state directly when the continuation is statically
+known and can remain on that worker. Even the smallest ready-word publish and
+reclaim control added approximately 35--68% in the workless eight-Join cases.
+Local batching of several simultaneously satisfied continuations is separately
+target- and compiler-dependent. The complete eligibility rules and measurements
+are in [the advanced experiments](advanced_literal_c_experiments.md).
+
 ### Worker activation
 
 Available processor count is a target or runtime fact; active worker count is a
@@ -164,6 +182,15 @@ portfolio:
    runnable identities and worker assignments are bounded; and
 4. the claimable deque and injection-queue scheduler when work identity, cost,
    or cardinality remains uncertain.
+
+One action may combine these forms. Proven fixed-cost Particle Operation regions
+can use generated static worker ranges while only sparse runtime-variable
+regions enter a shared claim cursor. In the measured 4,096-branch case with 64
+uncertain branches, this hybrid was 9--11% faster than both fully static and
+fully dynamic alternatives for one Action Execution under GCC and Clang. When
+several uniformly cheap Action Executions were live, whole-execution sharding or
+static regions remained faster. Codegen selects regions from exact dependency,
+cost-variance, simultaneous-Action-Execution, and locality facts.
 
 On Linux, create a persistent pool with pthreads. The pthread workers use no
 pthread synchronization operation during Action Execution. Their generated hot
@@ -280,6 +307,17 @@ Do not use `-Ofast` as a general Define build setting. It provided no stable
 scheduler improvement and permits transformations that may change numerical
 semantics in generated Action Fragments.
 
+Generated instruction size is also a representation input. In the retained
+large-code study, direct and bounded-region code remained competitive through
+approximately 4,096--16,384 synthetic Particle Operations, depending on compiler
+and region size. At 65,536, a compact operand loop was 55% faster than GCC
+direct code and 26% faster than Clang's best measured direct-region size while
+also reducing compile time from seconds or minutes to less than 0.15 seconds.
+The hardware counters attribute the reversal to instruction-fetch pressure.
+Region size and the direct-to-compact threshold require calibration for the
+selected compiler and target; a function per Particle Operation and a generated
+giant switch are not general fallbacks.
+
 Splitting generated actions across C translation units does not inherently
 prevent whole-program elimination. In a three-translation-unit, serialized model
 of the literal two-action fixture, both GCC 16.2 and Clang 22 retained the call
@@ -323,6 +361,8 @@ The Action Plan must provide:
 - exact predecessor and successor relationships;
 - the identity and multiplicity of every dependency arrival, along with total
   Join dependency counts;
+- which one Particle Operation completions contribute to several Joins and which
+  simultaneously satisfied continuations may execute in either order;
 - which successors are statically known;
 - which branches may become runnable concurrently; and
 - Action Execution initialization, Guarantee publication, and destruction
@@ -405,6 +445,8 @@ When available, codegen should receive:
 - expected branch probabilities;
 - expected fanout distributions;
 - expected Join arrival skew;
+- cost bounds and variance for independently schedulable regions;
+- the expected number of simultaneously live Action Executions;
 - likely indirect-call target distributions; and
 - measured execution frequency and Particle access volume.
 
@@ -438,8 +480,9 @@ The execution and storage plan is accompanied by target information describing:
   discoverable only at runtime; and
 - processor-affinity, aligned-allocation, waiting, waking, and processor-relax
   facilities; and
-- compiler capabilities such as guaranteed tail calls, link-time optimization,
-  and function multiversioning.
+- instruction-cache and front-end capacity relevant to generated code size; and
+- the selected compiler and version, plus capabilities such as guaranteed tail
+  calls, link-time optimization, and function multiversioning.
 
 Target information is not a Define semantic property. It can vary between C
 builds or at runtime without changing the Action Plan.
@@ -555,6 +598,8 @@ or an explicitly identified target-cost decision:
 | Use `pthread_join` as the final dependency satisfaction       | Every operation assigned to the pthread precedes the final continuation or the end of the Action Execution, the calling worker completes the other predecessor chain, and joining is already required before the Action Execution state can cease to be used |
 | Omit a readiness word for statically assigned work            | The producer, only consumer, publication point, and single lifetime of the runnable identity are all exact                                                                                                                                                   |
 | Group several arrivals into one subtraction                   | Dependency arrivals retain their completing predecessor identity and multiplicity, so codegen knows that one completion contributes the entire group                                                                                                         |
+| Pack several Join counters into one subtraction               | One completion contributes to every selected Join, exact lane counts and lifetimes prevent borrow or reset overlap, the target atomic width is lock-free, and continuation cost plus writable layout justify packing                                         |
+| Invoke a Join continuation from the subtract result           | The continuation identity is static, it may run on the final-arriving worker, and no placement or claimability requirement forces readiness publication                                                                                                      |
 | Omit ten nominal multi-arrival Joins                          | After grouping, each successor has exactly one distinct completing predecessor                                                                                                                                                                               |
 | Emit the remaining 13 Join counters in the C data image       | Their distinct completing-predecessor counts are exact, the compiled program creates one bounded instance of each, and initialization precedes publication of all predecessor work                                                                           |
 | Share one cache line between the first two Joins              | Their exact liveness intervals cannot overlap; every other concurrently writable Join relationship remains isolated                                                                                                                                          |
@@ -571,6 +616,8 @@ or an explicitly identified target-cost decision:
 | Group repeated Chase-Lev steals                               | A runnable-count bound, cost and variance estimates, maximum deque occupancy including republished tasks, and target measurements select the cap; every task still receives an individual compare-exchange and every additional claim is republished         |
 | Use shared victim lists or a generated victim scan            | Exact active-worker and topology-group membership, group cardinality, and target measurements; this changes only how workers search and never weakens claimability                                                                                           |
 | Select direct serial, fresh threads, or a persistent pool     | Runnable breadth, estimated path costs and variance, expected invocation count, pool lifetime, and calibrated creation and coordination costs                                                                                                                |
+| Combine static and dynamically claimed regions                | Exact independent regions, proven fixed costs, sparse uncertain costs, terminal arrival grouping, simultaneous Action Execution count, and target claim overhead justify the boundary                                                                        |
+| Select direct regions or compact operand data                 | Emitted instruction and constant-data estimates, hot frequency, natural region boundaries, compiler and target calibration, instruction-front-end capacity, and compile-resource budgets                                                                     |
 | Publish directly to selected persistent workers               | The worker assignment and exact active subset are known, no unassigned worker must claim the work, and target measurements prefer handoff lines for spinning or a sparse parked subset                                                                       |
 | Publish one broadcast generation                              | Every retained worker is selected or waking additional workers is cheaper than publishing and waking individual words, as established by target measurements for the parked dense case                                                                       |
 | Use per-worker completion generations                         | Each selected worker completes exactly once, the caller will spin rather than park, and no runtime-selected worker can contribute an arrival                                                                                                                 |
@@ -1134,9 +1181,9 @@ unchanged.
 Revisit the following areas when literal C codegen can emit representative
 Define programs:
 
-- selective Action Fragment inlining and direct-call expansion, measured across
-  generated programs large enough to expose L1 instruction-cache and instruction
-  translation-lookaside-buffer pressure;
+- selective Action Fragment inlining and direct-call expansion with real value
+  behavior; the retained synthetic generated-code study establishes the
+  instruction-front-end crossover but not value-specific optimization;
 - optimization-level and code-alignment selection against realistic mixtures of
   Action Fragment cost, fanout, Join fan-in, and topology preference rather than
   adopting one synthetic-workload winner;
@@ -1144,12 +1191,15 @@ Define programs:
   Particle aliasing, address-identity, lifetime, and queue-capacity facts;
 - function multiversioning and runtime target selection when one binary must run
   efficiently on materially different processors;
-- scheduler behavior at generated-program scale, including large live task and
-  Join populations and Action Fragment target diversity; and
+- scheduler behavior at generated-program scale with value-bearing Action
+  Fragments, large live task and Join populations, and target diversity;
 - topology-group generation publication between the measured per-worker and
   global forms for dense parked pools above eight workers;
 - the release-decrement plus final-acquire-fence Join on weaker-memory-order
-  targets with suitable race detection and hardware measurements.
+  targets with suitable race detection and hardware measurements;
+- concurrent Join and hybrid-region measurements on physical AArch64 or gem5
+  full-system Linux; gem5 syscall-emulation pthread barriers did not reach the
+  measured region reliably.
 
 Broader link-time-optimization performance, profile-guided optimization, and
 scheduler designs involving multiple C translation units were deliberately

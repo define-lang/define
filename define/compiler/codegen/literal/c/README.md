@@ -16,6 +16,9 @@ Current studies:
   completion specializations, and rejected raw-clone comparison controls
 - [Pointer-free static execution design](pointer_free_static_design.md) and its
   retained [benchmark](pointer_free_static_benchmark.c)
+- [Advanced literal C experiments](advanced_literal_c_experiments.md), covering
+  fused Join updates, hybrid scheduling regions, large generated code, and
+  overlapping Action Executions
 - [Configurable pointer-free reference implementation](pointer_free_static_example.c)
 - [Literal generated examples](generated_examples), derived from existing
   Operation Graph fixtures
