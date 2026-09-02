@@ -215,8 +215,8 @@
     "https://bcr.bazel.build/modules/protobuf/32.1/MODULE.bazel": "89cd2866a9cb07fee9ff74c41ceace11554f32e0d849de4e23ac55515cfada4d",
     "https://bcr.bazel.build/modules/protobuf/33.1/MODULE.bazel": "982c8a0cceab4d790076f72b7677faf836b0dfadc2b66a34aab7232116c4ae39",
     "https://bcr.bazel.build/modules/protobuf/33.4/MODULE.bazel": "114775b816b38b6d0ca620450d6b02550c60ceedfdc8d9a229833b34a223dc42",
-    "https://bcr.bazel.build/modules/protobuf/36.0.bcr.1/MODULE.bazel": "c9f7d8150608ade08bbf871182311021ad5fe08bb3ac13527d5ab341cf2fac2b",
-    "https://bcr.bazel.build/modules/protobuf/36.0.bcr.1/source.json": "31d92819fdd4ef26a324c85eec4f845080155872db5143920b5b1b09837d09c9",
+    "https://bcr.bazel.build/modules/protobuf/36.1.bcr.1/MODULE.bazel": "4cc1928927b3460ec07e35623ae3d52c8d77ebed515681e0400d9b14b221a586",
+    "https://bcr.bazel.build/modules/protobuf/36.1.bcr.1/source.json": "566e7f47e4efaa1b6b5197d0cda7a228fe3ee6324d29463b0a43fc6f56ead03d",
     "https://bcr.bazel.build/modules/protovalidate/1.2.2/MODULE.bazel": "8b0bf4160d89506d996c70fae88f51c9dd579dd90e411c442145f20b4be3628f",
     "https://bcr.bazel.build/modules/protovalidate/1.2.2/source.json": "011be449290ce70b4586aee3a13847ecffbd16ae483c31948af98cd67cb00900",
     "https://bcr.bazel.build/modules/pybind11_bazel/3.0.1/MODULE.bazel": "67899804c3dbdf169d107ce7c00e60a38a46d097c7ff3460bdebe192cbc77f56",
@@ -928,7 +928,7 @@
     "@@protobuf+//python/dist:system_python.bzl%system_python_extension": {
       "general": {
         "bzlTransitiveDigest": "qh0n9IrXU/xS94wxKQrG1J63zrLkA1Wy2Y3BQxptPcI=",
-        "usagesDigest": "kVbxR/mYndN3QWrZLS6jdk6e1CL7kQy3QMa3NBMjEpE=",
+        "usagesDigest": "5nmtRivsScwzftla7fWqD7lfrvKOqRvRmabq+cY3KLU=",
         "recordedInputs": [],
         "generatedRepoSpecs": {
           "system_python": {
@@ -1078,7 +1078,7 @@
     "@@rules_rust+//crate_universe:extension.bzl%crate": {
       "general": {
         "bzlTransitiveDigest": "+IdJtwaNFIdAvi4KHnd3O6mwLGS9lW49am5a4bLywbk=",
-        "usagesDigest": "AFfi0DQqbNGYbmUAkL1fXTJenxljuo+g8dT7QFNhemg=",
+        "usagesDigest": "iRH26LGhchbWPEi1YexMZWF2hNpipOdcshkFuFTVThY=",
         "recordedInputs": [
           "ENV:CARGO_BAZEL_DEBUG \\0",
           "ENV:CARGO_BAZEL_GENERATOR_SHA256 \\0",
