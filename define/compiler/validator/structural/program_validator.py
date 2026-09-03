@@ -263,7 +263,9 @@ class ProgramStructuralValidator:
         # work into the queue ASAP.
         if submit_referenced_files:
             for edge in result.edges_to_other_files():
-                self._submit_filesystem_referenced_file(result, edge, pool)
+                if self._references_non_filesystem_definition(edge):
+                    continue
+                self._submit_referenced_file_from_configured_root(result, edge, pool)
         for definition_result in result.definition_results:
             self._process_completed_definition(result, definition_result)
         # Reference edges are file-scoped, but validating them still depends on
@@ -290,13 +292,13 @@ class ProgramStructuralValidator:
         self._reference_graph.add_definition(definition_result.definition)
         self._validate_outgoing_reference_edges(result.root_prefix, definition_result)
 
-    def _submit_filesystem_referenced_file(
+    def _submit_referenced_file_from_configured_root(
         self,
         result: validation_result.FileValidationResult,
         edge: reference_graph.ReferenceEdge,
         pool: _FileWorkPool,
     ):
-        """Submit the file an edge references from a filesystem-context file."""
+        """Submit a referenced file using its source project's loaded config."""
         global_name = edge.global_name_reference.name_content
         if global_name.fqun is None:
             root_prefix = result.root_prefix
@@ -387,27 +389,22 @@ class ProgramStructuralValidator:
         """Resolve references in non-filesystem mode after config load."""
         unknown_fquns: set[str] = set()
         for edge in result.first_edge_per_referenced_file():
-            expected_fqun = edge.global_name_reference.effective_fqun.canonical
-            sub_root_rel = root_config.sub_roots.get(expected_fqun)
-            if sub_root_rel is None:
-                if expected_fqun in unknown_fquns:
-                    continue
-                unknown_fquns.add(expected_fqun)
-                global_name = edge.global_name_reference.name_content
-                result.add_file_diagnostic(
-                    diagnostics.ExternalUniverseNotConfiguredDiagnostic(
-                        location=global_name.location,
-                        universe=expected_fqun,
-                        current_universe_name=root_config.fqun,
+            global_name = edge.global_name_reference.name_content
+            if global_name.fqun is not None:
+                fqun = global_name.fqun.canonical
+                if fqun not in root_config.sub_roots:
+                    if fqun in unknown_fquns:
+                        continue
+                    unknown_fquns.add(fqun)
+                    result.add_file_diagnostic(
+                        diagnostics.ExternalUniverseNotConfiguredDiagnostic(
+                            location=global_name.location,
+                            universe=fqun,
+                            current_universe_name=root_config.fqun,
+                        )
                     )
-                )
-                continue
-            self._submit_referenced_file(
-                result=result,
-                edge=edge,
-                root_prefix=result.root_prefix / sub_root_rel,
-                pool=pool,
-            )
+                    continue
+            self._submit_referenced_file_from_configured_root(result, edge, pool)
 
         # In a filesystem context, we don't return reference edges for
         # unknown sub-roots, so we are keeping that behavior consistent
@@ -476,6 +473,10 @@ class ProgramStructuralValidator:
     ):
         """Try to add edges to the reference graph, validate targets we already know about, and enqueue those we don't."""
         for ref_edge in source_definition.reference_edges:
+            # A definition from the supplied source has no file path to resolve.
+            if self._references_non_filesystem_definition(ref_edge):
+                _ = self._add_reference_edge(ref_edge, source_definition)
+                continue
             target_file = self._resolve_target_file(
                 ref_edge.global_name_reference.name_content,
                 enclosing_root,
@@ -484,14 +485,7 @@ class ProgramStructuralValidator:
             if target_file is None:
                 continue
 
-            detected = self._reference_graph.try_add_edge(ref_edge)
-            if detected is not None:
-                source_definition.add_diagnostic(
-                    diagnostics.CircularGlobalReferenceDiagnostic(
-                        location=ref_edge.global_name_reference.location,
-                        cycle=detected,
-                    )
-                )
+            if not self._add_reference_edge(ref_edge, source_definition):
                 continue
             if self._check_if_current_universe_path_in_a_subroot(
                 ref_edge, target_file, enclosing_root, source_definition
@@ -514,6 +508,32 @@ class ProgramStructuralValidator:
                 self._deferred_edges.setdefault(target_file, []).append(
                     _DeferredReferenceEdge(ref_edge, source_definition)
                 )
+
+    def _add_reference_edge(
+        self,
+        ref_edge: reference_graph.ReferenceEdge,
+        source_definition: validation_result.DefinitionValidationResult,
+    ) -> bool:
+        detected_cycle = self._reference_graph.try_add_edge(ref_edge)
+        if detected_cycle is None:
+            return True
+        source_definition.add_diagnostic(
+            diagnostics.CircularGlobalReferenceDiagnostic(
+                location=ref_edge.global_name_reference.location,
+                cycle=detected_cycle,
+            )
+        )
+        return False
+
+    def _references_non_filesystem_definition(
+        self,
+        edge: reference_graph.ReferenceEdge,
+    ) -> bool:
+        referenced_definition = self._definition_results.get(edge.global_name_reference)
+        return (
+            referenced_definition is not None
+            and referenced_definition.definition.location.file_path is None
+        )
 
     def _resolve_target_file(
         self,

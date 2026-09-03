@@ -1,0 +1,4 @@
+# Both definitions participating in the cycle use this universe.
+project: {
+  universe_name: "my.domain.com:my_lib"
+}

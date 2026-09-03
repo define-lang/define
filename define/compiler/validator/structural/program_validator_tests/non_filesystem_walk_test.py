@@ -8,8 +8,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import pytest
-
 from define.compiler import config, diagnostics
 from define.compiler.data_structures import define_path
 from define.compiler.validator.test_helpers import assert_no_errors
@@ -313,7 +311,7 @@ def test_two_known_universes_for_same_path_each_load_their_file(
     )
 
 
-def test_forward_reference_within_non_filesystem_source_is_broken(
+def test_forward_reference_within_non_filesystem_source_reports_missing_file(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
@@ -322,23 +320,12 @@ def test_forward_reference_within_non_filesystem_source_is_broken(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     diag = diags[0]
-    assert isinstance(diag, diagnostics.ExternalUniverseNotConfiguredDiagnostic)
-    assert diag.universe == "my.domain.com:my_lib"
-    assert diag.current_universe_name == "my.domain.com:my_lib"
-    assert diag.location.line == 7
+    assert isinstance(diag, diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert diag.file_path == "b.dfn"
+    assert diag.location.line == 5
     assert diag.location.column == 29
 
 
-@pytest.mark.xfail(
-    raises=AssertionError,
-    strict=True,
-    reason=(
-        "Non-filesystem resolution routes every reference through local deps,"
-        " and a project's own universe is never among its local deps, so a"
-        " current-universe reference is diagnosed as an unconfigured external"
-        " universe instead of resolving to the file on disk."
-    ),
-)
 def test_non_filesystem_reference_walks_into_current_universe_file(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
@@ -350,17 +337,37 @@ def test_non_filesystem_reference_walks_into_current_universe_file(
     assert result.file_results[2].file_path == define_path.DefinePath("leaf.dfn")
 
 
-@pytest.mark.xfail(
-    raises=KeyError,
-    strict=True,
-    reason=(
-        "In non-filesystem mode, no project root is registered with the"
-        " path_tracker, so a back-reference to an in-source cross-universe"
-        " definition crashes in program_validator._resolve_target_file when"
-        " path_tracker.has_sub_root looks up the empty parent root in"
-        " self._project_roots and raises KeyError."
-    ),
-)
+def test_non_filesystem_file_back_reference_reports_cycle(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    assert len(result.file_results) == 2
+    assert result.file_results[0].diagnostics == []
+    assert result.file_results[1].file_path == define_path.DefinePath("target.dfn")
+    diags = result.file_results[1].diagnostics
+    assert len(diags) == 1
+    diag = diags[0]
+    assert isinstance(diag, diagnostics.CircularGlobalReferenceDiagnostic)
+    assert diag.location.line == 3
+    assert diag.location.column == 20
+    assert diag.cycle == [
+        "position<my.domain.com:my_lib:/test>",
+        "position<my.domain.com:my_lib:/target>",
+        "position<my.domain.com:my_lib:/test>",
+    ]
+
+
+def test_filesystem_reference_to_non_filesystem_definition_is_valid(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert len(result.file_results) == 2
+    assert_no_errors(result)
+    assert str(result.file_results[0].file_path) == "<string>"
+    assert result.file_results[1].file_path == define_path.DefinePath("target.dfn")
+
+
 def test_non_filesystem_cross_universe_back_reference(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):

@@ -1,0 +1,7 @@
+# The referenced file refers to an earlier definition from this supplied source.
+define the potential position<my.domain.com:my_lib:/earlier>.
+define the potential position<my.domain.com:my_lib:/test> {
+    it may only contain particles where {
+        it has the position</target>.
+    }
+}
