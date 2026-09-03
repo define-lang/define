@@ -39,15 +39,13 @@ local_path_override(
 # TODO: Upgrade to the next aspect_rules_py 2.0.0 release and remove this override.
 git_override(
     module_name = "aspect_rules_py",
-    commit = "3609650caded4d7e6373edf3e89cc306e0f04784",
+    commit = "eaee1284c53204b14b008ed5d7d5173958614b94",
     remote = "https://github.com/aspect-build/rules_py.git",
 )
 
 git_override(
     module_name = "rules_lean",
     commit = "e3b343ff799554a1e1a1d158d4a96eac5cdaa3ea",
-    patch_strip = 1,
-    patches = ["//patches:rules_lean_silent_axiom_audit.patch"],
     remote = "https://github.com/tomato-bazel/rules_lean.git",
 )
 
