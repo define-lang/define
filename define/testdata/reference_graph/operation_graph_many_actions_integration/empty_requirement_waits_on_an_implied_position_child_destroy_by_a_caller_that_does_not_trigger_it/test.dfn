@@ -1,0 +1,14 @@
+# /outer empties the implied child, but /middle triggers /inner without touching
+# it. /inner's Empty Requirement propagates through /middle to /outer.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</holder>.
+    it also assigns the action</outer>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</holder>.
+        create a particle in position</holder>::position</a>.
+        create a particle in action</outer>::position<trigger_pos>.
+        destroy the particle in action</outer>::position<trigger_pos>.
+    }
+}

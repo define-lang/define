@@ -34,9 +34,9 @@ class Other(literal.Action):
 @final
 class OtherGuarantees:
     def __init__(self):
-        self.guarantee_global_position_intermediate: list[literal.Task] = []
-        self.guarantee_global_position_input: list[literal.Task] = []
-        self.guarantee_position_sink: list[literal.Task] = []
+        self.global_position_intermediate = literal.Guarantee()
+        self.global_position_input = literal.Guarantee()
+        self.position_sink = literal.Guarantee()
 
 
 @final
@@ -45,27 +45,38 @@ class OtherExecution:
         self,
         action: Other,
         scheduler: literal.Scheduler,
-        guarantees: OtherGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = OtherGuarantees()
         self.destruction_connections = destruction_connections
-        self.join_for_move_global_position_input__global_position_b_to_position_sink = self.scheduler.create_join(2)
-        self.join_for_destroy_global_position_input = self.scheduler.create_join(2)
+        self.join_for_move_global_position_intermediate_to_global_position_input__global_position_b: literal.Join
+        self.join_for_move_global_position_input__global_position_b_to_position_sink: literal.Join
+        self.join_for_destroy_global_position_input: literal.Join
+        self.join_for_empty_rule_global_position_intermediate: literal.Join
+        self.join_when_empty_position_sink: literal.Join
+        self.join_for_empty_rule_global_position_input: literal.Join
 
     def accept_for_empty_rule_global_position_intermediate(self):
+        if not self.join_for_empty_rule_global_position_intermediate.arrive():
+            return
         self.move_global_position_intermediate_to_global_position_input__global_position_b()
 
     def accept_when_empty_position_sink(self):
+        if not self.join_when_empty_position_sink.arrive():
+            return
         self.move_global_position_input__global_position_b_to_position_sink()
 
     def accept_for_empty_rule_global_position_input(self):
+        if not self.join_for_empty_rule_global_position_input.arrive():
+            return
         self.destroy_global_position_input()
 
     def move_global_position_intermediate_to_global_position_input__global_position_b(self):
+        if not self.join_for_move_global_position_intermediate_to_global_position_input__global_position_b.arrive():
+            return
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.intermediate.Intermediate
         ).move_particle_to(
@@ -75,8 +86,10 @@ class OtherExecution:
                 local.my_domain_com.my_lib.b.B
             )
         )
-        self.scheduler.submit(self.move_global_position_input__global_position_b_to_position_sink)
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_intermediate)
+        self.guarantees.global_position_intermediate.publish(
+            self.scheduler,
+            self.move_global_position_input__global_position_b_to_position_sink,
+        )
 
     def move_global_position_input__global_position_b_to_position_sink(self):
         if not self.join_for_move_global_position_input__global_position_b_to_position_sink.arrive():
@@ -102,7 +115,9 @@ class OtherExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.input.Input
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_input)
+        self.guarantees.global_position_input.publish(
+            self.scheduler,
+        )
 
     def destroy_position_sink(self):
         literal.continue_destruction(self.continue_destroy_position_sink)
@@ -111,4 +126,6 @@ class OtherExecution:
         self.action.get_interface_position(
             "position<sink>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_sink)
+        self.guarantees.position_sink.publish(
+            self.scheduler,
+        )

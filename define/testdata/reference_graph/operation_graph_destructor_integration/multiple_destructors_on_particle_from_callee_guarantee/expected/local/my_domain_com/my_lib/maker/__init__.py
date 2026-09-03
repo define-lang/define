@@ -33,7 +33,7 @@ class Maker(literal.Action):
 @final
 class MakerGuarantees:
     def __init__(self):
-        self.guarantee_position_result: list[literal.Task] = []
+        self.position_result = literal.Guarantee()
 
 
 @final
@@ -42,11 +42,10 @@ class MakerExecution:
         self,
         action: Maker,
         scheduler: literal.Scheduler,
-        guarantees: MakerGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = MakerGuarantees()
 
     def accept_when_empty_position_result(self):
         self.create_position_result()
@@ -55,4 +54,6 @@ class MakerExecution:
         self.action.get_interface_position(
             "position<result>"
         ).create_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_result)
+        self.guarantees.position_result.publish(
+            self.scheduler,
+        )

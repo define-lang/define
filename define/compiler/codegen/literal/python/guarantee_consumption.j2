@@ -1,0 +1,21 @@
+{% macro configure_guarantee_consumption(consumption, task_list, method_name) %}
+        self
+    {%- for execution_member_name in consumption.execution_member_names -%}
+.{{ execution_member_name }}
+    {%- endfor -%}
+.guarantees.{{ consumption.guarantee_name }}.{{ task_list }}.append(
+            self.{{ method_name }}
+        )
+{% endmacro %}
+{% macro deferred_guarantee_registration_methods(registrations) %}
+    {% for deferred in registrations %}
+
+    def {{ deferred.method_name }}(self):
+        {% for method_name in deferred.consumption.init_method_names %}
+{{ configure_guarantee_consumption(deferred.consumption, "inits", method_name) -}}
+        {% endfor %}
+        {% for method_name in deferred.consumption.consumer_method_names %}
+{{ configure_guarantee_consumption(deferred.consumption, "consumers", method_name) -}}
+        {% endfor %}
+    {% endfor %}
+{% endmacro %}

@@ -19,17 +19,8 @@ class Test(literal.EntryPoint):
         execution = TestExecution(
             self,
             scheduler,
-            TestGuarantees(),
         )
-        execution.scheduler.submit(execution.create_action_middle_a__position_run)
-        execution.create_action_middle_b__position_run()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_action_middle_a = local.my_domain_com.my_lib.middle_a.MiddleAGuarantees()
-        self.trigger_action_middle_b = local.my_domain_com.my_lib.middle_b.MiddleBGuarantees()
+        execution.on_action_parent_occupied()
 
 
 @final
@@ -38,15 +29,33 @@ class TestExecution:
         self,
         action: Test,
         scheduler: literal.Scheduler,
-        guarantees: TestGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
-        self.execution_trigger_action_middle_a: local.my_domain_com.my_lib.middle_a.MiddleAExecution
-        self.execution_trigger_action_middle_b: local.my_domain_com.my_lib.middle_b.MiddleBExecution
-        self.join_for_trigger_action_middle_a__for_empty_rule_position_run = self.scheduler.create_join(2)
-        self.join_for_trigger_action_middle_b__for_empty_rule_position_run = self.scheduler.create_join(2)
+        self.execution_action_middle_a: local.my_domain_com.my_lib.middle_a.MiddleAExecution
+        self.execution_action_middle_b: local.my_domain_com.my_lib.middle_b.MiddleBExecution
+        self.execution_action_middle_a = local.my_domain_com.my_lib.middle_a.MiddleAExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.middle_a.MiddleA
+            ),
+            self.scheduler,
+        )
+        self.execution_action_middle_a.join_for_empty_rule_position_run = literal.NO_JOIN
+        self.execution_action_middle_a.join_for_destroy_position_run = literal.NO_JOIN
+        self.execution_action_middle_b = local.my_domain_com.my_lib.middle_b.MiddleBExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.middle_b.MiddleB
+            ),
+            self.scheduler,
+        )
+        self.execution_action_middle_b.join_for_empty_rule_position_run = literal.NO_JOIN
+        self.execution_action_middle_b.join_for_destroy_position_run = literal.NO_JOIN
+
+    def on_action_parent_occupied(self):
+        self.scheduler.submit(self.create_action_middle_a__position_run)
+        self.scheduler.submit(self.create_action_middle_b__position_run)
+        self.scheduler.submit(self.execution_action_middle_a.on_action_parent_occupied)
+        self.execution_action_middle_b.on_action_parent_occupied()
 
     def create_action_middle_a__position_run(self):
         self.action.on_particle.get_action(
@@ -54,16 +63,7 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.execution_trigger_action_middle_a = local.my_domain_com.my_lib.middle_a.MiddleAExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.middle_a.MiddleA
-            ),
-            self.scheduler,
-            self.guarantees.trigger_action_middle_a,
-        )
-        self.scheduler.submit(self.trigger_action_middle_a__for_empty_rule_position_run)
-        self.scheduler.submit(self.trigger_action_middle_a__action_parent)
-        self.trigger_action_middle_a__for_empty_rule_position_run()
+        self.execution_action_middle_a.accept_for_empty_rule_position_run()
 
     def create_action_middle_b__position_run(self):
         self.action.on_particle.get_action(
@@ -71,29 +71,4 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.execution_trigger_action_middle_b = local.my_domain_com.my_lib.middle_b.MiddleBExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.middle_b.MiddleB
-            ),
-            self.scheduler,
-            self.guarantees.trigger_action_middle_b,
-        )
-        self.scheduler.submit(self.trigger_action_middle_b__for_empty_rule_position_run)
-        self.scheduler.submit(self.trigger_action_middle_b__action_parent)
-        self.trigger_action_middle_b__for_empty_rule_position_run()
-
-    def trigger_action_middle_a__action_parent(self):
-        self.execution_trigger_action_middle_a.accept_action_parent()
-
-    def trigger_action_middle_a__for_empty_rule_position_run(self):
-        if not self.join_for_trigger_action_middle_a__for_empty_rule_position_run.arrive():
-            return
-        self.execution_trigger_action_middle_a.accept_for_empty_rule_position_run()
-
-    def trigger_action_middle_b__action_parent(self):
-        self.execution_trigger_action_middle_b.accept_action_parent()
-
-    def trigger_action_middle_b__for_empty_rule_position_run(self):
-        if not self.join_for_trigger_action_middle_b__for_empty_rule_position_run.arrive():
-            return
-        self.execution_trigger_action_middle_b.accept_for_empty_rule_position_run()
+        self.execution_action_middle_b.accept_for_empty_rule_position_run()

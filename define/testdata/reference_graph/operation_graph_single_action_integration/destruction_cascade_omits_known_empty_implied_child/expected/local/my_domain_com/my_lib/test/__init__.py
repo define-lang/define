@@ -19,7 +19,13 @@ class Test(literal.EntryPoint):
             self,
             scheduler,
         )
-        execution.create_global_position_parent()
+        execution.accept_when_empty_global_position_parent()
+
+
+@final
+class TestGuarantees:
+    def __init__(self):
+        self.global_position_parent = literal.Guarantee()
 
 
 @final
@@ -31,10 +37,14 @@ class TestExecution:
     ):
         self.action = action
         self.scheduler = scheduler
+        self.guarantees = TestGuarantees()
         self.local_position_destination = literal.LocalPosition(
             "position<destination>",
             scheduler=self.scheduler,
         )
+
+    def accept_when_empty_global_position_parent(self):
+        self.create_global_position_parent()
 
     def create_global_position_parent(self):
         self.action.on_particle.get_position(
@@ -57,6 +67,9 @@ class TestExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.parent.Parent
         ).destroy_particle()
+        self.guarantees.global_position_parent.publish(
+            self.scheduler,
+        )
 
     def destroy_position_destination(self):
         self.local_position_destination.destroy_particle()

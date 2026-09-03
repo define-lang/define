@@ -29,7 +29,7 @@ class Producer(literal.Action):
 @final
 class ProducerGuarantees:
     def __init__(self):
-        self.guarantee_global_position_input__move__global_position_box: list[literal.Task] = []
+        self.global_position_input__move__global_position_box = literal.Guarantee()
 
 
 @final
@@ -38,16 +38,21 @@ class ProducerExecution:
         self,
         action: Producer,
         scheduler: literal.Scheduler,
-        guarantees: ProducerGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = ProducerGuarantees()
+        self.join_for_move_global_position_input_to_global_position_box: literal.Join
+        self.join_for_empty_rule_global_position_input: literal.Join
 
     def accept_for_empty_rule_global_position_input(self):
+        if not self.join_for_empty_rule_global_position_input.arrive():
+            return
         self.move_global_position_input_to_global_position_box()
 
     def move_global_position_input_to_global_position_box(self):
+        if not self.join_for_move_global_position_input_to_global_position_box.arrive():
+            return
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.input.Input
         ).move_particle_to(
@@ -55,4 +60,6 @@ class ProducerExecution:
                 local.my_domain_com.my_lib.box.Box
             )
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_input__move__global_position_box)
+        self.guarantees.global_position_input__move__global_position_box.publish(
+            self.scheduler,
+        )

@@ -39,50 +39,6 @@
   {
     "operation": {
       "execution": {
-        "caller": null,
-        "action_name": "test"
-      },
-      "operation_name": "create",
-      "target": "box::/maker::run",
-      "occurrence": 1
-    },
-    "dependencies": [
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "create",
-        "target": "box",
-        "occurrence": 1
-      }
-    ]
-  },
-  {
-    "operation": {
-      "execution": {
-        "caller": null,
-        "action_name": "test"
-      },
-      "operation_name": "destroy",
-      "target": "box::/maker::run",
-      "occurrence": 1
-    },
-    "dependencies": [
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "create",
-        "target": "box::/maker::run",
-        "occurrence": 1
-      }
-    ]
-  },
-  {
-    "operation": {
-      "execution": {
         "caller": {
           "caller": null,
           "action_name": "test"
@@ -221,6 +177,50 @@
         "caller": null,
         "action_name": "test"
       },
+      "operation_name": "create",
+      "target": "box::/maker::run",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "operation_name": "create",
+        "target": "box",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "operation_name": "destroy",
+      "target": "box::/maker::run",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "operation_name": "create",
+        "target": "box::/maker::run",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
       "operation_name": "destroy",
       "target": "box",
       "occurrence": 1
@@ -232,7 +232,7 @@
           "action_name": "test"
         },
         "operation_name": "destroy",
-        "target": "box::/maker::run",
+        "target": "box::/maker::result",
         "occurrence": 1
       },
       {
@@ -241,7 +241,7 @@
           "action_name": "test"
         },
         "operation_name": "destroy",
-        "target": "box::/maker::result",
+        "target": "box::/maker::run",
         "occurrence": 1
       }
     ]

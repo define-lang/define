@@ -33,12 +33,14 @@ class MiddleExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.execution_trigger_action_inner: local.my_domain_com.my_lib.inner.InnerExecution
-        self.join_for_trigger_action_inner__action_parent = self.scheduler.create_join(2)
+        self.execution_action_inner: local.my_domain_com.my_lib.inner.InnerExecution
+        self.execution_action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
+            self.scheduler,
+        )
 
-    def accept_action_parent(self):
+    def on_action_parent_occupied(self):
         self.scheduler.submit(self.create_action_inner__position_trigger_pos)
-        self.trigger_action_inner__action_parent()
+        self.execution_action_inner.on_action_parent_occupied()
 
     def create_action_inner__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -46,20 +48,8 @@ class MiddleExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.execution_trigger_action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
-            self.scheduler,
-        )
-        self.scheduler.submit(self.destroy_action_inner__position_trigger_pos)
-        self.trigger_action_inner__action_parent()
-
-    def destroy_action_inner__position_trigger_pos(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.inner.Inner
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
-
-    def trigger_action_inner__action_parent(self):
-        if not self.join_for_trigger_action_inner__action_parent.arrive():
-            return
-        self.execution_trigger_action_inner.accept_action_parent()

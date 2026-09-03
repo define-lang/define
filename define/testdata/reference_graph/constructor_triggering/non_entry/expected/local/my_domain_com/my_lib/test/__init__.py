@@ -14,15 +14,8 @@ class Test(literal.EntryPoint):
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
             scheduler,
-            TestGuarantees(),
         )
-        execution.create_position_box()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_position_box__action_other = local.my_domain_com.my_lib.other.OtherGuarantees()
+        execution.on_action_parent_occupied()
 
 
 @final
@@ -30,10 +23,8 @@ class TestExecution:
     def __init__(
         self,
         scheduler: literal.Scheduler,
-        guarantees: TestGuarantees,
     ):
         self.scheduler = scheduler
-        self.guarantees = guarantees
         self.local_position_box = literal.LocalPosition(
             "position<box>",
             constraints=(
@@ -41,31 +32,26 @@ class TestExecution:
             ),
             scheduler=self.scheduler,
         )
-        guarantees.trigger_position_box__action_other.guarantee_global_position_filled.append(
-            self.destroy_position_box__global_position_filled
-        )
-        self.execution_trigger_position_box__action_other: local.my_domain_com.my_lib.other.OtherExecution
-        self.join_for_trigger_position_box__action_other__when_empty_global_position_filled = self.scheduler.create_join(2)
+        self.execution_position_box__action_other: local.my_domain_com.my_lib.other.OtherExecution
+
+    def on_action_parent_occupied(self):
+        self.create_position_box()
 
     def create_position_box(self):
         self.local_position_box.create_particle()
-        self.execution_trigger_position_box__action_other = local.my_domain_com.my_lib.other.OtherExecution(
+        self.execution_position_box__action_other = local.my_domain_com.my_lib.other.OtherExecution(
             self.local_position_box.particle.get_action(
                 local.my_domain_com.my_lib.other.Other
             ),
             self.scheduler,
-            self.guarantees.trigger_position_box__action_other,
         )
-        self.scheduler.submit(self.trigger_position_box__action_other__when_empty_global_position_filled)
-        self.trigger_position_box__action_other__when_empty_global_position_filled()
+        self.execution_position_box__action_other.guarantees.global_position_filled.consumers.append(
+            self.destroy_position_box__global_position_filled
+        )
+        self.execution_position_box__action_other.accept_when_empty_global_position_filled()
 
     def destroy_position_box__global_position_filled(self):
         self.local_position_box.particle.get_position(
             local.my_domain_com.my_lib.filled.Filled
         ).destroy_particle()
         self.local_position_box.destroy_particle()
-
-    def trigger_position_box__action_other__when_empty_global_position_filled(self):
-        if not self.join_for_trigger_position_box__action_other__when_empty_global_position_filled.arrive():
-            return
-        self.execution_trigger_position_box__action_other.accept_when_empty_global_position_filled()

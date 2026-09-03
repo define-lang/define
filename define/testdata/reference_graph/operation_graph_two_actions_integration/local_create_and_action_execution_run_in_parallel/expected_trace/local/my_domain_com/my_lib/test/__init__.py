@@ -20,8 +20,7 @@ class Test(literal.EntryPoint):
             None,
             "test",
         )
-        execution.scheduler.submit(execution.create_action_other__position_trigger_pos)
-        execution.create_position_local_item()
+        execution.on_action_parent_occupied()
 
 
 @final
@@ -43,7 +42,17 @@ class TestExecution:
             "position<local_item>",
             scheduler=self.scheduler,
         )
-        self.execution_trigger_action_other: local.my_domain_com.my_lib.other.OtherExecution
+        self.execution_action_other: local.my_domain_com.my_lib.other.OtherExecution
+        self.execution_action_other = local.my_domain_com.my_lib.other.OtherExecution(
+            self.scheduler,
+            self.trace_execution,
+            "other",
+        )
+
+    def on_action_parent_occupied(self):
+        self.scheduler.submit(self.create_action_other__position_trigger_pos)
+        self.scheduler.submit(self.create_position_local_item)
+        self.execution_action_other.on_action_parent_occupied()
 
     def create_action_other__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -56,13 +65,16 @@ class TestExecution:
             "/other::trigger_pos",
             1,
         )
-        self.execution_trigger_action_other = local.my_domain_com.my_lib.other.OtherExecution(
-            self.scheduler,
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.other.Other
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
+        self.scheduler.destroy_completed(
             self.trace_execution,
-            "other",
+            "/other::trigger_pos",
+            1,
         )
-        self.scheduler.submit(self.destroy_action_other__position_trigger_pos)
-        self.trigger_action_other__action_parent()
 
     def create_position_local_item(self):
         self.local_position_local_item.create_particle()
@@ -77,18 +89,3 @@ class TestExecution:
             "local_item",
             1,
         )
-
-    def destroy_action_other__position_trigger_pos(self):
-        self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.other.Other
-        ).get_interface_position(
-            "position<trigger_pos>"
-        ).destroy_particle()
-        self.scheduler.destroy_completed(
-            self.trace_execution,
-            "/other::trigger_pos",
-            1,
-        )
-
-    def trigger_action_other__action_parent(self):
-        self.execution_trigger_action_other.accept_action_parent()

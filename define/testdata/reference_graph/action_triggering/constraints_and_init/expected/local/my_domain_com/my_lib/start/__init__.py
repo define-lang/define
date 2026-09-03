@@ -22,7 +22,7 @@ class Start(literal.Action):
 @final
 class StartGuarantees:
     def __init__(self):
-        self.guarantee_position_pp: list[literal.Task] = []
+        self.position_pp = literal.Guarantee()
 
 
 @final
@@ -31,23 +31,26 @@ class StartExecution:
         self,
         action: Start,
         scheduler: literal.Scheduler,
-        guarantees: StartGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = StartGuarantees()
         self.destruction_connections = destruction_connections
         self.local_position_noop = literal.LocalPosition(
             "position<noop>",
             scheduler=self.scheduler,
         )
+        self.join_for_destroy_position_pp: literal.Join
+        self.join_for_empty_rule_position_pp: literal.Join
 
-    def accept_action_parent(self):
+    def on_action_parent_occupied(self):
         self.create_position_noop()
 
     def accept_for_empty_rule_position_pp(self):
+        if not self.join_for_empty_rule_position_pp.arrive():
+            return
         self.destroy_position_pp()
 
     def create_position_noop(self):
@@ -55,10 +58,14 @@ class StartExecution:
         self.local_position_noop.destroy_particle()
 
     def destroy_position_pp(self):
+        if not self.join_for_destroy_position_pp.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_pp)
 
     def continue_destroy_position_pp(self):
         self.action.get_interface_position(
             "position<pp>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_pp)
+        self.guarantees.position_pp.publish(
+            self.scheduler,
+        )

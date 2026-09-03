@@ -1,0 +1,23 @@
+{% macro destruction_contract_destructor_methods(action_executions) %}
+    {% for action_execution in action_executions %}
+        {% for connection in action_execution.created_destruction_connections %}
+            {% for destructor in connection.destruction_contract_destructors %}
+
+    def {{ destructor.run_method_name }}(self):
+        execution = {{ destructor.execution_class.module_name }}.{{ destructor.execution_class.class_name }}(
+            self.scheduler,
+                {% if destructor.trace_action_name is not none %}
+            self.{{ connection.member_name }}.trace_execution,
+            "{{ destructor.trace_action_name }}",
+                {% endif %}
+        )
+                {% for guarantee_name in destructor.guarantee_names_completing_connection %}
+        execution.guarantees.{{ guarantee_name }}.consumers.append(
+            self.{{ connection.member_name }}.complete
+        )
+                {% endfor %}
+        execution.{{ destructor.action_parent_binding_method_name }}()
+            {% endfor %}
+        {% endfor %}
+    {% endfor %}
+{% endmacro %}

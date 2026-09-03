@@ -17,8 +17,7 @@ class ConstructB(literal.Action):
 @final
 class ConstructBGuarantees:
     def __init__(self):
-        self.guarantee_global_position_inner: list[literal.Task] = []
-        self.trigger_global_position_inner__action_construct_c = local.my_domain_com.my_lib.construct_c.ConstructCGuarantees()
+        self.global_position_inner = literal.Guarantee()
 
 
 @final
@@ -27,13 +26,11 @@ class ConstructBExecution:
         self,
         action: ConstructB,
         scheduler: literal.Scheduler,
-        guarantees: ConstructBGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
-        self.execution_trigger_global_position_inner__action_construct_c: local.my_domain_com.my_lib.construct_c.ConstructCExecution
-        self.join_for_trigger_global_position_inner__action_construct_c__when_empty_global_position_leaf = self.scheduler.create_join(2)
+        self.guarantees = ConstructBGuarantees()
+        self.execution_global_position_inner__action_construct_c: local.my_domain_com.my_lib.construct_c.ConstructCExecution
 
     def accept_when_empty_global_position_inner(self):
         self.create_global_position_inner()
@@ -42,20 +39,15 @@ class ConstructBExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.inner.Inner
         ).create_particle()
-        self.execution_trigger_global_position_inner__action_construct_c = local.my_domain_com.my_lib.construct_c.ConstructCExecution(
+        self.execution_global_position_inner__action_construct_c = local.my_domain_com.my_lib.construct_c.ConstructCExecution(
             self.action.on_particle.get_position(
                 local.my_domain_com.my_lib.inner.Inner
             ).particle.get_action(
                 local.my_domain_com.my_lib.construct_c.ConstructC
             ),
             self.scheduler,
-            self.guarantees.trigger_global_position_inner__action_construct_c,
         )
-        self.scheduler.submit(self.trigger_global_position_inner__action_construct_c__when_empty_global_position_leaf)
-        self.scheduler.submit_all(self.guarantees.guarantee_global_position_inner)
-        self.trigger_global_position_inner__action_construct_c__when_empty_global_position_leaf()
-
-    def trigger_global_position_inner__action_construct_c__when_empty_global_position_leaf(self):
-        if not self.join_for_trigger_global_position_inner__action_construct_c__when_empty_global_position_leaf.arrive():
-            return
-        self.execution_trigger_global_position_inner__action_construct_c.accept_when_empty_global_position_leaf()
+        self.guarantees.global_position_inner.publish(
+            self.scheduler,
+            self.execution_global_position_inner__action_construct_c.accept_when_empty_global_position_leaf,
+        )

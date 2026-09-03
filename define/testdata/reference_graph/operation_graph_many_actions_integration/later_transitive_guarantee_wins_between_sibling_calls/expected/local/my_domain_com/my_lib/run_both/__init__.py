@@ -27,41 +27,43 @@ class RunBoth(literal.Action):
 
 
 @final
-class RunBothGuarantees:
-    def __init__(self):
-        self.trigger_action_call_fill = local.my_domain_com.my_lib.call_fill.CallFillGuarantees()
-        self.trigger_action_call_empty = local.my_domain_com.my_lib.call_empty.CallEmptyGuarantees()
-
-
-@final
 class RunBothExecution:
     def __init__(
         self,
         action: RunBoth,
         scheduler: literal.Scheduler,
-        guarantees: RunBothGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
-        guarantees.trigger_action_call_fill.trigger_action_fill_item.guarantee_global_position_item.append(
-            self.trigger_action_call_empty__for_empty_rule_global_position_item
+        self.execution_action_call_fill: local.my_domain_com.my_lib.call_fill.CallFillExecution
+        self.execution_action_call_empty: local.my_domain_com.my_lib.call_empty.CallEmptyExecution
+        self.execution_action_call_fill = local.my_domain_com.my_lib.call_fill.CallFillExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.call_fill.CallFill
+            ),
+            self.scheduler,
         )
-        self.execution_trigger_action_call_fill: local.my_domain_com.my_lib.call_fill.CallFillExecution
-        self.execution_trigger_action_call_empty: local.my_domain_com.my_lib.call_empty.CallEmptyExecution
-        self.join_for_trigger_action_call_fill__action_parent = self.scheduler.create_join(2)
-        self.join_for_trigger_action_call_fill__when_empty_global_position_item = self.scheduler.create_join(2)
-        self.join_for_trigger_action_call_empty__action_parent = self.scheduler.create_join(2)
-        self.join_for_trigger_action_call_empty__for_empty_rule_global_position_item = self.scheduler.create_join(2)
+        self.execution_action_call_fill.execution_action_fill_item.guarantees.global_position_item.consumers.append(
+            self.accept_guarantee_action_call_empty
+        )
+        self.execution_action_call_empty = local.my_domain_com.my_lib.call_empty.CallEmptyExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.call_empty.CallEmpty
+            ),
+            self.scheduler,
+        )
+        self.execution_action_call_empty.execution_action_empty_item.join_for_empty_rule_global_position_item = literal.NO_JOIN
+        self.execution_action_call_empty.execution_action_empty_item.join_for_destroy_global_position_item = literal.NO_JOIN
+        self.execution_action_call_empty.join_for_empty_rule_global_position_item = literal.NO_JOIN
 
-    def accept_action_parent(self):
+    def on_action_parent_occupied(self):
         self.scheduler.submit(self.create_action_call_fill__position_trigger_pos)
         self.scheduler.submit(self.create_action_call_empty__position_trigger_pos)
-        self.scheduler.submit(self.trigger_action_call_fill__action_parent)
-        self.trigger_action_call_empty__action_parent()
+        self.scheduler.submit(self.execution_action_call_fill.on_action_parent_occupied)
+        self.execution_action_call_empty.on_action_parent_occupied()
 
     def accept_when_empty_global_position_item(self):
-        self.trigger_action_call_fill__when_empty_global_position_item()
+        self.execution_action_call_fill.accept_when_empty_global_position_item()
 
     def create_action_call_fill__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -69,16 +71,11 @@ class RunBothExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.execution_trigger_action_call_fill = local.my_domain_com.my_lib.call_fill.CallFillExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.call_fill.CallFill
-            ),
-            self.scheduler,
-            self.guarantees.trigger_action_call_fill,
-        )
-        self.scheduler.submit(self.destroy_action_call_fill__position_trigger_pos)
-        self.scheduler.submit(self.trigger_action_call_fill__action_parent)
-        self.trigger_action_call_fill__when_empty_global_position_item()
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.call_fill.CallFill
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
 
     def create_action_call_empty__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -86,47 +83,11 @@ class RunBothExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.execution_trigger_action_call_empty = local.my_domain_com.my_lib.call_empty.CallEmptyExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.call_empty.CallEmpty
-            ),
-            self.scheduler,
-            self.guarantees.trigger_action_call_empty,
-        )
-        self.scheduler.submit(self.destroy_action_call_empty__position_trigger_pos)
-        self.scheduler.submit(self.trigger_action_call_empty__action_parent)
-        self.trigger_action_call_empty__for_empty_rule_global_position_item()
-
-    def destroy_action_call_fill__position_trigger_pos(self):
-        self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.call_fill.CallFill
-        ).get_interface_position(
-            "position<trigger_pos>"
-        ).destroy_particle()
-
-    def destroy_action_call_empty__position_trigger_pos(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.call_empty.CallEmpty
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
 
-    def trigger_action_call_fill__action_parent(self):
-        if not self.join_for_trigger_action_call_fill__action_parent.arrive():
-            return
-        self.execution_trigger_action_call_fill.accept_action_parent()
-
-    def trigger_action_call_fill__when_empty_global_position_item(self):
-        if not self.join_for_trigger_action_call_fill__when_empty_global_position_item.arrive():
-            return
-        self.execution_trigger_action_call_fill.accept_when_empty_global_position_item()
-
-    def trigger_action_call_empty__action_parent(self):
-        if not self.join_for_trigger_action_call_empty__action_parent.arrive():
-            return
-        self.execution_trigger_action_call_empty.accept_action_parent()
-
-    def trigger_action_call_empty__for_empty_rule_global_position_item(self):
-        if not self.join_for_trigger_action_call_empty__for_empty_rule_global_position_item.arrive():
-            return
-        self.execution_trigger_action_call_empty.accept_for_empty_rule_global_position_item()
+    def accept_guarantee_action_call_empty(self):
+        self.execution_action_call_empty.accept_for_empty_rule_global_position_item()

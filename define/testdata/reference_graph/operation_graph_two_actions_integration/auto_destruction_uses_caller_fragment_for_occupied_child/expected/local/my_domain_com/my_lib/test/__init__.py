@@ -18,15 +18,11 @@ class Test(literal.EntryPoint):
         execution = TestExecution(
             self,
             scheduler,
-            TestGuarantees(),
         )
-        execution.create_position_source()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_action_triggered = local.my_domain_com.my_lib.triggered.TriggeredGuarantees()
+        execution.join_when_empty_global_position_target = literal.NO_JOIN
+        execution.join_for_action_triggered__for_empty_rule_position_run = scheduler.create_join(2)
+        scheduler.submit(execution.on_action_parent_occupied)
+        execution.accept_when_empty_global_position_target()
 
 
 @final
@@ -35,11 +31,9 @@ class TestExecution:
         self,
         action: Test,
         scheduler: literal.Scheduler,
-        guarantees: TestGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
         self.local_position_source = literal.LocalPosition(
             "position<source>",
             constraints=(
@@ -47,10 +41,37 @@ class TestExecution:
             ),
             scheduler=self.scheduler,
         )
-        self.execution_trigger_action_triggered: local.my_domain_com.my_lib.triggered.TriggeredExecution
-        self.destruction_connection_trigger_action_triggered: literal.DestructionConnection
+        self.execution_action_triggered: local.my_domain_com.my_lib.triggered.TriggeredExecution
+        self.destruction_connection_action_triggered: literal.DestructionConnection
         self.destruction_position_action_triggered__position_run__global_position_a: literal.Position
-        self.join_for_trigger_action_triggered__for_empty_rule_position_run = self.scheduler.create_join(2)
+        self.join_when_empty_global_position_target: literal.Join
+        self.join_for_action_triggered__for_empty_rule_position_run: literal.Join
+        self.destruction_connection_action_triggered = literal.DestructionConnection(
+            self.scheduler,
+            1,
+            self.destroy_action_triggered__position_run__global_position_a,
+        )
+        self.execution_action_triggered = local.my_domain_com.my_lib.triggered.TriggeredExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.triggered.Triggered
+            ),
+            self.scheduler,
+            destruction_connections=literal.DestructionConnections(
+            {
+                local.my_domain_com.my_lib.triggered.TriggeredExecution.continue_destroy_position_local: self.destruction_connection_action_triggered,
+            },
+            ),
+        )
+        self.execution_action_triggered.join_for_empty_rule_position_run = literal.NO_JOIN
+        self.execution_action_triggered.join_for_move_position_run_to_global_position_target = literal.NO_JOIN
+
+    def on_action_parent_occupied(self):
+        self.create_position_source()
+
+    def accept_when_empty_global_position_target(self):
+        if not self.join_when_empty_global_position_target.arrive():
+            return
+        self.action_triggered__for_empty_rule_position_run()
 
     def create_position_source(self):
         self.local_position_source.create_particle()
@@ -64,32 +85,14 @@ class TestExecution:
                 "position<run>"
             )
         )
-        self.destruction_connection_trigger_action_triggered = literal.DestructionConnection(
-            self.scheduler,
-            1,
-            self.destroy_action_triggered__position_run__global_position_a,
-        )
-        self.execution_trigger_action_triggered = local.my_domain_com.my_lib.triggered.TriggeredExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.triggered.Triggered
-            ),
-            self.scheduler,
-            self.guarantees.trigger_action_triggered,
-            destruction_connections=literal.DestructionConnections(
-            {
-                local.my_domain_com.my_lib.triggered.TriggeredExecution.continue_destroy_position_local: self.destruction_connection_trigger_action_triggered,
-            },
-            ),
-        )
-        self.scheduler.submit(self.trigger_action_triggered__for_empty_rule_position_run)
-        self.trigger_action_triggered__for_empty_rule_position_run()
+        self.action_triggered__for_empty_rule_position_run()
 
     def destroy_action_triggered__position_run__global_position_a(self):
         self.destruction_position_action_triggered__position_run__global_position_a.destroy_particle()
-        self.destruction_connection_trigger_action_triggered.complete()
+        self.destruction_connection_action_triggered.complete()
 
-    def trigger_action_triggered__for_empty_rule_position_run(self):
-        if not self.join_for_trigger_action_triggered__for_empty_rule_position_run.arrive():
+    def action_triggered__for_empty_rule_position_run(self):
+        if not self.join_for_action_triggered__for_empty_rule_position_run.arrive():
             return
         self.destruction_position_action_triggered__position_run__global_position_a = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.triggered.Triggered
@@ -98,4 +101,4 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.a.A
         )
-        self.execution_trigger_action_triggered.accept_for_empty_rule_position_run()
+        self.execution_action_triggered.accept_for_empty_rule_position_run()

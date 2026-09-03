@@ -23,21 +23,8 @@ class Test(literal.EntryPoint):
         execution = TestExecution(
             self,
             scheduler,
-            TestGuarantees(),
         )
-        execution.scheduler.submit(execution.create_action_do_thing__position_trigger_pos)
-        execution.scheduler.submit(execution.create_action_a_b_c_the_lib_do_thing__position_trigger_pos)
-        execution.scheduler.submit(execution.create_action_mv_a_b_c_the_lib_do_thing__position_trigger_pos)
-        execution.create_action_a_b_c_the_lib_do_thing__position_trigger_pos_2()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_action_do_thing = local.a_b_c.the_lib.do_thing.DoThingGuarantees()
-        self.trigger_action_a_b_c_the_lib_do_thing = local.a_b_c_.the_lib.do_thing.DoThingGuarantees()
-        self.trigger_action_mv_a_b_c_the_lib_do_thing = mv.a_b_c.the_lib.do_thing.DoThingGuarantees()
-        self.trigger_action_a_b_c_the_lib_do_thing_2 = local.a_b_c__.the_lib.do_thing.DoThingGuarantees()
+        execution.on_action_parent_occupied()
 
 
 @final
@@ -46,19 +33,55 @@ class TestExecution:
         self,
         action: Test,
         scheduler: literal.Scheduler,
-        guarantees: TestGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
-        self.execution_trigger_action_do_thing: local.a_b_c.the_lib.do_thing.DoThingExecution
-        self.execution_trigger_action_a_b_c_the_lib_do_thing: local.a_b_c_.the_lib.do_thing.DoThingExecution
-        self.execution_trigger_action_mv_a_b_c_the_lib_do_thing: mv.a_b_c.the_lib.do_thing.DoThingExecution
-        self.execution_trigger_action_a_b_c_the_lib_do_thing_2: local.a_b_c__.the_lib.do_thing.DoThingExecution
-        self.join_for_trigger_action_do_thing__for_empty_rule_position_trigger_pos = self.scheduler.create_join(2)
-        self.join_for_trigger_action_a_b_c_the_lib_do_thing__for_empty_rule_position_trigger_pos = self.scheduler.create_join(2)
-        self.join_for_trigger_action_mv_a_b_c_the_lib_do_thing__for_empty_rule_position_trigger_pos = self.scheduler.create_join(2)
-        self.join_for_trigger_action_a_b_c_the_lib_do_thing_2__for_empty_rule_position_trigger_pos = self.scheduler.create_join(2)
+        self.execution_action_do_thing: local.a_b_c.the_lib.do_thing.DoThingExecution
+        self.execution_action_a_b_c_the_lib_do_thing: local.a_b_c_.the_lib.do_thing.DoThingExecution
+        self.execution_action_mv_a_b_c_the_lib_do_thing: mv.a_b_c.the_lib.do_thing.DoThingExecution
+        self.execution_action_a_b_c_the_lib_do_thing_2: local.a_b_c__.the_lib.do_thing.DoThingExecution
+        self.execution_action_do_thing = local.a_b_c.the_lib.do_thing.DoThingExecution(
+            self.action.on_particle.get_action(
+                local.a_b_c.the_lib.do_thing.DoThing
+            ),
+            self.scheduler,
+        )
+        self.execution_action_do_thing.join_for_empty_rule_position_trigger_pos = literal.NO_JOIN
+        self.execution_action_do_thing.join_for_destroy_position_trigger_pos = literal.NO_JOIN
+        self.execution_action_a_b_c_the_lib_do_thing = local.a_b_c_.the_lib.do_thing.DoThingExecution(
+            self.action.on_particle.get_action(
+                local.a_b_c_.the_lib.do_thing.DoThing
+            ),
+            self.scheduler,
+        )
+        self.execution_action_a_b_c_the_lib_do_thing.join_for_empty_rule_position_trigger_pos = literal.NO_JOIN
+        self.execution_action_a_b_c_the_lib_do_thing.join_for_destroy_position_trigger_pos = literal.NO_JOIN
+        self.execution_action_mv_a_b_c_the_lib_do_thing = mv.a_b_c.the_lib.do_thing.DoThingExecution(
+            self.action.on_particle.get_action(
+                mv.a_b_c.the_lib.do_thing.DoThing
+            ),
+            self.scheduler,
+        )
+        self.execution_action_mv_a_b_c_the_lib_do_thing.join_for_empty_rule_position_trigger_pos = literal.NO_JOIN
+        self.execution_action_mv_a_b_c_the_lib_do_thing.join_for_destroy_position_trigger_pos = literal.NO_JOIN
+        self.execution_action_a_b_c_the_lib_do_thing_2 = local.a_b_c__.the_lib.do_thing.DoThingExecution(
+            self.action.on_particle.get_action(
+                local.a_b_c__.the_lib.do_thing.DoThing
+            ),
+            self.scheduler,
+        )
+        self.execution_action_a_b_c_the_lib_do_thing_2.join_for_empty_rule_position_trigger_pos = literal.NO_JOIN
+        self.execution_action_a_b_c_the_lib_do_thing_2.join_for_destroy_position_trigger_pos = literal.NO_JOIN
+
+    def on_action_parent_occupied(self):
+        self.scheduler.submit(self.create_action_do_thing__position_trigger_pos)
+        self.scheduler.submit(self.create_action_a_b_c_the_lib_do_thing__position_trigger_pos)
+        self.scheduler.submit(self.create_action_mv_a_b_c_the_lib_do_thing__position_trigger_pos)
+        self.scheduler.submit(self.create_action_a_b_c_the_lib_do_thing__position_trigger_pos_2)
+        self.scheduler.submit(self.execution_action_do_thing.on_action_parent_occupied)
+        self.scheduler.submit(self.execution_action_a_b_c_the_lib_do_thing.on_action_parent_occupied)
+        self.scheduler.submit(self.execution_action_mv_a_b_c_the_lib_do_thing.on_action_parent_occupied)
+        self.execution_action_a_b_c_the_lib_do_thing_2.on_action_parent_occupied()
 
     def create_action_do_thing__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -66,16 +89,7 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.execution_trigger_action_do_thing = local.a_b_c.the_lib.do_thing.DoThingExecution(
-            self.action.on_particle.get_action(
-                local.a_b_c.the_lib.do_thing.DoThing
-            ),
-            self.scheduler,
-            self.guarantees.trigger_action_do_thing,
-        )
-        self.scheduler.submit(self.trigger_action_do_thing__for_empty_rule_position_trigger_pos)
-        self.scheduler.submit(self.trigger_action_do_thing__action_parent)
-        self.trigger_action_do_thing__for_empty_rule_position_trigger_pos()
+        self.execution_action_do_thing.accept_for_empty_rule_position_trigger_pos()
 
     def create_action_a_b_c_the_lib_do_thing__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -83,16 +97,7 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.execution_trigger_action_a_b_c_the_lib_do_thing = local.a_b_c_.the_lib.do_thing.DoThingExecution(
-            self.action.on_particle.get_action(
-                local.a_b_c_.the_lib.do_thing.DoThing
-            ),
-            self.scheduler,
-            self.guarantees.trigger_action_a_b_c_the_lib_do_thing,
-        )
-        self.scheduler.submit(self.trigger_action_a_b_c_the_lib_do_thing__for_empty_rule_position_trigger_pos)
-        self.scheduler.submit(self.trigger_action_a_b_c_the_lib_do_thing__action_parent)
-        self.trigger_action_a_b_c_the_lib_do_thing__for_empty_rule_position_trigger_pos()
+        self.execution_action_a_b_c_the_lib_do_thing.accept_for_empty_rule_position_trigger_pos()
 
     def create_action_mv_a_b_c_the_lib_do_thing__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -100,16 +105,7 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.execution_trigger_action_mv_a_b_c_the_lib_do_thing = mv.a_b_c.the_lib.do_thing.DoThingExecution(
-            self.action.on_particle.get_action(
-                mv.a_b_c.the_lib.do_thing.DoThing
-            ),
-            self.scheduler,
-            self.guarantees.trigger_action_mv_a_b_c_the_lib_do_thing,
-        )
-        self.scheduler.submit(self.trigger_action_mv_a_b_c_the_lib_do_thing__for_empty_rule_position_trigger_pos)
-        self.scheduler.submit(self.trigger_action_mv_a_b_c_the_lib_do_thing__action_parent)
-        self.trigger_action_mv_a_b_c_the_lib_do_thing__for_empty_rule_position_trigger_pos()
+        self.execution_action_mv_a_b_c_the_lib_do_thing.accept_for_empty_rule_position_trigger_pos()
 
     def create_action_a_b_c_the_lib_do_thing__position_trigger_pos_2(self):
         self.action.on_particle.get_action(
@@ -117,45 +113,4 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.execution_trigger_action_a_b_c_the_lib_do_thing_2 = local.a_b_c__.the_lib.do_thing.DoThingExecution(
-            self.action.on_particle.get_action(
-                local.a_b_c__.the_lib.do_thing.DoThing
-            ),
-            self.scheduler,
-            self.guarantees.trigger_action_a_b_c_the_lib_do_thing_2,
-        )
-        self.scheduler.submit(self.trigger_action_a_b_c_the_lib_do_thing_2__for_empty_rule_position_trigger_pos)
-        self.scheduler.submit(self.trigger_action_a_b_c_the_lib_do_thing_2__action_parent)
-        self.trigger_action_a_b_c_the_lib_do_thing_2__for_empty_rule_position_trigger_pos()
-
-    def trigger_action_do_thing__action_parent(self):
-        self.execution_trigger_action_do_thing.accept_action_parent()
-
-    def trigger_action_do_thing__for_empty_rule_position_trigger_pos(self):
-        if not self.join_for_trigger_action_do_thing__for_empty_rule_position_trigger_pos.arrive():
-            return
-        self.execution_trigger_action_do_thing.accept_for_empty_rule_position_trigger_pos()
-
-    def trigger_action_a_b_c_the_lib_do_thing__action_parent(self):
-        self.execution_trigger_action_a_b_c_the_lib_do_thing.accept_action_parent()
-
-    def trigger_action_a_b_c_the_lib_do_thing__for_empty_rule_position_trigger_pos(self):
-        if not self.join_for_trigger_action_a_b_c_the_lib_do_thing__for_empty_rule_position_trigger_pos.arrive():
-            return
-        self.execution_trigger_action_a_b_c_the_lib_do_thing.accept_for_empty_rule_position_trigger_pos()
-
-    def trigger_action_mv_a_b_c_the_lib_do_thing__action_parent(self):
-        self.execution_trigger_action_mv_a_b_c_the_lib_do_thing.accept_action_parent()
-
-    def trigger_action_mv_a_b_c_the_lib_do_thing__for_empty_rule_position_trigger_pos(self):
-        if not self.join_for_trigger_action_mv_a_b_c_the_lib_do_thing__for_empty_rule_position_trigger_pos.arrive():
-            return
-        self.execution_trigger_action_mv_a_b_c_the_lib_do_thing.accept_for_empty_rule_position_trigger_pos()
-
-    def trigger_action_a_b_c_the_lib_do_thing_2__action_parent(self):
-        self.execution_trigger_action_a_b_c_the_lib_do_thing_2.accept_action_parent()
-
-    def trigger_action_a_b_c_the_lib_do_thing_2__for_empty_rule_position_trigger_pos(self):
-        if not self.join_for_trigger_action_a_b_c_the_lib_do_thing_2__for_empty_rule_position_trigger_pos.arrive():
-            return
-        self.execution_trigger_action_a_b_c_the_lib_do_thing_2.accept_for_empty_rule_position_trigger_pos()
+        self.execution_action_a_b_c_the_lib_do_thing_2.accept_for_empty_rule_position_trigger_pos()

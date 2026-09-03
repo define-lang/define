@@ -27,7 +27,7 @@ class Destroyer(literal.Action):
 @final
 class DestroyerGuarantees:
     def __init__(self):
-        self.guarantee_position_run: list[literal.Task] = []
+        self.position_run = literal.Guarantee()
 
 
 @final
@@ -36,27 +36,35 @@ class DestroyerExecution:
         self,
         action: Destroyer,
         scheduler: literal.Scheduler,
-        guarantees: DestroyerGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = DestroyerGuarantees()
         self.destruction_connections = destruction_connections
         self.local_position_keeper = literal.LocalPosition(
             "position<keeper>",
             scheduler=self.scheduler,
         )
-        self.join_for_destroy_position_run = self.scheduler.create_join(2)
+        self.join_for_move_position_run__global_position_child_to_position_keeper: literal.Join
+        self.join_for_destroy_position_run: literal.Join
+        self.join_for_empty_rule_position_run__global_position_child: literal.Join
+        self.join_for_empty_rule_position_run: literal.Join
 
     def accept_for_empty_rule_position_run__global_position_child(self):
+        if not self.join_for_empty_rule_position_run__global_position_child.arrive():
+            return
         self.move_position_run__global_position_child_to_position_keeper()
 
     def accept_for_empty_rule_position_run(self):
+        if not self.join_for_empty_rule_position_run.arrive():
+            return
         self.destroy_position_run()
 
     def move_position_run__global_position_child_to_position_keeper(self):
+        if not self.join_for_move_position_run__global_position_child_to_position_keeper.arrive():
+            return
         self.action.get_interface_position(
             "position<run>"
         ).particle.get_position(
@@ -91,4 +99,6 @@ class DestroyerExecution:
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_run)
+        self.guarantees.position_run.publish(
+            self.scheduler,
+        )

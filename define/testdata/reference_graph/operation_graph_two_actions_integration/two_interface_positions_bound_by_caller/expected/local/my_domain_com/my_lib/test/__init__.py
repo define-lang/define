@@ -17,15 +17,10 @@ class Test(literal.EntryPoint):
         execution = TestExecution(
             self,
             scheduler,
-            TestGuarantees(),
         )
-        execution.create_action_caller__position_run()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_action_caller = local.my_domain_com.my_lib.caller.CallerGuarantees()
+        scheduler.submit(execution.on_action_parent_occupied)
+        scheduler.submit(execution.accept_when_empty_action_caller__position_first_gateway)
+        execution.accept_when_empty_action_caller__position_second_gateway()
 
 
 @final
@@ -34,13 +29,27 @@ class TestExecution:
         self,
         action: Test,
         scheduler: literal.Scheduler,
-        guarantees: TestGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
-        self.execution_trigger_action_caller: local.my_domain_com.my_lib.caller.CallerExecution
-        self.join_for_trigger_action_caller__for_empty_rule_position_run = self.scheduler.create_join(2)
+        self.execution_action_caller: local.my_domain_com.my_lib.caller.CallerExecution
+        self.execution_action_caller = local.my_domain_com.my_lib.caller.CallerExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.caller.Caller
+            ),
+            self.scheduler,
+        )
+        self.execution_action_caller.join_for_empty_rule_position_run = literal.NO_JOIN
+        self.execution_action_caller.join_for_destroy_position_run = literal.NO_JOIN
+
+    def on_action_parent_occupied(self):
+        self.create_action_caller__position_run()
+
+    def accept_when_empty_action_caller__position_first_gateway(self):
+        self.execution_action_caller.accept_when_empty_position_first_gateway()
+
+    def accept_when_empty_action_caller__position_second_gateway(self):
+        self.execution_action_caller.accept_when_empty_position_second_gateway()
 
     def create_action_caller__position_run(self):
         self.action.on_particle.get_action(
@@ -48,25 +57,4 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.execution_trigger_action_caller = local.my_domain_com.my_lib.caller.CallerExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.caller.Caller
-            ),
-            self.scheduler,
-            self.guarantees.trigger_action_caller,
-        )
-        self.scheduler.submit(self.trigger_action_caller__for_empty_rule_position_run)
-        self.scheduler.submit(self.trigger_action_caller__when_empty_position_first_gateway)
-        self.scheduler.submit(self.trigger_action_caller__when_empty_position_second_gateway)
-        self.trigger_action_caller__for_empty_rule_position_run()
-
-    def trigger_action_caller__when_empty_position_first_gateway(self):
-        self.execution_trigger_action_caller.accept_when_empty_position_first_gateway()
-
-    def trigger_action_caller__when_empty_position_second_gateway(self):
-        self.execution_trigger_action_caller.accept_when_empty_position_second_gateway()
-
-    def trigger_action_caller__for_empty_rule_position_run(self):
-        if not self.join_for_trigger_action_caller__for_empty_rule_position_run.arrive():
-            return
-        self.execution_trigger_action_caller.accept_for_empty_rule_position_run()
+        self.execution_action_caller.accept_for_empty_rule_position_run()

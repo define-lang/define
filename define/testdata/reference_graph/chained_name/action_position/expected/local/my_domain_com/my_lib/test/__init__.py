@@ -18,16 +18,8 @@ class Test(literal.EntryPoint):
         execution = TestExecution(
             self,
             scheduler,
-            TestGuarantees(),
         )
-        execution.scheduler.submit(execution.create_action_act__position_trigger_pos)
-        execution.create_action_act__position_run()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_action_act = local.my_domain_com.my_lib.act.ActGuarantees()
+        execution.on_action_parent_occupied()
 
 
 @final
@@ -36,14 +28,27 @@ class TestExecution:
         self,
         action: Test,
         scheduler: literal.Scheduler,
-        guarantees: TestGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
-        self.execution_trigger_action_act: local.my_domain_com.my_lib.act.ActExecution
-        self.join_for_trigger_action_act__for_empty_rule_position_trigger_pos__global_position_inner = self.scheduler.create_join(2)
-        self.join_for_trigger_action_act__for_empty_rule_position_run = self.scheduler.create_join(2)
+        self.execution_action_act: local.my_domain_com.my_lib.act.ActExecution
+        self.execution_action_act = local.my_domain_com.my_lib.act.ActExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.act.Act
+            ),
+            self.scheduler,
+        )
+        self.execution_action_act.join_for_empty_rule_position_trigger_pos__global_position_inner = literal.NO_JOIN
+        self.execution_action_act.join_for_empty_rule_position_trigger_pos = literal.NO_JOIN
+        self.execution_action_act.join_for_empty_rule_position_run = literal.NO_JOIN
+        self.execution_action_act.join_for_destroy_position_trigger_pos__global_position_inner = literal.NO_JOIN
+        self.execution_action_act.join_for_destroy_position_trigger_pos = literal.NO_JOIN
+        self.execution_action_act.join_for_destroy_position_run = literal.NO_JOIN
+
+    def on_action_parent_occupied(self):
+        self.scheduler.submit(self.create_action_act__position_trigger_pos)
+        self.scheduler.submit(self.create_action_act__position_run)
+        self.execution_action_act.on_action_parent_occupied()
 
     def create_action_act__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -58,7 +63,7 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.inner.Inner
         ).create_particle()
-        self.trigger_action_act__for_empty_rule_position_trigger_pos__global_position_inner()
+        self.execution_action_act.accept_for_empty_rule_position_trigger_pos__global_position_inner()
 
     def create_action_act__position_run(self):
         self.action.on_particle.get_action(
@@ -66,31 +71,4 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.execution_trigger_action_act = local.my_domain_com.my_lib.act.ActExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.act.Act
-            ),
-            self.scheduler,
-            self.guarantees.trigger_action_act,
-        )
-        self.scheduler.submit(self.trigger_action_act__for_empty_rule_position_run)
-        self.scheduler.submit(self.trigger_action_act__action_parent)
-        self.scheduler.submit(self.trigger_action_act__for_empty_rule_position_trigger_pos__global_position_inner)
-        self.scheduler.submit(self.trigger_action_act__for_empty_rule_position_trigger_pos)
-        self.trigger_action_act__for_empty_rule_position_run()
-
-    def trigger_action_act__action_parent(self):
-        self.execution_trigger_action_act.accept_action_parent()
-
-    def trigger_action_act__for_empty_rule_position_trigger_pos__global_position_inner(self):
-        if not self.join_for_trigger_action_act__for_empty_rule_position_trigger_pos__global_position_inner.arrive():
-            return
-        self.execution_trigger_action_act.accept_for_empty_rule_position_trigger_pos__global_position_inner()
-
-    def trigger_action_act__for_empty_rule_position_trigger_pos(self):
-        self.execution_trigger_action_act.accept_for_empty_rule_position_trigger_pos()
-
-    def trigger_action_act__for_empty_rule_position_run(self):
-        if not self.join_for_trigger_action_act__for_empty_rule_position_run.arrive():
-            return
-        self.execution_trigger_action_act.accept_for_empty_rule_position_run()
+        self.execution_action_act.accept_for_empty_rule_position_run()

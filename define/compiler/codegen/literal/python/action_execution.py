@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import typing
-from dataclasses import dataclass
 
 from define.compiler.codegen import action_plan
 from define.compiler.codegen.literal.python import (
@@ -25,20 +24,6 @@ if typing.TYPE_CHECKING:
     )
 
 
-@dataclass(frozen=True, slots=True)
-class GeneratedExecution:
-    """Generated execution context and caller-facing interface."""
-
-    context: template_context.ActionExecutionContext
-    binding_hole_method_names: dict[operation_graph_model.BindingHole, str]
-    guarantee_interface: action_context.GuaranteeInterface | None
-    execute_method_names: list[str]
-    destruction_continuations: dict[
-        operation_graph_model.DestructionFactDestroyNode,
-        template_context.DestructionContinuationContext,
-    ]
-
-
 @typing.final
 class ActionExecutionGenerator:
     """Lower one action plan to a literal Python execution context."""
@@ -48,7 +33,7 @@ class ActionExecutionGenerator:
         definition: ast.ActionDefinition,
         converter: naming.NameConverter,
         generated_actions: typed_name_dict.TypedNameDict[
-            ast.GlobalTypedName, action_context.GeneratedAction
+            ast.GlobalTypedName, action_context.GeneratedActionInterface
         ],
         plan: action_plan.ActionPlan,
         operation_labels: operation_graph_labeler.OperationGraphLabeler | None,
@@ -64,7 +49,7 @@ class ActionExecutionGenerator:
         self._plan = plan
         self._operation_labels = operation_labels
 
-    def generate(self) -> GeneratedExecution:
+    def generate(self) -> action_context.GeneratedExecution:
         """Generate the execution context and caller-facing interface."""
         names = action_names.ActionNameGenerator(
             self._definition,
@@ -80,8 +65,7 @@ class ActionExecutionGenerator:
             names.destruction_connections,
             self._operation_labels,
         )
-        local_position_statements = statement_generator.build_local_positions()
-        guarantees = action_guarantees.ActionGuaranteesGenerator(
+        generated_guarantees = action_guarantees.ActionGuaranteesGenerator(
             self._definition,
             self._converter,
             self._plan,
@@ -96,54 +80,109 @@ class ActionExecutionGenerator:
                 self._plan,
                 self._operation_labels,
                 names,
-                guarantees.interface,
+                generated_guarantees.consumptions,
                 statement_generator,
             ).generate()
         )
-        callee_binding_join_contexts = self._generate_callee_binding_joins(
+        context = self._generate_execution_context(
             names,
             statement_generator,
+            generated_guarantees.context,
+            generated_guarantees.consumptions,
+            action_execution_contexts_by_execution,
         )
-        triggers_for_destroyed_callee_guarantee_particle_contexts = (
-            self._generate_triggers_for_destroyed_callee_guarantee_particles(
-                names,
-                action_execution_contexts_by_execution,
+        action_interface = self._generate_action_interface(context, names)
+        return action_context.GeneratedExecution(context, action_interface)
+
+    def _generate_execution_context(
+        self,
+        names: action_names.ActionNames,
+        statement_generator: action_statements.ActionStatementsGenerator,
+        guarantees_context: template_context.GuaranteesContext | None,
+        guarantee_consumptions: action_guarantees.GeneratedGuaranteeConsumptions | None,
+        action_execution_contexts_by_execution: dict[
+            operation_graph_model.ActionExecution,
+            template_context.TriggeredActionExecutionContext,
+        ],
+    ) -> template_context.ActionExecutionContext:
+        callee_binding_plan_contexts = self._generate_callee_binding_plans(
+            names,
+            statement_generator,
+            guarantee_consumptions,
+        )
+        action_execution_init_methods = self._generate_action_execution_init_methods(
+            names,
+            action_execution_contexts_by_execution,
+        )
+        deferred_guarantee_registrations: list[
+            template_context.DeferredGuaranteeRegistrationContext
+        ] = []
+        if guarantee_consumptions is not None:
+            deferred_guarantee_registrations = (
+                guarantee_consumptions.deferred_registrations
             )
-        )
-        destruction_continuations = self._generate_destruction_continuations(names)
-        context = template_context.ActionExecutionContext(
+        destruction_positions: list[template_context.DestructionPositionContext] = []
+        for operation, member_name in names.destruction_positions.items():
+            destruction_positions.append(
+                template_context.DestructionPositionContext(
+                    member_name=member_name,
+                    position=statement_generator.build_position(operation.target),
+                )
+            )
+        # TODO: Emit comments identifying the Define source lines represented by
+        # generated Action Execution and Particle Operation code.
+        return template_context.ActionExecutionContext(
             execution_class_name=self._converter.execution_class_name(
                 self._definition.typed_name.name_content.path.relative_path
             ),
-            local_position_statements=local_position_statements,
+            local_position_statements=statement_generator.build_local_positions(),
+            destruction_positions=destruction_positions,
             fragments=self._generate_fragments(
                 names,
                 statement_generator,
                 action_execution_contexts_by_execution,
+                guarantee_consumptions,
             ),
             binding_hole_fanouts=self._generate_binding_hole_fanouts(
                 names,
                 action_execution_contexts_by_execution,
             ),
             action_executions=list(action_execution_contexts_by_execution.values()),
-            triggers_for_destroyed_callee_guarantee_particles=(
-                triggers_for_destroyed_callee_guarantee_particle_contexts
+            creation_inits=self._generate_inits_context(
+                names,
+                self._plan.creation_inits,
+                action_execution_contexts_by_execution,
             ),
-            callee_binding_joins=callee_binding_join_contexts,
-            guarantees=guarantees.context,
+            action_execution_init_methods=action_execution_init_methods,
+            deferred_guarantee_registrations=deferred_guarantee_registrations,
+            callee_binding_plans=callee_binding_plan_contexts,
+            guarantees=guarantees_context,
             accepts_destruction_connections=(
                 self._plan.accepts_destruction_connections
             ),
             trace_operations=self._operation_labels is not None,
         )
-        return GeneratedExecution(
-            context=context,
-            binding_hole_method_names=names.binding_hole_method_names,
-            guarantee_interface=guarantees.interface,
-            execute_method_names=[
-                names.fragments[fragment] for fragment in self._plan.execute_fragments
-            ],
-            destruction_continuations=destruction_continuations,
+
+    def _generate_action_interface(
+        self,
+        context: template_context.ActionExecutionContext,
+        names: action_names.ActionNames,
+    ) -> action_context.GeneratedActionInterface:
+        execution_member_names = {
+            execution: execution_names.execution_name
+            for execution, execution_names in names.action_executions.items()
+        }
+        return action_context.GeneratedActionInterface(
+            needs_action=context.needs_action,
+            binding_holes=names.binding_holes,
+            guarantee_names_by_operation={
+                guarantees.operation: guarantee_name
+                for guarantees, guarantee_name in names.guarantees.items()
+            },
+            execution_member_names=execution_member_names,
+            join_member_names=names.join_member_names,
+            fragment_method_names=names.fragments,
+            destruction_continuations=self._generate_destruction_continuations(names),
         )
 
     def _generate_destruction_continuations(
@@ -179,19 +218,14 @@ class ActionExecutionGenerator:
             operation_graph_model.ActionExecution,
             template_context.TriggeredActionExecutionContext,
         ],
+        guarantee_consumptions: action_guarantees.GeneratedGuaranteeConsumptions | None,
     ) -> list[template_context.ActionFragmentContext]:
         fragments: list[template_context.ActionFragmentContext] = []
         for fragment in self._plan.fragments:
-            destruction_connection_names_to_complete: list[str] = []
-            for connection in fragment.destruction_connections_to_complete:
-                destruction_connection_names_to_complete.append(
-                    names.destruction_connections[connection]
-                )
-            guarantee_publication_names: list[str] = []
-            for publication in fragment.guarantee_publications:
-                guarantee_publication_names.append(
-                    names.guarantee_publications[publication]
-                )
+            guarantee_name = None
+            action_guarantees = fragment.guarantees
+            if action_guarantees is not None:
+                guarantee_name = names.guarantees[action_guarantees]
             guarantee_dependent_destroy_position = None
             operation = fragment.guarantee_dependent_destroy
             if operation is not None:
@@ -201,6 +235,18 @@ class ActionExecutionGenerator:
                         position=statement_generator.build_position(operation.target),
                     )
                 )
+            inline_callee_binding_plans: list[
+                template_context.CalleeBindingPlanContext
+            ] = []
+            for callee_binding_plan in fragment.inline_callee_binding_plans:
+                inline_callee_binding_plans.append(
+                    self._generate_callee_binding_plan_context(
+                        callee_binding_plan,
+                        names,
+                        statement_generator,
+                        guarantee_consumptions,
+                    )
+                )
             fragments.append(
                 template_context.ActionFragmentContext(
                     method_name=names.fragments[fragment],
@@ -208,38 +254,24 @@ class ActionExecutionGenerator:
                         statement_generator.build_operation(operation)
                         for operation in fragment.operations
                     ],
-                    successor_fragment_method_names=[
-                        names.fragments[successor]
-                        for successor in fragment.successor_fragments
-                    ],
-                    callee_binding_join_method_names_that_depend_on_fragment=[
-                        names.callee_binding_join_method_names[callee_binding_join]
-                        for callee_binding_join in (
-                            fragment.callee_binding_joins_that_depend_on_fragment
+                    inits=self._generate_inits_context(
+                        names,
+                        fragment.inits,
+                        action_execution_contexts_by_execution,
+                    ),
+                    fanout_continuation_method_names=(
+                        names.fanout_continuation_method_names(
+                            fragment.fanout_continuations,
                         )
-                    ],
-                    # TODO: Do not make a triggered Action Execution inherit the
-                    # triggering Particle Operation as a runtime dependency. The
-                    # particle operation dependency graph has no such dependency,
-                    # but initialization currently follows the triggering Particle
-                    # Operation's completion hook.
-                    triggered_action_successors=[
-                        action_execution_contexts_by_execution[action_execution]
-                        for action_execution in fragment.action_execution_successors
-                    ],
-                    triggered_action_execution_callee_binding_join_method_names=[
-                        names.callee_binding_join_method_names[callee_binding_join]
-                        for callee_binding_join in (
-                            fragment.triggered_action_execution_callee_binding_joins
-                        )
-                    ],
-                    guarantee_publication_names=guarantee_publication_names,
+                    ),
+                    inline_callee_binding_plans=inline_callee_binding_plans,
+                    guarantee_name=guarantee_name,
                     dependency_count=fragment.dependency_count,
+                    join_is_assigned_by_caller=fragment.join_is_assigned_by_caller,
+                    requires_join_check=fragment.requires_join_check,
+                    join_member_name=names.join_member_names.get(fragment),
                     continue_destroy_method_name=names.continue_destroy_methods.get(
                         fragment
-                    ),
-                    destruction_connection_names_to_complete=(
-                        destruction_connection_names_to_complete
                     ),
                     guarantee_dependent_destroy_position=(
                         guarantee_dependent_destroy_position
@@ -256,101 +288,161 @@ class ActionExecutionGenerator:
             template_context.TriggeredActionExecutionContext,
         ],
     ) -> list[template_context.BindingHoleFanoutContext]:
-        return [
-            template_context.BindingHoleFanoutContext(
-                binding_hole_method_name=names.binding_hole_method_names[
-                    binding_hole_fanout.binding_hole
-                ],
-                fragment_method_names=[
-                    names.fragments[fragment]
-                    for fragment in binding_hole_fanout.fragments
-                ],
-                callee_binding_join_method_names=[
-                    names.callee_binding_join_method_names[callee_binding_join]
-                    for callee_binding_join in binding_hole_fanout.callee_binding_joins
-                ],
-                destructor_executions=[
-                    action_execution_contexts_by_execution[destructor_execution]
-                    for destructor_execution in (
-                        binding_hole_fanout.destructor_executions
-                    )
-                ],
+        contexts: list[template_context.BindingHoleFanoutContext] = []
+        for binding_hole_fanout in self._plan.binding_hole_fanouts.values():
+            binding_hole_names = names.binding_holes[binding_hole_fanout.binding_hole]
+            inits = self._generate_inits_context(
+                names,
+                binding_hole_fanout.inits,
+                action_execution_contexts_by_execution,
             )
-            for binding_hole_fanout in self._plan.binding_hole_fanouts
-        ]
+            contexts.append(
+                template_context.BindingHoleFanoutContext(
+                    binding_hole_method_name=binding_hole_names.method_name,
+                    requires_join_check=binding_hole_fanout.requires_join_check,
+                    join_member_name=names.join_member_names.get(binding_hole_fanout),
+                    inits=inits,
+                    separate_init_method_name=(
+                        binding_hole_names.separate_init_method_name
+                    ),
+                    fanout_continuation_method_names=(
+                        names.fanout_continuation_method_names(
+                            binding_hole_fanout.continuations,
+                        )
+                    ),
+                )
+            )
+        return contexts
 
-    def _generate_callee_binding_joins(
+    def _generate_inits_context(
+        self,
+        names: action_names.ActionNames,
+        inits: action_plan.ActionExecutionInits,
+        action_execution_contexts_by_execution: dict[
+            operation_graph_model.ActionExecution,
+            template_context.TriggeredActionExecutionContext,
+        ],
+    ) -> template_context.ActionExecutionInitsContext:
+        return template_context.ActionExecutionInitsContext(
+            action_executions=[
+                action_execution_contexts_by_execution[action_execution]
+                for action_execution in inits.action_executions
+            ],
+            callee_binding_method_names=names.callee_binding_plan_method_names(
+                inits.callee_binding_plans,
+            ),
+        )
+
+    def _generate_callee_binding_plans(
         self,
         names: action_names.ActionNames,
         statement_generator: action_statements.ActionStatementsGenerator,
-    ) -> list[template_context.CalleeBindingJoinContext]:
-        callee_binding_join_contexts: list[
-            template_context.CalleeBindingJoinContext
+        guarantee_consumptions: action_guarantees.GeneratedGuaranteeConsumptions | None,
+    ) -> list[template_context.CalleeBindingPlanContext]:
+        callee_binding_plan_contexts: list[
+            template_context.CalleeBindingPlanContext
         ] = []
-        for callee_binding_join in self._plan.callee_binding_joins:
-            execution = callee_binding_join.execution
-            callee_binding_join_contexts.append(
-                template_context.CalleeBindingJoinContext(
-                    triggered_action_execution_name=(
-                        names.triggered_actions[execution].execution_name
-                    ),
-                    callee_binding_hole_method_name=self._generated_actions[
-                        execution.callee_action_name
-                    ].binding_hole_method_names[
-                        callee_binding_join.callee_binding_hole
-                    ],
-                    method_name=names.callee_binding_join_method_names[
-                        callee_binding_join
-                    ],
-                    dependency_count=callee_binding_join.dependency_count,
-                    destruction_positions=[
-                        template_context.DestructionPositionContext(
-                            member_name=names.destruction_positions[operation],
-                            position=statement_generator.build_position(
-                                operation.target
-                            ),
-                        )
-                        for operation in (
-                            callee_binding_join.contributed_destruction_operations
-                        )
-                    ],
+        for callee_binding_plan in self._plan.callee_binding_method_plans:
+            callee_binding_plan_contexts.append(
+                self._generate_callee_binding_plan_context(
+                    callee_binding_plan,
+                    names,
+                    statement_generator,
+                    guarantee_consumptions,
                 )
             )
-        return callee_binding_join_contexts
+        return callee_binding_plan_contexts
 
-    def _generate_triggers_for_destroyed_callee_guarantee_particles(
+    def _generate_callee_binding_plan_context(
+        self,
+        callee_binding_plan: action_plan.CalleeBindingPlan,
+        names: action_names.ActionNames,
+        statement_generator: action_statements.ActionStatementsGenerator,
+        guarantee_consumptions: action_guarantees.GeneratedGuaranteeConsumptions | None,
+    ) -> template_context.CalleeBindingPlanContext:
+        execution = callee_binding_plan.execution
+        generated_callee = self._generated_actions[execution.callee_action_name]
+        binding_hole_names = generated_callee.binding_holes[
+            callee_binding_plan.callee_binding_hole
+        ]
+        post_init_guarantee_consumptions: list[
+            template_context.GuaranteeConsumptionContext
+        ] = []
+        if guarantee_consumptions is not None:
+            for (
+                consumption_plan
+            ) in callee_binding_plan.post_init_guarantee_consumption_plans:
+                post_init_guarantee_consumptions.append(
+                    guarantee_consumptions.context_by_plan[consumption_plan]
+                )
+        destruction_positions: list[template_context.DestructionPositionContext] = []
+        for operation in callee_binding_plan.contributed_destruction_operations:
+            destruction_positions.append(
+                template_context.DestructionPositionContext(
+                    member_name=names.destruction_positions[operation],
+                    position=statement_generator.build_position(operation.target),
+                )
+            )
+        init_method_name = None
+        if callee_binding_plan.inits_action_executions:
+            init_method_name = (
+                binding_hole_names.separate_init_method_name
+                or binding_hole_names.method_name
+            )
+        return template_context.CalleeBindingPlanContext(
+            action_execution_name=names.action_executions[execution].execution_name,
+            callee_binding_hole_method_name=binding_hole_names.method_name,
+            method_name=names.callee_binding_plans.get(callee_binding_plan),
+            invocation_method_name=names.callee_binding_invocations.get(
+                callee_binding_plan
+            ),
+            invokes_callee_binding_hole_after_setup=(
+                callee_binding_plan.invokes_callee_binding_hole_after_setup
+            ),
+            dependency_count=callee_binding_plan.dependency_count,
+            join_is_assigned_by_caller=callee_binding_plan.join_is_assigned_by_caller,
+            requires_join_check=callee_binding_plan.requires_join_check,
+            join_member_name=names.join_member_names.get(callee_binding_plan),
+            destruction_positions=destruction_positions,
+            init_method_name=init_method_name,
+            post_init_join_assignments=[
+                self._nested_callee_join_assignment_context(assignment, names)
+                for assignment in callee_binding_plan.post_init_join_assignments
+            ],
+            post_init_guarantee_consumptions=(post_init_guarantee_consumptions),
+        )
+
+    def _nested_callee_join_assignment_context(
+        self,
+        assignment: action_plan.CalleeJoinAssignment,
+        names: action_names.ActionNames,
+    ) -> template_context.CalleeJoinAssignmentContext:
+        execution_member_names, generated_callee = names.generated_execution_path(
+            assignment.execution_path,
+        )
+        return template_context.CalleeJoinAssignmentContext(
+            member_name=generated_callee.join_member_names[assignment.target],
+            dependency_count=assignment.dependency_count,
+            execution_member_names=execution_member_names,
+        )
+
+    def _generate_action_execution_init_methods(
         self,
         names: action_names.ActionNames,
         action_execution_contexts_by_execution: dict[
             operation_graph_model.ActionExecution,
             template_context.TriggeredActionExecutionContext,
         ],
-    ) -> list[template_context.TriggerForDestroyedCalleeGuaranteeParticleContext]:
-        contexts: list[
-            template_context.TriggerForDestroyedCalleeGuaranteeParticleContext
-        ] = []
+    ) -> list[template_context.ActionExecutionInitMethodContext]:
+        init_methods: list[template_context.ActionExecutionInitMethodContext] = []
         for (
-            trigger_for_destroyed_callee_guarantee_particle
-        ) in self._plan.triggers_for_destroyed_callee_guarantee_particles:
-            triggered_action_names = names.triggered_actions[
-                trigger_for_destroyed_callee_guarantee_particle.execution
-            ]
-            callee_binding_join_method_names: list[str] = []
-            for (
-                callee_binding_join
-            ) in trigger_for_destroyed_callee_guarantee_particle.callee_binding_joins:
-                callee_binding_join_method_names.append(
-                    names.callee_binding_join_method_names[callee_binding_join]
-                )
-            contexts.append(
-                template_context.TriggerForDestroyedCalleeGuaranteeParticleContext(
-                    method_name=triggered_action_names.canonical_name,
-                    action_execution=(
-                        action_execution_contexts_by_execution[
-                            trigger_for_destroyed_callee_guarantee_particle.execution
-                        ]
-                    ),
-                    callee_binding_join_method_names=callee_binding_join_method_names,
+            action_execution,
+            method_name,
+        ) in names.action_execution_init_method_names.items():
+            init_methods.append(
+                template_context.ActionExecutionInitMethodContext(
+                    method_name,
+                    action_execution_contexts_by_execution[action_execution],
                 )
             )
-        return contexts
+        return init_methods

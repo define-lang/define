@@ -13,16 +13,8 @@ class Test(literal.EntryPoint):
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
             scheduler,
-            TestGuarantees(),
         )
-        execution.create_position_gateway()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_position_gateway__action_worker = local.my_domain_com.my_lib.worker.WorkerGuarantees()
-        self.trigger_position_gateway__action_worker_2 = local.my_domain_com.my_lib.worker.WorkerGuarantees()
+        execution.on_action_parent_occupied()
 
 
 @final
@@ -30,10 +22,8 @@ class TestExecution:
     def __init__(
         self,
         scheduler: literal.Scheduler,
-        guarantees: TestGuarantees,
     ):
         self.scheduler = scheduler
-        self.guarantees = guarantees
         self.local_position_gateway = literal.LocalPosition(
             "position<gateway>",
             constraints=(
@@ -41,28 +31,47 @@ class TestExecution:
             ),
             scheduler=self.scheduler,
         )
-        guarantees.trigger_position_gateway__action_worker.guarantee_position_trigger_pos.append(
-            self.create_position_gateway__action_worker__position_trigger_pos_2
-        )
-        guarantees.trigger_position_gateway__action_worker_2.guarantee_position_item.append(
-            self.destroy_position_gateway__action_worker__position_item
-        )
-        guarantees.trigger_position_gateway__action_worker_2.guarantee_position_trigger_pos.append(
-            self.destroy_position_gateway
-        )
-        guarantees.trigger_position_gateway__action_worker.guarantee_position_item.append(
-            self.trigger_position_gateway__action_worker_2__for_empty_rule_position_item
-        )
-        self.execution_trigger_position_gateway__action_worker: local.my_domain_com.my_lib.worker.WorkerExecution
-        self.execution_trigger_position_gateway__action_worker_2: local.my_domain_com.my_lib.worker.WorkerExecution
+        self.execution_position_gateway__action_worker: local.my_domain_com.my_lib.worker.WorkerExecution
+        self.execution_position_gateway__action_worker_2: local.my_domain_com.my_lib.worker.WorkerExecution
         self.join_for_destroy_position_gateway = self.scheduler.create_join(2)
-        self.join_for_trigger_position_gateway__action_worker__for_empty_rule_position_item = self.scheduler.create_join(2)
-        self.join_for_trigger_position_gateway__action_worker__for_empty_rule_position_trigger_pos = self.scheduler.create_join(2)
-        self.join_for_trigger_position_gateway__action_worker_2__for_empty_rule_position_item = self.scheduler.create_join(2)
-        self.join_for_trigger_position_gateway__action_worker_2__for_empty_rule_position_trigger_pos = self.scheduler.create_join(2)
+
+    def on_action_parent_occupied(self):
+        self.create_position_gateway()
 
     def create_position_gateway(self):
         self.local_position_gateway.create_particle()
+        self.execution_position_gateway__action_worker = local.my_domain_com.my_lib.worker.WorkerExecution(
+            self.local_position_gateway.particle.get_action(
+                local.my_domain_com.my_lib.worker.Worker
+            ),
+            self.scheduler,
+        )
+        self.execution_position_gateway__action_worker.join_for_empty_rule_position_item = literal.NO_JOIN
+        self.execution_position_gateway__action_worker.join_for_empty_rule_position_trigger_pos = literal.NO_JOIN
+        self.execution_position_gateway__action_worker.join_for_move_position_item_to_position_holder = literal.NO_JOIN
+        self.execution_position_gateway__action_worker.join_for_destroy_position_trigger_pos = literal.NO_JOIN
+        self.execution_position_gateway__action_worker.guarantees.position_trigger_pos.consumers.append(
+            self.create_position_gateway__action_worker__position_trigger_pos_2
+        )
+        self.execution_position_gateway__action_worker.guarantees.position_item.consumers.append(
+            self.accept_guarantee_position_gateway__action_worker
+        )
+        self.execution_position_gateway__action_worker_2 = local.my_domain_com.my_lib.worker.WorkerExecution(
+            self.local_position_gateway.particle.get_action(
+                local.my_domain_com.my_lib.worker.Worker
+            ),
+            self.scheduler,
+        )
+        self.execution_position_gateway__action_worker_2.join_for_empty_rule_position_item = literal.NO_JOIN
+        self.execution_position_gateway__action_worker_2.join_for_empty_rule_position_trigger_pos = literal.NO_JOIN
+        self.execution_position_gateway__action_worker_2.join_for_move_position_item_to_position_holder = literal.NO_JOIN
+        self.execution_position_gateway__action_worker_2.join_for_destroy_position_trigger_pos = literal.NO_JOIN
+        self.execution_position_gateway__action_worker_2.guarantees.position_item.consumers.append(
+            self.destroy_position_gateway__action_worker__position_item
+        )
+        self.execution_position_gateway__action_worker_2.guarantees.position_trigger_pos.consumers.append(
+            self.destroy_position_gateway
+        )
         self.scheduler.submit(self.create_position_gateway__action_worker__position_item)
         self.create_position_gateway__action_worker__position_trigger_pos()
 
@@ -72,7 +81,7 @@ class TestExecution:
         ).get_interface_position(
             "position<item>"
         ).create_particle()
-        self.trigger_position_gateway__action_worker__for_empty_rule_position_item()
+        self.execution_position_gateway__action_worker.accept_for_empty_rule_position_item()
 
     def create_position_gateway__action_worker__position_trigger_pos(self):
         self.local_position_gateway.particle.get_action(
@@ -80,16 +89,7 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.execution_trigger_position_gateway__action_worker = local.my_domain_com.my_lib.worker.WorkerExecution(
-            self.local_position_gateway.particle.get_action(
-                local.my_domain_com.my_lib.worker.Worker
-            ),
-            self.scheduler,
-            self.guarantees.trigger_position_gateway__action_worker,
-        )
-        self.scheduler.submit(self.trigger_position_gateway__action_worker__for_empty_rule_position_trigger_pos)
-        self.scheduler.submit(self.trigger_position_gateway__action_worker__for_empty_rule_position_item)
-        self.trigger_position_gateway__action_worker__for_empty_rule_position_trigger_pos()
+        self.execution_position_gateway__action_worker.accept_for_empty_rule_position_trigger_pos()
 
     def create_position_gateway__action_worker__position_trigger_pos_2(self):
         self.local_position_gateway.particle.get_action(
@@ -97,16 +97,7 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.execution_trigger_position_gateway__action_worker_2 = local.my_domain_com.my_lib.worker.WorkerExecution(
-            self.local_position_gateway.particle.get_action(
-                local.my_domain_com.my_lib.worker.Worker
-            ),
-            self.scheduler,
-            self.guarantees.trigger_position_gateway__action_worker_2,
-        )
-        self.scheduler.submit(self.trigger_position_gateway__action_worker_2__for_empty_rule_position_trigger_pos)
-        self.scheduler.submit(self.trigger_position_gateway__action_worker_2__for_empty_rule_position_item)
-        self.trigger_position_gateway__action_worker_2__for_empty_rule_position_trigger_pos()
+        self.execution_position_gateway__action_worker_2.accept_for_empty_rule_position_trigger_pos()
 
     def destroy_position_gateway__action_worker__position_item(self):
         self.local_position_gateway.particle.get_action(
@@ -121,22 +112,5 @@ class TestExecution:
             return
         self.local_position_gateway.destroy_particle()
 
-    def trigger_position_gateway__action_worker__for_empty_rule_position_item(self):
-        if not self.join_for_trigger_position_gateway__action_worker__for_empty_rule_position_item.arrive():
-            return
-        self.execution_trigger_position_gateway__action_worker.accept_for_empty_rule_position_item()
-
-    def trigger_position_gateway__action_worker__for_empty_rule_position_trigger_pos(self):
-        if not self.join_for_trigger_position_gateway__action_worker__for_empty_rule_position_trigger_pos.arrive():
-            return
-        self.execution_trigger_position_gateway__action_worker.accept_for_empty_rule_position_trigger_pos()
-
-    def trigger_position_gateway__action_worker_2__for_empty_rule_position_item(self):
-        if not self.join_for_trigger_position_gateway__action_worker_2__for_empty_rule_position_item.arrive():
-            return
-        self.execution_trigger_position_gateway__action_worker_2.accept_for_empty_rule_position_item()
-
-    def trigger_position_gateway__action_worker_2__for_empty_rule_position_trigger_pos(self):
-        if not self.join_for_trigger_position_gateway__action_worker_2__for_empty_rule_position_trigger_pos.arrive():
-            return
-        self.execution_trigger_position_gateway__action_worker_2.accept_for_empty_rule_position_trigger_pos()
+    def accept_guarantee_position_gateway__action_worker(self):
+        self.execution_position_gateway__action_worker_2.accept_for_empty_rule_position_item()

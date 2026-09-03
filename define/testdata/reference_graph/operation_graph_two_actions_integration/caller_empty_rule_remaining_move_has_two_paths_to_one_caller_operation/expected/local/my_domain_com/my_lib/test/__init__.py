@@ -20,16 +20,20 @@ class Test(literal.EntryPoint):
         execution = TestExecution(
             self,
             scheduler,
-            TestGuarantees(),
         )
-        execution.scheduler.submit(execution.create_global_position_input)
-        execution.create_action_other__position_trigger_pos()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_action_other = local.my_domain_com.my_lib.other.OtherGuarantees()
+        execution.execution_action_other.join_for_empty_rule_global_position_input__global_position_a = scheduler.create_join(2)
+        execution.execution_action_other.join_when_empty_position_holder_b = literal.NO_JOIN
+        execution.execution_action_other.join_when_empty_position_holder_c = literal.NO_JOIN
+        execution.execution_action_other.join_for_move_position_holder_a_to_position_holder_b = scheduler.create_join(2)
+        execution.execution_action_other.join_for_move_global_position_input__global_position_a_to_position_holder_c = scheduler.create_join(2)
+        execution.join_when_empty_action_other__position_holder_a = literal.NO_JOIN
+        execution.join_when_empty_action_other__position_holder_b = literal.NO_JOIN
+        execution.join_when_empty_action_other__position_holder_c = literal.NO_JOIN
+        scheduler.submit(execution.accept_when_empty_global_position_input)
+        scheduler.submit(execution.on_action_parent_occupied)
+        scheduler.submit(execution.accept_when_empty_action_other__position_holder_a)
+        scheduler.submit(execution.accept_when_empty_action_other__position_holder_b)
+        execution.accept_when_empty_action_other__position_holder_c()
 
 
 @final
@@ -38,13 +42,43 @@ class TestExecution:
         self,
         action: Test,
         scheduler: literal.Scheduler,
-        guarantees: TestGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
-        self.execution_trigger_action_other: local.my_domain_com.my_lib.other.OtherExecution
-        self.join_for_trigger_action_other__for_empty_rule_global_position_input__global_position_a = self.scheduler.create_join(2)
+        self.execution_action_other: local.my_domain_com.my_lib.other.OtherExecution
+        self.join_when_empty_action_other__position_holder_a: literal.Join
+        self.join_when_empty_action_other__position_holder_b: literal.Join
+        self.join_when_empty_action_other__position_holder_c: literal.Join
+        self.execution_action_other = local.my_domain_com.my_lib.other.OtherExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.other.Other
+            ),
+            self.scheduler,
+        )
+        self.execution_action_other.join_for_empty_rule_global_position_input = literal.NO_JOIN
+        self.execution_action_other.join_for_move_global_position_input__global_position_a_to_position_holder_a = literal.NO_JOIN
+        self.execution_action_other.join_for_destroy_global_position_input = literal.NO_JOIN
+
+    def accept_when_empty_global_position_input(self):
+        self.create_global_position_input()
+
+    def on_action_parent_occupied(self):
+        self.create_action_other__position_trigger_pos()
+
+    def accept_when_empty_action_other__position_holder_a(self):
+        if not self.join_when_empty_action_other__position_holder_a.arrive():
+            return
+        self.execution_action_other.accept_for_empty_rule_global_position_input__global_position_a()
+
+    def accept_when_empty_action_other__position_holder_b(self):
+        if not self.join_when_empty_action_other__position_holder_b.arrive():
+            return
+        self.execution_action_other.accept_when_empty_position_holder_b()
+
+    def accept_when_empty_action_other__position_holder_c(self):
+        if not self.join_when_empty_action_other__position_holder_c.arrive():
+            return
+        self.execution_action_other.accept_when_empty_position_holder_c()
 
     def create_global_position_input(self):
         self.action.on_particle.get_position(
@@ -55,7 +89,7 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.a.A
         ).create_particle()
-        self.trigger_action_other__for_empty_rule_global_position_input__global_position_a()
+        self.execution_action_other.accept_for_empty_rule_global_position_input__global_position_a()
 
     def create_action_other__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -63,36 +97,8 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.execution_trigger_action_other = local.my_domain_com.my_lib.other.OtherExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.other.Other
-            ),
-            self.scheduler,
-            self.guarantees.trigger_action_other,
-        )
-        self.scheduler.submit(self.destroy_action_other__position_trigger_pos)
-        self.scheduler.submit(self.trigger_action_other__for_empty_rule_global_position_input__global_position_a)
-        self.scheduler.submit(self.trigger_action_other__when_empty_position_holder_b)
-        self.scheduler.submit(self.trigger_action_other__when_empty_position_holder_c)
-        self.trigger_action_other__for_empty_rule_global_position_input()
-
-    def destroy_action_other__position_trigger_pos(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.other.Other
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
-
-    def trigger_action_other__for_empty_rule_global_position_input__global_position_a(self):
-        if not self.join_for_trigger_action_other__for_empty_rule_global_position_input__global_position_a.arrive():
-            return
-        self.execution_trigger_action_other.accept_for_empty_rule_global_position_input__global_position_a()
-
-    def trigger_action_other__when_empty_position_holder_b(self):
-        self.execution_trigger_action_other.accept_when_empty_position_holder_b()
-
-    def trigger_action_other__when_empty_position_holder_c(self):
-        self.execution_trigger_action_other.accept_when_empty_position_holder_c()
-
-    def trigger_action_other__for_empty_rule_global_position_input(self):
-        self.execution_trigger_action_other.accept_for_empty_rule_global_position_input()

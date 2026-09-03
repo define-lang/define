@@ -21,18 +21,12 @@ class Test(literal.EntryPoint):
         execution = TestExecution(
             self,
             scheduler,
-            TestGuarantees(),
         )
-        execution.scheduler.submit(execution.create_global_position_input)
-        execution.scheduler.submit(execution.create_action_producer__position_trigger_pos)
-        execution.create_action_consumer__position_trigger_pos()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_action_producer = local.my_domain_com.my_lib.producer.ProducerGuarantees()
-        self.trigger_action_consumer = local.my_domain_com.my_lib.consumer.ConsumerGuarantees()
+        execution.execution_action_producer.join_for_empty_rule_global_position_input = scheduler.create_join(2)
+        execution.join_when_empty_global_position_box = literal.NO_JOIN
+        scheduler.submit(execution.accept_when_empty_global_position_input)
+        scheduler.submit(execution.on_action_parent_occupied)
+        execution.accept_when_empty_global_position_box()
 
 
 @final
@@ -41,24 +35,48 @@ class TestExecution:
         self,
         action: Test,
         scheduler: literal.Scheduler,
-        guarantees: TestGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
-        guarantees.trigger_action_producer.guarantee_global_position_input__move__global_position_box.append(
-            self.trigger_action_consumer__when_empty_global_position_box__global_position_item
+        self.execution_action_producer: local.my_domain_com.my_lib.producer.ProducerExecution
+        self.execution_action_consumer: local.my_domain_com.my_lib.consumer.ConsumerExecution
+        self.join_when_empty_global_position_box: literal.Join
+        self.execution_action_producer = local.my_domain_com.my_lib.producer.ProducerExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.producer.Producer
+            ),
+            self.scheduler,
         )
-        self.execution_trigger_action_producer: local.my_domain_com.my_lib.producer.ProducerExecution
-        self.execution_trigger_action_consumer: local.my_domain_com.my_lib.consumer.ConsumerExecution
-        self.join_for_trigger_action_producer__for_empty_rule_global_position_input = self.scheduler.create_join(2)
-        self.join_for_trigger_action_consumer__when_empty_global_position_box__global_position_item = self.scheduler.create_join(2)
+        self.execution_action_producer.join_for_move_global_position_input_to_global_position_box = literal.NO_JOIN
+        self.execution_action_producer.guarantees.global_position_input__move__global_position_box.consumers.append(
+            self.accept_guarantee_action_consumer
+        )
+        self.execution_action_consumer = local.my_domain_com.my_lib.consumer.ConsumerExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.consumer.Consumer
+            ),
+            self.scheduler,
+        )
+        self.execution_action_consumer.join_when_empty_global_position_box__global_position_destination = literal.NO_JOIN
+        self.execution_action_consumer.join_for_move_global_position_box__global_position_item_to_global_position_box__global_position_destination = literal.NO_JOIN
+
+    def accept_when_empty_global_position_input(self):
+        self.create_global_position_input()
+
+    def on_action_parent_occupied(self):
+        self.scheduler.submit(self.create_action_producer__position_trigger_pos)
+        self.create_action_consumer__position_trigger_pos()
+
+    def accept_when_empty_global_position_box(self):
+        if not self.join_when_empty_global_position_box.arrive():
+            return
+        self.execution_action_producer.accept_for_empty_rule_global_position_input()
 
     def create_global_position_input(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.input.Input
         ).create_particle()
-        self.trigger_action_producer__for_empty_rule_global_position_input()
+        self.execution_action_producer.accept_for_empty_rule_global_position_input()
 
     def create_action_producer__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -66,15 +84,11 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.execution_trigger_action_producer = local.my_domain_com.my_lib.producer.ProducerExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.producer.Producer
-            ),
-            self.scheduler,
-            self.guarantees.trigger_action_producer,
-        )
-        self.scheduler.submit(self.destroy_action_producer__position_trigger_pos)
-        self.trigger_action_producer__for_empty_rule_global_position_input()
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.producer.Producer
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
 
     def create_action_consumer__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -82,40 +96,11 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.execution_trigger_action_consumer = local.my_domain_com.my_lib.consumer.ConsumerExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.consumer.Consumer
-            ),
-            self.scheduler,
-            self.guarantees.trigger_action_consumer,
-        )
-        self.scheduler.submit(self.destroy_action_consumer__position_trigger_pos)
-        self.scheduler.submit(self.trigger_action_consumer__when_empty_global_position_box__global_position_item)
-        self.trigger_action_consumer__when_empty_global_position_box__global_position_destination()
-
-    def destroy_action_producer__position_trigger_pos(self):
-        self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.producer.Producer
-        ).get_interface_position(
-            "position<trigger_pos>"
-        ).destroy_particle()
-
-    def destroy_action_consumer__position_trigger_pos(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.consumer.Consumer
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
 
-    def trigger_action_producer__for_empty_rule_global_position_input(self):
-        if not self.join_for_trigger_action_producer__for_empty_rule_global_position_input.arrive():
-            return
-        self.execution_trigger_action_producer.accept_for_empty_rule_global_position_input()
-
-    def trigger_action_consumer__when_empty_global_position_box__global_position_item(self):
-        if not self.join_for_trigger_action_consumer__when_empty_global_position_box__global_position_item.arrive():
-            return
-        self.execution_trigger_action_consumer.accept_when_empty_global_position_box__global_position_item()
-
-    def trigger_action_consumer__when_empty_global_position_box__global_position_destination(self):
-        self.execution_trigger_action_consumer.accept_when_empty_global_position_box__global_position_destination()
+    def accept_guarantee_action_consumer(self):
+        self.execution_action_consumer.accept_when_empty_global_position_box__global_position_item()

@@ -1,6 +1,7 @@
 {% from "action_statements.j2" import action_statements %}
+{% from "triggered_action_execution.j2" import init_action_executions %}
 {% macro action_execution_init(action_class_name, execution) %}
-{% set destruction_connection_class = "tracing.DestructionConnection" if execution.trace_operations else "literal.DestructionConnection" %}
+    {% set destruction_connection_class = "tracing.DestructionConnection" if execution.trace_operations else "literal.DestructionConnection" %}
     def __init__(
         self,
     {% if execution.needs_action %}
@@ -10,9 +11,6 @@
     {% if execution.trace_operations %}
         caller_execution: object | None,
         action_name: str,
-    {% endif %}
-    {% if execution.needs_guarantees %}
-        guarantees: {{ execution.guarantees.class_name }},
     {% endif %}
     {% if execution.accepts_destruction_connections %}
         *,
@@ -30,7 +28,7 @@
         )
     {% endif %}
     {% if execution.needs_guarantees %}
-        self.guarantees = guarantees
+        self.guarantees = {{ execution.guarantees.class_name }}()
     {% endif %}
     {% if execution.accepts_destruction_connections %}
         self.destruction_connections = destruction_connections
@@ -38,42 +36,33 @@
     {% if execution.local_position_statements %}
 {{ action_statements(execution.local_position_statements) -}}
     {% endif %}
-    {% if execution.needs_guarantees %}
-        {% for registration in execution.guarantees.registrations %}
-        guarantees
-        {%- for child_guarantees_name in registration.child_guarantees_names -%}
-.{{ child_guarantees_name }}
-        {%- endfor -%}
-.{{ registration.guarantee_name }}.append(
-            self.{{ registration.method_name }}
-        )
-        {% endfor %}
-    {% endif %}
     {% for action_execution in execution.action_executions %}
         self.{{ action_execution.execution_name }}: {{ action_execution.execution_class.module_name }}.{{ action_execution.execution_class.class_name }}
         {% for connection in action_execution.created_destruction_connections %}
         self.{{ connection.member_name }}: {{ destruction_connection_class }}
         {% endfor %}
     {% endfor %}
-    {% for callee_binding_join in execution.callee_binding_joins %}
-        {% for destruction_position in callee_binding_join.destruction_positions %}
+    {% for destruction_position in execution.destruction_positions %}
         self.{{ destruction_position.member_name }}: literal.Position
-        {% endfor %}
     {% endfor %}
     {% for fragment in execution.fragments %}
-        {% if fragment.guarantee_dependent_destroy_position is not none %}
-        {% set destruction_position = fragment.guarantee_dependent_destroy_position %}
-        self.{{ destruction_position.member_name }}: literal.Position
+        {% if fragment.join_is_assigned_by_caller %}
+        self.{{ fragment.join_member_name }}: literal.Join
+        {% elif fragment.requires_join_check %}
+        self.{{ fragment.join_member_name }} = self.scheduler.create_join({{ fragment.dependency_count }})
         {% endif %}
     {% endfor %}
-    {% for fragment in execution.fragments %}
-        {% if fragment.dependency_count > 1 %}
-        self.join_for_{{ fragment.method_name }} = self.scheduler.create_join({{ fragment.dependency_count }})
+    {% for binding_hole_fanout in execution.binding_hole_fanouts %}
+        {% if binding_hole_fanout.requires_join_check %}
+        self.{{ binding_hole_fanout.join_member_name }}: literal.Join
         {% endif %}
     {% endfor %}
-    {% for callee_binding_join in execution.callee_binding_joins %}
-        {% if callee_binding_join.dependency_count > 1 %}
-        self.join_for_{{ callee_binding_join.method_name }} = self.scheduler.create_join({{ callee_binding_join.dependency_count }})
+    {% for callee_binding_plan in execution.callee_binding_plans %}
+        {% if callee_binding_plan.join_is_assigned_by_caller %}
+        self.{{ callee_binding_plan.join_member_name }}: literal.Join
+        {% elif callee_binding_plan.requires_join_check %}
+        self.{{ callee_binding_plan.join_member_name }} = self.scheduler.create_join({{ callee_binding_plan.dependency_count }})
         {% endif %}
     {% endfor %}
+{{ init_action_executions(execution.creation_inits) -}}
 {% endmacro %}

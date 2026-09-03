@@ -25,37 +25,40 @@ class Right(literal.Action):
 
 
 @final
-class RightGuarantees:
-    def __init__(self):
-        self.trigger_action_right_child = local.my_domain_com.my_lib.right_child.RightChildGuarantees()
-
-
-@final
 class RightExecution:
     def __init__(
         self,
         action: Right,
         scheduler: literal.Scheduler,
-        guarantees: RightGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
         self.destruction_connections = destruction_connections
-        self.execution_trigger_action_right_child: local.my_domain_com.my_lib.right_child.RightChildExecution
-        self.join_for_trigger_action_right_child__for_empty_rule_global_position_marker = self.scheduler.create_join(2)
-        self.join_for_trigger_action_right_child__when_occupied_global_position_marker = self.scheduler.create_join(2)
+        self.execution_action_right_child: local.my_domain_com.my_lib.right_child.RightChildExecution
+        self.join_for_empty_rule_global_position_marker: literal.Join
+        self.execution_action_right_child = local.my_domain_com.my_lib.right_child.RightChildExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.right_child.RightChild
+            ),
+            self.scheduler,
+            destruction_connections=self.destruction_connections,
+        )
 
-    def accept_action_parent(self):
+    def on_action_parent_occupied(self):
         self.create_action_right_child__position_trigger_pos()
 
     def accept_for_empty_rule_global_position_marker(self):
-        self.trigger_action_right_child__for_empty_rule_global_position_marker()
+        if not self.join_for_empty_rule_global_position_marker.arrive():
+            return
+        self.execution_action_right_child.accept_for_empty_rule_global_position_marker()
 
     def accept_when_occupied_global_position_marker(self):
-        self.trigger_action_right_child__when_occupied_global_position_marker()
+        self.accept_guarantee_action_right_child()
+
+    def init_when_occupied_global_position_marker(self):
+        self.action_right_child__when_occupied_global_position_marker()
 
     def create_action_right_child__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -63,31 +66,14 @@ class RightExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.execution_trigger_action_right_child = local.my_domain_com.my_lib.right_child.RightChildExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.right_child.RightChild
-            ),
-            self.scheduler,
-            self.guarantees.trigger_action_right_child,
-            destruction_connections=self.destruction_connections,
-        )
-        self.scheduler.submit(self.destroy_action_right_child__position_trigger_pos)
-        self.scheduler.submit(self.trigger_action_right_child__for_empty_rule_global_position_marker)
-        self.trigger_action_right_child__when_occupied_global_position_marker()
-
-    def destroy_action_right_child__position_trigger_pos(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.right_child.RightChild
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
 
-    def trigger_action_right_child__for_empty_rule_global_position_marker(self):
-        if not self.join_for_trigger_action_right_child__for_empty_rule_global_position_marker.arrive():
-            return
-        self.execution_trigger_action_right_child.accept_for_empty_rule_global_position_marker()
+    def action_right_child__when_occupied_global_position_marker(self):
+        self.execution_action_right_child.init_when_occupied_global_position_marker()
 
-    def trigger_action_right_child__when_occupied_global_position_marker(self):
-        if not self.join_for_trigger_action_right_child__when_occupied_global_position_marker.arrive():
-            return
-        self.execution_trigger_action_right_child.accept_when_occupied_global_position_marker()
+    def accept_guarantee_action_right_child(self):
+        self.execution_action_right_child.accept_when_occupied_global_position_marker()

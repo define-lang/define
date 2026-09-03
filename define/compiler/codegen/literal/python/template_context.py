@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 from define.compiler import ast
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Iterable, Iterator, Sequence
 
     from define.compiler.codegen.literal.python import naming
     from define.compiler.validator.reference_graph import operation_graph_labeler
@@ -82,14 +82,11 @@ class PositionExpr:
     local_position_member_name: str | None
     chain_elements: list[ChainElement]
 
-    @property
-    def class_references(self) -> list[naming.ClassReference]:
-        """Return global classes referenced by this expression."""
-        return [
-            element.class_reference
-            for element in self.chain_elements
-            if isinstance(element, GlobalQualityChainElement)
-        ]
+    def referenced_module_names(self) -> Iterator[str]:
+        """Yield external modules referenced by this expression."""
+        for element in self.chain_elements:
+            if isinstance(element, GlobalQualityChainElement):
+                yield element.class_reference.module_name
 
 
 @dataclass
@@ -120,14 +117,15 @@ class ActionFragmentContext:
 
     method_name: str
     statements: list[ActionStatementContext]
-    successor_fragment_method_names: list[str]
-    callee_binding_join_method_names_that_depend_on_fragment: list[str]
-    triggered_action_successors: list[TriggeredActionExecutionContext]
-    triggered_action_execution_callee_binding_join_method_names: list[str]
-    guarantee_publication_names: list[str]
+    inits: ActionExecutionInitsContext
+    fanout_continuation_method_names: list[str]
+    inline_callee_binding_plans: list[CalleeBindingPlanContext]
+    guarantee_name: str | None
     dependency_count: int
+    join_is_assigned_by_caller: bool
+    requires_join_check: bool
+    join_member_name: str | None
     continue_destroy_method_name: str | None
-    destruction_connection_names_to_complete: list[str]
     guarantee_dependent_destroy_position: DestructionPositionContext | None
 
 
@@ -136,8 +134,9 @@ class DestructionContractDestructorExecutionContext:
     """One Destructor Action Execution contributed through a Destruction Contract."""
 
     execution_class: naming.ClassReference
-    trigger_method_name: str
+    run_method_name: str
     action_parent_binding_method_name: str
+    guarantee_names_completing_connection: list[str]
     trace_action_name: str | None
 
 
@@ -150,9 +149,6 @@ class DestructionConnectionContext:
     start_method_names: list[str]
     destruction_contract_destructors: list[
         DestructionContractDestructorExecutionContext
-    ]
-    destructor_guarantee_registrations: list[
-        DestructionConnectionGuaranteeRegistrationContext
     ]
     predecessor_count: int
 
@@ -172,7 +168,8 @@ class TriggeredActionExecutionContext:
     action_expression: PositionExpr | None
     execution_class: naming.ClassReference
     execution_name: str
-    child_guarantees_name: str | None
+    callee_join_assignments: list[CalleeJoinAssignmentContext]
+    guarantee_consumptions: Sequence[GuaranteeConsumptionContext]
     created_destruction_connections: list[DestructionConnectionContext]
     forwards_destruction_connections: bool
     trace_parent_action_name: str | None
@@ -183,35 +180,40 @@ class TriggeredActionExecutionContext:
         """Whether the triggered execution receives its Action instance."""
         return self.action_expression is not None
 
-    @property
-    def execution_needs_guarantees(self) -> bool:
-        """Whether the triggered execution receives guarantee continuations."""
-        return self.child_guarantees_name is not None
+
+@dataclass
+class ActionExecutionInitsContext:
+    """Generated Action Execution init performed synchronously."""
+
+    action_executions: list[TriggeredActionExecutionContext]
+    callee_binding_method_names: list[str]
+
+
+@dataclass(frozen=True, slots=True)
+class CalleeJoinAssignmentContext:
+    """One caller-selected Join assigned through a generated execution path."""
+
+    member_name: str
+    dependency_count: int
+    execution_member_names: list[str]
 
 
 @dataclass
-class ChildGuaranteesContext:
-    """A guarantee bundle for one direct Action Execution."""
+class GuaranteeConsumptionContext:
+    """Generated tasks that consume one Guarantee."""
 
-    name: str
-    class_reference: naming.ClassReference
-
-
-@dataclass
-class GuaranteeRegistrationContext:
-    """One generated task registration for a consumed guarantee."""
-
-    child_guarantees_names: list[str]
+    execution_member_names: list[str]
     guarantee_name: str
+    init_method_names: list[str]
+    consumer_method_names: list[str]
+
+
+@dataclass
+class DeferredGuaranteeRegistrationContext:
+    """A Guarantee registration performed after its execution path exists."""
+
     method_name: str
-
-
-@dataclass
-class DestructionConnectionGuaranteeRegistrationContext:
-    """A destruction continuation's dependency on one Guarantee."""
-
-    child_guarantees_name: str
-    guarantee_name: str
+    consumption: GuaranteeConsumptionContext
 
 
 @dataclass
@@ -219,39 +221,46 @@ class GuaranteesContext:
     """Generated guarantees for one action execution."""
 
     class_name: str
-    child_guarantees: list[ChildGuaranteesContext]
-    publications: list[str]
-    registrations: Sequence[GuaranteeRegistrationContext]
+    guarantee_names: Iterable[str]
 
 
 @dataclass
-class CalleeBindingJoinContext:
-    """The generated join for one direct callee binding."""
+class CalleeBindingPlanContext:
+    """Generated context for completing one direct Callee Binding."""
 
-    triggered_action_execution_name: str
+    action_execution_name: str
     callee_binding_hole_method_name: str
-    method_name: str
+    method_name: str | None
+    invocation_method_name: str | None
+    invokes_callee_binding_hole_after_setup: bool
     dependency_count: int
+    join_is_assigned_by_caller: bool
+    requires_join_check: bool
+    join_member_name: str | None
     destruction_positions: list[DestructionPositionContext]
+    init_method_name: str | None
+    post_init_join_assignments: list[CalleeJoinAssignmentContext]
+    post_init_guarantee_consumptions: list[GuaranteeConsumptionContext]
 
 
 @dataclass
 class BindingHoleFanoutContext:
-    """A generated method that notifies every consumer of one Binding Hole."""
+    """Generated init and runnable fanout for one Binding Hole."""
 
     binding_hole_method_name: str
-    fragment_method_names: list[str]
-    callee_binding_join_method_names: list[str]
-    destructor_executions: list[TriggeredActionExecutionContext]
+    requires_join_check: bool
+    join_member_name: str | None
+    inits: ActionExecutionInitsContext
+    separate_init_method_name: str | None
+    fanout_continuation_method_names: list[str]
 
 
 @dataclass
-class TriggerForDestroyedCalleeGuaranteeParticleContext:
-    """One Action Execution for a destroyed callee-guaranteed particle."""
+class ActionExecutionInitMethodContext:
+    """A generated method that inits one Action Execution."""
 
     method_name: str
     action_execution: TriggeredActionExecutionContext
-    callee_binding_join_method_names: list[str]
 
 
 @dataclass
@@ -260,16 +269,19 @@ class ActionExecutionContext:
 
     execution_class_name: str
     local_position_statements: list[ActionStatementContext]
+    destruction_positions: list[DestructionPositionContext]
     fragments: list[ActionFragmentContext]
     binding_hole_fanouts: list[BindingHoleFanoutContext]
     action_executions: list[TriggeredActionExecutionContext]
-    triggers_for_destroyed_callee_guarantee_particles: list[
-        TriggerForDestroyedCalleeGuaranteeParticleContext
-    ]
-    callee_binding_joins: list[CalleeBindingJoinContext]
+    creation_inits: ActionExecutionInitsContext
+    action_execution_init_methods: list[ActionExecutionInitMethodContext]
+    callee_binding_plans: list[CalleeBindingPlanContext]
     guarantees: GuaranteesContext | None
     accepts_destruction_connections: bool
     trace_operations: bool = False
+    deferred_guarantee_registrations: list[DeferredGuaranteeRegistrationContext] = (
+        field(default_factory=list)
+    )
     needs_action: bool = field(init=False)
 
     def __post_init__(self):
@@ -288,21 +300,25 @@ class ActionExecutionContext:
                 ):
                     self.needs_action = True
                     return
-        self.needs_action = any(
-            triggered_action.action_expression is not None
-            and triggered_action.action_expression.local_position_member_name is None
-            for triggered_action in self.action_executions
-        )
+        self.needs_action = False
+        for triggered_action in self.action_executions:
+            action_expression = triggered_action.action_expression
+            if (
+                action_expression is not None
+                and action_expression.local_position_member_name is None
+            ):
+                self.needs_action = True
+                return
 
     @property
     def needs_tracing(self) -> bool:
         """Whether generated code imports the tracing runtime."""
         if not self.trace_operations:
             return False
-        return any(
-            action_execution.created_destruction_connections
-            for action_execution in self.action_executions
-        )
+        for action_execution in self.action_executions:
+            if action_execution.created_destruction_connections:
+                return True
+        return False
 
     @property
     def needs_guarantees(self) -> bool:
@@ -335,9 +351,10 @@ class PositionDefinitionContext:
     @property
     def imports(self) -> list[str]:
         """External modules imported by this definition."""
-        class_references: list[naming.ClassReference] = []
-        class_references.extend(self.constraints)
-        class_references.extend(self.implied_qualities)
-        return sorted(
-            {class_reference.module_name for class_reference in class_references}
+        module_names = {
+            class_reference.module_name for class_reference in self.constraints
+        }
+        module_names.update(
+            class_reference.module_name for class_reference in self.implied_qualities
         )
+        return sorted(module_names)

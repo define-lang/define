@@ -88,6 +88,10 @@ the
 
 ## Action Executions
 
+- The entry action uses the same reusable Action Plan as every other action. A
+  separate view-point Create plan identifies the ordinary Binding Holes and
+  caller-resolved joins satisfied by creation of the view point; only generated
+  `execute()` consumes that plan.
 - An Action Execution becomes available when its Action Parent has a particle.
   Initialize it synchronously before releasing work that requires it.
 - An Action Execution's constructor creates runtime state only. It never
@@ -108,6 +112,12 @@ the
   identity of callee consumers.
 - A Binding Hole interface owns its complete callee-defined fanout of Action
   Fragments and direct-callee Binding Holes.
+- A Move Rule or Empty Rule Binding Hole belongs to one Particle Operation. It
+  may receive multiple dependency arrivals, but it does not fan out to multiple
+  consumers.
+- Action Parent and Requirement Binding Holes may fan out to multiple consumers,
+  but each receives exactly one caller Particle Operation. No Binding Hole
+  therefore requires both multi-arrival joining and multi-consumer fanout.
 - A Particle Operation directly releases intrinsic Action Fragment arrivals
   known by its action.
 - Preserve distinct dependency arrivals even when they invoke the same generated

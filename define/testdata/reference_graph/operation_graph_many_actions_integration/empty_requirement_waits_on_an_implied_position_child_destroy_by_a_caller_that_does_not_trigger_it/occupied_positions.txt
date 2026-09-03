@@ -1,0 +1,2 @@
+position<local.my_domain_com.my_lib.holder.Holder>
+position<local.my_domain_com.my_lib.holder.Holder>::position<local.my_domain_com.my_lib.a.A>

@@ -15,8 +15,7 @@ class Test(literal.EntryPoint):
         execution = TestExecution(
             scheduler,
         )
-        execution.scheduler.submit(execution.create_position_box)
-        execution.create_position_source()
+        execution.on_action_parent_occupied()
 
 
 @final
@@ -41,6 +40,10 @@ class TestExecution:
             scheduler=self.scheduler,
         )
         self.join_for_move_position_source_to_position_box = self.scheduler.create_join(2)
+
+    def on_action_parent_occupied(self):
+        self.scheduler.submit(self.create_position_box)
+        self.create_position_source()
 
     def create_position_box(self):
         self.local_position_box.create_particle()

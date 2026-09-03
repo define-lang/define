@@ -9,24 +9,10 @@ py_library(
     visibility = ["//define/compiler/codegen:__subpackages__"],
     deps = [
         "//define/compiler:ast",
+        "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/validator/reference_graph:operation_graph",
         "//define/compiler/validator/reference_graph:operation_graph_action_resolver",
         "//define/compiler/validator/reference_graph:operation_graph_model",
-    ],
-)
-
-py_test(
-    name = "action_plan_test",
-    size = "small",
-    srcs = ["action_plan_test.py"],
-    deps = [
-        ":action_plan",
-        "//define/compiler:ast",
-        "//define/compiler:test_helpers",
-        "//define/compiler/validator/reference_graph:action_contract",
-        "//define/compiler/validator/reference_graph:operation_graph",
-        "//define/compiler/validator/reference_graph:operation_graph_model",
-        "@pypi//pytest",
     ],
 )
 
@@ -177,7 +163,6 @@ pyright_test(
     name = "pyright_test",
     deps = [
         ":action_plan",
-        ":action_plan_test",
         ":callee_codegen_independence_integration_test",
         ":codegen",
         ":generated_program_runner",

@@ -65,6 +65,56 @@
         "action_name": "test"
       },
       "operation_name": "create",
+      "target": "gateway::/worker::trigger_pos",
+      "occurrence": 2
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "worker"
+        },
+        "operation_name": "destroy",
+        "target": "trigger_pos",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "worker#2"
+      },
+      "operation_name": "destroy",
+      "target": "trigger_pos",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "operation_name": "create",
+        "target": "gateway::/worker::trigger_pos",
+        "occurrence": 2
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "operation_name": "create",
       "target": "gateway::/worker::item",
       "occurrence": 1
     },
@@ -139,56 +189,6 @@
   {
     "operation": {
       "execution": {
-        "caller": null,
-        "action_name": "test"
-      },
-      "operation_name": "create",
-      "target": "gateway::/worker::trigger_pos",
-      "occurrence": 2
-    },
-    "dependencies": [
-      {
-        "execution": {
-          "caller": {
-            "caller": null,
-            "action_name": "test"
-          },
-          "action_name": "worker"
-        },
-        "operation_name": "destroy",
-        "target": "trigger_pos",
-        "occurrence": 1
-      }
-    ]
-  },
-  {
-    "operation": {
-      "execution": {
-        "caller": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "action_name": "worker#2"
-      },
-      "operation_name": "destroy",
-      "target": "trigger_pos",
-      "occurrence": 1
-    },
-    "dependencies": [
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "create",
-        "target": "gateway::/worker::trigger_pos",
-        "occurrence": 2
-      }
-    ]
-  },
-  {
-    "operation": {
-      "execution": {
         "caller": {
           "caller": null,
           "action_name": "test"
@@ -242,6 +242,66 @@
         "operation_name": "move",
         "source": "item",
         "target": "holder",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "operation_name": "destroy",
+      "target": "gateway::/worker::item",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "worker#2"
+        },
+        "operation_name": "move",
+        "source": "holder",
+        "target": "item",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "operation_name": "destroy",
+      "target": "gateway",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "worker#2"
+        },
+        "operation_name": "destroy",
+        "target": "trigger_pos",
+        "occurrence": 1
+      },
+      {
+        "execution": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "operation_name": "destroy",
+        "target": "gateway::/worker::item",
         "occurrence": 1
       }
     ]

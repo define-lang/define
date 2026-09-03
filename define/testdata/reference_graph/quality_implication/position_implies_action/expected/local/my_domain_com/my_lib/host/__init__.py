@@ -14,29 +14,27 @@ class Host(literal.Action):
 
 
 @final
-class HostGuarantees:
-    def __init__(self):
-        self.trigger_action_helper = local.my_domain_com.my_lib.helper.HelperGuarantees()
-
-
-@final
 class HostExecution:
     def __init__(
         self,
         action: Host,
         scheduler: literal.Scheduler,
-        guarantees: HostGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
-        self.execution_trigger_action_helper: local.my_domain_com.my_lib.helper.HelperExecution
-        self.join_for_trigger_action_helper__action_parent = self.scheduler.create_join(2)
-        self.join_for_trigger_action_helper__for_empty_rule_position_run = self.scheduler.create_join(2)
+        self.execution_action_helper: local.my_domain_com.my_lib.helper.HelperExecution
+        self.execution_action_helper = local.my_domain_com.my_lib.helper.HelperExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.helper.Helper
+            ),
+            self.scheduler,
+        )
+        self.execution_action_helper.join_for_empty_rule_position_run = literal.NO_JOIN
+        self.execution_action_helper.join_for_destroy_position_run = literal.NO_JOIN
 
-    def accept_action_parent(self):
+    def on_action_parent_occupied(self):
         self.scheduler.submit(self.create_action_helper__position_run)
-        self.trigger_action_helper__action_parent()
+        self.execution_action_helper.on_action_parent_occupied()
 
     def create_action_helper__position_run(self):
         self.action.on_particle.get_action(
@@ -44,23 +42,4 @@ class HostExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.execution_trigger_action_helper = local.my_domain_com.my_lib.helper.HelperExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.helper.Helper
-            ),
-            self.scheduler,
-            self.guarantees.trigger_action_helper,
-        )
-        self.scheduler.submit(self.trigger_action_helper__for_empty_rule_position_run)
-        self.scheduler.submit(self.trigger_action_helper__action_parent)
-        self.trigger_action_helper__for_empty_rule_position_run()
-
-    def trigger_action_helper__action_parent(self):
-        if not self.join_for_trigger_action_helper__action_parent.arrive():
-            return
-        self.execution_trigger_action_helper.accept_action_parent()
-
-    def trigger_action_helper__for_empty_rule_position_run(self):
-        if not self.join_for_trigger_action_helper__for_empty_rule_position_run.arrive():
-            return
-        self.execution_trigger_action_helper.accept_for_empty_rule_position_run()
+        self.execution_action_helper.accept_for_empty_rule_position_run()

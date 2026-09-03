@@ -15,8 +15,7 @@ class Test(literal.EntryPoint):
         execution = TestExecution(
             scheduler,
         )
-        execution.scheduler.submit(execution.create_position_holder_first)
-        execution.create_position_holder_second()
+        execution.on_action_parent_occupied()
 
 
 @final
@@ -40,15 +39,20 @@ class TestExecution:
             ),
             scheduler=self.scheduler,
         )
-        self.execution_trigger_position_holder_first__action_first: local.my_domain_com.my_lib.first.FirstExecution
-        self.execution_trigger_position_holder_second__action_second: local.my_domain_com.my_lib.second.SecondExecution
-        self.join_for_trigger_position_holder_first__action_first__action_parent = self.scheduler.create_join(2)
-        self.join_for_trigger_position_holder_second__action_second__action_parent = self.scheduler.create_join(2)
+        self.execution_position_holder_first__action_first: local.my_domain_com.my_lib.first.FirstExecution
+        self.execution_position_holder_second__action_second: local.my_domain_com.my_lib.second.SecondExecution
+
+    def on_action_parent_occupied(self):
+        self.scheduler.submit(self.create_position_holder_first)
+        self.create_position_holder_second()
 
     def create_position_holder_first(self):
         self.local_position_holder_first.create_particle()
+        self.execution_position_holder_first__action_first = local.my_domain_com.my_lib.first.FirstExecution(
+            self.scheduler,
+        )
         self.scheduler.submit(self.create_position_holder_first__action_first__position_trigger_pos)
-        self.trigger_position_holder_first__action_first__action_parent()
+        self.execution_position_holder_first__action_first.on_action_parent_occupied()
 
     def create_position_holder_first__action_first__position_trigger_pos(self):
         self.local_position_holder_first.particle.get_action(
@@ -56,13 +60,6 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.execution_trigger_position_holder_first__action_first = local.my_domain_com.my_lib.first.FirstExecution(
-            self.scheduler,
-        )
-        self.scheduler.submit(self.destroy_position_holder_first__action_first__position_trigger_pos)
-        self.trigger_position_holder_first__action_first__action_parent()
-
-    def destroy_position_holder_first__action_first__position_trigger_pos(self):
         self.local_position_holder_first.particle.get_action(
             local.my_domain_com.my_lib.first.First
         ).get_interface_position(
@@ -72,8 +69,11 @@ class TestExecution:
 
     def create_position_holder_second(self):
         self.local_position_holder_second.create_particle()
+        self.execution_position_holder_second__action_second = local.my_domain_com.my_lib.second.SecondExecution(
+            self.scheduler,
+        )
         self.scheduler.submit(self.create_position_holder_second__action_second__position_trigger_pos)
-        self.trigger_position_holder_second__action_second__action_parent()
+        self.execution_position_holder_second__action_second.on_action_parent_occupied()
 
     def create_position_holder_second__action_second__position_trigger_pos(self):
         self.local_position_holder_second.particle.get_action(
@@ -81,26 +81,9 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.execution_trigger_position_holder_second__action_second = local.my_domain_com.my_lib.second.SecondExecution(
-            self.scheduler,
-        )
-        self.scheduler.submit(self.destroy_position_holder_second__action_second__position_trigger_pos)
-        self.trigger_position_holder_second__action_second__action_parent()
-
-    def destroy_position_holder_second__action_second__position_trigger_pos(self):
         self.local_position_holder_second.particle.get_action(
             local.my_domain_com.my_lib.second.Second
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
         self.local_position_holder_second.destroy_particle()
-
-    def trigger_position_holder_first__action_first__action_parent(self):
-        if not self.join_for_trigger_position_holder_first__action_first__action_parent.arrive():
-            return
-        self.execution_trigger_position_holder_first__action_first.accept_action_parent()
-
-    def trigger_position_holder_second__action_second__action_parent(self):
-        if not self.join_for_trigger_position_holder_second__action_second__action_parent.arrive():
-            return
-        self.execution_trigger_position_holder_second__action_second.accept_action_parent()

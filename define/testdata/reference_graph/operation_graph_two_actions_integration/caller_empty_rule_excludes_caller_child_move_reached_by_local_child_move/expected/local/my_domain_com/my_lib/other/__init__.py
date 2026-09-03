@@ -34,8 +34,8 @@ class Other(literal.Action):
 @final
 class OtherGuarantees:
     def __init__(self):
-        self.guarantee_global_position_input: list[literal.Task] = []
-        self.guarantee_position_holder: list[literal.Task] = []
+        self.global_position_input = literal.Guarantee()
+        self.position_holder = literal.Guarantee()
 
 
 @final
@@ -44,31 +44,45 @@ class OtherExecution:
         self,
         action: Other,
         scheduler: literal.Scheduler,
-        guarantees: OtherGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = OtherGuarantees()
         self.destruction_connections = destruction_connections
-        self.join_for_move_global_position_input__global_position_middle_to_global_position_input__global_position_target = self.scheduler.create_join(2)
-        self.join_for_move_global_position_input__global_position_target_to_position_holder = self.scheduler.create_join(2)
-        self.join_for_destroy_global_position_input = self.scheduler.create_join(2)
+        self.join_for_move_global_position_input__global_position_start_to_global_position_input__global_position_middle: literal.Join
+        self.join_for_move_global_position_input__global_position_middle_to_global_position_input__global_position_target: literal.Join
+        self.join_for_move_global_position_input__global_position_target_to_position_holder: literal.Join
+        self.join_for_destroy_global_position_input: literal.Join
+        self.join_for_empty_rule_global_position_input__global_position_start: literal.Join
+        self.join_when_empty_global_position_input__global_position_target: literal.Join
+        self.join_when_empty_position_holder: literal.Join
+        self.join_for_empty_rule_global_position_input: literal.Join
 
     def accept_for_empty_rule_global_position_input__global_position_start(self):
+        if not self.join_for_empty_rule_global_position_input__global_position_start.arrive():
+            return
         self.move_global_position_input__global_position_start_to_global_position_input__global_position_middle()
 
     def accept_when_empty_global_position_input__global_position_target(self):
+        if not self.join_when_empty_global_position_input__global_position_target.arrive():
+            return
         self.move_global_position_input__global_position_middle_to_global_position_input__global_position_target()
 
     def accept_when_empty_position_holder(self):
+        if not self.join_when_empty_position_holder.arrive():
+            return
         self.move_global_position_input__global_position_target_to_position_holder()
 
     def accept_for_empty_rule_global_position_input(self):
+        if not self.join_for_empty_rule_global_position_input.arrive():
+            return
         self.destroy_global_position_input()
 
     def move_global_position_input__global_position_start_to_global_position_input__global_position_middle(self):
+        if not self.join_for_move_global_position_input__global_position_start_to_global_position_input__global_position_middle.arrive():
+            return
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.input.Input
         ).particle.get_position(
@@ -122,7 +136,9 @@ class OtherExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.input.Input
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_input)
+        self.guarantees.global_position_input.publish(
+            self.scheduler,
+        )
 
     def destroy_position_holder(self):
         literal.continue_destruction(self.continue_destroy_position_holder)
@@ -131,4 +147,6 @@ class OtherExecution:
         self.action.get_interface_position(
             "position<holder>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_holder)
+        self.guarantees.position_holder.publish(
+            self.scheduler,
+        )

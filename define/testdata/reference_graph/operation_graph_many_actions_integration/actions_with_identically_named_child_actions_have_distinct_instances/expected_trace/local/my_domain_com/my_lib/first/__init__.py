@@ -41,10 +41,9 @@ class FirstExecution:
             ),
             scheduler=self.scheduler,
         )
-        self.execution_trigger_position_box__action_inner: local.my_domain_com.my_lib.inner.InnerExecution
-        self.join_for_trigger_position_box__action_inner__action_parent = self.scheduler.create_join(2)
+        self.execution_position_box__action_inner: local.my_domain_com.my_lib.inner.InnerExecution
 
-    def accept_action_parent(self):
+    def on_action_parent_occupied(self):
         self.create_position_box()
 
     def create_position_box(self):
@@ -54,8 +53,13 @@ class FirstExecution:
             "box",
             1,
         )
+        self.execution_position_box__action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
+            self.scheduler,
+            self.trace_execution,
+            "inner",
+        )
         self.scheduler.submit(self.create_position_box__action_inner__position_trigger_pos)
-        self.trigger_position_box__action_inner__action_parent()
+        self.execution_position_box__action_inner.on_action_parent_occupied()
 
     def create_position_box__action_inner__position_trigger_pos(self):
         self.local_position_box.particle.get_action(
@@ -68,15 +72,6 @@ class FirstExecution:
             "box::/inner::trigger_pos",
             1,
         )
-        self.execution_trigger_position_box__action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
-            self.scheduler,
-            self.trace_execution,
-            "inner",
-        )
-        self.scheduler.submit(self.destroy_position_box__action_inner__position_trigger_pos)
-        self.trigger_position_box__action_inner__action_parent()
-
-    def destroy_position_box__action_inner__position_trigger_pos(self):
         self.local_position_box.particle.get_action(
             local.my_domain_com.my_lib.inner.Inner
         ).get_interface_position(
@@ -93,8 +88,3 @@ class FirstExecution:
             "box",
             1,
         )
-
-    def trigger_position_box__action_inner__action_parent(self):
-        if not self.join_for_trigger_position_box__action_inner__action_parent.arrive():
-            return
-        self.execution_trigger_position_box__action_inner.accept_action_parent()

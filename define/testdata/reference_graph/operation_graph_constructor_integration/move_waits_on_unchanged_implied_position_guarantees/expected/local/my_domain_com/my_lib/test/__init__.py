@@ -15,16 +15,8 @@ class Test(literal.EntryPoint):
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
             scheduler,
-            TestGuarantees(),
         )
-        execution.create_position_source()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_position_source__action_construct_a = local.my_domain_com.my_lib.construct_a.ConstructAGuarantees()
-        self.trigger_position_source__action_construct_b = local.my_domain_com.my_lib.construct_b.ConstructBGuarantees()
+        execution.on_action_parent_occupied()
 
 
 @final
@@ -32,10 +24,8 @@ class TestExecution:
     def __init__(
         self,
         scheduler: literal.Scheduler,
-        guarantees: TestGuarantees,
     ):
         self.scheduler = scheduler
-        self.guarantees = guarantees
         self.local_position_source = literal.LocalPosition(
             "position<source>",
             constraints=(
@@ -51,36 +41,33 @@ class TestExecution:
             ),
             scheduler=self.scheduler,
         )
-        guarantees.trigger_position_source__action_construct_b.guarantee_global_position_marker.append(
-            self.move_position_source_to_position_dest
-        )
-        guarantees.trigger_position_source__action_construct_a.guarantee_global_position_marker.append(
-            self.trigger_position_source__action_construct_b__when_empty_global_position_marker
-        )
-        self.execution_trigger_position_source__action_construct_a: local.my_domain_com.my_lib.construct_a.ConstructAExecution
-        self.execution_trigger_position_source__action_construct_b: local.my_domain_com.my_lib.construct_b.ConstructBExecution
-        self.join_for_trigger_position_source__action_construct_a__when_empty_global_position_marker = self.scheduler.create_join(2)
-        self.join_for_trigger_position_source__action_construct_b__when_empty_global_position_marker = self.scheduler.create_join(2)
+        self.execution_position_source__action_construct_a: local.my_domain_com.my_lib.construct_a.ConstructAExecution
+        self.execution_position_source__action_construct_b: local.my_domain_com.my_lib.construct_b.ConstructBExecution
+
+    def on_action_parent_occupied(self):
+        self.create_position_source()
 
     def create_position_source(self):
         self.local_position_source.create_particle()
-        self.execution_trigger_position_source__action_construct_a = local.my_domain_com.my_lib.construct_a.ConstructAExecution(
+        self.execution_position_source__action_construct_a = local.my_domain_com.my_lib.construct_a.ConstructAExecution(
             self.local_position_source.particle.get_action(
                 local.my_domain_com.my_lib.construct_a.ConstructA
             ),
             self.scheduler,
-            self.guarantees.trigger_position_source__action_construct_a,
         )
-        self.execution_trigger_position_source__action_construct_b = local.my_domain_com.my_lib.construct_b.ConstructBExecution(
+        self.execution_position_source__action_construct_a.guarantees.global_position_marker.consumers.append(
+            self.accept_guarantee_position_source__action_construct_b
+        )
+        self.execution_position_source__action_construct_b = local.my_domain_com.my_lib.construct_b.ConstructBExecution(
             self.local_position_source.particle.get_action(
                 local.my_domain_com.my_lib.construct_b.ConstructB
             ),
             self.scheduler,
-            self.guarantees.trigger_position_source__action_construct_b,
         )
-        self.scheduler.submit(self.trigger_position_source__action_construct_a__when_empty_global_position_marker)
-        self.scheduler.submit(self.trigger_position_source__action_construct_a__when_empty_global_position_marker)
-        self.trigger_position_source__action_construct_b__when_empty_global_position_marker()
+        self.execution_position_source__action_construct_b.guarantees.global_position_marker.consumers.append(
+            self.move_position_source_to_position_dest
+        )
+        self.execution_position_source__action_construct_a.accept_when_empty_global_position_marker()
 
     def move_position_source_to_position_dest(self):
         self.local_position_source.move_particle_to(self.local_position_dest)
@@ -92,12 +79,5 @@ class TestExecution:
         ).destroy_particle()
         self.local_position_dest.destroy_particle()
 
-    def trigger_position_source__action_construct_a__when_empty_global_position_marker(self):
-        if not self.join_for_trigger_position_source__action_construct_a__when_empty_global_position_marker.arrive():
-            return
-        self.execution_trigger_position_source__action_construct_a.accept_when_empty_global_position_marker()
-
-    def trigger_position_source__action_construct_b__when_empty_global_position_marker(self):
-        if not self.join_for_trigger_position_source__action_construct_b__when_empty_global_position_marker.arrive():
-            return
-        self.execution_trigger_position_source__action_construct_b.accept_when_empty_global_position_marker()
+    def accept_guarantee_position_source__action_construct_b(self):
+        self.execution_position_source__action_construct_b.accept_when_empty_global_position_marker()

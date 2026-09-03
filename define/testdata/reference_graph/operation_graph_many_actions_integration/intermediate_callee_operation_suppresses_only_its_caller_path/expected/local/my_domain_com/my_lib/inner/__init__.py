@@ -27,7 +27,7 @@ class Inner(literal.Action):
 @final
 class InnerGuarantees:
     def __init__(self):
-        self.guarantee_global_position_parent: list[literal.Task] = []
+        self.global_position_parent = literal.Guarantee()
 
 
 @final
@@ -36,23 +36,30 @@ class InnerExecution:
         self,
         action: Inner,
         scheduler: literal.Scheduler,
-        guarantees: InnerGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = InnerGuarantees()
         self.destruction_connections = destruction_connections
+        self.join_for_destroy_global_position_parent: literal.Join
+        self.join_for_empty_rule_global_position_parent: literal.Join
 
     def accept_for_empty_rule_global_position_parent(self):
+        if not self.join_for_empty_rule_global_position_parent.arrive():
+            return
         self.destroy_global_position_parent()
 
     def destroy_global_position_parent(self):
+        if not self.join_for_destroy_global_position_parent.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_global_position_parent)
 
     def continue_destroy_global_position_parent(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.parent.Parent
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_parent)
+        self.guarantees.global_position_parent.publish(
+            self.scheduler,
+        )

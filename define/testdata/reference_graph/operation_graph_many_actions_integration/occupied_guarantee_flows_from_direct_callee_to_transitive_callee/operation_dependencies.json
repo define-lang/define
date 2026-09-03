@@ -2,18 +2,6 @@
   {
     "operation": {
       "execution": {
-        "caller": null,
-        "action_name": "test"
-      },
-      "operation_name": "create",
-      "target": "/outer::trigger_pos",
-      "occurrence": 1
-    },
-    "dependencies": []
-  },
-  {
-    "operation": {
-      "execution": {
         "caller": {
           "caller": null,
           "action_name": "test"
@@ -22,51 +10,6 @@
       },
       "operation_name": "create",
       "target": "/item",
-      "occurrence": 1
-    },
-    "dependencies": []
-  },
-  {
-    "operation": {
-      "execution": {
-        "caller": {
-          "caller": {
-            "caller": null,
-            "action_name": "test"
-          },
-          "action_name": "outer"
-        },
-        "action_name": "middle"
-      },
-      "operation_name": "create",
-      "target": "/empty_item::trigger_pos",
-      "occurrence": 1
-    },
-    "dependencies": []
-  },
-  {
-    "operation": {
-      "execution": {
-        "caller": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "action_name": "outer"
-      },
-      "operation_name": "create",
-      "target": "/middle::trigger_pos",
-      "occurrence": 1
-    },
-    "dependencies": []
-  },
-  {
-    "operation": {
-      "execution": {
-        "caller": null,
-        "action_name": "test"
-      },
-      "operation_name": "create",
-      "target": "/fill_item::trigger_pos",
       "occurrence": 1
     },
     "dependencies": []
@@ -101,6 +44,169 @@
         },
         "operation_name": "create",
         "target": "/item",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "outer"
+        },
+        "action_name": "middle"
+      },
+      "operation_name": "create",
+      "target": "/empty_item::trigger_pos",
+      "occurrence": 1
+    },
+    "dependencies": []
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "outer"
+        },
+        "action_name": "middle"
+      },
+      "operation_name": "destroy",
+      "target": "/empty_item::trigger_pos",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": {
+            "caller": {
+              "caller": null,
+              "action_name": "test"
+            },
+            "action_name": "outer"
+          },
+          "action_name": "middle"
+        },
+        "operation_name": "create",
+        "target": "/empty_item::trigger_pos",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "operation_name": "create",
+      "target": "/fill_item::trigger_pos",
+      "occurrence": 1
+    },
+    "dependencies": []
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "operation_name": "destroy",
+      "target": "/fill_item::trigger_pos",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "operation_name": "create",
+        "target": "/fill_item::trigger_pos",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "operation_name": "create",
+      "target": "/outer::trigger_pos",
+      "occurrence": 1
+    },
+    "dependencies": []
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "operation_name": "destroy",
+      "target": "/outer::trigger_pos",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "operation_name": "create",
+        "target": "/outer::trigger_pos",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "outer"
+      },
+      "operation_name": "create",
+      "target": "/middle::trigger_pos",
+      "occurrence": 1
+    },
+    "dependencies": []
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "outer"
+      },
+      "operation_name": "destroy",
+      "target": "/middle::trigger_pos",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "outer"
+        },
+        "operation_name": "create",
+        "target": "/middle::trigger_pos",
         "occurrence": 1
       }
     ]

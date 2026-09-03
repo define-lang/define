@@ -18,8 +18,8 @@ class SecondDestructor(literal.Action):
 @final
 class SecondDestructorGuarantees:
     def __init__(self):
-        self.guarantee_global_position_second: list[literal.Task] = []
-        self.guarantee_global_position_marker: list[literal.Task] = []
+        self.global_position_second = literal.Guarantee()
+        self.global_position_marker = literal.Guarantee()
 
 
 @final
@@ -30,7 +30,6 @@ class SecondDestructorExecution:
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
-        guarantees: SecondDestructorGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
@@ -38,7 +37,7 @@ class SecondDestructorExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = guarantees
+        self.guarantees = SecondDestructorGuarantees()
 
     def accept_when_empty_global_position_second(self):
         self.create_global_position_second()
@@ -63,7 +62,9 @@ class SecondDestructorExecution:
             "/second",
             1,
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_second)
+        self.guarantees.global_position_second.publish(
+            self.scheduler,
+        )
 
     def create_global_position_marker(self):
         self.action.on_particle.get_position(
@@ -82,4 +83,6 @@ class SecondDestructorExecution:
             "/marker",
             1,
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_marker)
+        self.guarantees.global_position_marker.publish(
+            self.scheduler,
+        )

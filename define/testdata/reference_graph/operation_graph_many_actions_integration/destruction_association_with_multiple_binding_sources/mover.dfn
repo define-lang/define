@@ -1,0 +1,32 @@
+define the potential action<my.domain.com:my_lib:/mover> {
+    it also assigns the position</guaranteed_parent>.
+    it also assigns the position</caller_parent>.
+    define the position<trigger_pos>.
+    define the position<guaranteed_destination> {
+        it may only contain particles where {
+            it has the position</child_a>.
+            it has the position</child_b>.
+        }
+    }
+    define the position<caller_destination> {
+        it may only contain particles where {
+            it has the position</child_a>.
+            it has the position</child_b>.
+        }
+    }
+    define the position<discard>.
+    it happens when {
+        the position<trigger_pos> has a particle.
+    } and it does {
+        move the particle in position</guaranteed_parent> to position<guaranteed_destination>.
+        move the particle in position</caller_parent> to position<caller_destination>.
+        destroy the particle in position<discard>.
+        destroy the particle in position<guaranteed_destination>::position</child_a>.
+        destroy the particle in position<guaranteed_destination>::position</child_b>.
+        destroy the particle in position<guaranteed_destination>.
+        destroy the particle in position<caller_destination>::position</child_a>.
+        destroy the particle in position<caller_destination>::position</child_b>.
+        destroy the particle in position<caller_destination>.
+        destroy the particle in position<trigger_pos>.
+    }
+}

@@ -28,7 +28,7 @@ class Maker(literal.Action):
 @final
 class MakerGuarantees:
     def __init__(self):
-        self.guarantee_global_position_child: list[literal.Task] = []
+        self.global_position_child = literal.Guarantee()
 
 
 @final
@@ -37,11 +37,10 @@ class MakerExecution:
         self,
         action: Maker,
         scheduler: literal.Scheduler,
-        guarantees: MakerGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = MakerGuarantees()
         self.local_position_temp = literal.LocalPosition(
             "position<temp>",
             constraints=(
@@ -49,12 +48,15 @@ class MakerExecution:
             ),
             scheduler=self.scheduler,
         )
-        self.join_for_move_position_temp_to_global_position_child = self.scheduler.create_join(2)
+        self.join_for_move_position_temp_to_global_position_child: literal.Join
+        self.join_when_empty_global_position_child: literal.Join
 
-    def accept_action_parent(self):
+    def on_action_parent_occupied(self):
         self.create_position_temp()
 
     def accept_when_empty_global_position_child(self):
+        if not self.join_when_empty_global_position_child.arrive():
+            return
         self.move_position_temp_to_global_position_child()
 
     def create_position_temp(self):
@@ -69,4 +71,6 @@ class MakerExecution:
                 local.my_domain_com.my_lib.child.Child
             )
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_child)
+        self.guarantees.global_position_child.publish(
+            self.scheduler,
+        )

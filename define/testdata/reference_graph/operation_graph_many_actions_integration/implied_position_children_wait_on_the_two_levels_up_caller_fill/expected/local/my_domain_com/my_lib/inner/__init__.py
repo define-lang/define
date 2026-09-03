@@ -29,8 +29,8 @@ class Inner(literal.Action):
 @final
 class InnerGuarantees:
     def __init__(self):
-        self.guarantee_global_position_parent__global_position_child1: list[literal.Task] = []
-        self.guarantee_global_position_parent__global_position_child2: list[literal.Task] = []
+        self.global_position_parent__global_position_child1 = literal.Guarantee()
+        self.global_position_parent__global_position_child2 = literal.Guarantee()
 
 
 @final
@@ -39,11 +39,10 @@ class InnerExecution:
         self,
         action: Inner,
         scheduler: literal.Scheduler,
-        guarantees: InnerGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = InnerGuarantees()
 
     def accept_when_empty_global_position_parent__global_position_child1(self):
         self.create_global_position_parent__global_position_child1()
@@ -57,7 +56,9 @@ class InnerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.child1.Child1
         ).create_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_parent__global_position_child1)
+        self.guarantees.global_position_parent__global_position_child1.publish(
+            self.scheduler,
+        )
 
     def create_global_position_parent__global_position_child2(self):
         self.action.on_particle.get_position(
@@ -65,4 +66,6 @@ class InnerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.child2.Child2
         ).create_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_parent__global_position_child2)
+        self.guarantees.global_position_parent__global_position_child2.publish(
+            self.scheduler,
+        )

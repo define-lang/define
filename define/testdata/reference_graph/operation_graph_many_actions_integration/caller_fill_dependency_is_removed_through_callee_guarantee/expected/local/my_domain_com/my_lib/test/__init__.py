@@ -21,16 +21,15 @@ class Test(literal.EntryPoint):
         execution = TestExecution(
             self,
             scheduler,
-            TestGuarantees(),
         )
-        execution.scheduler.submit(execution.create_global_position_destination)
-        execution.create_action_mover__position_trigger_pos()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_action_mover = local.my_domain_com.my_lib.mover.MoverGuarantees()
+        execution.execution_action_mover.join_for_empty_rule_global_position_slot = scheduler.create_join(2)
+        execution.join_when_empty_global_position_slot = literal.NO_JOIN
+        execution.join_when_empty_global_position_out = literal.NO_JOIN
+        execution.join_for_move_position_temp_to_global_position_slot = scheduler.create_join(2)
+        scheduler.submit(execution.accept_when_empty_global_position_destination)
+        scheduler.submit(execution.accept_when_empty_global_position_slot)
+        scheduler.submit(execution.on_action_parent_occupied)
+        execution.accept_when_empty_global_position_out()
 
 
 @final
@@ -39,17 +38,44 @@ class TestExecution:
         self,
         action: Test,
         scheduler: literal.Scheduler,
-        guarantees: TestGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
         self.local_position_temp = literal.LocalPosition(
             "position<temp>",
             scheduler=self.scheduler,
         )
-        self.execution_trigger_action_mover: local.my_domain_com.my_lib.mover.MoverExecution
-        self.join_for_trigger_action_mover__for_empty_rule_global_position_slot = self.scheduler.create_join(2)
+        self.execution_action_mover: local.my_domain_com.my_lib.mover.MoverExecution
+        self.join_for_move_position_temp_to_global_position_slot: literal.Join
+        self.join_when_empty_global_position_slot: literal.Join
+        self.join_when_empty_global_position_out: literal.Join
+        self.execution_action_mover = local.my_domain_com.my_lib.mover.MoverExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.mover.Mover
+            ),
+            self.scheduler,
+        )
+        self.execution_action_mover.execution_action_helper.join_for_empty_rule_global_position_slot = literal.NO_JOIN
+        self.execution_action_mover.execution_action_helper.join_for_move_global_position_slot_to_global_position_out = literal.NO_JOIN
+        self.execution_action_mover.join_when_empty_global_position_destination = literal.NO_JOIN
+        self.execution_action_mover.join_for_move_global_position_out_to_global_position_destination = literal.NO_JOIN
+
+    def accept_when_empty_global_position_destination(self):
+        self.create_global_position_destination()
+
+    def accept_when_empty_global_position_slot(self):
+        if not self.join_when_empty_global_position_slot.arrive():
+            return
+        self.move_position_temp_to_global_position_slot()
+
+    def on_action_parent_occupied(self):
+        self.scheduler.submit(self.create_action_mover__position_trigger_pos)
+        self.execution_action_mover.on_action_parent_occupied()
+
+    def accept_when_empty_global_position_out(self):
+        if not self.join_when_empty_global_position_out.arrive():
+            return
+        self.execution_action_mover.accept_for_empty_rule_global_position_slot()
 
     def create_global_position_destination(self):
         self.action.on_particle.get_position(
@@ -58,12 +84,17 @@ class TestExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.destination.Destination
         ).move_particle_to(self.local_position_temp)
+        self.move_position_temp_to_global_position_slot()
+
+    def move_position_temp_to_global_position_slot(self):
+        if not self.join_for_move_position_temp_to_global_position_slot.arrive():
+            return
         self.local_position_temp.move_particle_to(
             self.action.on_particle.get_position(
                 local.my_domain_com.my_lib.slot.Slot
             )
         )
-        self.trigger_action_mover__for_empty_rule_global_position_slot()
+        self.execution_action_mover.accept_for_empty_rule_global_position_slot()
 
     def create_action_mover__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -71,32 +102,8 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.execution_trigger_action_mover = local.my_domain_com.my_lib.mover.MoverExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.mover.Mover
-            ),
-            self.scheduler,
-            self.guarantees.trigger_action_mover,
-        )
-        self.scheduler.submit(self.destroy_action_mover__position_trigger_pos)
-        self.scheduler.submit(self.trigger_action_mover__action_parent)
-        self.scheduler.submit(self.trigger_action_mover__for_empty_rule_global_position_slot)
-        self.trigger_action_mover__when_empty_global_position_destination()
-
-    def destroy_action_mover__position_trigger_pos(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.mover.Mover
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
-
-    def trigger_action_mover__action_parent(self):
-        self.execution_trigger_action_mover.accept_action_parent()
-
-    def trigger_action_mover__for_empty_rule_global_position_slot(self):
-        if not self.join_for_trigger_action_mover__for_empty_rule_global_position_slot.arrive():
-            return
-        self.execution_trigger_action_mover.accept_for_empty_rule_global_position_slot()
-
-    def trigger_action_mover__when_empty_global_position_destination(self):
-        self.execution_trigger_action_mover.accept_when_empty_global_position_destination()

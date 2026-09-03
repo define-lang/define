@@ -30,9 +30,9 @@ class Process(literal.Action):
 @final
 class ProcessGuarantees:
     def __init__(self):
-        self.guarantee_position_input: list[literal.Task] = []
-        self.guarantee_position_config: list[literal.Task] = []
-        self.guarantee_position_trigger: list[literal.Task] = []
+        self.position_input = literal.Guarantee()
+        self.position_config = literal.Guarantee()
+        self.position_trigger = literal.Guarantee()
 
 
 @final
@@ -41,29 +41,36 @@ class ProcessExecution:
         self,
         action: Process,
         scheduler: literal.Scheduler,
-        guarantees: ProcessGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = ProcessGuarantees()
         self.destruction_connections = destruction_connections
         self.local_position_result = literal.LocalPosition(
             "position<result>",
             scheduler=self.scheduler,
         )
+        self.join_for_destroy_position_input: literal.Join
+        self.join_for_destroy_position_trigger: literal.Join
+        self.join_for_empty_rule_position_input: literal.Join
+        self.join_for_empty_rule_position_trigger: literal.Join
 
-    def accept_action_parent(self):
+    def on_action_parent_occupied(self):
         self.create_position_result()
 
     def accept_for_empty_rule_position_input(self):
+        if not self.join_for_empty_rule_position_input.arrive():
+            return
         self.destroy_position_input()
 
     def accept_when_empty_position_config(self):
         self.create_position_config()
 
     def accept_for_empty_rule_position_trigger(self):
+        if not self.join_for_empty_rule_position_trigger.arrive():
+            return
         self.destroy_position_trigger()
 
     def create_position_result(self):
@@ -71,13 +78,17 @@ class ProcessExecution:
         self.local_position_result.destroy_particle()
 
     def destroy_position_input(self):
+        if not self.join_for_destroy_position_input.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_input)
 
     def continue_destroy_position_input(self):
         self.action.get_interface_position(
             "position<input>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_input)
+        self.guarantees.position_input.publish(
+            self.scheduler,
+        )
 
     def create_position_config(self):
         self.action.get_interface_position(
@@ -86,13 +97,19 @@ class ProcessExecution:
         self.action.get_interface_position(
             "position<config>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_config)
+        self.guarantees.position_config.publish(
+            self.scheduler,
+        )
 
     def destroy_position_trigger(self):
+        if not self.join_for_destroy_position_trigger.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_trigger)
 
     def continue_destroy_position_trigger(self):
         self.action.get_interface_position(
             "position<trigger>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_trigger)
+        self.guarantees.position_trigger.publish(
+            self.scheduler,
+        )

@@ -16,7 +16,7 @@ class Test(literal.EntryPoint):
             None,
             "test",
         )
-        execution.create_position_box()
+        execution.on_action_parent_occupied()
 
 
 @final
@@ -39,10 +39,11 @@ class TestExecution:
             ),
             scheduler=self.scheduler,
         )
-        self.execution_trigger_position_box__action_destructor: local.my_domain_com.my_lib.destructor.DestructorExecution
-        self.execution_trigger_position_box__action_destructor_2: local.my_domain_com.my_lib.destructor.DestructorExecution
-        self.join_for_trigger_position_box__action_destructor__action_parent = self.scheduler.create_join(2)
-        self.join_for_trigger_position_box__action_destructor_2__action_parent = self.scheduler.create_join(2)
+        self.execution_position_box__action_destructor: local.my_domain_com.my_lib.destructor.DestructorExecution
+        self.execution_position_box__action_destructor_2: local.my_domain_com.my_lib.destructor.DestructorExecution
+
+    def on_action_parent_occupied(self):
+        self.create_position_box()
 
     def create_position_box(self):
         self.local_position_box.create_particle()
@@ -51,14 +52,13 @@ class TestExecution:
             "box",
             1,
         )
-        self.execution_trigger_position_box__action_destructor = local.my_domain_com.my_lib.destructor.DestructorExecution(
+        self.execution_position_box__action_destructor = local.my_domain_com.my_lib.destructor.DestructorExecution(
             self.scheduler,
             self.trace_execution,
             "destructor",
         )
         self.scheduler.submit(self.destroy_position_box)
-        self.scheduler.submit(self.trigger_position_box__action_destructor__action_parent)
-        self.trigger_position_box__action_destructor__action_parent()
+        self.execution_position_box__action_destructor.on_action_parent_occupied()
 
     def destroy_position_box(self):
         self.local_position_box.destroy_particle()
@@ -73,14 +73,13 @@ class TestExecution:
             "box",
             2,
         )
-        self.execution_trigger_position_box__action_destructor_2 = local.my_domain_com.my_lib.destructor.DestructorExecution(
+        self.execution_position_box__action_destructor_2 = local.my_domain_com.my_lib.destructor.DestructorExecution(
             self.scheduler,
             self.trace_execution,
             "destructor#2",
         )
         self.scheduler.submit(self.destroy_position_box_2)
-        self.scheduler.submit(self.trigger_position_box__action_destructor_2__action_parent)
-        self.trigger_position_box__action_destructor_2__action_parent()
+        self.execution_position_box__action_destructor_2.on_action_parent_occupied()
 
     def destroy_position_box_2(self):
         self.local_position_box.destroy_particle()
@@ -89,13 +88,3 @@ class TestExecution:
             "box",
             2,
         )
-
-    def trigger_position_box__action_destructor__action_parent(self):
-        if not self.join_for_trigger_position_box__action_destructor__action_parent.arrive():
-            return
-        self.execution_trigger_position_box__action_destructor.accept_action_parent()
-
-    def trigger_position_box__action_destructor_2__action_parent(self):
-        if not self.join_for_trigger_position_box__action_destructor_2__action_parent.arrive():
-            return
-        self.execution_trigger_position_box__action_destructor_2.accept_action_parent()

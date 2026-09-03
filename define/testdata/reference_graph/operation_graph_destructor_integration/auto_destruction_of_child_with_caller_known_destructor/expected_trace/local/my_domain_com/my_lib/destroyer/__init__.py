@@ -22,7 +22,7 @@ class Destroyer(literal.Action):
 @final
 class DestroyerGuarantees:
     def __init__(self):
-        self.guarantee_position_run: list[literal.Task] = []
+        self.position_run = literal.Guarantee()
 
 
 @final
@@ -33,7 +33,6 @@ class DestroyerExecution:
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
-        guarantees: DestroyerGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
@@ -43,17 +42,23 @@ class DestroyerExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = guarantees
+        self.guarantees = DestroyerGuarantees()
         self.destruction_connections = destruction_connections
         self.local_position_local = literal.LocalPosition(
             "position<local>",
             scheduler=self.scheduler,
         )
+        self.join_for_move_position_run_to_position_local: literal.Join
+        self.join_for_empty_rule_position_run: literal.Join
 
     def accept_for_empty_rule_position_run(self):
+        if not self.join_for_empty_rule_position_run.arrive():
+            return
         self.move_position_run_to_position_local()
 
     def move_position_run_to_position_local(self):
+        if not self.join_for_move_position_run_to_position_local.arrive():
+            return
         self.action.get_interface_position(
             "position<run>"
         ).move_particle_to(self.local_position_local)
@@ -63,8 +68,10 @@ class DestroyerExecution:
             "local",
             1,
         )
-        self.scheduler.submit(self.destroy_position_local)
-        self.scheduler.continue_with(self.guarantees.guarantee_position_run)
+        self.guarantees.position_run.publish(
+            self.scheduler,
+            self.destroy_position_local,
+        )
 
     def destroy_position_local(self):
         literal.continue_destruction(self.continue_destroy_position_local)

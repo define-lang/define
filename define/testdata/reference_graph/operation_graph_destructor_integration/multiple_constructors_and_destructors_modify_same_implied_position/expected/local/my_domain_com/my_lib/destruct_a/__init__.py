@@ -16,7 +16,7 @@ class DestructA(literal.Action):
 @final
 class DestructAGuarantees:
     def __init__(self):
-        self.guarantee_global_position_marker: list[literal.Task] = []
+        self.global_position_marker = literal.Guarantee()
 
 
 @final
@@ -25,20 +25,25 @@ class DestructAExecution:
         self,
         action: DestructA,
         scheduler: literal.Scheduler,
-        guarantees: DestructAGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = DestructAGuarantees()
         self.local_position_holder = literal.LocalPosition(
             "position<holder>",
             scheduler=self.scheduler,
         )
+        self.join_for_move_global_position_marker_to_position_holder: literal.Join
+        self.join_for_empty_rule_global_position_marker: literal.Join
 
     def accept_for_empty_rule_global_position_marker(self):
+        if not self.join_for_empty_rule_global_position_marker.arrive():
+            return
         self.move_global_position_marker_to_position_holder()
 
     def move_global_position_marker_to_position_holder(self):
+        if not self.join_for_move_global_position_marker_to_position_holder.arrive():
+            return
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         ).move_particle_to(self.local_position_holder)
@@ -47,4 +52,6 @@ class DestructAExecution:
                 local.my_domain_com.my_lib.marker.Marker
             )
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_marker)
+        self.guarantees.global_position_marker.publish(
+            self.scheduler,
+        )

@@ -37,7 +37,7 @@ class Mover(literal.Action):
 @final
 class MoverGuarantees:
     def __init__(self):
-        self.guarantee_global_position_parent__move__position_dest: list[literal.Task] = []
+        self.global_position_parent__move__position_dest = literal.Guarantee()
 
 
 @final
@@ -46,16 +46,21 @@ class MoverExecution:
         self,
         action: Mover,
         scheduler: literal.Scheduler,
-        guarantees: MoverGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = MoverGuarantees()
+        self.join_for_move_global_position_parent_to_position_dest: literal.Join
+        self.join_for_empty_rule_global_position_parent: literal.Join
 
     def accept_for_empty_rule_global_position_parent(self):
+        if not self.join_for_empty_rule_global_position_parent.arrive():
+            return
         self.move_global_position_parent_to_position_dest()
 
     def move_global_position_parent_to_position_dest(self):
+        if not self.join_for_move_global_position_parent_to_position_dest.arrive():
+            return
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.parent.Parent
         ).move_particle_to(
@@ -63,4 +68,6 @@ class MoverExecution:
                 "position<dest>"
             )
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_parent__move__position_dest)
+        self.guarantees.global_position_parent__move__position_dest.publish(
+            self.scheduler,
+        )

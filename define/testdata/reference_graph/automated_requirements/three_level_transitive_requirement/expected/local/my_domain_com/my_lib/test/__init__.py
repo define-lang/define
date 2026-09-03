@@ -18,16 +18,8 @@ class Test(literal.EntryPoint):
         execution = TestExecution(
             self,
             scheduler,
-            TestGuarantees(),
         )
-        execution.scheduler.submit(execution.create_position_box)
-        execution.create_action_outer__position_run()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_action_outer = local.my_domain_com.my_lib.outer.OuterGuarantees()
+        execution.on_action_parent_occupied()
 
 
 @final
@@ -36,11 +28,9 @@ class TestExecution:
         self,
         action: Test,
         scheduler: literal.Scheduler,
-        guarantees: TestGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
         self.local_position_box = literal.LocalPosition(
             "position<box>",
             constraints=(
@@ -48,9 +38,22 @@ class TestExecution:
             ),
             scheduler=self.scheduler,
         )
-        self.execution_trigger_action_outer: local.my_domain_com.my_lib.outer.OuterExecution
-        self.join_for_trigger_action_outer__for_empty_rule_position_input = self.scheduler.create_join(2)
-        self.join_for_trigger_action_outer__for_empty_rule_position_run = self.scheduler.create_join(2)
+        self.execution_action_outer: local.my_domain_com.my_lib.outer.OuterExecution
+        self.execution_action_outer = local.my_domain_com.my_lib.outer.OuterExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.outer.Outer
+            ),
+            self.scheduler,
+        )
+        self.execution_action_outer.join_for_empty_rule_position_input = literal.NO_JOIN
+        self.execution_action_outer.join_for_empty_rule_position_run = literal.NO_JOIN
+        self.execution_action_outer.join_for_move_position_input_to_position_middle_holder__action_middle__position_input = self.scheduler.create_join(2)
+        self.execution_action_outer.join_for_destroy_position_run = literal.NO_JOIN
+
+    def on_action_parent_occupied(self):
+        self.scheduler.submit(self.create_position_box)
+        self.scheduler.submit(self.create_action_outer__position_run)
+        self.execution_action_outer.on_action_parent_occupied()
 
     def create_position_box(self):
         self.local_position_box.create_particle()
@@ -64,7 +67,7 @@ class TestExecution:
                 "position<input>"
             )
         )
-        self.trigger_action_outer__for_empty_rule_position_input()
+        self.execution_action_outer.accept_for_empty_rule_position_input()
 
     def create_action_outer__position_run(self):
         self.action.on_particle.get_action(
@@ -72,27 +75,4 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.execution_trigger_action_outer = local.my_domain_com.my_lib.outer.OuterExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.outer.Outer
-            ),
-            self.scheduler,
-            self.guarantees.trigger_action_outer,
-        )
-        self.scheduler.submit(self.trigger_action_outer__for_empty_rule_position_run)
-        self.scheduler.submit(self.trigger_action_outer__action_parent)
-        self.scheduler.submit(self.trigger_action_outer__for_empty_rule_position_input)
-        self.trigger_action_outer__for_empty_rule_position_run()
-
-    def trigger_action_outer__action_parent(self):
-        self.execution_trigger_action_outer.accept_action_parent()
-
-    def trigger_action_outer__for_empty_rule_position_input(self):
-        if not self.join_for_trigger_action_outer__for_empty_rule_position_input.arrive():
-            return
-        self.execution_trigger_action_outer.accept_for_empty_rule_position_input()
-
-    def trigger_action_outer__for_empty_rule_position_run(self):
-        if not self.join_for_trigger_action_outer__for_empty_rule_position_run.arrive():
-            return
-        self.execution_trigger_action_outer.accept_for_empty_rule_position_run()
+        self.execution_action_outer.accept_for_empty_rule_position_run()

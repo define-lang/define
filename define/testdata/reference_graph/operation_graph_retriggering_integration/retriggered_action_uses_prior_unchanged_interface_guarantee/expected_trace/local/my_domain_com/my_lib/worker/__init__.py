@@ -26,8 +26,8 @@ class Worker(literal.Action):
 @final
 class WorkerGuarantees:
     def __init__(self):
-        self.guarantee_position_item: list[literal.Task] = []
-        self.guarantee_position_trigger_pos: list[literal.Task] = []
+        self.position_item = literal.Guarantee()
+        self.position_trigger_pos = literal.Guarantee()
 
 
 @final
@@ -38,7 +38,6 @@ class WorkerExecution:
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
-        guarantees: WorkerGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
@@ -48,20 +47,30 @@ class WorkerExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = guarantees
+        self.guarantees = WorkerGuarantees()
         self.destruction_connections = destruction_connections
         self.local_position_holder = literal.LocalPosition(
             "position<holder>",
             scheduler=self.scheduler,
         )
+        self.join_for_move_position_item_to_position_holder: literal.Join
+        self.join_for_destroy_position_trigger_pos: literal.Join
+        self.join_for_empty_rule_position_item: literal.Join
+        self.join_for_empty_rule_position_trigger_pos: literal.Join
 
     def accept_for_empty_rule_position_item(self):
+        if not self.join_for_empty_rule_position_item.arrive():
+            return
         self.move_position_item_to_position_holder()
 
     def accept_for_empty_rule_position_trigger_pos(self):
+        if not self.join_for_empty_rule_position_trigger_pos.arrive():
+            return
         self.destroy_position_trigger_pos()
 
     def move_position_item_to_position_holder(self):
+        if not self.join_for_move_position_item_to_position_holder.arrive():
+            return
         self.action.get_interface_position(
             "position<item>"
         ).move_particle_to(self.local_position_holder)
@@ -82,9 +91,13 @@ class WorkerExecution:
             "item",
             1,
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_position_item)
+        self.guarantees.position_item.publish(
+            self.scheduler,
+        )
 
     def destroy_position_trigger_pos(self):
+        if not self.join_for_destroy_position_trigger_pos.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_trigger_pos)
 
     def continue_destroy_position_trigger_pos(self):
@@ -96,4 +109,6 @@ class WorkerExecution:
             "trigger_pos",
             1,
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_position_trigger_pos)
+        self.guarantees.position_trigger_pos.publish(
+            self.scheduler,
+        )

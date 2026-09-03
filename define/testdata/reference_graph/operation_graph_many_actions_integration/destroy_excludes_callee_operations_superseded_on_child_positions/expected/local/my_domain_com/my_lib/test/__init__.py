@@ -13,15 +13,8 @@ class Test(literal.EntryPoint):
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
             scheduler,
-            TestGuarantees(),
         )
-        execution.create_position_box()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_position_box__action_worker = local.my_domain_com.my_lib.worker.WorkerGuarantees()
+        execution.on_action_parent_occupied()
 
 
 @final
@@ -29,10 +22,8 @@ class TestExecution:
     def __init__(
         self,
         scheduler: literal.Scheduler,
-        guarantees: TestGuarantees,
     ):
         self.scheduler = scheduler
-        self.guarantees = guarantees
         self.local_position_box = literal.LocalPosition(
             "position<box>",
             constraints=(
@@ -40,28 +31,33 @@ class TestExecution:
             ),
             scheduler=self.scheduler,
         )
-        guarantees.trigger_position_box__action_worker.guarantee_position_input__move__position_result.append(
-            self.destroy_position_box__action_worker__position_result
-        )
-        self.execution_trigger_position_box__action_worker: local.my_domain_com.my_lib.worker.WorkerExecution
-        self.join_for_trigger_position_box__action_worker__for_empty_rule_position_input = self.scheduler.create_join(2)
+        self.execution_position_box__action_worker: local.my_domain_com.my_lib.worker.WorkerExecution
+
+    def on_action_parent_occupied(self):
+        self.create_position_box()
 
     def create_position_box(self):
         self.local_position_box.create_particle()
+        self.execution_position_box__action_worker = local.my_domain_com.my_lib.worker.WorkerExecution(
+            self.local_position_box.particle.get_action(
+                local.my_domain_com.my_lib.worker.Worker
+            ),
+            self.scheduler,
+        )
+        self.execution_position_box__action_worker.join_for_empty_rule_position_input = literal.NO_JOIN
+        self.execution_position_box__action_worker.join_for_move_position_input_to_position_result = literal.NO_JOIN
+        self.execution_position_box__action_worker.guarantees.position_input__move__position_result.consumers.append(
+            self.destroy_position_box__action_worker__position_result
+        )
+        self.create_position_box__action_worker__position_input()
+
+    def create_position_box__action_worker__position_input(self):
         self.local_position_box.particle.get_action(
             local.my_domain_com.my_lib.worker.Worker
         ).get_interface_position(
             "position<input>"
         ).create_particle()
-        self.execution_trigger_position_box__action_worker = local.my_domain_com.my_lib.worker.WorkerExecution(
-            self.local_position_box.particle.get_action(
-                local.my_domain_com.my_lib.worker.Worker
-            ),
-            self.scheduler,
-            self.guarantees.trigger_position_box__action_worker,
-        )
-        self.scheduler.submit(self.trigger_position_box__action_worker__for_empty_rule_position_input)
-        self.trigger_position_box__action_worker__for_empty_rule_position_input()
+        self.execution_position_box__action_worker.accept_for_empty_rule_position_input()
 
     def destroy_position_box__action_worker__position_result(self):
         self.local_position_box.particle.get_action(
@@ -70,8 +66,3 @@ class TestExecution:
             "position<result>"
         ).destroy_particle()
         self.local_position_box.destroy_particle()
-
-    def trigger_position_box__action_worker__for_empty_rule_position_input(self):
-        if not self.join_for_trigger_position_box__action_worker__for_empty_rule_position_input.arrive():
-            return
-        self.execution_trigger_position_box__action_worker.accept_for_empty_rule_position_input()

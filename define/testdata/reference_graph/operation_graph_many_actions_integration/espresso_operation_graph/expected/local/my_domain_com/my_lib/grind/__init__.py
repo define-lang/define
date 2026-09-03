@@ -26,7 +26,7 @@ class Grind(literal.Action):
 @final
 class GrindGuarantees:
     def __init__(self):
-        self.guarantee_position_beans__move__position_grounds: list[literal.Task] = []
+        self.position_beans__move__position_grounds = literal.Guarantee()
 
 
 @final
@@ -35,16 +35,21 @@ class GrindExecution:
         self,
         action: Grind,
         scheduler: literal.Scheduler,
-        guarantees: GrindGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = GrindGuarantees()
+        self.join_for_move_position_beans_to_position_grounds: literal.Join
+        self.join_for_empty_rule_position_beans: literal.Join
 
     def accept_for_empty_rule_position_beans(self):
+        if not self.join_for_empty_rule_position_beans.arrive():
+            return
         self.move_position_beans_to_position_grounds()
 
     def move_position_beans_to_position_grounds(self):
+        if not self.join_for_move_position_beans_to_position_grounds.arrive():
+            return
         self.action.get_interface_position(
             "position<beans>"
         ).move_particle_to(
@@ -52,4 +57,6 @@ class GrindExecution:
                 "position<grounds>"
             )
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_position_beans__move__position_grounds)
+        self.guarantees.position_beans__move__position_grounds.publish(
+            self.scheduler,
+        )

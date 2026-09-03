@@ -30,9 +30,9 @@ class Runner(literal.Action):
 @final
 class RunnerGuarantees:
     def __init__(self):
-        self.guarantee_position_source: list[literal.Task] = []
-        self.guarantee_position_dest: list[literal.Task] = []
-        self.guarantee_position_run: list[literal.Task] = []
+        self.position_source = literal.Guarantee()
+        self.position_dest = literal.Guarantee()
+        self.position_run = literal.Guarantee()
 
 
 @final
@@ -41,22 +41,31 @@ class RunnerExecution:
         self,
         action: Runner,
         scheduler: literal.Scheduler,
-        guarantees: RunnerGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = RunnerGuarantees()
         self.destruction_connections = destruction_connections
+        self.join_for_move_position_source_to_position_dest: literal.Join
+        self.join_for_destroy_position_run: literal.Join
+        self.join_for_empty_rule_position_source: literal.Join
+        self.join_for_empty_rule_position_run: literal.Join
 
     def accept_for_empty_rule_position_source(self):
+        if not self.join_for_empty_rule_position_source.arrive():
+            return
         self.move_position_source_to_position_dest()
 
     def accept_for_empty_rule_position_run(self):
+        if not self.join_for_empty_rule_position_run.arrive():
+            return
         self.destroy_position_run()
 
     def move_position_source_to_position_dest(self):
+        if not self.join_for_move_position_source_to_position_dest.arrive():
+            return
         self.action.get_interface_position(
             "position<source>"
         ).move_particle_to(
@@ -64,8 +73,10 @@ class RunnerExecution:
                 "position<dest>"
             )
         )
-        self.scheduler.submit(self.destroy_position_dest)
-        self.scheduler.continue_with(self.guarantees.guarantee_position_source)
+        self.guarantees.position_source.publish(
+            self.scheduler,
+            self.destroy_position_dest,
+        )
 
     def destroy_position_dest(self):
         literal.continue_destruction(self.continue_destroy_position_dest)
@@ -74,13 +85,19 @@ class RunnerExecution:
         self.action.get_interface_position(
             "position<dest>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_dest)
+        self.guarantees.position_dest.publish(
+            self.scheduler,
+        )
 
     def destroy_position_run(self):
+        if not self.join_for_destroy_position_run.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_run)
 
     def continue_destroy_position_run(self):
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_run)
+        self.guarantees.position_run.publish(
+            self.scheduler,
+        )

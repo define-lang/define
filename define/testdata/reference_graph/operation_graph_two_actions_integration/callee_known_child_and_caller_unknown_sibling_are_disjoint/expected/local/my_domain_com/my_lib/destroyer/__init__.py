@@ -31,7 +31,7 @@ class Destroyer(literal.Action):
 @final
 class DestroyerGuarantees:
     def __init__(self):
-        self.guarantee_position_parent: list[literal.Task] = []
+        self.position_parent = literal.Guarantee()
 
 
 @final
@@ -40,27 +40,35 @@ class DestroyerExecution:
         self,
         action: Destroyer,
         scheduler: literal.Scheduler,
-        guarantees: DestroyerGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = DestroyerGuarantees()
         self.destruction_connections = destruction_connections
         self.local_position_keeper = literal.LocalPosition(
             "position<keeper>",
             scheduler=self.scheduler,
         )
-        self.join_for_destroy_position_parent = self.scheduler.create_join(2)
+        self.join_for_move_position_parent__global_position_child_to_position_keeper: literal.Join
+        self.join_for_destroy_position_parent: literal.Join
+        self.join_for_empty_rule_position_parent__global_position_child: literal.Join
+        self.join_for_empty_rule_position_parent: literal.Join
 
     def accept_for_empty_rule_position_parent__global_position_child(self):
+        if not self.join_for_empty_rule_position_parent__global_position_child.arrive():
+            return
         self.move_position_parent__global_position_child_to_position_keeper()
 
     def accept_for_empty_rule_position_parent(self):
+        if not self.join_for_empty_rule_position_parent.arrive():
+            return
         self.destroy_position_parent()
 
     def move_position_parent__global_position_child_to_position_keeper(self):
+        if not self.join_for_move_position_parent__global_position_child_to_position_keeper.arrive():
+            return
         self.action.get_interface_position(
             "position<parent>"
         ).particle.get_position(
@@ -95,4 +103,6 @@ class DestroyerExecution:
         self.action.get_interface_position(
             "position<parent>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_parent)
+        self.guarantees.position_parent.publish(
+            self.scheduler,
+        )

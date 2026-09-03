@@ -7,7 +7,6 @@ from define.compiler.codegen import action_plan
 from define.compiler.codegen.literal.python import (
     action_context,
     action_names,
-    template_context,
 )
 from define.compiler.data_structures import typed_name_dict
 from define.compiler.validator import test_helpers as validator_test_helpers
@@ -20,6 +19,9 @@ if typing.TYPE_CHECKING:
     import collections.abc
 
     from define.compiler import conftest
+    from define.compiler.validator.reference_graph import (
+        operation_graph_action_resolver,
+    )
 
 
 def _position(position_name: str) -> ast.PositionReference:
@@ -162,36 +164,21 @@ def _empty_rule_binding_hole(
     return operation_graph_model.EmptyRuleBindingHole(
         requirement_position=(f"position<{position_name}>",),
         collected_child_operation_positions=frozenset(),
-        fill_dependency_requirement_position=None,
         collected_operation_positions=(),
         prerequisite_binding_holes=(),
     )
 
 
-def _generated_action(
-    guarantee_interface: action_context.GuaranteeInterface | None,
-) -> action_context.GeneratedAction:
-    execution = template_context.ActionExecutionContext(
-        execution_class_name="CalleeExecution",
-        local_position_statements=[],
-        fragments=[],
-        binding_hole_fanouts=[],
-        action_executions=[],
-        triggers_for_destroyed_callee_guarantee_particles=[],
-        callee_binding_joins=[],
-        guarantees=None,
-        accepts_destruction_connections=False,
+def _generated_action_interface() -> action_context.GeneratedActionInterface:
+    return action_context.GeneratedActionInterface(
+        needs_action=False,
+        binding_holes={},
+        guarantee_names_by_operation={},
+        execution_member_names={},
+        join_member_names={},
+        fragment_method_names={},
+        destruction_continuations={},
     )
-    context = action_context.ActionDefinitionContext(
-        "Callee",
-        "local.callee",
-        execution,
-        [],
-        action_context.ActionRole.ACTION,
-        [],
-        [],
-    )
-    return action_context.GeneratedAction(context, {}, guarantee_interface, {})
 
 
 def _action_names(
@@ -200,11 +187,13 @@ def _action_names(
     definition: ast.ActionDefinition | None = None,
 ) -> action_names.ActionNames:
     generated_actions = typed_name_dict.TypedNameDict[
-        ast.GlobalTypedName, action_context.GeneratedAction
+        ast.GlobalTypedName, action_context.GeneratedActionInterface
     ]()
-    for planned_execution in plan.action_executions:
+    for planned_execution in plan.action_executions.values():
         action_execution = planned_execution.execution
-        generated_actions[action_execution.callee_action_name] = _generated_action(None)
+        generated_actions[action_execution.callee_action_name] = (
+            _generated_action_interface()
+        )
     return action_names.ActionNameGenerator(
         definition or _action_definition(),
         plan,
@@ -213,36 +202,48 @@ def _action_names(
 
 
 def _binding_hole_method_names(
-    *binding_holes: operation_graph_model.BindingHole,
+    *binding_holes: operation_graph_action_resolver.ResolvedBindingHole,
 ) -> dict[operation_graph_model.BindingHole, str]:
+    fragment = _create_fragment("/consumer")
+    binding_hole_fanouts: dict[
+        operation_graph_action_resolver.ResolvedBindingHole,
+        action_plan.BindingHoleFanout,
+    ] = {}
+    for binding_hole in binding_holes:
+        fanout = action_plan.BindingHoleFanout(binding_hole)
+        fanout.continuations.append(fragment)
+        binding_hole_fanouts[binding_hole] = fanout
     plan = action_plan.ActionPlan(
-        fragments=[],
-        execute_fragments=[],
-        binding_hole_fanouts=[
-            action_plan.BindingHoleFanout(binding_hole)
-            for binding_hole in binding_holes
-        ],
-        action_executions=[],
-        callee_binding_joins=[],
-        triggers_for_destroyed_callee_guarantee_particles=[],
-        guarantee_publications=[],
+        fragments=[fragment],
+        binding_hole_fanouts=binding_hole_fanouts,
+        action_executions={},
+        creation_inits=action_plan.ActionExecutionInits(),
+        callee_binding_method_plans=[],
+        guarantee_consumption_plans=[],
+        init_binding_hole_by_action_execution={},
         accepts_destruction_connections=False,
         destruction_connection_by_operation={},
+        caller_resolved_joins=[],
     )
-    return _action_names(plan).binding_hole_method_names
+    names = _action_names(plan)
+    return {
+        binding_hole: binding_hole_names.method_name
+        for binding_hole, binding_hole_names in names.binding_holes.items()
+    }
 
 
 def test_local_position_names():
     plan = action_plan.ActionPlan(
         fragments=[],
-        execute_fragments=[],
-        binding_hole_fanouts=[],
-        action_executions=[],
-        callee_binding_joins=[],
-        triggers_for_destroyed_callee_guarantee_particles=[],
-        guarantee_publications=[],
+        binding_hole_fanouts={},
+        action_executions={},
+        creation_inits=action_plan.ActionExecutionInits(),
+        callee_binding_method_plans=[],
+        guarantee_consumption_plans=[],
+        init_binding_hole_by_action_execution={},
         accepts_destruction_connections=False,
         destruction_connection_by_operation={},
+        caller_resolved_joins=[],
     )
     definition = _action_definition(("first", "second"))
 
@@ -256,7 +257,7 @@ def test_action_parent_binding_hole_method_name():
     action_parent = operation_graph_model.ActionParentLastOperationNode(node_id=0)
 
     assert _binding_hole_method_names(action_parent) == {
-        action_parent: "accept_action_parent"
+        action_parent: "on_action_parent_occupied"
     }
 
 
@@ -316,14 +317,15 @@ def test_fragments_skip_a_normalized_source_suffix():
     fragments = [naturally_suffixed, separated_path, underscored]
     plan = action_plan.ActionPlan(
         fragments=fragments,
-        execute_fragments=fragments,
-        binding_hole_fanouts=[],
-        action_executions=[],
-        callee_binding_joins=[],
-        triggers_for_destroyed_callee_guarantee_particles=[],
-        guarantee_publications=[],
+        binding_hole_fanouts={},
+        action_executions={},
+        creation_inits=action_plan.ActionExecutionInits(),
+        callee_binding_method_plans=[],
+        guarantee_consumption_plans=[],
+        init_binding_hole_by_action_execution={},
         accepts_destruction_connections=False,
         destruction_connection_by_operation={},
+        caller_resolved_joins=[],
     )
 
     names = _action_names(plan)
@@ -342,14 +344,15 @@ def test_fragment_names_preserve_external_universes_and_multiverse():
     fragments = [first_universe, second_universe, external_multiverse]
     plan = action_plan.ActionPlan(
         fragments=fragments,
-        execute_fragments=fragments,
-        binding_hole_fanouts=[],
-        action_executions=[],
-        callee_binding_joins=[],
-        triggers_for_destroyed_callee_guarantee_particles=[],
-        guarantee_publications=[],
+        binding_hole_fanouts={},
+        action_executions={},
+        creation_inits=action_plan.ActionExecutionInits(),
+        callee_binding_method_plans=[],
+        guarantee_consumption_plans=[],
+        init_binding_hole_by_action_execution={},
         accepts_destruction_connections=False,
         destruction_connection_by_operation={},
+        caller_resolved_joins=[],
     )
 
     names = _action_names(plan)
@@ -366,38 +369,41 @@ def test_repeated_action_execution_skips_a_source_suffix(
 ):
     naturally_suffixed, first, second = _action_executions(validate_project)
     action_executions = [naturally_suffixed, first, second]
+    planned_action_executions: dict[
+        operation_graph_model.ActionExecution,
+        action_plan.ActionExecutionPlan,
+    ] = {}
+    for action_execution in action_executions:
+        planned_action_executions[action_execution] = action_plan.ActionExecutionPlan(
+            execution=action_execution,
+        )
     plan = action_plan.ActionPlan(
         fragments=[],
-        execute_fragments=[],
-        binding_hole_fanouts=[],
-        action_executions=[
-            action_plan.ActionExecutionPlan(
-                execution=action_execution,
-                created_destruction_connections=[],
-            )
-            for action_execution in action_executions
-        ],
-        callee_binding_joins=[],
-        triggers_for_destroyed_callee_guarantee_particles=[],
-        guarantee_publications=[],
+        binding_hole_fanouts={},
+        action_executions=planned_action_executions,
+        creation_inits=action_plan.ActionExecutionInits(),
+        callee_binding_method_plans=[],
+        guarantee_consumption_plans=[],
+        init_binding_hole_by_action_execution={},
         accepts_destruction_connections=False,
         destruction_connection_by_operation={},
+        caller_resolved_joins=[],
     )
 
     names = _action_names(plan)
 
-    assert names.triggered_actions == {
-        naturally_suffixed: action_names.TriggeredActionNames(
-            canonical_name="trigger_position_gateway__action_worker_2",
-            execution_name="execution_trigger_position_gateway__action_worker_2",
+    assert names.action_executions == {
+        naturally_suffixed: action_names.ActionExecutionNames(
+            canonical_name="position_gateway__action_worker_2",
+            execution_name="execution_position_gateway__action_worker_2",
         ),
-        first: action_names.TriggeredActionNames(
-            canonical_name="trigger_position_gateway__action_worker",
-            execution_name="execution_trigger_position_gateway__action_worker",
+        first: action_names.ActionExecutionNames(
+            canonical_name="position_gateway__action_worker",
+            execution_name="execution_position_gateway__action_worker",
         ),
-        second: action_names.TriggeredActionNames(
-            canonical_name="trigger_position_gateway__action_worker_3",
-            execution_name="execution_trigger_position_gateway__action_worker_3",
+        second: action_names.ActionExecutionNames(
+            canonical_name="position_gateway__action_worker_3",
+            execution_name="execution_position_gateway__action_worker_3",
         ),
     }
 
@@ -435,9 +441,7 @@ def test_destruction_connection_names_use_action_execution(
             first_destroy,
         ),
         [],
-        [],
-        [],
-        [],
+        0,
     )
     second_connection = action_plan.DestructionConnection(
         operation_graph_model.DestructionOperation(
@@ -445,39 +449,34 @@ def test_destruction_connection_names_use_action_execution(
             second_destroy,
         ),
         [],
-        [],
-        [],
-        [],
+        0,
     )
     plan = action_plan.ActionPlan(
         fragments=[],
-        execute_fragments=[],
-        binding_hole_fanouts=[],
-        action_executions=[
-            action_plan.ActionExecutionPlan(
+        binding_hole_fanouts={},
+        action_executions={
+            execution: action_plan.ActionExecutionPlan(
                 execution=execution,
                 created_destruction_connections=[
                     first_connection,
                     second_connection,
                 ],
             )
-        ],
-        callee_binding_joins=[],
-        triggers_for_destroyed_callee_guarantee_particles=[],
-        guarantee_publications=[],
+        },
+        creation_inits=action_plan.ActionExecutionInits(),
+        callee_binding_method_plans=[],
+        guarantee_consumption_plans=[],
+        init_binding_hole_by_action_execution={},
         accepts_destruction_connections=False,
         destruction_connection_by_operation={},
+        caller_resolved_joins=[],
     )
 
     names = _action_names(plan)
 
     assert names.destruction_connections == {
-        first_connection: (
-            "destruction_connection_trigger_position_gateway__action_worker"
-        ),
-        second_connection: (
-            "destruction_connection_trigger_position_gateway__action_worker_2"
-        ),
+        first_connection: "destruction_connection_position_gateway__action_worker",
+        second_connection: "destruction_connection_position_gateway__action_worker_2",
     }
 
 
@@ -500,14 +499,15 @@ def test_continue_destroy_method_uses_destroy_fragment_name():
     fragment = action_plan.DestructionActionFragment([destroy])
     plan = action_plan.ActionPlan(
         fragments=[fragment],
-        execute_fragments=[],
-        binding_hole_fanouts=[],
-        action_executions=[],
-        callee_binding_joins=[],
-        triggers_for_destroyed_callee_guarantee_particles=[],
-        guarantee_publications=[],
+        binding_hole_fanouts={},
+        action_executions={},
+        creation_inits=action_plan.ActionExecutionInits(),
+        callee_binding_method_plans=[],
+        guarantee_consumption_plans=[],
+        init_binding_hole_by_action_execution={},
         accepts_destruction_connections=False,
         destruction_connection_by_operation={},
+        caller_resolved_joins=[],
     )
 
     names = _action_names(plan, definition=definition)

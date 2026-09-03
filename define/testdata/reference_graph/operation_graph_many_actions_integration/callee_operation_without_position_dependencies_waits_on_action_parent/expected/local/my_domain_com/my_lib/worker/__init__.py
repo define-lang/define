@@ -26,7 +26,7 @@ class Worker(literal.Action):
 @final
 class WorkerGuarantees:
     def __init__(self):
-        self.guarantee_position_result: list[literal.Task] = []
+        self.position_result = literal.Guarantee()
 
 
 @final
@@ -35,11 +35,10 @@ class WorkerExecution:
         self,
         action: Worker,
         scheduler: literal.Scheduler,
-        guarantees: WorkerGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = WorkerGuarantees()
 
     def accept_when_empty_position_result(self):
         self.create_position_result()
@@ -48,4 +47,6 @@ class WorkerExecution:
         self.action.get_interface_position(
             "position<result>"
         ).create_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_result)
+        self.guarantees.position_result.publish(
+            self.scheduler,
+        )

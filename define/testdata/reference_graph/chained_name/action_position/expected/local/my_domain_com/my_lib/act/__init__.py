@@ -31,8 +31,8 @@ class Act(literal.Action):
 @final
 class ActGuarantees:
     def __init__(self):
-        self.guarantee_position_trigger_pos: list[literal.Task] = []
-        self.guarantee_position_run: list[literal.Task] = []
+        self.position_trigger_pos = literal.Guarantee()
+        self.position_run = literal.Guarantee()
 
 
 @final
@@ -41,30 +41,40 @@ class ActExecution:
         self,
         action: Act,
         scheduler: literal.Scheduler,
-        guarantees: ActGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = ActGuarantees()
         self.destruction_connections = destruction_connections
         self.local_position_result = literal.LocalPosition(
             "position<result>",
             scheduler=self.scheduler,
         )
-        self.join_for_destroy_position_trigger_pos = self.scheduler.create_join(2)
+        self.join_for_destroy_position_trigger_pos__global_position_inner: literal.Join
+        self.join_for_destroy_position_trigger_pos: literal.Join
+        self.join_for_destroy_position_run: literal.Join
+        self.join_for_empty_rule_position_trigger_pos__global_position_inner: literal.Join
+        self.join_for_empty_rule_position_trigger_pos: literal.Join
+        self.join_for_empty_rule_position_run: literal.Join
 
-    def accept_action_parent(self):
+    def on_action_parent_occupied(self):
         self.create_position_result()
 
     def accept_for_empty_rule_position_trigger_pos__global_position_inner(self):
+        if not self.join_for_empty_rule_position_trigger_pos__global_position_inner.arrive():
+            return
         self.destroy_position_trigger_pos__global_position_inner()
 
     def accept_for_empty_rule_position_trigger_pos(self):
+        if not self.join_for_empty_rule_position_trigger_pos.arrive():
+            return
         self.destroy_position_trigger_pos()
 
     def accept_for_empty_rule_position_run(self):
+        if not self.join_for_empty_rule_position_run.arrive():
+            return
         self.destroy_position_run()
 
     def create_position_result(self):
@@ -72,6 +82,8 @@ class ActExecution:
         self.local_position_result.destroy_particle()
 
     def destroy_position_trigger_pos__global_position_inner(self):
+        if not self.join_for_destroy_position_trigger_pos__global_position_inner.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_trigger_pos__global_position_inner)
 
     def continue_destroy_position_trigger_pos__global_position_inner(self):
@@ -91,13 +103,19 @@ class ActExecution:
         self.action.get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_trigger_pos)
+        self.guarantees.position_trigger_pos.publish(
+            self.scheduler,
+        )
 
     def destroy_position_run(self):
+        if not self.join_for_destroy_position_run.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_run)
 
     def continue_destroy_position_run(self):
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_run)
+        self.guarantees.position_run.publish(
+            self.scheduler,
+        )

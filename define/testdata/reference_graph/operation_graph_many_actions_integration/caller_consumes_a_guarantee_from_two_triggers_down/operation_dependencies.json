@@ -39,6 +39,28 @@
         "caller": null,
         "action_name": "test"
       },
+      "operation_name": "destroy",
+      "target": "box::/outer::trigger_pos",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "operation_name": "create",
+        "target": "box::/outer::trigger_pos",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
       "operation_name": "create",
       "target": "box::/outer::gw",
       "occurrence": 1
@@ -83,11 +105,42 @@
   {
     "operation": {
       "execution": {
-        "caller": null,
-        "action_name": "test"
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "outer"
+      },
+      "operation_name": "destroy",
+      "target": "gw::/middle::trigger_pos",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "outer"
+        },
+        "operation_name": "create",
+        "target": "gw::/middle::trigger_pos",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "outer"
       },
       "operation_name": "create",
-      "target": "box::/outer::gw::/middle::igw",
+      "target": "gw::/middle::igw",
       "occurrence": 1
     },
     "dependencies": [
@@ -118,7 +171,130 @@
         "action_name": "inner"
       },
       "operation_name": "create",
+      "target": "/inner_result",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "outer"
+        },
+        "operation_name": "create",
+        "target": "gw::/middle::igw",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "outer"
+        },
+        "action_name": "middle"
+      },
+      "operation_name": "move",
+      "source": "igw::/inner_result",
       "target": "out",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": {
+            "caller": {
+              "caller": {
+                "caller": null,
+                "action_name": "test"
+              },
+              "action_name": "outer"
+            },
+            "action_name": "middle"
+          },
+          "action_name": "inner"
+        },
+        "operation_name": "create",
+        "target": "/inner_result",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "outer"
+      },
+      "operation_name": "move",
+      "source": "gw::/middle::out",
+      "target": "out",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": {
+            "caller": {
+              "caller": null,
+              "action_name": "test"
+            },
+            "action_name": "outer"
+          },
+          "action_name": "middle"
+        },
+        "operation_name": "move",
+        "source": "igw::/inner_result",
+        "target": "out",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "operation_name": "move",
+      "source": "box::/outer::out",
+      "target": "result",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "outer"
+        },
+        "operation_name": "move",
+        "source": "gw::/middle::out",
+        "target": "out",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "operation_name": "destroy",
+      "target": "result",
       "occurrence": 1
     },
     "dependencies": [
@@ -127,8 +303,9 @@
           "caller": null,
           "action_name": "test"
         },
-        "operation_name": "create",
-        "target": "box::/outer::gw::/middle::igw",
+        "operation_name": "move",
+        "source": "box::/outer::out",
+        "target": "result",
         "occurrence": 1
       }
     ]
@@ -152,11 +329,154 @@
     "dependencies": [
       {
         "execution": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "outer"
+        },
+        "operation_name": "create",
+        "target": "gw::/middle::igw",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "outer"
+        },
+        "action_name": "middle"
+      },
+      "operation_name": "destroy",
+      "target": "igw::/inner::trigger_pos",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": {
+            "caller": {
+              "caller": null,
+              "action_name": "test"
+            },
+            "action_name": "outer"
+          },
+          "action_name": "middle"
+        },
+        "operation_name": "create",
+        "target": "igw::/inner::trigger_pos",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "outer"
+        },
+        "action_name": "middle"
+      },
+      "operation_name": "destroy",
+      "target": "igw",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": {
+            "caller": {
+              "caller": null,
+              "action_name": "test"
+            },
+            "action_name": "outer"
+          },
+          "action_name": "middle"
+        },
+        "operation_name": "destroy",
+        "target": "igw::/inner::trigger_pos",
+        "occurrence": 1
+      },
+      {
+        "execution": {
+          "caller": {
+            "caller": {
+              "caller": null,
+              "action_name": "test"
+            },
+            "action_name": "outer"
+          },
+          "action_name": "middle"
+        },
+        "operation_name": "move",
+        "source": "igw::/inner_result",
+        "target": "out",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
           "caller": null,
           "action_name": "test"
         },
-        "operation_name": "create",
-        "target": "box::/outer::gw::/middle::igw",
+        "action_name": "outer"
+      },
+      "operation_name": "destroy",
+      "target": "gw",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "outer"
+        },
+        "operation_name": "destroy",
+        "target": "gw::/middle::trigger_pos",
+        "occurrence": 1
+      },
+      {
+        "execution": {
+          "caller": {
+            "caller": {
+              "caller": null,
+              "action_name": "test"
+            },
+            "action_name": "outer"
+          },
+          "action_name": "middle"
+        },
+        "operation_name": "destroy",
+        "target": "igw",
+        "occurrence": 1
+      },
+      {
+        "execution": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "outer"
+        },
+        "operation_name": "move",
+        "source": "gw::/middle::out",
+        "target": "out",
         "occurrence": 1
       }
     ]
@@ -167,28 +487,40 @@
         "caller": null,
         "action_name": "test"
       },
-      "operation_name": "move",
-      "source": "box::/outer::gw::/middle::igw::/inner::out",
-      "target": "result",
+      "operation_name": "destroy",
+      "target": "box",
       "occurrence": 1
     },
     "dependencies": [
       {
         "execution": {
-          "caller": {
-            "caller": {
-              "caller": {
-                "caller": null,
-                "action_name": "test"
-              },
-              "action_name": "outer"
-            },
-            "action_name": "middle"
-          },
-          "action_name": "inner"
+          "caller": null,
+          "action_name": "test"
         },
-        "operation_name": "create",
-        "target": "out",
+        "operation_name": "destroy",
+        "target": "box::/outer::trigger_pos",
+        "occurrence": 1
+      },
+      {
+        "execution": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "outer"
+        },
+        "operation_name": "destroy",
+        "target": "gw",
+        "occurrence": 1
+      },
+      {
+        "execution": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "operation_name": "move",
+        "source": "box::/outer::out",
+        "target": "result",
         "occurrence": 1
       }
     ]

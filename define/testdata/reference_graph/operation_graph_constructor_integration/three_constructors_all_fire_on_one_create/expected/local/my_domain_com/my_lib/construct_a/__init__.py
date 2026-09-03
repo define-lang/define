@@ -16,7 +16,7 @@ class ConstructA(literal.Action):
 @final
 class ConstructAGuarantees:
     def __init__(self):
-        self.guarantee_global_position_marker_a: list[literal.Task] = []
+        self.global_position_marker_a = literal.Guarantee()
 
 
 @final
@@ -25,11 +25,10 @@ class ConstructAExecution:
         self,
         action: ConstructA,
         scheduler: literal.Scheduler,
-        guarantees: ConstructAGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = ConstructAGuarantees()
 
     def accept_when_empty_global_position_marker_a(self):
         self.create_global_position_marker_a()
@@ -38,4 +37,6 @@ class ConstructAExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.marker_a.MarkerA
         ).create_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_marker_a)
+        self.guarantees.global_position_marker_a.publish(
+            self.scheduler,
+        )

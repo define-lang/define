@@ -1,5 +1,7 @@
 """Resolves symbolic dependencies between per-action operation graphs.
 
+See ``define/compiler/operation_graph_execution_design.md`` for the shared design.
+
 The purpose of this resolver is to take individual actions and resolve
 the dependency relationships between them and their direct callees.
 When we say "resolve a dependency relationship," we mean determine how
@@ -37,7 +39,6 @@ modularity.
 from __future__ import annotations
 
 import collections
-import itertools
 import typing
 from dataclasses import dataclass, field
 
@@ -55,17 +56,19 @@ from define.compiler.validator.reference_graph import (
 # graph.
 
 if typing.TYPE_CHECKING:
-    from collections.abc import (
-        Iterable,
-        Mapping,
-        Sequence,
-    )
+    from collections.abc import Iterable, Mapping, Sequence
 
     from define.compiler import ast
 
 
 type _RequirementOrActionParentNode = (
     operation_graph_model.ActionParentLastOperationNode
+    | operation_graph_model.RequirementNode
+)
+type ResolvedBindingHole = (
+    operation_graph_model.MoveRuleBindingHole
+    | operation_graph_model.EmptyRuleBindingHole
+    | operation_graph_model.ActionParentLastOperationNode
     | operation_graph_model.RequirementNode
 )
 type _ActionDependsOnTarget = (
@@ -76,12 +79,29 @@ type _OperationDependsOnTarget = (
 )
 
 
-@dataclass(frozen=True, slots=True)
+def binding_hole_binds_one_caller_operation(
+    binding_hole: ResolvedBindingHole,
+) -> bool:
+    """Whether a Binding Hole receives exactly one caller operation."""
+    return isinstance(
+        binding_hole,
+        (
+            operation_graph_model.ActionParentLastOperationNode,
+            operation_graph_model.RequirementNode,
+        ),
+    )
+
+
+@dataclass(slots=True)
 class ActionDependencies:
     """Dependencies resolved within one reusable action graph."""
 
-    local_operations: list[operation_graph_model.PositionOperationNode]
-    guarantee_dependencies: list[operation_graph.GuaranteePath]
+    local_operations: list[operation_graph_model.PositionOperationNode] = field(
+        default_factory=list
+    )
+    guarantee_dependencies: list[operation_graph.GuaranteePath] = field(
+        default_factory=list
+    )
 
     def concrete_nodes(
         self,
@@ -110,7 +130,6 @@ class _ResolvedOperationRelationships:
     guarantee_dependencies: list[operation_graph.GuaranteePath] | None = None
     binding_holes_depended_on: list[operation_graph_model.BindingHole] | None = None
     callee_bindings_depending_on: list[CalleeBinding] | None = None
-    action_executions_triggered: list[ResolvedActionExecution] | None = None
     destruction_dependencies: (
         list[operation_graph_model.ResolvedCalleeDestroy] | None
     ) = None
@@ -119,11 +138,6 @@ class _ResolvedOperationRelationships:
         if self.callee_bindings_depending_on is None:
             self.callee_bindings_depending_on = []
         self.callee_bindings_depending_on.append(callee_binding)
-
-    def add_action_execution_triggered(self, action_execution: ResolvedActionExecution):
-        if self.action_executions_triggered is None:
-            self.action_executions_triggered = []
-        self.action_executions_triggered.append(action_execution)
 
 
 def _append_action_dependency(
@@ -155,7 +169,7 @@ def _partition_caller_dependencies(
     operation_graphs: operation_graph.OperationGraphs,
 ) -> tuple[ActionDependencies, list[operation_graph_model.BindingHole]]:
     """Separate local Particle Operations and guarantees from Binding Holes."""
-    dependencies = ActionDependencies([], [])
+    dependencies = ActionDependencies()
     binding_holes: list[operation_graph_model.BindingHole] = []
     for node in nodes:
         _append_action_dependency(node, dependencies, binding_holes, operation_graphs)
@@ -180,19 +194,79 @@ def _resolve_empty_rule_binding_hole(
     )
 
 
+def _single_caller_binding_hole(
+    caller_binding_holes: list[operation_graph_model.BindingHole],
+) -> ResolvedBindingHole | None:
+    """Return the one caller Binding Hole, when one remains."""
+    if not caller_binding_holes:
+        return None
+    (caller_binding_hole,) = caller_binding_holes
+    # Callee Binding resolution replaces every Empty Rule Binding Hole Node
+    # before its caller Binding Holes are collected.
+    return typing.cast("ResolvedBindingHole", caller_binding_hole)
+
+
 @dataclass(slots=True, eq=False)
 class CalleeBinding:
     """One callee-to-caller binding across a direct Action Execution."""
 
-    callee_binding_hole: operation_graph_model.BindingHole
+    callee_binding_hole: ResolvedBindingHole
     caller_dependencies: ActionDependencies
-    caller_binding_holes: list[operation_graph_model.BindingHole]
+    caller_binding_hole: ResolvedBindingHole | None
     callee_destroy_for_empty_or_fill_dependency: (
         operation_graph_model.ResolvedCalleeDestroy | None
     )
     contributed_destruction_operations: list[
         operation_graph_model.DestructionFragmentDestroyNode
-    ] = field(default_factory=list)
+    ] = field(init=False, default_factory=list)
+
+    def add_to(
+        self,
+        empty_rule_binding_inputs: operation_graph_model.EmptyRuleBindingInputs,
+    ):
+        """Add this binding's caller values to an Empty Rule application."""
+        empty_rule_binding_inputs.concrete_caller_nodes.extend(
+            self.caller_dependencies.concrete_nodes()
+        )
+        if self.caller_binding_hole is not None:
+            empty_rule_binding_inputs.caller_binding_holes.append(
+                self.caller_binding_hole
+            )
+
+    @property
+    def binds_one_caller_operation(self) -> bool:
+        """Whether this Binding Hole receives one resolved caller operation."""
+        return binding_hole_binds_one_caller_operation(
+            self.callee_binding_hole,
+        )
+
+    @property
+    def concrete_dependency_count(self) -> int:
+        """Return the number of resolved concrete dependencies."""
+        return (
+            len(self.caller_dependencies.local_operations)
+            + len(self.caller_dependencies.guarantee_dependencies)
+            + int(self.callee_destroy_for_empty_or_fill_dependency is not None)
+        )
+
+    @property
+    def dependency_count(self) -> int:
+        """Return the number of resolved and unresolved dependencies."""
+        return self.concrete_dependency_count + int(
+            self.caller_binding_hole is not None
+        )
+
+    @property
+    def sole_caller_particle_operation(
+        self,
+    ) -> operation_graph_model.PositionOperationNode | None:
+        """Return the caller Particle Operation when it alone satisfies the binding."""
+        if (
+            self.dependency_count != 1
+            or len(self.caller_dependencies.local_operations) != 1
+        ):
+            return None
+        return self.caller_dependencies.local_operations[0]
 
     @classmethod
     def for_callee_binding_hole(
@@ -223,7 +297,6 @@ class CalleeBinding:
                 return cls._for_empty_rule_binding_hole(
                     execution,
                     operation_graphs,
-                    callee_binding_hole,
                     empty_rule_binding_hole,
                     prerequisite_callee_bindings,
                     replacement_depends_on_targets_by_node,
@@ -234,7 +307,6 @@ class CalleeBinding:
                 return cls._for_empty_rule_binding_hole(
                     execution,
                     operation_graphs,
-                    callee_binding_hole,
                     empty_rule_binding_hole,
                     prerequisite_callee_bindings,
                     replacement_depends_on_targets_by_node,
@@ -265,10 +337,7 @@ class CalleeBinding:
         """Bind one Move Rule Binding Hole from the caller's perspective."""
         empty_rule_binding_inputs = operation_graph_model.EmptyRuleBindingInputs()
         for prerequisite_callee_binding in prerequisite_callee_bindings:
-            empty_rule_binding_inputs.add_inputs(
-                prerequisite_callee_binding.caller_dependencies.concrete_nodes(),
-                prerequisite_callee_binding.caller_binding_holes,
-            )
+            prerequisite_callee_binding.add_to(empty_rule_binding_inputs)
         move_rule_application_result = (
             operation_graph_rules.apply_move_rule_binding_hole_in_caller(
                 execution,
@@ -297,7 +366,7 @@ class CalleeBinding:
         return cls(
             move_rule_binding_hole,
             dependencies,
-            caller_binding_holes,
+            _single_caller_binding_hole(caller_binding_holes),
             callee_destroy_for_empty_or_fill_dependency,
         )
 
@@ -306,10 +375,6 @@ class CalleeBinding:
         cls,
         execution: operation_graph_model.ActionExecution,
         operation_graphs: operation_graph.OperationGraphs,
-        callee_binding_hole: (
-            operation_graph_model.EmptyRuleBindingHoleNode
-            | operation_graph_model.EmptyRuleBindingHole
-        ),
         empty_rule_binding_hole: operation_graph_model.EmptyRuleBindingHole,
         prerequisite_callee_bindings: list[CalleeBinding],
         replacement_depends_on_targets_by_node: Mapping[
@@ -320,10 +385,7 @@ class CalleeBinding:
         """Bind one Empty Rule Binding Hole from the caller's perspective."""
         empty_rule_binding_inputs = operation_graph_model.EmptyRuleBindingInputs()
         for prerequisite_callee_binding in prerequisite_callee_bindings:
-            empty_rule_binding_inputs.add_inputs(
-                prerequisite_callee_binding.caller_dependencies.concrete_nodes(),
-                prerequisite_callee_binding.caller_binding_holes,
-            )
+            prerequisite_callee_binding.add_to(empty_rule_binding_inputs)
         empty_rule_application_result = (
             operation_graph_rules.apply_empty_rule_binding_hole_in_caller(
                 execution,
@@ -343,9 +405,9 @@ class CalleeBinding:
                 empty_rule_application_result.empty_rule_binding_hole
             )
         return cls(
-            callee_binding_hole,
+            empty_rule_binding_hole,
             dependencies,
-            caller_binding_holes,
+            _single_caller_binding_hole(caller_binding_holes),
             None,
         )
 
@@ -363,15 +425,30 @@ class CalleeBinding:
         if isinstance(caller_operation, operation_graph_model.CalleeDestroy):
             return cls(
                 callee_binding_hole,
-                ActionDependencies([], []),
-                [],
+                ActionDependencies(),
+                None,
                 operation_graphs.resolve_callee_destroy(caller_operation),
             )
         dependencies, caller_binding_holes = _partition_caller_dependencies(
             (caller_operation,),
             operation_graphs,
         )
-        return cls(callee_binding_hole, dependencies, caller_binding_holes, None)
+        return cls(
+            callee_binding_hole,
+            dependencies,
+            _single_caller_binding_hole(caller_binding_holes),
+            None,
+        )
+
+
+def _earlier_callee_binding(
+    current: CalleeBinding | None,
+    candidate: CalleeBinding,
+    indexes: Mapping[CalleeBinding, int],
+) -> CalleeBinding:
+    if current is None or indexes[candidate] < indexes[current]:
+        return candidate
+    return current
 
 
 def prerequisite_binding_holes(
@@ -391,6 +468,7 @@ def prerequisite_binding_holes(
             return ()
 
 
+# TODO: Move this ordering helper onto _ActionBindingHolesBuilder.
 # TODO: Consider maintaining prerequisite-first Binding Hole order as holes are
 # discovered. This could remove the final ordering pass, but only if simplifying
 # this code justifies requiring every discovery path to update shared ordering
@@ -485,12 +563,14 @@ class CalleeBindings:
             contributed_destruction_fragments,
             operation_graphs,
         )
+        bindings_with_runtime_consumers: list[CalleeBinding] = []
+        for binding_hole in callee_action_binding_holes.with_runtime_consumers:
+            bindings_with_runtime_consumers.append(
+                bindings_by_callee_binding_hole[binding_hole]
+            )
         return cls(
             bindings_by_callee_binding_hole,
-            cls._bindings_with_runtime_consumers(
-                bindings_by_callee_binding_hole,
-                callee_action_binding_holes,
-            ),
+            bindings_with_runtime_consumers,
         )
 
     @property
@@ -510,41 +590,18 @@ class CalleeBindings:
         """Return the binding for one direct callee Binding Hole, if present."""
         return self._bindings_by_callee_binding_hole.get(callee_binding_hole)
 
-    # A contributed Destroy can consume a binding otherwise used only as a
-    # prerequisite, and that association is known only after every binding is
-    # built. Select the runtime-consumed bindings after destruction association.
-    @staticmethod
-    def _bindings_with_runtime_consumers(
-        bindings_by_callee_binding_hole: dict[
-            operation_graph_model.BindingHole, CalleeBinding
-        ],
-        callee_action_binding_holes: ActionBindingHoles,
-    ) -> list[CalleeBinding]:
-        """Return bindings consumed by the callee or a contributed Destroy.
-
-        ``callee_action_binding_holes.with_runtime_consumers`` must contain the
-        same Binding Hole objects in the same relative order as
-        ``bindings_by_callee_binding_hole``.
-        """
-        bindings_with_runtime_consumers: list[CalleeBinding] = []
-        runtime_consumer_index = 0
-        binding_holes_with_runtime_consumers = (
-            callee_action_binding_holes.with_runtime_consumers
-        )
-        for callee_binding in bindings_by_callee_binding_hole.values():
-            has_runtime_consumer = (
-                runtime_consumer_index < len(binding_holes_with_runtime_consumers)
-                and callee_binding.callee_binding_hole
-                is binding_holes_with_runtime_consumers[runtime_consumer_index]
-            )
-            if has_runtime_consumer:
-                runtime_consumer_index += 1
+    def has_empty_or_fill_dependency_on(
+        self,
+        callee_destroy: operation_graph_model.ResolvedCalleeDestroy,
+    ) -> bool:
+        """Whether a runtime Callee Binding depends on the callee Destroy."""
+        for callee_binding in self._with_runtime_consumers:
             if (
-                has_runtime_consumer
-                or callee_binding.contributed_destruction_operations
+                callee_binding.callee_destroy_for_empty_or_fill_dependency
+                == callee_destroy
             ):
-                bindings_with_runtime_consumers.append(callee_binding)
-        return bindings_with_runtime_consumers
+                return True
+        return False
 
     @staticmethod
     def _associate_contributed_destruction_operations(
@@ -570,14 +627,7 @@ class CalleeBindings:
             CalleeBinding,
         ] = {}
         callee_binding_by_guarantee: dict[
-            tuple[
-                tuple[operation_graph_model.ActionExecution, ...],
-                operation_graph_model.PositionOperationNode,
-            ],
-            CalleeBinding,
-        ] = {}
-        callee_binding_by_caller_binding_hole: dict[
-            operation_graph_model.BindingHole,
+            operation_graph.ResolvedGuarantee,
             CalleeBinding,
         ] = {}
         for callee_binding_index, callee_binding in enumerate(
@@ -597,66 +647,58 @@ class CalleeBindings:
             # identify the Guarantee that supplied the required particle.
             for guarantee in callee_binding.caller_dependencies.guarantee_dependencies:
                 _ = callee_binding_by_guarantee.setdefault(
-                    (tuple(guarantee.executions), guarantee.operation),
-                    callee_binding,
-                )
-            # A caller Binding Hole that remains unfilled is passed to the next caller.
-            for caller_binding_hole in callee_binding.caller_binding_holes:
-                _ = callee_binding_by_caller_binding_hole.setdefault(
-                    caller_binding_hole,
+                    guarantee,
                     callee_binding,
                 )
         for fragment in fragments:
             if not fragment.operations:
                 continue
-            if any(
-                preceding_guarantee.destroy is fragment.operations[0]
-                for preceding_guarantee in (
-                    fragment.destructor_guarantees_preceding_destroys
-                )
-            ):
+            destroy_follows_destructor_guarantee = False
+            for (
+                preceding_guarantee
+            ) in fragment.destructor_guarantees_preceding_destroys:
+                if preceding_guarantee.destroy is fragment.operations[0]:
+                    destroy_follows_destructor_guarantee = True
+                    break
+            if destroy_follows_destructor_guarantee:
                 # The caller-contributed Destroy depends directly on the
                 # Destructor Guarantee. Associating the same Destroy with a
                 # callee Binding Hole would add a dependency absent from its
                 # Operation Graph.
                 continue
-            contribution_dependencies = itertools.chain.from_iterable(
-                contributed_destruction.contribution_node.depends_on
-                for contributed_destruction in fragment.contributed_destructions
-            )
-            dependencies, caller_binding_holes = _partition_caller_dependencies(
-                contribution_dependencies,
+            dependencies, _ = _partition_caller_dependencies(
+                fragment.dependencies(),
                 operation_graphs,
             )
-            matching_callee_bindings: list[CalleeBinding] = []
+            earliest_callee_binding: CalleeBinding | None = None
             # A contributed Destroy that follows a caller Particle Operation
             # belongs with the callee node resolved to that Particle Operation.
             for operation in dependencies.local_operations:
                 callee_binding = callee_binding_by_local_operation.get(operation)
                 if callee_binding is not None:
-                    matching_callee_bindings.append(callee_binding)
+                    earliest_callee_binding = _earlier_callee_binding(
+                        earliest_callee_binding,
+                        callee_binding,
+                        callee_binding_indexes,
+                    )
             # A contributed Destroy that follows an Action Guarantee belongs with
             # the callee node resolved through the same sequence of Action
             # Executions and the same guaranteed Particle Operation.
             for guarantee in dependencies.guarantee_dependencies:
-                callee_binding = callee_binding_by_guarantee.get(
-                    (tuple(guarantee.executions), guarantee.operation)
-                )
+                callee_binding = callee_binding_by_guarantee.get(guarantee)
                 if callee_binding is not None:
-                    matching_callee_bindings.append(callee_binding)
-            # A contributed Destroy whose dependency is passed to the next caller
-            # belongs with the callee node that passes the same operation-graph
-            # node to that caller.
-            for caller_binding_hole in caller_binding_holes:
-                callee_binding = callee_binding_by_caller_binding_hole.get(
-                    caller_binding_hole
-                )
-                if callee_binding is not None:
-                    matching_callee_bindings.append(callee_binding)
-            callee_binding = min(
-                matching_callee_bindings, key=callee_binding_indexes.__getitem__
+                    earliest_callee_binding = _earlier_callee_binding(
+                        earliest_callee_binding,
+                        callee_binding,
+                        callee_binding_indexes,
+                    )
+            # A contributed Destroy handled here shares a preceding Particle
+            # Operation or Action Guarantee with at least one Callee Binding.
+            earliest_callee_binding = typing.cast(
+                "CalleeBinding",
+                earliest_callee_binding,
             )
-            callee_binding.contributed_destruction_operations.extend(
+            earliest_callee_binding.contributed_destruction_operations.extend(
                 fragment.operations
             )
 
@@ -666,18 +708,47 @@ class ResolvedActionExecution:
     """The dependency interface of one direct Action Execution."""
 
     execution: operation_graph_model.ActionExecution
-    guarantee_dependency: operation_graph.GuaranteePath | None
+    resolved_action_parent_last_operation: (
+        operation_graph_model.PositionOperationNode
+        | operation_graph.GuaranteePath
+        | ResolvedBindingHole
+    )
     forwards_destruction_connections: bool
     callee_bindings: CalleeBindings
 
     @property
-    def has_only_action_parent_runtime_binding(self) -> bool:
-        """Whether the Action Parent is this execution's only runtime binding."""
+    def sole_action_parent_runtime_binding_hole(
+        self,
+    ) -> operation_graph_model.ActionParentLastOperationNode | None:
+        """Return the Action Parent when it is the only runtime Binding Hole."""
         runtime_bindings = self.callee_bindings.with_runtime_consumers
-        return len(runtime_bindings) == 1 and isinstance(
-            runtime_bindings[0].callee_binding_hole,
+        if len(runtime_bindings) != 1:
+            return None
+        binding_hole = runtime_bindings[0].callee_binding_hole
+        if not isinstance(
+            binding_hole,
             operation_graph_model.ActionParentLastOperationNode,
-        )
+        ):
+            return None
+        return binding_hole
+
+    def action_parent_guarantee_from_direct_caller(
+        self,
+        direct_caller_execution: operation_graph_model.ActionExecution,
+    ) -> operation_graph.ResolvedGuarantee | None:
+        """Return the direct caller's Action Guarantee for the Action Parent."""
+        match self.resolved_action_parent_last_operation:
+            case operation_graph_model.PositionOperationNode() as operation:
+                return operation_graph.ResolvedGuarantee(
+                    (direct_caller_execution,), operation
+                )
+            case operation_graph.GuaranteePath() as guarantee_path:
+                return operation_graph.ResolvedGuarantee(
+                    (direct_caller_execution, *guarantee_path.executions),
+                    guarantee_path.operation,
+                )
+            case _:
+                return None
 
     @classmethod
     def resolve(
@@ -692,10 +763,15 @@ class ResolvedActionExecution:
         ],
     ) -> typing.Self:
         """Resolve one direct Action Execution from the caller's perspective."""
-        trigger_operation = execution.trigger_operation
-        guarantee_dependency = None
-        if isinstance(trigger_operation, operation_graph_model.GuaranteeNode):
-            guarantee_dependency = operation_graphs.resolve_guarantee(trigger_operation)
+        action_parent_last_operation = execution.action_parent_last_operation
+        if isinstance(
+            action_parent_last_operation, operation_graph_model.GuaranteeNode
+        ):
+            resolved_action_parent_last_operation = operation_graphs.resolve_guarantee(
+                action_parent_last_operation
+            )
+        else:
+            resolved_action_parent_last_operation = action_parent_last_operation
         callee_bindings = CalleeBindings.for_action_execution(
             caller_graph,
             execution,
@@ -705,7 +781,7 @@ class ResolvedActionExecution:
         )
         return cls(
             execution,
-            guarantee_dependency,
+            resolved_action_parent_last_operation,
             caller_graph.propagates_destruction_from_execution_to_caller(execution),
             callee_bindings,
         )
@@ -717,9 +793,30 @@ class ResolvedDestructionContribution:
 
     operation_graph_contribution: operation_graph_model.DestructionContribution
     destructors: list[ResolvedActionExecution]
-    destructor_guarantees_preceding_callee_destroy: list[
-        operation_graph.ResolvedGuarantee
+    destructor_guarantees_preceding_callee_destroy_by_execution: dict[
+        operation_graph_model.ActionExecution,
+        list[operation_graph.ResolvedGuarantee],
     ]
+
+    def destructors_requiring_binding_association(
+        self,
+    ) -> Iterable[ResolvedActionExecution]:
+        """Iterate over Destructors whose bindings need operation association."""
+        for destructor in self.destructors:
+            if destructor.sole_action_parent_runtime_binding_hole is None:
+                yield destructor
+
+    def destructor_binding_depends_on_callee_destroy(
+        self,
+        callee_destroy: operation_graph_model.ResolvedCalleeDestroy,
+    ) -> bool:
+        """Whether a Destructor binding has an Empty or Fill Dependency on the Destroy."""
+        for destructor in self.destructors_requiring_binding_association():
+            if destructor.callee_bindings.has_empty_or_fill_dependency_on(
+                callee_destroy
+            ):
+                return True
+        return False
 
 
 @dataclass(frozen=True, slots=True)
@@ -731,21 +828,21 @@ class ActionBindingHoles:
     """
 
     in_binding_order: list[operation_graph_model.BindingHole]
-    with_runtime_consumers: list[operation_graph_model.BindingHole]
-    _binding_holes_by_guaranteed_position: dict[
-        tuple[str, ...], tuple[operation_graph_model.BindingHole, ...]
+    with_runtime_consumers: list[ResolvedBindingHole]
+    _binding_holes_by_guaranteed_operation: dict[
+        operation_graph_model.PositionOperationNode,
+        tuple[operation_graph_model.BindingHole, ...],
     ]
 
-    def binding_holes_depended_on_by_guaranteed_position(
-        self, guaranteed_position: tuple[str, ...]
+    def binding_holes_depended_on_by_guaranteed_operation(
+        self,
+        guaranteed_operation: operation_graph_model.PositionOperationNode,
     ) -> tuple[operation_graph_model.BindingHole, ...]:
         """Return the Binding Holes depended on by an Action Guarantee."""
-        binding_holes = self._binding_holes_by_guaranteed_position.get(
-            guaranteed_position
+        return self._binding_holes_by_guaranteed_operation.get(
+            guaranteed_operation,
+            (),
         )
-        if binding_holes is None:
-            return ()
-        return binding_holes
 
 
 @dataclass(frozen=True, slots=True)
@@ -790,6 +887,64 @@ class ResolvedAction:
         return typing.cast(
             "Sequence[operation_graph_model.PositionOperationNode]",
             operation.depends_on,
+        )
+
+    def direct_dependents_by_operation(
+        self,
+    ) -> dict[
+        operation_graph_model.PositionOperationNode,
+        list[operation_graph_model.PositionOperationNode],
+    ]:
+        """Return each Particle Operation's direct dependents."""
+        direct_dependents_by_operation: dict[
+            operation_graph_model.PositionOperationNode,
+            list[operation_graph_model.PositionOperationNode],
+        ] = {}
+        for operation in self.graph.particle_operations:
+            direct_dependents_by_operation[operation] = []
+        for operation in self.graph.particle_operations:
+            for depended_on_operation in self.local_operations_depended_on_by(
+                operation
+            ):
+                direct_dependents_by_operation[depended_on_operation].append(operation)
+        return direct_dependents_by_operation
+
+    def callee_action_parent_fill_operations(
+        self,
+    ) -> set[operation_graph_model.PositionOperationNode]:
+        """Return Particle Operations that fill direct callees' Action Parents."""
+        fill_operations: set[operation_graph_model.PositionOperationNode] = set()
+        for resolved_execution in self.action_executions:
+            action_parent_last_operation = (
+                resolved_execution.resolved_action_parent_last_operation
+            )
+            if isinstance(
+                action_parent_last_operation,
+                operation_graph_model.PositionOperationNode,
+            ):
+                fill_operations.add(action_parent_last_operation)
+        return fill_operations
+
+    def depends_only_on_particle_operations_in_this_action(
+        self,
+        operation: operation_graph_model.PositionOperationNode,
+    ) -> bool:
+        """Whether every dependency is a Particle Operation in this action."""
+        relationships = self.relationships_by_operation.get(operation)
+        if relationships is not None and (
+            relationships.guarantee_dependencies
+            or relationships.binding_holes_depended_on
+            or relationships.destruction_dependencies
+        ):
+            return False
+        return not (
+            isinstance(
+                operation,
+                operation_graph_model.DestructionFragmentDestroyNode,
+            )
+            and self.contributed_destructor_guarantee_dependencies_by_destroy.get(
+                operation
+            )
         )
 
     def guarantee_dependencies_for(
@@ -841,12 +996,15 @@ class ResolvedAction:
     def binding_holes_depended_on_by(
         self,
         operation: operation_graph_model.PositionOperationNode,
-    ) -> Sequence[operation_graph_model.BindingHole]:
+    ) -> Sequence[ResolvedBindingHole]:
         """Return the Binding Holes on which one Particle Operation depends."""
         relationships = self.relationships_by_operation.get(operation)
         if relationships is None or relationships.binding_holes_depended_on is None:
             return ()
-        return relationships.binding_holes_depended_on
+        return typing.cast(
+            "Sequence[ResolvedBindingHole]",
+            relationships.binding_holes_depended_on,
+        )
 
     def callee_bindings_depending_on(
         self,
@@ -857,16 +1015,6 @@ class ResolvedAction:
         if relationships is None or relationships.callee_bindings_depending_on is None:
             return ()
         return relationships.callee_bindings_depending_on
-
-    def action_executions_triggered_by(
-        self,
-        operation: operation_graph_model.PositionOperationNode,
-    ) -> Sequence[ResolvedActionExecution]:
-        """Return the Action Executions triggered by one Particle Operation."""
-        relationships = self.relationships_by_operation.get(operation)
-        if relationships is None or relationships.action_executions_triggered is None:
-            return ()
-        return relationships.action_executions_triggered
 
     def destruction_dependencies_for(
         self,
@@ -910,8 +1058,8 @@ class _ActionBindingHolesBuilder:
         terminal_action = self._resolved_callees[
             guarantee_path.executions[-1].callee_action_name
         ]
-        callee_binding_holes = terminal_action.binding_holes.binding_holes_depended_on_by_guaranteed_position(
-            guarantee.guarantee.guaranteed_position
+        callee_binding_holes = terminal_action.binding_holes.binding_holes_depended_on_by_guaranteed_operation(
+            guarantee_path.operation
         )
         if not callee_binding_holes:
             return ()
@@ -959,7 +1107,7 @@ class _ActionBindingHolesBuilder:
                 caller_binding_holes=directly_propagated_binding_holes,
                 replacement_depends_on_targets_by_node=caller_replacements,
             )
-        raise AssertionError("a Guarantee Path must contain an Action Execution")
+        raise ValueError("a Guarantee Path must contain an Action Execution")
 
     def _replacement_depends_on_targets_from_direct_callee(
         self,
@@ -976,7 +1124,10 @@ class _ActionBindingHolesBuilder:
             replacement_depends_on_targets.extend(
                 callee_binding.caller_dependencies.concrete_nodes()
             )
-            replacement_depends_on_targets.extend(callee_binding.caller_binding_holes)
+            if callee_binding.caller_binding_hole is not None:
+                replacement_depends_on_targets.append(
+                    callee_binding.caller_binding_hole
+                )
         return replacement_depends_on_targets
 
     @staticmethod
@@ -1004,7 +1155,7 @@ class _ActionBindingHolesBuilder:
     def build(
         self,
         operation_relationships: Iterable[_ResolvedOperationRelationships],
-        action_executions: Iterable[ResolvedActionExecution],
+        action_executions: Sequence[ResolvedActionExecution],
         replacement_depends_on_targets_by_node: Mapping[
             operation_graph_model.OperationNode,
             Sequence[_ActionDependsOnTarget],
@@ -1015,8 +1166,8 @@ class _ActionBindingHolesBuilder:
         # node saves enough repeated traversal across guaranteed operations to
         # justify the cache's memory cost. All replacement targets are final here,
         # so such a cache would remain valid throughout this calculation.
-        binding_holes_by_guaranteed_position = (
-            self._binding_holes_by_guaranteed_position(
+        binding_holes_by_guaranteed_operation = (
+            self._binding_holes_by_guaranteed_operation(
                 replacement_depends_on_targets_by_node
             )
         )
@@ -1032,63 +1183,76 @@ class _ActionBindingHolesBuilder:
                 binding_holes_with_runtime_consumers.add(binding_hole)
         for (
             guaranteed_operation_binding_holes
-        ) in binding_holes_by_guaranteed_position.values():
+        ) in binding_holes_by_guaranteed_operation.values():
             binding_holes.extend(guaranteed_operation_binding_holes)
         for resolved_execution in action_executions:
             for (
                 callee_binding
             ) in resolved_execution.callee_bindings.with_runtime_consumers:
-                for caller_binding_hole in callee_binding.caller_binding_holes:
+                caller_binding_hole = callee_binding.caller_binding_hole
+                if caller_binding_hole is not None:
                     binding_holes.append(caller_binding_hole)
                     binding_holes_with_runtime_consumers.add(caller_binding_hole)
-            # The destructor might not act on an implied position, so resolving its
-            # callee bindings does not necessarily discover this dependency.
-            destructor_trigger_requirement = (
-                resolved_execution.execution.destructor_trigger_requirement
+            resolved_action_parent_last_operation = (
+                resolved_execution.resolved_action_parent_last_operation
             )
-            if destructor_trigger_requirement is not None:
-                binding_holes.append(destructor_trigger_requirement)
-                binding_holes_with_runtime_consumers.add(destructor_trigger_requirement)
+            action_parent_last_operation_is_binding_hole = isinstance(
+                resolved_action_parent_last_operation,
+                (
+                    operation_graph_model.RequirementNode,
+                    operation_graph_model.EmptyRuleBindingHoleNode,
+                    operation_graph_model.EmptyRuleBindingHole,
+                    operation_graph_model.MoveRuleBindingHole,
+                ),
+            )
+            if action_parent_last_operation_is_binding_hole:
+                binding_holes.append(resolved_action_parent_last_operation)
+                binding_holes_with_runtime_consumers.add(
+                    resolved_action_parent_last_operation
+                )
         binding_holes_in_binding_order = _callee_binding_holes_in_binding_order(
             binding_holes
         )
+        binding_holes_with_runtime_consumers_in_order: list[ResolvedBindingHole] = []
+        for binding_hole in binding_holes_in_binding_order:
+            if binding_hole in binding_holes_with_runtime_consumers:
+                # Empty Rule Binding Hole Nodes are resolved before a relationship
+                # can make their resulting Binding Holes runtime consumers.
+                binding_holes_with_runtime_consumers_in_order.append(
+                    typing.cast("ResolvedBindingHole", binding_hole)
+                )
         return ActionBindingHoles(
             in_binding_order=binding_holes_in_binding_order,
-            with_runtime_consumers=[
-                binding_hole
-                for binding_hole in binding_holes_in_binding_order
-                if binding_hole in binding_holes_with_runtime_consumers
-            ],
-            _binding_holes_by_guaranteed_position=(
-                binding_holes_by_guaranteed_position
+            with_runtime_consumers=binding_holes_with_runtime_consumers_in_order,
+            _binding_holes_by_guaranteed_operation=(
+                binding_holes_by_guaranteed_operation
             ),
         )
 
-    def _binding_holes_by_guaranteed_position(
+    def _binding_holes_by_guaranteed_operation(
         self,
         replacement_depends_on_targets_by_node: Mapping[
             operation_graph_model.OperationNode,
             Sequence[_ActionDependsOnTarget],
         ],
-    ) -> dict[tuple[str, ...], tuple[operation_graph_model.BindingHole, ...]]:
+    ) -> dict[
+        operation_graph_model.PositionOperationNode,
+        tuple[operation_graph_model.BindingHole, ...],
+    ]:
         """Return Binding Holes for this action's published guarantees."""
-        binding_holes_by_guaranteed_position: dict[
-            tuple[str, ...], tuple[operation_graph_model.BindingHole, ...]
+        binding_holes_by_guaranteed_operation: dict[
+            operation_graph_model.PositionOperationNode,
+            tuple[operation_graph_model.BindingHole, ...],
         ] = {}
-        for (
-            operation,
-            guaranteed_positions,
-        ) in self._graph.guaranteed_positions_by_operation.items():
+        for operation in self._graph.direct_guarantees_by_operation:
             binding_holes = operation_graph_rules.binding_holes_depended_on_by(
                 (operation,),
                 replacement_depends_on_targets_by_node=(
                     replacement_depends_on_targets_by_node
                 ),
             )
-            if binding_holes:
-                for position in guaranteed_positions:
-                    binding_holes_by_guaranteed_position[position] = binding_holes
-        return binding_holes_by_guaranteed_position
+            binding_holes_by_guaranteed_operation[operation] = binding_holes
+        return binding_holes_by_guaranteed_operation
 
 
 @dataclass(frozen=True, slots=True)
@@ -1147,21 +1311,11 @@ class _ActionResolver:
         for resolved_contribution in destruction_contributions.values():
             self._associate_callee_bindings_with_operations(
                 resolved_nodes.relationships_by_operation,
-                (
-                    resolved_destructor
-                    for resolved_destructor in resolved_contribution.destructors
-                    if not resolved_destructor.has_only_action_parent_runtime_binding
-                ),
+                resolved_contribution.destructors_requiring_binding_association(),
             )
         binding_holes = self._action_binding_holes_builder.build(
             resolved_nodes.relationships_by_operation.values(),
-            itertools.chain(
-                resolved_nodes.action_executions,
-                itertools.chain.from_iterable(
-                    resolved_contribution.destructors
-                    for resolved_contribution in destruction_contributions.values()
-                ),
-            ),
+            resolved_nodes.action_executions,
             resolved_nodes.replacement_depends_on_targets_by_node,
         )
         return ResolvedAction(
@@ -1198,32 +1352,41 @@ class _ActionResolver:
         replacement_depends_on_targets_by_node: dict[
             operation_graph_model.OperationNode, Sequence[_ActionDependsOnTarget]
         ] = {}
-        direct_executions_by_trigger: dict[
-            operation_graph_model.LastOperationNode,
-            list[operation_graph_model.ActionExecution],
-        ] = {}
-        for execution in self._graph.executions:
-            direct_executions_by_trigger.setdefault(
-                execution.trigger_operation, []
-            ).append(execution)
-        contributed_destructor_executions_by_trigger: dict[
-            operation_graph_model.LastOperationNode,
-            list[operation_graph_model.ActionExecution],
-        ] = {}
         destructor_guarantees_by_contributed_destroy: dict[
             operation_graph_model.DestructionFragmentDestroyNode,
             list[operation_graph.ResolvedGuarantee],
         ] = {}
+
+        for node in self._graph.nodes:
+            if isinstance(node, operation_graph_model.GuaranteeNode):
+                _ = self._resolve_execution(
+                    node.execution,
+                    resolved_execution_by_execution,
+                    replacement_depends_on_targets_by_node,
+                )
+            self._resolve_node_relationships(
+                node,
+                relationships_by_operation,
+                resolved_execution_by_execution,
+                replacement_depends_on_targets_by_node,
+            )
+        for execution in self._graph.executions:
+            resolved_execution = self._resolve_execution(
+                execution,
+                resolved_execution_by_execution,
+                replacement_depends_on_targets_by_node,
+            )
+            action_executions.append(resolved_execution)
         for direct_execution in self._graph.executions:
             for fragment in self._graph.contributed_destruction_fragments_for(
                 direct_execution
             ):
                 for destructor in fragment.destructors:
-                    execution = destructor.destructor_execution
-                    contributed_destructor_executions_by_trigger.setdefault(
-                        execution.trigger_operation,
-                        [],
-                    ).append(execution)
+                    _ = self._resolve_execution(
+                        destructor.destructor_execution,
+                        resolved_execution_by_execution,
+                        replacement_depends_on_targets_by_node,
+                    )
                 for (
                     guarantee_preceding_destroy
                 ) in fragment.destructor_guarantees_preceding_destroys:
@@ -1235,45 +1398,6 @@ class _ActionResolver:
                             guarantee_preceding_destroy.guarantee
                         )
                     )
-        for node in self._graph.nodes:
-            self._resolve_node_relationships(
-                node,
-                relationships_by_operation,
-                resolved_execution_by_execution,
-                replacement_depends_on_targets_by_node,
-            )
-            if isinstance(
-                node,
-                (
-                    operation_graph_model.PositionOperationNode,
-                    operation_graph_model.GuaranteeNode,
-                    operation_graph_model.RequirementNode,
-                ),
-            ):
-                direct_executions = direct_executions_by_trigger.get(node, ())
-                for execution in itertools.chain(
-                    direct_executions,
-                    contributed_destructor_executions_by_trigger.get(node, ()),
-                ):
-                    callee = self._resolved_callees[execution.callee_action_name]
-                    resolved_execution = ResolvedActionExecution.resolve(
-                        self._graph,
-                        self._operation_graphs,
-                        execution,
-                        callee,
-                        replacement_depends_on_targets_by_node,
-                    )
-                    resolved_execution_by_execution[execution] = resolved_execution
-                for execution in direct_executions:
-                    resolved_execution = resolved_execution_by_execution[execution]
-                    action_executions.append(resolved_execution)
-                    if isinstance(
-                        execution.trigger_operation,
-                        operation_graph_model.PositionOperationNode,
-                    ):
-                        relationships_by_operation[
-                            execution.trigger_operation
-                        ].add_action_execution_triggered(resolved_execution)
         for operation in destructor_guarantees_by_contributed_destroy:
             # The Destructor Guarantee replaces this Destroy's dependencies from
             # before caller contribution, while contributed child Destroys remain
@@ -1304,6 +1428,31 @@ class _ActionResolver:
             replacement_depends_on_targets_by_node,
         )
 
+    def _resolve_execution(
+        self,
+        execution: operation_graph_model.ActionExecution,
+        resolved_execution_by_execution: dict[
+            operation_graph_model.ActionExecution, ResolvedActionExecution
+        ],
+        replacement_depends_on_targets_by_node: Mapping[
+            operation_graph_model.OperationNode,
+            Sequence[_ActionDependsOnTarget],
+        ],
+    ) -> ResolvedActionExecution:
+        resolved_execution = resolved_execution_by_execution.get(execution)
+        if resolved_execution is not None:
+            return resolved_execution
+        callee = self._resolved_callees[execution.callee_action_name]
+        resolved_execution = ResolvedActionExecution.resolve(
+            self._graph,
+            self._operation_graphs,
+            execution,
+            callee,
+            replacement_depends_on_targets_by_node,
+        )
+        resolved_execution_by_execution[execution] = resolved_execution
+        return resolved_execution
+
     def _resolve_node_relationships(
         self,
         node: operation_graph_model.OperationNode,
@@ -1318,36 +1467,39 @@ class _ActionResolver:
             operation_graph_model.OperationNode, Sequence[_ActionDependsOnTarget]
         ],
     ):
-        if isinstance(node, operation_graph_model.EmptyRuleBindingHoleNode):
-            binding_hole = _resolve_empty_rule_binding_hole(
-                node,
-                replacement_depends_on_targets_by_node,
-            )
-            if self._resolved_empty_rule_binding_hole_by_operation_node is not None:
-                self._resolved_empty_rule_binding_hole_by_operation_node[node] = (
-                    binding_hole
-                )
-            replacement_depends_on_targets_by_node[node] = (binding_hole,)
-        elif isinstance(node, operation_graph_model.GuaranteeNode):
-            resolved_execution = resolved_execution_by_execution[node.execution]
-            replacement_depends_on_targets_by_node[node] = (
-                self._action_binding_holes_builder.replacement_depends_on_targets_for_guarantee(
+        match node:
+            case operation_graph_model.EmptyRuleBindingHoleNode():
+                binding_hole = _resolve_empty_rule_binding_hole(
                     node,
-                    resolved_execution,
                     replacement_depends_on_targets_by_node,
                 )
-            )
-        elif isinstance(node, operation_graph_model.PositionOperationNode):
-            relationships, replacement_depends_on_targets = self._resolve_operation(
-                node,
-                replacement_depends_on_targets_by_node,
-            )
-            if relationships is not None:
-                relationships_by_operation[node] = relationships
-            if replacement_depends_on_targets is not None:
+                if self._resolved_empty_rule_binding_hole_by_operation_node is not None:
+                    self._resolved_empty_rule_binding_hole_by_operation_node[node] = (
+                        binding_hole
+                    )
+                replacement_depends_on_targets_by_node[node] = (binding_hole,)
+            case operation_graph_model.GuaranteeNode():
+                resolved_execution = resolved_execution_by_execution[node.execution]
                 replacement_depends_on_targets_by_node[node] = (
-                    replacement_depends_on_targets
+                    self._action_binding_holes_builder.replacement_depends_on_targets_for_guarantee(
+                        node,
+                        resolved_execution,
+                        replacement_depends_on_targets_by_node,
+                    )
                 )
+            case operation_graph_model.PositionOperationNode():
+                relationships, replacement_depends_on_targets = self._resolve_operation(
+                    node,
+                    replacement_depends_on_targets_by_node,
+                )
+                if relationships is not None:
+                    relationships_by_operation[node] = relationships
+                if replacement_depends_on_targets is not None:
+                    replacement_depends_on_targets_by_node[node] = (
+                        replacement_depends_on_targets
+                    )
+            case _:
+                return
 
     def _resolve_destruction_contributions(
         self,
@@ -1369,18 +1521,27 @@ class _ActionResolver:
             destructors: list[ResolvedActionExecution] = []
             for execution in contribution.destructors:
                 destructors.append(resolved_execution_by_execution[execution])
+            destructor_guarantees_by_execution: dict[
+                operation_graph_model.ActionExecution,
+                list[operation_graph.ResolvedGuarantee],
+            ] = {}
+            for (
+                guarantee
+            ) in contribution.destructor_guarantees_preceding_callee_destroy:
+                resolved_guarantees = destructor_guarantees_by_execution.setdefault(
+                    guarantee.destructor_execution,
+                    [],
+                )
+                resolved_guarantees.append(
+                    self._operation_graphs.resolve_destruction_contract_destructor_guarantee(
+                        guarantee
+                    )
+                )
             destruction_contributions[resolved_callee_destroy] = (
                 ResolvedDestructionContribution(
                     contribution,
                     destructors,
-                    [
-                        self._operation_graphs.resolve_destruction_contract_destructor_guarantee(
-                            guarantee
-                        )
-                        for guarantee in (
-                            contribution.destructor_guarantees_preceding_callee_destroy
-                        )
-                    ],
+                    destructor_guarantees_by_execution,
                 )
             )
         return destruction_contributions
@@ -1410,11 +1571,17 @@ class _ActionResolver:
             replacement_depends_on_targets = typing.cast(
                 "list[_ActionDependsOnTarget]", depends_on_targets
             )
-        if not relationships_changed and all(
-            isinstance(target, operation_graph_model.PositionOperationNode)
-            for target in depends_on_targets
-        ):
-            return None, None
+        if not relationships_changed:
+            relationships_are_local = True
+            for target in depends_on_targets:
+                if not isinstance(
+                    target,
+                    operation_graph_model.PositionOperationNode,
+                ):
+                    relationships_are_local = False
+                    break
+            if relationships_are_local:
+                return None, None
         dependencies, binding_holes, destruction_dependencies = (
             self._resolve_dependencies(depends_on_targets)
         )
@@ -1455,35 +1622,22 @@ class _ActionResolver:
                 )
             return partial_move_depends_on_targets, relationships_changed
 
-        # Most operations retain every graph relationship. Allocate a replacement
-        # list only after finding the first Binding Hole that action resolution
-        # replaces.
-        replacement_depends_on_targets: list[_OperationDependsOnTarget] | None = None
-        for dependency_index, dependency in enumerate(operation.depends_on):
-            match dependency:
-                case operation_graph_model.EmptyRuleBindingHoleNode():
-                    if replacement_depends_on_targets is None:
-                        replacement_depends_on_targets = list(
-                            operation.depends_on[:dependency_index]
-                        )
-                    replacement_depends_on_targets.append(
-                        replacement_depends_on_targets_by_node[dependency][0]
-                    )
-                case (
-                    operation_graph_model.ActionParentLastOperationNode()
-                    | operation_graph_model.PositionOperationNode()
-                    | operation_graph_model.DestructionContributionNode()
-                    | operation_graph_model.GuaranteeNode()
-                    | operation_graph_model.RequirementNode()
-                ):
-                    if replacement_depends_on_targets is not None:
-                        replacement_depends_on_targets.append(dependency)
-        relationships_changed = replacement_depends_on_targets is not None
+        # Graph construction appends at most one unfinished Empty Rule to a
+        # Particle Operation, after all its concrete dependencies.
+        last_dependency = operation.depends_on[-1] if operation.depends_on else None
         depends_on_targets: Sequence[_OperationDependsOnTarget]
-        if replacement_depends_on_targets is None:
-            depends_on_targets = operation.depends_on
+        if isinstance(
+            last_dependency,
+            operation_graph_model.EmptyRuleBindingHoleNode,
+        ):
+            depends_on_targets = [
+                *operation.depends_on[:-1],
+                replacement_depends_on_targets_by_node[last_dependency][0],
+            ]
+            relationships_changed = True
         else:
-            depends_on_targets = replacement_depends_on_targets
+            depends_on_targets = operation.depends_on
+            relationships_changed = False
         if (
             isinstance(operation, operation_graph_model.DestroyNode)
             and operation.depends_on_path_contains_guarantee_or_partial_move_rule
@@ -1537,11 +1691,11 @@ class _ActionResolver:
         removed_empty_dependencies.difference_update(remaining_empty_dependencies)
         if not removed_empty_dependencies:
             return depends_on_targets
-        return [
-            depends_on_target
-            for depends_on_target in depends_on_targets
-            if depends_on_target not in removed_empty_dependencies
-        ]
+        corrected_depends_on_targets: list[_OperationDependsOnTarget] = []
+        for depends_on_target in depends_on_targets:
+            if depends_on_target not in removed_empty_dependencies:
+                corrected_depends_on_targets.append(depends_on_target)
+        return corrected_depends_on_targets
 
     @staticmethod
     def _associate_callee_bindings_with_operations(
@@ -1569,7 +1723,7 @@ class _ActionResolver:
         list[operation_graph_model.BindingHole],
         list[operation_graph_model.ResolvedCalleeDestroy],
     ]:
-        dependencies = ActionDependencies([], [])
+        dependencies = ActionDependencies()
         binding_holes: list[operation_graph_model.BindingHole] = []
         destruction_dependencies: list[operation_graph_model.ResolvedCalleeDestroy] = []
         for dependency in dependency_nodes:
@@ -1634,3 +1788,17 @@ class ResolvedActions:
     def __getitem__(self, action: ast.GlobalTypedName) -> ResolvedAction:
         """Return a resolved action."""
         return self._resolved[action]
+
+    def action_parent_guarantee_for_nested_execution(
+        self,
+        direct_execution: operation_graph_model.ActionExecution,
+        nested_execution: operation_graph_model.ActionExecution,
+    ) -> operation_graph.ResolvedGuarantee | None:
+        """Return a direct callee execution's Action Parent Guarantee."""
+        resolved_callee = self._resolved[direct_execution.callee_action_name]
+        resolved_nested_execution = resolved_callee.resolved_execution_by_execution[
+            nested_execution
+        ]
+        return resolved_nested_execution.action_parent_guarantee_from_direct_caller(
+            direct_execution,
+        )

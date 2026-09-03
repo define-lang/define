@@ -31,8 +31,8 @@ class PerformOperation(literal.Action):
 @final
 class PerformOperationGuarantees:
     def __init__(self):
-        self.guarantee_position_operation_trigger: list[literal.Task] = []
-        self.guarantee_position_run: list[literal.Task] = []
+        self.position_operation_trigger = literal.Guarantee()
+        self.position_run = literal.Guarantee()
 
 
 @final
@@ -41,30 +41,40 @@ class PerformOperationExecution:
         self,
         action: PerformOperation,
         scheduler: literal.Scheduler,
-        guarantees: PerformOperationGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = PerformOperationGuarantees()
         self.destruction_connections = destruction_connections
         self.local_position_result = literal.LocalPosition(
             "position<result>",
             scheduler=self.scheduler,
         )
-        self.join_for_destroy_position_operation_trigger = self.scheduler.create_join(2)
+        self.join_for_destroy_position_operation_trigger__global_position_inner_position: literal.Join
+        self.join_for_destroy_position_operation_trigger: literal.Join
+        self.join_for_destroy_position_run: literal.Join
+        self.join_for_empty_rule_position_operation_trigger__global_position_inner_position: literal.Join
+        self.join_for_empty_rule_position_operation_trigger: literal.Join
+        self.join_for_empty_rule_position_run: literal.Join
 
-    def accept_action_parent(self):
+    def on_action_parent_occupied(self):
         self.create_position_result()
 
     def accept_for_empty_rule_position_operation_trigger__global_position_inner_position(self):
+        if not self.join_for_empty_rule_position_operation_trigger__global_position_inner_position.arrive():
+            return
         self.destroy_position_operation_trigger__global_position_inner_position()
 
     def accept_for_empty_rule_position_operation_trigger(self):
+        if not self.join_for_empty_rule_position_operation_trigger.arrive():
+            return
         self.destroy_position_operation_trigger()
 
     def accept_for_empty_rule_position_run(self):
+        if not self.join_for_empty_rule_position_run.arrive():
+            return
         self.destroy_position_run()
 
     def create_position_result(self):
@@ -72,6 +82,8 @@ class PerformOperationExecution:
         self.local_position_result.destroy_particle()
 
     def destroy_position_operation_trigger__global_position_inner_position(self):
+        if not self.join_for_destroy_position_operation_trigger__global_position_inner_position.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_operation_trigger__global_position_inner_position)
 
     def continue_destroy_position_operation_trigger__global_position_inner_position(self):
@@ -91,13 +103,19 @@ class PerformOperationExecution:
         self.action.get_interface_position(
             "position<operation_trigger>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_operation_trigger)
+        self.guarantees.position_operation_trigger.publish(
+            self.scheduler,
+        )
 
     def destroy_position_run(self):
+        if not self.join_for_destroy_position_run.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_run)
 
     def continue_destroy_position_run(self):
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_run)
+        self.guarantees.position_run.publish(
+            self.scheduler,
+        )

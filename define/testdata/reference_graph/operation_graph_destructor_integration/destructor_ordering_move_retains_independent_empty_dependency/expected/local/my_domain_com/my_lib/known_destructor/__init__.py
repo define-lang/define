@@ -16,7 +16,7 @@ class KnownDestructor(literal.Action):
 @final
 class KnownDestructorGuarantees:
     def __init__(self):
-        self.guarantee_global_position_destination: list[literal.Task] = []
+        self.global_position_destination = literal.Guarantee()
 
 
 @final
@@ -25,11 +25,10 @@ class KnownDestructorExecution:
         self,
         action: KnownDestructor,
         scheduler: literal.Scheduler,
-        guarantees: KnownDestructorGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = KnownDestructorGuarantees()
 
     def accept_when_empty_global_position_destination(self):
         self.create_global_position_destination()
@@ -41,4 +40,6 @@ class KnownDestructorExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.destination.Destination
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_destination)
+        self.guarantees.global_position_destination.publish(
+            self.scheduler,
+        )

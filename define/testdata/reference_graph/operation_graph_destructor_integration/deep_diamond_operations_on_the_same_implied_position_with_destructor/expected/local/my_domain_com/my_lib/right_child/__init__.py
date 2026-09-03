@@ -28,7 +28,7 @@ class RightChild(literal.Action):
 @final
 class RightChildGuarantees:
     def __init__(self):
-        self.guarantee_global_position_marker: list[literal.Task] = []
+        self.global_position_marker = literal.Guarantee()
 
 
 @final
@@ -37,37 +37,39 @@ class RightChildExecution:
         self,
         action: RightChild,
         scheduler: literal.Scheduler,
-        guarantees: RightChildGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = RightChildGuarantees()
         self.destruction_connections = destruction_connections
-        self.execution_trigger_global_position_marker__action_destructor: local.my_domain_com.my_lib.destructor.DestructorExecution
-        self.join_for_trigger_global_position_marker__action_destructor__action_parent = self.scheduler.create_join(2)
+        self.execution_global_position_marker__action_destructor: local.my_domain_com.my_lib.destructor.DestructorExecution
+        self.join_for_destroy_global_position_marker: literal.Join
+        self.join_for_empty_rule_global_position_marker: literal.Join
 
     def accept_for_empty_rule_global_position_marker(self):
+        if not self.join_for_empty_rule_global_position_marker.arrive():
+            return
         self.destroy_global_position_marker()
 
     def accept_when_occupied_global_position_marker(self):
-        self.execution_trigger_global_position_marker__action_destructor = local.my_domain_com.my_lib.destructor.DestructorExecution(
+        self.execution_global_position_marker__action_destructor.on_action_parent_occupied()
+
+    def init_when_occupied_global_position_marker(self):
+        self.execution_global_position_marker__action_destructor = local.my_domain_com.my_lib.destructor.DestructorExecution(
             self.scheduler,
         )
-        self.scheduler.submit(self.trigger_global_position_marker__action_destructor__action_parent)
-        self.trigger_global_position_marker__action_destructor__action_parent()
 
     def destroy_global_position_marker(self):
+        if not self.join_for_destroy_global_position_marker.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_global_position_marker)
 
     def continue_destroy_global_position_marker(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_marker)
-
-    def trigger_global_position_marker__action_destructor__action_parent(self):
-        if not self.join_for_trigger_global_position_marker__action_destructor__action_parent.arrive():
-            return
-        self.execution_trigger_global_position_marker__action_destructor.accept_action_parent()
+        self.guarantees.global_position_marker.publish(
+            self.scheduler,
+        )

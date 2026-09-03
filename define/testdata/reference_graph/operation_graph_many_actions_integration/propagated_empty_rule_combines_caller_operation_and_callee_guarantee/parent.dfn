@@ -1,0 +1,6 @@
+define the potential position<my.domain.com:my_lib:/parent> {
+    it may only contain particles where {
+        it has the position</direct_child>.
+        it has the position</guaranteed_child>.
+    }
+}

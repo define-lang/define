@@ -23,17 +23,8 @@ class Test(literal.EntryPoint):
             scheduler,
             None,
             "test",
-            TestGuarantees(),
         )
-        execution.scheduler.submit(execution.create_position_first_source)
-        execution.scheduler.submit(execution.create_position_second_source)
-        execution.create_action_destroyer__position_run()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_action_destroyer = local.my_domain_com.my_lib.destroyer.DestroyerGuarantees()
+        execution.on_action_parent_occupied()
 
 
 @final
@@ -44,7 +35,6 @@ class TestExecution:
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
-        guarantees: TestGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
@@ -52,7 +42,6 @@ class TestExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = guarantees
         self.local_position_first_source = literal.LocalPosition(
             "position<first_source>",
             constraints=(
@@ -69,12 +58,43 @@ class TestExecution:
             ),
             scheduler=self.scheduler,
         )
-        self.execution_trigger_action_destroyer: local.my_domain_com.my_lib.destroyer.DestroyerExecution
-        self.destruction_connection_trigger_action_destroyer: tracing.DestructionConnection
-        self.destruction_connection_trigger_action_destroyer_2: tracing.DestructionConnection
-        self.join_for_trigger_action_destroyer__for_empty_rule_position_first = self.scheduler.create_join(2)
-        self.join_for_trigger_action_destroyer__for_empty_rule_position_second = self.scheduler.create_join(2)
-        self.join_for_trigger_action_destroyer__when_occupied_position_first = self.scheduler.create_join(2)
+        self.execution_action_destroyer: local.my_domain_com.my_lib.destroyer.DestroyerExecution
+        self.destruction_connection_action_destroyer: tracing.DestructionConnection
+        self.destruction_connection_action_destroyer_2: tracing.DestructionConnection
+        self.destruction_connection_action_destroyer = tracing.DestructionConnection(
+            self.scheduler,
+            0,
+            self.run_action_destroyer__position_first__action_extra_destructor,
+            self.run_action_destroyer__position_first__action_shared_destructor,
+        )
+        self.destruction_connection_action_destroyer_2 = tracing.DestructionConnection(
+            self.scheduler,
+            0,
+            self.run_action_destroyer__position_second__action_shared_destructor,
+        )
+        self.execution_action_destroyer = local.my_domain_com.my_lib.destroyer.DestroyerExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.destroyer.Destroyer
+            ),
+            self.scheduler,
+            self.trace_execution,
+            "destroyer",
+            destruction_connections=literal.DestructionConnections(
+            {
+                local.my_domain_com.my_lib.destroyer.DestroyerExecution.continue_destroy_position_first: self.destruction_connection_action_destroyer,
+                local.my_domain_com.my_lib.destroyer.DestroyerExecution.continue_destroy_position_second: self.destruction_connection_action_destroyer_2,
+            },
+            ),
+        )
+        self.execution_action_destroyer.join_for_empty_rule_position_first = literal.NO_JOIN
+        self.execution_action_destroyer.join_for_empty_rule_position_second = literal.NO_JOIN
+        self.execution_action_destroyer.join_for_destroy_position_first = literal.NO_JOIN
+        self.execution_action_destroyer.join_for_destroy_position_second = literal.NO_JOIN
+
+    def on_action_parent_occupied(self):
+        self.scheduler.submit(self.create_position_first_source)
+        self.scheduler.submit(self.create_position_second_source)
+        self.create_action_destroyer__position_run()
 
     def create_position_first_source(self):
         self.local_position_first_source.create_particle()
@@ -96,8 +116,9 @@ class TestExecution:
             "/destroyer::first",
             1,
         )
-        self.scheduler.submit(self.trigger_action_destroyer__for_empty_rule_position_first)
-        self.trigger_action_destroyer__when_occupied_position_first()
+        self.execution_action_destroyer.init_when_occupied_position_first()
+        self.scheduler.submit(self.execution_action_destroyer.accept_for_empty_rule_position_first)
+        self.execution_action_destroyer.accept_when_occupied_position_first()
 
     def create_position_second_source(self):
         self.local_position_second_source.create_particle()
@@ -119,7 +140,7 @@ class TestExecution:
             "/destroyer::second",
             1,
         )
-        self.trigger_action_destroyer__for_empty_rule_position_second()
+        self.execution_action_destroyer.accept_for_empty_rule_position_second()
 
     def create_action_destroyer__position_run(self):
         self.action.on_particle.get_action(
@@ -132,38 +153,6 @@ class TestExecution:
             "/destroyer::run",
             1,
         )
-        self.destruction_connection_trigger_action_destroyer = tracing.DestructionConnection(
-            self.scheduler,
-            0,
-            self.trigger_action_destroyer__position_first__action_extra_destructor,
-            self.trigger_action_destroyer__position_first__action_shared_destructor,
-        )
-        self.destruction_connection_trigger_action_destroyer_2 = tracing.DestructionConnection(
-            self.scheduler,
-            0,
-            self.trigger_action_destroyer__position_second__action_shared_destructor,
-        )
-        self.execution_trigger_action_destroyer = local.my_domain_com.my_lib.destroyer.DestroyerExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.destroyer.Destroyer
-            ),
-            self.scheduler,
-            self.trace_execution,
-            "destroyer",
-            self.guarantees.trigger_action_destroyer,
-            destruction_connections=literal.DestructionConnections(
-            {
-                local.my_domain_com.my_lib.destroyer.DestroyerExecution.continue_destroy_position_first: self.destruction_connection_trigger_action_destroyer,
-                local.my_domain_com.my_lib.destroyer.DestroyerExecution.continue_destroy_position_second: self.destruction_connection_trigger_action_destroyer_2,
-            },
-            ),
-        )
-        self.scheduler.submit(self.destroy_action_destroyer__position_run)
-        self.scheduler.submit(self.trigger_action_destroyer__for_empty_rule_position_first)
-        self.scheduler.submit(self.trigger_action_destroyer__for_empty_rule_position_second)
-        self.trigger_action_destroyer__when_occupied_position_first()
-
-    def destroy_action_destroyer__position_run(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.destroyer.Destroyer
         ).get_interface_position(
@@ -175,41 +164,26 @@ class TestExecution:
             1,
         )
 
-    def trigger_action_destroyer__for_empty_rule_position_first(self):
-        if not self.join_for_trigger_action_destroyer__for_empty_rule_position_first.arrive():
-            return
-        self.execution_trigger_action_destroyer.accept_for_empty_rule_position_first()
-
-    def trigger_action_destroyer__for_empty_rule_position_second(self):
-        if not self.join_for_trigger_action_destroyer__for_empty_rule_position_second.arrive():
-            return
-        self.execution_trigger_action_destroyer.accept_for_empty_rule_position_second()
-
-    def trigger_action_destroyer__when_occupied_position_first(self):
-        if not self.join_for_trigger_action_destroyer__when_occupied_position_first.arrive():
-            return
-        self.execution_trigger_action_destroyer.accept_when_occupied_position_first()
-
-    def trigger_action_destroyer__position_first__action_extra_destructor(self):
+    def run_action_destroyer__position_first__action_extra_destructor(self):
         execution = local.my_domain_com.my_lib.extra_destructor.ExtraDestructorExecution(
             self.scheduler,
-            self.destruction_connection_trigger_action_destroyer.trace_execution,
+            self.destruction_connection_action_destroyer.trace_execution,
             "extra_destructor",
         )
-        execution.accept_action_parent()
+        execution.on_action_parent_occupied()
 
-    def trigger_action_destroyer__position_first__action_shared_destructor(self):
+    def run_action_destroyer__position_first__action_shared_destructor(self):
         execution = local.my_domain_com.my_lib.shared_destructor.SharedDestructorExecution(
             self.scheduler,
-            self.destruction_connection_trigger_action_destroyer.trace_execution,
+            self.destruction_connection_action_destroyer.trace_execution,
             "shared_destructor",
         )
-        execution.accept_action_parent()
+        execution.on_action_parent_occupied()
 
-    def trigger_action_destroyer__position_second__action_shared_destructor(self):
+    def run_action_destroyer__position_second__action_shared_destructor(self):
         execution = local.my_domain_com.my_lib.shared_destructor.SharedDestructorExecution(
             self.scheduler,
-            self.destruction_connection_trigger_action_destroyer_2.trace_execution,
+            self.destruction_connection_action_destroyer_2.trace_execution,
             "shared_destructor#2",
         )
-        execution.accept_action_parent()
+        execution.on_action_parent_occupied()

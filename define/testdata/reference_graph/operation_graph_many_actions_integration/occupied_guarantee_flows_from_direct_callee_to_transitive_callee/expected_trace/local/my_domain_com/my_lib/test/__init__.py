@@ -21,17 +21,9 @@ class Test(literal.EntryPoint):
             scheduler,
             None,
             "test",
-            TestGuarantees(),
         )
-        execution.scheduler.submit(execution.create_action_fill_item__position_trigger_pos)
-        execution.create_action_outer__position_trigger_pos()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_action_fill_item = local.my_domain_com.my_lib.fill_item.FillItemGuarantees()
-        self.trigger_action_outer = local.my_domain_com.my_lib.outer.OuterGuarantees()
+        scheduler.submit(execution.on_action_parent_occupied)
+        execution.accept_when_empty_global_position_item()
 
 
 @final
@@ -42,7 +34,6 @@ class TestExecution:
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
-        guarantees: TestGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
@@ -50,13 +41,39 @@ class TestExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = guarantees
-        guarantees.trigger_action_fill_item.guarantee_global_position_item.append(
-            self.trigger_action_outer__for_empty_rule_global_position_item
+        self.execution_action_fill_item: local.my_domain_com.my_lib.fill_item.FillItemExecution
+        self.execution_action_outer: local.my_domain_com.my_lib.outer.OuterExecution
+        self.execution_action_fill_item = local.my_domain_com.my_lib.fill_item.FillItemExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.fill_item.FillItem
+            ),
+            self.scheduler,
+            self.trace_execution,
+            "fill_item",
         )
-        self.execution_trigger_action_fill_item: local.my_domain_com.my_lib.fill_item.FillItemExecution
-        self.execution_trigger_action_outer: local.my_domain_com.my_lib.outer.OuterExecution
-        self.join_for_trigger_action_outer__for_empty_rule_global_position_item = self.scheduler.create_join(2)
+        self.execution_action_fill_item.guarantees.global_position_item.consumers.append(
+            self.accept_guarantee_action_outer
+        )
+        self.execution_action_outer = local.my_domain_com.my_lib.outer.OuterExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.outer.Outer
+            ),
+            self.scheduler,
+            self.trace_execution,
+            "outer",
+        )
+        self.execution_action_outer.execution_action_middle.execution_action_empty_item.join_for_empty_rule_global_position_item = literal.NO_JOIN
+        self.execution_action_outer.execution_action_middle.execution_action_empty_item.join_for_destroy_global_position_item = literal.NO_JOIN
+        self.execution_action_outer.execution_action_middle.join_for_empty_rule_global_position_item = literal.NO_JOIN
+        self.execution_action_outer.join_for_empty_rule_global_position_item = literal.NO_JOIN
+
+    def on_action_parent_occupied(self):
+        self.scheduler.submit(self.create_action_fill_item__position_trigger_pos)
+        self.scheduler.submit(self.create_action_outer__position_trigger_pos)
+        self.execution_action_outer.on_action_parent_occupied()
+
+    def accept_when_empty_global_position_item(self):
+        self.execution_action_fill_item.accept_when_empty_global_position_item()
 
     def create_action_fill_item__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -69,17 +86,16 @@ class TestExecution:
             "/fill_item::trigger_pos",
             1,
         )
-        self.execution_trigger_action_fill_item = local.my_domain_com.my_lib.fill_item.FillItemExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.fill_item.FillItem
-            ),
-            self.scheduler,
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.fill_item.FillItem
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
+        self.scheduler.destroy_completed(
             self.trace_execution,
-            "fill_item",
-            self.guarantees.trigger_action_fill_item,
+            "/fill_item::trigger_pos",
+            1,
         )
-        self.scheduler.submit(self.destroy_action_fill_item__position_trigger_pos)
-        self.trigger_action_fill_item__when_empty_global_position_item()
 
     def create_action_outer__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -92,32 +108,6 @@ class TestExecution:
             "/outer::trigger_pos",
             1,
         )
-        self.execution_trigger_action_outer = local.my_domain_com.my_lib.outer.OuterExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.outer.Outer
-            ),
-            self.scheduler,
-            self.trace_execution,
-            "outer",
-            self.guarantees.trigger_action_outer,
-        )
-        self.scheduler.submit(self.destroy_action_outer__position_trigger_pos)
-        self.scheduler.submit(self.trigger_action_outer__action_parent)
-        self.trigger_action_outer__for_empty_rule_global_position_item()
-
-    def destroy_action_fill_item__position_trigger_pos(self):
-        self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.fill_item.FillItem
-        ).get_interface_position(
-            "position<trigger_pos>"
-        ).destroy_particle()
-        self.scheduler.destroy_completed(
-            self.trace_execution,
-            "/fill_item::trigger_pos",
-            1,
-        )
-
-    def destroy_action_outer__position_trigger_pos(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.outer.Outer
         ).get_interface_position(
@@ -129,13 +119,5 @@ class TestExecution:
             1,
         )
 
-    def trigger_action_fill_item__when_empty_global_position_item(self):
-        self.execution_trigger_action_fill_item.accept_when_empty_global_position_item()
-
-    def trigger_action_outer__action_parent(self):
-        self.execution_trigger_action_outer.accept_action_parent()
-
-    def trigger_action_outer__for_empty_rule_global_position_item(self):
-        if not self.join_for_trigger_action_outer__for_empty_rule_global_position_item.arrive():
-            return
-        self.execution_trigger_action_outer.accept_for_empty_rule_global_position_item()
+    def accept_guarantee_action_outer(self):
+        self.execution_action_outer.accept_for_empty_rule_global_position_item()

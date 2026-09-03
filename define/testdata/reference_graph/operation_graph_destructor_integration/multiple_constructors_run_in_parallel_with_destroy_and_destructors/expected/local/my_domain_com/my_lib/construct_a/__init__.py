@@ -21,7 +21,7 @@ class ConstructAExecution:
             scheduler=self.scheduler,
         )
 
-    def accept_action_parent(self):
+    def on_action_parent_occupied(self):
         self.create_position_scratch()
 
     def create_position_scratch(self):

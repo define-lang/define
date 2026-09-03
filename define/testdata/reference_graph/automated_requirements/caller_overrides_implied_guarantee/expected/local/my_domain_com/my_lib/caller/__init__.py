@@ -29,9 +29,8 @@ class Caller(literal.Action):
 @final
 class CallerGuarantees:
     def __init__(self):
-        self.guarantee_global_position_implied: list[literal.Task] = []
-        self.guarantee_position_run: list[literal.Task] = []
-        self.trigger_action_callee = local.my_domain_com.my_lib.callee.CalleeGuarantees()
+        self.global_position_implied = literal.Guarantee()
+        self.position_run = literal.Guarantee()
 
 
 @final
@@ -40,29 +39,38 @@ class CallerExecution:
         self,
         action: Caller,
         scheduler: literal.Scheduler,
-        guarantees: CallerGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = CallerGuarantees()
         self.destruction_connections = destruction_connections
-        guarantees.trigger_action_callee.guarantee_global_position_implied.append(
+        self.execution_action_callee: local.my_domain_com.my_lib.callee.CalleeExecution
+        self.join_for_destroy_position_run: literal.Join
+        self.join_for_empty_rule_position_run: literal.Join
+        self.execution_action_callee = local.my_domain_com.my_lib.callee.CalleeExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.callee.Callee
+            ),
+            self.scheduler,
+        )
+        self.execution_action_callee.join_for_empty_rule_position_run = literal.NO_JOIN
+        self.execution_action_callee.join_for_destroy_position_run = literal.NO_JOIN
+        self.execution_action_callee.guarantees.global_position_implied.consumers.append(
             self.destroy_global_position_implied
         )
-        self.execution_trigger_action_callee: local.my_domain_com.my_lib.callee.CalleeExecution
-        self.join_for_trigger_action_callee__when_empty_global_position_implied = self.scheduler.create_join(2)
-        self.join_for_trigger_action_callee__for_empty_rule_position_run = self.scheduler.create_join(2)
 
-    def accept_action_parent(self):
+    def on_action_parent_occupied(self):
         self.create_action_callee__position_run()
 
     def accept_for_empty_rule_position_run(self):
+        if not self.join_for_empty_rule_position_run.arrive():
+            return
         self.destroy_position_run()
 
     def accept_when_empty_global_position_implied(self):
-        self.trigger_action_callee__when_empty_global_position_implied()
+        self.execution_action_callee.accept_when_empty_global_position_implied()
 
     def create_action_callee__position_run(self):
         self.action.on_particle.get_action(
@@ -70,38 +78,25 @@ class CallerExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.execution_trigger_action_callee = local.my_domain_com.my_lib.callee.CalleeExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.callee.Callee
-            ),
-            self.scheduler,
-            self.guarantees.trigger_action_callee,
-        )
-        self.scheduler.submit(self.trigger_action_callee__for_empty_rule_position_run)
-        self.scheduler.submit(self.trigger_action_callee__when_empty_global_position_implied)
-        self.trigger_action_callee__for_empty_rule_position_run()
+        self.execution_action_callee.accept_for_empty_rule_position_run()
 
     def destroy_global_position_implied(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.implied.Implied
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_implied)
+        self.guarantees.global_position_implied.publish(
+            self.scheduler,
+        )
 
     def destroy_position_run(self):
+        if not self.join_for_destroy_position_run.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_run)
 
     def continue_destroy_position_run(self):
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_run)
-
-    def trigger_action_callee__when_empty_global_position_implied(self):
-        if not self.join_for_trigger_action_callee__when_empty_global_position_implied.arrive():
-            return
-        self.execution_trigger_action_callee.accept_when_empty_global_position_implied()
-
-    def trigger_action_callee__for_empty_rule_position_run(self):
-        if not self.join_for_trigger_action_callee__for_empty_rule_position_run.arrive():
-            return
-        self.execution_trigger_action_callee.accept_for_empty_rule_position_run()
+        self.guarantees.position_run.publish(
+            self.scheduler,
+        )

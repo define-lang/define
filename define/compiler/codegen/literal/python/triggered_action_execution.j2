@@ -1,76 +1,86 @@
 {% from "position_expression.j2" import position_expression %}
+{% from "join_value.j2" import join_value %}
+{% from "guarantee_consumption.j2" import configure_guarantee_consumption %}
 {% macro destruction_continuation(continuation) -%}
 {{ continuation.execution_class.module_name }}.{{ continuation.execution_class.class_name }}.{{ continuation.member_name }}
 {%- endmacro %}
-{% macro initialize_action_execution(action_execution) %}
-{% set destruction_connection_class = "tracing.DestructionConnection" if action_execution.trace_action_name is not none else "literal.DestructionConnection" %}
-        {% for connection in action_execution.created_destruction_connections %}
+{% macro _construct_action_execution(action_execution) %}
+    {% set destruction_connection_class = "tracing.DestructionConnection" if action_execution.trace_action_name is not none else "literal.DestructionConnection" %}
+    {% for connection in action_execution.created_destruction_connections %}
         self.{{ connection.member_name }} = {{ destruction_connection_class }}(
             self.scheduler,
             {{ connection.predecessor_count }},
-            {% for method_name in connection.start_method_names %}
+        {% for method_name in connection.start_method_names %}
             self.{{ method_name }},
-            {% endfor %}
+        {% endfor %}
         {% if action_execution.forwards_destruction_connections %}
             forwarded_connection=self.destruction_connections.connection({{ destruction_continuation(connection.destruction_continuation) }}) if self.destruction_connections is not None else None,
         {% endif %}
         )
-        {% for registration in connection.destructor_guarantee_registrations %}
-        self.guarantees.{{ registration.child_guarantees_name }}.{{ registration.guarantee_name }}.append(
-            self.{{ connection.member_name }}.complete
-        )
-        {% endfor %}
-        {% endfor %}
+    {% endfor %}
         self.{{ action_execution.execution_name }} = {{ action_execution.execution_class.module_name }}.{{ action_execution.execution_class.class_name }}(
-        {% if action_execution.execution_needs_action %}
+    {% if action_execution.execution_needs_action %}
             {{ position_expression(action_execution.action_expression, extra_indent="    ") }},
-        {% endif %}
+    {% endif %}
             self.scheduler,
-        {% if action_execution.trace_action_name is not none %}
-            {% if action_execution.trace_parent_action_name is not none %}
+    {% if action_execution.trace_action_name is not none %}
+        {% if action_execution.trace_parent_action_name is not none %}
             self.scheduler.execution_created(
                 self.trace_execution,
                 "{{ action_execution.trace_parent_action_name }}",
             ),
-            {% else %}
+        {% else %}
             self.trace_execution,
-            {% endif %}
+        {% endif %}
             "{{ action_execution.trace_action_name }}",
-        {% endif %}
-        {% if action_execution.execution_needs_guarantees %}
-            self.guarantees.{{ action_execution.child_guarantees_name }},
-        {% endif %}
-        {% if action_execution.created_destruction_connections %}
+    {% endif %}
+    {% if action_execution.created_destruction_connections %}
             destruction_connections=literal.DestructionConnections(
             {
-            {% for connection in action_execution.created_destruction_connections %}
+        {% for connection in action_execution.created_destruction_connections %}
                 {{ destruction_continuation(connection.destruction_continuation) }}: self.{{ connection.member_name }},
-            {% endfor %}
+        {% endfor %}
             },
-            {% if action_execution.forwards_destruction_connections %}
+        {% if action_execution.forwards_destruction_connections %}
             forwarded=self.destruction_connections,
-            {% endif %}
-            ),
-        {% elif action_execution.forwards_destruction_connections %}
-            destruction_connections=self.destruction_connections,
         {% endif %}
+            ),
+    {% elif action_execution.forwards_destruction_connections %}
+            destruction_connections=self.destruction_connections,
+    {% endif %}
         )
 {% endmacro %}
-{% macro destruction_contract_destructor_methods(action_executions) %}
-    {% for action_execution in action_executions %}
-    {% for connection in action_execution.created_destruction_connections %}
-    {% for destructor in connection.destruction_contract_destructors %}
+{% macro _configure_action_execution(action_execution) %}
+    {% for assignment in action_execution.callee_join_assignments %}
+        self.{{ action_execution.execution_name }}
+            {%- for execution_member_name in assignment.execution_member_names -%}
+.{{ execution_member_name }}
+            {%- endfor -%}
+.{{ assignment.member_name }} = {{ join_value(assignment.dependency_count, "self.scheduler") }}
+    {% endfor %}
+    {% for consumption in action_execution.guarantee_consumptions %}
+        {% for method_name in consumption.init_method_names %}
+{{ configure_guarantee_consumption(consumption, "inits", method_name) -}}
+        {% endfor %}
+        {% for method_name in consumption.consumer_method_names %}
+{{ configure_guarantee_consumption(consumption, "consumers", method_name) -}}
+        {% endfor %}
+    {% endfor %}
+{% endmacro %}
+{% macro init_action_executions(inits) %}
+    {% for action_execution in inits.action_executions %}
+{{ _construct_action_execution(action_execution) -}}
+{{ _configure_action_execution(action_execution) -}}
+    {% endfor %}
+    {% for method_name in inits.callee_binding_method_names %}
+        self.{{ method_name }}()
+    {% endfor %}
+{% endmacro %}
+{% macro action_execution_init_methods(init_methods) %}
+    {% for init_method in init_methods %}
 
-    def {{ destructor.trigger_method_name }}(self):
-        execution = {{ destructor.execution_class.module_name }}.{{ destructor.execution_class.class_name }}(
-            self.scheduler,
-        {% if destructor.trace_action_name is not none %}
-            self.{{ connection.member_name }}.trace_execution,
-            "{{ destructor.trace_action_name }}",
-        {% endif %}
-        )
-        execution.{{ destructor.action_parent_binding_method_name }}()
-    {% endfor %}
-    {% endfor %}
+    def {{ init_method.method_name }}(self):
+{{ _construct_action_execution(init_method.action_execution) -}}
+{{ _configure_action_execution(init_method.action_execution) -}}
     {% endfor %}
 {% endmacro %}

@@ -31,7 +31,7 @@ class Destroyer(literal.Action):
 @final
 class DestroyerGuarantees:
     def __init__(self):
-        self.guarantee_position_target: list[literal.Task] = []
+        self.position_target = literal.Guarantee()
 
 
 @final
@@ -40,37 +40,39 @@ class DestroyerExecution:
         self,
         action: Destroyer,
         scheduler: literal.Scheduler,
-        guarantees: DestroyerGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = DestroyerGuarantees()
         self.destruction_connections = destruction_connections
-        self.execution_trigger_position_target__action_known_destructor: local.my_domain_com.my_lib.known_destructor.KnownDestructorExecution
-        self.join_for_trigger_position_target__action_known_destructor__action_parent = self.scheduler.create_join(2)
+        self.execution_position_target__action_known_destructor: local.my_domain_com.my_lib.known_destructor.KnownDestructorExecution
+        self.join_for_destroy_position_target: literal.Join
+        self.join_for_empty_rule_position_target: literal.Join
 
     def accept_for_empty_rule_position_target(self):
+        if not self.join_for_empty_rule_position_target.arrive():
+            return
         self.destroy_position_target()
 
     def accept_when_occupied_position_target(self):
-        self.execution_trigger_position_target__action_known_destructor = local.my_domain_com.my_lib.known_destructor.KnownDestructorExecution(
+        self.execution_position_target__action_known_destructor.on_action_parent_occupied()
+
+    def init_when_occupied_position_target(self):
+        self.execution_position_target__action_known_destructor = local.my_domain_com.my_lib.known_destructor.KnownDestructorExecution(
             self.scheduler,
         )
-        self.scheduler.submit(self.trigger_position_target__action_known_destructor__action_parent)
-        self.trigger_position_target__action_known_destructor__action_parent()
 
     def destroy_position_target(self):
+        if not self.join_for_destroy_position_target.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_target)
 
     def continue_destroy_position_target(self):
         self.action.get_interface_position(
             "position<target>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_target)
-
-    def trigger_position_target__action_known_destructor__action_parent(self):
-        if not self.join_for_trigger_position_target__action_known_destructor__action_parent.arrive():
-            return
-        self.execution_trigger_position_target__action_known_destructor.accept_action_parent()
+        self.guarantees.position_target.publish(
+            self.scheduler,
+        )

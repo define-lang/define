@@ -18,8 +18,8 @@ class ThirdDestructor(literal.Action):
 @final
 class ThirdDestructorGuarantees:
     def __init__(self):
-        self.guarantee_global_position_third: list[literal.Task] = []
-        self.guarantee_global_position_marker: list[literal.Task] = []
+        self.global_position_third = literal.Guarantee()
+        self.global_position_marker = literal.Guarantee()
 
 
 @final
@@ -30,7 +30,6 @@ class ThirdDestructorExecution:
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
-        guarantees: ThirdDestructorGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
@@ -38,7 +37,7 @@ class ThirdDestructorExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = guarantees
+        self.guarantees = ThirdDestructorGuarantees()
 
     def accept_when_empty_global_position_third(self):
         self.create_global_position_third()
@@ -63,7 +62,9 @@ class ThirdDestructorExecution:
             "/third",
             1,
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_third)
+        self.guarantees.global_position_third.publish(
+            self.scheduler,
+        )
 
     def create_global_position_marker(self):
         self.action.on_particle.get_position(
@@ -82,4 +83,6 @@ class ThirdDestructorExecution:
             "/marker",
             1,
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_marker)
+        self.guarantees.global_position_marker.publish(
+            self.scheduler,
+        )

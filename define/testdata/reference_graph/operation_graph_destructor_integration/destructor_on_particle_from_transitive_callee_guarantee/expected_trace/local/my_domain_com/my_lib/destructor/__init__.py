@@ -16,7 +16,7 @@ class Destructor(literal.Action):
 @final
 class DestructorGuarantees:
     def __init__(self):
-        self.guarantee_global_position_marker: list[literal.Task] = []
+        self.global_position_marker = literal.Guarantee()
 
 
 @final
@@ -27,7 +27,6 @@ class DestructorExecution:
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
-        guarantees: DestructorGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
@@ -35,7 +34,7 @@ class DestructorExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = guarantees
+        self.guarantees = DestructorGuarantees()
         self.local_position__noop = literal.LocalPosition(
             "position<_noop>",
             scheduler=self.scheduler,
@@ -44,11 +43,15 @@ class DestructorExecution:
             "position<holder>",
             scheduler=self.scheduler,
         )
+        self.join_for_move_global_position_marker_to_position_holder: literal.Join
+        self.join_for_empty_rule_global_position_marker: literal.Join
 
-    def accept_action_parent(self):
+    def on_action_parent_occupied(self):
         self.create_position_noop()
 
     def accept_for_empty_rule_global_position_marker(self):
+        if not self.join_for_empty_rule_global_position_marker.arrive():
+            return
         self.move_global_position_marker_to_position_holder()
 
     def create_position_noop(self):
@@ -66,6 +69,8 @@ class DestructorExecution:
         )
 
     def move_global_position_marker_to_position_holder(self):
+        if not self.join_for_move_global_position_marker_to_position_holder.arrive():
+            return
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         ).move_particle_to(self.local_position_holder)
@@ -86,4 +91,6 @@ class DestructorExecution:
             "/marker",
             1,
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_marker)
+        self.guarantees.global_position_marker.publish(
+            self.scheduler,
+        )

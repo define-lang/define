@@ -15,15 +15,8 @@ class Test(literal.EntryPoint):
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
             scheduler,
-            TestGuarantees(),
         )
-        execution.create_position_box()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_position_box__action_maker = local.my_domain_com.my_lib.maker.MakerGuarantees()
+        execution.on_action_parent_occupied()
 
 
 @final
@@ -31,10 +24,8 @@ class TestExecution:
     def __init__(
         self,
         scheduler: literal.Scheduler,
-        guarantees: TestGuarantees,
     ):
         self.scheduler = scheduler
-        self.guarantees = guarantees
         self.local_position_box = literal.LocalPosition(
             "position<box>",
             constraints=(
@@ -43,25 +34,31 @@ class TestExecution:
             ),
             scheduler=self.scheduler,
         )
-        guarantees.trigger_position_box__action_maker.guarantee_global_position_child.append(
-            self.destroy_position_box__global_position_child
-        )
-        guarantees.trigger_position_box__action_maker.guarantee_global_position_child.append(
-            self.trigger_position_box__global_position_child__action_destructor__action_parent
-        )
-        guarantees.trigger_position_box__action_maker.guarantee_global_position_child.append(
-            self.trigger_position_box__global_position_child__action_destructor
-        )
-        self.execution_trigger_position_box__action_maker: local.my_domain_com.my_lib.maker.MakerExecution
-        self.execution_trigger_position_box__global_position_child__action_destructor: local.my_domain_com.my_lib.destructor.DestructorExecution
+        self.execution_position_box__action_maker: local.my_domain_com.my_lib.maker.MakerExecution
+        self.execution_position_box__global_position_child__action_destructor: local.my_domain_com.my_lib.destructor.DestructorExecution
         self.join_for_destroy_position_box = self.scheduler.create_join(2)
-        self.join_for_trigger_position_box__action_maker__action_parent = self.scheduler.create_join(2)
-        self.join_for_trigger_position_box__global_position_child__action_destructor__action_parent = self.scheduler.create_join(2)
+
+    def on_action_parent_occupied(self):
+        self.create_position_box()
 
     def create_position_box(self):
         self.local_position_box.create_particle()
+        self.execution_position_box__action_maker = local.my_domain_com.my_lib.maker.MakerExecution(
+            self.local_position_box.particle.get_action(
+                local.my_domain_com.my_lib.maker.Maker
+            ),
+            self.scheduler,
+        )
+        self.execution_position_box__action_maker.join_when_empty_global_position_child = literal.NO_JOIN
+        self.execution_position_box__action_maker.join_for_move_position_temp_to_global_position_child = literal.NO_JOIN
+        self.execution_position_box__action_maker.guarantees.global_position_child.inits.append(
+            self.init_position_box__global_position_child__action_destructor
+        )
+        self.execution_position_box__action_maker.guarantees.global_position_child.consumers.append(
+            self.destroy_position_box__global_position_child
+        )
         self.scheduler.submit(self.create_position_box__action_maker__position_run)
-        self.trigger_position_box__action_maker__action_parent()
+        self.execution_position_box__action_maker.on_action_parent_occupied()
 
     def create_position_box__action_maker__position_run(self):
         self.local_position_box.particle.get_action(
@@ -69,28 +66,16 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.execution_trigger_position_box__action_maker = local.my_domain_com.my_lib.maker.MakerExecution(
-            self.local_position_box.particle.get_action(
-                local.my_domain_com.my_lib.maker.Maker
-            ),
-            self.scheduler,
-            self.guarantees.trigger_position_box__action_maker,
-        )
-        self.scheduler.submit(self.destroy_position_box__action_maker__position_run)
-        self.scheduler.submit(self.trigger_position_box__action_maker__action_parent)
-        self.trigger_position_box__action_maker__when_empty_global_position_child()
-
-    def destroy_position_box__global_position_child(self):
-        self.local_position_box.particle.get_position(
-            local.my_domain_com.my_lib.child.Child
-        ).destroy_particle()
-        self.destroy_position_box()
-
-    def destroy_position_box__action_maker__position_run(self):
         self.local_position_box.particle.get_action(
             local.my_domain_com.my_lib.maker.Maker
         ).get_interface_position(
             "position<run>"
+        ).destroy_particle()
+        self.destroy_position_box()
+
+    def destroy_position_box__global_position_child(self):
+        self.local_position_box.particle.get_position(
+            local.my_domain_com.my_lib.child.Child
         ).destroy_particle()
         self.destroy_position_box()
 
@@ -99,21 +84,13 @@ class TestExecution:
             return
         self.local_position_box.destroy_particle()
 
-    def trigger_position_box__global_position_child__action_destructor(self):
-        self.execution_trigger_position_box__global_position_child__action_destructor = local.my_domain_com.my_lib.destructor.DestructorExecution(
+    def init_position_box__global_position_child__action_destructor(self):
+        self.execution_position_box__global_position_child__action_destructor = local.my_domain_com.my_lib.destructor.DestructorExecution(
             self.scheduler,
         )
-        self.trigger_position_box__global_position_child__action_destructor__action_parent()
+        self.execution_position_box__action_maker.guarantees.global_position_child.consumers.append(
+            self.accept_guarantee_position_box__global_position_child__action_destructor
+        )
 
-    def trigger_position_box__action_maker__action_parent(self):
-        if not self.join_for_trigger_position_box__action_maker__action_parent.arrive():
-            return
-        self.execution_trigger_position_box__action_maker.accept_action_parent()
-
-    def trigger_position_box__action_maker__when_empty_global_position_child(self):
-        self.execution_trigger_position_box__action_maker.accept_when_empty_global_position_child()
-
-    def trigger_position_box__global_position_child__action_destructor__action_parent(self):
-        if not self.join_for_trigger_position_box__global_position_child__action_destructor__action_parent.arrive():
-            return
-        self.execution_trigger_position_box__global_position_child__action_destructor.accept_action_parent()
+    def accept_guarantee_position_box__global_position_child__action_destructor(self):
+        self.execution_position_box__global_position_child__action_destructor.on_action_parent_occupied()

@@ -1,0 +1,7 @@
+{% macro join_value(dependency_count, scheduler_expression) -%}
+    {%- if dependency_count <= 1 -%}
+literal.NO_JOIN
+    {%- else -%}
+{{ scheduler_expression }}.create_join({{ dependency_count }})
+    {%- endif -%}
+{%- endmacro %}

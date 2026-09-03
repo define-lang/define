@@ -31,8 +31,8 @@ class Triggered(literal.Action):
 @final
 class TriggeredGuarantees:
     def __init__(self):
-        self.guarantee_position_run: list[literal.Task] = []
-        self.guarantee_position_input__global_position_child: list[literal.Task] = []
+        self.position_input__global_position_child = literal.Guarantee()
+        self.position_run = literal.Guarantee()
 
 
 @final
@@ -41,22 +41,31 @@ class TriggeredExecution:
         self,
         action: Triggered,
         scheduler: literal.Scheduler,
-        guarantees: TriggeredGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = TriggeredGuarantees()
         self.destruction_connections = destruction_connections
+        self.join_for_destroy_position_input__global_position_child: literal.Join
+        self.join_for_destroy_position_run: literal.Join
+        self.join_for_empty_rule_position_input__global_position_child: literal.Join
+        self.join_for_empty_rule_position_run: literal.Join
 
     def accept_for_empty_rule_position_input__global_position_child(self):
+        if not self.join_for_empty_rule_position_input__global_position_child.arrive():
+            return
         self.destroy_position_input__global_position_child()
 
     def accept_for_empty_rule_position_run(self):
+        if not self.join_for_empty_rule_position_run.arrive():
+            return
         self.destroy_position_run()
 
     def destroy_position_input__global_position_child(self):
+        if not self.join_for_destroy_position_input__global_position_child.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_input__global_position_child)
 
     def continue_destroy_position_input__global_position_child(self):
@@ -65,13 +74,19 @@ class TriggeredExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.child.Child
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_input__global_position_child)
+        self.guarantees.position_input__global_position_child.publish(
+            self.scheduler,
+        )
 
     def destroy_position_run(self):
+        if not self.join_for_destroy_position_run.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_run)
 
     def continue_destroy_position_run(self):
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_run)
+        self.guarantees.position_run.publish(
+            self.scheduler,
+        )

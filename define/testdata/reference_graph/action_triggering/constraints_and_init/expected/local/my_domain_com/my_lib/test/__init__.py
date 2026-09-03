@@ -17,15 +17,8 @@ class Test(literal.EntryPoint):
         execution = TestExecution(
             self,
             scheduler,
-            TestGuarantees(),
         )
-        execution.create_action_start__position_pp()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_action_start = local.my_domain_com.my_lib.start.StartGuarantees()
+        execution.on_action_parent_occupied()
 
 
 @final
@@ -34,13 +27,22 @@ class TestExecution:
         self,
         action: Test,
         scheduler: literal.Scheduler,
-        guarantees: TestGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
-        self.execution_trigger_action_start: local.my_domain_com.my_lib.start.StartExecution
-        self.join_for_trigger_action_start__for_empty_rule_position_pp = self.scheduler.create_join(2)
+        self.execution_action_start: local.my_domain_com.my_lib.start.StartExecution
+        self.execution_action_start = local.my_domain_com.my_lib.start.StartExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.start.Start
+            ),
+            self.scheduler,
+        )
+        self.execution_action_start.join_for_empty_rule_position_pp = literal.NO_JOIN
+        self.execution_action_start.join_for_destroy_position_pp = literal.NO_JOIN
+
+    def on_action_parent_occupied(self):
+        self.scheduler.submit(self.create_action_start__position_pp)
+        self.execution_action_start.on_action_parent_occupied()
 
     def create_action_start__position_pp(self):
         self.action.on_particle.get_action(
@@ -48,21 +50,4 @@ class TestExecution:
         ).get_interface_position(
             "position<pp>"
         ).create_particle()
-        self.execution_trigger_action_start = local.my_domain_com.my_lib.start.StartExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.start.Start
-            ),
-            self.scheduler,
-            self.guarantees.trigger_action_start,
-        )
-        self.scheduler.submit(self.trigger_action_start__for_empty_rule_position_pp)
-        self.scheduler.submit(self.trigger_action_start__action_parent)
-        self.trigger_action_start__for_empty_rule_position_pp()
-
-    def trigger_action_start__action_parent(self):
-        self.execution_trigger_action_start.accept_action_parent()
-
-    def trigger_action_start__for_empty_rule_position_pp(self):
-        if not self.join_for_trigger_action_start__for_empty_rule_position_pp.arrive():
-            return
-        self.execution_trigger_action_start.accept_for_empty_rule_position_pp()
+        self.execution_action_start.accept_for_empty_rule_position_pp()

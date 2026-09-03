@@ -35,19 +35,23 @@ class MiddleExecution:
             ),
             scheduler=self.scheduler,
         )
-        self.execution_trigger_position_gw__action_worker: local.my_domain_com.my_lib.worker.WorkerExecution
-        self.execution_trigger_position_gw__action_worker_2: local.my_domain_com.my_lib.worker.WorkerExecution
-        self.join_for_trigger_position_gw__action_worker__action_parent = self.scheduler.create_join(2)
-        self.join_for_trigger_position_gw__action_worker_2__action_parent = self.scheduler.create_join(2)
+        self.execution_position_gw__action_worker: local.my_domain_com.my_lib.worker.WorkerExecution
+        self.execution_position_gw__action_worker_2: local.my_domain_com.my_lib.worker.WorkerExecution
 
-    def accept_action_parent(self):
+    def on_action_parent_occupied(self):
         self.create_position_gw()
 
     def create_position_gw(self):
         self.local_position_gw.create_particle()
+        self.execution_position_gw__action_worker = local.my_domain_com.my_lib.worker.WorkerExecution(
+            self.scheduler,
+        )
+        self.execution_position_gw__action_worker_2 = local.my_domain_com.my_lib.worker.WorkerExecution(
+            self.scheduler,
+        )
         self.scheduler.submit(self.create_position_gw__action_worker__position_trigger_pos)
-        self.scheduler.submit(self.trigger_position_gw__action_worker__action_parent)
-        self.trigger_position_gw__action_worker_2__action_parent()
+        self.scheduler.submit(self.execution_position_gw__action_worker.on_action_parent_occupied)
+        self.execution_position_gw__action_worker_2.on_action_parent_occupied()
 
     def create_position_gw__action_worker__position_trigger_pos(self):
         self.local_position_gw.particle.get_action(
@@ -55,13 +59,6 @@ class MiddleExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.execution_trigger_position_gw__action_worker = local.my_domain_com.my_lib.worker.WorkerExecution(
-            self.scheduler,
-        )
-        self.scheduler.submit(self.destroy_position_gw__action_worker__position_trigger_pos)
-        self.trigger_position_gw__action_worker__action_parent()
-
-    def destroy_position_gw__action_worker__position_trigger_pos(self):
         self.local_position_gw.particle.get_action(
             local.my_domain_com.my_lib.worker.Worker
         ).get_interface_position(
@@ -72,26 +69,9 @@ class MiddleExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.execution_trigger_position_gw__action_worker_2 = local.my_domain_com.my_lib.worker.WorkerExecution(
-            self.scheduler,
-        )
-        self.scheduler.submit(self.destroy_position_gw__action_worker__position_trigger_pos_2)
-        self.trigger_position_gw__action_worker_2__action_parent()
-
-    def destroy_position_gw__action_worker__position_trigger_pos_2(self):
         self.local_position_gw.particle.get_action(
             local.my_domain_com.my_lib.worker.Worker
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
         self.local_position_gw.destroy_particle()
-
-    def trigger_position_gw__action_worker__action_parent(self):
-        if not self.join_for_trigger_position_gw__action_worker__action_parent.arrive():
-            return
-        self.execution_trigger_position_gw__action_worker.accept_action_parent()
-
-    def trigger_position_gw__action_worker_2__action_parent(self):
-        if not self.join_for_trigger_position_gw__action_worker_2__action_parent.arrive():
-            return
-        self.execution_trigger_position_gw__action_worker_2.accept_action_parent()

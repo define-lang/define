@@ -26,16 +26,18 @@ class Test(literal.EntryPoint):
             scheduler,
             None,
             "test",
-            TestGuarantees(),
         )
-        execution.create_global_position_left()
+        execution.join_when_empty_global_position_right = literal.NO_JOIN
+        execution.join_for_move_global_position_left_to_global_position_right = scheduler.create_join(2)
+        scheduler.submit(execution.accept_when_empty_global_position_left)
+        execution.accept_when_empty_global_position_right()
 
 
 @final
 class TestGuarantees:
     def __init__(self):
-        self.trigger_action_destroyer = local.my_domain_com.my_lib.destroyer.DestroyerGuarantees()
-        self.trigger_action_destroyer__position_target__action_destructor = local.my_domain_com.my_lib.destructor.DestructorGuarantees()
+        self.global_position_left = literal.Guarantee()
+        self.global_position_right = literal.Guarantee()
 
 
 @final
@@ -46,7 +48,6 @@ class TestExecution:
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
-        guarantees: TestGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
@@ -54,17 +55,42 @@ class TestExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = guarantees
-        guarantees.trigger_action_destroyer__position_target__action_destructor.guarantee_global_position_marker.append(
-            self.destroy_action_destroyer__position_target__global_position_marker
-        )
-        self.execution_trigger_action_destroyer: local.my_domain_com.my_lib.destroyer.DestroyerExecution
-        self.destruction_connection_trigger_action_destroyer: tracing.DestructionConnection
-        self.execution_trigger_action_destroyer__position_target__action_destructor: local.my_domain_com.my_lib.destructor.DestructorExecution
+        self.guarantees = TestGuarantees()
+        self.execution_action_destroyer: local.my_domain_com.my_lib.destroyer.DestroyerExecution
+        self.destruction_connection_action_destroyer: tracing.DestructionConnection
+        self.execution_action_destroyer__position_target__action_destructor: local.my_domain_com.my_lib.destructor.DestructorExecution
         self.destruction_position_action_destroyer__position_target__global_position_marker: literal.Position
+        self.join_for_move_global_position_left_to_global_position_right: literal.Join
         self.join_for_destroy_action_destroyer__position_target__global_position_marker = self.scheduler.create_join(2)
-        self.join_for_trigger_action_destroyer__for_empty_rule_position_target = self.scheduler.create_join(2)
-        self.join_for_trigger_action_destroyer__position_target__action_destructor__for_empty_rule_global_position_marker = self.scheduler.create_join(2)
+        self.join_when_empty_global_position_right: literal.Join
+        self.destruction_connection_action_destroyer = tracing.DestructionConnection(
+            self.scheduler,
+            1,
+            self.destroy_action_destroyer__position_target__global_position_marker,
+        )
+        self.execution_action_destroyer = local.my_domain_com.my_lib.destroyer.DestroyerExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.destroyer.Destroyer
+            ),
+            self.scheduler,
+            self.trace_execution,
+            "destroyer",
+            destruction_connections=literal.DestructionConnections(
+            {
+                local.my_domain_com.my_lib.destroyer.DestroyerExecution.continue_destroy_position_target: self.destruction_connection_action_destroyer,
+            },
+            ),
+        )
+        self.execution_action_destroyer.join_for_empty_rule_position_target = literal.NO_JOIN
+        self.execution_action_destroyer.join_for_destroy_position_target = literal.NO_JOIN
+
+    def accept_when_empty_global_position_left(self):
+        self.create_global_position_left()
+
+    def accept_when_empty_global_position_right(self):
+        if not self.join_when_empty_global_position_right.arrive():
+            return
+        self.move_global_position_left_to_global_position_right()
 
     def create_global_position_left(self):
         self.action.on_particle.get_position(
@@ -85,6 +111,11 @@ class TestExecution:
             "/left::/marker",
             1,
         )
+        self.move_global_position_left_to_global_position_right()
+
+    def move_global_position_left_to_global_position_right(self):
+        if not self.join_for_move_global_position_left_to_global_position_right.arrive():
+            return
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.left.Left
         ).move_particle_to(
@@ -98,6 +129,12 @@ class TestExecution:
             "/right",
             1,
         )
+        self.guarantees.global_position_left.publish(
+            self.scheduler,
+            self.move_global_position_right_to_action_destroyer__position_target,
+        )
+
+    def move_global_position_right_to_action_destroyer__position_target(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.right.Right
         ).move_particle_to(
@@ -113,7 +150,7 @@ class TestExecution:
             "/destroyer::target",
             1,
         )
-        self.execution_trigger_action_destroyer__position_target__action_destructor = local.my_domain_com.my_lib.destructor.DestructorExecution(
+        self.execution_action_destroyer__position_target__action_destructor = local.my_domain_com.my_lib.destructor.DestructorExecution(
             self.action.on_particle.get_action(
                 local.my_domain_com.my_lib.destroyer.Destroyer
             ).get_interface_position(
@@ -127,31 +164,17 @@ class TestExecution:
                 "destroyer",
             ),
             "destructor",
-            self.guarantees.trigger_action_destroyer__position_target__action_destructor,
         )
-        self.destruction_connection_trigger_action_destroyer = tracing.DestructionConnection(
+        self.execution_action_destroyer__position_target__action_destructor.join_for_empty_rule_global_position_marker = literal.NO_JOIN
+        self.execution_action_destroyer__position_target__action_destructor.join_for_move_global_position_marker_to_position_holder = literal.NO_JOIN
+        self.execution_action_destroyer__position_target__action_destructor.guarantees.global_position_marker.consumers.append(
+            self.destroy_action_destroyer__position_target__global_position_marker
+        )
+        self.guarantees.global_position_right.publish(
             self.scheduler,
-            1,
-            self.destroy_action_destroyer__position_target__global_position_marker,
+            self.execution_action_destroyer.accept_for_empty_rule_position_target,
+            self.execution_action_destroyer__position_target__action_destructor.accept_for_empty_rule_global_position_marker,
         )
-        self.execution_trigger_action_destroyer = local.my_domain_com.my_lib.destroyer.DestroyerExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.destroyer.Destroyer
-            ),
-            self.scheduler,
-            self.trace_execution,
-            "destroyer",
-            self.guarantees.trigger_action_destroyer,
-            destruction_connections=literal.DestructionConnections(
-            {
-                local.my_domain_com.my_lib.destroyer.DestroyerExecution.continue_destroy_position_target: self.destruction_connection_trigger_action_destroyer,
-            },
-            ),
-        )
-        self.scheduler.submit(self.trigger_action_destroyer__for_empty_rule_position_target)
-        self.scheduler.submit(self.trigger_action_destroyer__position_target__action_destructor__for_empty_rule_global_position_marker)
-        self.scheduler.submit(self.trigger_action_destroyer__for_empty_rule_position_target)
-        self.trigger_action_destroyer__position_target__action_destructor__for_empty_rule_global_position_marker()
 
     def destroy_action_destroyer__position_target__global_position_marker(self):
         if not self.join_for_destroy_action_destroyer__position_target__global_position_marker.arrive():
@@ -165,18 +188,8 @@ class TestExecution:
         )
         self.destruction_position_action_destroyer__position_target__global_position_marker.destroy_particle()
         self.scheduler.destroy_completed(
-            self.destruction_connection_trigger_action_destroyer.trace_execution,
+            self.destruction_connection_action_destroyer.trace_execution,
             "target::/marker",
             1,
         )
-        self.destruction_connection_trigger_action_destroyer.complete()
-
-    def trigger_action_destroyer__for_empty_rule_position_target(self):
-        if not self.join_for_trigger_action_destroyer__for_empty_rule_position_target.arrive():
-            return
-        self.execution_trigger_action_destroyer.accept_for_empty_rule_position_target()
-
-    def trigger_action_destroyer__position_target__action_destructor__for_empty_rule_global_position_marker(self):
-        if not self.join_for_trigger_action_destroyer__position_target__action_destructor__for_empty_rule_global_position_marker.arrive():
-            return
-        self.execution_trigger_action_destroyer__position_target__action_destructor.accept_for_empty_rule_global_position_marker()
+        self.destruction_connection_action_destroyer.complete()

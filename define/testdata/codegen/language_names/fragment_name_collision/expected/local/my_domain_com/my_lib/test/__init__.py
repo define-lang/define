@@ -24,10 +24,19 @@ class Test(literal.EntryPoint):
             self,
             scheduler,
         )
-        execution.scheduler.submit(execution.create_global_position_item_name)
-        execution.scheduler.submit(execution.create_global_position_item_name_2)
-        execution.scheduler.submit(execution.create_global_position_item_name_3)
-        execution.create_global_position_item_name_4()
+        scheduler.submit(execution.accept_when_empty_global_position_item_name)
+        scheduler.submit(execution.accept_when_empty_global_position_item_name_2)
+        scheduler.submit(execution.accept_when_empty_global_position_item_name_3)
+        execution.accept_when_empty_global_position_item_name_4()
+
+
+@final
+class TestGuarantees:
+    def __init__(self):
+        self.global_position_item_name = literal.Guarantee()
+        self.global_position_item_name_2 = literal.Guarantee()
+        self.global_position_item_name_3 = literal.Guarantee()
+        self.global_position_item_name_4 = literal.Guarantee()
 
 
 @final
@@ -39,23 +48,48 @@ class TestExecution:
     ):
         self.action = action
         self.scheduler = scheduler
+        self.guarantees = TestGuarantees()
+
+    def accept_when_empty_global_position_item_name(self):
+        self.create_global_position_item_name()
+
+    def accept_when_empty_global_position_item_name_2(self):
+        self.create_global_position_item_name_2()
+
+    def accept_when_empty_global_position_item_name_3(self):
+        self.create_global_position_item_name_3()
+
+    def accept_when_empty_global_position_item_name_4(self):
+        self.create_global_position_item_name_4()
 
     def create_global_position_item_name(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.item.name.ItemName
         ).create_particle()
+        self.guarantees.global_position_item_name.publish(
+            self.scheduler,
+        )
 
     def create_global_position_item_name_2(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.item.name_2.ItemName2
         ).create_particle()
+        self.guarantees.global_position_item_name_2.publish(
+            self.scheduler,
+        )
 
     def create_global_position_item_name_3(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.item.name_3.ItemName3
         ).create_particle()
+        self.guarantees.global_position_item_name_3.publish(
+            self.scheduler,
+        )
 
     def create_global_position_item_name_4(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.item_name.ItemName
         ).create_particle()
+        self.guarantees.global_position_item_name_4.publish(
+            self.scheduler,
+        )

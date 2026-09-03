@@ -31,7 +31,6 @@ _ENV = template_env.create_environment(
     _TEMPLATES_DIR,
     _COMPILED_DIR,
     template_globals={
-        "ActionRole": action_context.ActionRole,
         "ChainAccessor": template_context.ChainAccessor,
         "StatementKind": template_context.StatementKind,
     },
@@ -66,16 +65,17 @@ class _DefinitionGenerator:
         self._converter = converter
         self._operation_labels = operation_labels
         self._output_dir = output_dir
-        self._plans = action_plan.ActionPlans(operation_graphs, entry_point.typed_name)
+        self._plans = action_plan.ActionPlans(operation_graphs)
         self._generated_actions = typed_name_dict.TypedNameDict[
-            ast.GlobalTypedName, action_context.GeneratedAction
+            ast.GlobalTypedName, action_context.GeneratedActionInterface
         ]()
+        self._entry_definition: action_context.GeneratedActionDefinition
 
     def generate(
         self,
         *,
         max_workers: int | None,
-    ) -> tuple[action_context.ActionDefinitionContext, set[Path]]:
+    ) -> tuple[action_context.GeneratedActionDefinition, set[Path]]:
         """Generate every definition with bounded worker concurrency."""
         # TODO: Some referenced definitions may not contribute generated
         # information used by a definition. Investigate whether codegen can use
@@ -85,8 +85,7 @@ class _DefinitionGenerator:
             self._generate_definition,
             max_workers=max_workers,
         )
-        entry_context = self._generated_actions[self._entry_point.typed_name].context
-        return entry_context, set(package_dirs)
+        return self._entry_definition, set(package_dirs)
 
     def _generate_definition(self, definition: ast.QualityDefinition) -> Path:
         if isinstance(definition, ast.ActionDefinition):
@@ -104,22 +103,26 @@ class _DefinitionGenerator:
         self,
         definition: ast.ActionDefinition,
     ) -> action_context.ActionDefinitionContext:
-        role = (
-            action_context.ActionRole.ENTRY_POINT
-            if definition.typed_name == self._entry_point.typed_name
-            else action_context.ActionRole.ACTION
-        )
         plan = self._plans.plan_for(definition)
-        generated_action = action_definition.ActionDefinitionGenerator(
+        is_entry_point = definition.typed_name == self._entry_point.typed_name
+        view_point_create_plan = None
+        if is_entry_point:
+            view_point_create_plan = plan.view_point_create_plan()
+        generated_definition = action_definition.ActionDefinitionGenerator(
             definition,
             self._converter,
-            role,
             self._generated_actions,
             plan,
+            view_point_create_plan,
             self._operation_labels,
+            is_entry_point=is_entry_point,
         ).generate()
-        self._generated_actions[definition.typed_name] = generated_action
-        return generated_action.context
+        self._generated_actions[definition.typed_name] = (
+            generated_definition.action_interface
+        )
+        if is_entry_point:
+            self._entry_definition = generated_definition
+        return generated_definition.context
 
     def _write_definition_file(
         self,
@@ -165,7 +168,7 @@ class PythonLiteralCodeGenerator:
         # existing definition-order choice before workers share the converter.
         for definition in definition_order.definitions:
             _ = converter.module_name(definition.typed_name.name_content)
-        entry_context, package_dirs = _DefinitionGenerator(
+        entry_definition, package_dirs = _DefinitionGenerator(
             definition_order,
             operation_graphs,
             entry_point,
@@ -175,7 +178,7 @@ class PythonLiteralCodeGenerator:
         ).generate(max_workers=max_workers)
 
         self._write_init_files(package_dirs, output_dir)
-        self._write_entry_point(entry_context, output_dir)
+        self._write_entry_point(entry_definition.context, output_dir)
 
     def _write_init_files(self, package_dirs: set[Path], output_dir: Path):
         """Write empty __init__.py files for intermediate packages."""
@@ -194,15 +197,15 @@ class PythonLiteralCodeGenerator:
 
     def _write_entry_point(
         self,
-        entry_ctx: action_context.ActionDefinitionContext,
+        context: action_context.ActionDefinitionContext,
         output_dir: Path,
     ):
         """Write the __main__.py entry point file."""
         content = _ENTRY_POINT_TEMPLATE.render(
             entry_reference=naming.ClassReference(
-                module_name=entry_ctx.module_name,
-                class_name=entry_ctx.class_name,
+                module_name=context.module_name,
+                class_name=context.class_name,
             ),
-            trace_operations=entry_ctx.trace_operations,
+            trace_operations=context.trace_operations,
         )
         _ = (output_dir / "__main__.py").write_text(content)

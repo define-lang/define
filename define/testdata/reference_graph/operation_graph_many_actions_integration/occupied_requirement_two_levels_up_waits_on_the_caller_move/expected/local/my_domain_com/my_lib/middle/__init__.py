@@ -33,8 +33,7 @@ class Middle(literal.Action):
 @final
 class MiddleGuarantees:
     def __init__(self):
-        self.guarantee_position_gw: list[literal.Task] = []
-        self.trigger_position_gw__action_inner = local.my_domain_com.my_lib.inner.InnerGuarantees()
+        self.position_gw = literal.Guarantee()
 
 
 @final
@@ -43,31 +42,51 @@ class MiddleExecution:
         self,
         action: Middle,
         scheduler: literal.Scheduler,
-        guarantees: MiddleGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = MiddleGuarantees()
         self.destruction_connections = destruction_connections
-        guarantees.trigger_position_gw__action_inner.guarantee_position_slot.append(
-            self.destroy_position_gw
-        )
-        self.execution_trigger_position_gw__action_inner: local.my_domain_com.my_lib.inner.InnerExecution
-        self.join_for_destroy_position_gw = self.scheduler.create_join(3)
-        self.join_for_trigger_position_gw__action_inner__for_empty_rule_position_slot = self.scheduler.create_join(2)
+        self.execution_position_gw__action_inner: local.my_domain_com.my_lib.inner.InnerExecution
+        self.join_for_move_position_gw__global_position_value_to_position_gw__action_inner__position_slot: literal.Join
+        self.join_for_destroy_position_gw: literal.Join
+        self.join_for_empty_rule_position_gw__global_position_value: literal.Join
+        self.join_for_empty_rule_position_gw: literal.Join
 
     def accept_for_empty_rule_position_gw__global_position_value(self):
+        if not self.join_for_empty_rule_position_gw__global_position_value.arrive():
+            return
         self.move_position_gw__global_position_value_to_position_gw__action_inner__position_slot()
 
     def accept_when_occupied_position_gw(self):
         self.create_position_gw__action_inner__position_trigger_pos()
 
+    def init_when_occupied_position_gw(self):
+        self.execution_position_gw__action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
+            self.action.get_interface_position(
+                "position<gw>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.inner.Inner
+            ),
+            self.scheduler,
+            destruction_connections=self.destruction_connections,
+        )
+        self.execution_position_gw__action_inner.join_for_empty_rule_position_slot = literal.NO_JOIN
+        self.execution_position_gw__action_inner.join_for_destroy_position_slot = literal.NO_JOIN
+        self.execution_position_gw__action_inner.guarantees.position_slot.consumers.append(
+            self.destroy_position_gw
+        )
+
     def accept_for_empty_rule_position_gw(self):
+        if not self.join_for_empty_rule_position_gw.arrive():
+            return
         self.destroy_position_gw()
 
     def move_position_gw__global_position_value_to_position_gw__action_inner__position_slot(self):
+        if not self.join_for_move_position_gw__global_position_value_to_position_gw__action_inner__position_slot.arrive():
+            return
         self.action.get_interface_position(
             "position<gw>"
         ).particle.get_position(
@@ -81,7 +100,7 @@ class MiddleExecution:
                 "position<slot>"
             )
         )
-        self.trigger_position_gw__action_inner__for_empty_rule_position_slot()
+        self.execution_position_gw__action_inner.accept_for_empty_rule_position_slot()
 
     def create_position_gw__action_inner__position_trigger_pos(self):
         self.action.get_interface_position(
@@ -91,20 +110,6 @@ class MiddleExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.execution_trigger_position_gw__action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
-            self.action.get_interface_position(
-                "position<gw>"
-            ).particle.get_action(
-                local.my_domain_com.my_lib.inner.Inner
-            ),
-            self.scheduler,
-            self.guarantees.trigger_position_gw__action_inner,
-            destruction_connections=self.destruction_connections,
-        )
-        self.scheduler.submit(self.destroy_position_gw__action_inner__position_trigger_pos)
-        self.trigger_position_gw__action_inner__for_empty_rule_position_slot()
-
-    def destroy_position_gw__action_inner__position_trigger_pos(self):
         self.action.get_interface_position(
             "position<gw>"
         ).particle.get_action(
@@ -123,9 +128,6 @@ class MiddleExecution:
         self.action.get_interface_position(
             "position<gw>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_gw)
-
-    def trigger_position_gw__action_inner__for_empty_rule_position_slot(self):
-        if not self.join_for_trigger_position_gw__action_inner__for_empty_rule_position_slot.arrive():
-            return
-        self.execution_trigger_position_gw__action_inner.accept_for_empty_rule_position_slot()
+        self.guarantees.position_gw.publish(
+            self.scheduler,
+        )

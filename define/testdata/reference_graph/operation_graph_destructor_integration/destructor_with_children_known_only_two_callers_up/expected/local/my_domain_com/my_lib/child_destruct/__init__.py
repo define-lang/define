@@ -18,8 +18,8 @@ class ChildDestruct(literal.Action):
 @final
 class ChildDestructGuarantees:
     def __init__(self):
-        self.guarantee_global_position_marker_a: list[literal.Task] = []
-        self.guarantee_global_position_marker_b: list[literal.Task] = []
+        self.global_position_marker_a = literal.Guarantee()
+        self.global_position_marker_b = literal.Guarantee()
 
 
 @final
@@ -28,11 +28,10 @@ class ChildDestructExecution:
         self,
         action: ChildDestruct,
         scheduler: literal.Scheduler,
-        guarantees: ChildDestructGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = ChildDestructGuarantees()
         self.local_position_holder_a = literal.LocalPosition(
             "position<holder_a>",
             scheduler=self.scheduler,
@@ -41,14 +40,24 @@ class ChildDestructExecution:
             "position<holder_b>",
             scheduler=self.scheduler,
         )
+        self.join_for_move_global_position_marker_a_to_position_holder_a: literal.Join
+        self.join_for_move_global_position_marker_b_to_position_holder_b: literal.Join
+        self.join_for_empty_rule_global_position_marker_a: literal.Join
+        self.join_for_empty_rule_global_position_marker_b: literal.Join
 
     def accept_for_empty_rule_global_position_marker_a(self):
+        if not self.join_for_empty_rule_global_position_marker_a.arrive():
+            return
         self.move_global_position_marker_a_to_position_holder_a()
 
     def accept_for_empty_rule_global_position_marker_b(self):
+        if not self.join_for_empty_rule_global_position_marker_b.arrive():
+            return
         self.move_global_position_marker_b_to_position_holder_b()
 
     def move_global_position_marker_a_to_position_holder_a(self):
+        if not self.join_for_move_global_position_marker_a_to_position_holder_a.arrive():
+            return
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.marker_a.MarkerA
         ).move_particle_to(self.local_position_holder_a)
@@ -57,9 +66,13 @@ class ChildDestructExecution:
                 local.my_domain_com.my_lib.marker_a.MarkerA
             )
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_marker_a)
+        self.guarantees.global_position_marker_a.publish(
+            self.scheduler,
+        )
 
     def move_global_position_marker_b_to_position_holder_b(self):
+        if not self.join_for_move_global_position_marker_b_to_position_holder_b.arrive():
+            return
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.marker_b.MarkerB
         ).move_particle_to(self.local_position_holder_b)
@@ -68,4 +81,6 @@ class ChildDestructExecution:
                 local.my_domain_com.my_lib.marker_b.MarkerB
             )
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_marker_b)
+        self.guarantees.global_position_marker_b.publish(
+            self.scheduler,
+        )

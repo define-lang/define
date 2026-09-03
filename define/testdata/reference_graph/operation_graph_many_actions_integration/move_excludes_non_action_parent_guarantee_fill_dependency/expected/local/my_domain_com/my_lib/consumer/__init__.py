@@ -29,7 +29,7 @@ class Consumer(literal.Action):
 @final
 class ConsumerGuarantees:
     def __init__(self):
-        self.guarantee_global_position_box__global_position_item__move__global_position_box__global_position_destination: list[literal.Task] = []
+        self.global_position_box__global_position_item__move__global_position_box__global_position_destination = literal.Guarantee()
 
 
 @final
@@ -38,17 +38,19 @@ class ConsumerExecution:
         self,
         action: Consumer,
         scheduler: literal.Scheduler,
-        guarantees: ConsumerGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
-        self.join_for_move_global_position_box__global_position_item_to_global_position_box__global_position_destination = self.scheduler.create_join(2)
+        self.guarantees = ConsumerGuarantees()
+        self.join_for_move_global_position_box__global_position_item_to_global_position_box__global_position_destination: literal.Join
+        self.join_when_empty_global_position_box__global_position_destination: literal.Join
 
     def accept_when_empty_global_position_box__global_position_item(self):
         self.create_global_position_box__global_position_item()
 
     def accept_when_empty_global_position_box__global_position_destination(self):
+        if not self.join_when_empty_global_position_box__global_position_destination.arrive():
+            return
         self.move_global_position_box__global_position_item_to_global_position_box__global_position_destination()
 
     def create_global_position_box__global_position_item(self):
@@ -73,4 +75,6 @@ class ConsumerExecution:
                 local.my_domain_com.my_lib.destination.Destination
             )
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_box__global_position_item__move__global_position_box__global_position_destination)
+        self.guarantees.global_position_box__global_position_item__move__global_position_box__global_position_destination.publish(
+            self.scheduler,
+        )

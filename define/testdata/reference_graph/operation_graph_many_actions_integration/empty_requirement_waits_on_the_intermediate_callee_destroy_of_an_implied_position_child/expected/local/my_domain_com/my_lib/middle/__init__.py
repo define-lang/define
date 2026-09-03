@@ -32,35 +32,42 @@ class Middle(literal.Action):
 
 
 @final
-class MiddleGuarantees:
-    def __init__(self):
-        self.trigger_position_gw__action_inner = local.my_domain_com.my_lib.inner.InnerGuarantees()
-
-
-@final
 class MiddleExecution:
     def __init__(
         self,
         action: Middle,
         scheduler: literal.Scheduler,
-        guarantees: MiddleGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
         self.destruction_connections = destruction_connections
-        self.execution_trigger_position_gw__action_inner: local.my_domain_com.my_lib.inner.InnerExecution
-        self.join_for_trigger_position_gw__action_inner__when_empty_global_position_holder__global_position_a = self.scheduler.create_join(2)
+        self.execution_position_gw__action_inner: local.my_domain_com.my_lib.inner.InnerExecution
+        self.join_for_destroy_position_gw__global_position_holder__global_position_a: literal.Join
+        self.join_for_empty_rule_position_gw__global_position_holder__global_position_a: literal.Join
 
     def accept_for_empty_rule_position_gw__global_position_holder__global_position_a(self):
+        if not self.join_for_empty_rule_position_gw__global_position_holder__global_position_a.arrive():
+            return
         self.destroy_position_gw__global_position_holder__global_position_a()
 
     def accept_when_occupied_position_gw(self):
         self.create_position_gw__action_inner__position_trigger_pos()
 
+    def init_when_occupied_position_gw(self):
+        self.execution_position_gw__action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
+            self.action.get_interface_position(
+                "position<gw>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.inner.Inner
+            ),
+            self.scheduler,
+        )
+
     def destroy_position_gw__global_position_holder__global_position_a(self):
+        if not self.join_for_destroy_position_gw__global_position_holder__global_position_a.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_gw__global_position_holder__global_position_a)
 
     def continue_destroy_position_gw__global_position_holder__global_position_a(self):
@@ -71,7 +78,7 @@ class MiddleExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.a.A
         ).destroy_particle()
-        self.trigger_position_gw__action_inner__when_empty_global_position_holder__global_position_a()
+        self.execution_position_gw__action_inner.accept_when_empty_global_position_holder__global_position_a()
 
     def create_position_gw__action_inner__position_trigger_pos(self):
         self.action.get_interface_position(
@@ -81,19 +88,6 @@ class MiddleExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.execution_trigger_position_gw__action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
-            self.action.get_interface_position(
-                "position<gw>"
-            ).particle.get_action(
-                local.my_domain_com.my_lib.inner.Inner
-            ),
-            self.scheduler,
-            self.guarantees.trigger_position_gw__action_inner,
-        )
-        self.scheduler.submit(self.destroy_position_gw__action_inner__position_trigger_pos)
-        self.trigger_position_gw__action_inner__when_empty_global_position_holder__global_position_a()
-
-    def destroy_position_gw__action_inner__position_trigger_pos(self):
         self.action.get_interface_position(
             "position<gw>"
         ).particle.get_action(
@@ -101,8 +95,3 @@ class MiddleExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
-
-    def trigger_position_gw__action_inner__when_empty_global_position_holder__global_position_a(self):
-        if not self.join_for_trigger_position_gw__action_inner__when_empty_global_position_holder__global_position_a.arrive():
-            return
-        self.execution_trigger_position_gw__action_inner.accept_when_empty_global_position_holder__global_position_a()

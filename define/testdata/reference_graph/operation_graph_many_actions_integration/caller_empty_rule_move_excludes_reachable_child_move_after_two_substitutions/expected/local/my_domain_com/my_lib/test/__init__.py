@@ -22,16 +22,12 @@ class Test(literal.EntryPoint):
         execution = TestExecution(
             self,
             scheduler,
-            TestGuarantees(),
         )
-        execution.scheduler.submit(execution.create_global_position_input)
-        execution.create_action_middle_action__position_trigger_pos()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_action_middle_action = local.my_domain_com.my_lib.middle_action.MiddleActionGuarantees()
+        execution.execution_action_middle_action.join_for_empty_rule_global_position_input = scheduler.create_join(2)
+        execution.join_when_empty_action_inner__position_holder = literal.NO_JOIN
+        scheduler.submit(execution.accept_when_empty_global_position_input)
+        scheduler.submit(execution.on_action_parent_occupied)
+        execution.accept_when_empty_action_inner__position_holder()
 
 
 @final
@@ -40,11 +36,9 @@ class TestExecution:
         self,
         action: Test,
         scheduler: literal.Scheduler,
-        guarantees: TestGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
         self.local_position_holder_a = literal.LocalPosition(
             "position<holder_a>",
             scheduler=self.scheduler,
@@ -53,16 +47,34 @@ class TestExecution:
             "position<holder_c>",
             scheduler=self.scheduler,
         )
-        self.execution_trigger_action_middle_action: local.my_domain_com.my_lib.middle_action.MiddleActionExecution
-        self.join_for_trigger_action_middle_action__when_empty_global_position_input__global_position_marker = self.scheduler.create_join(2)
-        self.join_for_trigger_action_middle_action__for_empty_rule_global_position_input = self.scheduler.create_join(2)
+        self.execution_action_middle_action: local.my_domain_com.my_lib.middle_action.MiddleActionExecution
+        self.join_when_empty_action_inner__position_holder: literal.Join
+        self.execution_action_middle_action = local.my_domain_com.my_lib.middle_action.MiddleActionExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.middle_action.MiddleAction
+            ),
+            self.scheduler,
+        )
+        self.execution_action_middle_action.execution_action_inner.join_for_empty_rule_global_position_input = self.scheduler.create_join(2)
+
+    def accept_when_empty_global_position_input(self):
+        self.create_global_position_input()
+
+    def on_action_parent_occupied(self):
+        self.scheduler.submit(self.create_action_middle_action__position_trigger_pos)
+        self.execution_action_middle_action.on_action_parent_occupied()
+
+    def accept_when_empty_action_inner__position_holder(self):
+        if not self.join_when_empty_action_inner__position_holder.arrive():
+            return
+        self.execution_action_middle_action.accept_for_empty_rule_global_position_input()
 
     def create_global_position_input(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.input.Input
         ).create_particle()
         self.scheduler.submit(self.create_global_position_input__global_position_origin)
-        self.trigger_action_middle_action__when_empty_global_position_input__global_position_marker()
+        self.execution_action_middle_action.accept_when_empty_global_position_input__global_position_marker()
 
     def create_global_position_input__global_position_origin(self):
         self.action.on_particle.get_position(
@@ -99,7 +111,7 @@ class TestExecution:
             local.my_domain_com.my_lib.target.Target
         ).move_particle_to(self.local_position_holder_c)
         self.scheduler.submit(self.destroy_position_holder_c)
-        self.trigger_action_middle_action__for_empty_rule_global_position_input()
+        self.execution_action_middle_action.accept_for_empty_rule_global_position_input()
 
     def destroy_position_holder_c(self):
         self.local_position_holder_c.destroy_particle()
@@ -110,34 +122,8 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.execution_trigger_action_middle_action = local.my_domain_com.my_lib.middle_action.MiddleActionExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.middle_action.MiddleAction
-            ),
-            self.scheduler,
-            self.guarantees.trigger_action_middle_action,
-        )
-        self.scheduler.submit(self.destroy_action_middle_action__position_trigger_pos)
-        self.scheduler.submit(self.trigger_action_middle_action__when_empty_global_position_input__global_position_marker)
-        self.scheduler.submit(self.trigger_action_middle_action__action_parent)
-        self.trigger_action_middle_action__for_empty_rule_global_position_input()
-
-    def destroy_action_middle_action__position_trigger_pos(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.middle_action.MiddleAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
-
-    def trigger_action_middle_action__when_empty_global_position_input__global_position_marker(self):
-        if not self.join_for_trigger_action_middle_action__when_empty_global_position_input__global_position_marker.arrive():
-            return
-        self.execution_trigger_action_middle_action.accept_when_empty_global_position_input__global_position_marker()
-
-    def trigger_action_middle_action__action_parent(self):
-        self.execution_trigger_action_middle_action.accept_action_parent()
-
-    def trigger_action_middle_action__for_empty_rule_global_position_input(self):
-        if not self.join_for_trigger_action_middle_action__for_empty_rule_global_position_input.arrive():
-            return
-        self.execution_trigger_action_middle_action.accept_for_empty_rule_global_position_input()

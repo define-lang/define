@@ -14,16 +14,8 @@ class Test(literal.EntryPoint):
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
             scheduler,
-            TestGuarantees(),
         )
-        execution.scheduler.submit(execution.create_position_gateway)
-        execution.create_position_box()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_position_gateway__action_other = local.my_domain_com.my_lib.other.OtherGuarantees()
+        execution.on_action_parent_occupied()
 
 
 @final
@@ -31,10 +23,8 @@ class TestExecution:
     def __init__(
         self,
         scheduler: literal.Scheduler,
-        guarantees: TestGuarantees,
     ):
         self.scheduler = scheduler
-        self.guarantees = guarantees
         self.local_position_gateway = literal.LocalPosition(
             "position<gateway>",
             constraints=(
@@ -53,19 +43,32 @@ class TestExecution:
             "position<destination>",
             scheduler=self.scheduler,
         )
-        guarantees.trigger_position_gateway__action_other.guarantee_position_destination.append(
-            self.destroy_position_gateway__action_other__position_destination
-        )
-        guarantees.trigger_position_gateway__action_other.guarantee_position_box.append(
-            self.destroy_position_gateway
-        )
-        self.execution_trigger_position_gateway__action_other: local.my_domain_com.my_lib.other.OtherExecution
+        self.execution_position_gateway__action_other: local.my_domain_com.my_lib.other.OtherExecution
         self.join_for_move_position_destination_to_position_gateway__action_other__position_box = self.scheduler.create_join(2)
         self.join_for_destroy_position_gateway = self.scheduler.create_join(2)
-        self.join_for_trigger_position_gateway__action_other__when_empty_position_box__global_position_item = self.scheduler.create_join(2)
+
+    def on_action_parent_occupied(self):
+        self.scheduler.submit(self.create_position_gateway)
+        self.create_position_box()
 
     def create_position_gateway(self):
         self.local_position_gateway.create_particle()
+        self.execution_position_gateway__action_other = local.my_domain_com.my_lib.other.OtherExecution(
+            self.local_position_gateway.particle.get_action(
+                local.my_domain_com.my_lib.other.Other
+            ),
+            self.scheduler,
+        )
+        self.execution_position_gateway__action_other.join_when_empty_position_destination = literal.NO_JOIN
+        self.execution_position_gateway__action_other.join_for_empty_rule_position_box = literal.NO_JOIN
+        self.execution_position_gateway__action_other.join_for_move_position_box__global_position_item_to_position_destination = literal.NO_JOIN
+        self.execution_position_gateway__action_other.join_for_destroy_position_box = literal.NO_JOIN
+        self.execution_position_gateway__action_other.guarantees.position_destination.consumers.append(
+            self.destroy_position_gateway__action_other__position_destination
+        )
+        self.execution_position_gateway__action_other.guarantees.position_box.consumers.append(
+            self.destroy_position_gateway
+        )
         self.move_position_destination_to_position_gateway__action_other__position_box()
 
     def create_position_box(self):
@@ -83,17 +86,7 @@ class TestExecution:
                 "position<box>"
             )
         )
-        self.execution_trigger_position_gateway__action_other = local.my_domain_com.my_lib.other.OtherExecution(
-            self.local_position_gateway.particle.get_action(
-                local.my_domain_com.my_lib.other.Other
-            ),
-            self.scheduler,
-            self.guarantees.trigger_position_gateway__action_other,
-        )
-        self.scheduler.submit(self.trigger_position_gateway__action_other__when_empty_position_box__global_position_item)
-        self.scheduler.submit(self.trigger_position_gateway__action_other__when_empty_position_box__global_position_item)
-        self.scheduler.submit(self.trigger_position_gateway__action_other__when_empty_position_destination)
-        self.trigger_position_gateway__action_other__for_empty_rule_position_box()
+        self.execution_position_gateway__action_other.accept_when_empty_position_box__global_position_item()
 
     def destroy_position_gateway__action_other__position_destination(self):
         self.local_position_gateway.particle.get_action(
@@ -107,14 +100,3 @@ class TestExecution:
         if not self.join_for_destroy_position_gateway.arrive():
             return
         self.local_position_gateway.destroy_particle()
-
-    def trigger_position_gateway__action_other__when_empty_position_box__global_position_item(self):
-        if not self.join_for_trigger_position_gateway__action_other__when_empty_position_box__global_position_item.arrive():
-            return
-        self.execution_trigger_position_gateway__action_other.accept_when_empty_position_box__global_position_item()
-
-    def trigger_position_gateway__action_other__when_empty_position_destination(self):
-        self.execution_trigger_position_gateway__action_other.accept_when_empty_position_destination()
-
-    def trigger_position_gateway__action_other__for_empty_rule_position_box(self):
-        self.execution_trigger_position_gateway__action_other.accept_for_empty_rule_position_box()

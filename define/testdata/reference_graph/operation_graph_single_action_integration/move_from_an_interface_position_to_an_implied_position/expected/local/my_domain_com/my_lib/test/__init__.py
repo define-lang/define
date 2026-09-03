@@ -18,7 +18,16 @@ class Test(literal.EntryPoint):
             self,
             scheduler,
         )
-        execution.create_position_source()
+        execution.join_when_empty_global_position_implied = literal.NO_JOIN
+        execution.join_for_move_position_source_to_global_position_implied = scheduler.create_join(2)
+        scheduler.submit(execution.on_action_parent_occupied)
+        execution.accept_when_empty_global_position_implied()
+
+
+@final
+class TestGuarantees:
+    def __init__(self):
+        self.global_position_implied = literal.Guarantee()
 
 
 @final
@@ -30,15 +39,34 @@ class TestExecution:
     ):
         self.action = action
         self.scheduler = scheduler
+        self.guarantees = TestGuarantees()
         self.local_position_source = literal.LocalPosition(
             "position<source>",
             scheduler=self.scheduler,
         )
+        self.join_for_move_position_source_to_global_position_implied: literal.Join
+        self.join_when_empty_global_position_implied: literal.Join
+
+    def on_action_parent_occupied(self):
+        self.create_position_source()
+
+    def accept_when_empty_global_position_implied(self):
+        if not self.join_when_empty_global_position_implied.arrive():
+            return
+        self.move_position_source_to_global_position_implied()
 
     def create_position_source(self):
         self.local_position_source.create_particle()
+        self.move_position_source_to_global_position_implied()
+
+    def move_position_source_to_global_position_implied(self):
+        if not self.join_for_move_position_source_to_global_position_implied.arrive():
+            return
         self.local_position_source.move_particle_to(
             self.action.on_particle.get_position(
                 local.my_domain_com.my_lib.implied.Implied
             )
+        )
+        self.guarantees.global_position_implied.publish(
+            self.scheduler,
         )

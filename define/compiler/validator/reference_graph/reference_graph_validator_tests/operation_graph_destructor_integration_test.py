@@ -2849,6 +2849,186 @@ def test_creator_nonoverlapping_child_order_is_canonical_across_three_actions(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+def test_direct_destructor_with_mixed_implied_position_state(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(source)": [],
+        "test.create(source::/occupied_first)": ["test.create(source)"],
+        "test.create(source::/occupied_first::/transitive)": [
+            "test.create(source::/occupied_first)"
+        ],
+        "test.create(source::/occupied_last)": ["test.create(source)"],
+        "test.move(source, /destroyer::target)": [
+            "test.create(source::/occupied_first::/transitive)",
+            "test.create(source::/occupied_last)",
+        ],
+        # The directly known Destructor starts after the Move of its Action
+        # Parent and the occupied implied-position particles it uses.
+        "destructor.move(/occupied_first, first_holder)": [
+            "test.move(source, /destroyer::target)"
+        ],
+        "destructor.move(first_holder, /occupied_first)": [
+            "destructor.move(/occupied_first, first_holder)"
+        ],
+        "destructor.move(/occupied_first::/transitive, transitive_holder)": [
+            "destructor.move(first_holder, /occupied_first)"
+        ],
+        "destructor.move(transitive_holder, /occupied_first::/transitive)": [
+            "destructor.move(/occupied_first::/transitive, transitive_holder)"
+        ],
+        "destructor.create(/empty)": ["test.move(source, /destroyer::target)"],
+        "destructor.destroy(/empty)": ["destructor.create(/empty)"],
+        "destructor.move(/occupied_last, last_holder)": [
+            "test.move(source, /destroyer::target)"
+        ],
+        "destructor.move(last_holder, /occupied_last)": [
+            "destructor.move(/occupied_last, last_holder)"
+        ],
+        "destroyer.destroy(target::/occupied_last)": [
+            "destructor.move(last_holder, /occupied_last)"
+        ],
+        "destroyer.destroy(target::/occupied_first::/transitive)": [
+            "destructor.move(transitive_holder, /occupied_first::/transitive)"
+        ],
+        "destroyer.destroy(target::/occupied_first)": [
+            "destroyer.destroy(target::/occupied_first::/transitive)"
+        ],
+        "destroyer.destroy(target)": [
+            "destroyer.destroy(target::/occupied_last)",
+            "destroyer.destroy(target::/occupied_first)",
+            "destructor.destroy(/empty)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=_DESTRUCTOR_OPERATION_DEPENDENCIES_NOT_RESOLVED,
+)
+def test_caller_contributed_destructor_with_mixed_implied_position_state(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(source)": [],
+        "test.create(source::/occupied_first)": ["test.create(source)"],
+        "test.create(source::/occupied_first::/transitive)": [
+            "test.create(source::/occupied_first)"
+        ],
+        "test.create(source::/occupied_last)": ["test.create(source)"],
+        "test.move(source, /destroyer::target)": [
+            "test.create(source::/occupied_first::/transitive)",
+            "test.create(source::/occupied_last)",
+        ],
+        # The caller-contributed Destructor retains the caller's Move as the
+        # predecessor for both its Action Parent and occupied Requirements.
+        "destructor.move(/occupied_first, first_holder)": [
+            "test.move(source, /destroyer::target)"
+        ],
+        "destructor.move(first_holder, /occupied_first)": [
+            "destructor.move(/occupied_first, first_holder)"
+        ],
+        "destructor.move(/occupied_first::/transitive, transitive_holder)": [
+            "destructor.move(first_holder, /occupied_first)"
+        ],
+        "destructor.move(transitive_holder, /occupied_first::/transitive)": [
+            "destructor.move(/occupied_first::/transitive, transitive_holder)"
+        ],
+        "destructor.create(/empty)": ["test.move(source, /destroyer::target)"],
+        "destructor.destroy(/empty)": ["destructor.create(/empty)"],
+        "destructor.move(/occupied_last, last_holder)": [
+            "test.move(source, /destroyer::target)"
+        ],
+        "destructor.move(last_holder, /occupied_last)": [
+            "destructor.move(/occupied_last, last_holder)"
+        ],
+        "destroyer.destroy(target::/occupied_last)": [
+            "destructor.move(last_holder, /occupied_last)"
+        ],
+        "destroyer.destroy(target::/occupied_first::/transitive)": [
+            "destructor.move(transitive_holder, /occupied_first::/transitive)"
+        ],
+        "destroyer.destroy(target::/occupied_first)": [
+            "destroyer.destroy(target::/occupied_first::/transitive)"
+        ],
+        "destroyer.destroy(target)": [
+            "destroyer.destroy(target::/occupied_last)",
+            "destroyer.destroy(target::/occupied_first)",
+            "destructor.destroy(/empty)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=_DESTRUCTOR_OPERATION_DEPENDENCIES_NOT_RESOLVED,
+)
+def test_destructor_implied_position_state_completed_by_creator(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(/bundle)": [],
+        "test.create(/bundle::/occupied_first)": ["test.create(/bundle)"],
+        "test.create(/bundle::/occupied_first::/transitive)": [
+            "test.create(/bundle::/occupied_first)"
+        ],
+        "test.move(/bundle, /middle::target)": [
+            "test.create(/bundle::/occupied_first::/transitive)"
+        ],
+        "middle.create(target::/occupied_last)": [
+            "test.move(/bundle, /middle::target)"
+        ],
+        "middle.move(target, /destroyer::target)": [
+            "middle.create(target::/occupied_last)"
+        ],
+        # The final Move combines the creator-known and callee-created implied
+        # position state before the Destructor can use its occupied Requirements.
+        "destructor.move(/occupied_first, first_holder)": [
+            "middle.move(target, /destroyer::target)"
+        ],
+        "destructor.move(first_holder, /occupied_first)": [
+            "destructor.move(/occupied_first, first_holder)"
+        ],
+        "destructor.move(/occupied_first::/transitive, transitive_holder)": [
+            "destructor.move(first_holder, /occupied_first)"
+        ],
+        "destructor.move(transitive_holder, /occupied_first::/transitive)": [
+            "destructor.move(/occupied_first::/transitive, transitive_holder)"
+        ],
+        "destructor.create(/empty)": ["middle.move(target, /destroyer::target)"],
+        "destructor.destroy(/empty)": ["destructor.create(/empty)"],
+        "destructor.move(/occupied_last, last_holder)": [
+            "middle.move(target, /destroyer::target)"
+        ],
+        "destructor.move(last_holder, /occupied_last)": [
+            "destructor.move(/occupied_last, last_holder)"
+        ],
+        "destroyer.destroy(target::/occupied_last)": [
+            "destructor.move(last_holder, /occupied_last)"
+        ],
+        "destroyer.destroy(target::/occupied_first::/transitive)": [
+            "destructor.move(transitive_holder, /occupied_first::/transitive)"
+        ],
+        "destroyer.destroy(target::/occupied_first)": [
+            "destroyer.destroy(target::/occupied_first::/transitive)"
+        ],
+        "destroyer.destroy(target)": [
+            "destroyer.destroy(target::/occupied_last)",
+            "destroyer.destroy(target::/occupied_first)",
+            "destructor.destroy(/empty)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
 def test_two_destruction_facts_with_distinct_destructor_sets(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -3296,5 +3476,48 @@ def test_repeated_destructor_uses_distinct_requirement_sources(
             "destructor#2.move(holder, /marker)"
         ],
         "destroyer#2.destroy(target)": ["destroyer#2.destroy(target::/marker)#2"],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=_DESTRUCTOR_OPERATION_DEPENDENCIES_NOT_RESOLVED,
+)
+def test_caller_destroy_with_multiple_callee_and_destructor_guarantees(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(source)": [],
+        "test.create(source::/sibling)": ["test.create(source)"],
+        "test.move(source, /destroyer::parent)": ["test.create(source::/sibling)"],
+        "test.create(/destroyer::trigger_pos)": [],
+        "destroyer.create(parent::/maker::trigger_pos)": [
+            "test.move(source, /destroyer::parent)"
+        ],
+        "maker.create(first)": ["test.move(source, /destroyer::parent)"],
+        "maker.create(second)": ["test.move(source, /destroyer::parent)"],
+        "maker.destroy(first)": ["maker.create(first)"],
+        "maker.destroy(second)": ["maker.create(second)"],
+        "destruct.create(/marker)": ["test.move(source, /destroyer::parent)"],
+        "destruct.destroy(/marker)": ["destruct.create(/marker)"],
+        "destroyer.destroy(parent::/sibling)": [
+            "test.move(source, /destroyer::parent)"
+        ],
+        "destroyer.destroy(parent::/maker::trigger_pos)": [
+            "destroyer.create(parent::/maker::trigger_pos)"
+        ],
+        # The caller-only child Destroy, both callee Guarantees, and the
+        # caller-known Destructor Guarantee all precede the parent Destroy.
+        "destroyer.destroy(parent)": [
+            "destroyer.destroy(parent::/sibling)",
+            "destruct.destroy(/marker)",
+            "maker.destroy(first)",
+            "maker.destroy(second)",
+            "destroyer.destroy(parent::/maker::trigger_pos)",
+        ],
+        "destroyer.destroy(trigger_pos)": ["test.create(/destroyer::trigger_pos)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)

@@ -26,8 +26,8 @@ class Maker(literal.Action):
 @final
 class MakerGuarantees:
     def __init__(self):
-        self.guarantee_position_result: list[literal.Task] = []
-        self.guarantee_position_trigger_pos: list[literal.Task] = []
+        self.position_result = literal.Guarantee()
+        self.position_trigger_pos = literal.Guarantee()
 
 
 @final
@@ -38,7 +38,6 @@ class MakerExecution:
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
-        guarantees: MakerGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
@@ -48,13 +47,17 @@ class MakerExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = guarantees
+        self.guarantees = MakerGuarantees()
         self.destruction_connections = destruction_connections
+        self.join_for_destroy_position_trigger_pos: literal.Join
+        self.join_for_empty_rule_position_trigger_pos: literal.Join
 
     def accept_when_empty_position_result(self):
         self.create_position_result()
 
     def accept_for_empty_rule_position_trigger_pos(self):
+        if not self.join_for_empty_rule_position_trigger_pos.arrive():
+            return
         self.destroy_position_trigger_pos()
 
     def create_position_result(self):
@@ -66,9 +69,13 @@ class MakerExecution:
             "result",
             1,
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_position_result)
+        self.guarantees.position_result.publish(
+            self.scheduler,
+        )
 
     def destroy_position_trigger_pos(self):
+        if not self.join_for_destroy_position_trigger_pos.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_trigger_pos)
 
     def continue_destroy_position_trigger_pos(self):
@@ -80,4 +87,6 @@ class MakerExecution:
             "trigger_pos",
             1,
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_position_trigger_pos)
+        self.guarantees.position_trigger_pos.publish(
+            self.scheduler,
+        )

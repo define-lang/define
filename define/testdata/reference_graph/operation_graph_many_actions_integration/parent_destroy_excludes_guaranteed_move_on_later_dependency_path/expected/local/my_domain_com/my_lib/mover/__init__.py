@@ -30,9 +30,9 @@ class Mover(literal.Action):
 @final
 class MoverGuarantees:
     def __init__(self):
-        self.guarantee_position_source: list[literal.Task] = []
-        self.guarantee_position_destination: list[literal.Task] = []
-        self.guarantee_position_run: list[literal.Task] = []
+        self.position_source = literal.Guarantee()
+        self.position_destination = literal.Guarantee()
+        self.position_run = literal.Guarantee()
 
 
 @final
@@ -41,35 +41,49 @@ class MoverExecution:
         self,
         action: Mover,
         scheduler: literal.Scheduler,
-        guarantees: MoverGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = MoverGuarantees()
         self.destruction_connections = destruction_connections
         self.local_position_intermediate = literal.LocalPosition(
             "position<intermediate>",
             scheduler=self.scheduler,
         )
-        self.join_for_move_position_intermediate_to_position_destination = self.scheduler.create_join(2)
+        self.join_for_move_position_source_to_position_intermediate: literal.Join
+        self.join_for_move_position_intermediate_to_position_destination: literal.Join
+        self.join_for_destroy_position_run: literal.Join
+        self.join_for_empty_rule_position_source: literal.Join
+        self.join_when_empty_position_destination: literal.Join
+        self.join_for_empty_rule_position_run: literal.Join
 
     def accept_for_empty_rule_position_source(self):
+        if not self.join_for_empty_rule_position_source.arrive():
+            return
         self.move_position_source_to_position_intermediate()
 
     def accept_when_empty_position_destination(self):
+        if not self.join_when_empty_position_destination.arrive():
+            return
         self.move_position_intermediate_to_position_destination()
 
     def accept_for_empty_rule_position_run(self):
+        if not self.join_for_empty_rule_position_run.arrive():
+            return
         self.destroy_position_run()
 
     def move_position_source_to_position_intermediate(self):
+        if not self.join_for_move_position_source_to_position_intermediate.arrive():
+            return
         self.action.get_interface_position(
             "position<source>"
         ).move_particle_to(self.local_position_intermediate)
-        self.scheduler.submit(self.move_position_intermediate_to_position_destination)
-        self.scheduler.continue_with(self.guarantees.guarantee_position_source)
+        self.guarantees.position_source.publish(
+            self.scheduler,
+            self.move_position_intermediate_to_position_destination,
+        )
 
     def move_position_intermediate_to_position_destination(self):
         if not self.join_for_move_position_intermediate_to_position_destination.arrive():
@@ -79,13 +93,19 @@ class MoverExecution:
                 "position<destination>"
             )
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_position_destination)
+        self.guarantees.position_destination.publish(
+            self.scheduler,
+        )
 
     def destroy_position_run(self):
+        if not self.join_for_destroy_position_run.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_run)
 
     def continue_destroy_position_run(self):
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_run)
+        self.guarantees.position_run.publish(
+            self.scheduler,
+        )

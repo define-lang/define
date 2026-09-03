@@ -365,17 +365,26 @@ class _CurrentActionNestedGuarantees:
             target, saved_subtree, saved_subtree[source[-1:]]
         )
 
-    def items(self) -> action_contract.NestedGuaranteesByActionChain:
+    def items(
+        self,
+        executions: Sequence[operation_graph_model.ActionExecution],
+    ) -> action_contract.NestedGuaranteesByActionChain:
         """Return nested guarantees in triggering order."""
-        result = [
-            (action_chain, nested_guarantees)
-            for action_chain, guarantees in self._by_action_chain.items()
-            for nested_guarantees in guarantees
-        ]
-        result.sort(
-            key=lambda item: item[1].execution.trigger_operation.operation_order
+        by_execution: dict[
+            operation_graph_model.ActionExecution,
+            tuple[tuple[str, ...], action_contract.NestedGuarantees],
+        ] = {}
+        for action_chain, guarantees in self._by_action_chain.items():
+            for nested_guarantees in guarantees:
+                by_execution[nested_guarantees.execution] = (
+                    action_chain,
+                    nested_guarantees,
+                )
+        return tuple(
+            by_execution[execution]
+            for execution in executions
+            if execution in by_execution
         )
-        return tuple(result)
 
     def action_chains_with_most_recent_trigger(
         self,
@@ -1643,7 +1652,7 @@ class ParticleTracker:
         self,
     ) -> action_contract.NestedGuaranteesByActionChain:
         """Return the guarantees of actions this action triggered."""
-        return self._nested_guarantees.items()
+        return self._nested_guarantees.items(self._operation_graph_builder.executions)
 
     def _apply_pending_guarantee(self, pending_guarantee: _PendingGuarantee):
         """Apply a callee's guarantees and add one child name to nested guarantee prefixes."""

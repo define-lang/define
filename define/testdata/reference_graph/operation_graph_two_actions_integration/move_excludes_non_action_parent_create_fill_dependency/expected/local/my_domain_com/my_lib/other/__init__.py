@@ -33,7 +33,7 @@ class Other(literal.Action):
 @final
 class OtherGuarantees:
     def __init__(self):
-        self.guarantee_position_box__global_position_item__move__position_box__global_position_destination: list[literal.Task] = []
+        self.position_box__global_position_item__move__position_box__global_position_destination = literal.Guarantee()
 
 
 @final
@@ -42,17 +42,19 @@ class OtherExecution:
         self,
         action: Other,
         scheduler: literal.Scheduler,
-        guarantees: OtherGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
-        self.join_for_move_position_box__global_position_item_to_position_box__global_position_destination = self.scheduler.create_join(2)
+        self.guarantees = OtherGuarantees()
+        self.join_for_move_position_box__global_position_item_to_position_box__global_position_destination: literal.Join
+        self.join_when_empty_position_box__global_position_destination: literal.Join
 
     def accept_when_empty_position_box__global_position_item(self):
         self.create_position_box__global_position_item()
 
     def accept_when_empty_position_box__global_position_destination(self):
+        if not self.join_when_empty_position_box__global_position_destination.arrive():
+            return
         self.move_position_box__global_position_item_to_position_box__global_position_destination()
 
     def create_position_box__global_position_item(self):
@@ -77,4 +79,6 @@ class OtherExecution:
                 local.my_domain_com.my_lib.destination.Destination
             )
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_position_box__global_position_item__move__position_box__global_position_destination)
+        self.guarantees.position_box__global_position_item__move__position_box__global_position_destination.publish(
+            self.scheduler,
+        )

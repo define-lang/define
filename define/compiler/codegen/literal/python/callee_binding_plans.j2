@@ -1,0 +1,45 @@
+{% from "position_expression.j2" import position_expression %}
+{% from "join_value.j2" import join_value %}
+{% from "guarantee_consumption.j2" import configure_guarantee_consumption %}
+{% macro callee_binding_plan_body(callee_binding_plan) %}
+    {% for destruction_position in callee_binding_plan.destruction_positions %}
+        self.{{ destruction_position.member_name }} = {{ position_expression(destruction_position.position) }}
+    {% endfor %}
+    {% if callee_binding_plan.init_method_name is not none %}
+        self.{{ callee_binding_plan.action_execution_name }}.{{ callee_binding_plan.init_method_name }}()
+    {% endif %}
+    {% for assignment in callee_binding_plan.post_init_join_assignments %}
+        self
+        {%- for execution_member_name in assignment.execution_member_names -%}
+.{{ execution_member_name }}
+        {%- endfor -%}
+.{{ assignment.member_name }} = {{ join_value(assignment.dependency_count, "self.scheduler") }}
+    {% endfor %}
+    {% for consumption in callee_binding_plan.post_init_guarantee_consumptions %}
+        {% for method_name in consumption.init_method_names %}
+{{ configure_guarantee_consumption(consumption, "inits", method_name) -}}
+        {% endfor %}
+        {% for method_name in consumption.consumer_method_names %}
+{{ configure_guarantee_consumption(consumption, "consumers", method_name) -}}
+        {% endfor %}
+    {% endfor %}
+    {% if callee_binding_plan.invokes_callee_binding_hole_after_setup %}
+        self.{{ callee_binding_plan.action_execution_name }}.{{ callee_binding_plan.callee_binding_hole_method_name }}()
+    {% endif %}
+{% endmacro %}
+{% macro callee_binding_plan_methods(callee_binding_plans) %}
+    {% for callee_binding_plan in callee_binding_plans %}
+
+    def {{ callee_binding_plan.method_name }}(self):
+        {% if callee_binding_plan.requires_join_check %}
+        if not self.{{ callee_binding_plan.join_member_name }}.arrive():
+            return
+        {% endif %}
+{{ callee_binding_plan_body(callee_binding_plan) -}}
+        {% if callee_binding_plan.invocation_method_name is not none %}
+
+    def {{ callee_binding_plan.invocation_method_name }}(self):
+        self.{{ callee_binding_plan.action_execution_name }}.{{ callee_binding_plan.callee_binding_hole_method_name }}()
+        {% endif %}
+    {% endfor %}
+{% endmacro %}

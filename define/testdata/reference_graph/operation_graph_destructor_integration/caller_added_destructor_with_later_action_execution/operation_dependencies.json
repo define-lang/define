@@ -51,6 +51,28 @@
         "caller": null,
         "action_name": "test"
       },
+      "operation_name": "destroy",
+      "target": "box::/callee::run",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "operation_name": "create",
+        "target": "box::/callee::run",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
       "operation_name": "create",
       "target": "later_box",
       "occurrence": 1
@@ -75,6 +97,28 @@
         },
         "operation_name": "create",
         "target": "later_box",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "operation_name": "destroy",
+      "target": "later_box::/later::run",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "operation_name": "create",
+        "target": "later_box::/later::run",
         "occurrence": 1
       }
     ]
@@ -130,40 +174,9 @@
           "caller": null,
           "action_name": "test"
         },
-        "operation_name": "create",
-        "target": "box::/callee::run",
-        "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
         "operation_name": "move",
         "source": "carrier",
         "target": "box::/callee::target",
-        "occurrence": 1
-      }
-    ]
-  },
-  {
-    "operation": {
-      "execution": {
-        "caller": null,
-        "action_name": "test"
-      },
-      "operation_name": "destroy",
-      "target": "box::/callee::run",
-      "occurrence": 1
-    },
-    "dependencies": [
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "create",
-        "target": "box::/callee::run",
         "occurrence": 1
       }
     ]
@@ -181,6 +194,15 @@
     "dependencies": [
       {
         "execution": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "operation_name": "destroy",
+        "target": "box::/callee::run",
+        "occurrence": 1
+      },
+      {
+        "execution": {
           "caller": {
             "caller": null,
             "action_name": "test"
@@ -189,37 +211,6 @@
         },
         "operation_name": "destroy",
         "target": "target",
-        "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "destroy",
-        "target": "box::/callee::run",
-        "occurrence": 1
-      }
-    ]
-  },
-  {
-    "operation": {
-      "execution": {
-        "caller": null,
-        "action_name": "test"
-      },
-      "operation_name": "destroy",
-      "target": "later_box::/later::run",
-      "occurrence": 1
-    },
-    "dependencies": [
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "create",
-        "target": "later_box::/later::run",
         "occurrence": 1
       }
     ]
@@ -298,15 +289,6 @@
           "caller": null,
           "action_name": "test"
         },
-        "operation_name": "create",
-        "target": "later_box::/later::run",
-        "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
         "operation_name": "move",
         "source": "carrier",
         "target": "later_box::/later::target",
@@ -370,15 +352,6 @@
           "caller": null,
           "action_name": "test"
         },
-        "operation_name": "create",
-        "target": "box::/callee::run",
-        "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
         "operation_name": "move",
         "source": "carrier",
         "target": "box::/callee::target",
@@ -437,15 +410,6 @@
       "occurrence": 1
     },
     "dependencies": [
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "create",
-        "target": "later_box::/later::run",
-        "occurrence": 1
-      },
       {
         "execution": {
           "caller": null,

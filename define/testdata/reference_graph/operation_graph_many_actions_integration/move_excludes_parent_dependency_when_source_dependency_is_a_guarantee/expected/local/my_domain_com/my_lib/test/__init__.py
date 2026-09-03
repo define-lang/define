@@ -19,15 +19,15 @@ class Test(literal.EntryPoint):
         execution = TestExecution(
             self,
             scheduler,
-            TestGuarantees(),
         )
-        execution.create_global_position_box()
+        execution.accept_when_empty_global_position_box()
 
 
 @final
 class TestGuarantees:
     def __init__(self):
-        self.trigger_global_position_box__action_producer = local.my_domain_com.my_lib.producer.ProducerGuarantees()
+        self.global_position_box = literal.Guarantee()
+        self.global_position_box__global_position_destination = literal.Guarantee()
 
 
 @final
@@ -36,21 +36,38 @@ class TestExecution:
         self,
         action: Test,
         scheduler: literal.Scheduler,
-        guarantees: TestGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
-        guarantees.trigger_global_position_box__action_producer.guarantee_position_input__move__position_result.append(
-            self.move_global_position_box__action_producer__position_result_to_global_position_box__global_position_destination
-        )
-        self.execution_trigger_global_position_box__action_producer: local.my_domain_com.my_lib.producer.ProducerExecution
-        self.join_for_trigger_global_position_box__action_producer__for_empty_rule_position_input = self.scheduler.create_join(2)
+        self.guarantees = TestGuarantees()
+        self.execution_global_position_box__action_producer: local.my_domain_com.my_lib.producer.ProducerExecution
+
+    def accept_when_empty_global_position_box(self):
+        self.create_global_position_box()
 
     def create_global_position_box(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.box.Box
         ).create_particle()
+        self.execution_global_position_box__action_producer = local.my_domain_com.my_lib.producer.ProducerExecution(
+            self.action.on_particle.get_position(
+                local.my_domain_com.my_lib.box.Box
+            ).particle.get_action(
+                local.my_domain_com.my_lib.producer.Producer
+            ),
+            self.scheduler,
+        )
+        self.execution_global_position_box__action_producer.join_for_empty_rule_position_input = literal.NO_JOIN
+        self.execution_global_position_box__action_producer.join_for_move_position_input_to_position_result = literal.NO_JOIN
+        self.execution_global_position_box__action_producer.guarantees.position_input__move__position_result.consumers.append(
+            self.move_global_position_box__action_producer__position_result_to_global_position_box__global_position_destination
+        )
+        self.guarantees.global_position_box.publish(
+            self.scheduler,
+            self.create_global_position_box__action_producer__position_input,
+        )
+
+    def create_global_position_box__action_producer__position_input(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.box.Box
         ).particle.get_action(
@@ -58,17 +75,7 @@ class TestExecution:
         ).get_interface_position(
             "position<input>"
         ).create_particle()
-        self.execution_trigger_global_position_box__action_producer = local.my_domain_com.my_lib.producer.ProducerExecution(
-            self.action.on_particle.get_position(
-                local.my_domain_com.my_lib.box.Box
-            ).particle.get_action(
-                local.my_domain_com.my_lib.producer.Producer
-            ),
-            self.scheduler,
-            self.guarantees.trigger_global_position_box__action_producer,
-        )
-        self.scheduler.submit(self.trigger_global_position_box__action_producer__for_empty_rule_position_input)
-        self.trigger_global_position_box__action_producer__for_empty_rule_position_input()
+        self.execution_global_position_box__action_producer.accept_for_empty_rule_position_input()
 
     def move_global_position_box__action_producer__position_result_to_global_position_box__global_position_destination(self):
         self.action.on_particle.get_position(
@@ -84,8 +91,6 @@ class TestExecution:
                 local.my_domain_com.my_lib.destination.Destination
             )
         )
-
-    def trigger_global_position_box__action_producer__for_empty_rule_position_input(self):
-        if not self.join_for_trigger_global_position_box__action_producer__for_empty_rule_position_input.arrive():
-            return
-        self.execution_trigger_global_position_box__action_producer.accept_for_empty_rule_position_input()
+        self.guarantees.global_position_box__global_position_destination.publish(
+            self.scheduler,
+        )

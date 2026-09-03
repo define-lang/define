@@ -30,35 +30,42 @@ class Middle(literal.Action):
 
 
 @final
-class MiddleGuarantees:
-    def __init__(self):
-        self.trigger_action_inner = local.my_domain_com.my_lib.inner.InnerGuarantees()
-
-
-@final
 class MiddleExecution:
     def __init__(
         self,
         action: Middle,
         scheduler: literal.Scheduler,
-        guarantees: MiddleGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
-        self.execution_trigger_action_inner: local.my_domain_com.my_lib.inner.InnerExecution
-        self.join_for_trigger_action_inner__for_empty_rule_global_position_input = self.scheduler.create_join(3)
+        self.execution_action_inner: local.my_domain_com.my_lib.inner.InnerExecution
+        self.join_for_move_global_position_destination_to_global_position_input__global_position_marker: literal.Join
+        self.join_for_empty_rule_global_position_destination: literal.Join
+        self.join_for_empty_rule_global_position_input: literal.Join
+        self.execution_action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.inner.Inner
+            ),
+            self.scheduler,
+        )
+        self.execution_action_inner.join_for_move_global_position_input_to_global_position_destination = literal.NO_JOIN
 
     def accept_for_empty_rule_global_position_destination(self):
+        if not self.join_for_empty_rule_global_position_destination.arrive():
+            return
         self.move_global_position_destination_to_global_position_input__global_position_marker()
 
-    def accept_action_parent(self):
+    def on_action_parent_occupied(self):
         self.create_action_inner__position_trigger_pos()
 
     def accept_for_empty_rule_global_position_input(self):
-        self.trigger_action_inner__for_empty_rule_global_position_input()
+        if not self.join_for_empty_rule_global_position_input.arrive():
+            return
+        self.execution_action_inner.accept_for_empty_rule_global_position_input()
 
     def move_global_position_destination_to_global_position_input__global_position_marker(self):
+        if not self.join_for_move_global_position_destination_to_global_position_input__global_position_marker.arrive():
+            return
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.destination.Destination
         ).move_particle_to(
@@ -68,7 +75,7 @@ class MiddleExecution:
                 local.my_domain_com.my_lib.marker.Marker
             )
         )
-        self.trigger_action_inner__for_empty_rule_global_position_input()
+        self.execution_action_inner.accept_for_empty_rule_global_position_input()
 
     def create_action_inner__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -76,24 +83,8 @@ class MiddleExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.execution_trigger_action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.inner.Inner
-            ),
-            self.scheduler,
-            self.guarantees.trigger_action_inner,
-        )
-        self.scheduler.submit(self.destroy_action_inner__position_trigger_pos)
-        self.trigger_action_inner__for_empty_rule_global_position_input()
-
-    def destroy_action_inner__position_trigger_pos(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.inner.Inner
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
-
-    def trigger_action_inner__for_empty_rule_global_position_input(self):
-        if not self.join_for_trigger_action_inner__for_empty_rule_global_position_input.arrive():
-            return
-        self.execution_trigger_action_inner.accept_for_empty_rule_global_position_input()

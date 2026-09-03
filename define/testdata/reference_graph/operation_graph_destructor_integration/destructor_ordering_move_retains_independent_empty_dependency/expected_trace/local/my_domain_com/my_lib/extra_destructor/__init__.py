@@ -18,7 +18,7 @@ class ExtraDestructor(literal.Action):
 @final
 class ExtraDestructorGuarantees:
     def __init__(self):
-        self.guarantee_global_position_destination__move__global_position_origin: list[literal.Task] = []
+        self.global_position_destination__move__global_position_origin = literal.Guarantee()
 
 
 @final
@@ -29,7 +29,6 @@ class ExtraDestructorExecution:
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
-        guarantees: ExtraDestructorGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
@@ -37,12 +36,18 @@ class ExtraDestructorExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = guarantees
+        self.guarantees = ExtraDestructorGuarantees()
+        self.join_for_move_global_position_origin_to_global_position_destination: literal.Join
+        self.join_for_empty_rule_global_position_origin: literal.Join
 
     def accept_for_empty_rule_global_position_origin(self):
+        if not self.join_for_empty_rule_global_position_origin.arrive():
+            return
         self.move_global_position_origin_to_global_position_destination()
 
     def move_global_position_origin_to_global_position_destination(self):
+        if not self.join_for_move_global_position_origin_to_global_position_destination.arrive():
+            return
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.origin.Origin
         ).move_particle_to(
@@ -69,4 +74,6 @@ class ExtraDestructorExecution:
             "/origin",
             1,
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_destination__move__global_position_origin)
+        self.guarantees.global_position_destination__move__global_position_origin.publish(
+            self.scheduler,
+        )

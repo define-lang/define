@@ -18,8 +18,8 @@ class FifthDestructor(literal.Action):
 @final
 class FifthDestructorGuarantees:
     def __init__(self):
-        self.guarantee_global_position_fifth: list[literal.Task] = []
-        self.guarantee_global_position_marker: list[literal.Task] = []
+        self.global_position_fifth = literal.Guarantee()
+        self.global_position_marker = literal.Guarantee()
 
 
 @final
@@ -28,11 +28,10 @@ class FifthDestructorExecution:
         self,
         action: FifthDestructor,
         scheduler: literal.Scheduler,
-        guarantees: FifthDestructorGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = FifthDestructorGuarantees()
 
     def accept_when_empty_global_position_fifth(self):
         self.create_global_position_fifth()
@@ -47,7 +46,9 @@ class FifthDestructorExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.fifth.Fifth
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_fifth)
+        self.guarantees.global_position_fifth.publish(
+            self.scheduler,
+        )
 
     def create_global_position_marker(self):
         self.action.on_particle.get_position(
@@ -56,4 +57,6 @@ class FifthDestructorExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_marker)
+        self.guarantees.global_position_marker.publish(
+            self.scheduler,
+        )

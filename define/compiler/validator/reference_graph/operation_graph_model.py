@@ -169,13 +169,10 @@ class CallerEmptyRuleCollection:
     """The Empty Rule's Collection awaiting an earlier caller.
 
     ``collected_child_operation_positions`` are relative to the required particle.
-    ``fill_dependency_requirement_position`` identifies a Fill Dependency that
-    still awaits caller substitution.
     """
 
     requirement_position: tuple[str, ...]
     collected_child_operation_positions: frozenset[tuple[str, ...]]
-    fill_dependency_requirement_position: tuple[str, ...] | None
     collected_operation_positions: tuple[tuple[str, ...], ...]
 
 
@@ -201,9 +198,6 @@ class EmptyRuleBindingHole(CallerEmptyRuleCollection):
             collected_child_operation_positions=(
                 collection.collected_child_operation_positions
             ),
-            fill_dependency_requirement_position=(
-                collection.fill_dependency_requirement_position
-            ),
             collected_operation_positions=collection.collected_operation_positions,
             prerequisite_binding_holes=prerequisite_binding_holes,
         )
@@ -215,15 +209,6 @@ class EmptyRuleBindingInputs:
 
     concrete_caller_nodes: list[ConcreteOperationNode] = field(default_factory=list)
     caller_binding_holes: list[BindingHole] = field(default_factory=list)
-
-    def add_inputs(
-        self,
-        concrete_caller_nodes: Iterable[ConcreteOperationNode],
-        caller_binding_holes: Iterable[BindingHole],
-    ):
-        """Add caller-side values from one prerequisite binding."""
-        self.concrete_caller_nodes.extend(concrete_caller_nodes)
-        self.caller_binding_holes.extend(caller_binding_holes)
 
 
 @dataclass(frozen=True, slots=True)
@@ -240,7 +225,7 @@ class EmptyOrMoveRuleResult:
 class EmptyRuleApplicationResult:
     """The result of binding an Empty Rule Binding Hole in one caller."""
 
-    caller_nodes: list[LastOperationNode]
+    caller_nodes: list[ConcreteOperationNode]
     empty_rule_binding_hole: EmptyRuleBindingHole | None
 
 
@@ -382,8 +367,6 @@ class ActionExecution:
 
     # The action reference run by this Action Execution, from the caller's perspective.
     callee: ast.ActionReference
-    # The operation that triggered the callee.
-    trigger_operation: LastOperationNode
     # What satisfies each requirement of the callee, by the callee's own key for
     # that requirement.
     requirement_satisfactions: dict[tuple[str, ...], RequirementSatisfaction]
@@ -401,13 +384,6 @@ class ActionExecution:
         """Return the caller's chained name for the triggered action."""
         return self.callee.canonical_chained_name_tuple
 
-    @property
-    def destructor_trigger_requirement(self) -> RequirementNode | None:
-        """Return the Requirement that triggers a destructor Action Execution."""
-        if isinstance(self.trigger_operation, RequirementNode):
-            return self.trigger_operation
-        return None
-
     def caller_operation_for_callee_binding_hole(
         self,
         callee_binding_hole: ActionParentLastOperationNode | RequirementNode,
@@ -420,7 +396,6 @@ class ActionExecution:
         )
         if requirement_satisfaction is not None:
             return requirement_satisfaction.operation
-
         # Position Requirements form a chain through parent names, so this node has
         # exactly one direct dependency: the nearest parent-name requirement, or
         # the action parent's last operation when there is no parent-name
@@ -734,7 +709,7 @@ class ContributedDestruction:
 
     contribution_node: DestructionContributionNode
     operations: tuple[DestructionFragmentDestroyNode, ...]
-    completion_operations: tuple[DestructionFragmentDestroyNode, ...]
+    completion_operation: DestructionFragmentDestroyNode
 
 
 @dataclass(frozen=True, slots=True)
@@ -747,6 +722,11 @@ class ContributedDestructionFragment:
     destructor_guarantees_preceding_destroys: tuple[
         DestructionContractDestructorGuaranteePrecedingDestroy, ...
     ] = ()
+
+    def dependencies(self) -> Iterable[EmptyRuleDependencyNode]:
+        """Iterate over the contributed destructions' direct dependencies."""
+        for contributed_destruction in self.contributed_destructions:
+            yield from contributed_destruction.contribution_node.depends_on
 
 
 @dataclass(slots=True, eq=False)
@@ -765,15 +745,14 @@ class GuaranteeNode(OperationNode):
     """A position a triggered action guarantees, which the callee itself operates on.
 
     This stands in for an operation whose details live in the callee's own graph.
-    ``depends_on`` holds the operation that triggered the Action Execution; codegen resolves
-    this node to the callee's last operation on the guaranteed position when it
-    includes ``action`` for that execution. Caller operations that read the position
-    depend on this node with ordinary edges.
+    Codegen resolves this node to the callee's last operation on the guaranteed
+    position when it includes ``action`` for that execution. Caller operations
+    that read the position depend on this node with ordinary edges.
     """
 
     _is_guarantee_or_has_partial_move_rule_result: typing.ClassVar[bool] = True
 
-    depends_on: tuple[LastOperationNode, ...]
+    depends_on: tuple[()] = ()
     # The Action Execution of the action that guarantees the position.
     execution: ActionExecution
     # Action Executions to follow after ``execution`` before resolving

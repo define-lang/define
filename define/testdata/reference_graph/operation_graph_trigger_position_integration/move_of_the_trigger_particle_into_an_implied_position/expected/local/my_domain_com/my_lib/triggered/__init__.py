@@ -27,7 +27,7 @@ class Triggered(literal.Action):
 @final
 class TriggeredGuarantees:
     def __init__(self):
-        self.guarantee_position_run__move__global_position_implied: list[literal.Task] = []
+        self.position_run__move__global_position_implied = literal.Guarantee()
 
 
 @final
@@ -36,16 +36,21 @@ class TriggeredExecution:
         self,
         action: Triggered,
         scheduler: literal.Scheduler,
-        guarantees: TriggeredGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = TriggeredGuarantees()
+        self.join_for_move_position_run_to_global_position_implied: literal.Join
+        self.join_for_empty_rule_position_run: literal.Join
 
     def accept_for_empty_rule_position_run(self):
+        if not self.join_for_empty_rule_position_run.arrive():
+            return
         self.move_position_run_to_global_position_implied()
 
     def move_position_run_to_global_position_implied(self):
+        if not self.join_for_move_position_run_to_global_position_implied.arrive():
+            return
         self.action.get_interface_position(
             "position<run>"
         ).move_particle_to(
@@ -53,4 +58,6 @@ class TriggeredExecution:
                 local.my_domain_com.my_lib.implied.Implied
             )
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_position_run__move__global_position_implied)
+        self.guarantees.position_run__move__global_position_implied.publish(
+            self.scheduler,
+        )

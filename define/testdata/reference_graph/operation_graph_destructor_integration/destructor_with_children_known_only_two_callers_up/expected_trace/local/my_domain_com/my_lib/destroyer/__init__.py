@@ -27,7 +27,7 @@ class Destroyer(literal.Action):
 @final
 class DestroyerGuarantees:
     def __init__(self):
-        self.guarantee_position_run: list[literal.Task] = []
+        self.position_run = literal.Guarantee()
 
 
 @final
@@ -38,7 +38,6 @@ class DestroyerExecution:
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
-        guarantees: DestroyerGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
@@ -48,24 +47,30 @@ class DestroyerExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = guarantees
+        self.guarantees = DestroyerGuarantees()
         self.destruction_connections = destruction_connections
-        self.execution_trigger_position_run__action_destruct: local.my_domain_com.my_lib.destruct.DestructExecution
-        self.join_for_trigger_position_run__action_destruct__action_parent = self.scheduler.create_join(2)
+        self.execution_position_run__action_destruct: local.my_domain_com.my_lib.destruct.DestructExecution
+        self.join_for_destroy_position_run: literal.Join
+        self.join_for_empty_rule_position_run: literal.Join
 
     def accept_for_empty_rule_position_run(self):
+        if not self.join_for_empty_rule_position_run.arrive():
+            return
         self.destroy_position_run()
 
     def accept_when_occupied_position_run(self):
-        self.execution_trigger_position_run__action_destruct = local.my_domain_com.my_lib.destruct.DestructExecution(
+        self.execution_position_run__action_destruct.on_action_parent_occupied()
+
+    def init_when_occupied_position_run(self):
+        self.execution_position_run__action_destruct = local.my_domain_com.my_lib.destruct.DestructExecution(
             self.scheduler,
             self.trace_execution,
             "destruct",
         )
-        self.scheduler.submit(self.trigger_position_run__action_destruct__action_parent)
-        self.trigger_position_run__action_destruct__action_parent()
 
     def destroy_position_run(self):
+        if not self.join_for_destroy_position_run.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_run)
 
     def continue_destroy_position_run(self):
@@ -77,9 +82,6 @@ class DestroyerExecution:
             "run",
             1,
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_position_run)
-
-    def trigger_position_run__action_destruct__action_parent(self):
-        if not self.join_for_trigger_position_run__action_destruct__action_parent.arrive():
-            return
-        self.execution_trigger_position_run__action_destruct.accept_action_parent()
+        self.guarantees.position_run.publish(
+            self.scheduler,
+        )

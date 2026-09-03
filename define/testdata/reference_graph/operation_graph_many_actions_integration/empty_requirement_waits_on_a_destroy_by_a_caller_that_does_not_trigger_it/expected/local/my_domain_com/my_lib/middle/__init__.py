@@ -25,30 +25,27 @@ class Middle(literal.Action):
 
 
 @final
-class MiddleGuarantees:
-    def __init__(self):
-        self.trigger_action_inner = local.my_domain_com.my_lib.inner.InnerGuarantees()
-
-
-@final
 class MiddleExecution:
     def __init__(
         self,
         action: Middle,
         scheduler: literal.Scheduler,
-        guarantees: MiddleGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
-        self.execution_trigger_action_inner: local.my_domain_com.my_lib.inner.InnerExecution
-        self.join_for_trigger_action_inner__when_empty_global_position_slot = self.scheduler.create_join(2)
+        self.execution_action_inner: local.my_domain_com.my_lib.inner.InnerExecution
+        self.execution_action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.inner.Inner
+            ),
+            self.scheduler,
+        )
 
-    def accept_action_parent(self):
+    def on_action_parent_occupied(self):
         self.create_action_inner__position_trigger_pos()
 
     def accept_when_empty_global_position_slot(self):
-        self.trigger_action_inner__when_empty_global_position_slot()
+        self.execution_action_inner.accept_when_empty_global_position_slot()
 
     def create_action_inner__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -56,24 +53,8 @@ class MiddleExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.execution_trigger_action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.inner.Inner
-            ),
-            self.scheduler,
-            self.guarantees.trigger_action_inner,
-        )
-        self.scheduler.submit(self.destroy_action_inner__position_trigger_pos)
-        self.trigger_action_inner__when_empty_global_position_slot()
-
-    def destroy_action_inner__position_trigger_pos(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.inner.Inner
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
-
-    def trigger_action_inner__when_empty_global_position_slot(self):
-        if not self.join_for_trigger_action_inner__when_empty_global_position_slot.arrive():
-            return
-        self.execution_trigger_action_inner.accept_when_empty_global_position_slot()

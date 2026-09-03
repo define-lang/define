@@ -30,8 +30,8 @@ class Other(literal.Action):
 @final
 class OtherGuarantees:
     def __init__(self):
-        self.guarantee_position_scratch: list[literal.Task] = []
-        self.guarantee_position_output: list[literal.Task] = []
+        self.position_scratch = literal.Guarantee()
+        self.position_output = literal.Guarantee()
 
 
 @final
@@ -40,11 +40,10 @@ class OtherExecution:
         self,
         action: Other,
         scheduler: literal.Scheduler,
-        guarantees: OtherGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = OtherGuarantees()
 
     def accept_when_empty_position_scratch(self):
         self.create_position_scratch()
@@ -59,10 +58,14 @@ class OtherExecution:
         self.action.get_interface_position(
             "position<scratch>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_scratch)
+        self.guarantees.position_scratch.publish(
+            self.scheduler,
+        )
 
     def create_position_output(self):
         self.action.get_interface_position(
             "position<output>"
         ).create_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_output)
+        self.guarantees.position_output.publish(
+            self.scheduler,
+        )

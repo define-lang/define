@@ -27,7 +27,7 @@ class EmptyItem(literal.Action):
 @final
 class EmptyItemGuarantees:
     def __init__(self):
-        self.guarantee_global_position_item: list[literal.Task] = []
+        self.global_position_item = literal.Guarantee()
 
 
 @final
@@ -38,7 +38,6 @@ class EmptyItemExecution:
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
-        guarantees: EmptyItemGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
@@ -48,13 +47,19 @@ class EmptyItemExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = guarantees
+        self.guarantees = EmptyItemGuarantees()
         self.destruction_connections = destruction_connections
+        self.join_for_destroy_global_position_item: literal.Join
+        self.join_for_empty_rule_global_position_item: literal.Join
 
     def accept_for_empty_rule_global_position_item(self):
+        if not self.join_for_empty_rule_global_position_item.arrive():
+            return
         self.destroy_global_position_item()
 
     def destroy_global_position_item(self):
+        if not self.join_for_destroy_global_position_item.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_global_position_item)
 
     def continue_destroy_global_position_item(self):
@@ -66,4 +71,6 @@ class EmptyItemExecution:
             "/item",
             1,
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_item)
+        self.guarantees.global_position_item.publish(
+            self.scheduler,
+        )

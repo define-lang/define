@@ -1,0 +1,27 @@
+define the potential action<my.domain.com:my_lib:/other> {
+    define the position<source> {
+        it may only contain particles where {
+            it has the position</a>.
+            it has the position</b>.
+            it has the action</worker>.
+        }
+    }
+    define the position<destination> {
+        it may only contain particles where {
+            it has the position</a>.
+            it has the position</b>.
+            it has the action</worker>.
+        }
+    }
+    define the position<trigger_pos>.
+    it happens when {
+        the position<trigger_pos> has a particle.
+    } and it does {
+        create a particle in position<source>.
+        create a particle in position<source>::position</a>.
+        create a particle in position<source>::position</b>.
+        move the particle in position<source> to position<destination>.
+        create a particle in position<destination>::action</worker>::position<run>.
+        destroy the particle in position<trigger_pos>.
+    }
+}

@@ -18,15 +18,8 @@ class Test(literal.EntryPoint):
         execution = TestExecution(
             self,
             scheduler,
-            TestGuarantees(),
         )
-        execution.create_position_source()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_action_triggered = local.my_domain_com.my_lib.triggered.TriggeredGuarantees()
+        execution.on_action_parent_occupied()
 
 
 @final
@@ -35,11 +28,9 @@ class TestExecution:
         self,
         action: Test,
         scheduler: literal.Scheduler,
-        guarantees: TestGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
         self.local_position_source = literal.LocalPosition(
             "position<source>",
             constraints=(
@@ -47,8 +38,20 @@ class TestExecution:
             ),
             scheduler=self.scheduler,
         )
-        self.execution_trigger_action_triggered: local.my_domain_com.my_lib.triggered.TriggeredExecution
-        self.join_for_trigger_action_triggered__for_empty_rule_position_run__global_position_child = self.scheduler.create_join(2)
+        self.execution_action_triggered: local.my_domain_com.my_lib.triggered.TriggeredExecution
+        self.execution_action_triggered = local.my_domain_com.my_lib.triggered.TriggeredExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.triggered.Triggered
+            ),
+            self.scheduler,
+        )
+        self.execution_action_triggered.join_for_empty_rule_position_run__global_position_child = literal.NO_JOIN
+        self.execution_action_triggered.join_for_empty_rule_position_run = literal.NO_JOIN
+        self.execution_action_triggered.join_for_destroy_position_run__global_position_child = literal.NO_JOIN
+        self.execution_action_triggered.join_for_destroy_position_run = literal.NO_JOIN
+
+    def on_action_parent_occupied(self):
+        self.create_position_source()
 
     def create_position_source(self):
         self.local_position_source.create_particle()
@@ -62,21 +65,4 @@ class TestExecution:
                 "position<run>"
             )
         )
-        self.execution_trigger_action_triggered = local.my_domain_com.my_lib.triggered.TriggeredExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.triggered.Triggered
-            ),
-            self.scheduler,
-            self.guarantees.trigger_action_triggered,
-        )
-        self.scheduler.submit(self.trigger_action_triggered__for_empty_rule_position_run__global_position_child)
-        self.scheduler.submit(self.trigger_action_triggered__for_empty_rule_position_run__global_position_child)
-        self.trigger_action_triggered__for_empty_rule_position_run()
-
-    def trigger_action_triggered__for_empty_rule_position_run__global_position_child(self):
-        if not self.join_for_trigger_action_triggered__for_empty_rule_position_run__global_position_child.arrive():
-            return
-        self.execution_trigger_action_triggered.accept_for_empty_rule_position_run__global_position_child()
-
-    def trigger_action_triggered__for_empty_rule_position_run(self):
-        self.execution_trigger_action_triggered.accept_for_empty_rule_position_run()
+        self.execution_action_triggered.accept_for_empty_rule_position_run__global_position_child()

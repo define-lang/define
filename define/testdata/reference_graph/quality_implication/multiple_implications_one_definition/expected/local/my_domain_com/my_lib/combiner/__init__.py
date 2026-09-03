@@ -18,8 +18,8 @@ class Combiner(literal.Action):
 @final
 class CombinerGuarantees:
     def __init__(self):
-        self.guarantee_global_position_first_marker: list[literal.Task] = []
-        self.guarantee_global_position_second_marker: list[literal.Task] = []
+        self.global_position_first_marker = literal.Guarantee()
+        self.global_position_second_marker = literal.Guarantee()
 
 
 @final
@@ -28,11 +28,10 @@ class CombinerExecution:
         self,
         action: Combiner,
         scheduler: literal.Scheduler,
-        guarantees: CombinerGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = CombinerGuarantees()
 
     def accept_when_empty_global_position_first_marker(self):
         self.create_global_position_first_marker()
@@ -44,10 +43,14 @@ class CombinerExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.first_marker.FirstMarker
         ).create_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_first_marker)
+        self.guarantees.global_position_first_marker.publish(
+            self.scheduler,
+        )
 
     def create_global_position_second_marker(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.second_marker.SecondMarker
         ).create_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_second_marker)
+        self.guarantees.global_position_second_marker.publish(
+            self.scheduler,
+        )

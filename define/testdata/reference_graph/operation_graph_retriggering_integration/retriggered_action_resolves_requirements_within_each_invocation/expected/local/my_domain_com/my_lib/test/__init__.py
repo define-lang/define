@@ -13,16 +13,8 @@ class Test(literal.EntryPoint):
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
             scheduler,
-            TestGuarantees(),
         )
-        execution.create_position_gw()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_position_gw__action_maker = local.my_domain_com.my_lib.maker.MakerGuarantees()
-        self.trigger_position_gw__action_maker_2 = local.my_domain_com.my_lib.maker.MakerGuarantees()
+        execution.on_action_parent_occupied()
 
 
 @final
@@ -30,10 +22,8 @@ class TestExecution:
     def __init__(
         self,
         scheduler: literal.Scheduler,
-        guarantees: TestGuarantees,
     ):
         self.scheduler = scheduler
-        self.guarantees = guarantees
         self.local_position_first_result = literal.LocalPosition(
             "position<first_result>",
             scheduler=self.scheduler,
@@ -49,22 +39,35 @@ class TestExecution:
             ),
             scheduler=self.scheduler,
         )
-        guarantees.trigger_position_gw__action_maker.guarantee_position_out.append(
-            self.move_position_gw__action_maker__position_out_to_position_first_result
-        )
-        guarantees.trigger_position_gw__action_maker_2.guarantee_position_out.append(
-            self.move_position_gw__action_maker__position_out_to_position_second_result
-        )
-        self.execution_trigger_position_gw__action_maker: local.my_domain_com.my_lib.maker.MakerExecution
-        self.execution_trigger_position_gw__action_maker_2: local.my_domain_com.my_lib.maker.MakerExecution
+        self.execution_position_gw__action_maker: local.my_domain_com.my_lib.maker.MakerExecution
+        self.execution_position_gw__action_maker_2: local.my_domain_com.my_lib.maker.MakerExecution
         self.join_for_destroy_position_gw = self.scheduler.create_join(2)
-        self.join_for_trigger_position_gw__action_maker__when_empty_position_out = self.scheduler.create_join(2)
-        self.join_for_trigger_position_gw__action_maker_2__when_empty_position_out = self.scheduler.create_join(2)
+
+    def on_action_parent_occupied(self):
+        self.create_position_gw()
 
     def create_position_gw(self):
         self.local_position_gw.create_particle()
+        self.execution_position_gw__action_maker = local.my_domain_com.my_lib.maker.MakerExecution(
+            self.local_position_gw.particle.get_action(
+                local.my_domain_com.my_lib.maker.Maker
+            ),
+            self.scheduler,
+        )
+        self.execution_position_gw__action_maker.guarantees.position_out.consumers.append(
+            self.move_position_gw__action_maker__position_out_to_position_first_result
+        )
+        self.execution_position_gw__action_maker_2 = local.my_domain_com.my_lib.maker.MakerExecution(
+            self.local_position_gw.particle.get_action(
+                local.my_domain_com.my_lib.maker.Maker
+            ),
+            self.scheduler,
+        )
+        self.execution_position_gw__action_maker_2.guarantees.position_out.consumers.append(
+            self.move_position_gw__action_maker__position_out_to_position_second_result
+        )
         self.scheduler.submit(self.create_position_gw__action_maker__position_trigger_pos)
-        self.trigger_position_gw__action_maker__when_empty_position_out()
+        self.execution_position_gw__action_maker.accept_when_empty_position_out()
 
     def create_position_gw__action_maker__position_trigger_pos(self):
         self.local_position_gw.particle.get_action(
@@ -72,26 +75,6 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.execution_trigger_position_gw__action_maker = local.my_domain_com.my_lib.maker.MakerExecution(
-            self.local_position_gw.particle.get_action(
-                local.my_domain_com.my_lib.maker.Maker
-            ),
-            self.scheduler,
-            self.guarantees.trigger_position_gw__action_maker,
-        )
-        self.scheduler.submit(self.destroy_position_gw__action_maker__position_trigger_pos)
-        self.trigger_position_gw__action_maker__when_empty_position_out()
-
-    def move_position_gw__action_maker__position_out_to_position_first_result(self):
-        self.local_position_gw.particle.get_action(
-            local.my_domain_com.my_lib.maker.Maker
-        ).get_interface_position(
-            "position<out>"
-        ).move_particle_to(self.local_position_first_result)
-        self.scheduler.submit(self.destroy_position_first_result)
-        self.trigger_position_gw__action_maker_2__when_empty_position_out()
-
-    def destroy_position_gw__action_maker__position_trigger_pos(self):
         self.local_position_gw.particle.get_action(
             local.my_domain_com.my_lib.maker.Maker
         ).get_interface_position(
@@ -102,15 +85,21 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.execution_trigger_position_gw__action_maker_2 = local.my_domain_com.my_lib.maker.MakerExecution(
-            self.local_position_gw.particle.get_action(
-                local.my_domain_com.my_lib.maker.Maker
-            ),
-            self.scheduler,
-            self.guarantees.trigger_position_gw__action_maker_2,
-        )
-        self.scheduler.submit(self.destroy_position_gw__action_maker__position_trigger_pos_2)
-        self.trigger_position_gw__action_maker_2__when_empty_position_out()
+        self.local_position_gw.particle.get_action(
+            local.my_domain_com.my_lib.maker.Maker
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
+        self.destroy_position_gw()
+
+    def move_position_gw__action_maker__position_out_to_position_first_result(self):
+        self.local_position_gw.particle.get_action(
+            local.my_domain_com.my_lib.maker.Maker
+        ).get_interface_position(
+            "position<out>"
+        ).move_particle_to(self.local_position_first_result)
+        self.scheduler.submit(self.destroy_position_first_result)
+        self.execution_position_gw__action_maker_2.accept_when_empty_position_out()
 
     def move_position_gw__action_maker__position_out_to_position_second_result(self):
         self.local_position_gw.particle.get_action(
@@ -120,14 +109,6 @@ class TestExecution:
         ).move_particle_to(self.local_position_second_result)
         self.scheduler.submit(self.destroy_position_gw)
         self.destroy_position_second_result()
-
-    def destroy_position_gw__action_maker__position_trigger_pos_2(self):
-        self.local_position_gw.particle.get_action(
-            local.my_domain_com.my_lib.maker.Maker
-        ).get_interface_position(
-            "position<trigger_pos>"
-        ).destroy_particle()
-        self.destroy_position_gw()
 
     def destroy_position_gw(self):
         if not self.join_for_destroy_position_gw.arrive():
@@ -139,13 +120,3 @@ class TestExecution:
 
     def destroy_position_first_result(self):
         self.local_position_first_result.destroy_particle()
-
-    def trigger_position_gw__action_maker__when_empty_position_out(self):
-        if not self.join_for_trigger_position_gw__action_maker__when_empty_position_out.arrive():
-            return
-        self.execution_trigger_position_gw__action_maker.accept_when_empty_position_out()
-
-    def trigger_position_gw__action_maker_2__when_empty_position_out(self):
-        if not self.join_for_trigger_position_gw__action_maker_2__when_empty_position_out.arrive():
-            return
-        self.execution_trigger_position_gw__action_maker_2.accept_when_empty_position_out()

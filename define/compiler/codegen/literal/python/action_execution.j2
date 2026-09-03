@@ -1,9 +1,10 @@
 {% from "action_execution_init.j2" import action_execution_init %}
 {% from "action_fragments.j2" import action_fragment_methods %}
-{% from "triggered_action_execution.j2" import destruction_contract_destructor_methods %}
 {% from "binding_hole_fanouts.j2" import binding_hole_fanout_methods %}
-{% from "callee_binding_joins.j2" import callee_binding_join_methods %}
-{% from "trigger_for_destroyed_callee_guarantee_particle.j2" import trigger_methods_for_destroyed_callee_guarantee_particles %}
+{% from "callee_binding_plans.j2" import callee_binding_plan_methods %}
+{% from "destruction_contract_destructor.j2" import destruction_contract_destructor_methods %}
+{% from "guarantee_consumption.j2" import deferred_guarantee_registration_methods %}
+{% from "triggered_action_execution.j2" import action_execution_init_methods %}
 {% macro action_execution(action_class_name, execution) %}
 
 @final
@@ -11,7 +12,8 @@ class {{ execution.execution_class_name }}:
 {{ action_execution_init(action_class_name, execution) -}}
 {{ binding_hole_fanout_methods(execution.binding_hole_fanouts) -}}
 {{ action_fragment_methods(execution.fragments) -}}
-{{ trigger_methods_for_destroyed_callee_guarantee_particles(execution.triggers_for_destroyed_callee_guarantee_particles) -}}
-{{ callee_binding_join_methods(execution.callee_binding_joins) -}}
+{{ action_execution_init_methods(execution.action_execution_init_methods) -}}
+{{ deferred_guarantee_registration_methods(execution.deferred_guarantee_registrations) -}}
+{{ callee_binding_plan_methods(execution.callee_binding_plans) -}}
 {{ destruction_contract_destructor_methods(execution.action_executions) -}}
 {% endmacro %}

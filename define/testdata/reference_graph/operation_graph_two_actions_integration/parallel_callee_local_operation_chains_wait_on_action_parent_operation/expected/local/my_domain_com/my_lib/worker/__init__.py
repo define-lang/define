@@ -35,7 +35,7 @@ class WorkerExecution:
             scheduler=self.scheduler,
         )
 
-    def accept_action_parent(self):
+    def on_action_parent_occupied(self):
         self.scheduler.submit(self.create_position_first)
         self.create_position_second()
 

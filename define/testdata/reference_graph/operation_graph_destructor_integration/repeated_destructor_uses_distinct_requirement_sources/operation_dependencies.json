@@ -117,16 +117,6 @@
         "source": "first_source",
         "target": "/destroyer::target",
         "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "move",
-        "source": "first_source",
-        "target": "/destroyer::target",
-        "occurrence": 1
       }
     ]
   },
@@ -205,16 +195,6 @@
         "source": "first_source",
         "target": "/destroyer::target",
         "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "move",
-        "source": "first_source",
-        "target": "/destroyer::target",
-        "occurrence": 1
       }
     ]
   },
@@ -232,16 +212,6 @@
       "occurrence": 1
     },
     "dependencies": [
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "move",
-        "source": "first_source",
-        "target": "/destroyer::target",
-        "occurrence": 1
-      },
       {
         "execution": {
           "caller": null,
@@ -319,16 +289,6 @@
       "occurrence": 1
     },
     "dependencies": [
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "move",
-        "source": "second_source",
-        "target": "/destroyer::target",
-        "occurrence": 1
-      },
       {
         "execution": {
           "caller": null,
@@ -416,16 +376,6 @@
         "source": "second_source",
         "target": "/destroyer::target",
         "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "move",
-        "source": "second_source",
-        "target": "/destroyer::target",
-        "occurrence": 1
       }
     ]
   },
@@ -443,16 +393,6 @@
       "occurrence": 1
     },
     "dependencies": [
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "move",
-        "source": "second_source",
-        "target": "/destroyer::target",
-        "occurrence": 1
-      },
       {
         "execution": {
           "caller": null,

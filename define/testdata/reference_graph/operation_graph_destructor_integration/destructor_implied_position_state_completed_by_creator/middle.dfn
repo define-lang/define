@@ -1,0 +1,15 @@
+define the potential action<my.domain.com:my_lib:/middle> {
+    it also assigns the action</destroyer>.
+    define the position<target> {
+        it may only contain particles where {
+            it has the action</destructor>.
+            it has the position</occupied_last>.
+        }
+    }
+    it happens when {
+        the position<target> has a particle.
+    } and it does {
+        create a particle in position<target>::position</occupied_last>.
+        move the particle in position<target> to action</destroyer>::position<target>.
+    }
+}

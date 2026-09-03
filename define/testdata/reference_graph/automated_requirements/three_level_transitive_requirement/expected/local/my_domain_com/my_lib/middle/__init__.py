@@ -32,9 +32,8 @@ class Middle(literal.Action):
 @final
 class MiddleGuarantees:
     def __init__(self):
-        self.guarantee_position_input: list[literal.Task] = []
-        self.guarantee_position_run: list[literal.Task] = []
-        self.trigger_position_inner_holder__action_inner = local.my_domain_com.my_lib.inner.InnerGuarantees()
+        self.position_input = literal.Guarantee()
+        self.position_run = literal.Guarantee()
 
 
 @final
@@ -43,13 +42,12 @@ class MiddleExecution:
         self,
         action: Middle,
         scheduler: literal.Scheduler,
-        guarantees: MiddleGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = MiddleGuarantees()
         self.destruction_connections = destruction_connections
         self.local_position_inner_holder = literal.LocalPosition(
             "position<inner_holder>",
@@ -58,29 +56,47 @@ class MiddleExecution:
             ),
             scheduler=self.scheduler,
         )
-        guarantees.trigger_position_inner_holder__action_inner.guarantee_position_input.append(
-            self.destroy_position_inner_holder
-        )
-        guarantees.trigger_position_inner_holder__action_inner.guarantee_position_run.append(
-            self.destroy_position_inner_holder
-        )
-        self.execution_trigger_position_inner_holder__action_inner: local.my_domain_com.my_lib.inner.InnerExecution
-        self.join_for_move_position_input_to_position_inner_holder__action_inner__position_input = self.scheduler.create_join(2)
+        self.execution_position_inner_holder__action_inner: local.my_domain_com.my_lib.inner.InnerExecution
+        self.join_for_move_position_input_to_position_inner_holder__action_inner__position_input: literal.Join
+        self.join_for_destroy_position_run: literal.Join
         self.join_for_destroy_position_inner_holder = self.scheduler.create_join(2)
-        self.join_for_trigger_position_inner_holder__action_inner__for_empty_rule_position_input__global_position_data = self.scheduler.create_join(2)
-        self.join_for_trigger_position_inner_holder__action_inner__for_empty_rule_position_run = self.scheduler.create_join(2)
+        self.join_for_empty_rule_position_input: literal.Join
+        self.join_for_empty_rule_position_run: literal.Join
 
-    def accept_action_parent(self):
+    def on_action_parent_occupied(self):
         self.create_position_inner_holder()
 
     def accept_for_empty_rule_position_input(self):
+        if not self.join_for_empty_rule_position_input.arrive():
+            return
         self.move_position_input_to_position_inner_holder__action_inner__position_input()
 
     def accept_for_empty_rule_position_run(self):
+        if not self.join_for_empty_rule_position_run.arrive():
+            return
         self.destroy_position_run()
 
     def create_position_inner_holder(self):
         self.local_position_inner_holder.create_particle()
+        self.execution_position_inner_holder__action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
+            self.local_position_inner_holder.particle.get_action(
+                local.my_domain_com.my_lib.inner.Inner
+            ),
+            self.scheduler,
+            destruction_connections=self.destruction_connections,
+        )
+        self.execution_position_inner_holder__action_inner.join_for_empty_rule_position_input__global_position_data = literal.NO_JOIN
+        self.execution_position_inner_holder__action_inner.join_for_empty_rule_position_input = literal.NO_JOIN
+        self.execution_position_inner_holder__action_inner.join_for_empty_rule_position_run = literal.NO_JOIN
+        self.execution_position_inner_holder__action_inner.join_for_destroy_position_input__global_position_data = literal.NO_JOIN
+        self.execution_position_inner_holder__action_inner.join_for_destroy_position_input = literal.NO_JOIN
+        self.execution_position_inner_holder__action_inner.join_for_destroy_position_run = literal.NO_JOIN
+        self.execution_position_inner_holder__action_inner.guarantees.position_input.consumers.append(
+            self.destroy_position_inner_holder
+        )
+        self.execution_position_inner_holder__action_inner.guarantees.position_run.consumers.append(
+            self.destroy_position_inner_holder
+        )
         self.scheduler.submit(self.move_position_input_to_position_inner_holder__action_inner__position_input)
         self.create_position_inner_holder__action_inner__position_run()
 
@@ -96,8 +112,10 @@ class MiddleExecution:
                 "position<input>"
             )
         )
-        self.scheduler.submit(self.trigger_position_inner_holder__action_inner__for_empty_rule_position_input__global_position_data)
-        self.scheduler.continue_with(self.guarantees.guarantee_position_input)
+        self.guarantees.position_input.publish(
+            self.scheduler,
+            self.execution_position_inner_holder__action_inner.accept_for_empty_rule_position_input__global_position_data,
+        )
 
     def create_position_inner_holder__action_inner__position_run(self):
         self.local_position_inner_holder.particle.get_action(
@@ -105,42 +123,22 @@ class MiddleExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.execution_trigger_position_inner_holder__action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
-            self.local_position_inner_holder.particle.get_action(
-                local.my_domain_com.my_lib.inner.Inner
-            ),
-            self.scheduler,
-            self.guarantees.trigger_position_inner_holder__action_inner,
-            destruction_connections=self.destruction_connections,
-        )
-        self.scheduler.submit(self.trigger_position_inner_holder__action_inner__for_empty_rule_position_run)
-        self.scheduler.submit(self.trigger_position_inner_holder__action_inner__for_empty_rule_position_input__global_position_data)
-        self.scheduler.submit(self.trigger_position_inner_holder__action_inner__for_empty_rule_position_input)
-        self.trigger_position_inner_holder__action_inner__for_empty_rule_position_run()
+        self.execution_position_inner_holder__action_inner.accept_for_empty_rule_position_run()
 
     def destroy_position_run(self):
+        if not self.join_for_destroy_position_run.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_run)
 
     def continue_destroy_position_run(self):
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_run)
+        self.guarantees.position_run.publish(
+            self.scheduler,
+        )
 
     def destroy_position_inner_holder(self):
         if not self.join_for_destroy_position_inner_holder.arrive():
             return
         self.local_position_inner_holder.destroy_particle()
-
-    def trigger_position_inner_holder__action_inner__for_empty_rule_position_input__global_position_data(self):
-        if not self.join_for_trigger_position_inner_holder__action_inner__for_empty_rule_position_input__global_position_data.arrive():
-            return
-        self.execution_trigger_position_inner_holder__action_inner.accept_for_empty_rule_position_input__global_position_data()
-
-    def trigger_position_inner_holder__action_inner__for_empty_rule_position_input(self):
-        self.execution_trigger_position_inner_holder__action_inner.accept_for_empty_rule_position_input()
-
-    def trigger_position_inner_holder__action_inner__for_empty_rule_position_run(self):
-        if not self.join_for_trigger_position_inner_holder__action_inner__for_empty_rule_position_run.arrive():
-            return
-        self.execution_trigger_position_inner_holder__action_inner.accept_for_empty_rule_position_run()

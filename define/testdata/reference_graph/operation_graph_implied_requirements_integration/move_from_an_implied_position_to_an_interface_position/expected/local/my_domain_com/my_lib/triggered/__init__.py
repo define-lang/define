@@ -31,8 +31,8 @@ class Triggered(literal.Action):
 @final
 class TriggeredGuarantees:
     def __init__(self):
-        self.guarantee_global_position_implied__move__position_dest: list[literal.Task] = []
-        self.guarantee_position_run: list[literal.Task] = []
+        self.global_position_implied__move__position_dest = literal.Guarantee()
+        self.position_run = literal.Guarantee()
 
 
 @final
@@ -41,22 +41,31 @@ class TriggeredExecution:
         self,
         action: Triggered,
         scheduler: literal.Scheduler,
-        guarantees: TriggeredGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = TriggeredGuarantees()
         self.destruction_connections = destruction_connections
+        self.join_for_move_global_position_implied_to_position_dest: literal.Join
+        self.join_for_destroy_position_run: literal.Join
+        self.join_for_empty_rule_global_position_implied: literal.Join
+        self.join_for_empty_rule_position_run: literal.Join
 
     def accept_for_empty_rule_global_position_implied(self):
+        if not self.join_for_empty_rule_global_position_implied.arrive():
+            return
         self.move_global_position_implied_to_position_dest()
 
     def accept_for_empty_rule_position_run(self):
+        if not self.join_for_empty_rule_position_run.arrive():
+            return
         self.destroy_position_run()
 
     def move_global_position_implied_to_position_dest(self):
+        if not self.join_for_move_global_position_implied_to_position_dest.arrive():
+            return
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.implied.Implied
         ).move_particle_to(
@@ -64,13 +73,19 @@ class TriggeredExecution:
                 "position<dest>"
             )
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_implied__move__position_dest)
+        self.guarantees.global_position_implied__move__position_dest.publish(
+            self.scheduler,
+        )
 
     def destroy_position_run(self):
+        if not self.join_for_destroy_position_run.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_run)
 
     def continue_destroy_position_run(self):
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_run)
+        self.guarantees.position_run.publish(
+            self.scheduler,
+        )

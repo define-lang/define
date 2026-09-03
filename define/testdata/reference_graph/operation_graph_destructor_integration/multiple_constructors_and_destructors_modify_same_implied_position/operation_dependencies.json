@@ -33,15 +33,6 @@
         "operation_name": "create",
         "target": "box",
         "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "create",
-        "target": "box",
-        "occurrence": 1
       }
     ]
   },
@@ -70,15 +61,6 @@
         },
         "operation_name": "create",
         "target": "/marker",
-        "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "create",
-        "target": "box",
         "occurrence": 1
       }
     ]
@@ -140,15 +122,6 @@
         "source": "holder",
         "target": "/marker",
         "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "create",
-        "target": "box",
-        "occurrence": 1
       }
     ]
   },
@@ -197,15 +170,6 @@
       "occurrence": 1
     },
     "dependencies": [
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "create",
-        "target": "box",
-        "occurrence": 1
-      },
       {
         "execution": {
           "caller": {

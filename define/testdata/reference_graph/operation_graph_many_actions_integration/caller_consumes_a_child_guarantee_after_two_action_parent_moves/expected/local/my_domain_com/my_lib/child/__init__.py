@@ -27,7 +27,7 @@ class Child(literal.Action):
 @final
 class ChildGuarantees:
     def __init__(self):
-        self.guarantee_global_position_result: list[literal.Task] = []
+        self.global_position_result = literal.Guarantee()
 
 
 @final
@@ -36,11 +36,10 @@ class ChildExecution:
         self,
         action: Child,
         scheduler: literal.Scheduler,
-        guarantees: ChildGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = ChildGuarantees()
 
     def accept_when_empty_global_position_result(self):
         self.create_global_position_result()
@@ -49,4 +48,6 @@ class ChildExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.result.Result
         ).create_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_result)
+        self.guarantees.global_position_result.publish(
+            self.scheduler,
+        )

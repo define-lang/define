@@ -43,10 +43,10 @@ class Runner(literal.Action):
 @final
 class RunnerGuarantees:
     def __init__(self):
-        self.guarantee_global_position_marker: list[literal.Task] = []
-        self.guarantee_position_input_a: list[literal.Task] = []
-        self.guarantee_position_input_b: list[literal.Task] = []
-        self.guarantee_position_run: list[literal.Task] = []
+        self.global_position_marker = literal.Guarantee()
+        self.position_input_a = literal.Guarantee()
+        self.position_input_b = literal.Guarantee()
+        self.position_run = literal.Guarantee()
 
 
 @final
@@ -55,16 +55,19 @@ class RunnerExecution:
         self,
         action: Runner,
         scheduler: literal.Scheduler,
-        guarantees: RunnerGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = RunnerGuarantees()
         self.destruction_connections = destruction_connections
-        self.join_for_destroy_position_input_a = self.scheduler.create_join(2)
-        self.join_for_destroy_position_input_b = self.scheduler.create_join(2)
+        self.join_for_destroy_position_input_a: literal.Join
+        self.join_for_destroy_position_input_b: literal.Join
+        self.join_for_destroy_position_run: literal.Join
+        self.join_for_empty_rule_position_input_a: literal.Join
+        self.join_for_empty_rule_position_input_b: literal.Join
+        self.join_for_empty_rule_position_run: literal.Join
 
     def accept_when_empty_global_position_marker(self):
         self.create_global_position_marker()
@@ -76,19 +79,27 @@ class RunnerExecution:
         self.create_position_input_b__global_position_quality_b()
 
     def accept_for_empty_rule_position_input_a(self):
+        if not self.join_for_empty_rule_position_input_a.arrive():
+            return
         self.destroy_position_input_a()
 
     def accept_for_empty_rule_position_input_b(self):
+        if not self.join_for_empty_rule_position_input_b.arrive():
+            return
         self.destroy_position_input_b()
 
     def accept_for_empty_rule_position_run(self):
+        if not self.join_for_empty_rule_position_run.arrive():
+            return
         self.destroy_position_run()
 
     def create_global_position_marker(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         ).create_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_marker)
+        self.guarantees.global_position_marker.publish(
+            self.scheduler,
+        )
 
     def create_position_input_a__global_position_quality_a(self):
         self.action.get_interface_position(
@@ -126,7 +137,9 @@ class RunnerExecution:
         self.action.get_interface_position(
             "position<input_a>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_input_a)
+        self.guarantees.position_input_a.publish(
+            self.scheduler,
+        )
 
     def destroy_position_input_b__global_position_quality_b(self):
         literal.continue_destruction(self.continue_destroy_position_input_b__global_position_quality_b)
@@ -148,13 +161,19 @@ class RunnerExecution:
         self.action.get_interface_position(
             "position<input_b>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_input_b)
+        self.guarantees.position_input_b.publish(
+            self.scheduler,
+        )
 
     def destroy_position_run(self):
+        if not self.join_for_destroy_position_run.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_run)
 
     def continue_destroy_position_run(self):
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_run)
+        self.guarantees.position_run.publish(
+            self.scheduler,
+        )

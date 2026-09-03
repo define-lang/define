@@ -18,8 +18,7 @@ class Test(literal.EntryPoint):
             self,
             scheduler,
         )
-        execution.scheduler.submit(execution.create_action_other__position_trigger_pos)
-        execution.create_position_local_item()
+        execution.on_action_parent_occupied()
 
 
 @final
@@ -35,7 +34,15 @@ class TestExecution:
             "position<local_item>",
             scheduler=self.scheduler,
         )
-        self.execution_trigger_action_other: local.my_domain_com.my_lib.other.OtherExecution
+        self.execution_action_other: local.my_domain_com.my_lib.other.OtherExecution
+        self.execution_action_other = local.my_domain_com.my_lib.other.OtherExecution(
+            self.scheduler,
+        )
+
+    def on_action_parent_occupied(self):
+        self.scheduler.submit(self.create_action_other__position_trigger_pos)
+        self.scheduler.submit(self.create_position_local_item)
+        self.execution_action_other.on_action_parent_occupied()
 
     def create_action_other__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -43,22 +50,12 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.execution_trigger_action_other = local.my_domain_com.my_lib.other.OtherExecution(
-            self.scheduler,
-        )
-        self.scheduler.submit(self.destroy_action_other__position_trigger_pos)
-        self.trigger_action_other__action_parent()
-
-    def create_position_local_item(self):
-        self.local_position_local_item.create_particle()
-        self.local_position_local_item.destroy_particle()
-
-    def destroy_action_other__position_trigger_pos(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.other.Other
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
 
-    def trigger_action_other__action_parent(self):
-        self.execution_trigger_action_other.accept_action_parent()
+    def create_position_local_item(self):
+        self.local_position_local_item.create_particle()
+        self.local_position_local_item.destroy_particle()

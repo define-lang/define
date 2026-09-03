@@ -31,7 +31,7 @@ class Inner(literal.Action):
 @final
 class InnerGuarantees:
     def __init__(self):
-        self.guarantee_position_input: list[literal.Task] = []
+        self.position_input = literal.Guarantee()
 
 
 @final
@@ -40,23 +40,31 @@ class InnerExecution:
         self,
         action: Inner,
         scheduler: literal.Scheduler,
-        guarantees: InnerGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = InnerGuarantees()
         self.destruction_connections = destruction_connections
-        self.join_for_destroy_position_input = self.scheduler.create_join(2)
+        self.join_for_destroy_position_input__global_position_child: literal.Join
+        self.join_for_destroy_position_input: literal.Join
+        self.join_for_empty_rule_position_input__global_position_child: literal.Join
+        self.join_for_empty_rule_position_input: literal.Join
 
     def accept_for_empty_rule_position_input__global_position_child(self):
+        if not self.join_for_empty_rule_position_input__global_position_child.arrive():
+            return
         self.destroy_position_input__global_position_child()
 
     def accept_for_empty_rule_position_input(self):
+        if not self.join_for_empty_rule_position_input.arrive():
+            return
         self.destroy_position_input()
 
     def destroy_position_input__global_position_child(self):
+        if not self.join_for_destroy_position_input__global_position_child.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_input__global_position_child)
 
     def continue_destroy_position_input__global_position_child(self):
@@ -76,4 +84,6 @@ class InnerExecution:
         self.action.get_interface_position(
             "position<input>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_input)
+        self.guarantees.position_input.publish(
+            self.scheduler,
+        )

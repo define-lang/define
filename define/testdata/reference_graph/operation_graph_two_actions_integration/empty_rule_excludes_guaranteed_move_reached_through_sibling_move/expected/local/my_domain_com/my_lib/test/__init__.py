@@ -25,16 +25,23 @@ class Test(literal.EntryPoint):
         execution = TestExecution(
             self,
             scheduler,
-            TestGuarantees(),
         )
-        execution.scheduler.submit(execution.create_global_position_input)
-        execution.create_action_producer__position_trigger_pos()
+        execution.execution_action_producer.join_for_empty_rule_global_position_input__global_position_a = scheduler.create_join(2)
+        execution.join_when_empty_global_position_holder = literal.NO_JOIN
+        execution.join_when_empty_global_position_intermediate = literal.NO_JOIN
+        execution.join_for_move_global_position_holder_to_global_position_intermediate = scheduler.create_join(2)
+        scheduler.submit(execution.accept_when_empty_global_position_input)
+        scheduler.submit(execution.on_action_parent_occupied)
+        scheduler.submit(execution.accept_when_empty_global_position_holder)
+        execution.accept_when_empty_global_position_intermediate()
 
 
 @final
 class TestGuarantees:
     def __init__(self):
-        self.trigger_action_producer = local.my_domain_com.my_lib.producer.ProducerGuarantees()
+        self.global_position_holder = literal.Guarantee()
+        self.global_position_intermediate = literal.Guarantee()
+        self.global_position_input = literal.Guarantee()
 
 
 @final
@@ -43,16 +50,40 @@ class TestExecution:
         self,
         action: Test,
         scheduler: literal.Scheduler,
-        guarantees: TestGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
-        guarantees.trigger_action_producer.guarantee_global_position_input__global_position_a__move__global_position_holder.append(
+        self.guarantees = TestGuarantees()
+        self.execution_action_producer: local.my_domain_com.my_lib.producer.ProducerExecution
+        self.join_for_move_global_position_holder_to_global_position_intermediate: literal.Join
+        self.join_when_empty_global_position_holder: literal.Join
+        self.join_when_empty_global_position_intermediate: literal.Join
+        self.execution_action_producer = local.my_domain_com.my_lib.producer.ProducerExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.producer.Producer
+            ),
+            self.scheduler,
+        )
+        self.execution_action_producer.join_for_move_global_position_input__global_position_a_to_global_position_holder = literal.NO_JOIN
+        self.execution_action_producer.guarantees.global_position_input__global_position_a__move__global_position_holder.consumers.append(
             self.move_global_position_holder_to_global_position_intermediate
         )
-        self.execution_trigger_action_producer: local.my_domain_com.my_lib.producer.ProducerExecution
-        self.join_for_trigger_action_producer__for_empty_rule_global_position_input__global_position_a = self.scheduler.create_join(2)
+
+    def accept_when_empty_global_position_input(self):
+        self.create_global_position_input()
+
+    def on_action_parent_occupied(self):
+        self.create_action_producer__position_trigger_pos()
+
+    def accept_when_empty_global_position_holder(self):
+        if not self.join_when_empty_global_position_holder.arrive():
+            return
+        self.execution_action_producer.accept_for_empty_rule_global_position_input__global_position_a()
+
+    def accept_when_empty_global_position_intermediate(self):
+        if not self.join_when_empty_global_position_intermediate.arrive():
+            return
+        self.move_global_position_holder_to_global_position_intermediate()
 
     def create_global_position_input(self):
         self.action.on_particle.get_position(
@@ -63,7 +94,7 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.a.A
         ).create_particle()
-        self.trigger_action_producer__for_empty_rule_global_position_input__global_position_a()
+        self.execution_action_producer.accept_for_empty_rule_global_position_input__global_position_a()
 
     def create_action_producer__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -71,17 +102,15 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.execution_trigger_action_producer = local.my_domain_com.my_lib.producer.ProducerExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.producer.Producer
-            ),
-            self.scheduler,
-            self.guarantees.trigger_action_producer,
-        )
-        self.scheduler.submit(self.destroy_action_producer__position_trigger_pos)
-        self.trigger_action_producer__for_empty_rule_global_position_input__global_position_a()
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.producer.Producer
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
 
     def move_global_position_holder_to_global_position_intermediate(self):
+        if not self.join_for_move_global_position_holder_to_global_position_intermediate.arrive():
+            return
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.holder.Holder
         ).move_particle_to(
@@ -89,6 +118,12 @@ class TestExecution:
                 local.my_domain_com.my_lib.intermediate.Intermediate
             )
         )
+        self.guarantees.global_position_holder.publish(
+            self.scheduler,
+            self.move_global_position_intermediate_to_global_position_input__global_position_b,
+        )
+
+    def move_global_position_intermediate_to_global_position_input__global_position_b(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.intermediate.Intermediate
         ).move_particle_to(
@@ -98,6 +133,12 @@ class TestExecution:
                 local.my_domain_com.my_lib.b.B
             )
         )
+        self.guarantees.global_position_intermediate.publish(
+            self.scheduler,
+            self.destroy_global_position_input__global_position_b,
+        )
+
+    def destroy_global_position_input__global_position_b(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.input.Input
         ).particle.get_position(
@@ -106,15 +147,6 @@ class TestExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.input.Input
         ).destroy_particle()
-
-    def destroy_action_producer__position_trigger_pos(self):
-        self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.producer.Producer
-        ).get_interface_position(
-            "position<trigger_pos>"
-        ).destroy_particle()
-
-    def trigger_action_producer__for_empty_rule_global_position_input__global_position_a(self):
-        if not self.join_for_trigger_action_producer__for_empty_rule_global_position_input__global_position_a.arrive():
-            return
-        self.execution_trigger_action_producer.accept_for_empty_rule_global_position_input__global_position_a()
+        self.guarantees.global_position_input.publish(
+            self.scheduler,
+        )

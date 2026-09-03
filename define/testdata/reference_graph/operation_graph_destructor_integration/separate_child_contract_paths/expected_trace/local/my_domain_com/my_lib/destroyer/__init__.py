@@ -29,7 +29,7 @@ class Destroyer(literal.Action):
 @final
 class DestroyerGuarantees:
     def __init__(self):
-        self.guarantee_position_target: list[literal.Task] = []
+        self.position_target = literal.Guarantee()
 
 
 @final
@@ -40,7 +40,6 @@ class DestroyerExecution:
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
-        guarantees: DestroyerGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
@@ -50,7 +49,7 @@ class DestroyerExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = guarantees
+        self.guarantees = DestroyerGuarantees()
         self.destruction_connections = destruction_connections
         self.local_position_left_holder = literal.LocalPosition(
             "position<left_holder>",
@@ -60,18 +59,31 @@ class DestroyerExecution:
             "position<right_holder>",
             scheduler=self.scheduler,
         )
-        self.join_for_destroy_position_target = self.scheduler.create_join(3)
+        self.join_for_move_position_target__global_position_left_to_position_left_holder: literal.Join
+        self.join_for_move_position_target__global_position_right_to_position_right_holder: literal.Join
+        self.join_for_destroy_position_target: literal.Join
+        self.join_for_empty_rule_position_target__global_position_left: literal.Join
+        self.join_for_empty_rule_position_target__global_position_right: literal.Join
+        self.join_for_empty_rule_position_target: literal.Join
 
     def accept_for_empty_rule_position_target__global_position_left(self):
+        if not self.join_for_empty_rule_position_target__global_position_left.arrive():
+            return
         self.move_position_target__global_position_left_to_position_left_holder()
 
     def accept_for_empty_rule_position_target__global_position_right(self):
+        if not self.join_for_empty_rule_position_target__global_position_right.arrive():
+            return
         self.move_position_target__global_position_right_to_position_right_holder()
 
     def accept_for_empty_rule_position_target(self):
+        if not self.join_for_empty_rule_position_target.arrive():
+            return
         self.destroy_position_target()
 
     def move_position_target__global_position_left_to_position_left_holder(self):
+        if not self.join_for_move_position_target__global_position_left_to_position_left_holder.arrive():
+            return
         self.action.get_interface_position(
             "position<target>"
         ).particle.get_position(
@@ -99,6 +111,8 @@ class DestroyerExecution:
         self.destroy_position_target__global_position_left()
 
     def move_position_target__global_position_right_to_position_right_holder(self):
+        if not self.join_for_move_position_target__global_position_right_to_position_right_holder.arrive():
+            return
         self.action.get_interface_position(
             "position<target>"
         ).particle.get_position(
@@ -171,4 +185,6 @@ class DestroyerExecution:
             "target",
             1,
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_position_target)
+        self.guarantees.position_target.publish(
+            self.scheduler,
+        )

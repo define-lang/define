@@ -17,15 +17,9 @@ class Test(literal.EntryPoint):
         execution = TestExecution(
             self,
             scheduler,
-            TestGuarantees(),
         )
-        execution.create_action_outer__position_run()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_action_outer = local.my_domain_com.my_lib.outer.OuterGuarantees()
+        scheduler.submit(execution.on_action_parent_occupied)
+        execution.accept_when_empty_global_position_implied()
 
 
 @final
@@ -34,13 +28,25 @@ class TestExecution:
         self,
         action: Test,
         scheduler: literal.Scheduler,
-        guarantees: TestGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
-        self.execution_trigger_action_outer: local.my_domain_com.my_lib.outer.OuterExecution
-        self.join_for_trigger_action_outer__for_empty_rule_position_run = self.scheduler.create_join(2)
+        self.execution_action_outer: local.my_domain_com.my_lib.outer.OuterExecution
+        self.execution_action_outer = local.my_domain_com.my_lib.outer.OuterExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.outer.Outer
+            ),
+            self.scheduler,
+        )
+        self.execution_action_outer.join_for_empty_rule_position_run = literal.NO_JOIN
+        self.execution_action_outer.join_for_destroy_position_run = literal.NO_JOIN
+
+    def on_action_parent_occupied(self):
+        self.scheduler.submit(self.create_action_outer__position_run)
+        self.execution_action_outer.on_action_parent_occupied()
+
+    def accept_when_empty_global_position_implied(self):
+        self.execution_action_outer.accept_when_empty_global_position_implied()
 
     def create_action_outer__position_run(self):
         self.action.on_particle.get_action(
@@ -48,25 +54,4 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.execution_trigger_action_outer = local.my_domain_com.my_lib.outer.OuterExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.outer.Outer
-            ),
-            self.scheduler,
-            self.guarantees.trigger_action_outer,
-        )
-        self.scheduler.submit(self.trigger_action_outer__for_empty_rule_position_run)
-        self.scheduler.submit(self.trigger_action_outer__action_parent)
-        self.scheduler.submit(self.trigger_action_outer__for_empty_rule_position_run)
-        self.trigger_action_outer__when_empty_global_position_implied()
-
-    def trigger_action_outer__action_parent(self):
-        self.execution_trigger_action_outer.accept_action_parent()
-
-    def trigger_action_outer__for_empty_rule_position_run(self):
-        if not self.join_for_trigger_action_outer__for_empty_rule_position_run.arrive():
-            return
-        self.execution_trigger_action_outer.accept_for_empty_rule_position_run()
-
-    def trigger_action_outer__when_empty_global_position_implied(self):
-        self.execution_trigger_action_outer.accept_when_empty_global_position_implied()
+        self.execution_action_outer.accept_for_empty_rule_position_run()

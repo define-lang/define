@@ -27,8 +27,8 @@ class Triggered(literal.Action):
 @final
 class TriggeredGuarantees:
     def __init__(self):
-        self.guarantee_position_run: list[literal.Task] = []
-        self.guarantee_global_position_target: list[literal.Task] = []
+        self.position_run = literal.Guarantee()
+        self.global_position_target = literal.Guarantee()
 
 
 @final
@@ -37,19 +37,24 @@ class TriggeredExecution:
         self,
         action: Triggered,
         scheduler: literal.Scheduler,
-        guarantees: TriggeredGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = TriggeredGuarantees()
         self.destruction_connections = destruction_connections
+        self.join_for_move_position_run_to_global_position_target: literal.Join
+        self.join_for_empty_rule_position_run: literal.Join
 
     def accept_for_empty_rule_position_run(self):
+        if not self.join_for_empty_rule_position_run.arrive():
+            return
         self.move_position_run_to_global_position_target()
 
     def move_position_run_to_global_position_target(self):
+        if not self.join_for_move_position_run_to_global_position_target.arrive():
+            return
         self.action.get_interface_position(
             "position<run>"
         ).move_particle_to(
@@ -57,8 +62,10 @@ class TriggeredExecution:
                 local.my_domain_com.my_lib.target.Target
             )
         )
-        self.scheduler.submit(self.destroy_global_position_target)
-        self.scheduler.continue_with(self.guarantees.guarantee_position_run)
+        self.guarantees.position_run.publish(
+            self.scheduler,
+            self.destroy_global_position_target,
+        )
 
     def destroy_global_position_target(self):
         literal.continue_destruction(self.continue_destroy_global_position_target)
@@ -67,4 +74,6 @@ class TriggeredExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.target.Target
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_target)
+        self.guarantees.global_position_target.publish(
+            self.scheduler,
+        )

@@ -30,8 +30,8 @@ class Inner(literal.Action):
 @final
 class InnerGuarantees:
     def __init__(self):
-        self.guarantee_global_position_intermediate: list[literal.Task] = []
-        self.guarantee_global_position_input: list[literal.Task] = []
+        self.global_position_intermediate = literal.Guarantee()
+        self.global_position_input = literal.Guarantee()
 
 
 @final
@@ -40,27 +40,38 @@ class InnerExecution:
         self,
         action: Inner,
         scheduler: literal.Scheduler,
-        guarantees: InnerGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = InnerGuarantees()
         self.destruction_connections = destruction_connections
-        self.join_for_move_global_position_input__global_position_b_to_global_position_intermediate = self.scheduler.create_join(2)
-        self.join_for_destroy_global_position_input = self.scheduler.create_join(2)
+        self.join_for_destroy_global_position_intermediate: literal.Join
+        self.join_for_move_global_position_input__global_position_b_to_global_position_intermediate: literal.Join
+        self.join_for_destroy_global_position_input: literal.Join
+        self.join_for_empty_rule_global_position_intermediate: literal.Join
+        self.join_for_empty_rule_global_position_input__global_position_b: literal.Join
+        self.join_for_empty_rule_global_position_input: literal.Join
 
     def accept_for_empty_rule_global_position_intermediate(self):
+        if not self.join_for_empty_rule_global_position_intermediate.arrive():
+            return
         self.destroy_global_position_intermediate()
 
     def accept_for_empty_rule_global_position_input__global_position_b(self):
+        if not self.join_for_empty_rule_global_position_input__global_position_b.arrive():
+            return
         self.move_global_position_input__global_position_b_to_global_position_intermediate()
 
     def accept_for_empty_rule_global_position_input(self):
+        if not self.join_for_empty_rule_global_position_input.arrive():
+            return
         self.destroy_global_position_input()
 
     def destroy_global_position_intermediate(self):
+        if not self.join_for_destroy_global_position_intermediate.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_global_position_intermediate)
 
     def continue_destroy_global_position_intermediate(self):
@@ -81,8 +92,10 @@ class InnerExecution:
                 local.my_domain_com.my_lib.intermediate.Intermediate
             )
         )
-        self.scheduler.submit(self.destroy_global_position_input)
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_intermediate)
+        self.guarantees.global_position_intermediate.publish(
+            self.scheduler,
+            self.destroy_global_position_input,
+        )
 
     def destroy_global_position_input(self):
         if not self.join_for_destroy_global_position_input.arrive():
@@ -93,4 +106,6 @@ class InnerExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.input.Input
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_input)
+        self.guarantees.global_position_input.publish(
+            self.scheduler,
+        )

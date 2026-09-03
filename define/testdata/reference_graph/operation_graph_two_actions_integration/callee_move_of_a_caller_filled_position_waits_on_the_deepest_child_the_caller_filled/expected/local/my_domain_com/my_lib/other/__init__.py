@@ -38,7 +38,7 @@ class Other(literal.Action):
 @final
 class OtherGuarantees:
     def __init__(self):
-        self.guarantee_position_source__move__position_holder: list[literal.Task] = []
+        self.position_source__move__position_holder = literal.Guarantee()
 
 
 @final
@@ -47,16 +47,21 @@ class OtherExecution:
         self,
         action: Other,
         scheduler: literal.Scheduler,
-        guarantees: OtherGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = OtherGuarantees()
+        self.join_for_move_position_source_to_position_holder: literal.Join
+        self.join_for_empty_rule_position_source: literal.Join
 
     def accept_for_empty_rule_position_source(self):
+        if not self.join_for_empty_rule_position_source.arrive():
+            return
         self.move_position_source_to_position_holder()
 
     def move_position_source_to_position_holder(self):
+        if not self.join_for_move_position_source_to_position_holder.arrive():
+            return
         self.action.get_interface_position(
             "position<source>"
         ).move_particle_to(
@@ -64,4 +69,6 @@ class OtherExecution:
                 "position<holder>"
             )
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_position_source__move__position_holder)
+        self.guarantees.position_source__move__position_holder.publish(
+            self.scheduler,
+        )

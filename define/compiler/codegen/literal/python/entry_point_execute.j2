@@ -1,0 +1,32 @@
+{% from "join_value.j2" import join_value %}
+{% macro entry_point_execute(definition) -%}
+    {% if definition.is_entry_point %}
+
+    @override
+    def execute(self, scheduler: literal.Scheduler):
+        execution = {{ definition.execution.execution_class_name }}(
+        {% if definition.execution.needs_action %}
+            self,
+        {% endif %}
+            scheduler,
+        {% if definition.trace_operations %}
+            None,
+            "{{ definition.trace_action_name }}",
+        {% endif %}
+        )
+        {% for assignment in definition.view_point_create_join_assignments %}
+        execution
+            {%- for execution_member_name in assignment.execution_member_names -%}
+.{{ execution_member_name }}
+            {%- endfor -%}
+.{{ assignment.member_name }} = {{ join_value(assignment.dependency_count, "scheduler") }}
+        {% endfor %}
+        {% for method_name in definition.view_point_create_method_names %}
+            {% if not loop.last %}
+        scheduler.submit(execution.{{ method_name }})
+            {% else %}
+        execution.{{ method_name }}()
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+{%- endmacro %}

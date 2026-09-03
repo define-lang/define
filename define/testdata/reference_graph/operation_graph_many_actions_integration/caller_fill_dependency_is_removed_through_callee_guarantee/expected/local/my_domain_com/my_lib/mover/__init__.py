@@ -31,8 +31,7 @@ class Mover(literal.Action):
 @final
 class MoverGuarantees:
     def __init__(self):
-        self.guarantee_global_position_out__move__global_position_destination: list[literal.Task] = []
-        self.trigger_action_helper = local.my_domain_com.my_lib.helper.HelperGuarantees()
+        self.global_position_out__move__global_position_destination = literal.Guarantee()
 
 
 @final
@@ -41,25 +40,35 @@ class MoverExecution:
         self,
         action: Mover,
         scheduler: literal.Scheduler,
-        guarantees: MoverGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
-        guarantees.trigger_action_helper.guarantee_global_position_slot__move__global_position_out.append(
+        self.guarantees = MoverGuarantees()
+        self.execution_action_helper: local.my_domain_com.my_lib.helper.HelperExecution
+        self.join_for_move_global_position_out_to_global_position_destination: literal.Join
+        self.join_for_empty_rule_global_position_slot: literal.Join
+        self.join_when_empty_global_position_destination: literal.Join
+        self.execution_action_helper = local.my_domain_com.my_lib.helper.HelperExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.helper.Helper
+            ),
+            self.scheduler,
+        )
+        self.execution_action_helper.guarantees.global_position_slot__move__global_position_out.consumers.append(
             self.move_global_position_out_to_global_position_destination
         )
-        self.execution_trigger_action_helper: local.my_domain_com.my_lib.helper.HelperExecution
-        self.join_for_move_global_position_out_to_global_position_destination = self.scheduler.create_join(2)
-        self.join_for_trigger_action_helper__for_empty_rule_global_position_slot = self.scheduler.create_join(2)
 
-    def accept_action_parent(self):
+    def on_action_parent_occupied(self):
         self.create_action_helper__position_trigger_pos()
 
     def accept_for_empty_rule_global_position_slot(self):
-        self.trigger_action_helper__for_empty_rule_global_position_slot()
+        if not self.join_for_empty_rule_global_position_slot.arrive():
+            return
+        self.execution_action_helper.accept_for_empty_rule_global_position_slot()
 
     def accept_when_empty_global_position_destination(self):
+        if not self.join_when_empty_global_position_destination.arrive():
+            return
         self.move_global_position_out_to_global_position_destination()
 
     def create_action_helper__position_trigger_pos(self):
@@ -68,15 +77,11 @@ class MoverExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.execution_trigger_action_helper = local.my_domain_com.my_lib.helper.HelperExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.helper.Helper
-            ),
-            self.scheduler,
-            self.guarantees.trigger_action_helper,
-        )
-        self.scheduler.submit(self.destroy_action_helper__position_trigger_pos)
-        self.trigger_action_helper__for_empty_rule_global_position_slot()
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.helper.Helper
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
 
     def move_global_position_out_to_global_position_destination(self):
         if not self.join_for_move_global_position_out_to_global_position_destination.arrive():
@@ -88,16 +93,6 @@ class MoverExecution:
                 local.my_domain_com.my_lib.destination.Destination
             )
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_out__move__global_position_destination)
-
-    def destroy_action_helper__position_trigger_pos(self):
-        self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.helper.Helper
-        ).get_interface_position(
-            "position<trigger_pos>"
-        ).destroy_particle()
-
-    def trigger_action_helper__for_empty_rule_global_position_slot(self):
-        if not self.join_for_trigger_action_helper__for_empty_rule_global_position_slot.arrive():
-            return
-        self.execution_trigger_action_helper.accept_for_empty_rule_global_position_slot()
+        self.guarantees.global_position_out__move__global_position_destination.publish(
+            self.scheduler,
+        )

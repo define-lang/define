@@ -11,6 +11,7 @@ py_library(
     deps = [
         ":naming",
         ":template_context",
+        "//define/compiler/codegen:action_plan",
         "//define/compiler/validator/reference_graph:operation_graph_model",
     ],
 )
@@ -79,6 +80,7 @@ py_library(
         "//define/compiler/codegen:action_plan",
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/validator/reference_graph:action_contract",
+        "//define/compiler/validator/reference_graph:operation_graph_action_resolver",
         "//define/compiler/validator/reference_graph:operation_graph_model",
     ],
 )
@@ -90,7 +92,6 @@ py_test(
     deps = [
         ":action_context",
         ":action_names",
-        ":template_context",
         "//define/compiler:ast",
         "//define/compiler:conftest",
         "//define/compiler:test_helpers",
@@ -98,6 +99,7 @@ py_test(
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/reference_graph:action_contract",
+        "//define/compiler/validator/reference_graph:operation_graph_action_resolver",
         "//define/compiler/validator/reference_graph:operation_graph_model",
     ],
 )
@@ -217,6 +219,7 @@ py_library(
     visibility = ["//define/compiler/codegen:__subpackages__"],
     deps = [
         ":action_context",
+        ":action_guarantees",
         ":action_names",
         ":action_statements",
         ":naming",

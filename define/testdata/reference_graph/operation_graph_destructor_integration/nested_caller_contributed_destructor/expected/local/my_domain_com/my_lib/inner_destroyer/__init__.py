@@ -22,7 +22,7 @@ class InnerDestroyer(literal.Action):
 @final
 class InnerDestroyerGuarantees:
     def __init__(self):
-        self.guarantee_position_target: list[literal.Task] = []
+        self.position_target = literal.Guarantee()
 
 
 @final
@@ -31,23 +31,30 @@ class InnerDestroyerExecution:
         self,
         action: InnerDestroyer,
         scheduler: literal.Scheduler,
-        guarantees: InnerDestroyerGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = InnerDestroyerGuarantees()
         self.destruction_connections = destruction_connections
+        self.join_for_destroy_position_target: literal.Join
+        self.join_for_empty_rule_position_target: literal.Join
 
     def accept_for_empty_rule_position_target(self):
+        if not self.join_for_empty_rule_position_target.arrive():
+            return
         self.destroy_position_target()
 
     def destroy_position_target(self):
+        if not self.join_for_destroy_position_target.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_target)
 
     def continue_destroy_position_target(self):
         self.action.get_interface_position(
             "position<target>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_target)
+        self.guarantees.position_target.publish(
+            self.scheduler,
+        )

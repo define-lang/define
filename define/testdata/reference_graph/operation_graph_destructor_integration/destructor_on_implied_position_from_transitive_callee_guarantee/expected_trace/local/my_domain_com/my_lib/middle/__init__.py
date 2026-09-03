@@ -25,12 +25,6 @@ class Middle(literal.Action):
 
 
 @final
-class MiddleGuarantees:
-    def __init__(self):
-        self.trigger_action_inner = local.my_domain_com.my_lib.inner.InnerGuarantees()
-
-
-@final
 class MiddleExecution:
     def __init__(
         self,
@@ -38,7 +32,6 @@ class MiddleExecution:
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
-        guarantees: MiddleGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
@@ -46,15 +39,21 @@ class MiddleExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = guarantees
-        self.execution_trigger_action_inner: local.my_domain_com.my_lib.inner.InnerExecution
-        self.join_for_trigger_action_inner__when_empty_global_position_child = self.scheduler.create_join(2)
+        self.execution_action_inner: local.my_domain_com.my_lib.inner.InnerExecution
+        self.execution_action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.inner.Inner
+            ),
+            self.scheduler,
+            self.trace_execution,
+            "inner",
+        )
 
-    def accept_action_parent(self):
+    def on_action_parent_occupied(self):
         self.create_action_inner__position_run()
 
     def accept_when_empty_global_position_child(self):
-        self.trigger_action_inner__when_empty_global_position_child()
+        self.execution_action_inner.accept_when_empty_global_position_child()
 
     def create_action_inner__position_run(self):
         self.action.on_particle.get_action(
@@ -67,19 +66,6 @@ class MiddleExecution:
             "/inner::run",
             1,
         )
-        self.execution_trigger_action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.inner.Inner
-            ),
-            self.scheduler,
-            self.trace_execution,
-            "inner",
-            self.guarantees.trigger_action_inner,
-        )
-        self.scheduler.submit(self.destroy_action_inner__position_run)
-        self.trigger_action_inner__when_empty_global_position_child()
-
-    def destroy_action_inner__position_run(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.inner.Inner
         ).get_interface_position(
@@ -90,8 +76,3 @@ class MiddleExecution:
             "/inner::run",
             1,
         )
-
-    def trigger_action_inner__when_empty_global_position_child(self):
-        if not self.join_for_trigger_action_inner__when_empty_global_position_child.arrive():
-            return
-        self.execution_trigger_action_inner.accept_when_empty_global_position_child()

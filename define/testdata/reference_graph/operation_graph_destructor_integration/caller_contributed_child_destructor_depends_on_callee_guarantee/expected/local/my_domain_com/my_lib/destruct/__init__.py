@@ -18,8 +18,8 @@ class Destruct(literal.Action):
 @final
 class DestructGuarantees:
     def __init__(self):
-        self.guarantee_global_position_required: list[literal.Task] = []
-        self.guarantee_global_position_sibling: list[literal.Task] = []
+        self.global_position_required = literal.Guarantee()
+        self.global_position_sibling = literal.Guarantee()
 
 
 @final
@@ -28,11 +28,10 @@ class DestructExecution:
         self,
         action: Destruct,
         scheduler: literal.Scheduler,
-        guarantees: DestructGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = DestructGuarantees()
         self.local_position_held_result = literal.LocalPosition(
             "position<held_result>",
             scheduler=self.scheduler,
@@ -41,14 +40,24 @@ class DestructExecution:
             "position<held_sibling>",
             scheduler=self.scheduler,
         )
+        self.join_for_move_global_position_required_to_position_held_result: literal.Join
+        self.join_for_move_global_position_sibling_to_position_held_sibling: literal.Join
+        self.join_for_empty_rule_global_position_required: literal.Join
+        self.join_for_empty_rule_global_position_sibling: literal.Join
 
     def accept_for_empty_rule_global_position_required(self):
+        if not self.join_for_empty_rule_global_position_required.arrive():
+            return
         self.move_global_position_required_to_position_held_result()
 
     def accept_for_empty_rule_global_position_sibling(self):
+        if not self.join_for_empty_rule_global_position_sibling.arrive():
+            return
         self.move_global_position_sibling_to_position_held_sibling()
 
     def move_global_position_required_to_position_held_result(self):
+        if not self.join_for_move_global_position_required_to_position_held_result.arrive():
+            return
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.required.Required
         ).move_particle_to(self.local_position_held_result)
@@ -57,9 +66,13 @@ class DestructExecution:
                 local.my_domain_com.my_lib.required.Required
             )
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_required)
+        self.guarantees.global_position_required.publish(
+            self.scheduler,
+        )
 
     def move_global_position_sibling_to_position_held_sibling(self):
+        if not self.join_for_move_global_position_sibling_to_position_held_sibling.arrive():
+            return
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.sibling.Sibling
         ).move_particle_to(self.local_position_held_sibling)
@@ -68,4 +81,6 @@ class DestructExecution:
                 local.my_domain_com.my_lib.sibling.Sibling
             )
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_sibling)
+        self.guarantees.global_position_sibling.publish(
+            self.scheduler,
+        )

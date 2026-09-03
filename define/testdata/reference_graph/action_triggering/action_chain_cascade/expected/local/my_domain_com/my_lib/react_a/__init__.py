@@ -31,9 +31,8 @@ class ReactA(literal.Action):
 @final
 class ReactAGuarantees:
     def __init__(self):
-        self.guarantee_position_result: list[literal.Task] = []
-        self.guarantee_position_trigger: list[literal.Task] = []
-        self.trigger_position_result__action_final = local.my_domain_com.my_lib.final.FinalGuarantees()
+        self.position_result = literal.Guarantee()
+        self.position_trigger = literal.Guarantee()
 
 
 @final
@@ -42,33 +41,44 @@ class ReactAExecution:
         self,
         action: ReactA,
         scheduler: literal.Scheduler,
-        guarantees: ReactAGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = ReactAGuarantees()
         self.destruction_connections = destruction_connections
-        guarantees.trigger_position_result__action_final.guarantee_position_trigger.append(
-            self.destroy_position_result
-        )
-        self.execution_trigger_position_result__action_final: local.my_domain_com.my_lib.final.FinalExecution
-        self.join_for_trigger_position_result__action_final__action_parent = self.scheduler.create_join(2)
-        self.join_for_trigger_position_result__action_final__for_empty_rule_position_trigger = self.scheduler.create_join(2)
+        self.execution_position_result__action_final: local.my_domain_com.my_lib.final.FinalExecution
+        self.join_for_destroy_position_trigger: literal.Join
+        self.join_for_empty_rule_position_trigger: literal.Join
 
     def accept_when_empty_position_result(self):
         self.create_position_result()
 
     def accept_for_empty_rule_position_trigger(self):
+        if not self.join_for_empty_rule_position_trigger.arrive():
+            return
         self.destroy_position_trigger()
 
     def create_position_result(self):
         self.action.get_interface_position(
             "position<result>"
         ).create_particle()
+        self.execution_position_result__action_final = local.my_domain_com.my_lib.final.FinalExecution(
+            self.action.get_interface_position(
+                "position<result>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.final.Final
+            ),
+            self.scheduler,
+        )
+        self.execution_position_result__action_final.join_for_empty_rule_position_trigger = literal.NO_JOIN
+        self.execution_position_result__action_final.join_for_destroy_position_trigger = literal.NO_JOIN
+        self.execution_position_result__action_final.guarantees.position_trigger.consumers.append(
+            self.destroy_position_result
+        )
         self.scheduler.submit(self.create_position_result__action_final__position_trigger)
-        self.trigger_position_result__action_final__action_parent()
+        self.execution_position_result__action_final.on_action_parent_occupied()
 
     def create_position_result__action_final__position_trigger(self):
         self.action.get_interface_position(
@@ -78,40 +88,25 @@ class ReactAExecution:
         ).get_interface_position(
             "position<trigger>"
         ).create_particle()
-        self.execution_trigger_position_result__action_final = local.my_domain_com.my_lib.final.FinalExecution(
-            self.action.get_interface_position(
-                "position<result>"
-            ).particle.get_action(
-                local.my_domain_com.my_lib.final.Final
-            ),
-            self.scheduler,
-            self.guarantees.trigger_position_result__action_final,
-        )
-        self.scheduler.submit(self.trigger_position_result__action_final__for_empty_rule_position_trigger)
-        self.scheduler.submit(self.trigger_position_result__action_final__action_parent)
-        self.trigger_position_result__action_final__for_empty_rule_position_trigger()
+        self.execution_position_result__action_final.accept_for_empty_rule_position_trigger()
 
     def destroy_position_result(self):
         self.action.get_interface_position(
             "position<result>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_result)
+        self.guarantees.position_result.publish(
+            self.scheduler,
+        )
 
     def destroy_position_trigger(self):
+        if not self.join_for_destroy_position_trigger.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_trigger)
 
     def continue_destroy_position_trigger(self):
         self.action.get_interface_position(
             "position<trigger>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_trigger)
-
-    def trigger_position_result__action_final__action_parent(self):
-        if not self.join_for_trigger_position_result__action_final__action_parent.arrive():
-            return
-        self.execution_trigger_position_result__action_final.accept_action_parent()
-
-    def trigger_position_result__action_final__for_empty_rule_position_trigger(self):
-        if not self.join_for_trigger_position_result__action_final__for_empty_rule_position_trigger.arrive():
-            return
-        self.execution_trigger_position_result__action_final.accept_for_empty_rule_position_trigger()
+        self.guarantees.position_trigger.publish(
+            self.scheduler,
+        )

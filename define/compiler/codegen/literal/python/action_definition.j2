@@ -1,77 +1,54 @@
 {% from "action_execution.j2" import action_execution %}
 {% from "action_guarantees.j2" import action_guarantees %}
+{% from "entry_point_execute.j2" import entry_point_execute %}
 {% from "file_header.j2" import file_header %}
-{% macro action_base_class(role) -%}
-    {%- if role == ActionRole.ENTRY_POINT -%}
+{% macro action_base_class(is_entry_point) -%}
+    {%- if is_entry_point -%}
 literal.EntryPoint
     {%- else -%}
 literal.Action
     {%- endif -%}
 {%- endmacro %}
-{{ file_header(definition, needs_final=true, needs_override=definition.role.has_execute_method, needs_tracing=definition.execution.needs_tracing) }}
+{{ file_header(definition, needs_final=true, needs_override=definition.is_entry_point, needs_tracing=definition.execution.needs_tracing) }}
 
-class {{ definition.class_name }}({{ action_base_class(definition.role) }}):
-    {% if definition.implied_qualities %}
+class {{ definition.class_name }}({{ action_base_class(definition.is_entry_point) }}):
+{% if definition.implied_qualities %}
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        {% for class_reference in definition.implied_qualities %}
+    {% for class_reference in definition.implied_qualities %}
         {{ class_reference.module_name }}.{{ class_reference.class_name }},
-        {% endfor %}
+    {% endfor %}
     )
-    {% endif %}
-    {% if definition.interface_positions %}
+{% endif %}
+{% if definition.interface_positions %}
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
             on_particle,
             interface_positions=[
-        {% for iface in definition.interface_positions %}
-            {% if iface.constraints %}
+    {% for iface in definition.interface_positions %}
+        {% if iface.constraints %}
                 literal.LocalPosition(
                     "{{ iface.typed_name }}",
                     constraints=(
-                {% for class_reference in iface.constraints %}
+            {% for class_reference in iface.constraints %}
                         {{ class_reference.module_name }}.{{ class_reference.class_name }},
-                {% endfor %}
+            {% endfor %}
                     ),
                     scheduler=on_particle.scheduler,
                 ),
-            {% else %}
+        {% else %}
                 literal.LocalPosition(
                     "{{ iface.typed_name }}",
                     scheduler=on_particle.scheduler,
                 ),
-            {% endif %}
-        {% endfor %}
+        {% endif %}
+    {% endfor %}
             ],
         )
-    {% endif %}
-    {% if definition.role.has_execute_method %}
-
-    @override
-    def execute(self, scheduler: literal.Scheduler):
-        execution = {{ definition.execution.execution_class_name }}(
-        {% if definition.execution.needs_action %}
-            self,
-        {% endif %}
-            scheduler,
-        {% if definition.trace_operations %}
-            None,
-            "{{ definition.trace_action_name }}",
-        {% endif %}
-        {% if definition.execution.needs_guarantees %}
-            {{ definition.execution.guarantees.class_name }}(),
-        {% endif %}
-        )
-        {% for fragment_method_name in definition.execute_method_names %}
-            {% if loop.last %}
-        execution.{{ fragment_method_name }}()
-            {% else %}
-        execution.scheduler.submit(execution.{{ fragment_method_name }})
-            {% endif %}
-        {% endfor %}
-    {% endif %}
-    {% if not definition.role.has_execute_method and not definition.interface_positions and not definition.needs_classvar %}
+{% endif %}
+{{ entry_point_execute(definition) -}}
+{% if not definition.is_entry_point and not definition.interface_positions and not definition.needs_classvar %}
     pass
-    {% endif %}
+{% endif %}
 {{ action_guarantees(definition.execution.guarantees) }}
 {{ action_execution(definition.class_name, definition.execution) -}}

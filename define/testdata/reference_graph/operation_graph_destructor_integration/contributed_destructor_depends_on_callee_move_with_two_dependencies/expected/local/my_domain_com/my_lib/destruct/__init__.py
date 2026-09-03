@@ -17,7 +17,7 @@ class Destruct(literal.Action):
 @final
 class DestructGuarantees:
     def __init__(self):
-        self.guarantee_global_position_required__global_position_work: list[literal.Task] = []
+        self.global_position_required__global_position_work = literal.Guarantee()
 
 
 @final
@@ -26,11 +26,10 @@ class DestructExecution:
         self,
         action: Destruct,
         scheduler: literal.Scheduler,
-        guarantees: DestructGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = DestructGuarantees()
 
     def accept_when_empty_global_position_required__global_position_work(self):
         self.create_global_position_required__global_position_work()
@@ -46,4 +45,6 @@ class DestructExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.work.Work
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_required__global_position_work)
+        self.guarantees.global_position_required__global_position_work.publish(
+            self.scheduler,
+        )

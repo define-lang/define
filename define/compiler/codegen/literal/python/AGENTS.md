@@ -11,5 +11,6 @@ Before changing literal Python execution codegen, read
 - Pass syntax components through template contexts, not Python source fragments;
   templates should spell attribute access, qualified references, calls,
   statements, annotations, imports, and other expressions.
-- Give subtemplates and macros small, explicit APIs, and keep their control
-  statements indented to reflect the generated Python structure.
+- Give subtemplates and macros small, explicit APIs.
+- Indent Jinja statements according to their Jinja nesting, independently of the
+  indentation of the Python they emit.

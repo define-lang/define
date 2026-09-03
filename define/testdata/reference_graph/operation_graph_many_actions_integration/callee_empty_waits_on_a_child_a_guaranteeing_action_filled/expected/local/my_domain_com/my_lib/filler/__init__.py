@@ -29,7 +29,7 @@ class Filler(literal.Action):
 @final
 class FillerGuarantees:
     def __init__(self):
-        self.guarantee_global_position_parent__global_position_child__global_position_gc: list[literal.Task] = []
+        self.global_position_parent__global_position_child__global_position_gc = literal.Guarantee()
 
 
 @final
@@ -38,11 +38,10 @@ class FillerExecution:
         self,
         action: Filler,
         scheduler: literal.Scheduler,
-        guarantees: FillerGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = FillerGuarantees()
 
     def accept_when_empty_global_position_parent__global_position_child__global_position_gc(self):
         self.create_global_position_parent__global_position_child__global_position_gc()
@@ -55,4 +54,6 @@ class FillerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.gc.Gc
         ).create_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_parent__global_position_child__global_position_gc)
+        self.guarantees.global_position_parent__global_position_child__global_position_gc.publish(
+            self.scheduler,
+        )

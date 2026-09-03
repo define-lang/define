@@ -22,7 +22,7 @@ class Inner(literal.Action):
 @final
 class InnerGuarantees:
     def __init__(self):
-        self.guarantee_position_inner_run: list[literal.Task] = []
+        self.position_inner_run = literal.Guarantee()
 
 
 @final
@@ -31,28 +31,35 @@ class InnerExecution:
         self,
         action: Inner,
         scheduler: literal.Scheduler,
-        guarantees: InnerGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = InnerGuarantees()
         self.destruction_connections = destruction_connections
         self.local_position_local = literal.LocalPosition(
             "position<local>",
             scheduler=self.scheduler,
         )
+        self.join_for_move_position_inner_run_to_position_local: literal.Join
+        self.join_for_empty_rule_position_inner_run: literal.Join
 
     def accept_for_empty_rule_position_inner_run(self):
+        if not self.join_for_empty_rule_position_inner_run.arrive():
+            return
         self.move_position_inner_run_to_position_local()
 
     def move_position_inner_run_to_position_local(self):
+        if not self.join_for_move_position_inner_run_to_position_local.arrive():
+            return
         self.action.get_interface_position(
             "position<inner_run>"
         ).move_particle_to(self.local_position_local)
-        self.scheduler.submit(self.destroy_position_local)
-        self.scheduler.continue_with(self.guarantees.guarantee_position_inner_run)
+        self.guarantees.position_inner_run.publish(
+            self.scheduler,
+            self.destroy_position_local,
+        )
 
     def destroy_position_local(self):
         literal.continue_destruction(self.continue_destroy_position_local)

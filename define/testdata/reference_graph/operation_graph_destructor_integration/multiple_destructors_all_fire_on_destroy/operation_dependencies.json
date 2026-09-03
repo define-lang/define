@@ -14,28 +14,6 @@
   {
     "operation": {
       "execution": {
-        "caller": null,
-        "action_name": "test"
-      },
-      "operation_name": "destroy",
-      "target": "box",
-      "occurrence": 1
-    },
-    "dependencies": [
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "create",
-        "target": "box",
-        "occurrence": 1
-      }
-    ]
-  },
-  {
-    "operation": {
-      "execution": {
         "caller": {
           "caller": null,
           "action_name": "test"
@@ -47,15 +25,6 @@
       "occurrence": 1
     },
     "dependencies": [
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "create",
-        "target": "box",
-        "occurrence": 1
-      },
       {
         "execution": {
           "caller": null,
@@ -98,14 +67,11 @@
   {
     "operation": {
       "execution": {
-        "caller": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "action_name": "destruct_b"
+        "caller": null,
+        "action_name": "test"
       },
-      "operation_name": "create",
-      "target": "_noop",
+      "operation_name": "destroy",
+      "target": "box",
       "occurrence": 1
     },
     "dependencies": [
@@ -117,7 +83,23 @@
         "operation_name": "create",
         "target": "box",
         "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "destruct_b"
       },
+      "operation_name": "create",
+      "target": "_noop",
+      "occurrence": 1
+    },
+    "dependencies": [
       {
         "execution": {
           "caller": null,

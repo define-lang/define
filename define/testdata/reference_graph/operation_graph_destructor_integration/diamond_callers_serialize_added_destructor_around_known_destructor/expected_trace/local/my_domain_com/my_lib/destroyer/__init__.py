@@ -32,8 +32,7 @@ class Destroyer(literal.Action):
 @final
 class DestroyerGuarantees:
     def __init__(self):
-        self.guarantee_position_target: list[literal.Task] = []
-        self.trigger_position_target__action_known_destructor = local.my_domain_com.my_lib.known_destructor.KnownDestructorGuarantees()
+        self.position_target = literal.Guarantee()
 
 
 @final
@@ -44,7 +43,6 @@ class DestroyerExecution:
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
-        guarantees: DestroyerGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
@@ -54,23 +52,25 @@ class DestroyerExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = guarantees
+        self.guarantees = DestroyerGuarantees()
         self.destruction_connections = destruction_connections
-        guarantees.trigger_position_target__action_known_destructor.guarantee_global_position_marker.append(
-            self.destroy_position_target__global_position_marker
-        )
-        self.execution_trigger_position_target__action_known_destructor: local.my_domain_com.my_lib.known_destructor.KnownDestructorExecution
-        self.join_for_destroy_position_target = self.scheduler.create_join(2)
-        self.join_for_trigger_position_target__action_known_destructor__for_empty_rule_global_position_marker = self.scheduler.create_join(2)
+        self.execution_position_target__action_known_destructor: local.my_domain_com.my_lib.known_destructor.KnownDestructorExecution
+        self.join_for_destroy_position_target: literal.Join
+        self.join_for_empty_rule_position_target__global_position_marker: literal.Join
+        self.join_for_empty_rule_position_target: literal.Join
 
     def accept_for_empty_rule_position_target__global_position_marker(self):
-        self.trigger_position_target__action_known_destructor__for_empty_rule_global_position_marker()
+        if not self.join_for_empty_rule_position_target__global_position_marker.arrive():
+            return
+        self.execution_position_target__action_known_destructor.accept_for_empty_rule_global_position_marker()
 
     def accept_for_empty_rule_position_target(self):
+        if not self.join_for_empty_rule_position_target.arrive():
+            return
         self.destroy_position_target()
 
-    def accept_when_occupied_position_target(self):
-        self.execution_trigger_position_target__action_known_destructor = local.my_domain_com.my_lib.known_destructor.KnownDestructorExecution(
+    def init_position_target__action_known_destructor(self):
+        self.execution_position_target__action_known_destructor = local.my_domain_com.my_lib.known_destructor.KnownDestructorExecution(
             self.action.get_interface_position(
                 "position<target>"
             ).particle.get_action(
@@ -79,9 +79,10 @@ class DestroyerExecution:
             self.scheduler,
             self.trace_execution,
             "known_destructor",
-            self.guarantees.trigger_position_target__action_known_destructor,
         )
-        self.trigger_position_target__action_known_destructor__for_empty_rule_global_position_marker()
+        self.execution_position_target__action_known_destructor.guarantees.global_position_marker.consumers.append(
+            self.destroy_position_target__global_position_marker
+        )
 
     def destroy_position_target__global_position_marker(self):
         literal.continue_destruction(self.continue_destroy_position_target__global_position_marker)
@@ -113,9 +114,6 @@ class DestroyerExecution:
             "target",
             1,
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_position_target)
-
-    def trigger_position_target__action_known_destructor__for_empty_rule_global_position_marker(self):
-        if not self.join_for_trigger_position_target__action_known_destructor__for_empty_rule_global_position_marker.arrive():
-            return
-        self.execution_trigger_position_target__action_known_destructor.accept_for_empty_rule_global_position_marker()
+        self.guarantees.position_target.publish(
+            self.scheduler,
+        )

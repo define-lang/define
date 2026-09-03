@@ -1,0 +1,9 @@
+define the potential action<my.domain.com:my_lib:/fill_b> {
+    it also assigns the position</guaranteed_parent>.
+    define the position<trigger_pos>.
+    it happens when {
+        the position<trigger_pos> has a particle.
+    } and it does {
+        create a particle in position</guaranteed_parent>::position</child_b>.
+    }
+}

@@ -22,7 +22,7 @@ class Destroyer(literal.Action):
 @final
 class DestroyerGuarantees:
     def __init__(self):
-        self.guarantee_position_target: list[literal.Task] = []
+        self.position_target = literal.Guarantee()
 
 
 @final
@@ -33,7 +33,6 @@ class DestroyerExecution:
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
-        guarantees: DestroyerGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
@@ -43,13 +42,19 @@ class DestroyerExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = guarantees
+        self.guarantees = DestroyerGuarantees()
         self.destruction_connections = destruction_connections
+        self.join_for_destroy_position_target: literal.Join
+        self.join_for_empty_rule_position_target: literal.Join
 
     def accept_for_empty_rule_position_target(self):
+        if not self.join_for_empty_rule_position_target.arrive():
+            return
         self.destroy_position_target()
 
     def destroy_position_target(self):
+        if not self.join_for_destroy_position_target.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_target)
 
     def continue_destroy_position_target(self):
@@ -61,4 +66,6 @@ class DestroyerExecution:
             "target",
             1,
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_position_target)
+        self.guarantees.position_target.publish(
+            self.scheduler,
+        )

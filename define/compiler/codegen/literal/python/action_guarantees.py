@@ -23,14 +23,37 @@ if typing.TYPE_CHECKING:
 
 
 @dataclass(frozen=True, slots=True)
+class GeneratedGuaranteeConsumptions:
+    """Generated Guarantee consumptions grouped by their setup location."""
+
+    context_by_plan: dict[
+        action_plan.GuaranteeConsumptionPlan,
+        template_context.GuaranteeConsumptionContext,
+    ]
+    consumptions_by_action_execution: dict[
+        operation_graph_model.ActionExecution,
+        list[template_context.GuaranteeConsumptionContext],
+    ]
+    deferred_registrations: list[template_context.DeferredGuaranteeRegistrationContext]
+
+
+@dataclass(frozen=True, slots=True)
 class GeneratedGuarantees:
-    """Generated guarantee context and caller-facing interface."""
+    """Generated Guarantee template data and consumptions."""
 
     context: template_context.GuaranteesContext | None
-    interface: action_context.GuaranteeInterface | None
+    consumptions: GeneratedGuaranteeConsumptions | None
 
 
-_EMPTY_GENERATED_GUARANTEES = GeneratedGuarantees(None, None)
+@dataclass(frozen=True, slots=True)
+class _ActionExecutionGuaranteeConsumptions:
+    """Generated Guarantee consumptions associated with Action Executions."""
+
+    consumptions_by_action_execution: dict[
+        operation_graph_model.ActionExecution,
+        list[template_context.GuaranteeConsumptionContext],
+    ]
+    deferred_registrations: list[template_context.DeferredGuaranteeRegistrationContext]
 
 
 @typing.final
@@ -43,7 +66,7 @@ class ActionGuaranteesGenerator:
         converter: naming.NameConverter,
         plan: action_plan.ActionPlan,
         generated_actions: typed_name_dict.TypedNameDict[
-            ast.GlobalTypedName, action_context.GeneratedAction
+            ast.GlobalTypedName, action_context.GeneratedActionInterface
         ],
         names: action_names.ActionNames,
     ):
@@ -55,156 +78,165 @@ class ActionGuaranteesGenerator:
         self._names = names
 
     def generate(self) -> GeneratedGuarantees:
-        """Generate guarantee classes and consumer registrations."""
-        child_guarantees = self._child_guarantees()
-        if not (
-            self._plan.guarantee_publications
-            or child_guarantees
-            or self._has_guarantee_dependencies()
-        ):
-            return _EMPTY_GENERATED_GUARANTEES
-
-        class_reference = self._converter.guarantees_class_reference(
-            self._definition.typed_name
-        )
-        interface = action_context.GuaranteeInterface(
-            class_reference=class_reference,
-            child_guarantees=child_guarantees,
-            guarantee_names_by_operation=self._guarantee_names_by_operation(),
-        )
-        return GeneratedGuarantees(
-            self._guarantees_context(
-                class_reference,
-                child_guarantees,
-                self._guarantee_registrations(interface),
-            ),
-            interface,
-        )
-
-    def _has_guarantee_dependencies(self) -> bool:
-        return (
-            any(fragment.guarantee_dependencies for fragment in self._plan.fragments)
-            or any(
-                callee_binding_join.guarantee_dependencies
-                for callee_binding_join in self._plan.callee_binding_joins
+        """Generate Guarantee classes and consumptions."""
+        context = None
+        if self._names.guarantees:
+            class_reference = self._converter.guarantees_class_reference(
+                self._definition.typed_name
             )
-            or bool(self._plan.triggers_for_destroyed_callee_guarantee_particles)
-        )
+            context = template_context.GuaranteesContext(
+                class_name=class_reference.class_name,
+                guarantee_names=self._names.guarantees.values(),
+            )
+        consumptions = None
+        if self._plan.guarantee_consumption_plans:
+            consumptions = self._generated_guarantee_consumptions()
+        return GeneratedGuarantees(context, consumptions)
 
-    def _child_guarantees(
-        self,
-    ) -> dict[operation_graph_model.ActionExecution, action_context.ChildGuarantees]:
-        child_guarantees: dict[
-            operation_graph_model.ActionExecution, action_context.ChildGuarantees
+    def _generated_guarantee_consumptions(self) -> GeneratedGuaranteeConsumptions:
+        consumptions: dict[
+            action_plan.GuaranteeConsumptionPlan,
+            template_context.GuaranteeConsumptionContext,
         ] = {}
-        for planned_execution in self._plan.action_executions:
-            action_execution = planned_execution.execution
-            callee_interface = self._generated_actions[
-                action_execution.callee_action_name
-            ].guarantee_interface
-            if callee_interface is not None:
-                child_guarantees[action_execution] = action_context.ChildGuarantees(
-                    self._names.triggered_actions[action_execution].canonical_name,
-                    callee_interface,
-                )
-        return child_guarantees
-
-    def _guarantee_names_by_operation(
-        self,
-    ) -> dict[operation_graph_model.PositionOperationNode, str]:
-        names: dict[operation_graph_model.PositionOperationNode, str] = {}
-        for publication in self._plan.guarantee_publications:
-            names[publication.operation] = self._names.guarantee_publications[
-                publication
-            ]
-        return names
-
-    def _guarantees_context(
-        self,
-        class_reference: naming.ClassReference,
-        child_guarantees: dict[
-            operation_graph_model.ActionExecution, action_context.ChildGuarantees
-        ],
-        registrations: list[template_context.GuaranteeRegistrationContext],
-    ) -> template_context.GuaranteesContext:
-        return template_context.GuaranteesContext(
-            class_name=class_reference.class_name,
-            child_guarantees=[
-                template_context.ChildGuaranteesContext(
-                    name=child.member_name,
-                    class_reference=child.callee_interface.class_reference,
-                )
-                for child in child_guarantees.values()
-            ],
-            publications=[
-                self._names.guarantee_publications[publication]
-                for publication in self._plan.guarantee_publications
-            ],
-            registrations=registrations,
+        for consumption_plan in self._plan.guarantee_consumption_plans:
+            consumptions[consumption_plan] = self._consumption_context(
+                consumption_plan,
+            )
+        action_execution_consumptions = self._action_execution_consumptions(
+            consumptions
+        )
+        return GeneratedGuaranteeConsumptions(
+            consumptions,
+            action_execution_consumptions.consumptions_by_action_execution,
+            action_execution_consumptions.deferred_registrations,
         )
 
-    def _guarantee_registrations(
+    def _consumption_context(
         self,
-        interface: action_context.GuaranteeInterface,
-    ) -> list[template_context.GuaranteeRegistrationContext]:
-        registrations: list[template_context.GuaranteeRegistrationContext] = []
-        for fragment in self._plan.fragments:
-            for dependency in fragment.guarantee_dependencies:
-                child_guarantees_names, guarantee_name = (
-                    self._names_for_resolved_guarantee(interface, dependency)
-                )
-                registrations.append(
-                    template_context.GuaranteeRegistrationContext(
-                        child_guarantees_names=child_guarantees_names,
-                        guarantee_name=guarantee_name,
-                        method_name=self._names.fragments[fragment],
-                    )
-                )
-        for callee_binding_join in self._plan.callee_binding_joins:
-            for dependency in callee_binding_join.guarantee_dependencies:
-                child_guarantees_names, guarantee_name = (
-                    self._names_for_resolved_guarantee(interface, dependency)
-                )
-                registrations.append(
-                    template_context.GuaranteeRegistrationContext(
-                        child_guarantees_names=child_guarantees_names,
-                        guarantee_name=guarantee_name,
-                        method_name=self._names.callee_binding_join_method_names[
-                            callee_binding_join
-                        ],
-                    )
-                )
-        for (
-            action_execution
-        ) in self._plan.triggers_for_destroyed_callee_guarantee_particles:
-            child_guarantees_names, guarantee_name = self._names_for_resolved_guarantee(
-                interface, action_execution.guarantee_dependency
+        consumption_plan: action_plan.GuaranteeConsumptionPlan,
+    ) -> template_context.GuaranteeConsumptionContext:
+        execution_member_names, guarantee_name = self._names_for_resolved_guarantee(
+            consumption_plan.guarantee
+        )
+        init_method_names: list[str] = []
+        for execution in consumption_plan.inits.action_executions:
+            init_method_names.append(
+                self._names.action_execution_init_method_names[execution]
             )
-            registrations.append(
-                template_context.GuaranteeRegistrationContext(
-                    child_guarantees_names=child_guarantees_names,
-                    guarantee_name=guarantee_name,
-                    method_name=self._names.triggered_actions[
-                        action_execution.execution
-                    ].canonical_name,
-                )
+        init_method_names.extend(
+            self._names.callee_binding_plan_method_names(
+                consumption_plan.inits.callee_binding_plans,
             )
-        return registrations
+        )
+        return template_context.GuaranteeConsumptionContext(
+            execution_member_names,
+            guarantee_name,
+            init_method_names,
+            self._names.fanout_continuation_method_names(
+                consumption_plan.continuations,
+            ),
+        )
 
-    @staticmethod
+    def _action_execution_consumptions(
+        self,
+        consumption_context_by_plan: dict[
+            action_plan.GuaranteeConsumptionPlan,
+            template_context.GuaranteeConsumptionContext,
+        ],
+    ) -> _ActionExecutionGuaranteeConsumptions:
+        consumptions_by_action_execution: dict[
+            operation_graph_model.ActionExecution,
+            list[template_context.GuaranteeConsumptionContext],
+        ] = {}
+        deferred_registrations: list[
+            template_context.DeferredGuaranteeRegistrationContext
+        ] = []
+        for planned_execution in self._plan.action_executions.values():
+            consumptions, execution_deferred_registrations = (
+                self._consumptions_for_action_execution(
+                    planned_execution,
+                    consumption_context_by_plan,
+                )
+            )
+            deferred_registrations.extend(execution_deferred_registrations)
+            if consumptions:
+                consumptions_by_action_execution[planned_execution.execution] = (
+                    consumptions
+                )
+        return _ActionExecutionGuaranteeConsumptions(
+            consumptions_by_action_execution,
+            deferred_registrations,
+        )
+
+    def _consumptions_for_action_execution(
+        self,
+        planned_execution: action_plan.ActionExecutionPlan,
+        consumption_context_by_plan: dict[
+            action_plan.GuaranteeConsumptionPlan,
+            template_context.GuaranteeConsumptionContext,
+        ],
+    ) -> tuple[
+        list[template_context.GuaranteeConsumptionContext],
+        list[template_context.DeferredGuaranteeRegistrationContext],
+    ]:
+        consumptions: list[template_context.GuaranteeConsumptionContext] = []
+        deferred_registrations: list[
+            template_context.DeferredGuaranteeRegistrationContext
+        ] = []
+        for consumption_plan in planned_execution.guarantee_consumption_plans:
+            consumptions.append(consumption_context_by_plan[consumption_plan])
+        for deferred in planned_execution.deferred_guarantee_registrations:
+            consumption, deferred_registration = self._deferred_registration(
+                deferred,
+                consumption_context_by_plan,
+            )
+            consumptions.append(consumption)
+            deferred_registrations.append(deferred_registration)
+        return consumptions, deferred_registrations
+
+    def _deferred_registration(
+        self,
+        deferred: action_plan.DeferredGuaranteeRegistration,
+        consumption_context_by_plan: dict[
+            action_plan.GuaranteeConsumptionPlan,
+            template_context.GuaranteeConsumptionContext,
+        ],
+    ) -> tuple[
+        template_context.GuaranteeConsumptionContext,
+        template_context.DeferredGuaranteeRegistrationContext,
+    ]:
+        execution_member_names, guarantee_name = self._names_for_resolved_guarantee(
+            deferred.prerequisite_guarantee
+        )
+        method_name = self._names.deferred_guarantee_registration_method_names[deferred]
+        consumption = template_context.GuaranteeConsumptionContext(
+            execution_member_names,
+            guarantee_name,
+            [method_name],
+            [],
+        )
+        return (
+            consumption,
+            template_context.DeferredGuaranteeRegistrationContext(
+                method_name,
+                consumption_context_by_plan[deferred.consumption_plan],
+            ),
+        )
+
     def _names_for_resolved_guarantee(
-        interface: action_context.GuaranteeInterface,
+        self,
         resolved_guarantee: operation_graph.ResolvedGuarantee,
     ) -> tuple[list[str], str]:
-        current_interface = interface
-        child_guarantees_names: list[str] = []
-        for execution in resolved_guarantee.executions:
-            child_guarantees = current_interface.child_guarantees[execution]
-            child_guarantees_names.append(child_guarantees.member_name)
-            current_interface = child_guarantees.callee_interface
+        """Return names for accessing the Guarantee from this execution.
+
+        The list contains each Action Execution member leading to the callee
+        that publishes the Guarantee. The string is the Guarantee member name
+        exposed by that callee's generated interface.
+        """
+        execution_member_names, generated_callee = self._names.generated_execution_path(
+            resolved_guarantee.executions,
+        )
         return (
-            child_guarantees_names,
-            current_interface.guarantee_names_by_operation[
-                resolved_guarantee.operation
-            ],
+            execution_member_names,
+            generated_callee.guarantee_names_by_operation[resolved_guarantee.operation],
         )

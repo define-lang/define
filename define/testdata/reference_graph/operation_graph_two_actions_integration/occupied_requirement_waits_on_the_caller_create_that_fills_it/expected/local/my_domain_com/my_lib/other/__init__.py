@@ -26,7 +26,7 @@ class Other(literal.Action):
 @final
 class OtherGuarantees:
     def __init__(self):
-        self.guarantee_position_input: list[literal.Task] = []
+        self.position_input = literal.Guarantee()
 
 
 @final
@@ -35,23 +35,30 @@ class OtherExecution:
         self,
         action: Other,
         scheduler: literal.Scheduler,
-        guarantees: OtherGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = OtherGuarantees()
         self.destruction_connections = destruction_connections
+        self.join_for_destroy_position_input: literal.Join
+        self.join_for_empty_rule_position_input: literal.Join
 
     def accept_for_empty_rule_position_input(self):
+        if not self.join_for_empty_rule_position_input.arrive():
+            return
         self.destroy_position_input()
 
     def destroy_position_input(self):
+        if not self.join_for_destroy_position_input.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_input)
 
     def continue_destroy_position_input(self):
         self.action.get_interface_position(
             "position<input>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_input)
+        self.guarantees.position_input.publish(
+            self.scheduler,
+        )

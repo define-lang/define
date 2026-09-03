@@ -31,8 +31,8 @@ class Inner(literal.Action):
 @final
 class InnerGuarantees:
     def __init__(self):
-        self.guarantee_global_position_input: list[literal.Task] = []
-        self.guarantee_position_holder: list[literal.Task] = []
+        self.global_position_input = literal.Guarantee()
+        self.position_holder = literal.Guarantee()
 
 
 @final
@@ -41,19 +41,24 @@ class InnerExecution:
         self,
         action: Inner,
         scheduler: literal.Scheduler,
-        guarantees: InnerGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = InnerGuarantees()
         self.destruction_connections = destruction_connections
+        self.join_for_move_global_position_input_to_position_holder: literal.Join
+        self.join_for_empty_rule_global_position_input: literal.Join
 
     def accept_for_empty_rule_global_position_input(self):
+        if not self.join_for_empty_rule_global_position_input.arrive():
+            return
         self.move_global_position_input_to_position_holder()
 
     def move_global_position_input_to_position_holder(self):
+        if not self.join_for_move_global_position_input_to_position_holder.arrive():
+            return
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.input.Input
         ).move_particle_to(
@@ -61,8 +66,10 @@ class InnerExecution:
                 "position<holder>"
             )
         )
-        self.scheduler.submit(self.destroy_position_holder)
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_input)
+        self.guarantees.global_position_input.publish(
+            self.scheduler,
+            self.destroy_position_holder,
+        )
 
     def destroy_position_holder(self):
         literal.continue_destruction(self.continue_destroy_position_holder)
@@ -71,4 +78,6 @@ class InnerExecution:
         self.action.get_interface_position(
             "position<holder>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_holder)
+        self.guarantees.position_holder.publish(
+            self.scheduler,
+        )

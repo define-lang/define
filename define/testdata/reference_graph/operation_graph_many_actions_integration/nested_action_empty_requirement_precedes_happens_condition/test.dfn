@@ -1,0 +1,12 @@
+# /middle's position<final> is known to be empty before /runner creates the
+# local particle that has /middle. The later Worker Guarantee is the only
+# Particle Operation that the Move from position<output> must follow.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</runner>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in action</runner>::position<run>.
+        destroy the particle in action</runner>::position<run>.
+    }
+}

@@ -18,8 +18,8 @@ class Worker(literal.Action):
 @final
 class WorkerGuarantees:
     def __init__(self):
-        self.guarantee_global_position_first_interface: list[literal.Task] = []
-        self.guarantee_global_position_second_interface: list[literal.Task] = []
+        self.global_position_first_interface = literal.Guarantee()
+        self.global_position_second_interface = literal.Guarantee()
 
 
 @final
@@ -30,7 +30,6 @@ class WorkerExecution:
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
-        guarantees: WorkerGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
@@ -38,7 +37,7 @@ class WorkerExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = guarantees
+        self.guarantees = WorkerGuarantees()
 
     def accept_when_empty_global_position_first_interface(self):
         self.create_global_position_first_interface()
@@ -55,7 +54,9 @@ class WorkerExecution:
             "/first_interface",
             1,
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_first_interface)
+        self.guarantees.global_position_first_interface.publish(
+            self.scheduler,
+        )
 
     def create_global_position_second_interface(self):
         self.action.on_particle.get_position(
@@ -66,4 +67,6 @@ class WorkerExecution:
             "/second_interface",
             1,
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_second_interface)
+        self.guarantees.global_position_second_interface.publish(
+            self.scheduler,
+        )

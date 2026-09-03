@@ -14,31 +14,29 @@ class Destructor(literal.Action):
 
 
 @final
-class DestructorGuarantees:
-    def __init__(self):
-        self.trigger_action_filler = local.my_domain_com.my_lib.filler.FillerGuarantees()
-
-
-@final
 class DestructorExecution:
     def __init__(
         self,
         action: Destructor,
         scheduler: literal.Scheduler,
-        guarantees: DestructorGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
-        self.execution_trigger_action_filler: local.my_domain_com.my_lib.filler.FillerExecution
-        self.join_for_trigger_action_filler__when_empty_global_position_implied = self.scheduler.create_join(2)
-        self.join_for_trigger_action_filler__for_empty_rule_position_trigger_pos = self.scheduler.create_join(2)
+        self.execution_action_filler: local.my_domain_com.my_lib.filler.FillerExecution
+        self.execution_action_filler = local.my_domain_com.my_lib.filler.FillerExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.filler.Filler
+            ),
+            self.scheduler,
+        )
+        self.execution_action_filler.join_for_empty_rule_position_trigger_pos = literal.NO_JOIN
+        self.execution_action_filler.join_for_destroy_position_trigger_pos = literal.NO_JOIN
 
-    def accept_action_parent(self):
+    def on_action_parent_occupied(self):
         self.create_action_filler__position_trigger_pos()
 
     def accept_when_empty_global_position_implied(self):
-        self.trigger_action_filler__when_empty_global_position_implied()
+        self.execution_action_filler.accept_when_empty_global_position_implied()
 
     def create_action_filler__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -46,23 +44,4 @@ class DestructorExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.execution_trigger_action_filler = local.my_domain_com.my_lib.filler.FillerExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.filler.Filler
-            ),
-            self.scheduler,
-            self.guarantees.trigger_action_filler,
-        )
-        self.scheduler.submit(self.trigger_action_filler__for_empty_rule_position_trigger_pos)
-        self.scheduler.submit(self.trigger_action_filler__when_empty_global_position_implied)
-        self.trigger_action_filler__for_empty_rule_position_trigger_pos()
-
-    def trigger_action_filler__when_empty_global_position_implied(self):
-        if not self.join_for_trigger_action_filler__when_empty_global_position_implied.arrive():
-            return
-        self.execution_trigger_action_filler.accept_when_empty_global_position_implied()
-
-    def trigger_action_filler__for_empty_rule_position_trigger_pos(self):
-        if not self.join_for_trigger_action_filler__for_empty_rule_position_trigger_pos.arrive():
-            return
-        self.execution_trigger_action_filler.accept_for_empty_rule_position_trigger_pos()
+        self.execution_action_filler.accept_for_empty_rule_position_trigger_pos()

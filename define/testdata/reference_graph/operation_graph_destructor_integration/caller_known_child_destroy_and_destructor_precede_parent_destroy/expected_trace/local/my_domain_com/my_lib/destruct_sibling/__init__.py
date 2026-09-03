@@ -16,7 +16,7 @@ class DestructSibling(literal.Action):
 @final
 class DestructSiblingGuarantees:
     def __init__(self):
-        self.guarantee_global_position_sibling: list[literal.Task] = []
+        self.global_position_sibling = literal.Guarantee()
 
 
 @final
@@ -27,7 +27,6 @@ class DestructSiblingExecution:
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
-        guarantees: DestructSiblingGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
@@ -35,16 +34,22 @@ class DestructSiblingExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = guarantees
+        self.guarantees = DestructSiblingGuarantees()
         self.local_position_held_sibling = literal.LocalPosition(
             "position<held_sibling>",
             scheduler=self.scheduler,
         )
+        self.join_for_move_global_position_sibling_to_position_held_sibling: literal.Join
+        self.join_for_empty_rule_global_position_sibling: literal.Join
 
     def accept_for_empty_rule_global_position_sibling(self):
+        if not self.join_for_empty_rule_global_position_sibling.arrive():
+            return
         self.move_global_position_sibling_to_position_held_sibling()
 
     def move_global_position_sibling_to_position_held_sibling(self):
+        if not self.join_for_move_global_position_sibling_to_position_held_sibling.arrive():
+            return
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.sibling.Sibling
         ).move_particle_to(self.local_position_held_sibling)
@@ -65,4 +70,6 @@ class DestructSiblingExecution:
             "/sibling",
             1,
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_sibling)
+        self.guarantees.global_position_sibling.publish(
+            self.scheduler,
+        )

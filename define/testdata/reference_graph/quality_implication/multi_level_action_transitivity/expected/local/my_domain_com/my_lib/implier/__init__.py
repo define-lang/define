@@ -14,31 +14,29 @@ class Implier(literal.Action):
 
 
 @final
-class ImplierGuarantees:
-    def __init__(self):
-        self.trigger_action_implied = local.my_domain_com.my_lib.implied.ImpliedGuarantees()
-
-
-@final
 class ImplierExecution:
     def __init__(
         self,
         action: Implier,
         scheduler: literal.Scheduler,
-        guarantees: ImplierGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
-        self.execution_trigger_action_implied: local.my_domain_com.my_lib.implied.ImpliedExecution
-        self.join_for_trigger_action_implied__when_empty_global_position_transitive_implied = self.scheduler.create_join(2)
-        self.join_for_trigger_action_implied__for_empty_rule_position_run = self.scheduler.create_join(2)
+        self.execution_action_implied: local.my_domain_com.my_lib.implied.ImpliedExecution
+        self.execution_action_implied = local.my_domain_com.my_lib.implied.ImpliedExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.implied.Implied
+            ),
+            self.scheduler,
+        )
+        self.execution_action_implied.join_for_empty_rule_position_run = literal.NO_JOIN
+        self.execution_action_implied.join_for_destroy_position_run = literal.NO_JOIN
 
-    def accept_action_parent(self):
+    def on_action_parent_occupied(self):
         self.create_action_implied__position_run()
 
     def accept_when_empty_global_position_transitive_implied(self):
-        self.trigger_action_implied__when_empty_global_position_transitive_implied()
+        self.execution_action_implied.accept_when_empty_global_position_transitive_implied()
 
     def create_action_implied__position_run(self):
         self.action.on_particle.get_action(
@@ -46,23 +44,4 @@ class ImplierExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.execution_trigger_action_implied = local.my_domain_com.my_lib.implied.ImpliedExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.implied.Implied
-            ),
-            self.scheduler,
-            self.guarantees.trigger_action_implied,
-        )
-        self.scheduler.submit(self.trigger_action_implied__for_empty_rule_position_run)
-        self.scheduler.submit(self.trigger_action_implied__when_empty_global_position_transitive_implied)
-        self.trigger_action_implied__for_empty_rule_position_run()
-
-    def trigger_action_implied__when_empty_global_position_transitive_implied(self):
-        if not self.join_for_trigger_action_implied__when_empty_global_position_transitive_implied.arrive():
-            return
-        self.execution_trigger_action_implied.accept_when_empty_global_position_transitive_implied()
-
-    def trigger_action_implied__for_empty_rule_position_run(self):
-        if not self.join_for_trigger_action_implied__for_empty_rule_position_run.arrive():
-            return
-        self.execution_trigger_action_implied.accept_for_empty_rule_position_run()
+        self.execution_action_implied.accept_for_empty_rule_position_run()

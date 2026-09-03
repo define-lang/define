@@ -51,6 +51,50 @@
         "caller": null,
         "action_name": "test"
       },
+      "operation_name": "create",
+      "target": "first::/child",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "operation_name": "create",
+        "target": "first",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "operation_name": "destroy",
+      "target": "first::/child",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "operation_name": "create",
+        "target": "first::/child",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
       "operation_name": "move",
       "source": "first",
       "target": "/destroyer::run",
@@ -62,8 +106,8 @@
           "caller": null,
           "action_name": "test"
         },
-        "operation_name": "create",
-        "target": "first",
+        "operation_name": "destroy",
+        "target": "first::/child",
         "occurrence": 1
       }
     ]
@@ -83,16 +127,6 @@
       "occurrence": 1
     },
     "dependencies": [
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "move",
-        "source": "first",
-        "target": "/destroyer::run",
-        "occurrence": 1
-      },
       {
         "execution": {
           "caller": null,
@@ -205,16 +239,6 @@
         },
         "operation_name": "destroy",
         "target": "/target",
-        "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "move",
-        "source": "second",
-        "target": "/destroyer::run",
         "occurrence": 1
       }
     ]

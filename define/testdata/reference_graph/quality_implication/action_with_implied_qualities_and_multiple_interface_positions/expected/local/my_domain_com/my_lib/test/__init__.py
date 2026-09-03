@@ -17,17 +17,9 @@ class Test(literal.EntryPoint):
         execution = TestExecution(
             self,
             scheduler,
-            TestGuarantees(),
         )
-        execution.scheduler.submit(execution.create_action_runner__position_input_a)
-        execution.scheduler.submit(execution.create_action_runner__position_input_b)
-        execution.create_action_runner__position_run()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_action_runner = local.my_domain_com.my_lib.runner.RunnerGuarantees()
+        scheduler.submit(execution.on_action_parent_occupied)
+        execution.accept_when_empty_global_position_marker()
 
 
 @final
@@ -36,15 +28,30 @@ class TestExecution:
         self,
         action: Test,
         scheduler: literal.Scheduler,
-        guarantees: TestGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
-        self.execution_trigger_action_runner: local.my_domain_com.my_lib.runner.RunnerExecution
-        self.join_for_trigger_action_runner__when_empty_position_input_a__global_position_quality_a = self.scheduler.create_join(2)
-        self.join_for_trigger_action_runner__when_empty_position_input_b__global_position_quality_b = self.scheduler.create_join(2)
-        self.join_for_trigger_action_runner__for_empty_rule_position_run = self.scheduler.create_join(2)
+        self.execution_action_runner: local.my_domain_com.my_lib.runner.RunnerExecution
+        self.execution_action_runner = local.my_domain_com.my_lib.runner.RunnerExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.runner.Runner
+            ),
+            self.scheduler,
+        )
+        self.execution_action_runner.join_for_empty_rule_position_input_a = literal.NO_JOIN
+        self.execution_action_runner.join_for_empty_rule_position_input_b = literal.NO_JOIN
+        self.execution_action_runner.join_for_empty_rule_position_run = literal.NO_JOIN
+        self.execution_action_runner.join_for_destroy_position_input_a = literal.NO_JOIN
+        self.execution_action_runner.join_for_destroy_position_input_b = literal.NO_JOIN
+        self.execution_action_runner.join_for_destroy_position_run = literal.NO_JOIN
+
+    def on_action_parent_occupied(self):
+        self.scheduler.submit(self.create_action_runner__position_input_a)
+        self.scheduler.submit(self.create_action_runner__position_input_b)
+        self.create_action_runner__position_run()
+
+    def accept_when_empty_global_position_marker(self):
+        self.execution_action_runner.accept_when_empty_global_position_marker()
 
     def create_action_runner__position_input_a(self):
         self.action.on_particle.get_action(
@@ -52,7 +59,7 @@ class TestExecution:
         ).get_interface_position(
             "position<input_a>"
         ).create_particle()
-        self.trigger_action_runner__when_empty_position_input_a__global_position_quality_a()
+        self.execution_action_runner.accept_when_empty_position_input_a__global_position_quality_a()
 
     def create_action_runner__position_input_b(self):
         self.action.on_particle.get_action(
@@ -60,7 +67,7 @@ class TestExecution:
         ).get_interface_position(
             "position<input_b>"
         ).create_particle()
-        self.trigger_action_runner__when_empty_position_input_b__global_position_quality_b()
+        self.execution_action_runner.accept_when_empty_position_input_b__global_position_quality_b()
 
     def create_action_runner__position_run(self):
         self.action.on_particle.get_action(
@@ -68,41 +75,4 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.execution_trigger_action_runner = local.my_domain_com.my_lib.runner.RunnerExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.runner.Runner
-            ),
-            self.scheduler,
-            self.guarantees.trigger_action_runner,
-        )
-        self.scheduler.submit(self.trigger_action_runner__for_empty_rule_position_run)
-        self.scheduler.submit(self.trigger_action_runner__when_empty_global_position_marker)
-        self.scheduler.submit(self.trigger_action_runner__when_empty_position_input_a__global_position_quality_a)
-        self.scheduler.submit(self.trigger_action_runner__when_empty_position_input_b__global_position_quality_b)
-        self.scheduler.submit(self.trigger_action_runner__for_empty_rule_position_input_a)
-        self.scheduler.submit(self.trigger_action_runner__for_empty_rule_position_input_b)
-        self.trigger_action_runner__for_empty_rule_position_run()
-
-    def trigger_action_runner__when_empty_global_position_marker(self):
-        self.execution_trigger_action_runner.accept_when_empty_global_position_marker()
-
-    def trigger_action_runner__when_empty_position_input_a__global_position_quality_a(self):
-        if not self.join_for_trigger_action_runner__when_empty_position_input_a__global_position_quality_a.arrive():
-            return
-        self.execution_trigger_action_runner.accept_when_empty_position_input_a__global_position_quality_a()
-
-    def trigger_action_runner__when_empty_position_input_b__global_position_quality_b(self):
-        if not self.join_for_trigger_action_runner__when_empty_position_input_b__global_position_quality_b.arrive():
-            return
-        self.execution_trigger_action_runner.accept_when_empty_position_input_b__global_position_quality_b()
-
-    def trigger_action_runner__for_empty_rule_position_input_a(self):
-        self.execution_trigger_action_runner.accept_for_empty_rule_position_input_a()
-
-    def trigger_action_runner__for_empty_rule_position_input_b(self):
-        self.execution_trigger_action_runner.accept_for_empty_rule_position_input_b()
-
-    def trigger_action_runner__for_empty_rule_position_run(self):
-        if not self.join_for_trigger_action_runner__for_empty_rule_position_run.arrive():
-            return
-        self.execution_trigger_action_runner.accept_for_empty_rule_position_run()
+        self.execution_action_runner.accept_for_empty_rule_position_run()

@@ -18,28 +18,6 @@
         "action_name": "test"
       },
       "operation_name": "create",
-      "target": "box::/marker_a",
-      "occurrence": 1
-    },
-    "dependencies": [
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "create",
-        "target": "box",
-        "occurrence": 1
-      }
-    ]
-  },
-  {
-    "operation": {
-      "execution": {
-        "caller": null,
-        "action_name": "test"
-      },
-      "operation_name": "create",
       "target": "box::/marker_b",
       "occurrence": 1
     },
@@ -70,15 +48,6 @@
       "occurrence": 1
     },
     "dependencies": [
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "create",
-        "target": "box",
-        "occurrence": 1
-      },
       {
         "execution": {
           "caller": null,
@@ -149,6 +118,28 @@
   {
     "operation": {
       "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "operation_name": "create",
+      "target": "box::/marker_a",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "operation_name": "create",
+        "target": "box",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
         "caller": {
           "caller": null,
           "action_name": "test"
@@ -168,15 +159,6 @@
         },
         "operation_name": "create",
         "target": "box::/marker_a",
-        "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "create",
-        "target": "box",
         "occurrence": 1
       }
     ]

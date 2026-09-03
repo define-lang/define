@@ -34,9 +34,9 @@ class Brew(literal.Action):
 @final
 class BrewGuarantees:
     def __init__(self):
-        self.guarantee_position_cup: list[literal.Task] = []
-        self.guarantee_position_water: list[literal.Task] = []
-        self.guarantee_position_grounds__move__position_spent_puck: list[literal.Task] = []
+        self.position_cup = literal.Guarantee()
+        self.position_water = literal.Guarantee()
+        self.position_grounds__move__position_spent_puck = literal.Guarantee()
 
 
 @final
@@ -45,40 +45,55 @@ class BrewExecution:
         self,
         action: Brew,
         scheduler: literal.Scheduler,
-        guarantees: BrewGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = BrewGuarantees()
         self.destruction_connections = destruction_connections
+        self.join_for_destroy_position_water: literal.Join
+        self.join_for_move_position_grounds_to_position_spent_puck: literal.Join
+        self.join_for_empty_rule_position_water: literal.Join
+        self.join_for_empty_rule_position_grounds: literal.Join
 
     def accept_when_empty_position_cup(self):
         self.create_position_cup()
 
     def accept_for_empty_rule_position_water(self):
+        if not self.join_for_empty_rule_position_water.arrive():
+            return
         self.destroy_position_water()
 
     def accept_for_empty_rule_position_grounds(self):
+        if not self.join_for_empty_rule_position_grounds.arrive():
+            return
         self.move_position_grounds_to_position_spent_puck()
 
     def create_position_cup(self):
         self.action.get_interface_position(
             "position<cup>"
         ).create_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_cup)
+        self.guarantees.position_cup.publish(
+            self.scheduler,
+        )
 
     def destroy_position_water(self):
+        if not self.join_for_destroy_position_water.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_water)
 
     def continue_destroy_position_water(self):
         self.action.get_interface_position(
             "position<water>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_water)
+        self.guarantees.position_water.publish(
+            self.scheduler,
+        )
 
     def move_position_grounds_to_position_spent_puck(self):
+        if not self.join_for_move_position_grounds_to_position_spent_puck.arrive():
+            return
         self.action.get_interface_position(
             "position<grounds>"
         ).move_particle_to(
@@ -86,4 +101,6 @@ class BrewExecution:
                 "position<spent_puck>"
             )
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_position_grounds__move__position_spent_puck)
+        self.guarantees.position_grounds__move__position_spent_puck.publish(
+            self.scheduler,
+        )

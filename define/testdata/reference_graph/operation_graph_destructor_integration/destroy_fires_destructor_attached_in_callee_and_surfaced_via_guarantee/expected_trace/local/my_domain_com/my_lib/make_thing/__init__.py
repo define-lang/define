@@ -28,7 +28,7 @@ class MakeThing(literal.Action):
 @final
 class MakeThingGuarantees:
     def __init__(self):
-        self.guarantee_position_result: list[literal.Task] = []
+        self.position_result = literal.Guarantee()
 
 
 @final
@@ -39,7 +39,6 @@ class MakeThingExecution:
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
-        guarantees: MakeThingGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
@@ -47,7 +46,7 @@ class MakeThingExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = guarantees
+        self.guarantees = MakeThingGuarantees()
         self.local_position_temp = literal.LocalPosition(
             "position<temp>",
             constraints=(
@@ -55,12 +54,15 @@ class MakeThingExecution:
             ),
             scheduler=self.scheduler,
         )
-        self.join_for_move_position_temp_to_position_result = self.scheduler.create_join(2)
+        self.join_for_move_position_temp_to_position_result: literal.Join
+        self.join_when_empty_position_result: literal.Join
 
-    def accept_action_parent(self):
+    def on_action_parent_occupied(self):
         self.create_position_temp()
 
     def accept_when_empty_position_result(self):
+        if not self.join_when_empty_position_result.arrive():
+            return
         self.move_position_temp_to_position_result()
 
     def create_position_temp(self):
@@ -86,4 +88,6 @@ class MakeThingExecution:
             "result",
             1,
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_position_result)
+        self.guarantees.position_result.publish(
+            self.scheduler,
+        )

@@ -5,11 +5,8 @@
 @final
 class {{ guarantees.class_name }}:
     def __init__(self):
-        {% for publication in guarantees.publications %}
-        self.{{ publication }}: list[literal.Task] = []
-        {% endfor %}
-        {% for child in guarantees.child_guarantees %}
-        self.{{ child.name }} = {{ child.class_reference.module_name }}.{{ child.class_reference.class_name }}()
+        {% for guarantee_name in guarantees.guarantee_names %}
+        self.{{ guarantee_name }} = literal.Guarantee()
         {% endfor %}
     {% endif %}
 {% endmacro %}

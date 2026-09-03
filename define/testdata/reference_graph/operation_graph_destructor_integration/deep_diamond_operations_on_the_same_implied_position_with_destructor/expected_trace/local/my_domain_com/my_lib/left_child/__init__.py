@@ -27,7 +27,7 @@ class LeftChild(literal.Action):
 @final
 class LeftChildGuarantees:
     def __init__(self):
-        self.guarantee_global_position_marker: list[literal.Task] = []
+        self.global_position_marker = literal.Guarantee()
 
 
 @final
@@ -38,7 +38,6 @@ class LeftChildExecution:
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
-        guarantees: LeftChildGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
@@ -46,7 +45,7 @@ class LeftChildExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = guarantees
+        self.guarantees = LeftChildGuarantees()
 
     def accept_when_empty_global_position_marker(self):
         self.create_global_position_marker()
@@ -60,4 +59,6 @@ class LeftChildExecution:
             "/marker",
             1,
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_marker)
+        self.guarantees.global_position_marker.publish(
+            self.scheduler,
+        )

@@ -22,7 +22,7 @@ class Worker(literal.Action):
 @final
 class WorkerGuarantees:
     def __init__(self):
-        self.guarantee_position_slot: list[literal.Task] = []
+        self.position_slot = literal.Guarantee()
 
 
 @final
@@ -31,23 +31,30 @@ class WorkerExecution:
         self,
         action: Worker,
         scheduler: literal.Scheduler,
-        guarantees: WorkerGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = WorkerGuarantees()
         self.destruction_connections = destruction_connections
+        self.join_for_destroy_position_slot: literal.Join
+        self.join_for_empty_rule_position_slot: literal.Join
 
     def accept_for_empty_rule_position_slot(self):
+        if not self.join_for_empty_rule_position_slot.arrive():
+            return
         self.destroy_position_slot()
 
     def destroy_position_slot(self):
+        if not self.join_for_destroy_position_slot.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_slot)
 
     def continue_destroy_position_slot(self):
         self.action.get_interface_position(
             "position<slot>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_slot)
+        self.guarantees.position_slot.publish(
+            self.scheduler,
+        )

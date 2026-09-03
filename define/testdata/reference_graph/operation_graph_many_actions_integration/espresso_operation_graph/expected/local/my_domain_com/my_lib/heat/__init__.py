@@ -26,7 +26,7 @@ class Heat(literal.Action):
 @final
 class HeatGuarantees:
     def __init__(self):
-        self.guarantee_position_cold_water__move__position_hot_water: list[literal.Task] = []
+        self.position_cold_water__move__position_hot_water = literal.Guarantee()
 
 
 @final
@@ -35,16 +35,21 @@ class HeatExecution:
         self,
         action: Heat,
         scheduler: literal.Scheduler,
-        guarantees: HeatGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = HeatGuarantees()
+        self.join_for_move_position_cold_water_to_position_hot_water: literal.Join
+        self.join_for_empty_rule_position_cold_water: literal.Join
 
     def accept_for_empty_rule_position_cold_water(self):
+        if not self.join_for_empty_rule_position_cold_water.arrive():
+            return
         self.move_position_cold_water_to_position_hot_water()
 
     def move_position_cold_water_to_position_hot_water(self):
+        if not self.join_for_move_position_cold_water_to_position_hot_water.arrive():
+            return
         self.action.get_interface_position(
             "position<cold_water>"
         ).move_particle_to(
@@ -52,4 +57,6 @@ class HeatExecution:
                 "position<hot_water>"
             )
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_position_cold_water__move__position_hot_water)
+        self.guarantees.position_cold_water__move__position_hot_water.publish(
+            self.scheduler,
+        )

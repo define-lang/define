@@ -14,15 +14,8 @@ class Test(literal.EntryPoint):
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
             scheduler,
-            TestGuarantees(),
         )
-        execution.create_position_gateway()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_position_gateway__action_middle = local.my_domain_com.my_lib.middle.MiddleGuarantees()
+        execution.on_action_parent_occupied()
 
 
 @final
@@ -30,10 +23,8 @@ class TestExecution:
     def __init__(
         self,
         scheduler: literal.Scheduler,
-        guarantees: TestGuarantees,
     ):
         self.scheduler = scheduler
-        self.guarantees = guarantees
         self.local_position_gateway = literal.LocalPosition(
             "position<gateway>",
             constraints=(
@@ -41,19 +32,28 @@ class TestExecution:
             ),
             scheduler=self.scheduler,
         )
-        guarantees.trigger_position_gateway__action_middle.guarantee_position_source.append(
-            self.destroy_position_gateway
-        )
-        self.execution_trigger_position_gateway__action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
+        self.execution_position_gateway__action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
         self.join_for_destroy_position_gateway = self.scheduler.create_join(2)
-        self.join_for_trigger_position_gateway__action_middle__for_empty_rule_position_source = self.scheduler.create_join(2)
-        self.join_for_trigger_position_gateway__action_middle__action_parent = self.scheduler.create_join(2)
+
+    def on_action_parent_occupied(self):
+        self.create_position_gateway()
 
     def create_position_gateway(self):
         self.local_position_gateway.create_particle()
+        self.execution_position_gateway__action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
+            self.local_position_gateway.particle.get_action(
+                local.my_domain_com.my_lib.middle.Middle
+            ),
+            self.scheduler,
+        )
+        self.execution_position_gateway__action_middle.join_for_empty_rule_position_source = literal.NO_JOIN
+        self.execution_position_gateway__action_middle.join_for_move_position_source_to_position_holder = literal.NO_JOIN
+        self.execution_position_gateway__action_middle.guarantees.position_source.consumers.append(
+            self.destroy_position_gateway
+        )
         self.scheduler.submit(self.create_position_gateway__action_middle__position_source)
         self.scheduler.submit(self.create_position_gateway__action_middle__position_trigger_pos)
-        self.trigger_position_gateway__action_middle__action_parent()
+        self.execution_position_gateway__action_middle.on_action_parent_occupied()
 
     def create_position_gateway__action_middle__position_source(self):
         self.local_position_gateway.particle.get_action(
@@ -68,7 +68,7 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.item.Item
         ).create_particle()
-        self.trigger_position_gateway__action_middle__for_empty_rule_position_source()
+        self.execution_position_gateway__action_middle.accept_for_empty_rule_position_source()
 
     def create_position_gateway__action_middle__position_trigger_pos(self):
         self.local_position_gateway.particle.get_action(
@@ -76,18 +76,6 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.execution_trigger_position_gateway__action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
-            self.local_position_gateway.particle.get_action(
-                local.my_domain_com.my_lib.middle.Middle
-            ),
-            self.scheduler,
-            self.guarantees.trigger_position_gateway__action_middle,
-        )
-        self.scheduler.submit(self.destroy_position_gateway__action_middle__position_trigger_pos)
-        self.scheduler.submit(self.trigger_position_gateway__action_middle__for_empty_rule_position_source)
-        self.trigger_position_gateway__action_middle__action_parent()
-
-    def destroy_position_gateway__action_middle__position_trigger_pos(self):
         self.local_position_gateway.particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
         ).get_interface_position(
@@ -99,13 +87,3 @@ class TestExecution:
         if not self.join_for_destroy_position_gateway.arrive():
             return
         self.local_position_gateway.destroy_particle()
-
-    def trigger_position_gateway__action_middle__for_empty_rule_position_source(self):
-        if not self.join_for_trigger_position_gateway__action_middle__for_empty_rule_position_source.arrive():
-            return
-        self.execution_trigger_position_gateway__action_middle.accept_for_empty_rule_position_source()
-
-    def trigger_position_gateway__action_middle__action_parent(self):
-        if not self.join_for_trigger_position_gateway__action_middle__action_parent.arrive():
-            return
-        self.execution_trigger_position_gateway__action_middle.accept_action_parent()

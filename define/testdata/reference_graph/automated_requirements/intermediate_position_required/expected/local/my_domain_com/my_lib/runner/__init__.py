@@ -32,8 +32,8 @@ class Runner(literal.Action):
 @final
 class RunnerGuarantees:
     def __init__(self):
-        self.guarantee_position_wrap: list[literal.Task] = []
-        self.guarantee_position_run: list[literal.Task] = []
+        self.position_wrap = literal.Guarantee()
+        self.position_run = literal.Guarantee()
 
 
 @final
@@ -42,30 +42,45 @@ class RunnerExecution:
         self,
         action: Runner,
         scheduler: literal.Scheduler,
-        guarantees: RunnerGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = RunnerGuarantees()
         self.destruction_connections = destruction_connections
-        self.join_for_destroy_position_wrap__global_position_mid = self.scheduler.create_join(2)
-        self.join_for_destroy_position_wrap = self.scheduler.create_join(2)
+        self.join_for_destroy_position_wrap__global_position_mid__global_position_leaf: literal.Join
+        self.join_for_destroy_position_wrap__global_position_mid: literal.Join
+        self.join_for_destroy_position_wrap: literal.Join
+        self.join_for_destroy_position_run: literal.Join
+        self.join_for_empty_rule_position_wrap__global_position_mid__global_position_leaf: literal.Join
+        self.join_for_empty_rule_position_wrap__global_position_mid: literal.Join
+        self.join_for_empty_rule_position_wrap: literal.Join
+        self.join_for_empty_rule_position_run: literal.Join
 
     def accept_for_empty_rule_position_wrap__global_position_mid__global_position_leaf(self):
+        if not self.join_for_empty_rule_position_wrap__global_position_mid__global_position_leaf.arrive():
+            return
         self.destroy_position_wrap__global_position_mid__global_position_leaf()
 
     def accept_for_empty_rule_position_wrap__global_position_mid(self):
+        if not self.join_for_empty_rule_position_wrap__global_position_mid.arrive():
+            return
         self.destroy_position_wrap__global_position_mid()
 
     def accept_for_empty_rule_position_wrap(self):
+        if not self.join_for_empty_rule_position_wrap.arrive():
+            return
         self.destroy_position_wrap()
 
     def accept_for_empty_rule_position_run(self):
+        if not self.join_for_empty_rule_position_run.arrive():
+            return
         self.destroy_position_run()
 
     def destroy_position_wrap__global_position_mid__global_position_leaf(self):
+        if not self.join_for_destroy_position_wrap__global_position_mid__global_position_leaf.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_wrap__global_position_mid__global_position_leaf)
 
     def continue_destroy_position_wrap__global_position_mid__global_position_leaf(self):
@@ -100,13 +115,19 @@ class RunnerExecution:
         self.action.get_interface_position(
             "position<wrap>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_wrap)
+        self.guarantees.position_wrap.publish(
+            self.scheduler,
+        )
 
     def destroy_position_run(self):
+        if not self.join_for_destroy_position_run.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_run)
 
     def continue_destroy_position_run(self):
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_run)
+        self.guarantees.position_run.publish(
+            self.scheduler,
+        )

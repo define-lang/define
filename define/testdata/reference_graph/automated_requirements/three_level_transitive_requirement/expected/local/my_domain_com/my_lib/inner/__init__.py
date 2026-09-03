@@ -31,8 +31,8 @@ class Inner(literal.Action):
 @final
 class InnerGuarantees:
     def __init__(self):
-        self.guarantee_position_input: list[literal.Task] = []
-        self.guarantee_position_run: list[literal.Task] = []
+        self.position_input = literal.Guarantee()
+        self.position_run = literal.Guarantee()
 
 
 @final
@@ -41,26 +41,38 @@ class InnerExecution:
         self,
         action: Inner,
         scheduler: literal.Scheduler,
-        guarantees: InnerGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = InnerGuarantees()
         self.destruction_connections = destruction_connections
-        self.join_for_destroy_position_input = self.scheduler.create_join(2)
+        self.join_for_destroy_position_input__global_position_data: literal.Join
+        self.join_for_destroy_position_input: literal.Join
+        self.join_for_destroy_position_run: literal.Join
+        self.join_for_empty_rule_position_input__global_position_data: literal.Join
+        self.join_for_empty_rule_position_input: literal.Join
+        self.join_for_empty_rule_position_run: literal.Join
 
     def accept_for_empty_rule_position_input__global_position_data(self):
+        if not self.join_for_empty_rule_position_input__global_position_data.arrive():
+            return
         self.destroy_position_input__global_position_data()
 
     def accept_for_empty_rule_position_input(self):
+        if not self.join_for_empty_rule_position_input.arrive():
+            return
         self.destroy_position_input()
 
     def accept_for_empty_rule_position_run(self):
+        if not self.join_for_empty_rule_position_run.arrive():
+            return
         self.destroy_position_run()
 
     def destroy_position_input__global_position_data(self):
+        if not self.join_for_destroy_position_input__global_position_data.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_input__global_position_data)
 
     def continue_destroy_position_input__global_position_data(self):
@@ -80,13 +92,19 @@ class InnerExecution:
         self.action.get_interface_position(
             "position<input>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_input)
+        self.guarantees.position_input.publish(
+            self.scheduler,
+        )
 
     def destroy_position_run(self):
+        if not self.join_for_destroy_position_run.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_run)
 
     def continue_destroy_position_run(self):
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_run)
+        self.guarantees.position_run.publish(
+            self.scheduler,
+        )

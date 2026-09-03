@@ -38,7 +38,7 @@ class Inner(literal.Action):
 @final
 class InnerGuarantees:
     def __init__(self):
-        self.guarantee_position_source__move__position_holder: list[literal.Task] = []
+        self.position_source__move__position_holder = literal.Guarantee()
 
 
 @final
@@ -47,16 +47,21 @@ class InnerExecution:
         self,
         action: Inner,
         scheduler: literal.Scheduler,
-        guarantees: InnerGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = InnerGuarantees()
+        self.join_for_move_position_source_to_position_holder: literal.Join
+        self.join_for_empty_rule_position_source: literal.Join
 
     def accept_for_empty_rule_position_source(self):
+        if not self.join_for_empty_rule_position_source.arrive():
+            return
         self.move_position_source_to_position_holder()
 
     def move_position_source_to_position_holder(self):
+        if not self.join_for_move_position_source_to_position_holder.arrive():
+            return
         self.action.get_interface_position(
             "position<source>"
         ).move_particle_to(
@@ -64,4 +69,6 @@ class InnerExecution:
                 "position<holder>"
             )
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_position_source__move__position_holder)
+        self.guarantees.position_source__move__position_holder.publish(
+            self.scheduler,
+        )

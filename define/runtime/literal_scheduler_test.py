@@ -114,7 +114,7 @@ class TestScheduler:
             typed_name: ClassVar[str] = "action<entry>"
 
             @override
-            def execute(self, scheduler: literal.Scheduler):
+            def execute(self, _scheduler: literal.Scheduler):
                 pass
 
         scheduler = literal.Scheduler(max_threads=1)

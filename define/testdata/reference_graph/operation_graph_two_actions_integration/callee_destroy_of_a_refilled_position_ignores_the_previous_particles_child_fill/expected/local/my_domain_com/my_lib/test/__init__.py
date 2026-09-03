@@ -20,16 +20,9 @@ class Test(literal.EntryPoint):
         execution = TestExecution(
             self,
             scheduler,
-            TestGuarantees(),
         )
-        execution.scheduler.submit(execution.create_global_position_origin)
-        execution.create_action_other__position_trigger_pos()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_action_other = local.my_domain_com.my_lib.other.OtherGuarantees()
+        scheduler.submit(execution.accept_when_empty_global_position_origin)
+        execution.on_action_parent_occupied()
 
 
 @final
@@ -38,13 +31,24 @@ class TestExecution:
         self,
         action: Test,
         scheduler: literal.Scheduler,
-        guarantees: TestGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
-        self.execution_trigger_action_other: local.my_domain_com.my_lib.other.OtherExecution
-        self.join_for_trigger_action_other__for_empty_rule_global_position_origin = self.scheduler.create_join(2)
+        self.execution_action_other: local.my_domain_com.my_lib.other.OtherExecution
+        self.execution_action_other = local.my_domain_com.my_lib.other.OtherExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.other.Other
+            ),
+            self.scheduler,
+        )
+        self.execution_action_other.join_for_empty_rule_global_position_origin = literal.NO_JOIN
+        self.execution_action_other.join_for_destroy_global_position_origin = literal.NO_JOIN
+
+    def accept_when_empty_global_position_origin(self):
+        self.create_global_position_origin()
+
+    def on_action_parent_occupied(self):
+        self.create_action_other__position_trigger_pos()
 
     def create_global_position_origin(self):
         self.action.on_particle.get_position(
@@ -66,7 +70,7 @@ class TestExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.origin.Origin
         ).create_particle()
-        self.trigger_action_other__for_empty_rule_global_position_origin()
+        self.execution_action_other.accept_for_empty_rule_global_position_origin()
 
     def create_action_other__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -74,24 +78,8 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.execution_trigger_action_other = local.my_domain_com.my_lib.other.OtherExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.other.Other
-            ),
-            self.scheduler,
-            self.guarantees.trigger_action_other,
-        )
-        self.scheduler.submit(self.destroy_action_other__position_trigger_pos)
-        self.trigger_action_other__for_empty_rule_global_position_origin()
-
-    def destroy_action_other__position_trigger_pos(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.other.Other
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
-
-    def trigger_action_other__for_empty_rule_global_position_origin(self):
-        if not self.join_for_trigger_action_other__for_empty_rule_global_position_origin.arrive():
-            return
-        self.execution_trigger_action_other.accept_for_empty_rule_global_position_origin()

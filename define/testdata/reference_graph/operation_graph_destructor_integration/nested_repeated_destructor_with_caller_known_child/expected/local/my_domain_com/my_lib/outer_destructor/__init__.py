@@ -15,21 +15,12 @@ class OuterDestructor(literal.Action):
 
 
 @final
-class OuterDestructorGuarantees:
-    def __init__(self):
-        self.trigger_position_inner_destroyer_particle__action_inner_destroyer = local.my_domain_com.my_lib.inner_destroyer.InnerDestroyerGuarantees()
-        self.trigger_position_inner_destroyer_particle__action_inner_destroyer_2 = local.my_domain_com.my_lib.inner_destroyer.InnerDestroyerGuarantees()
-
-
-@final
 class OuterDestructorExecution:
     def __init__(
         self,
         scheduler: literal.Scheduler,
-        guarantees: OuterDestructorGuarantees,
     ):
         self.scheduler = scheduler
-        self.guarantees = guarantees
         self.local_position_inner_destroyer_particle = literal.LocalPosition(
             "position<inner_destroyer_particle>",
             constraints=(
@@ -54,30 +45,67 @@ class OuterDestructorExecution:
             ),
             scheduler=self.scheduler,
         )
-        guarantees.trigger_position_inner_destroyer_particle__action_inner_destroyer.guarantee_position_target.append(
-            self.move_position_second_source_to_position_inner_destroyer_particle__action_inner_destroyer__position_target
-        )
-        guarantees.trigger_position_inner_destroyer_particle__action_inner_destroyer_2.guarantee_position_target.append(
-            self.destroy_position_inner_destroyer_particle
-        )
-        self.execution_trigger_position_inner_destroyer_particle__action_inner_destroyer: local.my_domain_com.my_lib.inner_destroyer.InnerDestroyerExecution
-        self.destruction_connection_trigger_position_inner_destroyer_particle__action_inner_destroyer: literal.DestructionConnection
-        self.execution_trigger_position_inner_destroyer_particle__action_inner_destroyer_2: local.my_domain_com.my_lib.inner_destroyer.InnerDestroyerExecution
-        self.destruction_connection_trigger_position_inner_destroyer_particle__action_inner_destroyer_2: literal.DestructionConnection
+        self.execution_position_inner_destroyer_particle__action_inner_destroyer: local.my_domain_com.my_lib.inner_destroyer.InnerDestroyerExecution
+        self.destruction_connection_position_inner_destroyer_particle__action_inner_destroyer: literal.DestructionConnection
+        self.execution_position_inner_destroyer_particle__action_inner_destroyer_2: local.my_domain_com.my_lib.inner_destroyer.InnerDestroyerExecution
+        self.destruction_connection_position_inner_destroyer_particle__action_inner_destroyer_2: literal.DestructionConnection
         self.destruction_position_position_inner_destroyer_particle__action_inner_destroyer__position_target__global_position_extra: literal.Position
         self.destruction_position_position_inner_destroyer_particle__action_inner_destroyer__position_target__global_position_extra_2: literal.Position
         self.join_for_move_position_first_source_to_position_inner_destroyer_particle__action_inner_destroyer__position_target = self.scheduler.create_join(2)
         self.join_for_move_position_second_source_to_position_inner_destroyer_particle__action_inner_destroyer__position_target = self.scheduler.create_join(2)
-        self.join_for_trigger_position_inner_destroyer_particle__action_inner_destroyer__for_empty_rule_position_target = self.scheduler.create_join(2)
-        self.join_for_trigger_position_inner_destroyer_particle__action_inner_destroyer_2__for_empty_rule_position_target = self.scheduler.create_join(2)
 
-    def accept_action_parent(self):
+    def on_action_parent_occupied(self):
         self.scheduler.submit(self.create_position_inner_destroyer_particle)
         self.scheduler.submit(self.create_position_first_source)
         self.create_position_second_source()
 
     def create_position_inner_destroyer_particle(self):
         self.local_position_inner_destroyer_particle.create_particle()
+        self.destruction_connection_position_inner_destroyer_particle__action_inner_destroyer = literal.DestructionConnection(
+            self.scheduler,
+            1,
+            self.destroy_position_inner_destroyer_particle__action_inner_destroyer__position_target__global_position_extra,
+            self.run_position_inner_destroyer_particle__action_inner_destroyer__position_target__action_inner_destructor_a,
+        )
+        self.execution_position_inner_destroyer_particle__action_inner_destroyer = local.my_domain_com.my_lib.inner_destroyer.InnerDestroyerExecution(
+            self.local_position_inner_destroyer_particle.particle.get_action(
+                local.my_domain_com.my_lib.inner_destroyer.InnerDestroyer
+            ),
+            self.scheduler,
+            destruction_connections=literal.DestructionConnections(
+            {
+                local.my_domain_com.my_lib.inner_destroyer.InnerDestroyerExecution.continue_destroy_position_target: self.destruction_connection_position_inner_destroyer_particle__action_inner_destroyer,
+            },
+            ),
+        )
+        self.execution_position_inner_destroyer_particle__action_inner_destroyer.join_for_empty_rule_position_target = literal.NO_JOIN
+        self.execution_position_inner_destroyer_particle__action_inner_destroyer.join_for_destroy_position_target = literal.NO_JOIN
+        self.execution_position_inner_destroyer_particle__action_inner_destroyer.guarantees.position_target.consumers.append(
+            self.move_position_second_source_to_position_inner_destroyer_particle__action_inner_destroyer__position_target
+        )
+        self.destruction_connection_position_inner_destroyer_particle__action_inner_destroyer_2 = literal.DestructionConnection(
+            self.scheduler,
+            1,
+            self.destroy_position_inner_destroyer_particle__action_inner_destroyer__position_target__global_position_extra_2,
+            self.run_position_inner_destroyer_particle__action_inner_destroyer__position_target__action_inner_destructor_b,
+            self.run_position_inner_destroyer_particle__action_inner_destroyer__position_target__action_inner_destructor_a_2,
+        )
+        self.execution_position_inner_destroyer_particle__action_inner_destroyer_2 = local.my_domain_com.my_lib.inner_destroyer.InnerDestroyerExecution(
+            self.local_position_inner_destroyer_particle.particle.get_action(
+                local.my_domain_com.my_lib.inner_destroyer.InnerDestroyer
+            ),
+            self.scheduler,
+            destruction_connections=literal.DestructionConnections(
+            {
+                local.my_domain_com.my_lib.inner_destroyer.InnerDestroyerExecution.continue_destroy_position_target: self.destruction_connection_position_inner_destroyer_particle__action_inner_destroyer_2,
+            },
+            ),
+        )
+        self.execution_position_inner_destroyer_particle__action_inner_destroyer_2.join_for_empty_rule_position_target = literal.NO_JOIN
+        self.execution_position_inner_destroyer_particle__action_inner_destroyer_2.join_for_destroy_position_target = literal.NO_JOIN
+        self.execution_position_inner_destroyer_particle__action_inner_destroyer_2.guarantees.position_target.consumers.append(
+            self.destroy_position_inner_destroyer_particle
+        )
         self.move_position_first_source_to_position_inner_destroyer_particle__action_inner_destroyer__position_target()
 
     def create_position_first_source(self):
@@ -97,30 +125,18 @@ class OuterDestructorExecution:
                 "position<target>"
             )
         )
-        self.destruction_connection_trigger_position_inner_destroyer_particle__action_inner_destroyer = literal.DestructionConnection(
-            self.scheduler,
-            1,
-            self.destroy_position_inner_destroyer_particle__action_inner_destroyer__position_target__global_position_extra,
-            self.trigger_position_inner_destroyer_particle__action_inner_destroyer__position_target__action_inner_destructor_a,
+        self.destruction_position_position_inner_destroyer_particle__action_inner_destroyer__position_target__global_position_extra = self.local_position_inner_destroyer_particle.particle.get_action(
+            local.my_domain_com.my_lib.inner_destroyer.InnerDestroyer
+        ).get_interface_position(
+            "position<target>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.extra.Extra
         )
-        self.execution_trigger_position_inner_destroyer_particle__action_inner_destroyer = local.my_domain_com.my_lib.inner_destroyer.InnerDestroyerExecution(
-            self.local_position_inner_destroyer_particle.particle.get_action(
-                local.my_domain_com.my_lib.inner_destroyer.InnerDestroyer
-            ),
-            self.scheduler,
-            self.guarantees.trigger_position_inner_destroyer_particle__action_inner_destroyer,
-            destruction_connections=literal.DestructionConnections(
-            {
-                local.my_domain_com.my_lib.inner_destroyer.InnerDestroyerExecution.continue_destroy_position_target: self.destruction_connection_trigger_position_inner_destroyer_particle__action_inner_destroyer,
-            },
-            ),
-        )
-        self.scheduler.submit(self.trigger_position_inner_destroyer_particle__action_inner_destroyer__for_empty_rule_position_target)
-        self.trigger_position_inner_destroyer_particle__action_inner_destroyer__for_empty_rule_position_target()
+        self.execution_position_inner_destroyer_particle__action_inner_destroyer.accept_for_empty_rule_position_target()
 
     def destroy_position_inner_destroyer_particle__action_inner_destroyer__position_target__global_position_extra(self):
         self.destruction_position_position_inner_destroyer_particle__action_inner_destroyer__position_target__global_position_extra.destroy_particle()
-        self.destruction_connection_trigger_position_inner_destroyer_particle__action_inner_destroyer.complete()
+        self.destruction_connection_position_inner_destroyer_particle__action_inner_destroyer.complete()
 
     def create_position_second_source(self):
         self.local_position_second_source.create_particle()
@@ -139,50 +155,6 @@ class OuterDestructorExecution:
                 "position<target>"
             )
         )
-        self.destruction_connection_trigger_position_inner_destroyer_particle__action_inner_destroyer_2 = literal.DestructionConnection(
-            self.scheduler,
-            1,
-            self.destroy_position_inner_destroyer_particle__action_inner_destroyer__position_target__global_position_extra_2,
-            self.trigger_position_inner_destroyer_particle__action_inner_destroyer__position_target__action_inner_destructor_b,
-            self.trigger_position_inner_destroyer_particle__action_inner_destroyer__position_target__action_inner_destructor_a_2,
-        )
-        self.execution_trigger_position_inner_destroyer_particle__action_inner_destroyer_2 = local.my_domain_com.my_lib.inner_destroyer.InnerDestroyerExecution(
-            self.local_position_inner_destroyer_particle.particle.get_action(
-                local.my_domain_com.my_lib.inner_destroyer.InnerDestroyer
-            ),
-            self.scheduler,
-            self.guarantees.trigger_position_inner_destroyer_particle__action_inner_destroyer_2,
-            destruction_connections=literal.DestructionConnections(
-            {
-                local.my_domain_com.my_lib.inner_destroyer.InnerDestroyerExecution.continue_destroy_position_target: self.destruction_connection_trigger_position_inner_destroyer_particle__action_inner_destroyer_2,
-            },
-            ),
-        )
-        self.scheduler.submit(self.trigger_position_inner_destroyer_particle__action_inner_destroyer_2__for_empty_rule_position_target)
-        self.trigger_position_inner_destroyer_particle__action_inner_destroyer_2__for_empty_rule_position_target()
-
-    def destroy_position_inner_destroyer_particle__action_inner_destroyer__position_target__global_position_extra_2(self):
-        self.destruction_position_position_inner_destroyer_particle__action_inner_destroyer__position_target__global_position_extra_2.destroy_particle()
-        self.destruction_connection_trigger_position_inner_destroyer_particle__action_inner_destroyer_2.complete()
-
-    def destroy_position_inner_destroyer_particle(self):
-        self.local_position_inner_destroyer_particle.destroy_particle()
-
-    def trigger_position_inner_destroyer_particle__action_inner_destroyer__for_empty_rule_position_target(self):
-        if not self.join_for_trigger_position_inner_destroyer_particle__action_inner_destroyer__for_empty_rule_position_target.arrive():
-            return
-        self.destruction_position_position_inner_destroyer_particle__action_inner_destroyer__position_target__global_position_extra = self.local_position_inner_destroyer_particle.particle.get_action(
-            local.my_domain_com.my_lib.inner_destroyer.InnerDestroyer
-        ).get_interface_position(
-            "position<target>"
-        ).particle.get_position(
-            local.my_domain_com.my_lib.extra.Extra
-        )
-        self.execution_trigger_position_inner_destroyer_particle__action_inner_destroyer.accept_for_empty_rule_position_target()
-
-    def trigger_position_inner_destroyer_particle__action_inner_destroyer_2__for_empty_rule_position_target(self):
-        if not self.join_for_trigger_position_inner_destroyer_particle__action_inner_destroyer_2__for_empty_rule_position_target.arrive():
-            return
         self.destruction_position_position_inner_destroyer_particle__action_inner_destroyer__position_target__global_position_extra_2 = self.local_position_inner_destroyer_particle.particle.get_action(
             local.my_domain_com.my_lib.inner_destroyer.InnerDestroyer
         ).get_interface_position(
@@ -190,22 +162,29 @@ class OuterDestructorExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.extra.Extra
         )
-        self.execution_trigger_position_inner_destroyer_particle__action_inner_destroyer_2.accept_for_empty_rule_position_target()
+        self.execution_position_inner_destroyer_particle__action_inner_destroyer_2.accept_for_empty_rule_position_target()
 
-    def trigger_position_inner_destroyer_particle__action_inner_destroyer__position_target__action_inner_destructor_a(self):
+    def destroy_position_inner_destroyer_particle__action_inner_destroyer__position_target__global_position_extra_2(self):
+        self.destruction_position_position_inner_destroyer_particle__action_inner_destroyer__position_target__global_position_extra_2.destroy_particle()
+        self.destruction_connection_position_inner_destroyer_particle__action_inner_destroyer_2.complete()
+
+    def destroy_position_inner_destroyer_particle(self):
+        self.local_position_inner_destroyer_particle.destroy_particle()
+
+    def run_position_inner_destroyer_particle__action_inner_destroyer__position_target__action_inner_destructor_a(self):
         execution = local.my_domain_com.my_lib.inner_destructor_a.InnerDestructorAExecution(
             self.scheduler,
         )
-        execution.accept_action_parent()
+        execution.on_action_parent_occupied()
 
-    def trigger_position_inner_destroyer_particle__action_inner_destroyer__position_target__action_inner_destructor_b(self):
+    def run_position_inner_destroyer_particle__action_inner_destroyer__position_target__action_inner_destructor_b(self):
         execution = local.my_domain_com.my_lib.inner_destructor_b.InnerDestructorBExecution(
             self.scheduler,
         )
-        execution.accept_action_parent()
+        execution.on_action_parent_occupied()
 
-    def trigger_position_inner_destroyer_particle__action_inner_destroyer__position_target__action_inner_destructor_a_2(self):
+    def run_position_inner_destroyer_particle__action_inner_destroyer__position_target__action_inner_destructor_a_2(self):
         execution = local.my_domain_com.my_lib.inner_destructor_a.InnerDestructorAExecution(
             self.scheduler,
         )
-        execution.accept_action_parent()
+        execution.on_action_parent_occupied()

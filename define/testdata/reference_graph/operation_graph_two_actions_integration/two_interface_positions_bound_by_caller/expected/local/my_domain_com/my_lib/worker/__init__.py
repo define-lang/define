@@ -30,8 +30,8 @@ class Worker(literal.Action):
 @final
 class WorkerGuarantees:
     def __init__(self):
-        self.guarantee_position_second: list[literal.Task] = []
-        self.guarantee_position_third: list[literal.Task] = []
+        self.position_second = literal.Guarantee()
+        self.position_third = literal.Guarantee()
 
 
 @final
@@ -40,35 +40,50 @@ class WorkerExecution:
         self,
         action: Worker,
         scheduler: literal.Scheduler,
-        guarantees: WorkerGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = WorkerGuarantees()
         self.destruction_connections = destruction_connections
+        self.join_for_destroy_position_second: literal.Join
+        self.join_for_destroy_position_third: literal.Join
+        self.join_for_empty_rule_position_second: literal.Join
+        self.join_for_empty_rule_position_third: literal.Join
 
     def accept_for_empty_rule_position_second(self):
+        if not self.join_for_empty_rule_position_second.arrive():
+            return
         self.destroy_position_second()
 
     def accept_for_empty_rule_position_third(self):
+        if not self.join_for_empty_rule_position_third.arrive():
+            return
         self.destroy_position_third()
 
     def destroy_position_second(self):
+        if not self.join_for_destroy_position_second.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_second)
 
     def continue_destroy_position_second(self):
         self.action.get_interface_position(
             "position<second>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_second)
+        self.guarantees.position_second.publish(
+            self.scheduler,
+        )
 
     def destroy_position_third(self):
+        if not self.join_for_destroy_position_third.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_third)
 
     def continue_destroy_position_third(self):
         self.action.get_interface_position(
             "position<third>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_third)
+        self.guarantees.position_third.publish(
+            self.scheduler,
+        )

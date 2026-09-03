@@ -27,7 +27,7 @@ class InnerDestructorAExecution:
             scheduler=self.scheduler,
         )
 
-    def accept_action_parent(self):
+    def on_action_parent_occupied(self):
         self.create_position_work_a()
 
     def create_position_work_a(self):

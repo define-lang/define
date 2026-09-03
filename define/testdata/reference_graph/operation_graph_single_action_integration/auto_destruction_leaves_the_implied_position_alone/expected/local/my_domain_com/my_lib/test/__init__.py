@@ -18,8 +18,14 @@ class Test(literal.EntryPoint):
             self,
             scheduler,
         )
-        execution.scheduler.submit(execution.create_position_temporary)
-        execution.create_global_position_implied()
+        scheduler.submit(execution.on_action_parent_occupied)
+        execution.accept_when_empty_global_position_implied()
+
+
+@final
+class TestGuarantees:
+    def __init__(self):
+        self.global_position_implied = literal.Guarantee()
 
 
 @final
@@ -31,10 +37,17 @@ class TestExecution:
     ):
         self.action = action
         self.scheduler = scheduler
+        self.guarantees = TestGuarantees()
         self.local_position_temporary = literal.LocalPosition(
             "position<temporary>",
             scheduler=self.scheduler,
         )
+
+    def on_action_parent_occupied(self):
+        self.create_position_temporary()
+
+    def accept_when_empty_global_position_implied(self):
+        self.create_global_position_implied()
 
     def create_position_temporary(self):
         self.local_position_temporary.create_particle()
@@ -44,3 +57,6 @@ class TestExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.implied.Implied
         ).create_particle()
+        self.guarantees.global_position_implied.publish(
+            self.scheduler,
+        )

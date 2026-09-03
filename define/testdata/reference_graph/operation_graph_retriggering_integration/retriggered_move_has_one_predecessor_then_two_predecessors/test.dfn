@@ -1,0 +1,21 @@
+# The first /worker Move has one child operation as its predecessor. After the
+# Unchanged Guarantee, two new child Creates independently precede its next Move.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<gateway> {
+            it may only contain particles where {
+                it has the action</worker>.
+            }
+        }
+        create a particle in position<gateway>.
+        create a particle in position<gateway>::action</worker>::position<item>.
+        create a particle in position<gateway>::action</worker>::position<item>::position</a>.
+        create a particle in position<gateway>::action</worker>::position<trigger_pos>.
+        create a particle in position<gateway>::action</worker>::position<item>::position</b>.
+        create a particle in position<gateway>::action</worker>::position<item>::position</c>.
+        create a particle in position<gateway>::action</worker>::position<trigger_pos>.
+        destroy the particle in position<gateway>::action</worker>::position<item>.
+    }
+}

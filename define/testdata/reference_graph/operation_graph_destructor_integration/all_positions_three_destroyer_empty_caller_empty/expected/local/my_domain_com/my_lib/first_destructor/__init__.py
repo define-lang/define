@@ -18,8 +18,8 @@ class FirstDestructor(literal.Action):
 @final
 class FirstDestructorGuarantees:
     def __init__(self):
-        self.guarantee_global_position_first: list[literal.Task] = []
-        self.guarantee_global_position_marker: list[literal.Task] = []
+        self.global_position_first = literal.Guarantee()
+        self.global_position_marker = literal.Guarantee()
 
 
 @final
@@ -28,11 +28,10 @@ class FirstDestructorExecution:
         self,
         action: FirstDestructor,
         scheduler: literal.Scheduler,
-        guarantees: FirstDestructorGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = FirstDestructorGuarantees()
 
     def accept_when_empty_global_position_first(self):
         self.create_global_position_first()
@@ -47,7 +46,9 @@ class FirstDestructorExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.first.First
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_first)
+        self.guarantees.global_position_first.publish(
+            self.scheduler,
+        )
 
     def create_global_position_marker(self):
         self.action.on_particle.get_position(
@@ -56,4 +57,6 @@ class FirstDestructorExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_marker)
+        self.guarantees.global_position_marker.publish(
+            self.scheduler,
+        )

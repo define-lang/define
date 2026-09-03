@@ -21,19 +21,8 @@ class Test(literal.EntryPoint):
         execution = TestExecution(
             self,
             scheduler,
-            TestGuarantees(),
         )
-        execution.scheduler.submit(execution.create_action_class_var__position_trigger_pos)
-        execution.scheduler.submit(execution.create_action_class_var__position_trigger_pos_2)
-        execution.create_action_type_error__position_pp()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_action_class_var = local.my_domain_com.my_lib.class_var.ClassVarGuarantees()
-        self.trigger_action_class_var_2 = local.my_domain_com.my_lib.class_var_.ClassVarGuarantees()
-        self.trigger_action_type_error = local.my_domain_com.my_lib.type_error.TypeErrorGuarantees()
+        execution.on_action_parent_occupied()
 
 
 @final
@@ -42,17 +31,44 @@ class TestExecution:
         self,
         action: Test,
         scheduler: literal.Scheduler,
-        guarantees: TestGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
-        self.execution_trigger_action_class_var: local.my_domain_com.my_lib.class_var.ClassVarExecution
-        self.execution_trigger_action_class_var_2: local.my_domain_com.my_lib.class_var_.ClassVarExecution
-        self.execution_trigger_action_type_error: local.my_domain_com.my_lib.type_error.TypeErrorExecution
-        self.join_for_trigger_action_class_var__for_empty_rule_position_trigger_pos = self.scheduler.create_join(2)
-        self.join_for_trigger_action_class_var_2__for_empty_rule_position_trigger_pos = self.scheduler.create_join(2)
-        self.join_for_trigger_action_type_error__for_empty_rule_position_pp = self.scheduler.create_join(2)
+        self.execution_action_class_var: local.my_domain_com.my_lib.class_var.ClassVarExecution
+        self.execution_action_class_var_2: local.my_domain_com.my_lib.class_var_.ClassVarExecution
+        self.execution_action_type_error: local.my_domain_com.my_lib.type_error.TypeErrorExecution
+        self.execution_action_class_var = local.my_domain_com.my_lib.class_var.ClassVarExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.class_var.ClassVar
+            ),
+            self.scheduler,
+        )
+        self.execution_action_class_var.join_for_empty_rule_position_trigger_pos = literal.NO_JOIN
+        self.execution_action_class_var.join_for_destroy_position_trigger_pos = literal.NO_JOIN
+        self.execution_action_class_var_2 = local.my_domain_com.my_lib.class_var_.ClassVarExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.class_var_.ClassVar
+            ),
+            self.scheduler,
+        )
+        self.execution_action_class_var_2.join_for_empty_rule_position_trigger_pos = literal.NO_JOIN
+        self.execution_action_class_var_2.join_for_destroy_position_trigger_pos = literal.NO_JOIN
+        self.execution_action_type_error = local.my_domain_com.my_lib.type_error.TypeErrorExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.type_error.TypeError
+            ),
+            self.scheduler,
+        )
+        self.execution_action_type_error.join_for_empty_rule_position_pp = literal.NO_JOIN
+        self.execution_action_type_error.join_for_destroy_position_pp = literal.NO_JOIN
+
+    def on_action_parent_occupied(self):
+        self.scheduler.submit(self.create_action_class_var__position_trigger_pos)
+        self.scheduler.submit(self.create_action_class_var__position_trigger_pos_2)
+        self.scheduler.submit(self.create_action_type_error__position_pp)
+        self.scheduler.submit(self.execution_action_class_var.on_action_parent_occupied)
+        self.scheduler.submit(self.execution_action_class_var_2.on_action_parent_occupied)
+        self.execution_action_type_error.on_action_parent_occupied()
 
     def create_action_class_var__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -60,16 +76,7 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.execution_trigger_action_class_var = local.my_domain_com.my_lib.class_var.ClassVarExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.class_var.ClassVar
-            ),
-            self.scheduler,
-            self.guarantees.trigger_action_class_var,
-        )
-        self.scheduler.submit(self.trigger_action_class_var__for_empty_rule_position_trigger_pos)
-        self.scheduler.submit(self.trigger_action_class_var__action_parent)
-        self.trigger_action_class_var__for_empty_rule_position_trigger_pos()
+        self.execution_action_class_var.accept_for_empty_rule_position_trigger_pos()
 
     def create_action_class_var__position_trigger_pos_2(self):
         self.action.on_particle.get_action(
@@ -77,16 +84,7 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.execution_trigger_action_class_var_2 = local.my_domain_com.my_lib.class_var_.ClassVarExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.class_var_.ClassVar
-            ),
-            self.scheduler,
-            self.guarantees.trigger_action_class_var_2,
-        )
-        self.scheduler.submit(self.trigger_action_class_var_2__for_empty_rule_position_trigger_pos)
-        self.scheduler.submit(self.trigger_action_class_var_2__action_parent)
-        self.trigger_action_class_var_2__for_empty_rule_position_trigger_pos()
+        self.execution_action_class_var_2.accept_for_empty_rule_position_trigger_pos()
 
     def create_action_type_error__position_pp(self):
         self.action.on_particle.get_action(
@@ -94,37 +92,4 @@ class TestExecution:
         ).get_interface_position(
             "position<pp>"
         ).create_particle()
-        self.execution_trigger_action_type_error = local.my_domain_com.my_lib.type_error.TypeErrorExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.type_error.TypeError
-            ),
-            self.scheduler,
-            self.guarantees.trigger_action_type_error,
-        )
-        self.scheduler.submit(self.trigger_action_type_error__for_empty_rule_position_pp)
-        self.scheduler.submit(self.trigger_action_type_error__action_parent)
-        self.trigger_action_type_error__for_empty_rule_position_pp()
-
-    def trigger_action_class_var__action_parent(self):
-        self.execution_trigger_action_class_var.accept_action_parent()
-
-    def trigger_action_class_var__for_empty_rule_position_trigger_pos(self):
-        if not self.join_for_trigger_action_class_var__for_empty_rule_position_trigger_pos.arrive():
-            return
-        self.execution_trigger_action_class_var.accept_for_empty_rule_position_trigger_pos()
-
-    def trigger_action_class_var_2__action_parent(self):
-        self.execution_trigger_action_class_var_2.accept_action_parent()
-
-    def trigger_action_class_var_2__for_empty_rule_position_trigger_pos(self):
-        if not self.join_for_trigger_action_class_var_2__for_empty_rule_position_trigger_pos.arrive():
-            return
-        self.execution_trigger_action_class_var_2.accept_for_empty_rule_position_trigger_pos()
-
-    def trigger_action_type_error__action_parent(self):
-        self.execution_trigger_action_type_error.accept_action_parent()
-
-    def trigger_action_type_error__for_empty_rule_position_pp(self):
-        if not self.join_for_trigger_action_type_error__for_empty_rule_position_pp.arrive():
-            return
-        self.execution_trigger_action_type_error.accept_for_empty_rule_position_pp()
+        self.execution_action_type_error.accept_for_empty_rule_position_pp()

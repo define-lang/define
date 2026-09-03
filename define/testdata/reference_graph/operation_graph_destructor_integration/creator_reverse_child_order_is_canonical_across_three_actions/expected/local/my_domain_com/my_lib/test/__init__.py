@@ -27,16 +27,8 @@ class Test(literal.EntryPoint):
         execution = TestExecution(
             self,
             scheduler,
-            TestGuarantees(),
         )
-        execution.create_position_carrier()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_position_carrier__action_worker = local.my_domain_com.my_lib.worker.WorkerGuarantees()
-        self.trigger_action_middle = local.my_domain_com.my_lib.middle.MiddleGuarantees()
+        execution.on_action_parent_occupied()
 
 
 @final
@@ -45,11 +37,9 @@ class TestExecution:
         self,
         action: Test,
         scheduler: literal.Scheduler,
-        guarantees: TestGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
         self.local_position_carrier = literal.LocalPosition(
             "position<carrier>",
             constraints=(
@@ -63,39 +53,54 @@ class TestExecution:
             ),
             scheduler=self.scheduler,
         )
-        guarantees.trigger_position_carrier__action_worker.guarantee_global_position_first_interface.append(
-            self.move_position_carrier_to_action_middle__position_target
-        )
-        guarantees.trigger_position_carrier__action_worker.guarantee_global_position_second_interface.append(
-            self.move_position_carrier_to_action_middle__position_target
-        )
-        self.execution_trigger_position_carrier__action_worker: local.my_domain_com.my_lib.worker.WorkerExecution
-        self.execution_trigger_action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
-        self.destruction_connection_trigger_action_middle: literal.DestructionConnection
+        self.execution_position_carrier__action_worker: local.my_domain_com.my_lib.worker.WorkerExecution
+        self.execution_action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
+        self.destruction_connection_action_middle: literal.DestructionConnection
         self.destruction_position_action_middle__position_target__global_position_second_interface: literal.Position
         self.destruction_position_action_middle__position_target__global_position_first_interface: literal.Position
         self.destruction_position_action_middle__position_target__global_position_third: literal.Position
         self.join_for_move_position_carrier_to_action_middle__position_target = self.scheduler.create_join(3)
-        self.join_for_trigger_position_carrier__action_worker__when_empty_global_position_first_interface = self.scheduler.create_join(2)
-        self.join_for_trigger_position_carrier__action_worker__when_empty_global_position_second_interface = self.scheduler.create_join(2)
-        self.join_for_trigger_action_middle__when_empty_position_target__global_position_first = self.scheduler.create_join(2)
-        self.join_for_trigger_action_middle__when_empty_position_target__global_position_second = self.scheduler.create_join(2)
-        self.join_for_trigger_action_middle__when_empty_position_target__global_position_fifth = self.scheduler.create_join(2)
+        self.destruction_connection_action_middle = literal.DestructionConnection(
+            self.scheduler,
+            3,
+            self.destroy_action_middle__position_target__global_position_second_interface,
+            self.destroy_action_middle__position_target__global_position_first_interface,
+            self.destroy_action_middle__position_target__global_position_third,
+        )
+        self.execution_action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.middle.Middle
+            ),
+            self.scheduler,
+            destruction_connections=literal.DestructionConnections(
+            {
+                local.my_domain_com.my_lib.destroyer.DestroyerExecution.continue_destroy_position_target: self.destruction_connection_action_middle,
+            },
+            ),
+        )
+        self.execution_action_middle.join_for_empty_rule_position_target = literal.NO_JOIN
+        self.execution_action_middle.join_for_move_position_target_to_action_destroyer__position_target = self.scheduler.create_join(3)
+
+    def on_action_parent_occupied(self):
+        self.create_position_carrier()
 
     def create_position_carrier(self):
         self.local_position_carrier.create_particle()
-        self.execution_trigger_position_carrier__action_worker = local.my_domain_com.my_lib.worker.WorkerExecution(
+        self.execution_position_carrier__action_worker = local.my_domain_com.my_lib.worker.WorkerExecution(
             self.local_position_carrier.particle.get_action(
                 local.my_domain_com.my_lib.worker.Worker
             ),
             self.scheduler,
-            self.guarantees.trigger_position_carrier__action_worker,
+        )
+        self.execution_position_carrier__action_worker.guarantees.global_position_first_interface.consumers.append(
+            self.move_position_carrier_to_action_middle__position_target
+        )
+        self.execution_position_carrier__action_worker.guarantees.global_position_second_interface.consumers.append(
+            self.move_position_carrier_to_action_middle__position_target
         )
         self.scheduler.submit(self.create_position_carrier__global_position_third)
-        self.scheduler.submit(self.trigger_position_carrier__action_worker__when_empty_global_position_first_interface)
-        self.scheduler.submit(self.trigger_position_carrier__action_worker__when_empty_global_position_second_interface)
-        self.scheduler.submit(self.trigger_position_carrier__action_worker__when_empty_global_position_first_interface)
-        self.trigger_position_carrier__action_worker__when_empty_global_position_second_interface()
+        self.scheduler.submit(self.execution_position_carrier__action_worker.accept_when_empty_global_position_first_interface)
+        self.execution_position_carrier__action_worker.accept_when_empty_global_position_second_interface()
 
     def create_position_carrier__global_position_third(self):
         self.local_position_carrier.particle.get_position(
@@ -113,58 +118,6 @@ class TestExecution:
                 "position<target>"
             )
         )
-        self.destruction_connection_trigger_action_middle = literal.DestructionConnection(
-            self.scheduler,
-            3,
-            self.destroy_action_middle__position_target__global_position_second_interface,
-            self.destroy_action_middle__position_target__global_position_first_interface,
-            self.destroy_action_middle__position_target__global_position_third,
-        )
-        self.execution_trigger_action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.middle.Middle
-            ),
-            self.scheduler,
-            self.guarantees.trigger_action_middle,
-            destruction_connections=literal.DestructionConnections(
-            {
-                local.my_domain_com.my_lib.destroyer.DestroyerExecution.continue_destroy_position_target: self.destruction_connection_trigger_action_middle,
-            },
-            ),
-        )
-        self.scheduler.submit(self.trigger_action_middle__when_empty_position_target__global_position_first)
-        self.scheduler.submit(self.trigger_action_middle__when_empty_position_target__global_position_second)
-        self.scheduler.submit(self.trigger_action_middle__when_empty_position_target__global_position_fifth)
-        self.scheduler.submit(self.trigger_action_middle__when_empty_position_target__global_position_first)
-        self.scheduler.submit(self.trigger_action_middle__when_empty_position_target__global_position_second)
-        self.scheduler.submit(self.trigger_action_middle__when_empty_position_target__global_position_fifth)
-        self.trigger_action_middle__for_empty_rule_position_target()
-
-    def destroy_action_middle__position_target__global_position_second_interface(self):
-        self.destruction_position_action_middle__position_target__global_position_second_interface.destroy_particle()
-        self.destruction_connection_trigger_action_middle.complete()
-
-    def destroy_action_middle__position_target__global_position_first_interface(self):
-        self.destruction_position_action_middle__position_target__global_position_first_interface.destroy_particle()
-        self.destruction_connection_trigger_action_middle.complete()
-
-    def destroy_action_middle__position_target__global_position_third(self):
-        self.destruction_position_action_middle__position_target__global_position_third.destroy_particle()
-        self.destruction_connection_trigger_action_middle.complete()
-
-    def trigger_position_carrier__action_worker__when_empty_global_position_first_interface(self):
-        if not self.join_for_trigger_position_carrier__action_worker__when_empty_global_position_first_interface.arrive():
-            return
-        self.execution_trigger_position_carrier__action_worker.accept_when_empty_global_position_first_interface()
-
-    def trigger_position_carrier__action_worker__when_empty_global_position_second_interface(self):
-        if not self.join_for_trigger_position_carrier__action_worker__when_empty_global_position_second_interface.arrive():
-            return
-        self.execution_trigger_position_carrier__action_worker.accept_when_empty_global_position_second_interface()
-
-    def trigger_action_middle__when_empty_position_target__global_position_first(self):
-        if not self.join_for_trigger_action_middle__when_empty_position_target__global_position_first.arrive():
-            return
         self.destruction_position_action_middle__position_target__global_position_second_interface = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
         ).get_interface_position(
@@ -186,17 +139,18 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.third.Third
         )
-        self.execution_trigger_action_middle.accept_when_empty_position_target__global_position_first()
+        self.scheduler.submit(self.execution_action_middle.accept_when_empty_position_target__global_position_first)
+        self.scheduler.submit(self.execution_action_middle.accept_when_empty_position_target__global_position_second)
+        self.execution_action_middle.accept_when_empty_position_target__global_position_fifth()
 
-    def trigger_action_middle__when_empty_position_target__global_position_second(self):
-        if not self.join_for_trigger_action_middle__when_empty_position_target__global_position_second.arrive():
-            return
-        self.execution_trigger_action_middle.accept_when_empty_position_target__global_position_second()
+    def destroy_action_middle__position_target__global_position_second_interface(self):
+        self.destruction_position_action_middle__position_target__global_position_second_interface.destroy_particle()
+        self.destruction_connection_action_middle.complete()
 
-    def trigger_action_middle__when_empty_position_target__global_position_fifth(self):
-        if not self.join_for_trigger_action_middle__when_empty_position_target__global_position_fifth.arrive():
-            return
-        self.execution_trigger_action_middle.accept_when_empty_position_target__global_position_fifth()
+    def destroy_action_middle__position_target__global_position_first_interface(self):
+        self.destruction_position_action_middle__position_target__global_position_first_interface.destroy_particle()
+        self.destruction_connection_action_middle.complete()
 
-    def trigger_action_middle__for_empty_rule_position_target(self):
-        self.execution_trigger_action_middle.accept_for_empty_rule_position_target()
+    def destroy_action_middle__position_target__global_position_third(self):
+        self.destruction_position_action_middle__position_target__global_position_third.destroy_particle()
+        self.destruction_connection_action_middle.complete()

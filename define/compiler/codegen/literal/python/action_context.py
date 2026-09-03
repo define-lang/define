@@ -2,25 +2,15 @@
 
 from __future__ import annotations
 
-import enum
 import typing
 from dataclasses import dataclass
 
 if typing.TYPE_CHECKING:
+    from collections.abc import Iterator
+
+    from define.compiler.codegen import action_plan
     from define.compiler.codegen.literal.python import naming, template_context
     from define.compiler.validator.reference_graph import operation_graph_model
-
-
-class ActionRole(enum.Enum):
-    """The runtime role of one generated action definition."""
-
-    ACTION = enum.auto()
-    ENTRY_POINT = enum.auto()
-
-    @property
-    def has_execute_method(self) -> bool:
-        """Whether the runtime invokes this action through execute()."""
-        return self is ActionRole.ENTRY_POINT
 
 
 @dataclass
@@ -30,10 +20,13 @@ class ActionDefinitionContext:
     class_name: str
     module_name: str
     execution: template_context.ActionExecutionContext
-    execute_method_names: list[str]
-    role: ActionRole
+    is_entry_point: bool
     interface_positions: list[template_context.InterfacePositionContext]
     implied_qualities: list[naming.ClassReference]
+    view_point_create_method_names: list[str]
+    view_point_create_join_assignments: list[
+        template_context.CalleeJoinAssignmentContext
+    ]
     trace_operations: bool = False
     trace_action_name: str | None = None
 
@@ -45,68 +38,95 @@ class ActionDefinitionContext:
     @property
     def imports(self) -> list[str]:
         """External modules imported by this definition."""
-        class_references: list[naming.ClassReference] = []
-        class_references.extend(self.implied_qualities)
+        module_names = {
+            class_reference.module_name for class_reference in self.implied_qualities
+        }
+        module_names.update(self._position_constraint_module_names())
+        module_names.update(self._fragment_module_names())
+        module_names.update(self._action_execution_module_names())
+        module_names.update(self._destruction_position_module_names())
+        return sorted(module_names)
+
+    def _position_constraint_module_names(self) -> Iterator[str]:
         for interface_position in self.interface_positions:
-            class_references.extend(interface_position.constraints)
+            for class_reference in interface_position.constraints:
+                yield class_reference.module_name
         for statement in self.execution.local_position_statements:
-            class_references.extend(statement.constraints)
+            for class_reference in statement.constraints:
+                yield class_reference.module_name
+
+    def _fragment_module_names(self) -> Iterator[str]:
         for fragment in self.execution.fragments:
             for statement in fragment.statements:
                 position = typing.cast(
                     "template_context.PositionExpr", statement.position
                 )
-                class_references.extend(position.class_references)
+                yield from position.referenced_module_names()
                 if statement.to_position is not None:
-                    class_references.extend(statement.to_position.class_references)
+                    yield from statement.to_position.referenced_module_names()
+            if fragment.guarantee_dependent_destroy_position is not None:
+                yield from (
+                    fragment.guarantee_dependent_destroy_position.position.referenced_module_names()
+                )
+
+    def _action_execution_module_names(self) -> Iterator[str]:
         for action_execution in self.execution.action_executions:
             for connection in action_execution.created_destruction_connections:
-                class_references.append(
-                    connection.destruction_continuation.execution_class
-                )
-                class_references.extend(
-                    destructor.execution_class
-                    for destructor in connection.destruction_contract_destructors
-                )
+                yield connection.destruction_continuation.execution_class.module_name
+                for destructor in connection.destruction_contract_destructors:
+                    yield destructor.execution_class.module_name
             action_expression = action_execution.action_expression
             if action_expression is not None:
-                class_references.extend(action_expression.class_references)
-            class_references.append(action_execution.execution_class)
-        for callee_binding_join in self.execution.callee_binding_joins:
-            for destruction_position in callee_binding_join.destruction_positions:
-                class_references.extend(destruction_position.position.class_references)
-        return sorted(
-            {class_reference.module_name for class_reference in class_references}
-        )
+                yield from action_expression.referenced_module_names()
+            yield action_execution.execution_class.module_name
+
+    def _destruction_position_module_names(self) -> Iterator[str]:
+        for destruction_position in self.execution.destruction_positions:
+            yield from destruction_position.position.referenced_module_names()
+        for callee_binding_plan in self.execution.callee_binding_plans:
+            for destruction_position in callee_binding_plan.destruction_positions:
+                yield from destruction_position.position.referenced_module_names()
 
 
 @dataclass(frozen=True, slots=True)
-class ChildGuarantees:
-    """A generated child's guarantee interface and its member in the caller."""
-
-    member_name: str
-    callee_interface: GuaranteeInterface
-
-
-@dataclass(frozen=True, slots=True)
-class GuaranteeInterface:
-    """Generated guarantee members exposed across one action boundary."""
-
-    class_reference: naming.ClassReference
-    child_guarantees: dict[operation_graph_model.ActionExecution, ChildGuarantees]
-    # Guarantee paths end at the Position Operation that publishes the
-    # guarantee; its value here is the generated task-list member name.
-    guarantee_names_by_operation: dict[operation_graph_model.PositionOperationNode, str]
-
-
-@dataclass(frozen=True, slots=True)
-class GeneratedAction:
-    """Generated context and caller-facing interface of one action."""
+class GeneratedActionDefinition:
+    """Generated action-definition context and caller-facing interface."""
 
     context: ActionDefinitionContext
-    binding_hole_method_names: dict[operation_graph_model.BindingHole, str]
-    guarantee_interface: GuaranteeInterface | None
+    action_interface: GeneratedActionInterface
+
+
+@dataclass(slots=True)
+class GeneratedBindingHoleNames:
+    """Generated names through which callers use one Binding Hole."""
+
+    base_name: str
+    method_name: str
+    separate_init_method_name: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class GeneratedActionInterface:
+    """Caller-facing interface of one generated action."""
+
+    needs_action: bool
+    binding_holes: dict[
+        operation_graph_model.BindingHole,
+        GeneratedBindingHoleNames,
+    ]
+    guarantee_names_by_operation: dict[operation_graph_model.PositionOperationNode, str]
+    execution_member_names: dict[operation_graph_model.ActionExecution, str]
+    join_member_names: dict[action_plan.JoinTarget, str]
+    fragment_method_names: dict[action_plan.ActionFragment, str]
     destruction_continuations: dict[
         operation_graph_model.DestructionFactDestroyNode,
         template_context.DestructionContinuationContext,
     ]
+
+
+@dataclass(frozen=True, slots=True)
+class GeneratedExecution:
+    """Generated execution context and caller-facing action interface."""
+
+    context: template_context.ActionExecutionContext
+    action_interface: GeneratedActionInterface

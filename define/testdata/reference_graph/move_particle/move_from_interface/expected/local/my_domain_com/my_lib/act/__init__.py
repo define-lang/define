@@ -48,12 +48,12 @@ class Act(literal.Action):
 @final
 class ActGuarantees:
     def __init__(self):
-        self.guarantee_position_src_a: list[literal.Task] = []
-        self.guarantee_position_src_b: list[literal.Task] = []
-        self.guarantee_position_src_c: list[literal.Task] = []
-        self.guarantee_position_iface_dest: list[literal.Task] = []
-        self.guarantee_position_chain_dest: list[literal.Task] = []
-        self.guarantee_position_trigger: list[literal.Task] = []
+        self.position_src_a = literal.Guarantee()
+        self.position_src_b = literal.Guarantee()
+        self.position_src_c = literal.Guarantee()
+        self.position_iface_dest = literal.Guarantee()
+        self.position_chain_dest = literal.Guarantee()
+        self.position_trigger = literal.Guarantee()
 
 
 @final
@@ -62,22 +62,27 @@ class ActExecution:
         self,
         action: Act,
         scheduler: literal.Scheduler,
-        guarantees: ActGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = ActGuarantees()
         self.destruction_connections = destruction_connections
         self.local_position_local_dest = literal.LocalPosition(
             "position<local_dest>",
             scheduler=self.scheduler,
         )
-        self.join_for_move_position_src_b_to_position_iface_dest = self.scheduler.create_join(2)
-        self.join_for_move_position_src_c_to_position_chain_dest__global_position_mid_dest__global_position_end_dest = self.scheduler.create_join(2)
-        self.join_for_destroy_position_chain_dest__global_position_mid_dest = self.scheduler.create_join(2)
-        self.join_for_destroy_position_chain_dest = self.scheduler.create_join(2)
+        self.join_for_move_position_src_b_to_position_iface_dest: literal.Join
+        self.join_for_move_position_src_c_to_position_chain_dest__global_position_mid_dest__global_position_end_dest: literal.Join
+        self.join_for_destroy_position_chain_dest__global_position_mid_dest: literal.Join
+        self.join_for_destroy_position_chain_dest: literal.Join
+        self.join_for_destroy_position_trigger: literal.Join
+        self.join_when_empty_position_iface_dest: literal.Join
+        self.join_when_empty_position_chain_dest__global_position_mid_dest__global_position_end_dest: literal.Join
+        self.join_for_empty_rule_position_chain_dest__global_position_mid_dest: literal.Join
+        self.join_for_empty_rule_position_chain_dest: literal.Join
+        self.join_for_empty_rule_position_trigger: literal.Join
 
     def accept_when_empty_position_src_a(self):
         self.create_position_src_a()
@@ -89,18 +94,28 @@ class ActExecution:
         self.create_position_src_c()
 
     def accept_when_empty_position_iface_dest(self):
+        if not self.join_when_empty_position_iface_dest.arrive():
+            return
         self.move_position_src_b_to_position_iface_dest()
 
     def accept_when_empty_position_chain_dest__global_position_mid_dest__global_position_end_dest(self):
+        if not self.join_when_empty_position_chain_dest__global_position_mid_dest__global_position_end_dest.arrive():
+            return
         self.move_position_src_c_to_position_chain_dest__global_position_mid_dest__global_position_end_dest()
 
     def accept_for_empty_rule_position_chain_dest__global_position_mid_dest(self):
+        if not self.join_for_empty_rule_position_chain_dest__global_position_mid_dest.arrive():
+            return
         self.destroy_position_chain_dest__global_position_mid_dest()
 
     def accept_for_empty_rule_position_chain_dest(self):
+        if not self.join_for_empty_rule_position_chain_dest.arrive():
+            return
         self.destroy_position_chain_dest()
 
     def accept_for_empty_rule_position_trigger(self):
+        if not self.join_for_empty_rule_position_trigger.arrive():
+            return
         self.destroy_position_trigger()
 
     def create_position_src_a(self):
@@ -110,8 +125,10 @@ class ActExecution:
         self.action.get_interface_position(
             "position<src_a>"
         ).move_particle_to(self.local_position_local_dest)
-        self.scheduler.submit(self.destroy_position_local_dest)
-        self.scheduler.continue_with(self.guarantees.guarantee_position_src_a)
+        self.guarantees.position_src_a.publish(
+            self.scheduler,
+            self.destroy_position_local_dest,
+        )
 
     def create_position_src_b(self):
         self.action.get_interface_position(
@@ -135,8 +152,10 @@ class ActExecution:
                 "position<iface_dest>"
             )
         )
-        self.scheduler.submit(self.destroy_position_iface_dest)
-        self.scheduler.continue_with(self.guarantees.guarantee_position_src_b)
+        self.guarantees.position_src_b.publish(
+            self.scheduler,
+            self.destroy_position_iface_dest,
+        )
 
     def move_position_src_c_to_position_chain_dest__global_position_mid_dest__global_position_end_dest(self):
         if not self.join_for_move_position_src_c_to_position_chain_dest__global_position_mid_dest__global_position_end_dest.arrive():
@@ -152,14 +171,18 @@ class ActExecution:
                 local.my_domain_com.my_lib.end_dest.EndDest
             )
         )
-        self.scheduler.submit(self.destroy_position_chain_dest__global_position_mid_dest__global_position_end_dest)
-        self.scheduler.continue_with(self.guarantees.guarantee_position_src_c)
+        self.guarantees.position_src_c.publish(
+            self.scheduler,
+            self.destroy_position_chain_dest__global_position_mid_dest__global_position_end_dest,
+        )
 
     def destroy_position_iface_dest(self):
         self.action.get_interface_position(
             "position<iface_dest>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_iface_dest)
+        self.guarantees.position_iface_dest.publish(
+            self.scheduler,
+        )
 
     def destroy_position_chain_dest__global_position_mid_dest__global_position_end_dest(self):
         literal.continue_destruction(self.continue_destroy_position_chain_dest__global_position_mid_dest__global_position_end_dest)
@@ -196,16 +219,22 @@ class ActExecution:
         self.action.get_interface_position(
             "position<chain_dest>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_chain_dest)
+        self.guarantees.position_chain_dest.publish(
+            self.scheduler,
+        )
 
     def destroy_position_trigger(self):
+        if not self.join_for_destroy_position_trigger.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_trigger)
 
     def continue_destroy_position_trigger(self):
         self.action.get_interface_position(
             "position<trigger>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_trigger)
+        self.guarantees.position_trigger.publish(
+            self.scheduler,
+        )
 
     def destroy_position_local_dest(self):
         self.local_position_local_dest.destroy_particle()

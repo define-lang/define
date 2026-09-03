@@ -19,16 +19,9 @@ class Test(literal.EntryPoint):
         execution = TestExecution(
             self,
             scheduler,
-            TestGuarantees(),
         )
-        execution.scheduler.submit(execution.create_global_position_slot)
-        execution.create_action_outer__position_trigger_pos()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_action_outer = local.my_domain_com.my_lib.outer.OuterGuarantees()
+        scheduler.submit(execution.accept_when_empty_global_position_slot)
+        execution.on_action_parent_occupied()
 
 
 @final
@@ -37,19 +30,31 @@ class TestExecution:
         self,
         action: Test,
         scheduler: literal.Scheduler,
-        guarantees: TestGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
-        self.execution_trigger_action_outer: local.my_domain_com.my_lib.outer.OuterExecution
-        self.join_for_trigger_action_outer__for_empty_rule_global_position_slot = self.scheduler.create_join(2)
+        self.execution_action_outer: local.my_domain_com.my_lib.outer.OuterExecution
+        self.execution_action_outer = local.my_domain_com.my_lib.outer.OuterExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.outer.Outer
+            ),
+            self.scheduler,
+        )
+        self.execution_action_outer.join_for_empty_rule_global_position_slot = literal.NO_JOIN
+        self.execution_action_outer.join_for_destroy_global_position_slot = literal.NO_JOIN
+
+    def accept_when_empty_global_position_slot(self):
+        self.create_global_position_slot()
+
+    def on_action_parent_occupied(self):
+        self.scheduler.submit(self.create_action_outer__position_trigger_pos)
+        self.execution_action_outer.on_action_parent_occupied()
 
     def create_global_position_slot(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.slot.Slot
         ).create_particle()
-        self.trigger_action_outer__for_empty_rule_global_position_slot()
+        self.execution_action_outer.accept_for_empty_rule_global_position_slot()
 
     def create_action_outer__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -57,28 +62,8 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.execution_trigger_action_outer = local.my_domain_com.my_lib.outer.OuterExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.outer.Outer
-            ),
-            self.scheduler,
-            self.guarantees.trigger_action_outer,
-        )
-        self.scheduler.submit(self.destroy_action_outer__position_trigger_pos)
-        self.scheduler.submit(self.trigger_action_outer__for_empty_rule_global_position_slot)
-        self.trigger_action_outer__action_parent()
-
-    def destroy_action_outer__position_trigger_pos(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.outer.Outer
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
-
-    def trigger_action_outer__for_empty_rule_global_position_slot(self):
-        if not self.join_for_trigger_action_outer__for_empty_rule_global_position_slot.arrive():
-            return
-        self.execution_trigger_action_outer.accept_for_empty_rule_global_position_slot()
-
-    def trigger_action_outer__action_parent(self):
-        self.execution_trigger_action_outer.accept_action_parent()

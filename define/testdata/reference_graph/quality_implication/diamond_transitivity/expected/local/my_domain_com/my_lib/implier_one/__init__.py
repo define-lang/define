@@ -16,7 +16,7 @@ class ImplierOne(literal.Action):
 @final
 class ImplierOneGuarantees:
     def __init__(self):
-        self.guarantee_global_position_implied: list[literal.Task] = []
+        self.global_position_implied = literal.Guarantee()
 
 
 @final
@@ -25,11 +25,10 @@ class ImplierOneExecution:
         self,
         action: ImplierOne,
         scheduler: literal.Scheduler,
-        guarantees: ImplierOneGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = ImplierOneGuarantees()
 
     def accept_when_empty_global_position_implied(self):
         self.create_global_position_implied()
@@ -41,4 +40,6 @@ class ImplierOneExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.implied.Implied
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_implied)
+        self.guarantees.global_position_implied.publish(
+            self.scheduler,
+        )

@@ -1,7 +1,12 @@
 """Particle Operation tracing for instrumented literal programs.
 
-Tracing records both realized operation order and runtime dependencies. It does
-not track generated methods that perform no Particle Operation.
+Tracing records both realized operation order and actual runtime
+dependencies. It does not track generated methods that perform no
+Particle Operation. In general, tracing must be a faithful
+representation of exactly how dependencies actually execute and
+depend on each other at runtime; it must never invent artificial
+dependencies or patterns that obscure what the code actually did
+when running.
 """
 
 from __future__ import annotations

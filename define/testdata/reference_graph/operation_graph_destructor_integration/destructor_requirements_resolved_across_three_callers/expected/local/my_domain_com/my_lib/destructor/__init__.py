@@ -20,9 +20,9 @@ class Destructor(literal.Action):
 @final
 class DestructorGuarantees:
     def __init__(self):
-        self.guarantee_global_position_callee_known: list[literal.Task] = []
-        self.guarantee_global_position_middle_known: list[literal.Task] = []
-        self.guarantee_global_position_creator_known: list[literal.Task] = []
+        self.global_position_callee_known = literal.Guarantee()
+        self.global_position_middle_known = literal.Guarantee()
+        self.global_position_creator_known = literal.Guarantee()
 
 
 @final
@@ -31,11 +31,10 @@ class DestructorExecution:
         self,
         action: Destructor,
         scheduler: literal.Scheduler,
-        guarantees: DestructorGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = DestructorGuarantees()
         self.local_position_callee_holder = literal.LocalPosition(
             "position<callee_holder>",
             scheduler=self.scheduler,
@@ -44,17 +43,27 @@ class DestructorExecution:
             "position<creator_holder>",
             scheduler=self.scheduler,
         )
+        self.join_for_move_global_position_callee_known_to_position_callee_holder: literal.Join
+        self.join_for_move_global_position_creator_known_to_position_creator_holder: literal.Join
+        self.join_for_empty_rule_global_position_callee_known: literal.Join
+        self.join_for_empty_rule_global_position_creator_known: literal.Join
 
     def accept_for_empty_rule_global_position_callee_known(self):
+        if not self.join_for_empty_rule_global_position_callee_known.arrive():
+            return
         self.move_global_position_callee_known_to_position_callee_holder()
 
     def accept_when_empty_global_position_middle_known(self):
         self.create_global_position_middle_known()
 
     def accept_for_empty_rule_global_position_creator_known(self):
+        if not self.join_for_empty_rule_global_position_creator_known.arrive():
+            return
         self.move_global_position_creator_known_to_position_creator_holder()
 
     def move_global_position_callee_known_to_position_callee_holder(self):
+        if not self.join_for_move_global_position_callee_known_to_position_callee_holder.arrive():
+            return
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.callee_known.CalleeKnown
         ).move_particle_to(self.local_position_callee_holder)
@@ -63,7 +72,9 @@ class DestructorExecution:
                 local.my_domain_com.my_lib.callee_known.CalleeKnown
             )
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_callee_known)
+        self.guarantees.global_position_callee_known.publish(
+            self.scheduler,
+        )
 
     def create_global_position_middle_known(self):
         self.action.on_particle.get_position(
@@ -72,9 +83,13 @@ class DestructorExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.middle_known.MiddleKnown
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_middle_known)
+        self.guarantees.global_position_middle_known.publish(
+            self.scheduler,
+        )
 
     def move_global_position_creator_known_to_position_creator_holder(self):
+        if not self.join_for_move_global_position_creator_known_to_position_creator_holder.arrive():
+            return
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.creator_known.CreatorKnown
         ).move_particle_to(self.local_position_creator_holder)
@@ -83,4 +98,6 @@ class DestructorExecution:
                 local.my_domain_com.my_lib.creator_known.CreatorKnown
             )
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_creator_known)
+        self.guarantees.global_position_creator_known.publish(
+            self.scheduler,
+        )

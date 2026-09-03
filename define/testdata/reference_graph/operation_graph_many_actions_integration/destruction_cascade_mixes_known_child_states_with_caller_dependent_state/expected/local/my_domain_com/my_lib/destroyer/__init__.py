@@ -35,9 +35,9 @@ class Destroyer(literal.Action):
 @final
 class DestroyerGuarantees:
     def __init__(self):
-        self.guarantee_position_run: list[literal.Task] = []
-        self.guarantee_global_position_target: list[literal.Task] = []
-        self.guarantee_global_position_destination: list[literal.Task] = []
+        self.position_run = literal.Guarantee()
+        self.global_position_target = literal.Guarantee()
+        self.global_position_destination = literal.Guarantee()
 
 
 @final
@@ -46,13 +46,12 @@ class DestroyerExecution:
         self,
         action: Destroyer,
         scheduler: literal.Scheduler,
-        guarantees: DestroyerGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = DestroyerGuarantees()
         self.destruction_connections = destruction_connections
         self.local_position_local = literal.LocalPosition(
             "position<local>",
@@ -62,16 +61,25 @@ class DestroyerExecution:
             ),
             scheduler=self.scheduler,
         )
-        self.join_for_move_position_local__global_position_known_empty_to_global_position_destination = self.scheduler.create_join(2)
+        self.join_for_move_position_run_to_global_position_target: literal.Join
+        self.join_for_move_position_local__global_position_known_empty_to_global_position_destination: literal.Join
         self.join_for_destroy_position_local = self.scheduler.create_join(2)
+        self.join_for_empty_rule_position_run: literal.Join
+        self.join_when_empty_global_position_destination: literal.Join
 
     def accept_for_empty_rule_position_run(self):
+        if not self.join_for_empty_rule_position_run.arrive():
+            return
         self.move_position_run_to_global_position_target()
 
     def accept_when_empty_global_position_destination(self):
+        if not self.join_when_empty_global_position_destination.arrive():
+            return
         self.move_position_local__global_position_known_empty_to_global_position_destination()
 
     def move_position_run_to_global_position_target(self):
+        if not self.join_for_move_position_run_to_global_position_target.arrive():
+            return
         self.action.get_interface_position(
             "position<run>"
         ).move_particle_to(
@@ -79,16 +87,20 @@ class DestroyerExecution:
                 local.my_domain_com.my_lib.target.Target
             )
         )
-        self.scheduler.submit(self.move_global_position_target_to_position_local)
-        self.scheduler.continue_with(self.guarantees.guarantee_position_run)
+        self.guarantees.position_run.publish(
+            self.scheduler,
+            self.move_global_position_target_to_position_local,
+        )
 
     def move_global_position_target_to_position_local(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.target.Target
         ).move_particle_to(self.local_position_local)
-        self.scheduler.submit(self.move_position_local__global_position_known_empty_to_global_position_destination)
-        self.scheduler.submit(self.create_position_local__global_position_known_occupied)
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_target)
+        self.guarantees.global_position_target.publish(
+            self.scheduler,
+            self.move_position_local__global_position_known_empty_to_global_position_destination,
+            self.create_position_local__global_position_known_occupied,
+        )
 
     def move_position_local__global_position_known_empty_to_global_position_destination(self):
         if not self.join_for_move_position_local__global_position_known_empty_to_global_position_destination.arrive():
@@ -100,8 +112,10 @@ class DestroyerExecution:
                 local.my_domain_com.my_lib.destination.Destination
             )
         )
-        self.scheduler.submit(self.destroy_position_local)
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_destination)
+        self.guarantees.global_position_destination.publish(
+            self.scheduler,
+            self.destroy_position_local,
+        )
 
     def create_position_local__global_position_known_occupied(self):
         self.local_position_local.particle.get_position(

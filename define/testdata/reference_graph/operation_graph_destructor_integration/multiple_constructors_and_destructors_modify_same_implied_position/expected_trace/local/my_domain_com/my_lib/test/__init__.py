@@ -19,18 +19,8 @@ class Test(literal.EntryPoint):
             scheduler,
             None,
             "test",
-            TestGuarantees(),
         )
-        execution.create_position_box()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_position_box__action_construct_a = local.my_domain_com.my_lib.construct_a.ConstructAGuarantees()
-        self.trigger_position_box__action_construct_b = local.my_domain_com.my_lib.construct_b.ConstructBGuarantees()
-        self.trigger_position_box__action_destruct_b = local.my_domain_com.my_lib.destruct_b.DestructBGuarantees()
-        self.trigger_position_box__action_destruct_a = local.my_domain_com.my_lib.destruct_a.DestructAGuarantees()
+        execution.on_action_parent_occupied()
 
 
 @final
@@ -40,14 +30,12 @@ class TestExecution:
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
-        guarantees: TestGuarantees,
     ):
         self.scheduler = scheduler
         self.trace_execution = scheduler.execution_created(
             caller_execution,
             action_name,
         )
-        self.guarantees = guarantees
         self.local_position_box = literal.LocalPosition(
             "position<box>",
             constraints=(
@@ -58,26 +46,13 @@ class TestExecution:
             ),
             scheduler=self.scheduler,
         )
-        guarantees.trigger_position_box__action_destruct_a.guarantee_global_position_marker.append(
-            self.destroy_position_box__global_position_marker
-        )
-        guarantees.trigger_position_box__action_construct_a.guarantee_global_position_marker.append(
-            self.trigger_position_box__action_construct_b__for_empty_rule_global_position_marker
-        )
-        guarantees.trigger_position_box__action_construct_b.guarantee_global_position_marker.append(
-            self.trigger_position_box__action_destruct_b__for_empty_rule_global_position_marker
-        )
-        guarantees.trigger_position_box__action_destruct_b.guarantee_global_position_marker.append(
-            self.trigger_position_box__action_destruct_a__for_empty_rule_global_position_marker
-        )
-        self.execution_trigger_position_box__action_construct_a: local.my_domain_com.my_lib.construct_a.ConstructAExecution
-        self.execution_trigger_position_box__action_construct_b: local.my_domain_com.my_lib.construct_b.ConstructBExecution
-        self.execution_trigger_position_box__action_destruct_b: local.my_domain_com.my_lib.destruct_b.DestructBExecution
-        self.execution_trigger_position_box__action_destruct_a: local.my_domain_com.my_lib.destruct_a.DestructAExecution
-        self.join_for_trigger_position_box__action_construct_a__when_empty_global_position_marker = self.scheduler.create_join(2)
-        self.join_for_trigger_position_box__action_construct_b__for_empty_rule_global_position_marker = self.scheduler.create_join(2)
-        self.join_for_trigger_position_box__action_destruct_b__for_empty_rule_global_position_marker = self.scheduler.create_join(2)
-        self.join_for_trigger_position_box__action_destruct_a__for_empty_rule_global_position_marker = self.scheduler.create_join(2)
+        self.execution_position_box__action_construct_a: local.my_domain_com.my_lib.construct_a.ConstructAExecution
+        self.execution_position_box__action_construct_b: local.my_domain_com.my_lib.construct_b.ConstructBExecution
+        self.execution_position_box__action_destruct_b: local.my_domain_com.my_lib.destruct_b.DestructBExecution
+        self.execution_position_box__action_destruct_a: local.my_domain_com.my_lib.destruct_a.DestructAExecution
+
+    def on_action_parent_occupied(self):
+        self.create_position_box()
 
     def create_position_box(self):
         self.local_position_box.create_particle()
@@ -86,47 +61,57 @@ class TestExecution:
             "box",
             1,
         )
-        self.execution_trigger_position_box__action_construct_a = local.my_domain_com.my_lib.construct_a.ConstructAExecution(
+        self.execution_position_box__action_construct_a = local.my_domain_com.my_lib.construct_a.ConstructAExecution(
             self.local_position_box.particle.get_action(
                 local.my_domain_com.my_lib.construct_a.ConstructA
             ),
             self.scheduler,
             self.trace_execution,
             "construct_a",
-            self.guarantees.trigger_position_box__action_construct_a,
         )
-        self.execution_trigger_position_box__action_construct_b = local.my_domain_com.my_lib.construct_b.ConstructBExecution(
+        self.execution_position_box__action_construct_a.guarantees.global_position_marker.consumers.append(
+            self.accept_guarantee_position_box__action_construct_b
+        )
+        self.execution_position_box__action_construct_b = local.my_domain_com.my_lib.construct_b.ConstructBExecution(
             self.local_position_box.particle.get_action(
                 local.my_domain_com.my_lib.construct_b.ConstructB
             ),
             self.scheduler,
             self.trace_execution,
             "construct_b",
-            self.guarantees.trigger_position_box__action_construct_b,
         )
-        self.execution_trigger_position_box__action_destruct_b = local.my_domain_com.my_lib.destruct_b.DestructBExecution(
+        self.execution_position_box__action_construct_b.join_for_empty_rule_global_position_marker = literal.NO_JOIN
+        self.execution_position_box__action_construct_b.join_for_move_global_position_marker_to_position_holder = literal.NO_JOIN
+        self.execution_position_box__action_construct_b.guarantees.global_position_marker.consumers.append(
+            self.accept_guarantee_position_box__action_destruct_b
+        )
+        self.execution_position_box__action_destruct_b = local.my_domain_com.my_lib.destruct_b.DestructBExecution(
             self.local_position_box.particle.get_action(
                 local.my_domain_com.my_lib.destruct_b.DestructB
             ),
             self.scheduler,
             self.trace_execution,
             "destruct_b",
-            self.guarantees.trigger_position_box__action_destruct_b,
         )
-        self.execution_trigger_position_box__action_destruct_a = local.my_domain_com.my_lib.destruct_a.DestructAExecution(
+        self.execution_position_box__action_destruct_b.join_for_empty_rule_global_position_marker = literal.NO_JOIN
+        self.execution_position_box__action_destruct_b.join_for_move_global_position_marker_to_position_holder = literal.NO_JOIN
+        self.execution_position_box__action_destruct_b.guarantees.global_position_marker.consumers.append(
+            self.accept_guarantee_position_box__action_destruct_a
+        )
+        self.execution_position_box__action_destruct_a = local.my_domain_com.my_lib.destruct_a.DestructAExecution(
             self.local_position_box.particle.get_action(
                 local.my_domain_com.my_lib.destruct_a.DestructA
             ),
             self.scheduler,
             self.trace_execution,
             "destruct_a",
-            self.guarantees.trigger_position_box__action_destruct_a,
         )
-        self.scheduler.submit(self.trigger_position_box__action_construct_a__when_empty_global_position_marker)
-        self.scheduler.submit(self.trigger_position_box__action_construct_a__when_empty_global_position_marker)
-        self.scheduler.submit(self.trigger_position_box__action_construct_b__for_empty_rule_global_position_marker)
-        self.scheduler.submit(self.trigger_position_box__action_destruct_b__for_empty_rule_global_position_marker)
-        self.trigger_position_box__action_destruct_a__for_empty_rule_global_position_marker()
+        self.execution_position_box__action_destruct_a.join_for_empty_rule_global_position_marker = literal.NO_JOIN
+        self.execution_position_box__action_destruct_a.join_for_move_global_position_marker_to_position_holder = literal.NO_JOIN
+        self.execution_position_box__action_destruct_a.guarantees.global_position_marker.consumers.append(
+            self.destroy_position_box__global_position_marker
+        )
+        self.execution_position_box__action_construct_a.accept_when_empty_global_position_marker()
 
     def destroy_position_box__global_position_marker(self):
         self.local_position_box.particle.get_position(
@@ -144,22 +129,11 @@ class TestExecution:
             1,
         )
 
-    def trigger_position_box__action_construct_a__when_empty_global_position_marker(self):
-        if not self.join_for_trigger_position_box__action_construct_a__when_empty_global_position_marker.arrive():
-            return
-        self.execution_trigger_position_box__action_construct_a.accept_when_empty_global_position_marker()
+    def accept_guarantee_position_box__action_construct_b(self):
+        self.execution_position_box__action_construct_b.accept_for_empty_rule_global_position_marker()
 
-    def trigger_position_box__action_construct_b__for_empty_rule_global_position_marker(self):
-        if not self.join_for_trigger_position_box__action_construct_b__for_empty_rule_global_position_marker.arrive():
-            return
-        self.execution_trigger_position_box__action_construct_b.accept_for_empty_rule_global_position_marker()
+    def accept_guarantee_position_box__action_destruct_b(self):
+        self.execution_position_box__action_destruct_b.accept_for_empty_rule_global_position_marker()
 
-    def trigger_position_box__action_destruct_b__for_empty_rule_global_position_marker(self):
-        if not self.join_for_trigger_position_box__action_destruct_b__for_empty_rule_global_position_marker.arrive():
-            return
-        self.execution_trigger_position_box__action_destruct_b.accept_for_empty_rule_global_position_marker()
-
-    def trigger_position_box__action_destruct_a__for_empty_rule_global_position_marker(self):
-        if not self.join_for_trigger_position_box__action_destruct_a__for_empty_rule_global_position_marker.arrive():
-            return
-        self.execution_trigger_position_box__action_destruct_a.accept_for_empty_rule_global_position_marker()
+    def accept_guarantee_position_box__action_destruct_a(self):
+        self.execution_position_box__action_destruct_a.accept_for_empty_rule_global_position_marker()

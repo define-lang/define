@@ -27,7 +27,7 @@ class Other(literal.Action):
 @final
 class OtherGuarantees:
     def __init__(self):
-        self.guarantee_global_position_origin: list[literal.Task] = []
+        self.global_position_origin = literal.Guarantee()
 
 
 @final
@@ -36,23 +36,30 @@ class OtherExecution:
         self,
         action: Other,
         scheduler: literal.Scheduler,
-        guarantees: OtherGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = OtherGuarantees()
         self.destruction_connections = destruction_connections
+        self.join_for_destroy_global_position_origin: literal.Join
+        self.join_for_empty_rule_global_position_origin: literal.Join
 
     def accept_for_empty_rule_global_position_origin(self):
+        if not self.join_for_empty_rule_global_position_origin.arrive():
+            return
         self.destroy_global_position_origin()
 
     def destroy_global_position_origin(self):
+        if not self.join_for_destroy_global_position_origin.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_global_position_origin)
 
     def continue_destroy_global_position_origin(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.origin.Origin
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_origin)
+        self.guarantees.global_position_origin.publish(
+            self.scheduler,
+        )

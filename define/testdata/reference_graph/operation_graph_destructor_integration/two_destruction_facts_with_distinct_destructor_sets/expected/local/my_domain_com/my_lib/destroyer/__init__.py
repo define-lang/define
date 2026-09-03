@@ -35,8 +35,8 @@ class Destroyer(literal.Action):
 @final
 class DestroyerGuarantees:
     def __init__(self):
-        self.guarantee_position_first: list[literal.Task] = []
-        self.guarantee_position_second: list[literal.Task] = []
+        self.position_first = literal.Guarantee()
+        self.position_second = literal.Guarantee()
 
 
 @final
@@ -45,49 +45,59 @@ class DestroyerExecution:
         self,
         action: Destroyer,
         scheduler: literal.Scheduler,
-        guarantees: DestroyerGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = DestroyerGuarantees()
         self.destruction_connections = destruction_connections
-        self.execution_trigger_position_first__action_direct_destructor: local.my_domain_com.my_lib.direct_destructor.DirectDestructorExecution
-        self.join_for_trigger_position_first__action_direct_destructor__action_parent = self.scheduler.create_join(2)
+        self.execution_position_first__action_direct_destructor: local.my_domain_com.my_lib.direct_destructor.DirectDestructorExecution
+        self.join_for_destroy_position_first: literal.Join
+        self.join_for_destroy_position_second: literal.Join
+        self.join_for_empty_rule_position_first: literal.Join
+        self.join_for_empty_rule_position_second: literal.Join
 
     def accept_for_empty_rule_position_first(self):
+        if not self.join_for_empty_rule_position_first.arrive():
+            return
         self.destroy_position_first()
 
     def accept_for_empty_rule_position_second(self):
+        if not self.join_for_empty_rule_position_second.arrive():
+            return
         self.destroy_position_second()
 
     def accept_when_occupied_position_first(self):
-        self.execution_trigger_position_first__action_direct_destructor = local.my_domain_com.my_lib.direct_destructor.DirectDestructorExecution(
+        self.execution_position_first__action_direct_destructor.on_action_parent_occupied()
+
+    def init_when_occupied_position_first(self):
+        self.execution_position_first__action_direct_destructor = local.my_domain_com.my_lib.direct_destructor.DirectDestructorExecution(
             self.scheduler,
         )
-        self.scheduler.submit(self.trigger_position_first__action_direct_destructor__action_parent)
-        self.trigger_position_first__action_direct_destructor__action_parent()
 
     def destroy_position_first(self):
+        if not self.join_for_destroy_position_first.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_first)
 
     def continue_destroy_position_first(self):
         self.action.get_interface_position(
             "position<first>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_first)
+        self.guarantees.position_first.publish(
+            self.scheduler,
+        )
 
     def destroy_position_second(self):
+        if not self.join_for_destroy_position_second.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_second)
 
     def continue_destroy_position_second(self):
         self.action.get_interface_position(
             "position<second>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_second)
-
-    def trigger_position_first__action_direct_destructor__action_parent(self):
-        if not self.join_for_trigger_position_first__action_direct_destructor__action_parent.arrive():
-            return
-        self.execution_trigger_position_first__action_direct_destructor.accept_action_parent()
+        self.guarantees.position_second.publish(
+            self.scheduler,
+        )

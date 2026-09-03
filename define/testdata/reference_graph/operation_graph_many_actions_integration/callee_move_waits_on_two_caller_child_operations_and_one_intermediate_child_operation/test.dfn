@@ -1,0 +1,21 @@
+# Two child Moves by /test and one child Create by /middle_action independently
+# precede /inner's Move of their parent particle.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</input>.
+    it also assigns the action</middle_action>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<second_holder>.
+        define the position<third_holder>.
+        create a particle in position</input>.
+        create a particle in position</input>::position</second>.
+        move the particle in position</input>::position</second> to position<second_holder>.
+        destroy the particle in position<second_holder>.
+        create a particle in position</input>::position</third>.
+        move the particle in position</input>::position</third> to position<third_holder>.
+        destroy the particle in position<third_holder>.
+        create a particle in action</middle_action>::position<trigger_pos>.
+        destroy the particle in action</middle_action>::position<trigger_pos>.
+    }
+}

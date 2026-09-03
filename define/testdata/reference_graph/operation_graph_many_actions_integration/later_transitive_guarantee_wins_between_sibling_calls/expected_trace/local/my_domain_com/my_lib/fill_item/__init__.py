@@ -27,7 +27,7 @@ class FillItem(literal.Action):
 @final
 class FillItemGuarantees:
     def __init__(self):
-        self.guarantee_global_position_item: list[literal.Task] = []
+        self.global_position_item = literal.Guarantee()
 
 
 @final
@@ -38,7 +38,6 @@ class FillItemExecution:
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
-        guarantees: FillItemGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
@@ -46,7 +45,7 @@ class FillItemExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = guarantees
+        self.guarantees = FillItemGuarantees()
 
     def accept_when_empty_global_position_item(self):
         self.create_global_position_item()
@@ -60,4 +59,6 @@ class FillItemExecution:
             "/item",
             1,
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_item)
+        self.guarantees.global_position_item.publish(
+            self.scheduler,
+        )

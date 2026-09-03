@@ -18,16 +18,8 @@ class Test(literal.EntryPoint):
         execution = TestExecution(
             self,
             scheduler,
-            TestGuarantees(),
         )
-        execution.scheduler.submit(execution.create_action_perform_operation__position_operation_trigger)
-        execution.create_action_perform_operation__position_run()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_action_perform_operation = local.my_domain_com.my_library_collection.perform_operation.PerformOperationGuarantees()
+        execution.on_action_parent_occupied()
 
 
 @final
@@ -36,14 +28,27 @@ class TestExecution:
         self,
         action: Test,
         scheduler: literal.Scheduler,
-        guarantees: TestGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
-        self.execution_trigger_action_perform_operation: local.my_domain_com.my_library_collection.perform_operation.PerformOperationExecution
-        self.join_for_trigger_action_perform_operation__for_empty_rule_position_operation_trigger__global_position_inner_position = self.scheduler.create_join(2)
-        self.join_for_trigger_action_perform_operation__for_empty_rule_position_run = self.scheduler.create_join(2)
+        self.execution_action_perform_operation: local.my_domain_com.my_library_collection.perform_operation.PerformOperationExecution
+        self.execution_action_perform_operation = local.my_domain_com.my_library_collection.perform_operation.PerformOperationExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_library_collection.perform_operation.PerformOperation
+            ),
+            self.scheduler,
+        )
+        self.execution_action_perform_operation.join_for_empty_rule_position_operation_trigger__global_position_inner_position = literal.NO_JOIN
+        self.execution_action_perform_operation.join_for_empty_rule_position_operation_trigger = literal.NO_JOIN
+        self.execution_action_perform_operation.join_for_empty_rule_position_run = literal.NO_JOIN
+        self.execution_action_perform_operation.join_for_destroy_position_operation_trigger__global_position_inner_position = literal.NO_JOIN
+        self.execution_action_perform_operation.join_for_destroy_position_operation_trigger = literal.NO_JOIN
+        self.execution_action_perform_operation.join_for_destroy_position_run = literal.NO_JOIN
+
+    def on_action_parent_occupied(self):
+        self.scheduler.submit(self.create_action_perform_operation__position_operation_trigger)
+        self.scheduler.submit(self.create_action_perform_operation__position_run)
+        self.execution_action_perform_operation.on_action_parent_occupied()
 
     def create_action_perform_operation__position_operation_trigger(self):
         self.action.on_particle.get_action(
@@ -58,7 +63,7 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_library_collection.inner_position.InnerPosition
         ).create_particle()
-        self.trigger_action_perform_operation__for_empty_rule_position_operation_trigger__global_position_inner_position()
+        self.execution_action_perform_operation.accept_for_empty_rule_position_operation_trigger__global_position_inner_position()
 
     def create_action_perform_operation__position_run(self):
         self.action.on_particle.get_action(
@@ -66,31 +71,4 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.execution_trigger_action_perform_operation = local.my_domain_com.my_library_collection.perform_operation.PerformOperationExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_library_collection.perform_operation.PerformOperation
-            ),
-            self.scheduler,
-            self.guarantees.trigger_action_perform_operation,
-        )
-        self.scheduler.submit(self.trigger_action_perform_operation__for_empty_rule_position_run)
-        self.scheduler.submit(self.trigger_action_perform_operation__action_parent)
-        self.scheduler.submit(self.trigger_action_perform_operation__for_empty_rule_position_operation_trigger__global_position_inner_position)
-        self.scheduler.submit(self.trigger_action_perform_operation__for_empty_rule_position_operation_trigger)
-        self.trigger_action_perform_operation__for_empty_rule_position_run()
-
-    def trigger_action_perform_operation__action_parent(self):
-        self.execution_trigger_action_perform_operation.accept_action_parent()
-
-    def trigger_action_perform_operation__for_empty_rule_position_operation_trigger__global_position_inner_position(self):
-        if not self.join_for_trigger_action_perform_operation__for_empty_rule_position_operation_trigger__global_position_inner_position.arrive():
-            return
-        self.execution_trigger_action_perform_operation.accept_for_empty_rule_position_operation_trigger__global_position_inner_position()
-
-    def trigger_action_perform_operation__for_empty_rule_position_operation_trigger(self):
-        self.execution_trigger_action_perform_operation.accept_for_empty_rule_position_operation_trigger()
-
-    def trigger_action_perform_operation__for_empty_rule_position_run(self):
-        if not self.join_for_trigger_action_perform_operation__for_empty_rule_position_run.arrive():
-            return
-        self.execution_trigger_action_perform_operation.accept_for_empty_rule_position_run()
+        self.execution_action_perform_operation.accept_for_empty_rule_position_run()

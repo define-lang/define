@@ -114,16 +114,6 @@
         "source": "first",
         "target": "/destroyer::run",
         "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "move",
-        "source": "first",
-        "target": "/destroyer::run",
-        "occurrence": 1
       }
     ]
   },
@@ -248,16 +238,6 @@
       "occurrence": 1
     },
     "dependencies": [
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "move",
-        "source": "second",
-        "target": "/destroyer::run",
-        "occurrence": 1
-      },
       {
         "execution": {
           "caller": null,

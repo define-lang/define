@@ -1,0 +1,28 @@
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</guaranteed_parent>.
+    it also assigns the position</caller_parent>.
+    it also assigns the action</fill_a>.
+    it also assigns the action</fill_b>.
+    it also assigns the action</mover>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<trash> {
+            it may only contain particles where {
+                it has the position</caller_only>.
+            }
+        }
+        create a particle in position</guaranteed_parent>.
+        create a particle in position</caller_parent>.
+        create a particle in position</caller_parent>::position</child_a>.
+        create a particle in position</caller_parent>::position</child_b>.
+        create a particle in position<trash>.
+        create a particle in position<trash>::position</caller_only>.
+        move the particle in position<trash> to action</mover>::position<discard>.
+        create a particle in action</fill_a>::position<trigger_pos>.
+        create a particle in action</fill_b>::position<trigger_pos>.
+        create a particle in action</mover>::position<trigger_pos>.
+        destroy the particle in action</fill_a>::position<trigger_pos>.
+        destroy the particle in action</fill_b>::position<trigger_pos>.
+    }
+}

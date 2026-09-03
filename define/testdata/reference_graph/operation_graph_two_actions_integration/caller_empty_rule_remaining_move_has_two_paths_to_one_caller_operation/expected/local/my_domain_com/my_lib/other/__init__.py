@@ -40,10 +40,10 @@ class Other(literal.Action):
 @final
 class OtherGuarantees:
     def __init__(self):
-        self.guarantee_position_holder_a: list[literal.Task] = []
-        self.guarantee_position_holder_b: list[literal.Task] = []
-        self.guarantee_global_position_input: list[literal.Task] = []
-        self.guarantee_position_holder_c: list[literal.Task] = []
+        self.position_holder_a = literal.Guarantee()
+        self.position_holder_b = literal.Guarantee()
+        self.global_position_input = literal.Guarantee()
+        self.position_holder_c = literal.Guarantee()
 
 
 @final
@@ -52,32 +52,46 @@ class OtherExecution:
         self,
         action: Other,
         scheduler: literal.Scheduler,
-        guarantees: OtherGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = OtherGuarantees()
         self.destruction_connections = destruction_connections
-        self.join_for_move_position_holder_a_to_position_holder_b = self.scheduler.create_join(2)
+        self.join_for_move_global_position_input__global_position_a_to_position_holder_a: literal.Join
+        self.join_for_move_position_holder_a_to_position_holder_b: literal.Join
         self.join_for_move_position_holder_b_to_global_position_input__global_position_a = self.scheduler.create_join(2)
-        self.join_for_move_global_position_input__global_position_a_to_position_holder_c = self.scheduler.create_join(2)
-        self.join_for_destroy_global_position_input = self.scheduler.create_join(2)
+        self.join_for_move_global_position_input__global_position_a_to_position_holder_c: literal.Join
+        self.join_for_destroy_global_position_input: literal.Join
+        self.join_for_empty_rule_global_position_input__global_position_a: literal.Join
+        self.join_when_empty_position_holder_b: literal.Join
+        self.join_when_empty_position_holder_c: literal.Join
+        self.join_for_empty_rule_global_position_input: literal.Join
 
     def accept_for_empty_rule_global_position_input__global_position_a(self):
+        if not self.join_for_empty_rule_global_position_input__global_position_a.arrive():
+            return
         self.move_global_position_input__global_position_a_to_position_holder_a()
 
     def accept_when_empty_position_holder_b(self):
+        if not self.join_when_empty_position_holder_b.arrive():
+            return
         self.move_position_holder_a_to_position_holder_b()
 
     def accept_when_empty_position_holder_c(self):
+        if not self.join_when_empty_position_holder_c.arrive():
+            return
         self.move_global_position_input__global_position_a_to_position_holder_c()
 
     def accept_for_empty_rule_global_position_input(self):
+        if not self.join_for_empty_rule_global_position_input.arrive():
+            return
         self.destroy_global_position_input()
 
     def move_global_position_input__global_position_a_to_position_holder_a(self):
+        if not self.join_for_move_global_position_input__global_position_a_to_position_holder_a.arrive():
+            return
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.input.Input
         ).particle.get_position(
@@ -100,8 +114,10 @@ class OtherExecution:
                 "position<holder_b>"
             )
         )
-        self.scheduler.submit(self.move_position_holder_b_to_global_position_input__global_position_a)
-        self.scheduler.continue_with(self.guarantees.guarantee_position_holder_a)
+        self.guarantees.position_holder_a.publish(
+            self.scheduler,
+            self.move_position_holder_b_to_global_position_input__global_position_a,
+        )
 
     def create_global_position_input__global_position_a(self):
         self.action.on_particle.get_position(
@@ -128,8 +144,10 @@ class OtherExecution:
                 local.my_domain_com.my_lib.a.A
             )
         )
-        self.scheduler.submit(self.move_global_position_input__global_position_a_to_position_holder_c)
-        self.scheduler.continue_with(self.guarantees.guarantee_position_holder_b)
+        self.guarantees.position_holder_b.publish(
+            self.scheduler,
+            self.move_global_position_input__global_position_a_to_position_holder_c,
+        )
 
     def move_global_position_input__global_position_a_to_position_holder_c(self):
         if not self.join_for_move_global_position_input__global_position_a_to_position_holder_c.arrive():
@@ -155,7 +173,9 @@ class OtherExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.input.Input
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_input)
+        self.guarantees.global_position_input.publish(
+            self.scheduler,
+        )
 
     def destroy_position_holder_c(self):
         literal.continue_destruction(self.continue_destroy_position_holder_c)
@@ -164,4 +184,6 @@ class OtherExecution:
         self.action.get_interface_position(
             "position<holder_c>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_holder_c)
+        self.guarantees.position_holder_c.publish(
+            self.scheduler,
+        )

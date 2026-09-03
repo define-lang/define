@@ -1,0 +1,17 @@
+# /other's Move waits independently on the two latest child Creates. Only the
+# completed Move occupies /worker's Action Parent at destination.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<gateway> {
+            it may only contain particles where {
+                it has the action</other>.
+            }
+        }
+        create a particle in position<gateway>.
+        create a particle in position<gateway>::action</other>::position<trigger_pos>.
+        destroy the particle in position<gateway>::action</other>::position<destination>.
+        destroy the particle in position<gateway>.
+    }
+}

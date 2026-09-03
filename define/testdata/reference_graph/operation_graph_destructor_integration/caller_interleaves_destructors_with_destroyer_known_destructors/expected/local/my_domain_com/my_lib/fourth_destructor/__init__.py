@@ -16,7 +16,7 @@ class FourthDestructor(literal.Action):
 @final
 class FourthDestructorGuarantees:
     def __init__(self):
-        self.guarantee_global_position_marker: list[literal.Task] = []
+        self.global_position_marker = literal.Guarantee()
 
 
 @final
@@ -25,11 +25,10 @@ class FourthDestructorExecution:
         self,
         action: FourthDestructor,
         scheduler: literal.Scheduler,
-        guarantees: FourthDestructorGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = FourthDestructorGuarantees()
 
     def accept_when_empty_global_position_marker(self):
         self.create_global_position_marker()
@@ -41,4 +40,6 @@ class FourthDestructorExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_marker)
+        self.guarantees.global_position_marker.publish(
+            self.scheduler,
+        )

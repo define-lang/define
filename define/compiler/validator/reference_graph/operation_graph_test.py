@@ -93,12 +93,11 @@ def _destruction_contribution(
     destruction_position: tuple[str, ...],
     node_id: int,
 ) -> operation_graph_model.DestructionContributionNode:
-    trigger_operation = _operation_node(0)
+    action_parent_operation = _operation_node(0)
     execution = operation_graph_model.ActionExecution(
         ast.ActionReference(typed_names=(action,), location=_LOC),
-        trigger_operation,
         {},
-        action_parent_last_operation=trigger_operation,
+        action_parent_last_operation=action_parent_operation,
     )
     return operation_graph_model.DestructionContributionNode(
         node_id=node_id,

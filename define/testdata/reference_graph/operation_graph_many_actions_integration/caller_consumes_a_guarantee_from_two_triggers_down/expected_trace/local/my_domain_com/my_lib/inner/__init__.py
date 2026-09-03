@@ -27,7 +27,7 @@ class Inner(literal.Action):
 @final
 class InnerGuarantees:
     def __init__(self):
-        self.guarantee_global_position_inner_result: list[literal.Task] = []
+        self.global_position_inner_result = literal.Guarantee()
 
 
 @final
@@ -38,7 +38,6 @@ class InnerExecution:
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
-        guarantees: InnerGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
@@ -46,7 +45,7 @@ class InnerExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = guarantees
+        self.guarantees = InnerGuarantees()
 
     def accept_when_empty_global_position_inner_result(self):
         self.create_global_position_inner_result()
@@ -60,4 +59,6 @@ class InnerExecution:
             "/inner_result",
             1,
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_inner_result)
+        self.guarantees.global_position_inner_result.publish(
+            self.scheduler,
+        )

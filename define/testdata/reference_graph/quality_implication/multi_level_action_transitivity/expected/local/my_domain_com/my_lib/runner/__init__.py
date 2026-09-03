@@ -39,10 +39,9 @@ class Runner(literal.Action):
 @final
 class RunnerGuarantees:
     def __init__(self):
-        self.guarantee_position_source: list[literal.Task] = []
-        self.guarantee_position_dest: list[literal.Task] = []
-        self.guarantee_position_run: list[literal.Task] = []
-        self.trigger_position_source__action_implier = local.my_domain_com.my_lib.implier.ImplierGuarantees()
+        self.position_source = literal.Guarantee()
+        self.position_dest = literal.Guarantee()
+        self.position_run = literal.Guarantee()
 
 
 @final
@@ -51,51 +50,52 @@ class RunnerExecution:
         self,
         action: Runner,
         scheduler: literal.Scheduler,
-        guarantees: RunnerGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = RunnerGuarantees()
         self.destruction_connections = destruction_connections
-        guarantees.trigger_position_source__action_implier.trigger_action_implied.guarantee_global_position_transitive_implied.append(
-            self.move_position_source_to_position_dest
-        )
-        guarantees.trigger_position_source__action_implier.trigger_action_implied.guarantee_position_run.append(
-            self.move_position_source_to_position_dest
-        )
-        self.execution_trigger_position_source__action_implier: local.my_domain_com.my_lib.implier.ImplierExecution
-        self.join_for_move_position_source_to_position_dest = self.scheduler.create_join(3)
-        self.join_for_trigger_position_source__action_implier__action_parent = self.scheduler.create_join(2)
-        self.join_for_trigger_position_source__action_implier__when_empty_global_position_transitive_implied = self.scheduler.create_join(2)
+        self.execution_position_source__action_implier: local.my_domain_com.my_lib.implier.ImplierExecution
+        self.join_for_move_position_source_to_position_dest: literal.Join
+        self.join_for_destroy_position_run: literal.Join
+        self.join_when_empty_position_dest: literal.Join
+        self.join_for_empty_rule_position_run: literal.Join
 
     def accept_when_empty_position_source(self):
         self.create_position_source()
 
     def accept_when_empty_position_dest(self):
+        if not self.join_when_empty_position_dest.arrive():
+            return
         self.move_position_source_to_position_dest()
 
     def accept_for_empty_rule_position_run(self):
+        if not self.join_for_empty_rule_position_run.arrive():
+            return
         self.destroy_position_run()
 
     def create_position_source(self):
         self.action.get_interface_position(
             "position<source>"
         ).create_particle()
-        self.execution_trigger_position_source__action_implier = local.my_domain_com.my_lib.implier.ImplierExecution(
+        self.execution_position_source__action_implier = local.my_domain_com.my_lib.implier.ImplierExecution(
             self.action.get_interface_position(
                 "position<source>"
             ).particle.get_action(
                 local.my_domain_com.my_lib.implier.Implier
             ),
             self.scheduler,
-            self.guarantees.trigger_position_source__action_implier,
         )
-        self.scheduler.submit(self.trigger_position_source__action_implier__action_parent)
-        self.scheduler.submit(self.trigger_position_source__action_implier__when_empty_global_position_transitive_implied)
-        self.scheduler.submit(self.trigger_position_source__action_implier__action_parent)
-        self.trigger_position_source__action_implier__when_empty_global_position_transitive_implied()
+        self.execution_position_source__action_implier.execution_action_implied.guarantees.global_position_transitive_implied.consumers.append(
+            self.move_position_source_to_position_dest
+        )
+        self.execution_position_source__action_implier.execution_action_implied.guarantees.position_run.consumers.append(
+            self.move_position_source_to_position_dest
+        )
+        self.scheduler.submit(self.execution_position_source__action_implier.on_action_parent_occupied)
+        self.execution_position_source__action_implier.accept_when_empty_global_position_transitive_implied()
 
     def move_position_source_to_position_dest(self):
         if not self.join_for_move_position_source_to_position_dest.arrive():
@@ -107,8 +107,10 @@ class RunnerExecution:
                 "position<dest>"
             )
         )
-        self.scheduler.submit(self.destroy_position_dest__global_position_transitive_implied)
-        self.scheduler.continue_with(self.guarantees.guarantee_position_source)
+        self.guarantees.position_source.publish(
+            self.scheduler,
+            self.destroy_position_dest__global_position_transitive_implied,
+        )
 
     def destroy_position_dest__global_position_transitive_implied(self):
         self.action.get_interface_position(
@@ -119,23 +121,19 @@ class RunnerExecution:
         self.action.get_interface_position(
             "position<dest>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_dest)
+        self.guarantees.position_dest.publish(
+            self.scheduler,
+        )
 
     def destroy_position_run(self):
+        if not self.join_for_destroy_position_run.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_run)
 
     def continue_destroy_position_run(self):
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_run)
-
-    def trigger_position_source__action_implier__action_parent(self):
-        if not self.join_for_trigger_position_source__action_implier__action_parent.arrive():
-            return
-        self.execution_trigger_position_source__action_implier.accept_action_parent()
-
-    def trigger_position_source__action_implier__when_empty_global_position_transitive_implied(self):
-        if not self.join_for_trigger_position_source__action_implier__when_empty_global_position_transitive_implied.arrive():
-            return
-        self.execution_trigger_position_source__action_implier.accept_when_empty_global_position_transitive_implied()
+        self.guarantees.position_run.publish(
+            self.scheduler,
+        )

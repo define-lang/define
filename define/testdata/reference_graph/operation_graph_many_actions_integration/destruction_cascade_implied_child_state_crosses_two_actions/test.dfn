@@ -1,0 +1,14 @@
+# /inner's Destruction Contract receives the occupied child states through
+# /middle without either callee moving the implied parent particle.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</parent>.
+    it also assigns the action</middle>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</parent>.
+        create a particle in position</parent>::position</a>.
+        create a particle in position</parent>::position</b>.
+        create a particle in action</middle>::position<trigger_pos>.
+    }
+}

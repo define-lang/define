@@ -32,9 +32,8 @@ class Middle(literal.Action):
 @final
 class MiddleGuarantees:
     def __init__(self):
-        self.guarantee_position_inner_parent: list[literal.Task] = []
-        self.guarantee_position_inner_parent__global_position_result_value: list[literal.Task] = []
-        self.trigger_position_inner_holder__action_inner = local.my_domain_com.my_lib.inner.InnerGuarantees()
+        self.position_inner_parent = literal.Guarantee()
+        self.position_inner_parent__global_position_result_value = literal.Guarantee()
 
 
 @final
@@ -43,11 +42,10 @@ class MiddleExecution:
         self,
         action: Middle,
         scheduler: literal.Scheduler,
-        guarantees: MiddleGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = MiddleGuarantees()
         self.local_position_inner_holder = literal.LocalPosition(
             "position<inner_holder>",
             constraints=(
@@ -59,22 +57,30 @@ class MiddleExecution:
             "position<result_holder>",
             scheduler=self.scheduler,
         )
-        guarantees.trigger_position_inner_holder__action_inner.guarantee_position_input__global_position_result_value.append(
-            self.move_position_inner_holder__action_inner__position_input__global_position_result_value_to_position_result_holder
-        )
-        self.execution_trigger_position_inner_holder__action_inner: local.my_domain_com.my_lib.inner.InnerExecution
-        self.join_for_move_position_inner_parent_to_position_inner_holder__action_inner__position_input = self.scheduler.create_join(2)
+        self.execution_position_inner_holder__action_inner: local.my_domain_com.my_lib.inner.InnerExecution
+        self.join_for_move_position_inner_parent_to_position_inner_holder__action_inner__position_input: literal.Join
         self.join_for_destroy_position_inner_holder = self.scheduler.create_join(2)
-        self.join_for_trigger_position_inner_holder__action_inner__when_empty_position_input__global_position_result_value = self.scheduler.create_join(2)
+        self.join_for_empty_rule_position_inner_parent: literal.Join
 
-    def accept_action_parent(self):
+    def on_action_parent_occupied(self):
         self.create_position_inner_holder()
 
     def accept_for_empty_rule_position_inner_parent(self):
+        if not self.join_for_empty_rule_position_inner_parent.arrive():
+            return
         self.move_position_inner_parent_to_position_inner_holder__action_inner__position_input()
 
     def create_position_inner_holder(self):
         self.local_position_inner_holder.create_particle()
+        self.execution_position_inner_holder__action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
+            self.local_position_inner_holder.particle.get_action(
+                local.my_domain_com.my_lib.inner.Inner
+            ),
+            self.scheduler,
+        )
+        self.execution_position_inner_holder__action_inner.guarantees.position_input__global_position_result_value.consumers.append(
+            self.move_position_inner_holder__action_inner__position_input__global_position_result_value_to_position_result_holder
+        )
         self.scheduler.submit(self.move_position_inner_parent_to_position_inner_holder__action_inner__position_input)
         self.create_position_inner_holder__action_inner__position_trigger_pos()
 
@@ -90,7 +96,7 @@ class MiddleExecution:
                 "position<input>"
             )
         )
-        self.trigger_position_inner_holder__action_inner__when_empty_position_input__global_position_result_value()
+        self.execution_position_inner_holder__action_inner.accept_when_empty_position_input__global_position_result_value()
 
     def create_position_inner_holder__action_inner__position_trigger_pos(self):
         self.local_position_inner_holder.particle.get_action(
@@ -98,15 +104,12 @@ class MiddleExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.execution_trigger_position_inner_holder__action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
-            self.local_position_inner_holder.particle.get_action(
-                local.my_domain_com.my_lib.inner.Inner
-            ),
-            self.scheduler,
-            self.guarantees.trigger_position_inner_holder__action_inner,
-        )
-        self.scheduler.submit(self.destroy_position_inner_holder__action_inner__position_trigger_pos)
-        self.trigger_position_inner_holder__action_inner__when_empty_position_input__global_position_result_value()
+        self.local_position_inner_holder.particle.get_action(
+            local.my_domain_com.my_lib.inner.Inner
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
+        self.destroy_position_inner_holder()
 
     def move_position_inner_holder__action_inner__position_input__global_position_result_value_to_position_result_holder(self):
         self.local_position_inner_holder.particle.get_action(
@@ -125,9 +128,11 @@ class MiddleExecution:
                 "position<inner_parent>"
             )
         )
-        self.scheduler.submit(self.move_position_result_holder_to_position_inner_parent__global_position_result_value)
-        self.scheduler.submit(self.destroy_position_inner_holder)
-        self.scheduler.continue_with(self.guarantees.guarantee_position_inner_parent)
+        self.guarantees.position_inner_parent.publish(
+            self.scheduler,
+            self.move_position_result_holder_to_position_inner_parent__global_position_result_value,
+            self.destroy_position_inner_holder,
+        )
 
     def move_position_result_holder_to_position_inner_parent__global_position_result_value(self):
         self.local_position_result_holder.move_particle_to(
@@ -137,22 +142,11 @@ class MiddleExecution:
                 local.my_domain_com.my_lib.result_value.ResultValue
             )
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_position_inner_parent__global_position_result_value)
-
-    def destroy_position_inner_holder__action_inner__position_trigger_pos(self):
-        self.local_position_inner_holder.particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
-        ).get_interface_position(
-            "position<trigger_pos>"
-        ).destroy_particle()
-        self.destroy_position_inner_holder()
+        self.guarantees.position_inner_parent__global_position_result_value.publish(
+            self.scheduler,
+        )
 
     def destroy_position_inner_holder(self):
         if not self.join_for_destroy_position_inner_holder.arrive():
             return
         self.local_position_inner_holder.destroy_particle()
-
-    def trigger_position_inner_holder__action_inner__when_empty_position_input__global_position_result_value(self):
-        if not self.join_for_trigger_position_inner_holder__action_inner__when_empty_position_input__global_position_result_value.arrive():
-            return
-        self.execution_trigger_position_inner_holder__action_inner.accept_when_empty_position_input__global_position_result_value()

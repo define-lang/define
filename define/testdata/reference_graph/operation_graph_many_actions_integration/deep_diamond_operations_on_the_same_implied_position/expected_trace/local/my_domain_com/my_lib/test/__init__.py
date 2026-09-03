@@ -21,17 +21,9 @@ class Test(literal.EntryPoint):
             scheduler,
             None,
             "test",
-            TestGuarantees(),
         )
-        execution.scheduler.submit(execution.create_action_left__position_trigger_pos)
-        execution.create_action_right__position_trigger_pos()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_action_left = local.my_domain_com.my_lib.left.LeftGuarantees()
-        self.trigger_action_right = local.my_domain_com.my_lib.right.RightGuarantees()
+        scheduler.submit(execution.on_action_parent_occupied)
+        execution.accept_when_empty_global_position_marker()
 
 
 @final
@@ -42,7 +34,6 @@ class TestExecution:
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
-        guarantees: TestGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
@@ -50,13 +41,39 @@ class TestExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = guarantees
-        guarantees.trigger_action_left.trigger_action_left_child.guarantee_global_position_marker.append(
-            self.trigger_action_right__for_empty_rule_global_position_marker
+        self.execution_action_left: local.my_domain_com.my_lib.left.LeftExecution
+        self.execution_action_right: local.my_domain_com.my_lib.right.RightExecution
+        self.execution_action_left = local.my_domain_com.my_lib.left.LeftExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.left.Left
+            ),
+            self.scheduler,
+            self.trace_execution,
+            "left",
         )
-        self.execution_trigger_action_left: local.my_domain_com.my_lib.left.LeftExecution
-        self.execution_trigger_action_right: local.my_domain_com.my_lib.right.RightExecution
-        self.join_for_trigger_action_right__for_empty_rule_global_position_marker = self.scheduler.create_join(2)
+        self.execution_action_left.execution_action_left_child.guarantees.global_position_marker.consumers.append(
+            self.accept_guarantee_action_right
+        )
+        self.execution_action_right = local.my_domain_com.my_lib.right.RightExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.right.Right
+            ),
+            self.scheduler,
+            self.trace_execution,
+            "right",
+        )
+        self.execution_action_right.execution_action_right_child.join_for_empty_rule_global_position_marker = literal.NO_JOIN
+        self.execution_action_right.execution_action_right_child.join_for_destroy_global_position_marker = literal.NO_JOIN
+        self.execution_action_right.join_for_empty_rule_global_position_marker = literal.NO_JOIN
+
+    def on_action_parent_occupied(self):
+        self.scheduler.submit(self.create_action_left__position_trigger_pos)
+        self.scheduler.submit(self.create_action_right__position_trigger_pos)
+        self.scheduler.submit(self.execution_action_left.on_action_parent_occupied)
+        self.execution_action_right.on_action_parent_occupied()
+
+    def accept_when_empty_global_position_marker(self):
+        self.execution_action_left.accept_when_empty_global_position_marker()
 
     def create_action_left__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -69,18 +86,16 @@ class TestExecution:
             "/left::trigger_pos",
             1,
         )
-        self.execution_trigger_action_left = local.my_domain_com.my_lib.left.LeftExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.left.Left
-            ),
-            self.scheduler,
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.left.Left
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
+        self.scheduler.destroy_completed(
             self.trace_execution,
-            "left",
-            self.guarantees.trigger_action_left,
+            "/left::trigger_pos",
+            1,
         )
-        self.scheduler.submit(self.destroy_action_left__position_trigger_pos)
-        self.scheduler.submit(self.trigger_action_left__action_parent)
-        self.trigger_action_left__when_empty_global_position_marker()
 
     def create_action_right__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -93,32 +108,6 @@ class TestExecution:
             "/right::trigger_pos",
             1,
         )
-        self.execution_trigger_action_right = local.my_domain_com.my_lib.right.RightExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.right.Right
-            ),
-            self.scheduler,
-            self.trace_execution,
-            "right",
-            self.guarantees.trigger_action_right,
-        )
-        self.scheduler.submit(self.destroy_action_right__position_trigger_pos)
-        self.scheduler.submit(self.trigger_action_right__action_parent)
-        self.trigger_action_right__for_empty_rule_global_position_marker()
-
-    def destroy_action_left__position_trigger_pos(self):
-        self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.left.Left
-        ).get_interface_position(
-            "position<trigger_pos>"
-        ).destroy_particle()
-        self.scheduler.destroy_completed(
-            self.trace_execution,
-            "/left::trigger_pos",
-            1,
-        )
-
-    def destroy_action_right__position_trigger_pos(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.right.Right
         ).get_interface_position(
@@ -130,16 +119,5 @@ class TestExecution:
             1,
         )
 
-    def trigger_action_left__action_parent(self):
-        self.execution_trigger_action_left.accept_action_parent()
-
-    def trigger_action_left__when_empty_global_position_marker(self):
-        self.execution_trigger_action_left.accept_when_empty_global_position_marker()
-
-    def trigger_action_right__action_parent(self):
-        self.execution_trigger_action_right.accept_action_parent()
-
-    def trigger_action_right__for_empty_rule_global_position_marker(self):
-        if not self.join_for_trigger_action_right__for_empty_rule_global_position_marker.arrive():
-            return
-        self.execution_trigger_action_right.accept_for_empty_rule_global_position_marker()
+    def accept_guarantee_action_right(self):
+        self.execution_action_right.accept_for_empty_rule_global_position_marker()

@@ -37,8 +37,8 @@ class Other(literal.Action):
 @final
 class OtherGuarantees:
     def __init__(self):
-        self.guarantee_position_box__global_position_a__move__position_keeper: list[literal.Task] = []
-        self.guarantee_position_box__global_position_b: list[literal.Task] = []
+        self.position_box__global_position_b = literal.Guarantee()
+        self.position_box__global_position_a__move__position_keeper = literal.Guarantee()
 
 
 @final
@@ -47,16 +47,19 @@ class OtherExecution:
         self,
         action: Other,
         scheduler: literal.Scheduler,
-        guarantees: OtherGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = OtherGuarantees()
+        self.join_for_move_position_box__global_position_a_to_position_keeper: literal.Join
+        self.join_for_empty_rule_position_box__global_position_a: literal.Join
 
     def accept_when_empty_position_box__global_position_b(self):
         self.create_position_box__global_position_b()
 
     def accept_for_empty_rule_position_box__global_position_a(self):
+        if not self.join_for_empty_rule_position_box__global_position_a.arrive():
+            return
         self.move_position_box__global_position_a_to_position_keeper()
 
     def create_position_box__global_position_b(self):
@@ -65,9 +68,13 @@ class OtherExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.b.B
         ).create_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_box__global_position_b)
+        self.guarantees.position_box__global_position_b.publish(
+            self.scheduler,
+        )
 
     def move_position_box__global_position_a_to_position_keeper(self):
+        if not self.join_for_move_position_box__global_position_a_to_position_keeper.arrive():
+            return
         self.action.get_interface_position(
             "position<box>"
         ).particle.get_position(
@@ -77,4 +84,6 @@ class OtherExecution:
                 "position<keeper>"
             )
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_position_box__global_position_a__move__position_keeper)
+        self.guarantees.position_box__global_position_a__move__position_keeper.publish(
+            self.scheduler,
+        )

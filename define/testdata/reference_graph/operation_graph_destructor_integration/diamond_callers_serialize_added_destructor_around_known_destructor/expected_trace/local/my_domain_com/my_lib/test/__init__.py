@@ -21,17 +21,8 @@ class Test(literal.EntryPoint):
             scheduler,
             None,
             "test",
-            TestGuarantees(),
         )
-        execution.scheduler.submit(execution.create_action_caller_a__position_trigger_pos)
-        execution.create_action_caller_b__position_trigger_pos()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_action_caller_a = local.my_domain_com.my_lib.caller_a.CallerAGuarantees()
-        self.trigger_action_caller_b = local.my_domain_com.my_lib.caller_b.CallerBGuarantees()
+        execution.on_action_parent_occupied()
 
 
 @final
@@ -42,7 +33,6 @@ class TestExecution:
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
-        guarantees: TestGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
@@ -50,11 +40,34 @@ class TestExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = guarantees
-        self.execution_trigger_action_caller_a: local.my_domain_com.my_lib.caller_a.CallerAExecution
-        self.execution_trigger_action_caller_b: local.my_domain_com.my_lib.caller_b.CallerBExecution
-        self.join_for_trigger_action_caller_a__for_empty_rule_position_trigger_pos = self.scheduler.create_join(2)
-        self.join_for_trigger_action_caller_b__for_empty_rule_position_trigger_pos = self.scheduler.create_join(2)
+        self.execution_action_caller_a: local.my_domain_com.my_lib.caller_a.CallerAExecution
+        self.execution_action_caller_b: local.my_domain_com.my_lib.caller_b.CallerBExecution
+        self.execution_action_caller_a = local.my_domain_com.my_lib.caller_a.CallerAExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.caller_a.CallerA
+            ),
+            self.scheduler,
+            self.trace_execution,
+            "caller_a",
+        )
+        self.execution_action_caller_a.join_for_empty_rule_position_trigger_pos = literal.NO_JOIN
+        self.execution_action_caller_a.join_for_destroy_position_trigger_pos = literal.NO_JOIN
+        self.execution_action_caller_b = local.my_domain_com.my_lib.caller_b.CallerBExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.caller_b.CallerB
+            ),
+            self.scheduler,
+            self.trace_execution,
+            "caller_b",
+        )
+        self.execution_action_caller_b.join_for_empty_rule_position_trigger_pos = literal.NO_JOIN
+        self.execution_action_caller_b.join_for_destroy_position_trigger_pos = literal.NO_JOIN
+
+    def on_action_parent_occupied(self):
+        self.scheduler.submit(self.create_action_caller_a__position_trigger_pos)
+        self.scheduler.submit(self.create_action_caller_b__position_trigger_pos)
+        self.scheduler.submit(self.execution_action_caller_a.on_action_parent_occupied)
+        self.execution_action_caller_b.on_action_parent_occupied()
 
     def create_action_caller_a__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -67,18 +80,7 @@ class TestExecution:
             "/caller_a::trigger_pos",
             1,
         )
-        self.execution_trigger_action_caller_a = local.my_domain_com.my_lib.caller_a.CallerAExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.caller_a.CallerA
-            ),
-            self.scheduler,
-            self.trace_execution,
-            "caller_a",
-            self.guarantees.trigger_action_caller_a,
-        )
-        self.scheduler.submit(self.trigger_action_caller_a__for_empty_rule_position_trigger_pos)
-        self.scheduler.submit(self.trigger_action_caller_a__action_parent)
-        self.trigger_action_caller_a__for_empty_rule_position_trigger_pos()
+        self.execution_action_caller_a.accept_for_empty_rule_position_trigger_pos()
 
     def create_action_caller_b__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -91,31 +93,4 @@ class TestExecution:
             "/caller_b::trigger_pos",
             1,
         )
-        self.execution_trigger_action_caller_b = local.my_domain_com.my_lib.caller_b.CallerBExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.caller_b.CallerB
-            ),
-            self.scheduler,
-            self.trace_execution,
-            "caller_b",
-            self.guarantees.trigger_action_caller_b,
-        )
-        self.scheduler.submit(self.trigger_action_caller_b__for_empty_rule_position_trigger_pos)
-        self.scheduler.submit(self.trigger_action_caller_b__action_parent)
-        self.trigger_action_caller_b__for_empty_rule_position_trigger_pos()
-
-    def trigger_action_caller_a__action_parent(self):
-        self.execution_trigger_action_caller_a.accept_action_parent()
-
-    def trigger_action_caller_a__for_empty_rule_position_trigger_pos(self):
-        if not self.join_for_trigger_action_caller_a__for_empty_rule_position_trigger_pos.arrive():
-            return
-        self.execution_trigger_action_caller_a.accept_for_empty_rule_position_trigger_pos()
-
-    def trigger_action_caller_b__action_parent(self):
-        self.execution_trigger_action_caller_b.accept_action_parent()
-
-    def trigger_action_caller_b__for_empty_rule_position_trigger_pos(self):
-        if not self.join_for_trigger_action_caller_b__for_empty_rule_position_trigger_pos.arrive():
-            return
-        self.execution_trigger_action_caller_b.accept_for_empty_rule_position_trigger_pos()
+        self.execution_action_caller_b.accept_for_empty_rule_position_trigger_pos()

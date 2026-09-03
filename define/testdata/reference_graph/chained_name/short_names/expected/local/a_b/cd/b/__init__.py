@@ -22,7 +22,7 @@ class B(literal.Action):
 @final
 class BGuarantees:
     def __init__(self):
-        self.guarantee_position_t: list[literal.Task] = []
+        self.position_t = literal.Guarantee()
 
 
 @final
@@ -31,23 +31,26 @@ class BExecution:
         self,
         action: B,
         scheduler: literal.Scheduler,
-        guarantees: BGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = BGuarantees()
         self.destruction_connections = destruction_connections
         self.local_position_r = literal.LocalPosition(
             "position<r>",
             scheduler=self.scheduler,
         )
+        self.join_for_destroy_position_t: literal.Join
+        self.join_for_empty_rule_position_t: literal.Join
 
-    def accept_action_parent(self):
+    def on_action_parent_occupied(self):
         self.create_position_r()
 
     def accept_for_empty_rule_position_t(self):
+        if not self.join_for_empty_rule_position_t.arrive():
+            return
         self.destroy_position_t()
 
     def create_position_r(self):
@@ -55,10 +58,14 @@ class BExecution:
         self.local_position_r.destroy_particle()
 
     def destroy_position_t(self):
+        if not self.join_for_destroy_position_t.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_t)
 
     def continue_destroy_position_t(self):
         self.action.get_interface_position(
             "position<t>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_t)
+        self.guarantees.position_t.publish(
+            self.scheduler,
+        )

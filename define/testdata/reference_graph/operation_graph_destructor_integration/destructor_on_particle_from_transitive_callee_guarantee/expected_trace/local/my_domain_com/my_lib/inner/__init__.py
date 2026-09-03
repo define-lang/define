@@ -33,8 +33,8 @@ class Inner(literal.Action):
 @final
 class InnerGuarantees:
     def __init__(self):
-        self.guarantee_position_result: list[literal.Task] = []
-        self.guarantee_position_result__global_position_marker: list[literal.Task] = []
+        self.position_result = literal.Guarantee()
+        self.position_result__global_position_marker = literal.Guarantee()
 
 
 @final
@@ -45,7 +45,6 @@ class InnerExecution:
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
-        guarantees: InnerGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
@@ -53,7 +52,7 @@ class InnerExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = guarantees
+        self.guarantees = InnerGuarantees()
 
     def accept_when_empty_position_result(self):
         self.create_position_result()
@@ -67,8 +66,10 @@ class InnerExecution:
             "result",
             1,
         )
-        self.scheduler.submit(self.create_position_result__global_position_marker)
-        self.scheduler.continue_with(self.guarantees.guarantee_position_result)
+        self.guarantees.position_result.publish(
+            self.scheduler,
+            self.create_position_result__global_position_marker,
+        )
 
     def create_position_result__global_position_marker(self):
         self.action.get_interface_position(
@@ -81,4 +82,6 @@ class InnerExecution:
             "result::/marker",
             1,
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_position_result__global_position_marker)
+        self.guarantees.position_result__global_position_marker.publish(
+            self.scheduler,
+        )

@@ -22,7 +22,7 @@ class ClassVar(literal.Action):
 @final
 class ClassVarGuarantees:
     def __init__(self):
-        self.guarantee_position_trigger_pos: list[literal.Task] = []
+        self.position_trigger_pos = literal.Guarantee()
 
 
 @final
@@ -31,13 +31,12 @@ class ClassVarExecution:
         self,
         action: ClassVar,
         scheduler: literal.Scheduler,
-        guarantees: ClassVarGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = ClassVarGuarantees()
         self.destruction_connections = destruction_connections
         self.local_position_self = literal.LocalPosition(
             "position<self>",
@@ -63,8 +62,10 @@ class ClassVarExecution:
             "position<typing>",
             scheduler=self.scheduler,
         )
+        self.join_for_destroy_position_trigger_pos: literal.Join
+        self.join_for_empty_rule_position_trigger_pos: literal.Join
 
-    def accept_action_parent(self):
+    def on_action_parent_occupied(self):
         self.scheduler.submit(self.create_position_self)
         self.scheduler.submit(self.create_position_self_2)
         self.scheduler.submit(self.create_position_literal)
@@ -73,6 +74,8 @@ class ClassVarExecution:
         self.create_position_typing()
 
     def accept_for_empty_rule_position_trigger_pos(self):
+        if not self.join_for_empty_rule_position_trigger_pos.arrive():
+            return
         self.destroy_position_trigger_pos()
 
     def create_position_self(self):
@@ -100,10 +103,14 @@ class ClassVarExecution:
         self.local_position_typing.destroy_particle()
 
     def destroy_position_trigger_pos(self):
+        if not self.join_for_destroy_position_trigger_pos.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_trigger_pos)
 
     def continue_destroy_position_trigger_pos(self):
         self.action.get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_trigger_pos)
+        self.guarantees.position_trigger_pos.publish(
+            self.scheduler,
+        )

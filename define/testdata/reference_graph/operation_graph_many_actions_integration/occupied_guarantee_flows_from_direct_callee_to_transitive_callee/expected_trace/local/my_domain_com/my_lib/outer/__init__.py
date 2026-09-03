@@ -25,12 +25,6 @@ class Outer(literal.Action):
 
 
 @final
-class OuterGuarantees:
-    def __init__(self):
-        self.trigger_action_middle = local.my_domain_com.my_lib.middle.MiddleGuarantees()
-
-
-@final
 class OuterExecution:
     def __init__(
         self,
@@ -38,7 +32,6 @@ class OuterExecution:
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
-        guarantees: OuterGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
@@ -48,18 +41,27 @@ class OuterExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = guarantees
         self.destruction_connections = destruction_connections
-        self.execution_trigger_action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
-        self.join_for_trigger_action_middle__action_parent = self.scheduler.create_join(2)
-        self.join_for_trigger_action_middle__for_empty_rule_global_position_item = self.scheduler.create_join(2)
+        self.execution_action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
+        self.join_for_empty_rule_global_position_item: literal.Join
+        self.execution_action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.middle.Middle
+            ),
+            self.scheduler,
+            self.trace_execution,
+            "middle",
+            destruction_connections=self.destruction_connections,
+        )
 
-    def accept_action_parent(self):
+    def on_action_parent_occupied(self):
         self.scheduler.submit(self.create_action_middle__position_trigger_pos)
-        self.trigger_action_middle__action_parent()
+        self.execution_action_middle.on_action_parent_occupied()
 
     def accept_for_empty_rule_global_position_item(self):
-        self.trigger_action_middle__for_empty_rule_global_position_item()
+        if not self.join_for_empty_rule_global_position_item.arrive():
+            return
+        self.execution_action_middle.accept_for_empty_rule_global_position_item()
 
     def create_action_middle__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -72,21 +74,6 @@ class OuterExecution:
             "/middle::trigger_pos",
             1,
         )
-        self.execution_trigger_action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.middle.Middle
-            ),
-            self.scheduler,
-            self.trace_execution,
-            "middle",
-            self.guarantees.trigger_action_middle,
-            destruction_connections=self.destruction_connections,
-        )
-        self.scheduler.submit(self.destroy_action_middle__position_trigger_pos)
-        self.scheduler.submit(self.trigger_action_middle__action_parent)
-        self.trigger_action_middle__for_empty_rule_global_position_item()
-
-    def destroy_action_middle__position_trigger_pos(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
         ).get_interface_position(
@@ -97,13 +84,3 @@ class OuterExecution:
             "/middle::trigger_pos",
             1,
         )
-
-    def trigger_action_middle__action_parent(self):
-        if not self.join_for_trigger_action_middle__action_parent.arrive():
-            return
-        self.execution_trigger_action_middle.accept_action_parent()
-
-    def trigger_action_middle__for_empty_rule_global_position_item(self):
-        if not self.join_for_trigger_action_middle__for_empty_rule_global_position_item.arrive():
-            return
-        self.execution_trigger_action_middle.accept_for_empty_rule_global_position_item()

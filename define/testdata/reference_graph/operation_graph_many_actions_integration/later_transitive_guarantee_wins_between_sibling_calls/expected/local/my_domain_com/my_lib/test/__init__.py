@@ -19,15 +19,15 @@ class Test(literal.EntryPoint):
         execution = TestExecution(
             self,
             scheduler,
-            TestGuarantees(),
         )
-        execution.create_action_run_both__position_trigger_pos()
+        scheduler.submit(execution.on_action_parent_occupied)
+        execution.accept_when_empty_global_position_item()
 
 
 @final
 class TestGuarantees:
     def __init__(self):
-        self.trigger_action_run_both = local.my_domain_com.my_lib.run_both.RunBothGuarantees()
+        self.global_position_item = literal.Guarantee()
 
 
 @final
@@ -36,15 +36,27 @@ class TestExecution:
         self,
         action: Test,
         scheduler: literal.Scheduler,
-        guarantees: TestGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
-        guarantees.trigger_action_run_both.trigger_action_call_empty.trigger_action_empty_item.guarantee_global_position_item.append(
+        self.guarantees = TestGuarantees()
+        self.execution_action_run_both: local.my_domain_com.my_lib.run_both.RunBothExecution
+        self.execution_action_run_both = local.my_domain_com.my_lib.run_both.RunBothExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.run_both.RunBoth
+            ),
+            self.scheduler,
+        )
+        self.execution_action_run_both.execution_action_call_empty.execution_action_empty_item.guarantees.global_position_item.consumers.append(
             self.create_global_position_item
         )
-        self.execution_trigger_action_run_both: local.my_domain_com.my_lib.run_both.RunBothExecution
+
+    def on_action_parent_occupied(self):
+        self.scheduler.submit(self.create_action_run_both__position_trigger_pos)
+        self.execution_action_run_both.on_action_parent_occupied()
+
+    def accept_when_empty_global_position_item(self):
+        self.execution_action_run_both.accept_when_empty_global_position_item()
 
     def create_action_run_both__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -52,31 +64,16 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.execution_trigger_action_run_both = local.my_domain_com.my_lib.run_both.RunBothExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.run_both.RunBoth
-            ),
-            self.scheduler,
-            self.guarantees.trigger_action_run_both,
-        )
-        self.scheduler.submit(self.destroy_action_run_both__position_trigger_pos)
-        self.scheduler.submit(self.trigger_action_run_both__action_parent)
-        self.trigger_action_run_both__when_empty_global_position_item()
-
-    def create_global_position_item(self):
-        self.action.on_particle.get_position(
-            local.my_domain_com.my_lib.item.Item
-        ).create_particle()
-
-    def destroy_action_run_both__position_trigger_pos(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.run_both.RunBoth
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
 
-    def trigger_action_run_both__action_parent(self):
-        self.execution_trigger_action_run_both.accept_action_parent()
-
-    def trigger_action_run_both__when_empty_global_position_item(self):
-        self.execution_trigger_action_run_both.accept_when_empty_global_position_item()
+    def create_global_position_item(self):
+        self.action.on_particle.get_position(
+            local.my_domain_com.my_lib.item.Item
+        ).create_particle()
+        self.guarantees.global_position_item.publish(
+            self.scheduler,
+        )

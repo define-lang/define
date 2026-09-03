@@ -17,6 +17,28 @@
         "caller": null,
         "action_name": "test"
       },
+      "operation_name": "destroy",
+      "target": "/destroyer::trigger_pos",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "operation_name": "create",
+        "target": "/destroyer::trigger_pos",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
       "operation_name": "create",
       "target": "source",
       "occurrence": 1
@@ -72,41 +94,6 @@
     "operation": {
       "execution": {
         "caller": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "action_name": "destroyer"
-      },
-      "operation_name": "create",
-      "target": "parent::/maker::trigger_pos",
-      "occurrence": 1
-    },
-    "dependencies": [
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "create",
-        "target": "/destroyer::trigger_pos",
-        "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "move",
-        "source": "source",
-        "target": "/destroyer::parent",
-        "occurrence": 1
-      }
-    ]
-  },
-  {
-    "operation": {
-      "execution": {
-        "caller": {
           "caller": {
             "caller": null,
             "action_name": "test"
@@ -121,16 +108,6 @@
       "occurrence": 1
     },
     "dependencies": [
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "move",
-        "source": "source",
-        "target": "/destroyer::parent",
-        "occurrence": 1
-      },
       {
         "execution": {
           "caller": null,
@@ -183,6 +160,32 @@
     "operation": {
       "execution": {
         "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "destroyer"
+      },
+      "operation_name": "create",
+      "target": "parent::/maker::trigger_pos",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "operation_name": "move",
+        "source": "source",
+        "target": "/destroyer::parent",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
           "caller": {
             "caller": null,
             "action_name": "test"
@@ -196,18 +199,6 @@
       "occurrence": 1
     },
     "dependencies": [
-      {
-        "execution": {
-          "caller": {
-            "caller": null,
-            "action_name": "test"
-          },
-          "action_name": "destroyer"
-        },
-        "operation_name": "create",
-        "target": "parent::/maker::trigger_pos",
-        "occurrence": 1
-      },
       {
         "execution": {
           "caller": {
@@ -244,30 +235,9 @@
           "caller": null,
           "action_name": "test"
         },
-        "operation_name": "create",
-        "target": "/destroyer::trigger_pos",
-        "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
         "operation_name": "move",
         "source": "source",
         "target": "/destroyer::parent",
-        "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": {
-            "caller": null,
-            "action_name": "test"
-          },
-          "action_name": "destroyer"
-        },
-        "operation_name": "create",
-        "target": "parent::/maker::trigger_pos",
         "occurrence": 1
       }
     ]
@@ -287,15 +257,6 @@
       "occurrence": 1
     },
     "dependencies": [
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "create",
-        "target": "/destroyer::trigger_pos",
-        "occurrence": 1
-      },
       {
         "execution": {
           "caller": {
@@ -391,16 +352,6 @@
       "occurrence": 1
     },
     "dependencies": [
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "move",
-        "source": "source",
-        "target": "/destroyer::parent",
-        "occurrence": 1
-      },
       {
         "execution": {
           "caller": {
@@ -529,15 +480,6 @@
       },
       {
         "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "create",
-        "target": "/destroyer::trigger_pos",
-        "occurrence": 1
-      },
-      {
-        "execution": {
           "caller": {
             "caller": {
               "caller": null,
@@ -579,15 +521,6 @@
       "occurrence": 1
     },
     "dependencies": [
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "create",
-        "target": "/destroyer::trigger_pos",
-        "occurrence": 1
-      },
       {
         "execution": {
           "caller": {

@@ -31,7 +31,7 @@ class Inner(literal.Action):
 @final
 class InnerGuarantees:
     def __init__(self):
-        self.guarantee_position_input__global_position_result_value: list[literal.Task] = []
+        self.position_input__global_position_result_value = literal.Guarantee()
 
 
 @final
@@ -40,11 +40,10 @@ class InnerExecution:
         self,
         action: Inner,
         scheduler: literal.Scheduler,
-        guarantees: InnerGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = InnerGuarantees()
 
     def accept_when_empty_position_input__global_position_result_value(self):
         self.create_position_input__global_position_result_value()
@@ -55,4 +54,6 @@ class InnerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.result_value.ResultValue
         ).create_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_input__global_position_result_value)
+        self.guarantees.position_input__global_position_result_value.publish(
+            self.scheduler,
+        )

@@ -1,18 +1,23 @@
 {% from "method_invocation.j2" import invoke_method %}
-{% from "triggered_action_execution.j2" import initialize_action_execution %}
+{% from "triggered_action_execution.j2" import init_action_executions %}
 {% macro binding_hole_fanout_methods(binding_hole_fanouts) %}
     {% for binding_hole_fanout in binding_hole_fanouts %}
 
     def {{ binding_hole_fanout.binding_hole_method_name }}(self):
-        {% for action_execution in binding_hole_fanout.destructor_executions %}
-{{ initialize_action_execution(action_execution) -}}
-        {% endfor %}
-        {% for fragment_method_name in binding_hole_fanout.fragment_method_names %}
-            {% set has_later = not loop.last or binding_hole_fanout.callee_binding_join_method_names %}
-        {{ invoke_method(fragment_method_name, submit=has_later) }}
-        {% endfor %}
-        {% for method_name in binding_hole_fanout.callee_binding_join_method_names %}
+        {% if binding_hole_fanout.requires_join_check %}
+        if not self.{{ binding_hole_fanout.join_member_name }}.arrive():
+            return
+        {% endif %}
+        {% if binding_hole_fanout.separate_init_method_name is none %}
+{{ init_action_executions(binding_hole_fanout.inits) -}}
+        {% endif %}
+        {% for method_name in binding_hole_fanout.fanout_continuation_method_names %}
         {{ invoke_method(method_name, submit=not loop.last) }}
         {% endfor %}
+        {% if binding_hole_fanout.separate_init_method_name is not none %}
+
+    def {{ binding_hole_fanout.separate_init_method_name }}(self):
+{{ init_action_executions(binding_hole_fanout.inits) -}}
+        {% endif %}
     {% endfor %}
 {% endmacro %}

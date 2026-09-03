@@ -26,7 +26,7 @@ class Helper(literal.Action):
 @final
 class HelperGuarantees:
     def __init__(self):
-        self.guarantee_position_slot__move__position_out: list[literal.Task] = []
+        self.position_slot__move__position_out = literal.Guarantee()
 
 
 @final
@@ -35,16 +35,21 @@ class HelperExecution:
         self,
         action: Helper,
         scheduler: literal.Scheduler,
-        guarantees: HelperGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = HelperGuarantees()
+        self.join_for_move_position_slot_to_position_out: literal.Join
+        self.join_for_empty_rule_position_slot: literal.Join
 
     def accept_for_empty_rule_position_slot(self):
+        if not self.join_for_empty_rule_position_slot.arrive():
+            return
         self.move_position_slot_to_position_out()
 
     def move_position_slot_to_position_out(self):
+        if not self.join_for_move_position_slot_to_position_out.arrive():
+            return
         self.action.get_interface_position(
             "position<slot>"
         ).move_particle_to(
@@ -52,4 +57,6 @@ class HelperExecution:
                 "position<out>"
             )
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_position_slot__move__position_out)
+        self.guarantees.position_slot__move__position_out.publish(
+            self.scheduler,
+        )

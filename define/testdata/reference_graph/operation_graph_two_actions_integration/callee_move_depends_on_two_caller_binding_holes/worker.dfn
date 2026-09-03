@@ -1,0 +1,10 @@
+define the potential action<my.domain.com:my_lib:/worker> {
+    it also assigns the position</destination>.
+    define the position<source>.
+    it happens when {
+        the position<source> has a particle.
+    } and it does {
+        move the particle in position<source> to position</destination>.
+        destroy the particle in position</destination>.
+    }
+}

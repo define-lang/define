@@ -15,15 +15,8 @@ class Test(literal.EntryPoint):
             scheduler,
             None,
             "test",
-            TestGuarantees(),
         )
-        execution.create_position_gateway()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_position_gateway__action_worker = local.my_domain_com.my_lib.worker.WorkerGuarantees()
+        execution.on_action_parent_occupied()
 
 
 @final
@@ -33,14 +26,12 @@ class TestExecution:
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
-        guarantees: TestGuarantees,
     ):
         self.scheduler = scheduler
         self.trace_execution = scheduler.execution_created(
             caller_execution,
             action_name,
         )
-        self.guarantees = guarantees
         self.local_position_gateway = literal.LocalPosition(
             "position<gateway>",
             constraints=(
@@ -48,12 +39,11 @@ class TestExecution:
             ),
             scheduler=self.scheduler,
         )
-        guarantees.trigger_position_gateway__action_worker.guarantee_position_input__move__position_output.append(
-            self.destroy_position_gateway__action_worker__position_output
-        )
-        self.execution_trigger_position_gateway__action_worker: local.my_domain_com.my_lib.worker.WorkerExecution
+        self.execution_position_gateway__action_worker: local.my_domain_com.my_lib.worker.WorkerExecution
         self.join_for_destroy_position_gateway = self.scheduler.create_join(2)
-        self.join_for_trigger_position_gateway__action_worker__for_empty_rule_position_input = self.scheduler.create_join(2)
+
+    def on_action_parent_occupied(self):
+        self.create_position_gateway()
 
     def create_position_gateway(self):
         self.local_position_gateway.create_particle()
@@ -61,6 +51,19 @@ class TestExecution:
             self.trace_execution,
             "gateway",
             1,
+        )
+        self.execution_position_gateway__action_worker = local.my_domain_com.my_lib.worker.WorkerExecution(
+            self.local_position_gateway.particle.get_action(
+                local.my_domain_com.my_lib.worker.Worker
+            ),
+            self.scheduler,
+            self.trace_execution,
+            "worker",
+        )
+        self.execution_position_gateway__action_worker.join_for_empty_rule_position_input = literal.NO_JOIN
+        self.execution_position_gateway__action_worker.join_for_move_position_input_to_position_output = literal.NO_JOIN
+        self.execution_position_gateway__action_worker.guarantees.position_input__move__position_output.consumers.append(
+            self.destroy_position_gateway__action_worker__position_output
         )
         self.scheduler.submit(self.create_position_gateway__action_worker__position_input)
         self.create_position_gateway__action_worker__position_trigger()
@@ -76,7 +79,7 @@ class TestExecution:
             "gateway::/worker::input",
             1,
         )
-        self.trigger_position_gateway__action_worker__for_empty_rule_position_input()
+        self.execution_position_gateway__action_worker.accept_for_empty_rule_position_input()
 
     def create_position_gateway__action_worker__position_trigger(self):
         self.local_position_gateway.particle.get_action(
@@ -89,17 +92,17 @@ class TestExecution:
             "gateway::/worker::trigger",
             1,
         )
-        self.execution_trigger_position_gateway__action_worker = local.my_domain_com.my_lib.worker.WorkerExecution(
-            self.local_position_gateway.particle.get_action(
-                local.my_domain_com.my_lib.worker.Worker
-            ),
-            self.scheduler,
+        self.local_position_gateway.particle.get_action(
+            local.my_domain_com.my_lib.worker.Worker
+        ).get_interface_position(
+            "position<trigger>"
+        ).destroy_particle()
+        self.scheduler.destroy_completed(
             self.trace_execution,
-            "worker",
-            self.guarantees.trigger_position_gateway__action_worker,
+            "gateway::/worker::trigger",
+            1,
         )
-        self.scheduler.submit(self.destroy_position_gateway__action_worker__position_trigger)
-        self.trigger_position_gateway__action_worker__for_empty_rule_position_input()
+        self.destroy_position_gateway()
 
     def destroy_position_gateway__action_worker__position_output(self):
         self.local_position_gateway.particle.get_action(
@@ -114,19 +117,6 @@ class TestExecution:
         )
         self.destroy_position_gateway()
 
-    def destroy_position_gateway__action_worker__position_trigger(self):
-        self.local_position_gateway.particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
-        ).get_interface_position(
-            "position<trigger>"
-        ).destroy_particle()
-        self.scheduler.destroy_completed(
-            self.trace_execution,
-            "gateway::/worker::trigger",
-            1,
-        )
-        self.destroy_position_gateway()
-
     def destroy_position_gateway(self):
         if not self.join_for_destroy_position_gateway.arrive():
             return
@@ -136,8 +126,3 @@ class TestExecution:
             "gateway",
             1,
         )
-
-    def trigger_position_gateway__action_worker__for_empty_rule_position_input(self):
-        if not self.join_for_trigger_position_gateway__action_worker__for_empty_rule_position_input.arrive():
-            return
-        self.execution_trigger_position_gateway__action_worker.accept_for_empty_rule_position_input()

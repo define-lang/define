@@ -16,7 +16,7 @@ class ConstructC(literal.Action):
 @final
 class ConstructCGuarantees:
     def __init__(self):
-        self.guarantee_global_position_leaf: list[literal.Task] = []
+        self.global_position_leaf = literal.Guarantee()
 
 
 @final
@@ -25,11 +25,10 @@ class ConstructCExecution:
         self,
         action: ConstructC,
         scheduler: literal.Scheduler,
-        guarantees: ConstructCGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = ConstructCGuarantees()
 
     def accept_when_empty_global_position_leaf(self):
         self.create_global_position_leaf()
@@ -38,4 +37,6 @@ class ConstructCExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.leaf.Leaf
         ).create_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_leaf)
+        self.guarantees.global_position_leaf.publish(
+            self.scheduler,
+        )

@@ -14,28 +14,6 @@
   {
     "operation": {
       "execution": {
-        "caller": null,
-        "action_name": "test"
-      },
-      "operation_name": "destroy",
-      "target": "box",
-      "occurrence": 1
-    },
-    "dependencies": [
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "create",
-        "target": "box",
-        "occurrence": 1
-      }
-    ]
-  },
-  {
-    "operation": {
-      "execution": {
         "caller": {
           "caller": null,
           "action_name": "test"
@@ -47,15 +25,6 @@
       "occurrence": 1
     },
     "dependencies": [
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "create",
-        "target": "box",
-        "occurrence": 1
-      },
       {
         "execution": {
           "caller": null,
@@ -98,14 +67,11 @@
   {
     "operation": {
       "execution": {
-        "caller": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "action_name": "construct_a"
+        "caller": null,
+        "action_name": "test"
       },
-      "operation_name": "create",
-      "target": "scratch",
+      "operation_name": "destroy",
+      "target": "box",
       "occurrence": 1
     },
     "dependencies": [
@@ -117,7 +83,23 @@
         "operation_name": "create",
         "target": "box",
         "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "construct_a"
       },
+      "operation_name": "create",
+      "target": "scratch",
+      "occurrence": 1
+    },
+    "dependencies": [
       {
         "execution": {
           "caller": null,
@@ -179,15 +161,6 @@
         "operation_name": "create",
         "target": "box",
         "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "create",
-        "target": "box",
-        "occurrence": 1
       }
     ]
   },
@@ -233,15 +206,6 @@
       "occurrence": 1
     },
     "dependencies": [
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "create",
-        "target": "box",
-        "occurrence": 1
-      },
       {
         "execution": {
           "caller": null,

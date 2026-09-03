@@ -35,8 +35,7 @@ class Destroyer(literal.Action):
 @final
 class DestroyerGuarantees:
     def __init__(self):
-        self.guarantee_position_target: list[literal.Task] = []
-        self.trigger_position_target__action_known_destructor = local.my_domain_com.my_lib.known_destructor.KnownDestructorGuarantees()
+        self.position_target = literal.Guarantee()
 
 
 @final
@@ -45,47 +44,54 @@ class DestroyerExecution:
         self,
         action: Destroyer,
         scheduler: literal.Scheduler,
-        guarantees: DestroyerGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = DestroyerGuarantees()
         self.destruction_connections = destruction_connections
         self.local_position_holder = literal.LocalPosition(
             "position<holder>",
             scheduler=self.scheduler,
         )
-        guarantees.trigger_position_target__action_known_destructor.guarantee_global_position_shared.append(
-            self.destroy_position_target__global_position_shared
-        )
-        self.execution_trigger_position_target__action_known_destructor: local.my_domain_com.my_lib.known_destructor.KnownDestructorExecution
-        self.join_for_destroy_position_target = self.scheduler.create_join(3)
-        self.join_for_trigger_position_target__action_known_destructor__for_empty_rule_global_position_shared = self.scheduler.create_join(2)
+        self.execution_position_target__action_known_destructor: local.my_domain_com.my_lib.known_destructor.KnownDestructorExecution
+        self.join_for_move_position_target__global_position_shared_to_position_holder: literal.Join
+        self.join_for_destroy_position_target: literal.Join
+        self.join_for_empty_rule_position_target__global_position_shared: literal.Join
+        self.join_for_empty_rule_position_target: literal.Join
 
     def accept_for_empty_rule_position_target__global_position_shared(self):
+        if not self.join_for_empty_rule_position_target__global_position_shared.arrive():
+            return
         self.move_position_target__global_position_shared_to_position_holder()
 
     def accept_when_empty_position_target__global_position_destination(self):
         self.create_position_target__global_position_destination()
 
     def accept_for_empty_rule_position_target(self):
+        if not self.join_for_empty_rule_position_target.arrive():
+            return
         self.destroy_position_target()
 
-    def accept_when_occupied_position_target(self):
-        self.execution_trigger_position_target__action_known_destructor = local.my_domain_com.my_lib.known_destructor.KnownDestructorExecution(
+    def init_position_target__action_known_destructor(self):
+        self.execution_position_target__action_known_destructor = local.my_domain_com.my_lib.known_destructor.KnownDestructorExecution(
             self.action.get_interface_position(
                 "position<target>"
             ).particle.get_action(
                 local.my_domain_com.my_lib.known_destructor.KnownDestructor
             ),
             self.scheduler,
-            self.guarantees.trigger_position_target__action_known_destructor,
         )
-        self.trigger_position_target__action_known_destructor__for_empty_rule_global_position_shared()
+        self.execution_position_target__action_known_destructor.join_for_empty_rule_global_position_shared = literal.NO_JOIN
+        self.execution_position_target__action_known_destructor.join_for_move_global_position_shared_to_position_holder = literal.NO_JOIN
+        self.execution_position_target__action_known_destructor.guarantees.global_position_shared.consumers.append(
+            self.destroy_position_target__global_position_shared
+        )
 
     def move_position_target__global_position_shared_to_position_holder(self):
+        if not self.join_for_move_position_target__global_position_shared_to_position_holder.arrive():
+            return
         self.action.get_interface_position(
             "position<target>"
         ).particle.get_position(
@@ -98,7 +104,7 @@ class DestroyerExecution:
                 local.my_domain_com.my_lib.shared.Shared
             )
         )
-        self.trigger_position_target__action_known_destructor__for_empty_rule_global_position_shared()
+        self.execution_position_target__action_known_destructor.accept_for_empty_rule_global_position_shared()
 
     def create_position_target__global_position_destination(self):
         self.action.get_interface_position(
@@ -133,9 +139,6 @@ class DestroyerExecution:
         self.action.get_interface_position(
             "position<target>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_target)
-
-    def trigger_position_target__action_known_destructor__for_empty_rule_global_position_shared(self):
-        if not self.join_for_trigger_position_target__action_known_destructor__for_empty_rule_global_position_shared.arrive():
-            return
-        self.execution_trigger_position_target__action_known_destructor.accept_for_empty_rule_global_position_shared()
+        self.guarantees.position_target.publish(
+            self.scheduler,
+        )

@@ -27,8 +27,8 @@ class Callee(literal.Action):
 @final
 class CalleeGuarantees:
     def __init__(self):
-        self.guarantee_global_position_implied: list[literal.Task] = []
-        self.guarantee_position_run: list[literal.Task] = []
+        self.global_position_implied = literal.Guarantee()
+        self.position_run = literal.Guarantee()
 
 
 @final
@@ -37,32 +37,41 @@ class CalleeExecution:
         self,
         action: Callee,
         scheduler: literal.Scheduler,
-        guarantees: CalleeGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = CalleeGuarantees()
         self.destruction_connections = destruction_connections
+        self.join_for_destroy_position_run: literal.Join
+        self.join_for_empty_rule_position_run: literal.Join
 
     def accept_when_empty_global_position_implied(self):
         self.create_global_position_implied()
 
     def accept_for_empty_rule_position_run(self):
+        if not self.join_for_empty_rule_position_run.arrive():
+            return
         self.destroy_position_run()
 
     def create_global_position_implied(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.implied.Implied
         ).create_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_implied)
+        self.guarantees.global_position_implied.publish(
+            self.scheduler,
+        )
 
     def destroy_position_run(self):
+        if not self.join_for_destroy_position_run.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_run)
 
     def continue_destroy_position_run(self):
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_run)
+        self.guarantees.position_run.publish(
+            self.scheduler,
+        )

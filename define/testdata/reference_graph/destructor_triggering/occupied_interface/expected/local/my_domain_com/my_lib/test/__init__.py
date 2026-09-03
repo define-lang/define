@@ -13,15 +13,8 @@ class Test(literal.EntryPoint):
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
             scheduler,
-            TestGuarantees(),
         )
-        execution.create_position_box()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_position_box__action_destructor = local.my_domain_com.my_lib.destructor.DestructorGuarantees()
+        execution.on_action_parent_occupied()
 
 
 @final
@@ -29,10 +22,8 @@ class TestExecution:
     def __init__(
         self,
         scheduler: literal.Scheduler,
-        guarantees: TestGuarantees,
     ):
         self.scheduler = scheduler
-        self.guarantees = guarantees
         self.local_position_box = literal.LocalPosition(
             "position<box>",
             constraints=(
@@ -40,23 +31,25 @@ class TestExecution:
             ),
             scheduler=self.scheduler,
         )
-        guarantees.trigger_position_box__action_destructor.guarantee_position_item.append(
-            self.destroy_position_box__action_destructor__position_item
-        )
-        self.execution_trigger_position_box__action_destructor: local.my_domain_com.my_lib.destructor.DestructorExecution
-        self.join_for_trigger_position_box__action_destructor__for_empty_rule_position_item = self.scheduler.create_join(2)
+        self.execution_position_box__action_destructor: local.my_domain_com.my_lib.destructor.DestructorExecution
+
+    def on_action_parent_occupied(self):
+        self.create_position_box()
 
     def create_position_box(self):
         self.local_position_box.create_particle()
-        self.execution_trigger_position_box__action_destructor = local.my_domain_com.my_lib.destructor.DestructorExecution(
+        self.execution_position_box__action_destructor = local.my_domain_com.my_lib.destructor.DestructorExecution(
             self.local_position_box.particle.get_action(
                 local.my_domain_com.my_lib.destructor.Destructor
             ),
             self.scheduler,
-            self.guarantees.trigger_position_box__action_destructor,
         )
-        self.scheduler.submit(self.create_position_box__action_destructor__position_item)
-        self.trigger_position_box__action_destructor__for_empty_rule_position_item()
+        self.execution_position_box__action_destructor.join_for_empty_rule_position_item = literal.NO_JOIN
+        self.execution_position_box__action_destructor.join_for_move_position_item_to_position_holder = literal.NO_JOIN
+        self.execution_position_box__action_destructor.guarantees.position_item.consumers.append(
+            self.destroy_position_box__action_destructor__position_item
+        )
+        self.create_position_box__action_destructor__position_item()
 
     def create_position_box__action_destructor__position_item(self):
         self.local_position_box.particle.get_action(
@@ -64,7 +57,7 @@ class TestExecution:
         ).get_interface_position(
             "position<item>"
         ).create_particle()
-        self.trigger_position_box__action_destructor__for_empty_rule_position_item()
+        self.execution_position_box__action_destructor.accept_for_empty_rule_position_item()
 
     def destroy_position_box__action_destructor__position_item(self):
         self.local_position_box.particle.get_action(
@@ -73,8 +66,3 @@ class TestExecution:
             "position<item>"
         ).destroy_particle()
         self.local_position_box.destroy_particle()
-
-    def trigger_position_box__action_destructor__for_empty_rule_position_item(self):
-        if not self.join_for_trigger_position_box__action_destructor__for_empty_rule_position_item.arrive():
-            return
-        self.execution_trigger_position_box__action_destructor.accept_for_empty_rule_position_item()

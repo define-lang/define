@@ -91,68 +91,90 @@ def test_destruction_connection_propagates_execution_through_forwarded_connectio
     assert connections[1].trace_execution is executions[0].trace_execution
 
 
-def test_destruction_connection_combines_operation_dependencies():
-    @typing.final
-    class ContinuationExecution:
-        def __init__(
-            self,
-            scheduler: literal.Scheduler,
-            trace_execution: tracing.ActionExecutionIdentity,
-            destruction_connections: literal.DestructionConnections,
-        ):
-            self.scheduler = scheduler
-            self.trace_execution = trace_execution
-            self.destruction_connections = destruction_connections
-
-        def continue_destroy(self):
-            self.scheduler.destroy_completed(
-                self.trace_execution,
-                "destroyed",
-                1,
-            )
-
+def test_caller_destructor_not_preceding_callee_destroy_preserves_destroy_dependency():
     class Entry(literal.EntryPoint):
         typed_name: typing.ClassVar[str] = "action<entry>"
 
         @typing.override
         def execute(self, scheduler: literal.Scheduler):
-            trace_execution = scheduler.execution_created(None, "test")
-            assert isinstance(trace_execution, tracing.ActionExecutionIdentity)
-            connection: tracing.DestructionConnection
+            dependency_execution = scheduler.execution_created(None, "test")
+            assert isinstance(dependency_execution, tracing.ActionExecutionIdentity)
+            destroying_execution = scheduler.execution_created(
+                dependency_execution,
+                "callee",
+            )
+            assert isinstance(destroying_execution, tracing.ActionExecutionIdentity)
+            destructor_execution = scheduler.execution_created(
+                destroying_execution,
+                "destructor",
+            )
+            assert isinstance(destructor_execution, tracing.ActionExecutionIdentity)
+            scheduler.move_completed(
+                dependency_execution,
+                "source",
+                "target",
+                1,
+            )
 
-            def complete_connected_work():
-                scheduler.create_completed(trace_execution, "connected_work", 1)
-                connection.complete()
+            @typing.final
+            class ContinuationExecution:
+                def __init__(
+                    self,
+                    destruction_connections: literal.DestructionConnections,
+                ):
+                    self.trace_execution = destroying_execution
+                    self.destruction_connections = destruction_connections
 
+                def continue_destroy(self):
+                    scheduler.destroy_completed(
+                        destroying_execution,
+                        "target",
+                        1,
+                    )
+
+            def run_destructor():
+                scheduler.create_completed(
+                    destructor_execution,
+                    "_noop",
+                    1,
+                )
+
+            # This Destructor runs at the callee Destroy but does not precede it.
             connection = tracing.DestructionConnection(
                 scheduler,
-                1,
-                _bound_task(complete_connected_work),
+                0,
+                _bound_task(run_destructor),
             )
             execution = ContinuationExecution(
-                scheduler,
-                trace_execution,
                 literal.DestructionConnections(
                     {ContinuationExecution.continue_destroy: connection}
-                ),
+                )
             )
-            scheduler.create_completed(trace_execution, "callee_work", 1)
             literal.continue_destruction(execution.continue_destroy)
 
-    scheduler = tracing.TracingScheduler(max_threads=1)
+    scheduler = tracing.TracingScheduler(max_threads=2)
     scheduler.start(Entry)
 
-    execution = tracing.ActionExecutionIdentity(None, "test")
-    callee_work = tracing.OperationIdentity(execution, "create", None, "callee_work", 1)
-    connected_work = tracing.OperationIdentity(
-        execution, "create", None, "connected_work", 1
+    dependency_execution = tracing.ActionExecutionIdentity(None, "test")
+    destroying_execution = tracing.ActionExecutionIdentity(
+        dependency_execution,
+        "callee",
     )
-    destroyed = tracing.OperationIdentity(execution, "destroy", None, "destroyed", 1)
-    assert scheduler.operation_dependencies == {
-        callee_work: (),
-        connected_work: (callee_work,),
-        destroyed: (callee_work, connected_work),
-    }
+    move = tracing.OperationIdentity(
+        dependency_execution,
+        "move",
+        "source",
+        "target",
+        1,
+    )
+    destroy = tracing.OperationIdentity(
+        destroying_execution,
+        "destroy",
+        None,
+        "target",
+        1,
+    )
+    assert scheduler.operation_dependencies[destroy] == (move,)
 
 
 def test_action_execution_identity_retains_each_caller():

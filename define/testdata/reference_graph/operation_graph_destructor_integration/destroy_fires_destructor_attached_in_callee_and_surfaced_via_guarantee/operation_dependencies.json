@@ -14,6 +14,117 @@
   {
     "operation": {
       "execution": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "make_thing"
+      },
+      "operation_name": "create",
+      "target": "temp",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "operation_name": "create",
+        "target": "box",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "make_thing"
+      },
+      "operation_name": "move",
+      "source": "temp",
+      "target": "result",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "make_thing"
+        },
+        "operation_name": "create",
+        "target": "temp",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "destructor"
+      },
+      "operation_name": "create",
+      "target": "_noop",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "make_thing"
+        },
+        "operation_name": "move",
+        "source": "temp",
+        "target": "result",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "destructor"
+      },
+      "operation_name": "destroy",
+      "target": "_noop",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "destructor"
+        },
+        "operation_name": "create",
+        "target": "_noop",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
         "caller": null,
         "action_name": "test"
       },
@@ -51,78 +162,6 @@
         },
         "operation_name": "create",
         "target": "box::/make_thing::run",
-        "occurrence": 1
-      }
-    ]
-  },
-  {
-    "operation": {
-      "execution": {
-        "caller": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "action_name": "make_thing"
-      },
-      "operation_name": "create",
-      "target": "temp",
-      "occurrence": 1
-    },
-    "dependencies": [
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "create",
-        "target": "box",
-        "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "create",
-        "target": "box::/make_thing::run",
-        "occurrence": 1
-      }
-    ]
-  },
-  {
-    "operation": {
-      "execution": {
-        "caller": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "action_name": "make_thing"
-      },
-      "operation_name": "move",
-      "source": "temp",
-      "target": "result",
-      "occurrence": 1
-    },
-    "dependencies": [
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "create",
-        "target": "box::/make_thing::run",
-        "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": {
-            "caller": null,
-            "action_name": "test"
-          },
-          "action_name": "make_thing"
-        },
-        "operation_name": "create",
-        "target": "temp",
         "occurrence": 1
       }
     ]
@@ -180,76 +219,6 @@
         },
         "operation_name": "destroy",
         "target": "box::/make_thing::result",
-        "occurrence": 1
-      }
-    ]
-  },
-  {
-    "operation": {
-      "execution": {
-        "caller": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "action_name": "destructor"
-      },
-      "operation_name": "create",
-      "target": "_noop",
-      "occurrence": 1
-    },
-    "dependencies": [
-      {
-        "execution": {
-          "caller": {
-            "caller": null,
-            "action_name": "test"
-          },
-          "action_name": "make_thing"
-        },
-        "operation_name": "move",
-        "source": "temp",
-        "target": "result",
-        "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": {
-            "caller": null,
-            "action_name": "test"
-          },
-          "action_name": "make_thing"
-        },
-        "operation_name": "move",
-        "source": "temp",
-        "target": "result",
-        "occurrence": 1
-      }
-    ]
-  },
-  {
-    "operation": {
-      "execution": {
-        "caller": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "action_name": "destructor"
-      },
-      "operation_name": "destroy",
-      "target": "_noop",
-      "occurrence": 1
-    },
-    "dependencies": [
-      {
-        "execution": {
-          "caller": {
-            "caller": null,
-            "action_name": "test"
-          },
-          "action_name": "destructor"
-        },
-        "operation_name": "create",
-        "target": "_noop",
         "occurrence": 1
       }
     ]

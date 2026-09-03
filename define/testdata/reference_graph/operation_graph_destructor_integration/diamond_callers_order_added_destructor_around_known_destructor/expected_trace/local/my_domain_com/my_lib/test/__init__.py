@@ -21,17 +21,8 @@ class Test(literal.EntryPoint):
             scheduler,
             None,
             "test",
-            TestGuarantees(),
         )
-        execution.scheduler.submit(execution.create_action_caller_a__position_trigger_pos)
-        execution.create_action_caller_b__position_trigger_pos()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_action_caller_a = local.my_domain_com.my_lib.caller_a.CallerAGuarantees()
-        self.trigger_action_caller_b = local.my_domain_com.my_lib.caller_b.CallerBGuarantees()
+        execution.on_action_parent_occupied()
 
 
 @final
@@ -42,7 +33,6 @@ class TestExecution:
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
-        guarantees: TestGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
@@ -50,9 +40,24 @@ class TestExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = guarantees
-        self.execution_trigger_action_caller_a: local.my_domain_com.my_lib.caller_a.CallerAExecution
-        self.execution_trigger_action_caller_b: local.my_domain_com.my_lib.caller_b.CallerBExecution
+        self.execution_action_caller_a: local.my_domain_com.my_lib.caller_a.CallerAExecution
+        self.execution_action_caller_b: local.my_domain_com.my_lib.caller_b.CallerBExecution
+        self.execution_action_caller_a = local.my_domain_com.my_lib.caller_a.CallerAExecution(
+            self.scheduler,
+            self.trace_execution,
+            "caller_a",
+        )
+        self.execution_action_caller_b = local.my_domain_com.my_lib.caller_b.CallerBExecution(
+            self.scheduler,
+            self.trace_execution,
+            "caller_b",
+        )
+
+    def on_action_parent_occupied(self):
+        self.scheduler.submit(self.create_action_caller_a__position_trigger_pos)
+        self.scheduler.submit(self.create_action_caller_b__position_trigger_pos)
+        self.scheduler.submit(self.execution_action_caller_a.on_action_parent_occupied)
+        self.execution_action_caller_b.on_action_parent_occupied()
 
     def create_action_caller_a__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -65,14 +70,16 @@ class TestExecution:
             "/caller_a::trigger_pos",
             1,
         )
-        self.execution_trigger_action_caller_a = local.my_domain_com.my_lib.caller_a.CallerAExecution(
-            self.scheduler,
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.caller_a.CallerA
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
+        self.scheduler.destroy_completed(
             self.trace_execution,
-            "caller_a",
-            self.guarantees.trigger_action_caller_a,
+            "/caller_a::trigger_pos",
+            1,
         )
-        self.scheduler.submit(self.destroy_action_caller_a__position_trigger_pos)
-        self.trigger_action_caller_a__action_parent()
 
     def create_action_caller_b__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -85,28 +92,6 @@ class TestExecution:
             "/caller_b::trigger_pos",
             1,
         )
-        self.execution_trigger_action_caller_b = local.my_domain_com.my_lib.caller_b.CallerBExecution(
-            self.scheduler,
-            self.trace_execution,
-            "caller_b",
-            self.guarantees.trigger_action_caller_b,
-        )
-        self.scheduler.submit(self.destroy_action_caller_b__position_trigger_pos)
-        self.trigger_action_caller_b__action_parent()
-
-    def destroy_action_caller_a__position_trigger_pos(self):
-        self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.caller_a.CallerA
-        ).get_interface_position(
-            "position<trigger_pos>"
-        ).destroy_particle()
-        self.scheduler.destroy_completed(
-            self.trace_execution,
-            "/caller_a::trigger_pos",
-            1,
-        )
-
-    def destroy_action_caller_b__position_trigger_pos(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.caller_b.CallerB
         ).get_interface_position(
@@ -117,9 +102,3 @@ class TestExecution:
             "/caller_b::trigger_pos",
             1,
         )
-
-    def trigger_action_caller_a__action_parent(self):
-        self.execution_trigger_action_caller_a.accept_action_parent()
-
-    def trigger_action_caller_b__action_parent(self):
-        self.execution_trigger_action_caller_b.accept_action_parent()

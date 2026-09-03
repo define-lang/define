@@ -38,7 +38,7 @@ class Other(literal.Action):
 @final
 class OtherGuarantees:
     def __init__(self):
-        self.guarantee_position_source__move__position_holder: list[literal.Task] = []
+        self.position_source__move__position_holder = literal.Guarantee()
 
 
 @final
@@ -47,23 +47,31 @@ class OtherExecution:
         self,
         action: Other,
         scheduler: literal.Scheduler,
-        guarantees: OtherGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = OtherGuarantees()
         self.destruction_connections = destruction_connections
-        self.join_for_move_position_source_to_position_holder = self.scheduler.create_join(2)
+        self.join_for_destroy_position_source__global_position_a: literal.Join
+        self.join_for_move_position_source_to_position_holder: literal.Join
+        self.join_for_empty_rule_position_source__global_position_a: literal.Join
+        self.join_for_empty_rule_position_source: literal.Join
 
     def accept_for_empty_rule_position_source__global_position_a(self):
+        if not self.join_for_empty_rule_position_source__global_position_a.arrive():
+            return
         self.destroy_position_source__global_position_a()
 
     def accept_for_empty_rule_position_source(self):
+        if not self.join_for_empty_rule_position_source.arrive():
+            return
         self.move_position_source_to_position_holder()
 
     def destroy_position_source__global_position_a(self):
+        if not self.join_for_destroy_position_source__global_position_a.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_source__global_position_a)
 
     def continue_destroy_position_source__global_position_a(self):
@@ -84,4 +92,6 @@ class OtherExecution:
                 "position<holder>"
             )
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_position_source__move__position_holder)
+        self.guarantees.position_source__move__position_holder.publish(
+            self.scheduler,
+        )

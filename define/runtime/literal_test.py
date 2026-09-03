@@ -1,6 +1,7 @@
 # pyright: reportPrivateUsage=false
 from __future__ import annotations
 
+import threading
 from typing import TYPE_CHECKING, ClassVar, override
 
 import pytest
@@ -20,6 +21,110 @@ def _local_position(
     if scheduler is None:
         scheduler = literal.Scheduler()
     return literal.LocalPosition(name, constraints, scheduler=scheduler)
+
+
+class TestGuarantee:
+    def test_lists_are_distinct_between_guarantees(self):
+        first = literal.Guarantee()
+        second = literal.Guarantee()
+
+        first.inits.append(lambda: None)
+        first.consumers.append(lambda: None)
+
+        assert second.inits == []
+        assert second.consumers == []
+
+    def test_publish_inits_every_destructor_before_releasing_consumers(self):
+        scheduler = literal.Scheduler(max_threads=1)
+        init_order: list[str] = []
+        released: list[str] = []
+        guarantee = literal.Guarantee()
+
+        def release(name: str):
+            assert init_order == ["first", "second"]
+            released.append(name)
+
+        def init_first():
+            init_order.append("first")
+            guarantee.consumers.append(lambda: release("first"))
+
+        def init_second():
+            init_order.append("second")
+            guarantee.consumers.append(lambda: release("second"))
+
+        guarantee.inits.append(init_first)
+        guarantee.inits.append(init_second)
+        guarantee.consumers.append(lambda: release("destroy"))
+
+        class Entry(literal.EntryPoint):
+            typed_name: ClassVar[str] = "action<entry>"
+
+            @override
+            def execute(self, _scheduler: literal.Scheduler):
+                guarantee.publish(scheduler)
+
+        scheduler.start(Entry)
+
+        assert sorted(released) == ["destroy", "first", "second"]
+
+    def test_publish_releases_callee_and_caller_consumers(self):
+        scheduler = literal.Scheduler(max_threads=1)
+        released: list[str] = []
+        guarantee = literal.Guarantee()
+        guarantee.consumers.append(lambda: released.append("caller"))
+
+        class Entry(literal.EntryPoint):
+            typed_name: ClassVar[str] = "action<entry>"
+
+            @override
+            def execute(self, _scheduler: literal.Scheduler):
+                guarantee.publish(
+                    scheduler,
+                    lambda: released.append("callee"),
+                )
+
+        scheduler.start(Entry)
+
+        assert sorted(released) == ["callee", "caller"]
+
+    def test_publish_keeps_one_consumer_on_the_publishing_thread(self):
+        scheduler = literal.Scheduler(max_threads=3)
+        publishing_thread = threading.current_thread()
+        consumer_threads: dict[str, threading.Thread] = {}
+        consumers_started = threading.Barrier(3)
+        guarantee = literal.Guarantee()
+
+        def consume(name: str):
+            consumer_threads[name] = threading.current_thread()
+            _ = consumers_started.wait(timeout=5)
+
+        guarantee.consumers.append(lambda: consume("caller"))
+
+        class Entry(literal.EntryPoint):
+            typed_name: ClassVar[str] = "action<entry>"
+
+            @override
+            def execute(self, _scheduler: literal.Scheduler):
+                guarantee.publish(
+                    scheduler,
+                    lambda: consume("first callee"),
+                    lambda: consume("second callee"),
+                )
+
+        scheduler.start(Entry)
+
+        consumers_on_publishing_thread = {
+            name
+            for name, consumer_thread in consumer_threads.items()
+            if consumer_thread is publishing_thread
+        }
+        assert len(consumers_on_publishing_thread) == 1
+
+
+class TestNoJoin:
+    def test_every_arrival_continues(self):
+        assert literal.NO_JOIN.arrive()
+        assert literal.NO_JOIN.arrive()
 
 
 class TestParticle:
@@ -349,10 +454,10 @@ class TestStart:
 
         class Entry(literal.EntryPoint):
             @override
-            def execute(self, scheduler: literal.Scheduler):
+            def execute(self, _scheduler: literal.Scheduler):
                 fired.append(type(self))
 
-        literal.start(Entry)
+        literal.start(Entry, literal.Scheduler())
 
         assert fired == [Entry]
 
@@ -371,7 +476,7 @@ class TestStart:
                 )
 
             @override
-            def execute(self, scheduler: literal.Scheduler):
+            def execute(self, _scheduler: literal.Scheduler):
                 self.get_interface_position("position<output>").create_particle()
 
         occupied_positions_file = tmp_path / "occupied_positions.txt"
@@ -390,7 +495,7 @@ class TestStart:
     ):
         class Entry(literal.EntryPoint):
             @override
-            def execute(self, scheduler: literal.Scheduler):
+            def execute(self, _scheduler: literal.Scheduler):
                 pass
 
         occupied_positions_file = tmp_path / "occupied_positions.txt"
@@ -498,6 +603,14 @@ class TestAction:
         action = MyAction(literal.Particle())
 
         assert action.name == f"action<{__name__}.MyAction>"
+
+    def test_action_has_no_entry_specific_execution_method(self):
+        class MyAction(literal.Action):
+            pass
+
+        action = MyAction(literal.Particle())
+
+        assert not hasattr(action, "execute")
 
     def test_entry_point_execute_requires_an_implementation(self):
         class MyEntryPoint(literal.EntryPoint):

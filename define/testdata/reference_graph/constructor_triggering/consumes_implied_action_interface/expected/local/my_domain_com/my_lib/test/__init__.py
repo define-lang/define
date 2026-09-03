@@ -13,15 +13,8 @@ class Test(literal.EntryPoint):
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
             scheduler,
-            TestGuarantees(),
         )
-        execution.create_position_box()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_position_box__action_host = local.my_domain_com.my_lib.host.HostGuarantees()
+        execution.on_action_parent_occupied()
 
 
 @final
@@ -29,10 +22,8 @@ class TestExecution:
     def __init__(
         self,
         scheduler: literal.Scheduler,
-        guarantees: TestGuarantees,
     ):
         self.scheduler = scheduler
-        self.guarantees = guarantees
         self.local_position_box = literal.LocalPosition(
             "position<box>",
             constraints=(
@@ -40,34 +31,29 @@ class TestExecution:
             ),
             scheduler=self.scheduler,
         )
-        guarantees.trigger_position_box__action_host.trigger_action_worker.guarantee_position_input.append(
-            self.destroy_position_box
-        )
-        guarantees.trigger_position_box__action_host.trigger_action_worker.guarantee_position_run.append(
-            self.destroy_position_box
-        )
-        self.execution_trigger_position_box__action_host: local.my_domain_com.my_lib.host.HostExecution
+        self.execution_position_box__action_host: local.my_domain_com.my_lib.host.HostExecution
         self.join_for_destroy_position_box = self.scheduler.create_join(2)
-        self.join_for_trigger_position_box__action_host__action_parent = self.scheduler.create_join(2)
+
+    def on_action_parent_occupied(self):
+        self.create_position_box()
 
     def create_position_box(self):
         self.local_position_box.create_particle()
-        self.execution_trigger_position_box__action_host = local.my_domain_com.my_lib.host.HostExecution(
+        self.execution_position_box__action_host = local.my_domain_com.my_lib.host.HostExecution(
             self.local_position_box.particle.get_action(
                 local.my_domain_com.my_lib.host.Host
             ),
             self.scheduler,
-            self.guarantees.trigger_position_box__action_host,
         )
-        self.scheduler.submit(self.trigger_position_box__action_host__action_parent)
-        self.trigger_position_box__action_host__action_parent()
+        self.execution_position_box__action_host.execution_action_worker.guarantees.position_input.consumers.append(
+            self.destroy_position_box
+        )
+        self.execution_position_box__action_host.execution_action_worker.guarantees.position_run.consumers.append(
+            self.destroy_position_box
+        )
+        self.execution_position_box__action_host.on_action_parent_occupied()
 
     def destroy_position_box(self):
         if not self.join_for_destroy_position_box.arrive():
             return
         self.local_position_box.destroy_particle()
-
-    def trigger_position_box__action_host__action_parent(self):
-        if not self.join_for_trigger_position_box__action_host__action_parent.arrive():
-            return
-        self.execution_trigger_position_box__action_host.accept_action_parent()

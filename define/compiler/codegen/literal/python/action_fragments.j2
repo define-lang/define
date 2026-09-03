@@ -1,44 +1,37 @@
 {% from "action_statements.j2" import action_statements %}
 {% from "position_expression.j2" import position_expression %}
 {% from "method_invocation.j2" import invoke_method %}
-{% from "triggered_action_execution.j2" import initialize_action_execution %}
+{% from "triggered_action_execution.j2" import init_action_executions %}
+{% from "callee_binding_plans.j2" import callee_binding_plan_body %}
 {% macro action_fragment_body(fragment) %}
-        {% if fragment.guarantee_dependent_destroy_position is not none %}
+    {% if fragment.guarantee_dependent_destroy_position is not none %}
         {% set destruction_position = fragment.guarantee_dependent_destroy_position %}
         self.{{ destruction_position.member_name }} = {{ position_expression(destruction_position.position) }}
-        {% endif %}
+    {% endif %}
 {{ action_statements(fragment.statements) -}}
-        {% for action_execution in fragment.triggered_action_successors %}
-{{ initialize_action_execution(action_execution) -}}
+{{ init_action_executions(fragment.inits) -}}
+    {% for callee_binding_plan in fragment.inline_callee_binding_plans %}
+{{ callee_binding_plan_body(callee_binding_plan) -}}
+    {% endfor %}
+    {% if fragment.guarantee_name is not none %}
+        self.guarantees.{{ fragment.guarantee_name }}.publish(
+            self.scheduler,
+        {% for method_name in fragment.fanout_continuation_method_names %}
+            self.{{ method_name }},
         {% endfor %}
-        {% for successor_method_name in fragment.successor_fragment_method_names %}
-            {% set has_later = not loop.last or fragment.callee_binding_join_method_names_that_depend_on_fragment or fragment.guarantee_publication_names or fragment.triggered_action_execution_callee_binding_join_method_names or fragment.destruction_connection_names_to_complete %}
-        {{ invoke_method(successor_method_name, submit=has_later) }}
+        )
+    {% else %}
+        {% for method_name in fragment.fanout_continuation_method_names %}
+        {{ invoke_method(method_name, submit=not loop.last) }}
         {% endfor %}
-        {% for method_name in fragment.callee_binding_join_method_names_that_depend_on_fragment %}
-            {% set has_later = not loop.last or fragment.guarantee_publication_names or fragment.triggered_action_execution_callee_binding_join_method_names or fragment.destruction_connection_names_to_complete %}
-        {{ invoke_method(method_name, submit=has_later) }}
-        {% endfor %}
-        {% for publication_name in fragment.guarantee_publication_names %}
-            {% if loop.last and not fragment.triggered_action_execution_callee_binding_join_method_names and not fragment.destruction_connection_names_to_complete %}
-        self.scheduler.continue_with(self.guarantees.{{ publication_name }})
-            {% else %}
-        self.scheduler.submit_all(self.guarantees.{{ publication_name }})
-            {% endif %}
-        {% endfor %}
-        {% for method_name in fragment.triggered_action_execution_callee_binding_join_method_names %}
-        {{ invoke_method(method_name, submit=not loop.last or fragment.destruction_connection_names_to_complete) }}
-        {% endfor %}
-        {% for connection_name in fragment.destruction_connection_names_to_complete %}
-        {{ invoke_method(connection_name ~ ".complete", submit=not loop.last) }}
-        {% endfor %}
+    {% endif %}
 {% endmacro %}
 {% macro action_fragment_methods(fragments) %}
     {% for fragment in fragments %}
 
     def {{ fragment.method_name }}(self):
-        {% if fragment.dependency_count > 1 %}
-        if not self.join_for_{{ fragment.method_name }}.arrive():
+        {% if fragment.requires_join_check %}
+        if not self.{{ fragment.join_member_name }}.arrive():
             return
         {% endif %}
         {% if fragment.continue_destroy_method_name %}
@@ -46,10 +39,10 @@
         {% else %}
 {{ action_fragment_body(fragment) -}}
         {% endif %}
-    {% if fragment.continue_destroy_method_name %}
+        {% if fragment.continue_destroy_method_name %}
 
     def {{ fragment.continue_destroy_method_name }}(self):
 {{ action_fragment_body(fragment) -}}
-    {% endif %}
+        {% endif %}
     {% endfor %}
 {% endmacro %}

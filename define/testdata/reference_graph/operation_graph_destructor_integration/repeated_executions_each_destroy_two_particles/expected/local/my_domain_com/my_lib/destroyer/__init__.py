@@ -30,9 +30,9 @@ class Destroyer(literal.Action):
 @final
 class DestroyerGuarantees:
     def __init__(self):
-        self.guarantee_position_run: list[literal.Task] = []
-        self.guarantee_position_first: list[literal.Task] = []
-        self.guarantee_position_second: list[literal.Task] = []
+        self.position_run = literal.Guarantee()
+        self.position_first = literal.Guarantee()
+        self.position_second = literal.Guarantee()
 
 
 @final
@@ -41,52 +41,75 @@ class DestroyerExecution:
         self,
         action: Destroyer,
         scheduler: literal.Scheduler,
-        guarantees: DestroyerGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = DestroyerGuarantees()
         self.destruction_connections = destruction_connections
         self.local_position_used_run = literal.LocalPosition(
             "position<used_run>",
             scheduler=self.scheduler,
         )
+        self.join_for_move_position_run_to_position_used_run: literal.Join
+        self.join_for_destroy_position_first: literal.Join
+        self.join_for_destroy_position_second: literal.Join
+        self.join_for_empty_rule_position_run: literal.Join
+        self.join_for_empty_rule_position_first: literal.Join
+        self.join_for_empty_rule_position_second: literal.Join
 
     def accept_for_empty_rule_position_run(self):
+        if not self.join_for_empty_rule_position_run.arrive():
+            return
         self.move_position_run_to_position_used_run()
 
     def accept_for_empty_rule_position_first(self):
+        if not self.join_for_empty_rule_position_first.arrive():
+            return
         self.destroy_position_first()
 
     def accept_for_empty_rule_position_second(self):
+        if not self.join_for_empty_rule_position_second.arrive():
+            return
         self.destroy_position_second()
 
     def move_position_run_to_position_used_run(self):
+        if not self.join_for_move_position_run_to_position_used_run.arrive():
+            return
         self.action.get_interface_position(
             "position<run>"
         ).move_particle_to(self.local_position_used_run)
-        self.scheduler.submit(self.destroy_position_used_run)
-        self.scheduler.continue_with(self.guarantees.guarantee_position_run)
+        self.guarantees.position_run.publish(
+            self.scheduler,
+            self.destroy_position_used_run,
+        )
 
     def destroy_position_first(self):
+        if not self.join_for_destroy_position_first.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_first)
 
     def continue_destroy_position_first(self):
         self.action.get_interface_position(
             "position<first>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_first)
+        self.guarantees.position_first.publish(
+            self.scheduler,
+        )
 
     def destroy_position_second(self):
+        if not self.join_for_destroy_position_second.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_second)
 
     def continue_destroy_position_second(self):
         self.action.get_interface_position(
             "position<second>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_second)
+        self.guarantees.position_second.publish(
+            self.scheduler,
+        )
 
     def destroy_position_used_run(self):
         literal.continue_destruction(self.continue_destroy_position_used_run)

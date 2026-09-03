@@ -31,7 +31,7 @@ class Worker(literal.Action):
 @final
 class WorkerGuarantees:
     def __init__(self):
-        self.guarantee_position_in__move__position_box__global_position_y: list[literal.Task] = []
+        self.position_in__move__position_box__global_position_y = literal.Guarantee()
 
 
 @final
@@ -40,16 +40,21 @@ class WorkerExecution:
         self,
         action: Worker,
         scheduler: literal.Scheduler,
-        guarantees: WorkerGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = WorkerGuarantees()
+        self.join_for_move_position_in_to_position_box__global_position_y: literal.Join
+        self.join_for_empty_rule_position_in: literal.Join
 
     def accept_for_empty_rule_position_in(self):
+        if not self.join_for_empty_rule_position_in.arrive():
+            return
         self.move_position_in_to_position_box__global_position_y()
 
     def move_position_in_to_position_box__global_position_y(self):
+        if not self.join_for_move_position_in_to_position_box__global_position_y.arrive():
+            return
         self.action.get_interface_position(
             "position<in>"
         ).move_particle_to(
@@ -59,4 +64,6 @@ class WorkerExecution:
                 local.my_domain_com.my_lib.y.Y
             )
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_position_in__move__position_box__global_position_y)
+        self.guarantees.position_in__move__position_box__global_position_y.publish(
+            self.scheduler,
+        )

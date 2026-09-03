@@ -34,9 +34,8 @@ class Middle(literal.Action):
 @final
 class MiddleGuarantees:
     def __init__(self):
-        self.guarantee_position_result: list[literal.Task] = []
-        self.guarantee_position_result__global_position_marker: list[literal.Task] = []
-        self.trigger_position_box__action_inner = local.my_domain_com.my_lib.inner.InnerGuarantees()
+        self.position_result = literal.Guarantee()
+        self.position_result__global_position_marker = literal.Guarantee()
 
 
 @final
@@ -47,7 +46,6 @@ class MiddleExecution:
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
-        guarantees: MiddleGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
@@ -55,7 +53,7 @@ class MiddleExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = guarantees
+        self.guarantees = MiddleGuarantees()
         self.local_position_box = literal.LocalPosition(
             "position<box>",
             constraints=(
@@ -67,18 +65,17 @@ class MiddleExecution:
             "position<held_marker>",
             scheduler=self.scheduler,
         )
-        guarantees.trigger_position_box__action_inner.guarantee_position_result__global_position_marker.append(
-            self.move_position_box__action_inner__position_result__global_position_marker_to_position_held_marker
-        )
-        self.execution_trigger_position_box__action_inner: local.my_domain_com.my_lib.inner.InnerExecution
-        self.join_for_move_position_box__action_inner__position_result_to_position_result = self.scheduler.create_join(2)
+        self.execution_position_box__action_inner: local.my_domain_com.my_lib.inner.InnerExecution
+        self.join_for_move_position_box__action_inner__position_result_to_position_result: literal.Join
         self.join_for_destroy_position_box = self.scheduler.create_join(2)
-        self.join_for_trigger_position_box__action_inner__when_empty_position_result = self.scheduler.create_join(2)
+        self.join_when_empty_position_result: literal.Join
 
-    def accept_action_parent(self):
+    def on_action_parent_occupied(self):
         self.create_position_box()
 
     def accept_when_empty_position_result(self):
+        if not self.join_when_empty_position_result.arrive():
+            return
         self.move_position_box__action_inner__position_result_to_position_result()
 
     def create_position_box(self):
@@ -88,8 +85,19 @@ class MiddleExecution:
             "box",
             1,
         )
+        self.execution_position_box__action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
+            self.local_position_box.particle.get_action(
+                local.my_domain_com.my_lib.inner.Inner
+            ),
+            self.scheduler,
+            self.trace_execution,
+            "inner",
+        )
+        self.execution_position_box__action_inner.guarantees.position_result__global_position_marker.consumers.append(
+            self.move_position_box__action_inner__position_result__global_position_marker_to_position_held_marker
+        )
         self.scheduler.submit(self.create_position_box__action_inner__position_run)
-        self.trigger_position_box__action_inner__when_empty_position_result()
+        self.execution_position_box__action_inner.accept_when_empty_position_result()
 
     def create_position_box__action_inner__position_run(self):
         self.local_position_box.particle.get_action(
@@ -102,17 +110,17 @@ class MiddleExecution:
             "box::/inner::run",
             1,
         )
-        self.execution_trigger_position_box__action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
-            self.local_position_box.particle.get_action(
-                local.my_domain_com.my_lib.inner.Inner
-            ),
-            self.scheduler,
+        self.local_position_box.particle.get_action(
+            local.my_domain_com.my_lib.inner.Inner
+        ).get_interface_position(
+            "position<run>"
+        ).destroy_particle()
+        self.scheduler.destroy_completed(
             self.trace_execution,
-            "inner",
-            self.guarantees.trigger_position_box__action_inner,
+            "box::/inner::run",
+            1,
         )
-        self.scheduler.submit(self.destroy_position_box__action_inner__position_run)
-        self.trigger_position_box__action_inner__when_empty_position_result()
+        self.destroy_position_box()
 
     def move_position_box__action_inner__position_result__global_position_marker_to_position_held_marker(self):
         self.local_position_box.particle.get_action(
@@ -148,9 +156,11 @@ class MiddleExecution:
             "result",
             1,
         )
-        self.scheduler.submit(self.move_position_held_marker_to_position_result__global_position_marker)
-        self.scheduler.submit(self.destroy_position_box)
-        self.scheduler.continue_with(self.guarantees.guarantee_position_result)
+        self.guarantees.position_result.publish(
+            self.scheduler,
+            self.move_position_held_marker_to_position_result__global_position_marker,
+            self.destroy_position_box,
+        )
 
     def move_position_held_marker_to_position_result__global_position_marker(self):
         self.local_position_held_marker.move_particle_to(
@@ -166,20 +176,9 @@ class MiddleExecution:
             "result::/marker",
             1,
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_position_result__global_position_marker)
-
-    def destroy_position_box__action_inner__position_run(self):
-        self.local_position_box.particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
-        ).get_interface_position(
-            "position<run>"
-        ).destroy_particle()
-        self.scheduler.destroy_completed(
-            self.trace_execution,
-            "box::/inner::run",
-            1,
+        self.guarantees.position_result__global_position_marker.publish(
+            self.scheduler,
         )
-        self.destroy_position_box()
 
     def destroy_position_box(self):
         if not self.join_for_destroy_position_box.arrive():
@@ -190,8 +189,3 @@ class MiddleExecution:
             "box",
             1,
         )
-
-    def trigger_position_box__action_inner__when_empty_position_result(self):
-        if not self.join_for_trigger_position_box__action_inner__when_empty_position_result.arrive():
-            return
-        self.execution_trigger_position_box__action_inner.accept_when_empty_position_result()

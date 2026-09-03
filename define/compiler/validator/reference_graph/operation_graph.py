@@ -56,9 +56,9 @@ class _RecordedDestructionContribution:
     operations: list[operation_graph_model.DestructionFragmentDestroyNode] = field(
         default_factory=list
     )
-    completion_operations: list[
-        operation_graph_model.DestructionFragmentDestroyNode
-    ] = field(default_factory=list)
+    completion_operation: (
+        operation_graph_model.DestructionFragmentDestroyNode | None
+    ) = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -205,8 +205,8 @@ class OperationGraph:
         nodes: list[operation_graph_model.OperationNode],
         last_operation: dict[tuple[str, ...], operation_graph_model.LastOperationNode],
         executions: list[operation_graph_model.ActionExecution],
-        guaranteed_positions_by_operation: dict[
-            operation_graph_model.ConcreteOperationNode,
+        direct_guarantees_by_operation: dict[
+            operation_graph_model.PositionOperationNode,
             tuple[tuple[str, ...], ...],
         ],
         destructions: dict[
@@ -226,7 +226,7 @@ class OperationGraph:
         self._nodes = nodes
         self._last_operation = last_operation
         self._executions = executions
-        self.guaranteed_positions_by_operation = guaranteed_positions_by_operation
+        self.direct_guarantees_by_operation = direct_guarantees_by_operation
         self._destructions = destructions
         self._contributed_destruction_fragments_by_direct_callee_execution = (
             contributed_destruction_fragments_by_direct_callee_execution
@@ -279,6 +279,18 @@ class OperationGraph:
         """Return the destruction recorded for one Destruction Fact."""
         return self._destructions[destruction_fact]
 
+    def is_propagated_destruction_operation(
+        self,
+        operation: operation_graph_model.PositionOperationNode,
+    ) -> bool:
+        """Whether a Destroy propagates its Destruction Fact to the caller."""
+        if not isinstance(
+            operation,
+            operation_graph_model.DestructionFactDestroyNode,
+        ):
+            return False
+        return self._destructions[operation.destruction_fact].is_propagated_to_caller
+
     @property
     def propagates_destruction_facts(self) -> bool:
         """Whether this action propagates any Destruction Fact to its caller."""
@@ -321,8 +333,8 @@ class OperationGraphBuilder:
             node_id=len(self._nodes),
         )
         self._nodes.append(self._action_parent_last_operation)
-        self._guaranteed_positions_by_operation: dict[
-            operation_graph_model.ConcreteOperationNode,
+        self._direct_guarantees_by_operation: dict[
+            operation_graph_model.PositionOperationNode,
             tuple[tuple[str, ...], ...],
         ] = {}
         self._destructions: dict[
@@ -344,6 +356,11 @@ class OperationGraphBuilder:
         body operation, so it does not count as the body touching the position.
         """
         return self._last_operations_by_position.body_touched(key)
+
+    @property
+    def executions(self) -> Sequence[operation_graph_model.ActionExecution]:
+        """Every Action Execution recorded so far, in triggering order."""
+        return self._executions
 
     def record_requirement(
         self,
@@ -419,12 +436,6 @@ class OperationGraphBuilder:
         child positions.
         """
         acting_on_position_key = acting_on_position.canonical_chained_name_tuple
-        # TODO: Associate each destructor Action Execution with the Destroy operation
-        # that fires it. Destructors are currently recorded before that Destroy exists,
-        # so a preceding Requirement Node can become trigger_operation and codegen
-        # treats satisfying the requirement as the trigger. Once destruction recording
-        # exposes the firing Destroy, remove destructor_trigger_requirement and exclude
-        # RequirementNode from Action Execution trigger handling.
         if is_destructor:
             # Need to check the parents because destructors trigger on child
             # positions of the passed-in particle, so it's the last operation
@@ -497,7 +508,6 @@ class OperationGraphBuilder:
             )
         return operation_graph_model.ActionExecution(
             callee=callee,
-            trigger_operation=firing_operation,
             requirement_satisfactions=requirement_satisfactions,
             action_parent_last_operation=action_parent_last_operation,
         )
@@ -1097,16 +1107,20 @@ class OperationGraphBuilder:
         for contributed_position in final_contributed_positions:
             record = records_by_contributed_position[contributed_position]
             for recorded_contribution in record.contributions:
-                recorded_contribution.completion_operations.append(record.operation)
+                recorded_contribution.completion_operation = record.operation
         contributed_destructions: list[
             operation_graph_model.ContributedDestruction
         ] = []
         for recorded_contribution in contributions:
+            completion_operation = typing.cast(
+                "operation_graph_model.DestructionFragmentDestroyNode",
+                recorded_contribution.completion_operation,
+            )
             contributed_destructions.append(
                 operation_graph_model.ContributedDestruction(
                     recorded_contribution.node,
                     tuple(recorded_contribution.operations),
-                    tuple(recorded_contribution.completion_operations),
+                    completion_operation,
                 )
             )
         return tuple(contributed_destructions)
@@ -1362,10 +1376,11 @@ class OperationGraphBuilder:
 
         Each key is a contracted position's absolute key. That position's last
         operation becomes a new guarantee node, so caller operations that read
-        it depend on the callee's final operation on it rather than on the
-        trigger operation itself. The node names the position as the callee's
-        own graph names it, including a position the callee in turn took from an
-        action it triggered.
+        it depend on the callee's final operation on it. The guarantee node does
+        not add the Particle Operation preceding the callee's Action Parent as
+        a dependency. The node names the position as the
+        callee's own graph names it, including a position the callee in turn took
+        from an action it called.
         """
         # The per-guarantee node and its one-element dependency list look like
         # avoidable allocation costs because guarantees account for most nodes
@@ -1407,7 +1422,6 @@ class OperationGraphBuilder:
                     node_id=len(self._nodes),
                     execution=execution,
                     nested_executions=nested_executions,
-                    depends_on=(execution.trigger_operation,),
                     guarantee=node_guarantee,
                     canonical_move_guarantee=canonical_move_guarantee,
                 )
@@ -1418,7 +1432,6 @@ class OperationGraphBuilder:
                     node_id=len(self._nodes),
                     execution=execution,
                     nested_executions=nested_executions,
-                    depends_on=(execution.trigger_operation,),
                     guarantee=node_guarantee,
                 )
             self._nodes.append(node)
@@ -1429,21 +1442,19 @@ class OperationGraphBuilder:
     def record_guaranteed_positions(self, positions: Iterable[tuple[str, ...]]):
         """Record guarantees published by this action's Particle Operations."""
         positions_by_operation: dict[
-            operation_graph_model.ConcreteOperationNode,
+            operation_graph_model.PositionOperationNode,
             list[tuple[str, ...]],
         ] = {}
         for position in positions:
             node = self._last_operations_by_position.get(position)
-            if not isinstance(
-                node,
-                (
-                    operation_graph_model.PositionOperationNode,
-                    operation_graph_model.GuaranteeNode,
-                ),
-            ):
+            # The only other type it could be is GuaranteeNode, and when we see
+            # that, it means it's a callee guarantee that was never consumed in
+            # this action (a purely transitive guarantee that we are shipping to
+            # our own caller).
+            if not isinstance(node, operation_graph_model.PositionOperationNode):
                 continue
             positions_by_operation.setdefault(node, []).append(position)
-        self._guaranteed_positions_by_operation = {
+        self._direct_guarantees_by_operation = {
             operation: tuple(guaranteed_positions)
             for operation, guaranteed_positions in positions_by_operation.items()
         }
@@ -1455,7 +1466,7 @@ class OperationGraphBuilder:
             nodes=self._nodes,
             last_operation=self._last_operations_by_position.finish(),
             executions=self._executions,
-            guaranteed_positions_by_operation=self._guaranteed_positions_by_operation,
+            direct_guarantees_by_operation=self._direct_guarantees_by_operation,
             destructions=self._destructions,
             contributed_destruction_fragments_by_direct_callee_execution=(
                 self._contributed_destruction_fragments_by_direct_callee_execution
@@ -1466,15 +1477,25 @@ class OperationGraphBuilder:
         )
 
 
-@dataclass(slots=True)
+@dataclass(frozen=True, slots=True, eq=False)
 class ResolvedGuarantee:
     """Action Executions from a Guarantee to its Particle Operation."""
 
-    executions: list[operation_graph_model.ActionExecution]
+    executions: tuple[operation_graph_model.ActionExecution, ...]
     operation: operation_graph_model.PositionOperationNode
 
+    @typing.override
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, ResolvedGuarantee):
+            return NotImplemented
+        return self.executions == other.executions and self.operation is other.operation
 
-@dataclass(slots=True)
+    @typing.override
+    def __hash__(self) -> int:
+        return hash((self.executions, self.operation))
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class GuaranteePath(ResolvedGuarantee):
     """An Operation Graph Guarantee resolved through its Action Executions."""
 
@@ -1508,7 +1529,7 @@ class OperationGraphs(
         self, guarantee: operation_graph_model.GuaranteeNode
     ) -> GuaranteePath:
         """Resolve one guarantee to its Particle Operation through callee graphs."""
-        executions = [guarantee.execution, *guarantee.nested_executions]
+        executions = (guarantee.execution, *guarantee.nested_executions)
         action = executions[-1].callee_action_name
         operation = self._resolve_guaranteed_operation(
             action,
@@ -1522,7 +1543,7 @@ class OperationGraphs(
     ) -> ResolvedGuarantee:
         """Resolve a contributed Destructor Guarantee to its Particle Operation."""
         return ResolvedGuarantee(
-            [guarantee.destructor_execution],
+            (guarantee.destructor_execution,),
             self._resolve_guaranteed_operation(
                 guarantee.destructor_execution.callee_action_name,
                 guarantee.verified_guarantee.guarantee.guaranteed_position,
@@ -1617,8 +1638,9 @@ class OperationGraphs(
                     contribution.first_operations[
                         contributed_destruction.operations[0]
                     ] = None
-                    for operation in contributed_destruction.completion_operations:
-                        contribution.completion_operations[operation] = None
+                    contribution.completion_operations[
+                        contributed_destruction.completion_operation
+                    ] = None
                 for destructor in fragment.destructors:
                     resolved_callee_destroy = self.resolve_callee_destroy(
                         destructor.callee_destroy

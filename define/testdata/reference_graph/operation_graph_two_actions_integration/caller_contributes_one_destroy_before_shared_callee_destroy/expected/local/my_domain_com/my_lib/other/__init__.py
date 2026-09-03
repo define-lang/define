@@ -32,7 +32,7 @@ class Other(literal.Action):
 @final
 class OtherGuarantees:
     def __init__(self):
-        self.guarantee_position_parent: list[literal.Task] = []
+        self.position_parent = literal.Guarantee()
 
 
 @final
@@ -41,27 +41,38 @@ class OtherExecution:
         self,
         action: Other,
         scheduler: literal.Scheduler,
-        guarantees: OtherGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = OtherGuarantees()
         self.destruction_connections = destruction_connections
-        self.join_for_destroy_position_parent__global_position_child = self.scheduler.create_join(2)
-        self.join_for_destroy_position_parent = self.scheduler.create_join(2)
+        self.join_for_destroy_position_parent__global_position_child__global_position_grandchild: literal.Join
+        self.join_for_destroy_position_parent__global_position_child: literal.Join
+        self.join_for_destroy_position_parent: literal.Join
+        self.join_for_empty_rule_position_parent__global_position_child__global_position_grandchild: literal.Join
+        self.join_for_empty_rule_position_parent__global_position_child: literal.Join
+        self.join_for_empty_rule_position_parent: literal.Join
 
     def accept_for_empty_rule_position_parent__global_position_child__global_position_grandchild(self):
+        if not self.join_for_empty_rule_position_parent__global_position_child__global_position_grandchild.arrive():
+            return
         self.destroy_position_parent__global_position_child__global_position_grandchild()
 
     def accept_for_empty_rule_position_parent__global_position_child(self):
+        if not self.join_for_empty_rule_position_parent__global_position_child.arrive():
+            return
         self.destroy_position_parent__global_position_child()
 
     def accept_for_empty_rule_position_parent(self):
+        if not self.join_for_empty_rule_position_parent.arrive():
+            return
         self.destroy_position_parent()
 
     def destroy_position_parent__global_position_child__global_position_grandchild(self):
+        if not self.join_for_destroy_position_parent__global_position_child__global_position_grandchild.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_parent__global_position_child__global_position_grandchild)
 
     def continue_destroy_position_parent__global_position_child__global_position_grandchild(self):
@@ -96,4 +107,6 @@ class OtherExecution:
         self.action.get_interface_position(
             "position<parent>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_parent)
+        self.guarantees.position_parent.publish(
+            self.scheduler,
+        )

@@ -15,7 +15,7 @@ class Test(literal.EntryPoint):
         execution = TestExecution(
             scheduler,
         )
-        execution.create_position_staging()
+        execution.on_action_parent_occupied()
 
 
 @final
@@ -36,8 +36,10 @@ class TestExecution:
             "position<box>",
             scheduler=self.scheduler,
         )
-        self.execution_trigger_position_box__global_position_child__action_destructor: local.my_domain_com.my_lib.destructor.DestructorExecution
-        self.join_for_trigger_position_box__global_position_child__action_destructor__action_parent = self.scheduler.create_join(2)
+        self.execution_position_box__global_position_child__action_destructor: local.my_domain_com.my_lib.destructor.DestructorExecution
+
+    def on_action_parent_occupied(self):
+        self.create_position_staging()
 
     def create_position_staging(self):
         self.local_position_staging.create_particle()
@@ -45,20 +47,14 @@ class TestExecution:
             local.my_domain_com.my_lib.child.Child
         ).create_particle()
         self.local_position_staging.move_particle_to(self.local_position_box)
-        self.execution_trigger_position_box__global_position_child__action_destructor = local.my_domain_com.my_lib.destructor.DestructorExecution(
+        self.execution_position_box__global_position_child__action_destructor = local.my_domain_com.my_lib.destructor.DestructorExecution(
             self.scheduler,
         )
         self.scheduler.submit(self.destroy_position_box__global_position_child)
-        self.scheduler.submit(self.trigger_position_box__global_position_child__action_destructor__action_parent)
-        self.trigger_position_box__global_position_child__action_destructor__action_parent()
+        self.execution_position_box__global_position_child__action_destructor.on_action_parent_occupied()
 
     def destroy_position_box__global_position_child(self):
         self.local_position_box.particle.get_position(
             local.my_domain_com.my_lib.child.Child
         ).destroy_particle()
         self.local_position_box.destroy_particle()
-
-    def trigger_position_box__global_position_child__action_destructor__action_parent(self):
-        if not self.join_for_trigger_position_box__global_position_child__action_destructor__action_parent.arrive():
-            return
-        self.execution_trigger_position_box__global_position_child__action_destructor.accept_action_parent()

@@ -22,16 +22,8 @@ class Test(literal.EntryPoint):
             scheduler,
             None,
             "test",
-            TestGuarantees(),
         )
-        execution.scheduler.submit(execution.create_position_source)
-        execution.create_action_middle__position_trigger()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_action_middle = local.my_domain_com.my_lib.middle.MiddleGuarantees()
+        execution.on_action_parent_occupied()
 
 
 @final
@@ -42,7 +34,6 @@ class TestExecution:
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
-        guarantees: TestGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
@@ -50,7 +41,6 @@ class TestExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = guarantees
         self.local_position_source = literal.LocalPosition(
             "position<source>",
             constraints=(
@@ -60,9 +50,24 @@ class TestExecution:
             ),
             scheduler=self.scheduler,
         )
-        self.execution_trigger_action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
-        self.join_for_trigger_action_middle__for_empty_rule_position_target = self.scheduler.create_join(2)
-        self.join_for_trigger_action_middle__for_empty_rule_position_trigger = self.scheduler.create_join(2)
+        self.execution_action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
+        self.execution_action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.middle.Middle
+            ),
+            self.scheduler,
+            self.trace_execution,
+            "middle",
+        )
+        self.execution_action_middle.join_for_empty_rule_position_target = literal.NO_JOIN
+        self.execution_action_middle.join_for_empty_rule_position_trigger = literal.NO_JOIN
+        self.execution_action_middle.join_for_move_position_target_to_action_destroyer__position_target = literal.NO_JOIN
+        self.execution_action_middle.join_for_destroy_position_trigger = literal.NO_JOIN
+
+    def on_action_parent_occupied(self):
+        self.scheduler.submit(self.create_position_source)
+        self.scheduler.submit(self.create_action_middle__position_trigger)
+        self.execution_action_middle.on_action_parent_occupied()
 
     def create_position_source(self):
         self.local_position_source.create_particle()
@@ -84,7 +89,7 @@ class TestExecution:
             "/middle::target",
             1,
         )
-        self.trigger_action_middle__for_empty_rule_position_target()
+        self.execution_action_middle.accept_for_empty_rule_position_target()
 
     def create_action_middle__position_trigger(self):
         self.action.on_particle.get_action(
@@ -97,29 +102,4 @@ class TestExecution:
             "/middle::trigger",
             1,
         )
-        self.execution_trigger_action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.middle.Middle
-            ),
-            self.scheduler,
-            self.trace_execution,
-            "middle",
-            self.guarantees.trigger_action_middle,
-        )
-        self.scheduler.submit(self.trigger_action_middle__for_empty_rule_position_trigger)
-        self.scheduler.submit(self.trigger_action_middle__for_empty_rule_position_target)
-        self.scheduler.submit(self.trigger_action_middle__action_parent)
-        self.trigger_action_middle__for_empty_rule_position_trigger()
-
-    def trigger_action_middle__for_empty_rule_position_target(self):
-        if not self.join_for_trigger_action_middle__for_empty_rule_position_target.arrive():
-            return
-        self.execution_trigger_action_middle.accept_for_empty_rule_position_target()
-
-    def trigger_action_middle__action_parent(self):
-        self.execution_trigger_action_middle.accept_action_parent()
-
-    def trigger_action_middle__for_empty_rule_position_trigger(self):
-        if not self.join_for_trigger_action_middle__for_empty_rule_position_trigger.arrive():
-            return
-        self.execution_trigger_action_middle.accept_for_empty_rule_position_trigger()
+        self.execution_action_middle.accept_for_empty_rule_position_trigger()

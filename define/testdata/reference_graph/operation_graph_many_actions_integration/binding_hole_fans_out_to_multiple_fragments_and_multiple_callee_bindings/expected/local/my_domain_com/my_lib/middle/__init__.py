@@ -43,18 +43,22 @@ class MiddleExecution:
             "position<second>",
             scheduler=self.scheduler,
         )
-        self.execution_trigger_action_child_a: local.my_domain_com.my_lib.child_a.ChildAExecution
-        self.execution_trigger_action_child_b: local.my_domain_com.my_lib.child_b.ChildBExecution
-        self.join_for_trigger_action_child_a__action_parent = self.scheduler.create_join(2)
-        self.join_for_trigger_action_child_b__action_parent = self.scheduler.create_join(2)
+        self.execution_action_child_a: local.my_domain_com.my_lib.child_a.ChildAExecution
+        self.execution_action_child_b: local.my_domain_com.my_lib.child_b.ChildBExecution
+        self.execution_action_child_a = local.my_domain_com.my_lib.child_a.ChildAExecution(
+            self.scheduler,
+        )
+        self.execution_action_child_b = local.my_domain_com.my_lib.child_b.ChildBExecution(
+            self.scheduler,
+        )
 
-    def accept_action_parent(self):
+    def on_action_parent_occupied(self):
         self.scheduler.submit(self.create_position_first)
         self.scheduler.submit(self.create_position_second)
         self.scheduler.submit(self.create_action_child_a__position_trigger_pos)
         self.scheduler.submit(self.create_action_child_b__position_trigger_pos)
-        self.scheduler.submit(self.trigger_action_child_a__action_parent)
-        self.trigger_action_child_b__action_parent()
+        self.scheduler.submit(self.execution_action_child_a.on_action_parent_occupied)
+        self.execution_action_child_b.on_action_parent_occupied()
 
     def create_position_first(self):
         self.local_position_first.create_particle()
@@ -70,11 +74,11 @@ class MiddleExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.execution_trigger_action_child_a = local.my_domain_com.my_lib.child_a.ChildAExecution(
-            self.scheduler,
-        )
-        self.scheduler.submit(self.destroy_action_child_a__position_trigger_pos)
-        self.trigger_action_child_a__action_parent()
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.child_a.ChildA
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
 
     def create_action_child_b__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -82,32 +86,8 @@ class MiddleExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.execution_trigger_action_child_b = local.my_domain_com.my_lib.child_b.ChildBExecution(
-            self.scheduler,
-        )
-        self.scheduler.submit(self.destroy_action_child_b__position_trigger_pos)
-        self.trigger_action_child_b__action_parent()
-
-    def destroy_action_child_a__position_trigger_pos(self):
-        self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.child_a.ChildA
-        ).get_interface_position(
-            "position<trigger_pos>"
-        ).destroy_particle()
-
-    def destroy_action_child_b__position_trigger_pos(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.child_b.ChildB
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
-
-    def trigger_action_child_a__action_parent(self):
-        if not self.join_for_trigger_action_child_a__action_parent.arrive():
-            return
-        self.execution_trigger_action_child_a.accept_action_parent()
-
-    def trigger_action_child_b__action_parent(self):
-        if not self.join_for_trigger_action_child_b__action_parent.arrive():
-            return
-        self.execution_trigger_action_child_b.accept_action_parent()

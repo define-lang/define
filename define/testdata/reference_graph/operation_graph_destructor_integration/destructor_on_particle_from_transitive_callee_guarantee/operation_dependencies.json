@@ -14,28 +14,6 @@
   {
     "operation": {
       "execution": {
-        "caller": null,
-        "action_name": "test"
-      },
-      "operation_name": "create",
-      "target": "gateway::/middle::run",
-      "occurrence": 1
-    },
-    "dependencies": [
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "create",
-        "target": "gateway",
-        "occurrence": 1
-      }
-    ]
-  },
-  {
-    "operation": {
-      "execution": {
         "caller": {
           "caller": null,
           "action_name": "test"
@@ -55,14 +33,211 @@
         "operation_name": "create",
         "target": "gateway",
         "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "middle"
+        },
+        "action_name": "inner"
       },
+      "operation_name": "create",
+      "target": "result",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "middle"
+        },
+        "operation_name": "create",
+        "target": "box",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "middle"
+        },
+        "action_name": "inner"
+      },
+      "operation_name": "create",
+      "target": "result::/marker",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": {
+            "caller": {
+              "caller": null,
+              "action_name": "test"
+            },
+            "action_name": "middle"
+          },
+          "action_name": "inner"
+        },
+        "operation_name": "create",
+        "target": "result",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "middle"
+      },
+      "operation_name": "move",
+      "source": "box::/inner::result::/marker",
+      "target": "held_marker",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": {
+            "caller": {
+              "caller": null,
+              "action_name": "test"
+            },
+            "action_name": "middle"
+          },
+          "action_name": "inner"
+        },
+        "operation_name": "create",
+        "target": "result::/marker",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "middle"
+      },
+      "operation_name": "move",
+      "source": "box::/inner::result",
+      "target": "result",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "middle"
+        },
+        "operation_name": "move",
+        "source": "box::/inner::result::/marker",
+        "target": "held_marker",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "destructor"
+      },
+      "operation_name": "create",
+      "target": "_noop",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "middle"
+        },
+        "operation_name": "move",
+        "source": "box::/inner::result",
+        "target": "result",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "destructor"
+      },
+      "operation_name": "destroy",
+      "target": "_noop",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "destructor"
+        },
+        "operation_name": "create",
+        "target": "_noop",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "operation_name": "create",
+      "target": "gateway::/middle::run",
+      "occurrence": 1
+    },
+    "dependencies": [
       {
         "execution": {
           "caller": null,
           "action_name": "test"
         },
         "operation_name": "create",
-        "target": "gateway::/middle::run",
+        "target": "gateway",
         "occurrence": 1
       }
     ]
@@ -121,53 +296,13 @@
     "operation": {
       "execution": {
         "caller": {
-          "caller": {
-            "caller": null,
-            "action_name": "test"
-          },
-          "action_name": "middle"
+          "caller": null,
+          "action_name": "test"
         },
-        "action_name": "inner"
-      },
-      "operation_name": "create",
-      "target": "result",
-      "occurrence": 1
-    },
-    "dependencies": [
-      {
-        "execution": {
-          "caller": {
-            "caller": null,
-            "action_name": "test"
-          },
-          "action_name": "middle"
-        },
-        "operation_name": "create",
-        "target": "box::/inner::run",
-        "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": {
-            "caller": null,
-            "action_name": "test"
-          },
-          "action_name": "middle"
-        },
-        "operation_name": "create",
-        "target": "box",
-        "occurrence": 1
-      }
-    ]
-  },
-  {
-    "operation": {
-      "execution": {
-        "caller": null,
-        "action_name": "test"
+        "action_name": "middle"
       },
       "operation_name": "destroy",
-      "target": "gateway::/middle::box::/inner::run",
+      "target": "box::/inner::run",
       "occurrence": 1
     },
     "dependencies": [
@@ -189,15 +324,13 @@
     "operation": {
       "execution": {
         "caller": {
-          "caller": {
-            "caller": null,
-            "action_name": "test"
-          },
-          "action_name": "middle"
+          "caller": null,
+          "action_name": "test"
         },
-        "action_name": "inner"
+        "action_name": "middle"
       },
-      "operation_name": "create",
+      "operation_name": "move",
+      "source": "held_marker",
       "target": "result::/marker",
       "occurrence": 1
     },
@@ -205,15 +338,13 @@
       {
         "execution": {
           "caller": {
-            "caller": {
-              "caller": null,
-              "action_name": "test"
-            },
-            "action_name": "middle"
+            "caller": null,
+            "action_name": "test"
           },
-          "action_name": "inner"
+          "action_name": "middle"
         },
-        "operation_name": "create",
+        "operation_name": "move",
+        "source": "box::/inner::result",
         "target": "result",
         "occurrence": 1
       }
@@ -237,30 +368,13 @@
       {
         "execution": {
           "caller": {
-            "caller": {
-              "caller": null,
-              "action_name": "test"
-            },
-            "action_name": "middle"
+            "caller": null,
+            "action_name": "test"
           },
-          "action_name": "inner"
+          "action_name": "middle"
         },
-        "operation_name": "create",
-        "target": "result",
-        "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": {
-            "caller": {
-              "caller": null,
-              "action_name": "test"
-            },
-            "action_name": "middle"
-          },
-          "action_name": "inner"
-        },
-        "operation_name": "create",
+        "operation_name": "move",
+        "source": "held_marker",
         "target": "result::/marker",
         "occurrence": 1
       }
@@ -303,7 +417,7 @@
         "action_name": "test"
       },
       "operation_name": "destroy",
-      "target": "gateway::/middle::box::/inner::result::/marker",
+      "target": "gateway::/middle::result::/marker",
       "occurrence": 1
     },
     "dependencies": [
@@ -329,7 +443,7 @@
         "action_name": "test"
       },
       "operation_name": "destroy",
-      "target": "gateway::/middle::box::/inner::result",
+      "target": "gateway::/middle::result",
       "occurrence": 1
     },
     "dependencies": [
@@ -339,38 +453,7 @@
           "action_name": "test"
         },
         "operation_name": "destroy",
-        "target": "gateway::/middle::box::/inner::result::/marker",
-        "occurrence": 1
-      }
-    ]
-  },
-  {
-    "operation": {
-      "execution": {
-        "caller": null,
-        "action_name": "test"
-      },
-      "operation_name": "destroy",
-      "target": "gateway::/middle::box",
-      "occurrence": 1
-    },
-    "dependencies": [
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "destroy",
-        "target": "gateway::/middle::box::/inner::run",
-        "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "destroy",
-        "target": "gateway::/middle::box::/inner::result",
+        "target": "gateway::/middle::result::/marker",
         "occurrence": 1
       }
     ]
@@ -401,7 +484,7 @@
           "action_name": "test"
         },
         "operation_name": "destroy",
-        "target": "gateway::/middle::box",
+        "target": "gateway::/middle::result",
         "occurrence": 1
       }
     ]
@@ -413,56 +496,10 @@
           "caller": null,
           "action_name": "test"
         },
-        "action_name": "destructor"
-      },
-      "operation_name": "create",
-      "target": "_noop",
-      "occurrence": 1
-    },
-    "dependencies": [
-      {
-        "execution": {
-          "caller": {
-            "caller": {
-              "caller": null,
-              "action_name": "test"
-            },
-            "action_name": "middle"
-          },
-          "action_name": "inner"
-        },
-        "operation_name": "create",
-        "target": "result",
-        "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": {
-            "caller": {
-              "caller": null,
-              "action_name": "test"
-            },
-            "action_name": "middle"
-          },
-          "action_name": "inner"
-        },
-        "operation_name": "create",
-        "target": "result",
-        "occurrence": 1
-      }
-    ]
-  },
-  {
-    "operation": {
-      "execution": {
-        "caller": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "action_name": "destructor"
+        "action_name": "middle"
       },
       "operation_name": "destroy",
-      "target": "_noop",
+      "target": "box",
       "occurrence": 1
     },
     "dependencies": [
@@ -472,10 +509,23 @@
             "caller": null,
             "action_name": "test"
           },
-          "action_name": "destructor"
+          "action_name": "middle"
         },
-        "operation_name": "create",
-        "target": "_noop",
+        "operation_name": "destroy",
+        "target": "box::/inner::run",
+        "occurrence": 1
+      },
+      {
+        "execution": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "middle"
+        },
+        "operation_name": "move",
+        "source": "box::/inner::result",
+        "target": "result",
         "occurrence": 1
       }
     ]

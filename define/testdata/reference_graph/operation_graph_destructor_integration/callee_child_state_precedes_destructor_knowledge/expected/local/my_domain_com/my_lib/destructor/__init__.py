@@ -18,8 +18,8 @@ class Destructor(literal.Action):
 @final
 class DestructorGuarantees:
     def __init__(self):
-        self.guarantee_global_position_occupied: list[literal.Task] = []
-        self.guarantee_global_position_empty: list[literal.Task] = []
+        self.global_position_occupied = literal.Guarantee()
+        self.global_position_empty = literal.Guarantee()
 
 
 @final
@@ -28,23 +28,28 @@ class DestructorExecution:
         self,
         action: Destructor,
         scheduler: literal.Scheduler,
-        guarantees: DestructorGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = DestructorGuarantees()
         self.local_position_holder = literal.LocalPosition(
             "position<holder>",
             scheduler=self.scheduler,
         )
+        self.join_for_move_global_position_occupied_to_position_holder: literal.Join
+        self.join_for_empty_rule_global_position_occupied: literal.Join
 
     def accept_for_empty_rule_global_position_occupied(self):
+        if not self.join_for_empty_rule_global_position_occupied.arrive():
+            return
         self.move_global_position_occupied_to_position_holder()
 
     def accept_when_empty_global_position_empty(self):
         self.create_global_position_empty()
 
     def move_global_position_occupied_to_position_holder(self):
+        if not self.join_for_move_global_position_occupied_to_position_holder.arrive():
+            return
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.occupied.Occupied
         ).move_particle_to(self.local_position_holder)
@@ -53,7 +58,9 @@ class DestructorExecution:
                 local.my_domain_com.my_lib.occupied.Occupied
             )
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_occupied)
+        self.guarantees.global_position_occupied.publish(
+            self.scheduler,
+        )
 
     def create_global_position_empty(self):
         self.action.on_particle.get_position(
@@ -62,4 +69,6 @@ class DestructorExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.empty.Empty
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_empty)
+        self.guarantees.global_position_empty.publish(
+            self.scheduler,
+        )

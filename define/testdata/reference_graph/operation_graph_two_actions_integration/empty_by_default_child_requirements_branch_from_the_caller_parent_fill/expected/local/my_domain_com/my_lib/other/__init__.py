@@ -33,8 +33,8 @@ class Other(literal.Action):
 @final
 class OtherGuarantees:
     def __init__(self):
-        self.guarantee_position_box__global_position_a: list[literal.Task] = []
-        self.guarantee_position_box__global_position_b: list[literal.Task] = []
+        self.position_box__global_position_a = literal.Guarantee()
+        self.position_box__global_position_b = literal.Guarantee()
 
 
 @final
@@ -43,11 +43,10 @@ class OtherExecution:
         self,
         action: Other,
         scheduler: literal.Scheduler,
-        guarantees: OtherGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = OtherGuarantees()
 
     def accept_when_empty_position_box__global_position_a(self):
         self.create_position_box__global_position_a()
@@ -61,7 +60,9 @@ class OtherExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.a.A
         ).create_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_box__global_position_a)
+        self.guarantees.position_box__global_position_a.publish(
+            self.scheduler,
+        )
 
     def create_position_box__global_position_b(self):
         self.action.get_interface_position(
@@ -69,4 +70,6 @@ class OtherExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.b.B
         ).create_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_box__global_position_b)
+        self.guarantees.position_box__global_position_b.publish(
+            self.scheduler,
+        )

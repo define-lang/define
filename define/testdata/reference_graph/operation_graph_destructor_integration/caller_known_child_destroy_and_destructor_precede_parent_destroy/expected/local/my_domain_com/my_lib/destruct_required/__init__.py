@@ -16,7 +16,7 @@ class DestructRequired(literal.Action):
 @final
 class DestructRequiredGuarantees:
     def __init__(self):
-        self.guarantee_global_position_required: list[literal.Task] = []
+        self.global_position_required = literal.Guarantee()
 
 
 @final
@@ -25,20 +25,25 @@ class DestructRequiredExecution:
         self,
         action: DestructRequired,
         scheduler: literal.Scheduler,
-        guarantees: DestructRequiredGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = DestructRequiredGuarantees()
         self.local_position_held_required = literal.LocalPosition(
             "position<held_required>",
             scheduler=self.scheduler,
         )
+        self.join_for_move_global_position_required_to_position_held_required: literal.Join
+        self.join_for_empty_rule_global_position_required: literal.Join
 
     def accept_for_empty_rule_global_position_required(self):
+        if not self.join_for_empty_rule_global_position_required.arrive():
+            return
         self.move_global_position_required_to_position_held_required()
 
     def move_global_position_required_to_position_held_required(self):
+        if not self.join_for_move_global_position_required_to_position_held_required.arrive():
+            return
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.required.Required
         ).move_particle_to(self.local_position_held_required)
@@ -47,4 +52,6 @@ class DestructRequiredExecution:
                 local.my_domain_com.my_lib.required.Required
             )
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_required)
+        self.guarantees.global_position_required.publish(
+            self.scheduler,
+        )

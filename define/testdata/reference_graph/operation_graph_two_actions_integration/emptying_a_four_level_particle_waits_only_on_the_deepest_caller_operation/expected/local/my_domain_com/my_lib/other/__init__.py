@@ -31,7 +31,7 @@ class Other(literal.Action):
 @final
 class OtherGuarantees:
     def __init__(self):
-        self.guarantee_global_position_parent__move__position_out: list[literal.Task] = []
+        self.global_position_parent__move__position_out = literal.Guarantee()
 
 
 @final
@@ -40,16 +40,21 @@ class OtherExecution:
         self,
         action: Other,
         scheduler: literal.Scheduler,
-        guarantees: OtherGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = OtherGuarantees()
+        self.join_for_move_global_position_parent_to_position_out: literal.Join
+        self.join_for_empty_rule_global_position_parent: literal.Join
 
     def accept_for_empty_rule_global_position_parent(self):
+        if not self.join_for_empty_rule_global_position_parent.arrive():
+            return
         self.move_global_position_parent_to_position_out()
 
     def move_global_position_parent_to_position_out(self):
+        if not self.join_for_move_global_position_parent_to_position_out.arrive():
+            return
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.parent.Parent
         ).move_particle_to(
@@ -57,4 +62,6 @@ class OtherExecution:
                 "position<out>"
             )
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_parent__move__position_out)
+        self.guarantees.global_position_parent__move__position_out.publish(
+            self.scheduler,
+        )

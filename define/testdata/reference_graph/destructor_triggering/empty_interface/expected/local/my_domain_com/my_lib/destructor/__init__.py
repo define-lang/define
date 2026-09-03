@@ -22,7 +22,7 @@ class Destructor(literal.Action):
 @final
 class DestructorGuarantees:
     def __init__(self):
-        self.guarantee_position_item: list[literal.Task] = []
+        self.position_item = literal.Guarantee()
 
 
 @final
@@ -31,11 +31,10 @@ class DestructorExecution:
         self,
         action: Destructor,
         scheduler: literal.Scheduler,
-        guarantees: DestructorGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = DestructorGuarantees()
 
     def accept_when_empty_position_item(self):
         self.create_position_item()
@@ -47,4 +46,6 @@ class DestructorExecution:
         self.action.get_interface_position(
             "position<item>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_item)
+        self.guarantees.position_item.publish(
+            self.scheduler,
+        )

@@ -16,7 +16,7 @@ class KnownDestructor(literal.Action):
 @final
 class KnownDestructorGuarantees:
     def __init__(self):
-        self.guarantee_global_position_shared: list[literal.Task] = []
+        self.global_position_shared = literal.Guarantee()
 
 
 @final
@@ -27,7 +27,6 @@ class KnownDestructorExecution:
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
-        guarantees: KnownDestructorGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
@@ -35,16 +34,22 @@ class KnownDestructorExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = guarantees
+        self.guarantees = KnownDestructorGuarantees()
         self.local_position_holder = literal.LocalPosition(
             "position<holder>",
             scheduler=self.scheduler,
         )
+        self.join_for_move_global_position_shared_to_position_holder: literal.Join
+        self.join_for_empty_rule_global_position_shared: literal.Join
 
     def accept_for_empty_rule_global_position_shared(self):
+        if not self.join_for_empty_rule_global_position_shared.arrive():
+            return
         self.move_global_position_shared_to_position_holder()
 
     def move_global_position_shared_to_position_holder(self):
+        if not self.join_for_move_global_position_shared_to_position_holder.arrive():
+            return
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.shared.Shared
         ).move_particle_to(self.local_position_holder)
@@ -65,4 +70,6 @@ class KnownDestructorExecution:
             "/shared",
             1,
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_shared)
+        self.guarantees.global_position_shared.publish(
+            self.scheduler,
+        )

@@ -25,12 +25,6 @@ class Left(literal.Action):
 
 
 @final
-class LeftGuarantees:
-    def __init__(self):
-        self.trigger_action_left_child = local.my_domain_com.my_lib.left_child.LeftChildGuarantees()
-
-
-@final
 class LeftExecution:
     def __init__(
         self,
@@ -38,7 +32,6 @@ class LeftExecution:
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
-        guarantees: LeftGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
@@ -46,15 +39,21 @@ class LeftExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = guarantees
-        self.execution_trigger_action_left_child: local.my_domain_com.my_lib.left_child.LeftChildExecution
-        self.join_for_trigger_action_left_child__when_empty_global_position_marker = self.scheduler.create_join(2)
+        self.execution_action_left_child: local.my_domain_com.my_lib.left_child.LeftChildExecution
+        self.execution_action_left_child = local.my_domain_com.my_lib.left_child.LeftChildExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.left_child.LeftChild
+            ),
+            self.scheduler,
+            self.trace_execution,
+            "left_child",
+        )
 
-    def accept_action_parent(self):
+    def on_action_parent_occupied(self):
         self.create_action_left_child__position_trigger_pos()
 
     def accept_when_empty_global_position_marker(self):
-        self.trigger_action_left_child__when_empty_global_position_marker()
+        self.execution_action_left_child.accept_when_empty_global_position_marker()
 
     def create_action_left_child__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -67,19 +66,6 @@ class LeftExecution:
             "/left_child::trigger_pos",
             1,
         )
-        self.execution_trigger_action_left_child = local.my_domain_com.my_lib.left_child.LeftChildExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.left_child.LeftChild
-            ),
-            self.scheduler,
-            self.trace_execution,
-            "left_child",
-            self.guarantees.trigger_action_left_child,
-        )
-        self.scheduler.submit(self.destroy_action_left_child__position_trigger_pos)
-        self.trigger_action_left_child__when_empty_global_position_marker()
-
-    def destroy_action_left_child__position_trigger_pos(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.left_child.LeftChild
         ).get_interface_position(
@@ -90,8 +76,3 @@ class LeftExecution:
             "/left_child::trigger_pos",
             1,
         )
-
-    def trigger_action_left_child__when_empty_global_position_marker(self):
-        if not self.join_for_trigger_action_left_child__when_empty_global_position_marker.arrive():
-            return
-        self.execution_trigger_action_left_child.accept_when_empty_global_position_marker()

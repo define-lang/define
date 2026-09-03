@@ -508,7 +508,8 @@ class ResolvedOperationGraphBuilder:
                 or callee_binding.caller_dependencies.guarantee_dependencies
             ):
                 has_dependency = True
-            for caller_binding_hole in callee_binding.caller_binding_holes:
+            caller_binding_hole = callee_binding.caller_binding_hole
+            if caller_binding_hole is not None:
                 work.append(
                     (
                         triggered_execution.caller,
@@ -633,7 +634,8 @@ class ResolvedOperationGraphBuilder:
             callee_binding.caller_dependencies.local_operations,
             callee_binding.caller_dependencies.guarantee_dependencies,
         )
-        for caller_binding_hole in callee_binding.caller_binding_holes:
+        caller_binding_hole = callee_binding.caller_binding_hole
+        if caller_binding_hole is not None:
             self._add_destruction_dependencies_for_binding_hole(
                 dependency_keys,
                 action_execution.caller,
@@ -669,19 +671,15 @@ class ResolvedOperationGraphBuilder:
                 completion_operations = resolved_contribution.operation_graph_contribution.completion_operations
                 for operation in completion_operations:
                     dependency_keys[caller_execution, operation] = None
-                destructor_guarantees_preceding_callee_destroy = (
-                    resolved_contribution.destructor_guarantees_preceding_callee_destroy
-                )
-                for guarantee in destructor_guarantees_preceding_callee_destroy:
-                    self._add_guarantee(
-                        dependency_keys,
-                        caller_execution,
-                        guarantee,
-                    )
-                if (
-                    completion_operations
-                    or destructor_guarantees_preceding_callee_destroy
-                ):
+                destructor_guarantees_by_execution = resolved_contribution.destructor_guarantees_preceding_callee_destroy_by_execution
+                for guarantees in destructor_guarantees_by_execution.values():
+                    for guarantee in guarantees:
+                        self._add_guarantee(
+                            dependency_keys,
+                            caller_execution,
+                            guarantee,
+                        )
+                if completion_operations or destructor_guarantees_by_execution:
                     found_contribution = True
             if not current_execution.direct_execution.forwards_destruction_connections:
                 return found_contribution
@@ -770,7 +768,8 @@ class ResolvedOperationGraphBuilder:
                 callee_destroy.operation,
                 direct_execution_caller,
             )
-        for caller_binding_hole in callee_binding.caller_binding_holes:
+        caller_binding_hole = callee_binding.caller_binding_hole
+        if caller_binding_hole is not None:
             self._add_dependencies_for_binding_hole(
                 dependency_keys,
                 direct_execution_caller,

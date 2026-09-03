@@ -30,8 +30,8 @@ class Inner(literal.Action):
 @final
 class InnerGuarantees:
     def __init__(self):
-        self.guarantee_global_position_parent__global_position_child__global_position_grandchild1: list[literal.Task] = []
-        self.guarantee_global_position_parent__global_position_child__global_position_grandchild2: list[literal.Task] = []
+        self.global_position_parent__global_position_child__global_position_grandchild1 = literal.Guarantee()
+        self.global_position_parent__global_position_child__global_position_grandchild2 = literal.Guarantee()
 
 
 @final
@@ -40,11 +40,10 @@ class InnerExecution:
         self,
         action: Inner,
         scheduler: literal.Scheduler,
-        guarantees: InnerGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = InnerGuarantees()
 
     def accept_when_empty_global_position_parent__global_position_child__global_position_grandchild1(self):
         self.create_global_position_parent__global_position_child__global_position_grandchild1()
@@ -60,7 +59,9 @@ class InnerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.grandchild1.Grandchild1
         ).create_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_parent__global_position_child__global_position_grandchild1)
+        self.guarantees.global_position_parent__global_position_child__global_position_grandchild1.publish(
+            self.scheduler,
+        )
 
     def create_global_position_parent__global_position_child__global_position_grandchild2(self):
         self.action.on_particle.get_position(
@@ -70,4 +71,6 @@ class InnerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.grandchild2.Grandchild2
         ).create_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_parent__global_position_child__global_position_grandchild2)
+        self.guarantees.global_position_parent__global_position_child__global_position_grandchild2.publish(
+            self.scheduler,
+        )

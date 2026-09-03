@@ -15,18 +15,8 @@ class Test(literal.EntryPoint):
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(
             scheduler,
-            TestGuarantees(),
         )
-        execution.scheduler.submit(execution.create_position_box)
-        execution.scheduler.submit(execution.create_position_later_box)
-        execution.create_position_carrier()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_position_box__action_callee = local.my_domain_com.my_lib.callee.CalleeGuarantees()
-        self.trigger_position_later_box__action_later = local.my_domain_com.my_lib.later.LaterGuarantees()
+        execution.on_action_parent_occupied()
 
 
 @final
@@ -34,10 +24,8 @@ class TestExecution:
     def __init__(
         self,
         scheduler: literal.Scheduler,
-        guarantees: TestGuarantees,
     ):
         self.scheduler = scheduler
-        self.guarantees = guarantees
         self.local_position_box = literal.LocalPosition(
             "position<box>",
             constraints=(
@@ -59,30 +47,69 @@ class TestExecution:
             ),
             scheduler=self.scheduler,
         )
-        guarantees.trigger_position_later_box__action_later.guarantee_position_target.append(
-            self.destroy_position_later_box
-        )
-        guarantees.trigger_position_box__action_callee.guarantee_position_target.append(
-            self.destroy_position_box
-        )
-        self.execution_trigger_position_box__action_callee: local.my_domain_com.my_lib.callee.CalleeExecution
-        self.destruction_connection_trigger_position_box__action_callee: literal.DestructionConnection
-        self.execution_trigger_position_later_box__action_later: local.my_domain_com.my_lib.later.LaterExecution
-        self.destruction_connection_trigger_position_later_box__action_later: literal.DestructionConnection
+        self.execution_position_box__action_callee: local.my_domain_com.my_lib.callee.CalleeExecution
+        self.destruction_connection_position_box__action_callee: literal.DestructionConnection
+        self.execution_position_later_box__action_later: local.my_domain_com.my_lib.later.LaterExecution
+        self.destruction_connection_position_later_box__action_later: literal.DestructionConnection
         self.join_for_move_position_carrier_to_position_box__action_callee__position_target = self.scheduler.create_join(2)
         self.join_for_move_position_carrier_to_position_later_box__action_later__position_target = self.scheduler.create_join(2)
         self.join_for_destroy_position_later_box = self.scheduler.create_join(2)
         self.join_for_destroy_position_box = self.scheduler.create_join(2)
-        self.join_for_trigger_position_box__action_callee__for_empty_rule_position_target = self.scheduler.create_join(2)
-        self.join_for_trigger_position_later_box__action_later__for_empty_rule_position_target = self.scheduler.create_join(2)
+
+    def on_action_parent_occupied(self):
+        self.scheduler.submit(self.create_position_box)
+        self.scheduler.submit(self.create_position_later_box)
+        self.create_position_carrier()
 
     def create_position_box(self):
         self.local_position_box.create_particle()
+        self.destruction_connection_position_box__action_callee = literal.DestructionConnection(
+            self.scheduler,
+            0,
+            self.run_position_box__action_callee__position_target__action_destructor,
+        )
+        self.execution_position_box__action_callee = local.my_domain_com.my_lib.callee.CalleeExecution(
+            self.local_position_box.particle.get_action(
+                local.my_domain_com.my_lib.callee.Callee
+            ),
+            self.scheduler,
+            destruction_connections=literal.DestructionConnections(
+            {
+                local.my_domain_com.my_lib.callee.CalleeExecution.continue_destroy_position_target: self.destruction_connection_position_box__action_callee,
+            },
+            ),
+        )
+        self.execution_position_box__action_callee.join_for_empty_rule_position_target = literal.NO_JOIN
+        self.execution_position_box__action_callee.join_for_destroy_position_target = literal.NO_JOIN
+        self.execution_position_box__action_callee.guarantees.position_target.consumers.append(
+            self.destroy_position_box
+        )
         self.scheduler.submit(self.move_position_carrier_to_position_box__action_callee__position_target)
         self.create_position_box__action_callee__position_run()
 
     def create_position_later_box(self):
         self.local_position_later_box.create_particle()
+        self.destruction_connection_position_later_box__action_later = literal.DestructionConnection(
+            self.scheduler,
+            0,
+            self.run_position_later_box__action_later__position_target__action_destructor,
+        )
+        self.execution_position_later_box__action_later = local.my_domain_com.my_lib.later.LaterExecution(
+            self.local_position_later_box.particle.get_action(
+                local.my_domain_com.my_lib.later.Later
+            ),
+            self.scheduler,
+            destruction_connections=literal.DestructionConnections(
+            {
+                local.my_domain_com.my_lib.later.LaterExecution.continue_destroy_position_target: self.destruction_connection_position_later_box__action_later,
+            },
+            ),
+        )
+        self.execution_position_later_box__action_later.join_for_empty_rule_position_target = literal.NO_JOIN
+        self.execution_position_later_box__action_later.join_for_destroy_position_target = literal.NO_JOIN
+        self.execution_position_later_box__action_later.guarantees.position_target.consumers.append(
+            self.destroy_position_later_box
+        )
         self.scheduler.submit(self.move_position_carrier_to_position_later_box__action_later__position_target)
         self.create_position_later_box__action_later__position_run()
 
@@ -101,7 +128,7 @@ class TestExecution:
             )
         )
         self.scheduler.submit(self.create_position_carrier_2)
-        self.trigger_position_box__action_callee__for_empty_rule_position_target()
+        self.execution_position_box__action_callee.accept_for_empty_rule_position_target()
 
     def create_position_carrier_2(self):
         self.local_position_carrier.create_particle()
@@ -117,7 +144,7 @@ class TestExecution:
                 "position<target>"
             )
         )
-        self.trigger_position_later_box__action_later__for_empty_rule_position_target()
+        self.execution_position_later_box__action_later.accept_for_empty_rule_position_target()
 
     def create_position_box__action_callee__position_run(self):
         self.local_position_box.particle.get_action(
@@ -125,25 +152,12 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.destruction_connection_trigger_position_box__action_callee = literal.DestructionConnection(
-            self.scheduler,
-            0,
-            self.trigger_position_box__action_callee__position_target__action_destructor,
-        )
-        self.execution_trigger_position_box__action_callee = local.my_domain_com.my_lib.callee.CalleeExecution(
-            self.local_position_box.particle.get_action(
-                local.my_domain_com.my_lib.callee.Callee
-            ),
-            self.scheduler,
-            self.guarantees.trigger_position_box__action_callee,
-            destruction_connections=literal.DestructionConnections(
-            {
-                local.my_domain_com.my_lib.callee.CalleeExecution.continue_destroy_position_target: self.destruction_connection_trigger_position_box__action_callee,
-            },
-            ),
-        )
-        self.scheduler.submit(self.destroy_position_box__action_callee__position_run)
-        self.trigger_position_box__action_callee__for_empty_rule_position_target()
+        self.local_position_box.particle.get_action(
+            local.my_domain_com.my_lib.callee.Callee
+        ).get_interface_position(
+            "position<run>"
+        ).destroy_particle()
+        self.destroy_position_box()
 
     def create_position_later_box__action_later__position_run(self):
         self.local_position_later_box.particle.get_action(
@@ -151,27 +165,6 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.destruction_connection_trigger_position_later_box__action_later = literal.DestructionConnection(
-            self.scheduler,
-            0,
-            self.trigger_position_later_box__action_later__position_target__action_destructor,
-        )
-        self.execution_trigger_position_later_box__action_later = local.my_domain_com.my_lib.later.LaterExecution(
-            self.local_position_later_box.particle.get_action(
-                local.my_domain_com.my_lib.later.Later
-            ),
-            self.scheduler,
-            self.guarantees.trigger_position_later_box__action_later,
-            destruction_connections=literal.DestructionConnections(
-            {
-                local.my_domain_com.my_lib.later.LaterExecution.continue_destroy_position_target: self.destruction_connection_trigger_position_later_box__action_later,
-            },
-            ),
-        )
-        self.scheduler.submit(self.destroy_position_later_box__action_later__position_run)
-        self.trigger_position_later_box__action_later__for_empty_rule_position_target()
-
-    def destroy_position_later_box__action_later__position_run(self):
         self.local_position_later_box.particle.get_action(
             local.my_domain_com.my_lib.later.Later
         ).get_interface_position(
@@ -184,37 +177,19 @@ class TestExecution:
             return
         self.local_position_later_box.destroy_particle()
 
-    def destroy_position_box__action_callee__position_run(self):
-        self.local_position_box.particle.get_action(
-            local.my_domain_com.my_lib.callee.Callee
-        ).get_interface_position(
-            "position<run>"
-        ).destroy_particle()
-        self.destroy_position_box()
-
     def destroy_position_box(self):
         if not self.join_for_destroy_position_box.arrive():
             return
         self.local_position_box.destroy_particle()
 
-    def trigger_position_box__action_callee__for_empty_rule_position_target(self):
-        if not self.join_for_trigger_position_box__action_callee__for_empty_rule_position_target.arrive():
-            return
-        self.execution_trigger_position_box__action_callee.accept_for_empty_rule_position_target()
-
-    def trigger_position_later_box__action_later__for_empty_rule_position_target(self):
-        if not self.join_for_trigger_position_later_box__action_later__for_empty_rule_position_target.arrive():
-            return
-        self.execution_trigger_position_later_box__action_later.accept_for_empty_rule_position_target()
-
-    def trigger_position_box__action_callee__position_target__action_destructor(self):
+    def run_position_box__action_callee__position_target__action_destructor(self):
         execution = local.my_domain_com.my_lib.destructor.DestructorExecution(
             self.scheduler,
         )
-        execution.accept_action_parent()
+        execution.on_action_parent_occupied()
 
-    def trigger_position_later_box__action_later__position_target__action_destructor(self):
+    def run_position_later_box__action_later__position_target__action_destructor(self):
         execution = local.my_domain_com.my_lib.destructor.DestructorExecution(
             self.scheduler,
         )
-        execution.accept_action_parent()
+        execution.on_action_parent_occupied()

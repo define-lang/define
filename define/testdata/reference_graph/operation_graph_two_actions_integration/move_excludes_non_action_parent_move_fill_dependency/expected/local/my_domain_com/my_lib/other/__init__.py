@@ -31,8 +31,8 @@ class Other(literal.Action):
 @final
 class OtherGuarantees:
     def __init__(self):
-        self.guarantee_position_destination: list[literal.Task] = []
-        self.guarantee_position_box: list[literal.Task] = []
+        self.position_destination = literal.Guarantee()
+        self.position_box = literal.Guarantee()
 
 
 @final
@@ -41,24 +41,29 @@ class OtherExecution:
         self,
         action: Other,
         scheduler: literal.Scheduler,
-        guarantees: OtherGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = OtherGuarantees()
         self.destruction_connections = destruction_connections
-        self.join_for_move_position_box__global_position_item_to_position_destination = self.scheduler.create_join(2)
-        self.join_for_destroy_position_box = self.scheduler.create_join(2)
+        self.join_for_move_position_box__global_position_item_to_position_destination: literal.Join
+        self.join_for_destroy_position_box: literal.Join
+        self.join_when_empty_position_destination: literal.Join
+        self.join_for_empty_rule_position_box: literal.Join
 
     def accept_when_empty_position_box__global_position_item(self):
         self.create_position_box__global_position_item()
 
     def accept_when_empty_position_destination(self):
+        if not self.join_when_empty_position_destination.arrive():
+            return
         self.move_position_box__global_position_item_to_position_destination()
 
     def accept_for_empty_rule_position_box(self):
+        if not self.join_for_empty_rule_position_box.arrive():
+            return
         self.destroy_position_box()
 
     def create_position_box__global_position_item(self):
@@ -81,8 +86,10 @@ class OtherExecution:
                 "position<destination>"
             )
         )
-        self.scheduler.submit(self.destroy_position_box)
-        self.scheduler.continue_with(self.guarantees.guarantee_position_destination)
+        self.guarantees.position_destination.publish(
+            self.scheduler,
+            self.destroy_position_box,
+        )
 
     def destroy_position_box(self):
         if not self.join_for_destroy_position_box.arrive():
@@ -93,4 +100,6 @@ class OtherExecution:
         self.action.get_interface_position(
             "position<box>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_box)
+        self.guarantees.position_box.publish(
+            self.scheduler,
+        )

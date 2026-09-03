@@ -29,7 +29,7 @@ class Helper(literal.Action):
 @final
 class HelperGuarantees:
     def __init__(self):
-        self.guarantee_global_position_slot__move__global_position_out: list[literal.Task] = []
+        self.global_position_slot__move__global_position_out = literal.Guarantee()
 
 
 @final
@@ -38,16 +38,21 @@ class HelperExecution:
         self,
         action: Helper,
         scheduler: literal.Scheduler,
-        guarantees: HelperGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = HelperGuarantees()
+        self.join_for_move_global_position_slot_to_global_position_out: literal.Join
+        self.join_for_empty_rule_global_position_slot: literal.Join
 
     def accept_for_empty_rule_global_position_slot(self):
+        if not self.join_for_empty_rule_global_position_slot.arrive():
+            return
         self.move_global_position_slot_to_global_position_out()
 
     def move_global_position_slot_to_global_position_out(self):
+        if not self.join_for_move_global_position_slot_to_global_position_out.arrive():
+            return
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.slot.Slot
         ).move_particle_to(
@@ -55,4 +60,6 @@ class HelperExecution:
                 local.my_domain_com.my_lib.out.Out
             )
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_slot__move__global_position_out)
+        self.guarantees.global_position_slot__move__global_position_out.publish(
+            self.scheduler,
+        )

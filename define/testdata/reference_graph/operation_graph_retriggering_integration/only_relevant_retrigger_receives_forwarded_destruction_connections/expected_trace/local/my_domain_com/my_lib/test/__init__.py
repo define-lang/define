@@ -22,15 +22,8 @@ class Test(literal.EntryPoint):
             scheduler,
             None,
             "test",
-            TestGuarantees(),
         )
-        execution.create_position_source()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_action_middle = local.my_domain_com.my_lib.middle.MiddleGuarantees()
+        execution.on_action_parent_occupied()
 
 
 @final
@@ -41,7 +34,6 @@ class TestExecution:
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
-        guarantees: TestGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
@@ -49,7 +41,6 @@ class TestExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = guarantees
         self.local_position_source = literal.LocalPosition(
             "position<source>",
             constraints=(
@@ -57,10 +48,33 @@ class TestExecution:
             ),
             scheduler=self.scheduler,
         )
-        self.execution_trigger_action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
-        self.destruction_connection_trigger_action_middle: tracing.DestructionConnection
+        self.execution_action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
+        self.destruction_connection_action_middle: tracing.DestructionConnection
         self.destruction_position_action_middle__position_run__global_position_child: literal.Position
-        self.join_for_trigger_action_middle__for_empty_rule_position_run = self.scheduler.create_join(2)
+        self.destruction_connection_action_middle = tracing.DestructionConnection(
+            self.scheduler,
+            1,
+            self.destroy_action_middle__position_run__global_position_child,
+        )
+        self.execution_action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.middle.Middle
+            ),
+            self.scheduler,
+            self.trace_execution,
+            "middle",
+            destruction_connections=literal.DestructionConnections(
+            {
+                local.my_domain_com.my_lib.destroyer.DestroyerExecution.continue_destroy_position_run: self.destruction_connection_action_middle,
+            },
+            ),
+        )
+        self.execution_action_middle.join_for_empty_rule_position_run = literal.NO_JOIN
+        self.execution_action_middle.join_for_move_position_run_to_action_destroyer__position_run = literal.NO_JOIN
+
+    def on_action_parent_occupied(self):
+        self.scheduler.submit(self.create_position_source)
+        self.execution_action_middle.on_action_parent_occupied()
 
     def create_position_source(self):
         self.local_position_source.create_particle()
@@ -90,41 +104,6 @@ class TestExecution:
             "/middle::run",
             1,
         )
-        self.destruction_connection_trigger_action_middle = tracing.DestructionConnection(
-            self.scheduler,
-            1,
-            self.destroy_action_middle__position_run__global_position_child,
-        )
-        self.execution_trigger_action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.middle.Middle
-            ),
-            self.scheduler,
-            self.trace_execution,
-            "middle",
-            self.guarantees.trigger_action_middle,
-            destruction_connections=literal.DestructionConnections(
-            {
-                local.my_domain_com.my_lib.destroyer.DestroyerExecution.continue_destroy_position_run: self.destruction_connection_trigger_action_middle,
-            },
-            ),
-        )
-        self.scheduler.submit(self.trigger_action_middle__for_empty_rule_position_run)
-        self.scheduler.submit(self.trigger_action_middle__for_empty_rule_position_run)
-        self.trigger_action_middle__action_parent()
-
-    def destroy_action_middle__position_run__global_position_child(self):
-        self.destruction_position_action_middle__position_run__global_position_child.destroy_particle()
-        self.scheduler.destroy_completed(
-            self.destruction_connection_trigger_action_middle.trace_execution,
-            "run::/child",
-            1,
-        )
-        self.destruction_connection_trigger_action_middle.complete()
-
-    def trigger_action_middle__for_empty_rule_position_run(self):
-        if not self.join_for_trigger_action_middle__for_empty_rule_position_run.arrive():
-            return
         self.destruction_position_action_middle__position_run__global_position_child = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
         ).get_interface_position(
@@ -132,7 +111,13 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.child.Child
         )
-        self.execution_trigger_action_middle.accept_for_empty_rule_position_run()
+        self.execution_action_middle.accept_for_empty_rule_position_run()
 
-    def trigger_action_middle__action_parent(self):
-        self.execution_trigger_action_middle.accept_action_parent()
+    def destroy_action_middle__position_run__global_position_child(self):
+        self.destruction_position_action_middle__position_run__global_position_child.destroy_particle()
+        self.scheduler.destroy_completed(
+            self.destruction_connection_action_middle.trace_execution,
+            "run::/child",
+            1,
+        )
+        self.destruction_connection_action_middle.complete()

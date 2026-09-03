@@ -14,28 +14,6 @@
   {
     "operation": {
       "execution": {
-        "caller": null,
-        "action_name": "test"
-      },
-      "operation_name": "destroy",
-      "target": "outer",
-      "occurrence": 1
-    },
-    "dependencies": [
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "create",
-        "target": "outer",
-        "occurrence": 1
-      }
-    ]
-  },
-  {
-    "operation": {
-      "execution": {
         "caller": {
           "caller": null,
           "action_name": "test"
@@ -47,15 +25,6 @@
       "occurrence": 1
     },
     "dependencies": [
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "create",
-        "target": "outer",
-        "occurrence": 1
-      },
       {
         "execution": {
           "caller": null,
@@ -98,14 +67,11 @@
   {
     "operation": {
       "execution": {
-        "caller": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "action_name": "outer_destructor"
+        "caller": null,
+        "action_name": "test"
       },
-      "operation_name": "create",
-      "target": "inner_destroyer_particle",
+      "operation_name": "destroy",
+      "target": "outer",
       "occurrence": 1
     },
     "dependencies": [
@@ -117,7 +83,23 @@
         "operation_name": "create",
         "target": "outer",
         "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "outer_destructor"
       },
+      "operation_name": "create",
+      "target": "inner_destroyer_particle",
+      "occurrence": 1
+    },
+    "dependencies": [
       {
         "execution": {
           "caller": null,
@@ -143,15 +125,6 @@
       "occurrence": 1
     },
     "dependencies": [
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "create",
-        "target": "outer",
-        "occurrence": 1
-      },
       {
         "execution": {
           "caller": null,
@@ -261,19 +234,6 @@
         "source": "first_source",
         "target": "inner_destroyer_particle::/inner_destroyer::target",
         "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": {
-            "caller": null,
-            "action_name": "test"
-          },
-          "action_name": "outer_destructor"
-        },
-        "operation_name": "move",
-        "source": "first_source",
-        "target": "inner_destroyer_particle::/inner_destroyer::target",
-        "occurrence": 1
       }
     ]
   },
@@ -294,19 +254,6 @@
       "occurrence": 1
     },
     "dependencies": [
-      {
-        "execution": {
-          "caller": {
-            "caller": null,
-            "action_name": "test"
-          },
-          "action_name": "outer_destructor"
-        },
-        "operation_name": "move",
-        "source": "first_source",
-        "target": "inner_destroyer_particle::/inner_destroyer::target",
-        "occurrence": 1
-      },
       {
         "execution": {
           "caller": {
@@ -413,19 +360,6 @@
         "source": "first_source",
         "target": "inner_destroyer_particle::/inner_destroyer::target",
         "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": {
-            "caller": null,
-            "action_name": "test"
-          },
-          "action_name": "outer_destructor"
-        },
-        "operation_name": "move",
-        "source": "first_source",
-        "target": "inner_destroyer_particle::/inner_destroyer::target",
-        "occurrence": 1
       }
     ]
   },
@@ -498,19 +432,6 @@
         "source": "second_source",
         "target": "inner_destroyer_particle::/inner_destroyer::target",
         "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": {
-            "caller": null,
-            "action_name": "test"
-          },
-          "action_name": "outer_destructor"
-        },
-        "operation_name": "move",
-        "source": "second_source",
-        "target": "inner_destroyer_particle::/inner_destroyer::target",
-        "occurrence": 1
       }
     ]
   },
@@ -531,19 +452,6 @@
       "occurrence": 1
     },
     "dependencies": [
-      {
-        "execution": {
-          "caller": {
-            "caller": null,
-            "action_name": "test"
-          },
-          "action_name": "outer_destructor"
-        },
-        "operation_name": "move",
-        "source": "second_source",
-        "target": "inner_destroyer_particle::/inner_destroyer::target",
-        "occurrence": 1
-      },
       {
         "execution": {
           "caller": {
@@ -637,19 +545,6 @@
         "source": "second_source",
         "target": "inner_destroyer_particle::/inner_destroyer::target",
         "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": {
-            "caller": null,
-            "action_name": "test"
-          },
-          "action_name": "outer_destructor"
-        },
-        "operation_name": "move",
-        "source": "second_source",
-        "target": "inner_destroyer_particle::/inner_destroyer::target",
-        "occurrence": 1
       }
     ]
   },
@@ -713,19 +608,6 @@
       "occurrence": 1
     },
     "dependencies": [
-      {
-        "execution": {
-          "caller": {
-            "caller": null,
-            "action_name": "test"
-          },
-          "action_name": "outer_destructor"
-        },
-        "operation_name": "move",
-        "source": "second_source",
-        "target": "inner_destroyer_particle::/inner_destroyer::target",
-        "occurrence": 1
-      },
       {
         "execution": {
           "caller": {

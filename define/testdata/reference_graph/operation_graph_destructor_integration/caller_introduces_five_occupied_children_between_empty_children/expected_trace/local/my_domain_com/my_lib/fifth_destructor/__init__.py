@@ -18,8 +18,8 @@ class FifthDestructor(literal.Action):
 @final
 class FifthDestructorGuarantees:
     def __init__(self):
-        self.guarantee_global_position_fifth: list[literal.Task] = []
-        self.guarantee_global_position_marker: list[literal.Task] = []
+        self.global_position_fifth = literal.Guarantee()
+        self.global_position_marker = literal.Guarantee()
 
 
 @final
@@ -30,7 +30,6 @@ class FifthDestructorExecution:
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
-        guarantees: FifthDestructorGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
@@ -38,19 +37,25 @@ class FifthDestructorExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = guarantees
+        self.guarantees = FifthDestructorGuarantees()
         self.local_position_holder = literal.LocalPosition(
             "position<holder>",
             scheduler=self.scheduler,
         )
+        self.join_for_move_global_position_fifth_to_position_holder: literal.Join
+        self.join_for_empty_rule_global_position_fifth: literal.Join
 
     def accept_for_empty_rule_global_position_fifth(self):
+        if not self.join_for_empty_rule_global_position_fifth.arrive():
+            return
         self.move_global_position_fifth_to_position_holder()
 
     def accept_when_empty_global_position_marker(self):
         self.create_global_position_marker()
 
     def move_global_position_fifth_to_position_holder(self):
+        if not self.join_for_move_global_position_fifth_to_position_holder.arrive():
+            return
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.fifth.Fifth
         ).move_particle_to(self.local_position_holder)
@@ -71,7 +76,9 @@ class FifthDestructorExecution:
             "/fifth",
             1,
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_fifth)
+        self.guarantees.global_position_fifth.publish(
+            self.scheduler,
+        )
 
     def create_global_position_marker(self):
         self.action.on_particle.get_position(
@@ -90,4 +97,6 @@ class FifthDestructorExecution:
             "/marker",
             1,
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_marker)
+        self.guarantees.global_position_marker.publish(
+            self.scheduler,
+        )

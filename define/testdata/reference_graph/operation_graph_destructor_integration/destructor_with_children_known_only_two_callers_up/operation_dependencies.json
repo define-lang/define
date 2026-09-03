@@ -133,16 +133,6 @@
         "source": "source",
         "target": "/middle::run",
         "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "move",
-        "source": "source",
-        "target": "/middle::run",
-        "occurrence": 1
       }
     ]
   },
@@ -166,45 +156,6 @@
       "occurrence": 1
     },
     "dependencies": [
-      {
-        "execution": {
-          "caller": {
-            "caller": null,
-            "action_name": "test"
-          },
-          "action_name": "middle"
-        },
-        "operation_name": "move",
-        "source": "run",
-        "target": "/destroyer::run",
-        "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": {
-            "caller": null,
-            "action_name": "test"
-          },
-          "action_name": "middle"
-        },
-        "operation_name": "move",
-        "source": "run",
-        "target": "/destroyer::run",
-        "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": {
-            "caller": null,
-            "action_name": "test"
-          },
-          "action_name": "middle"
-        },
-        "operation_name": "move",
-        "source": "run",
-        "target": "/destroyer::run",
-        "occurrence": 1
-      },
       {
         "execution": {
           "caller": {
@@ -289,19 +240,6 @@
         "source": "run",
         "target": "/destroyer::run",
         "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": {
-            "caller": null,
-            "action_name": "test"
-          },
-          "action_name": "middle"
-        },
-        "operation_name": "move",
-        "source": "run",
-        "target": "/destroyer::run",
-        "occurrence": 1
       }
     ]
   },
@@ -322,19 +260,6 @@
       "occurrence": 1
     },
     "dependencies": [
-      {
-        "execution": {
-          "caller": {
-            "caller": null,
-            "action_name": "test"
-          },
-          "action_name": "middle"
-        },
-        "operation_name": "move",
-        "source": "run",
-        "target": "/destroyer::run",
-        "occurrence": 1
-      },
       {
         "execution": {
           "caller": {
@@ -416,19 +341,6 @@
       "occurrence": 1
     },
     "dependencies": [
-      {
-        "execution": {
-          "caller": {
-            "caller": null,
-            "action_name": "test"
-          },
-          "action_name": "middle"
-        },
-        "operation_name": "move",
-        "source": "run",
-        "target": "/destroyer::run",
-        "occurrence": 1
-      },
       {
         "execution": {
           "caller": {

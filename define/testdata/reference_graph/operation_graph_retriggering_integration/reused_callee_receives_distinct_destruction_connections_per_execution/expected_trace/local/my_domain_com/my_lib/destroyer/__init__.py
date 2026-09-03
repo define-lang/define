@@ -27,8 +27,8 @@ class Destroyer(literal.Action):
 @final
 class DestroyerGuarantees:
     def __init__(self):
-        self.guarantee_position_run: list[literal.Task] = []
-        self.guarantee_global_position_target: list[literal.Task] = []
+        self.position_run = literal.Guarantee()
+        self.global_position_target = literal.Guarantee()
 
 
 @final
@@ -39,7 +39,6 @@ class DestroyerExecution:
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
-        guarantees: DestroyerGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
@@ -49,13 +48,19 @@ class DestroyerExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = guarantees
+        self.guarantees = DestroyerGuarantees()
         self.destruction_connections = destruction_connections
+        self.join_for_move_position_run_to_global_position_target: literal.Join
+        self.join_for_empty_rule_position_run: literal.Join
 
     def accept_for_empty_rule_position_run(self):
+        if not self.join_for_empty_rule_position_run.arrive():
+            return
         self.move_position_run_to_global_position_target()
 
     def move_position_run_to_global_position_target(self):
+        if not self.join_for_move_position_run_to_global_position_target.arrive():
+            return
         self.action.get_interface_position(
             "position<run>"
         ).move_particle_to(
@@ -69,8 +74,10 @@ class DestroyerExecution:
             "/target",
             1,
         )
-        self.scheduler.submit(self.destroy_global_position_target)
-        self.scheduler.continue_with(self.guarantees.guarantee_position_run)
+        self.guarantees.position_run.publish(
+            self.scheduler,
+            self.destroy_global_position_target,
+        )
 
     def destroy_global_position_target(self):
         literal.continue_destruction(self.continue_destroy_global_position_target)
@@ -84,4 +91,6 @@ class DestroyerExecution:
             "/target",
             1,
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_target)
+        self.guarantees.global_position_target.publish(
+            self.scheduler,
+        )

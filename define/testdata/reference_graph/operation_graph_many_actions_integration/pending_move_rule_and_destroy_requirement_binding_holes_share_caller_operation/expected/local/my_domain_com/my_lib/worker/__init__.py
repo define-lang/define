@@ -33,8 +33,8 @@ class Worker(literal.Action):
 @final
 class WorkerGuarantees:
     def __init__(self):
-        self.guarantee_position_source__move__position_state__global_position_target: list[literal.Task] = []
-        self.guarantee_position_state__global_position_occupied: list[literal.Task] = []
+        self.position_state__global_position_occupied = literal.Guarantee()
+        self.position_source__move__position_state__global_position_target = literal.Guarantee()
 
 
 @final
@@ -43,22 +43,31 @@ class WorkerExecution:
         self,
         action: Worker,
         scheduler: literal.Scheduler,
-        guarantees: WorkerGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = WorkerGuarantees()
         self.destruction_connections = destruction_connections
+        self.join_for_destroy_position_state__global_position_occupied: literal.Join
+        self.join_for_move_position_source_to_position_state__global_position_target: literal.Join
+        self.join_for_empty_rule_position_state__global_position_occupied: literal.Join
+        self.join_for_empty_rule_position_source: literal.Join
 
     def accept_for_empty_rule_position_state__global_position_occupied(self):
+        if not self.join_for_empty_rule_position_state__global_position_occupied.arrive():
+            return
         self.destroy_position_state__global_position_occupied()
 
     def accept_for_empty_rule_position_source(self):
+        if not self.join_for_empty_rule_position_source.arrive():
+            return
         self.move_position_source_to_position_state__global_position_target()
 
     def destroy_position_state__global_position_occupied(self):
+        if not self.join_for_destroy_position_state__global_position_occupied.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_state__global_position_occupied)
 
     def continue_destroy_position_state__global_position_occupied(self):
@@ -67,9 +76,13 @@ class WorkerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.occupied.Occupied
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_state__global_position_occupied)
+        self.guarantees.position_state__global_position_occupied.publish(
+            self.scheduler,
+        )
 
     def move_position_source_to_position_state__global_position_target(self):
+        if not self.join_for_move_position_source_to_position_state__global_position_target.arrive():
+            return
         self.action.get_interface_position(
             "position<source>"
         ).move_particle_to(
@@ -79,4 +92,6 @@ class WorkerExecution:
                 local.my_domain_com.my_lib.target.Target
             )
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_position_source__move__position_state__global_position_target)
+        self.guarantees.position_source__move__position_state__global_position_target.publish(
+            self.scheduler,
+        )

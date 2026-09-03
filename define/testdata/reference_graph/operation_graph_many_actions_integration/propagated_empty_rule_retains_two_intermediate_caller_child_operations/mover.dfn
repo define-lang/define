@@ -1,0 +1,15 @@
+define the potential action<my.domain.com:my_lib:/mover> {
+    it also assigns the position</parent>.
+    define the position<trigger_pos>.
+    define the position<destination> {
+        it may only contain particles where {
+            it has the position</first>.
+            it has the position</second>.
+        }
+    }
+    it happens when {
+        the position<trigger_pos> has a particle.
+    } and it does {
+        move the particle in position</parent> to position<destination>.
+    }
+}

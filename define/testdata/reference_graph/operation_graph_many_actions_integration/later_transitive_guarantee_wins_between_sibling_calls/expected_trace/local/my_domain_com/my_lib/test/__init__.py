@@ -21,15 +21,15 @@ class Test(literal.EntryPoint):
             scheduler,
             None,
             "test",
-            TestGuarantees(),
         )
-        execution.create_action_run_both__position_trigger_pos()
+        scheduler.submit(execution.on_action_parent_occupied)
+        execution.accept_when_empty_global_position_item()
 
 
 @final
 class TestGuarantees:
     def __init__(self):
-        self.trigger_action_run_both = local.my_domain_com.my_lib.run_both.RunBothGuarantees()
+        self.global_position_item = literal.Guarantee()
 
 
 @final
@@ -40,7 +40,6 @@ class TestExecution:
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
-        guarantees: TestGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
@@ -48,11 +47,26 @@ class TestExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = guarantees
-        guarantees.trigger_action_run_both.trigger_action_call_empty.trigger_action_empty_item.guarantee_global_position_item.append(
+        self.guarantees = TestGuarantees()
+        self.execution_action_run_both: local.my_domain_com.my_lib.run_both.RunBothExecution
+        self.execution_action_run_both = local.my_domain_com.my_lib.run_both.RunBothExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.run_both.RunBoth
+            ),
+            self.scheduler,
+            self.trace_execution,
+            "run_both",
+        )
+        self.execution_action_run_both.execution_action_call_empty.execution_action_empty_item.guarantees.global_position_item.consumers.append(
             self.create_global_position_item
         )
-        self.execution_trigger_action_run_both: local.my_domain_com.my_lib.run_both.RunBothExecution
+
+    def on_action_parent_occupied(self):
+        self.scheduler.submit(self.create_action_run_both__position_trigger_pos)
+        self.execution_action_run_both.on_action_parent_occupied()
+
+    def accept_when_empty_global_position_item(self):
+        self.execution_action_run_both.accept_when_empty_global_position_item()
 
     def create_action_run_both__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -65,30 +79,6 @@ class TestExecution:
             "/run_both::trigger_pos",
             1,
         )
-        self.execution_trigger_action_run_both = local.my_domain_com.my_lib.run_both.RunBothExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.run_both.RunBoth
-            ),
-            self.scheduler,
-            self.trace_execution,
-            "run_both",
-            self.guarantees.trigger_action_run_both,
-        )
-        self.scheduler.submit(self.destroy_action_run_both__position_trigger_pos)
-        self.scheduler.submit(self.trigger_action_run_both__action_parent)
-        self.trigger_action_run_both__when_empty_global_position_item()
-
-    def create_global_position_item(self):
-        self.action.on_particle.get_position(
-            local.my_domain_com.my_lib.item.Item
-        ).create_particle()
-        self.scheduler.create_completed(
-            self.trace_execution,
-            "/item",
-            1,
-        )
-
-    def destroy_action_run_both__position_trigger_pos(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.run_both.RunBoth
         ).get_interface_position(
@@ -100,8 +90,15 @@ class TestExecution:
             1,
         )
 
-    def trigger_action_run_both__action_parent(self):
-        self.execution_trigger_action_run_both.accept_action_parent()
-
-    def trigger_action_run_both__when_empty_global_position_item(self):
-        self.execution_trigger_action_run_both.accept_when_empty_global_position_item()
+    def create_global_position_item(self):
+        self.action.on_particle.get_position(
+            local.my_domain_com.my_lib.item.Item
+        ).create_particle()
+        self.scheduler.create_completed(
+            self.trace_execution,
+            "/item",
+            1,
+        )
+        self.guarantees.global_position_item.publish(
+            self.scheduler,
+        )

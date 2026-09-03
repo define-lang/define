@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import typing
 
+from define.compiler.codegen import action_plan
 from define.compiler.codegen.literal.python import (
     action_context,
+    action_guarantees,
     action_names,
     action_statements,
     naming,
@@ -13,8 +15,9 @@ from define.compiler.codegen.literal.python import (
 )
 
 if typing.TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from define.compiler import ast
-    from define.compiler.codegen import action_plan
     from define.compiler.data_structures import typed_name_dict
     from define.compiler.validator.reference_graph import (
         operation_graph_labeler,
@@ -31,12 +34,12 @@ class TriggeredActionExecutionGenerator:
         definition: ast.ActionDefinition,
         converter: naming.NameConverter,
         generated_actions: typed_name_dict.TypedNameDict[
-            ast.GlobalTypedName, action_context.GeneratedAction
+            ast.GlobalTypedName, action_context.GeneratedActionInterface
         ],
         plan: action_plan.ActionPlan,
         operation_labels: operation_graph_labeler.OperationGraphLabeler | None,
         names: action_names.ActionNames,
-        guarantee_interface: action_context.GuaranteeInterface | None,
+        guarantee_consumptions: action_guarantees.GeneratedGuaranteeConsumptions | None,
         statement_generator: action_statements.ActionStatementsGenerator,
     ):
         """Initialize Action Execution lowering for one action plan."""
@@ -46,7 +49,7 @@ class TriggeredActionExecutionGenerator:
         self._plan = plan
         self._operation_labels = operation_labels
         self._names = names
-        self._guarantee_interface = guarantee_interface
+        self._guarantee_consumptions = guarantee_consumptions
         self._statement_generator = statement_generator
 
     def generate(
@@ -60,34 +63,39 @@ class TriggeredActionExecutionGenerator:
             operation_graph_model.ActionExecution,
             template_context.TriggeredActionExecutionContext,
         ] = {}
-        for planned_execution in self._plan.action_executions:
+        for planned_execution in self._plan.action_executions.values():
             execution = planned_execution.execution
-            action_execution_names = self._names.triggered_actions[execution]
+            action_execution_names = self._names.action_executions[execution]
             generated_callee = self._generated_actions[execution.callee_action_name]
             destruction_connections = planned_execution.created_destruction_connections
             created_destruction_connections = (
                 self._generate_created_destruction_connections(destruction_connections)
             )
-            child_guarantees_name = None
-            if self._guarantee_interface is not None:
-                child_guarantees = self._guarantee_interface.child_guarantees.get(
-                    execution
+            guarantee_consumptions: Sequence[
+                template_context.GuaranteeConsumptionContext
+            ] = ()
+            if self._guarantee_consumptions is not None:
+                guarantee_consumptions = (
+                    self._guarantee_consumptions.consumptions_by_action_execution.get(
+                        execution, ()
+                    )
                 )
-                if child_guarantees is not None:
-                    child_guarantees_name = child_guarantees.member_name
             action_expression = None
-            if generated_callee.context.execution.needs_action:
+            if generated_callee.needs_action:
                 action_expression = self._statement_generator.build_action(
                     execution.callee
                 )
             trace_parent_action_name = None
-            destroying_action_execution = (
-                planned_execution.contributed_destructor_destroying_action_execution
-            )
-            if destroying_action_execution is not None:
+            if isinstance(
+                planned_execution,
+                action_plan.ContributedDestructorActionExecutionPlan,
+            ):
                 trace_parent_action_name = self._trace_action_name(
-                    destroying_action_execution
+                    planned_execution.destroying_action_execution
                 )
+            callee_join_assignments = self._generate_callee_join_assignments(
+                planned_execution.callee_join_assignments,
+            )
             action_executions[execution] = (
                 template_context.TriggeredActionExecutionContext(
                     action_expression=action_expression,
@@ -95,7 +103,8 @@ class TriggeredActionExecutionGenerator:
                         execution.callee_action_name
                     ),
                     execution_name=action_execution_names.execution_name,
-                    child_guarantees_name=child_guarantees_name,
+                    callee_join_assignments=callee_join_assignments,
+                    guarantee_consumptions=guarantee_consumptions,
                     created_destruction_connections=created_destruction_connections,
                     forwards_destruction_connections=(
                         planned_execution.forwards_destruction_connections
@@ -116,24 +125,53 @@ class TriggeredActionExecutionGenerator:
         ] = []
         for destructor in connection.destruction_contract_destructors:
             execution = destructor.execution
+            generated_destructor = self._generated_actions[execution.callee_action_name]
+            guarantee_names_completing_connection: list[str] = []
+            for guarantee in destructor.guarantees_preceding_callee_destroy:
+                guarantee_names_completing_connection.append(
+                    generated_destructor.guarantee_names_by_operation[
+                        guarantee.operation
+                    ]
+                )
             contexts.append(
                 template_context.DestructionContractDestructorExecutionContext(
                     execution_class=self._converter.execution_class_reference(
                         execution.callee_action_name
                     ),
-                    trigger_method_name=(
-                        self._names.destruction_contract_destructor_trigger_method_names[
+                    run_method_name=(
+                        self._names.destruction_contract_destructor_run_method_names[
                             destructor
                         ]
                     ),
                     action_parent_binding_method_name=(
-                        self._generated_actions[
-                            execution.callee_action_name
-                        ].binding_hole_method_names[
+                        generated_destructor.binding_holes[
                             destructor.action_parent_binding_hole
-                        ]
+                        ].method_name
+                    ),
+                    guarantee_names_completing_connection=(
+                        guarantee_names_completing_connection
                     ),
                     trace_action_name=self._trace_action_name(execution),
+                )
+            )
+        return contexts
+
+    def _generate_callee_join_assignments(
+        self,
+        assignments: Sequence[action_plan.CalleeJoinAssignment],
+    ) -> list[template_context.CalleeJoinAssignmentContext]:
+        contexts: list[template_context.CalleeJoinAssignmentContext] = []
+        for assignment in assignments:
+            execution_member_names, generated_callee = (
+                self._names.nested_generated_execution_path(
+                    assignment.execution_path,
+                )
+            )
+            contexts.append(
+                template_context.CalleeJoinAssignmentContext(
+                    member_name=generated_callee.join_member_names[assignment.target],
+                    dependency_count=assignment.dependency_count,
+                    execution_member_names=execution_member_names,
                 )
             )
         return contexts
@@ -163,58 +201,20 @@ class TriggeredActionExecutionGenerator:
             # through codegen. Starting all of them when execution reaches the
             # callee Destroy adds dependencies absent from the Particle Operation
             # dependency graph.
-            start_method_names: list[str] = []
-            for fragment in connection.first_fragments_of_destructions:
-                start_method_names.append(self._names.fragments[fragment])
             destruction_contract_destructors = (
                 self._generate_destruction_contract_destructors(connection)
             )
-            for destructor in destruction_contract_destructors:
-                start_method_names.append(destructor.trigger_method_name)
-            for callee_binding_join in connection.callee_binding_joins_to_start:
-                start_method_names.append(
-                    self._names.callee_binding_join_method_names[callee_binding_join]
-                )
-            destructor_guarantee_registrations: list[
-                template_context.DestructionConnectionGuaranteeRegistrationContext
-            ] = []
-            if connection.destructor_guarantees_preceding_callee_destroy:
-                guarantee_interface = typing.cast(
-                    "action_context.GuaranteeInterface", self._guarantee_interface
-                )
-                for (
-                    guarantee
-                ) in connection.destructor_guarantees_preceding_callee_destroy:
-                    (execution,) = guarantee.executions
-                    child_guarantees = guarantee_interface.child_guarantees[execution]
-                    guarantee_name = (
-                        child_guarantees.callee_interface.guarantee_names_by_operation[
-                            guarantee.operation
-                        ]
-                    )
-                    destructor_guarantee_registrations.append(
-                        template_context.DestructionConnectionGuaranteeRegistrationContext(
-                            child_guarantees_name=child_guarantees.member_name,
-                            guarantee_name=guarantee_name,
-                        )
-                    )
-            # TODO: Make the continuation available without representing that
-            # availability as a predecessor of the callee Destroy. Combining it
-            # with the true predecessors adds dependencies absent from the
-            # Particle Operation dependency graph.
             contexts.append(
                 template_context.DestructionConnectionContext(
                     member_name=self._names.destruction_connections[connection],
                     destruction_continuation=destruction_continuation,
-                    start_method_names=start_method_names,
-                    destruction_contract_destructors=(destruction_contract_destructors),
-                    destructor_guarantee_registrations=(
-                        destructor_guarantee_registrations
+                    start_method_names=(
+                        self._names.destruction_connection_continuation_method_names(
+                            connection.continuations
+                        )
                     ),
-                    predecessor_count=(
-                        len(connection.completion_fragments)
-                        + len(connection.destructor_guarantees_preceding_callee_destroy)
-                    ),
+                    destruction_contract_destructors=destruction_contract_destructors,
+                    predecessor_count=connection.predecessor_count,
                 )
             )
         return contexts

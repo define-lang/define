@@ -27,8 +27,7 @@ class Outer(literal.Action):
 @final
 class OuterGuarantees:
     def __init__(self):
-        self.guarantee_position_run: list[literal.Task] = []
-        self.trigger_action_inner = local.my_domain_com.my_lib.inner.InnerGuarantees()
+        self.position_run = literal.Guarantee()
 
 
 @final
@@ -37,23 +36,32 @@ class OuterExecution:
         self,
         action: Outer,
         scheduler: literal.Scheduler,
-        guarantees: OuterGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = OuterGuarantees()
         self.destruction_connections = destruction_connections
-        self.execution_trigger_action_inner: local.my_domain_com.my_lib.inner.InnerExecution
-        self.join_for_trigger_action_inner__action_parent = self.scheduler.create_join(2)
-        self.join_for_trigger_action_inner__for_empty_rule_position_run = self.scheduler.create_join(2)
+        self.execution_action_inner: local.my_domain_com.my_lib.inner.InnerExecution
+        self.join_for_destroy_position_run: literal.Join
+        self.join_for_empty_rule_position_run: literal.Join
+        self.execution_action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.inner.Inner
+            ),
+            self.scheduler,
+        )
+        self.execution_action_inner.join_for_empty_rule_position_run = literal.NO_JOIN
+        self.execution_action_inner.join_for_destroy_position_run = literal.NO_JOIN
 
-    def accept_action_parent(self):
+    def on_action_parent_occupied(self):
         self.scheduler.submit(self.create_action_inner__position_run)
-        self.trigger_action_inner__action_parent()
+        self.execution_action_inner.on_action_parent_occupied()
 
     def accept_for_empty_rule_position_run(self):
+        if not self.join_for_empty_rule_position_run.arrive():
+            return
         self.destroy_position_run()
 
     def create_action_inner__position_run(self):
@@ -62,32 +70,17 @@ class OuterExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.execution_trigger_action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.inner.Inner
-            ),
-            self.scheduler,
-            self.guarantees.trigger_action_inner,
-        )
-        self.scheduler.submit(self.trigger_action_inner__for_empty_rule_position_run)
-        self.scheduler.submit(self.trigger_action_inner__action_parent)
-        self.trigger_action_inner__for_empty_rule_position_run()
+        self.execution_action_inner.accept_for_empty_rule_position_run()
 
     def destroy_position_run(self):
+        if not self.join_for_destroy_position_run.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_run)
 
     def continue_destroy_position_run(self):
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_run)
-
-    def trigger_action_inner__action_parent(self):
-        if not self.join_for_trigger_action_inner__action_parent.arrive():
-            return
-        self.execution_trigger_action_inner.accept_action_parent()
-
-    def trigger_action_inner__for_empty_rule_position_run(self):
-        if not self.join_for_trigger_action_inner__for_empty_rule_position_run.arrive():
-            return
-        self.execution_trigger_action_inner.accept_for_empty_rule_position_run()
+        self.guarantees.position_run.publish(
+            self.scheduler,
+        )

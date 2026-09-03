@@ -19,16 +19,8 @@ class Test(literal.EntryPoint):
         execution = TestExecution(
             self,
             scheduler,
-            TestGuarantees(),
         )
-        execution.scheduler.submit(execution.create_action_runner__position_wrap)
-        execution.create_action_runner__position_run()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_action_runner = local.my_domain_com.my_lib.runner.RunnerGuarantees()
+        execution.on_action_parent_occupied()
 
 
 @final
@@ -37,14 +29,28 @@ class TestExecution:
         self,
         action: Test,
         scheduler: literal.Scheduler,
-        guarantees: TestGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
-        self.execution_trigger_action_runner: local.my_domain_com.my_lib.runner.RunnerExecution
-        self.join_for_trigger_action_runner__for_empty_rule_position_wrap__global_position_mid__global_position_leaf = self.scheduler.create_join(2)
-        self.join_for_trigger_action_runner__for_empty_rule_position_run = self.scheduler.create_join(2)
+        self.execution_action_runner: local.my_domain_com.my_lib.runner.RunnerExecution
+        self.execution_action_runner = local.my_domain_com.my_lib.runner.RunnerExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.runner.Runner
+            ),
+            self.scheduler,
+        )
+        self.execution_action_runner.join_for_empty_rule_position_wrap__global_position_mid__global_position_leaf = literal.NO_JOIN
+        self.execution_action_runner.join_for_empty_rule_position_wrap__global_position_mid = literal.NO_JOIN
+        self.execution_action_runner.join_for_empty_rule_position_wrap = literal.NO_JOIN
+        self.execution_action_runner.join_for_empty_rule_position_run = literal.NO_JOIN
+        self.execution_action_runner.join_for_destroy_position_wrap__global_position_mid__global_position_leaf = literal.NO_JOIN
+        self.execution_action_runner.join_for_destroy_position_wrap__global_position_mid = literal.NO_JOIN
+        self.execution_action_runner.join_for_destroy_position_wrap = literal.NO_JOIN
+        self.execution_action_runner.join_for_destroy_position_run = literal.NO_JOIN
+
+    def on_action_parent_occupied(self):
+        self.scheduler.submit(self.create_action_runner__position_wrap)
+        self.create_action_runner__position_run()
 
     def create_action_runner__position_wrap(self):
         self.action.on_particle.get_action(
@@ -68,7 +74,7 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.leaf.Leaf
         ).create_particle()
-        self.trigger_action_runner__for_empty_rule_position_wrap__global_position_mid__global_position_leaf()
+        self.execution_action_runner.accept_for_empty_rule_position_wrap__global_position_mid__global_position_leaf()
 
     def create_action_runner__position_run(self):
         self.action.on_particle.get_action(
@@ -76,31 +82,4 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.execution_trigger_action_runner = local.my_domain_com.my_lib.runner.RunnerExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.runner.Runner
-            ),
-            self.scheduler,
-            self.guarantees.trigger_action_runner,
-        )
-        self.scheduler.submit(self.trigger_action_runner__for_empty_rule_position_run)
-        self.scheduler.submit(self.trigger_action_runner__for_empty_rule_position_wrap__global_position_mid__global_position_leaf)
-        self.scheduler.submit(self.trigger_action_runner__for_empty_rule_position_wrap__global_position_mid)
-        self.scheduler.submit(self.trigger_action_runner__for_empty_rule_position_wrap)
-        self.trigger_action_runner__for_empty_rule_position_run()
-
-    def trigger_action_runner__for_empty_rule_position_wrap__global_position_mid__global_position_leaf(self):
-        if not self.join_for_trigger_action_runner__for_empty_rule_position_wrap__global_position_mid__global_position_leaf.arrive():
-            return
-        self.execution_trigger_action_runner.accept_for_empty_rule_position_wrap__global_position_mid__global_position_leaf()
-
-    def trigger_action_runner__for_empty_rule_position_wrap__global_position_mid(self):
-        self.execution_trigger_action_runner.accept_for_empty_rule_position_wrap__global_position_mid()
-
-    def trigger_action_runner__for_empty_rule_position_wrap(self):
-        self.execution_trigger_action_runner.accept_for_empty_rule_position_wrap()
-
-    def trigger_action_runner__for_empty_rule_position_run(self):
-        if not self.join_for_trigger_action_runner__for_empty_rule_position_run.arrive():
-            return
-        self.execution_trigger_action_runner.accept_for_empty_rule_position_run()
+        self.execution_action_runner.accept_for_empty_rule_position_run()

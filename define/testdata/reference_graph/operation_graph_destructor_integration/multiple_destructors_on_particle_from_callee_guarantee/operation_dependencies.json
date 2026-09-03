@@ -14,11 +14,14 @@
   {
     "operation": {
       "execution": {
-        "caller": null,
-        "action_name": "test"
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "maker"
       },
       "operation_name": "create",
-      "target": "box::/maker::run",
+      "target": "result",
       "occurrence": 1
     },
     "dependencies": [
@@ -40,10 +43,63 @@
           "caller": null,
           "action_name": "test"
         },
-        "action_name": "maker"
+        "action_name": "destruct_a"
       },
       "operation_name": "create",
-      "target": "result",
+      "target": "_noop",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "maker"
+        },
+        "operation_name": "create",
+        "target": "result",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "destruct_a"
+      },
+      "operation_name": "destroy",
+      "target": "_noop",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "destruct_a"
+        },
+        "operation_name": "create",
+        "target": "_noop",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "operation_name": "create",
+      "target": "box::/maker::run",
       "occurrence": 1
     },
     "dependencies": [
@@ -54,15 +110,6 @@
         },
         "operation_name": "create",
         "target": "box",
-        "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "create",
-        "target": "box::/maker::run",
         "occurrence": 1
       }
     ]
@@ -152,74 +199,6 @@
           "caller": null,
           "action_name": "test"
         },
-        "action_name": "destruct_a"
-      },
-      "operation_name": "create",
-      "target": "_noop",
-      "occurrence": 1
-    },
-    "dependencies": [
-      {
-        "execution": {
-          "caller": {
-            "caller": null,
-            "action_name": "test"
-          },
-          "action_name": "maker"
-        },
-        "operation_name": "create",
-        "target": "result",
-        "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": {
-            "caller": null,
-            "action_name": "test"
-          },
-          "action_name": "maker"
-        },
-        "operation_name": "create",
-        "target": "result",
-        "occurrence": 1
-      }
-    ]
-  },
-  {
-    "operation": {
-      "execution": {
-        "caller": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "action_name": "destruct_a"
-      },
-      "operation_name": "destroy",
-      "target": "_noop",
-      "occurrence": 1
-    },
-    "dependencies": [
-      {
-        "execution": {
-          "caller": {
-            "caller": null,
-            "action_name": "test"
-          },
-          "action_name": "destruct_a"
-        },
-        "operation_name": "create",
-        "target": "_noop",
-        "occurrence": 1
-      }
-    ]
-  },
-  {
-    "operation": {
-      "execution": {
-        "caller": {
-          "caller": null,
-          "action_name": "test"
-        },
         "action_name": "destruct_b"
       },
       "operation_name": "create",
@@ -227,18 +206,6 @@
       "occurrence": 1
     },
     "dependencies": [
-      {
-        "execution": {
-          "caller": {
-            "caller": null,
-            "action_name": "test"
-          },
-          "action_name": "maker"
-        },
-        "operation_name": "create",
-        "target": "result",
-        "occurrence": 1
-      },
       {
         "execution": {
           "caller": {

@@ -20,6 +20,11 @@ reviewed before implementation diverges.
 
 ## Action Executions
 
+- The entry action subclasses `literal.EntryPoint`. Its `execute()` method
+  creates the ordinary reusable Action Execution, assigns joins resolved by
+  creation of the view point, and invokes the ordinary Binding Hole methods
+  satisfied by that Create. Generated `__main__` only calls `literal.start()`
+  with the entry action class.
 - An Action Execution's `__init__` constructs runtime state only. It never
   performs a Particle Operation or releases scheduled work.
 - Immediately retain the specific Action object when a Particle Operation makes

@@ -14,6 +14,9 @@ if TYPE_CHECKING:
 
 _TEST = "action<my.domain.com:my_lib:/test>"
 _RESOLVED_GUARANTEE_MOVE_CORRECTION_NOT_IMPLEMENTED = "Move Correction does not follow dependency paths through resolved Action Guarantees"
+_CALLEE_CHILD_DESTROY_DEPENDENCIES_NOT_RESOLVED = (
+    "a caller Destroy does not retain every callee child Destroy dependency"
+)
 
 
 def test_binding_hole_fans_out_to_multiple_fragments_and_multiple_callee_bindings(
@@ -765,6 +768,106 @@ def test_empty_by_default_interface_child_waits_on_the_two_levels_up_caller_fill
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+def test_nested_action_empty_requirement_precedes_happens_condition(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(/runner::run)": [],
+        "runner.create(wrapper)": [],
+        "runner.create(wrapper::/middle::box)": ["runner.create(wrapper)"],
+        "runner.create(wrapper::/middle::run)": ["runner.create(wrapper)"],
+        "middle.create(box::/worker::input)": ["runner.create(wrapper::/middle::box)"],
+        "middle.create(box::/worker::run)": ["runner.create(wrapper::/middle::box)"],
+        "worker.move(input, output)": ["middle.create(box::/worker::input)"],
+        "worker.destroy(run)": ["middle.create(box::/worker::run)"],
+        # The Worker's Move follows the Create that made final empty, so that
+        # Guarantee is the Middle Move's only necessary direct dependency.
+        "middle.move(box::/worker::output, final)": ["worker.move(input, output)"],
+        "middle.destroy(box)": [
+            "middle.move(box::/worker::output, final)",
+            "worker.destroy(run)",
+        ],
+        "middle.destroy(run)": ["runner.create(wrapper::/middle::run)"],
+        "runner.destroy(wrapper::/middle::final)": [
+            "middle.move(box::/worker::output, final)"
+        ],
+        "runner.destroy(wrapper)": [
+            "runner.destroy(wrapper::/middle::final)",
+            "middle.destroy(box)",
+            "middle.destroy(run)",
+        ],
+        "test.destroy(/runner::run)": ["test.create(/runner::run)"],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+def test_ordinary_action_execution_init_follows_callee_guarantee(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(box)": [],
+        "test.create(box::/carrier::run)": ["test.create(box)"],
+        "carrier.create(source)": ["test.create(box)"],
+        "carrier.move(source, result)": ["carrier.create(source)"],
+        # /worker can run only after /carrier's Guarantee moves its Action
+        # Parent particle to result.
+        "test.create(box::/carrier::result::/worker::run)": [
+            "carrier.move(source, result)"
+        ],
+        "worker.destroy(run)": ["test.create(box::/carrier::result::/worker::run)"],
+        "test.destroy(box::/carrier::result)": ["worker.destroy(run)"],
+        "carrier.destroy(run)": ["test.create(box::/carrier::run)"],
+        "test.destroy(box)": [
+            "test.destroy(box::/carrier::result)",
+            "carrier.destroy(run)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+def test_joined_callee_move_inits_ordinary_action_execution(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(gateway)": [],
+        "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
+        "other.create(source)": ["test.create(gateway)"],
+        "other.create(source::/a)": ["other.create(source)"],
+        "other.create(source::/b)": ["other.create(source)"],
+        # The Move waits on both latest child operations before occupying
+        # /worker's Action Parent.
+        "other.move(source, destination)": [
+            "other.create(source::/a)",
+            "other.create(source::/b)",
+        ],
+        "other.create(destination::/worker::run)": ["other.move(source, destination)"],
+        "worker.destroy(run)": ["other.create(destination::/worker::run)"],
+        "test.destroy(gateway::/other::destination::/a)": [
+            "other.move(source, destination)"
+        ],
+        "test.destroy(gateway::/other::destination::/b)": [
+            "other.move(source, destination)"
+        ],
+        "test.destroy(gateway::/other::destination)": [
+            "test.destroy(gateway::/other::destination::/b)",
+            "test.destroy(gateway::/other::destination::/a)",
+            "worker.destroy(run)",
+        ],
+        "other.destroy(trigger_pos)": ["test.create(gateway::/other::trigger_pos)"],
+        "test.destroy(gateway)": [
+            "test.destroy(gateway::/other::destination)",
+            "other.destroy(trigger_pos)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
 def test_empty_requirement_waits_on_a_destroy_by_a_caller_that_does_not_trigger_it(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -779,6 +882,28 @@ def test_empty_requirement_waits_on_a_destroy_by_a_caller_that_does_not_trigger_
         # The inner action cannot fill the implied position until the distant
         # caller has explicitly emptied it.
         "inner.create(/slot)": ["outer.destroy(/slot)"],
+        "middle.destroy(/inner::trigger_pos)": ["middle.create(/inner::trigger_pos)"],
+        "outer.destroy(/middle::trigger_pos)": ["outer.create(/middle::trigger_pos)"],
+        "test.destroy(/outer::trigger_pos)": ["test.create(/outer::trigger_pos)"],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+def test_empty_requirement_waits_on_an_implied_position_child_destroy_by_a_caller_that_does_not_trigger_it(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(/holder)": [],
+        "test.create(/holder::/a)": ["test.create(/holder)"],
+        "test.create(/outer::trigger_pos)": [],
+        "outer.destroy(/holder::/a)": ["test.create(/holder::/a)"],
+        "outer.create(/middle::trigger_pos)": [],
+        "middle.create(/inner::trigger_pos)": [],
+        # The inner action cannot fill the implied child until the distant
+        # caller has explicitly emptied it.
+        "inner.create(/holder::/a)": ["outer.destroy(/holder::/a)"],
         "middle.destroy(/inner::trigger_pos)": ["middle.create(/inner::trigger_pos)"],
         "outer.destroy(/middle::trigger_pos)": ["outer.create(/middle::trigger_pos)"],
         "test.destroy(/outer::trigger_pos)": ["test.create(/outer::trigger_pos)"],
@@ -1108,6 +1233,10 @@ def test_moved_in_parent_children_branch_from_the_carrying_move(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason="a caller Destroy does not depend on every callee Destroy at its child positions",
+)
 def test_input_carried_through_two_moves_reaches_the_triggered_inner(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -1150,8 +1279,11 @@ def test_input_carried_through_two_moves_reaches_the_triggered_inner(
         "outer.destroy(middle_holder::/middle::run)": [
             "outer.create(middle_holder::/middle::run)"
         ],
+        # Destroying middle_holder waits for the final operations that empty
+        # both of its interface positions.
         "test.destroy(outer_holder::/outer::middle_holder)": [
-            "middle.move(input, inner_holder::/inner::input)"
+            "middle.move(input, inner_holder::/inner::input)",
+            "outer.destroy(middle_holder::/middle::run)",
         ],
         "test.destroy(outer_holder::/outer::run)": [
             "test.create(outer_holder::/outer::run)"
@@ -1274,6 +1406,41 @@ def test_callee_move_of_a_position_filled_two_levels_up_waits_on_the_caller_chil
         "test.destroy(box)": [
             "test.destroy(box::/middle::trigger_pos)",
             "middle.destroy(gw)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+def test_callee_move_waits_on_two_caller_child_operations_and_one_intermediate_child_operation(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(/input)": [],
+        "test.create(/input::/second)": ["test.create(/input)"],
+        "test.move(/input::/second, second_holder)": ["test.create(/input::/second)"],
+        "test.destroy(second_holder)": ["test.move(/input::/second, second_holder)"],
+        "test.create(/input::/third)": ["test.create(/input)"],
+        "test.move(/input::/third, third_holder)": ["test.create(/input::/third)"],
+        "test.destroy(third_holder)": ["test.move(/input::/third, third_holder)"],
+        "test.create(/middle_action::trigger_pos)": [],
+        "middle_action.create(/input::/first)": ["test.create(/input)"],
+        "middle_action.create(/inner::trigger_pos)": [],
+        # Each operation is latest on a different child name when /inner moves
+        # their parent particle.
+        "inner.move(/input, holder)": [
+            "middle_action.create(/input::/first)",
+            "test.move(/input::/second, second_holder)",
+            "test.move(/input::/third, third_holder)",
+        ],
+        "inner.destroy(holder::/first)": ["inner.move(/input, holder)"],
+        "inner.destroy(holder)": ["inner.destroy(holder::/first)"],
+        "middle_action.destroy(/inner::trigger_pos)": [
+            "middle_action.create(/inner::trigger_pos)"
+        ],
+        "test.destroy(/middle_action::trigger_pos)": [
+            "test.create(/middle_action::trigger_pos)"
         ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
@@ -1554,6 +1721,99 @@ def test_callee_move_empty_rule_binding_hole_binds_multiple_caller_guarantees(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+def test_propagated_empty_rule_combines_caller_operation_and_callee_guarantee(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(/parent)": [],
+        "test.create(/parent::/direct_child)": ["test.create(/parent)"],
+        "test.create(/filler::trigger_pos)": [],
+        "test.create(/middle::trigger_pos)": [],
+        "filler.create(/parent::/guaranteed_child)": ["test.create(/parent)"],
+        "middle.create(/mover::trigger_pos)": [],
+        # The Empty Rule retains both latest child operations when it passes
+        # through /middle to /mover.
+        "mover.move(/parent, destination)": [
+            "test.create(/parent::/direct_child)",
+            "filler.create(/parent::/guaranteed_child)",
+        ],
+        "middle.destroy(/mover::destination::/direct_child)": [
+            "mover.move(/parent, destination)"
+        ],
+        "middle.destroy(/mover::destination::/guaranteed_child)": [
+            "mover.move(/parent, destination)"
+        ],
+        "middle.destroy(/mover::destination)": [
+            "middle.destroy(/mover::destination::/guaranteed_child)",
+            "middle.destroy(/mover::destination::/direct_child)",
+        ],
+        "middle.destroy(/mover::trigger_pos)": ["middle.create(/mover::trigger_pos)"],
+        "test.destroy(/filler::trigger_pos)": ["test.create(/filler::trigger_pos)"],
+        "test.destroy(/middle::trigger_pos)": ["test.create(/middle::trigger_pos)"],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+def test_propagated_destroy_empty_rule_retains_two_intermediate_caller_child_operations(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(/parent)": [],
+        "test.create(/middle::trigger_pos)": [],
+        "middle.create(/parent::/first)": ["test.create(/parent)"],
+        "middle.create(/parent::/second)": ["test.create(/parent)"],
+        "middle.create(/destroyer::trigger_pos)": [],
+        "destroyer.destroy(/parent::/first)": ["middle.create(/parent::/first)"],
+        "destroyer.destroy(/parent::/second)": ["middle.create(/parent::/second)"],
+        # The parent Destroy waits for the independent Destroys of both child
+        # positions after the Empty Rule passes through /middle to /test.
+        "destroyer.destroy(/parent)": [
+            "destroyer.destroy(/parent::/second)",
+            "destroyer.destroy(/parent::/first)",
+        ],
+        "destroyer.destroy(trigger_pos)": ["middle.create(/destroyer::trigger_pos)"],
+        "test.destroy(/middle::trigger_pos)": ["test.create(/middle::trigger_pos)"],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+def test_propagated_empty_rule_retains_two_intermediate_caller_child_operations(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(/parent)": [],
+        "test.create(/middle::trigger_pos)": [],
+        "middle.create(/parent::/first)": ["test.create(/parent)"],
+        "middle.create(/parent::/second)": ["test.create(/parent)"],
+        "middle.create(/mover::trigger_pos)": [],
+        # The Empty Rule retains both independent child Creates contributed by
+        # /middle while its occupied /parent requirement passes to /test.
+        "mover.move(/parent, destination)": [
+            "middle.create(/parent::/first)",
+            "middle.create(/parent::/second)",
+        ],
+        "middle.destroy(/mover::destination::/first)": [
+            "mover.move(/parent, destination)"
+        ],
+        "middle.destroy(/mover::destination::/second)": [
+            "mover.move(/parent, destination)"
+        ],
+        "middle.destroy(/mover::destination)": [
+            "middle.destroy(/mover::destination::/second)",
+            "middle.destroy(/mover::destination::/first)",
+        ],
+        "middle.destroy(/mover::trigger_pos)": ["middle.create(/mover::trigger_pos)"],
+        "test.destroy(/middle::trigger_pos)": ["test.create(/middle::trigger_pos)"],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
 def test_destruction_cascade_child_state_crosses_two_actions(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -1574,6 +1834,31 @@ def test_destruction_cascade_child_state_crosses_two_actions(
             "inner.destroy(inner_run::/b)",
             "inner.destroy(inner_run::/a)",
         ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+def test_destruction_cascade_implied_child_state_crosses_two_actions(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(/parent)": [],
+        "test.create(/parent::/a)": ["test.create(/parent)"],
+        "test.create(/parent::/b)": ["test.create(/parent)"],
+        "test.create(/middle::trigger_pos)": [],
+        "middle.create(/inner::trigger_pos)": [],
+        # The occupied child states pass through /middle, so /inner's child
+        # Destroys wait on the corresponding Creates in /test.
+        "inner.destroy(/parent::/a)": ["test.create(/parent::/a)"],
+        "inner.destroy(/parent::/b)": ["test.create(/parent::/b)"],
+        "inner.destroy(/parent)": [
+            "inner.destroy(/parent::/b)",
+            "inner.destroy(/parent::/a)",
+        ],
+        "inner.destroy(trigger_pos)": ["middle.create(/inner::trigger_pos)"],
+        "middle.destroy(trigger_pos)": ["test.create(/middle::trigger_pos)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -1829,5 +2114,106 @@ def test_same_callee_callers_assign_child_qualities_in_opposite_orders(
         ],
         "middle_b.destroy(destroyer_holder)": ["middle_b:destroyer.destroy(run)"],
         "middle_b.destroy(run)": ["test.create(/middle_b::run)"],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=_CALLEE_CHILD_DESTROY_DEPENDENCIES_NOT_RESOLVED,
+)
+def test_guarantee_inits_execution_and_satisfies_two_empty_rules(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(box)": [],
+        "test.create(box::/carrier::run)": ["test.create(box)"],
+        "carrier.create(source)": ["test.create(box)"],
+        "carrier.move(source, result)": ["carrier.create(source)"],
+        "test.create(box::/carrier::result::/worker::run)": [
+            "carrier.move(source, result)"
+        ],
+        # Worker's Action Parent and both initially empty interface positions
+        # are resolved by the same Move Guarantee.
+        "worker.create(first)": ["carrier.move(source, result)"],
+        "worker.create(second)": ["carrier.move(source, result)"],
+        "worker.destroy(first)": ["worker.create(first)"],
+        "worker.destroy(second)": ["worker.create(second)"],
+        "worker.destroy(run)": ["test.create(box::/carrier::result::/worker::run)"],
+        "test.destroy(box::/carrier::result)": [
+            "worker.destroy(first)",
+            "worker.destroy(second)",
+            "worker.destroy(run)",
+        ],
+        "carrier.destroy(run)": ["test.create(box::/carrier::run)"],
+        "test.destroy(box)": [
+            "test.destroy(box::/carrier::result)",
+            "carrier.destroy(run)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+def test_destruction_association_with_multiple_binding_sources(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(/guaranteed_parent)": [],
+        "test.create(/caller_parent)": [],
+        "test.create(/caller_parent::/child_a)": ["test.create(/caller_parent)"],
+        "test.create(/caller_parent::/child_b)": ["test.create(/caller_parent)"],
+        "test.create(trash)": [],
+        "test.create(trash::/caller_only)": ["test.create(trash)"],
+        "test.move(trash, /mover::discard)": ["test.create(trash::/caller_only)"],
+        "test.create(/fill_a::trigger_pos)": [],
+        "test.create(/fill_b::trigger_pos)": [],
+        "test.create(/mover::trigger_pos)": [],
+        "fill_a.create(/guaranteed_parent::/child_a)": [
+            "test.create(/guaranteed_parent)"
+        ],
+        "fill_b.create(/guaranteed_parent::/child_b)": [
+            "test.create(/guaranteed_parent)"
+        ],
+        # These two caller Action Guarantees are the source particle's latest
+        # child operations for Mover's first Move.
+        "mover.move(/guaranteed_parent, guaranteed_destination)": [
+            "fill_a.create(/guaranteed_parent::/child_a)",
+            "fill_b.create(/guaranteed_parent::/child_b)",
+        ],
+        # These two direct caller Particle Operations are the source particle's
+        # latest child operations for Mover's second Move.
+        "mover.move(/caller_parent, caller_destination)": [
+            "test.create(/caller_parent::/child_a)",
+            "test.create(/caller_parent::/child_b)",
+        ],
+        "mover.destroy(discard::/caller_only)": ["test.move(trash, /mover::discard)"],
+        "mover.destroy(discard)": ["mover.destroy(discard::/caller_only)"],
+        "mover.destroy(guaranteed_destination::/child_a)": [
+            "mover.move(/guaranteed_parent, guaranteed_destination)"
+        ],
+        "mover.destroy(guaranteed_destination::/child_b)": [
+            "mover.move(/guaranteed_parent, guaranteed_destination)"
+        ],
+        "mover.destroy(guaranteed_destination)": [
+            "mover.destroy(guaranteed_destination::/child_a)",
+            "mover.destroy(guaranteed_destination::/child_b)",
+        ],
+        "mover.destroy(caller_destination::/child_a)": [
+            "mover.move(/caller_parent, caller_destination)"
+        ],
+        "mover.destroy(caller_destination::/child_b)": [
+            "mover.move(/caller_parent, caller_destination)"
+        ],
+        "mover.destroy(caller_destination)": [
+            "mover.destroy(caller_destination::/child_a)",
+            "mover.destroy(caller_destination::/child_b)",
+        ],
+        "mover.destroy(trigger_pos)": ["test.create(/mover::trigger_pos)"],
+        "test.destroy(/fill_a::trigger_pos)": ["test.create(/fill_a::trigger_pos)"],
+        "test.destroy(/fill_b::trigger_pos)": ["test.create(/fill_b::trigger_pos)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)

@@ -16,7 +16,7 @@ class ParentDestructor(literal.Action):
 @final
 class ParentDestructorGuarantees:
     def __init__(self):
-        self.guarantee_global_position_left: list[literal.Task] = []
+        self.global_position_left = literal.Guarantee()
 
 
 @final
@@ -27,7 +27,6 @@ class ParentDestructorExecution:
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
-        guarantees: ParentDestructorGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
@@ -35,16 +34,22 @@ class ParentDestructorExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = guarantees
+        self.guarantees = ParentDestructorGuarantees()
         self.local_position_holder = literal.LocalPosition(
             "position<holder>",
             scheduler=self.scheduler,
         )
+        self.join_for_move_global_position_left_to_position_holder: literal.Join
+        self.join_for_empty_rule_global_position_left: literal.Join
 
     def accept_for_empty_rule_global_position_left(self):
+        if not self.join_for_empty_rule_global_position_left.arrive():
+            return
         self.move_global_position_left_to_position_holder()
 
     def move_global_position_left_to_position_holder(self):
+        if not self.join_for_move_global_position_left_to_position_holder.arrive():
+            return
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.left.Left
         ).move_particle_to(self.local_position_holder)
@@ -65,4 +70,6 @@ class ParentDestructorExecution:
             "/left",
             1,
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_left)
+        self.guarantees.global_position_left.publish(
+            self.scheduler,
+        )

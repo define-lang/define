@@ -33,9 +33,8 @@ class Destroyer(literal.Action):
 @final
 class DestroyerGuarantees:
     def __init__(self):
-        self.guarantee_position_parent: list[literal.Task] = []
-        self.guarantee_position_trigger_pos: list[literal.Task] = []
-        self.trigger_position_parent__action_maker = local.my_domain_com.my_lib.maker.MakerGuarantees()
+        self.position_parent = literal.Guarantee()
+        self.position_trigger_pos = literal.Guarantee()
 
 
 @final
@@ -44,43 +43,62 @@ class DestroyerExecution:
         self,
         action: Destroyer,
         scheduler: literal.Scheduler,
-        guarantees: DestroyerGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = DestroyerGuarantees()
         self.destruction_connections = destruction_connections
         self.local_position_held_required = literal.LocalPosition(
             "position<held_required>",
             scheduler=self.scheduler,
         )
-        guarantees.trigger_position_parent__action_maker.guarantee_position_result.append(
-            self.move_position_parent__action_maker__position_result_to_position_parent__global_position_required
-        )
-        guarantees.trigger_position_parent__action_maker.guarantee_position_trigger_pos.append(
-            self.destroy_position_parent
-        )
-        self.execution_trigger_position_parent__action_maker: local.my_domain_com.my_lib.maker.MakerExecution
-        self.join_for_move_position_parent__action_maker__position_result_to_position_parent__global_position_required = self.scheduler.create_join(2)
-        self.join_for_destroy_position_parent = self.scheduler.create_join(3)
-        self.join_for_trigger_position_parent__action_maker__when_empty_position_result = self.scheduler.create_join(2)
-        self.join_for_trigger_position_parent__action_maker__for_empty_rule_position_trigger_pos = self.scheduler.create_join(2)
+        self.execution_position_parent__action_maker: local.my_domain_com.my_lib.maker.MakerExecution
+        self.join_for_move_position_parent__action_maker__position_result_to_position_parent__global_position_required: literal.Join
+        self.join_for_destroy_position_parent: literal.Join
+        self.join_for_destroy_position_trigger_pos: literal.Join
+        self.join_when_empty_position_parent__global_position_required: literal.Join
+        self.join_for_empty_rule_position_parent: literal.Join
+        self.join_for_empty_rule_position_trigger_pos: literal.Join
 
     def accept_when_occupied_position_parent(self):
         self.create_position_parent__action_maker__position_trigger_pos()
 
+    def init_when_occupied_position_parent(self):
+        self.execution_position_parent__action_maker = local.my_domain_com.my_lib.maker.MakerExecution(
+            self.action.get_interface_position(
+                "position<parent>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.maker.Maker
+            ),
+            self.scheduler,
+        )
+        self.execution_position_parent__action_maker.join_for_empty_rule_position_trigger_pos = literal.NO_JOIN
+        self.execution_position_parent__action_maker.join_for_destroy_position_trigger_pos = literal.NO_JOIN
+        self.execution_position_parent__action_maker.guarantees.position_result.consumers.append(
+            self.move_position_parent__action_maker__position_result_to_position_parent__global_position_required
+        )
+        self.execution_position_parent__action_maker.guarantees.position_trigger_pos.consumers.append(
+            self.destroy_position_parent
+        )
+
     def accept_when_empty_position_parent__action_maker__position_result(self):
-        self.trigger_position_parent__action_maker__when_empty_position_result()
+        self.execution_position_parent__action_maker.accept_when_empty_position_result()
 
     def accept_when_empty_position_parent__global_position_required(self):
+        if not self.join_when_empty_position_parent__global_position_required.arrive():
+            return
         self.move_position_parent__action_maker__position_result_to_position_parent__global_position_required()
 
     def accept_for_empty_rule_position_parent(self):
+        if not self.join_for_empty_rule_position_parent.arrive():
+            return
         self.destroy_position_parent()
 
     def accept_for_empty_rule_position_trigger_pos(self):
+        if not self.join_for_empty_rule_position_trigger_pos.arrive():
+            return
         self.destroy_position_trigger_pos()
 
     def create_position_parent__action_maker__position_trigger_pos(self):
@@ -91,18 +109,7 @@ class DestroyerExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.execution_trigger_position_parent__action_maker = local.my_domain_com.my_lib.maker.MakerExecution(
-            self.action.get_interface_position(
-                "position<parent>"
-            ).particle.get_action(
-                local.my_domain_com.my_lib.maker.Maker
-            ),
-            self.scheduler,
-            self.guarantees.trigger_position_parent__action_maker,
-        )
-        self.scheduler.submit(self.trigger_position_parent__action_maker__for_empty_rule_position_trigger_pos)
-        self.scheduler.submit(self.trigger_position_parent__action_maker__when_empty_position_result)
-        self.trigger_position_parent__action_maker__for_empty_rule_position_trigger_pos()
+        self.execution_position_parent__action_maker.accept_for_empty_rule_position_trigger_pos()
 
     def move_position_parent__action_maker__position_result_to_position_parent__global_position_required(self):
         if not self.join_for_move_position_parent__action_maker__position_result_to_position_parent__global_position_required.arrive():
@@ -154,23 +161,19 @@ class DestroyerExecution:
         self.action.get_interface_position(
             "position<parent>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_parent)
+        self.guarantees.position_parent.publish(
+            self.scheduler,
+        )
 
     def destroy_position_trigger_pos(self):
+        if not self.join_for_destroy_position_trigger_pos.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_trigger_pos)
 
     def continue_destroy_position_trigger_pos(self):
         self.action.get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_trigger_pos)
-
-    def trigger_position_parent__action_maker__when_empty_position_result(self):
-        if not self.join_for_trigger_position_parent__action_maker__when_empty_position_result.arrive():
-            return
-        self.execution_trigger_position_parent__action_maker.accept_when_empty_position_result()
-
-    def trigger_position_parent__action_maker__for_empty_rule_position_trigger_pos(self):
-        if not self.join_for_trigger_position_parent__action_maker__for_empty_rule_position_trigger_pos.arrive():
-            return
-        self.execution_trigger_position_parent__action_maker.accept_for_empty_rule_position_trigger_pos()
+        self.guarantees.position_trigger_pos.publish(
+            self.scheduler,
+        )

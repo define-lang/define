@@ -12,8 +12,7 @@ class Test(literal.EntryPoint):
         execution = TestExecution(
             scheduler,
         )
-        execution.scheduler.submit(execution.create_position_first)
-        execution.create_position_second()
+        execution.on_action_parent_occupied()
 
 
 @final
@@ -31,6 +30,10 @@ class TestExecution:
             "position<second>",
             scheduler=self.scheduler,
         )
+
+    def on_action_parent_occupied(self):
+        self.scheduler.submit(self.create_position_first)
+        self.create_position_second()
 
     def create_position_first(self):
         self.local_position_first.create_particle()

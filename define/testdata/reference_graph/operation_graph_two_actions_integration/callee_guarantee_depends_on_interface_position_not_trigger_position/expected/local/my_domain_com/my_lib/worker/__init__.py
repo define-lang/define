@@ -30,7 +30,7 @@ class Worker(literal.Action):
 @final
 class WorkerGuarantees:
     def __init__(self):
-        self.guarantee_position_input__move__position_output: list[literal.Task] = []
+        self.position_input__move__position_output = literal.Guarantee()
 
 
 @final
@@ -39,16 +39,21 @@ class WorkerExecution:
         self,
         action: Worker,
         scheduler: literal.Scheduler,
-        guarantees: WorkerGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = WorkerGuarantees()
+        self.join_for_move_position_input_to_position_output: literal.Join
+        self.join_for_empty_rule_position_input: literal.Join
 
     def accept_for_empty_rule_position_input(self):
+        if not self.join_for_empty_rule_position_input.arrive():
+            return
         self.move_position_input_to_position_output()
 
     def move_position_input_to_position_output(self):
+        if not self.join_for_move_position_input_to_position_output.arrive():
+            return
         self.action.get_interface_position(
             "position<input>"
         ).move_particle_to(
@@ -56,4 +61,6 @@ class WorkerExecution:
                 "position<output>"
             )
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_position_input__move__position_output)
+        self.guarantees.position_input__move__position_output.publish(
+            self.scheduler,
+        )

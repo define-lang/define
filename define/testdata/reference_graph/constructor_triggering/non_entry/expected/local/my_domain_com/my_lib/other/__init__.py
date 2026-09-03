@@ -16,7 +16,7 @@ class Other(literal.Action):
 @final
 class OtherGuarantees:
     def __init__(self):
-        self.guarantee_global_position_filled: list[literal.Task] = []
+        self.global_position_filled = literal.Guarantee()
 
 
 @final
@@ -25,11 +25,10 @@ class OtherExecution:
         self,
         action: Other,
         scheduler: literal.Scheduler,
-        guarantees: OtherGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = OtherGuarantees()
 
     def accept_when_empty_global_position_filled(self):
         self.create_global_position_filled()
@@ -38,4 +37,6 @@ class OtherExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.filled.Filled
         ).create_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_filled)
+        self.guarantees.global_position_filled.publish(
+            self.scheduler,
+        )

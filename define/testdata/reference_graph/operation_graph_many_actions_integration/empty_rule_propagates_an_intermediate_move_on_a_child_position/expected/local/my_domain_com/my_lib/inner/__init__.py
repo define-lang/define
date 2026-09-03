@@ -29,7 +29,7 @@ class Inner(literal.Action):
 @final
 class InnerGuarantees:
     def __init__(self):
-        self.guarantee_global_position_input__move__global_position_destination: list[literal.Task] = []
+        self.global_position_input__move__global_position_destination = literal.Guarantee()
 
 
 @final
@@ -38,16 +38,21 @@ class InnerExecution:
         self,
         action: Inner,
         scheduler: literal.Scheduler,
-        guarantees: InnerGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = InnerGuarantees()
+        self.join_for_move_global_position_input_to_global_position_destination: literal.Join
+        self.join_for_empty_rule_global_position_input: literal.Join
 
     def accept_for_empty_rule_global_position_input(self):
+        if not self.join_for_empty_rule_global_position_input.arrive():
+            return
         self.move_global_position_input_to_global_position_destination()
 
     def move_global_position_input_to_global_position_destination(self):
+        if not self.join_for_move_global_position_input_to_global_position_destination.arrive():
+            return
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.input.Input
         ).move_particle_to(
@@ -55,4 +60,6 @@ class InnerExecution:
                 local.my_domain_com.my_lib.destination.Destination
             )
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_input__move__global_position_destination)
+        self.guarantees.global_position_input__move__global_position_destination.publish(
+            self.scheduler,
+        )

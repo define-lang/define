@@ -26,7 +26,7 @@ class Callee(literal.Action):
 @final
 class CalleeGuarantees:
     def __init__(self):
-        self.guarantee_position_target: list[literal.Task] = []
+        self.position_target = literal.Guarantee()
 
 
 @final
@@ -37,7 +37,6 @@ class CalleeExecution:
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
-        guarantees: CalleeGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
@@ -47,13 +46,19 @@ class CalleeExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = guarantees
+        self.guarantees = CalleeGuarantees()
         self.destruction_connections = destruction_connections
+        self.join_for_destroy_position_target: literal.Join
+        self.join_for_empty_rule_position_target: literal.Join
 
     def accept_for_empty_rule_position_target(self):
+        if not self.join_for_empty_rule_position_target.arrive():
+            return
         self.destroy_position_target()
 
     def destroy_position_target(self):
+        if not self.join_for_destroy_position_target.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_position_target)
 
     def continue_destroy_position_target(self):
@@ -65,4 +70,6 @@ class CalleeExecution:
             "target",
             1,
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_position_target)
+        self.guarantees.position_target.publish(
+            self.scheduler,
+        )

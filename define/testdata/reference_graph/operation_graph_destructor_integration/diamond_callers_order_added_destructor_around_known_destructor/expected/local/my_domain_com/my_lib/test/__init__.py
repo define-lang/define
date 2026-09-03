@@ -19,17 +19,8 @@ class Test(literal.EntryPoint):
         execution = TestExecution(
             self,
             scheduler,
-            TestGuarantees(),
         )
-        execution.scheduler.submit(execution.create_action_caller_a__position_trigger_pos)
-        execution.create_action_caller_b__position_trigger_pos()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_action_caller_a = local.my_domain_com.my_lib.caller_a.CallerAGuarantees()
-        self.trigger_action_caller_b = local.my_domain_com.my_lib.caller_b.CallerBGuarantees()
+        execution.on_action_parent_occupied()
 
 
 @final
@@ -38,13 +29,23 @@ class TestExecution:
         self,
         action: Test,
         scheduler: literal.Scheduler,
-        guarantees: TestGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
-        self.execution_trigger_action_caller_a: local.my_domain_com.my_lib.caller_a.CallerAExecution
-        self.execution_trigger_action_caller_b: local.my_domain_com.my_lib.caller_b.CallerBExecution
+        self.execution_action_caller_a: local.my_domain_com.my_lib.caller_a.CallerAExecution
+        self.execution_action_caller_b: local.my_domain_com.my_lib.caller_b.CallerBExecution
+        self.execution_action_caller_a = local.my_domain_com.my_lib.caller_a.CallerAExecution(
+            self.scheduler,
+        )
+        self.execution_action_caller_b = local.my_domain_com.my_lib.caller_b.CallerBExecution(
+            self.scheduler,
+        )
+
+    def on_action_parent_occupied(self):
+        self.scheduler.submit(self.create_action_caller_a__position_trigger_pos)
+        self.scheduler.submit(self.create_action_caller_b__position_trigger_pos)
+        self.scheduler.submit(self.execution_action_caller_a.on_action_parent_occupied)
+        self.execution_action_caller_b.on_action_parent_occupied()
 
     def create_action_caller_a__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -52,12 +53,11 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.execution_trigger_action_caller_a = local.my_domain_com.my_lib.caller_a.CallerAExecution(
-            self.scheduler,
-            self.guarantees.trigger_action_caller_a,
-        )
-        self.scheduler.submit(self.destroy_action_caller_a__position_trigger_pos)
-        self.trigger_action_caller_a__action_parent()
+        self.action.on_particle.get_action(
+            local.my_domain_com.my_lib.caller_a.CallerA
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
 
     def create_action_caller_b__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -65,29 +65,8 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.execution_trigger_action_caller_b = local.my_domain_com.my_lib.caller_b.CallerBExecution(
-            self.scheduler,
-            self.guarantees.trigger_action_caller_b,
-        )
-        self.scheduler.submit(self.destroy_action_caller_b__position_trigger_pos)
-        self.trigger_action_caller_b__action_parent()
-
-    def destroy_action_caller_a__position_trigger_pos(self):
-        self.action.on_particle.get_action(
-            local.my_domain_com.my_lib.caller_a.CallerA
-        ).get_interface_position(
-            "position<trigger_pos>"
-        ).destroy_particle()
-
-    def destroy_action_caller_b__position_trigger_pos(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.caller_b.CallerB
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
-
-    def trigger_action_caller_a__action_parent(self):
-        self.execution_trigger_action_caller_a.accept_action_parent()
-
-    def trigger_action_caller_b__action_parent(self):
-        self.execution_trigger_action_caller_b.accept_action_parent()

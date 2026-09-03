@@ -19,17 +19,8 @@ class Test(literal.EntryPoint):
         execution = TestExecution(
             self,
             scheduler,
-            TestGuarantees(),
         )
-        execution.scheduler.submit(execution.create_action_left__position_trigger)
-        execution.create_action_right__position_trigger()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_action_left = local.my_domain_com.my_lib.left.LeftGuarantees()
-        self.trigger_action_right = local.my_domain_com.my_lib.right.RightGuarantees()
+        execution.on_action_parent_occupied()
 
 
 @final
@@ -38,15 +29,33 @@ class TestExecution:
         self,
         action: Test,
         scheduler: literal.Scheduler,
-        guarantees: TestGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
-        self.execution_trigger_action_left: local.my_domain_com.my_lib.left.LeftExecution
-        self.execution_trigger_action_right: local.my_domain_com.my_lib.right.RightExecution
-        self.join_for_trigger_action_left__for_empty_rule_position_trigger = self.scheduler.create_join(2)
-        self.join_for_trigger_action_right__for_empty_rule_position_trigger = self.scheduler.create_join(2)
+        self.execution_action_left: local.my_domain_com.my_lib.left.LeftExecution
+        self.execution_action_right: local.my_domain_com.my_lib.right.RightExecution
+        self.execution_action_left = local.my_domain_com.my_lib.left.LeftExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.left.Left
+            ),
+            self.scheduler,
+        )
+        self.execution_action_left.join_for_empty_rule_position_trigger = literal.NO_JOIN
+        self.execution_action_left.join_for_destroy_position_trigger = literal.NO_JOIN
+        self.execution_action_right = local.my_domain_com.my_lib.right.RightExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.right.Right
+            ),
+            self.scheduler,
+        )
+        self.execution_action_right.join_for_empty_rule_position_trigger = literal.NO_JOIN
+        self.execution_action_right.join_for_destroy_position_trigger = literal.NO_JOIN
+
+    def on_action_parent_occupied(self):
+        self.scheduler.submit(self.create_action_left__position_trigger)
+        self.scheduler.submit(self.create_action_right__position_trigger)
+        self.scheduler.submit(self.execution_action_left.on_action_parent_occupied)
+        self.execution_action_right.on_action_parent_occupied()
 
     def create_action_left__position_trigger(self):
         self.action.on_particle.get_action(
@@ -54,16 +63,7 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger>"
         ).create_particle()
-        self.execution_trigger_action_left = local.my_domain_com.my_lib.left.LeftExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.left.Left
-            ),
-            self.scheduler,
-            self.guarantees.trigger_action_left,
-        )
-        self.scheduler.submit(self.trigger_action_left__for_empty_rule_position_trigger)
-        self.scheduler.submit(self.trigger_action_left__action_parent)
-        self.trigger_action_left__for_empty_rule_position_trigger()
+        self.execution_action_left.accept_for_empty_rule_position_trigger()
 
     def create_action_right__position_trigger(self):
         self.action.on_particle.get_action(
@@ -71,29 +71,4 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger>"
         ).create_particle()
-        self.execution_trigger_action_right = local.my_domain_com.my_lib.right.RightExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.right.Right
-            ),
-            self.scheduler,
-            self.guarantees.trigger_action_right,
-        )
-        self.scheduler.submit(self.trigger_action_right__for_empty_rule_position_trigger)
-        self.scheduler.submit(self.trigger_action_right__action_parent)
-        self.trigger_action_right__for_empty_rule_position_trigger()
-
-    def trigger_action_left__action_parent(self):
-        self.execution_trigger_action_left.accept_action_parent()
-
-    def trigger_action_left__for_empty_rule_position_trigger(self):
-        if not self.join_for_trigger_action_left__for_empty_rule_position_trigger.arrive():
-            return
-        self.execution_trigger_action_left.accept_for_empty_rule_position_trigger()
-
-    def trigger_action_right__action_parent(self):
-        self.execution_trigger_action_right.accept_action_parent()
-
-    def trigger_action_right__for_empty_rule_position_trigger(self):
-        if not self.join_for_trigger_action_right__for_empty_rule_position_trigger.arrive():
-            return
-        self.execution_trigger_action_right.accept_for_empty_rule_position_trigger()
+        self.execution_action_right.accept_for_empty_rule_position_trigger()

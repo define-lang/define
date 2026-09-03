@@ -35,9 +35,8 @@ class Outer(literal.Action):
 @final
 class OuterGuarantees:
     def __init__(self):
-        self.guarantee_position_out: list[literal.Task] = []
-        self.guarantee_position_gw: list[literal.Task] = []
-        self.trigger_position_gw__action_middle = local.my_domain_com.my_lib.middle.MiddleGuarantees()
+        self.position_out = literal.Guarantee()
+        self.position_gw = literal.Guarantee()
 
 
 @final
@@ -48,7 +47,6 @@ class OuterExecution:
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
-        guarantees: OuterGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
@@ -58,32 +56,52 @@ class OuterExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = guarantees
+        self.guarantees = OuterGuarantees()
         self.destruction_connections = destruction_connections
-        guarantees.trigger_position_gw__action_middle.guarantee_position_out.append(
-            self.move_position_gw__action_middle__position_out_to_position_out
-        )
-        guarantees.trigger_position_gw__action_middle.guarantee_position_igw.append(
-            self.destroy_position_gw
-        )
-        self.execution_trigger_position_gw__action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
-        self.join_for_move_position_gw__action_middle__position_out_to_position_out = self.scheduler.create_join(2)
-        self.join_for_destroy_position_gw = self.scheduler.create_join(4)
-        self.join_for_trigger_position_gw__action_middle__when_occupied_position_igw = self.scheduler.create_join(2)
-        self.join_for_trigger_position_gw__action_middle__when_empty_position_igw__global_position_inner_result = self.scheduler.create_join(2)
-        self.join_for_trigger_position_gw__action_middle__when_empty_position_out = self.scheduler.create_join(2)
+        self.execution_position_gw__action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
+        self.join_for_move_position_gw__action_middle__position_out_to_position_out: literal.Join
+        self.join_for_destroy_position_gw: literal.Join
+        self.join_when_empty_position_gw__action_middle__position_out: literal.Join
+        self.join_when_empty_position_out: literal.Join
+        self.join_for_empty_rule_position_gw: literal.Join
 
     def accept_when_occupied_position_gw(self):
         self.scheduler.submit(self.create_position_gw__action_middle__position_igw)
         self.create_position_gw__action_middle__position_trigger_pos()
 
+    def init_when_occupied_position_gw(self):
+        self.execution_position_gw__action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
+            self.action.get_interface_position(
+                "position<gw>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.middle.Middle
+            ),
+            self.scheduler,
+            self.trace_execution,
+            "middle",
+        )
+        self.execution_position_gw__action_middle.join_for_empty_rule_position_igw = literal.NO_JOIN
+        self.execution_position_gw__action_middle.join_for_destroy_position_igw = self.scheduler.create_join(2)
+        self.execution_position_gw__action_middle.guarantees.position_out.consumers.append(
+            self.move_position_gw__action_middle__position_out_to_position_out
+        )
+        self.execution_position_gw__action_middle.guarantees.position_igw.consumers.append(
+            self.destroy_position_gw
+        )
+
     def accept_when_empty_position_gw__action_middle__position_out(self):
-        self.trigger_position_gw__action_middle__when_empty_position_out()
+        if not self.join_when_empty_position_gw__action_middle__position_out.arrive():
+            return
+        self.execution_position_gw__action_middle.accept_when_empty_position_out()
 
     def accept_when_empty_position_out(self):
+        if not self.join_when_empty_position_out.arrive():
+            return
         self.move_position_gw__action_middle__position_out_to_position_out()
 
     def accept_for_empty_rule_position_gw(self):
+        if not self.join_for_empty_rule_position_gw.arrive():
+            return
         self.destroy_position_gw()
 
     def create_position_gw__action_middle__position_igw(self):
@@ -99,8 +117,9 @@ class OuterExecution:
             "gw::/middle::igw",
             1,
         )
-        self.scheduler.submit(self.trigger_position_gw__action_middle__when_occupied_position_igw)
-        self.trigger_position_gw__action_middle__when_empty_position_igw__global_position_inner_result()
+        self.execution_position_gw__action_middle.init_when_occupied_position_igw()
+        self.scheduler.submit(self.execution_position_gw__action_middle.accept_when_occupied_position_igw)
+        self.execution_position_gw__action_middle.accept_when_empty_position_igw__global_position_inner_result()
 
     def create_position_gw__action_middle__position_trigger_pos(self):
         self.action.get_interface_position(
@@ -115,22 +134,19 @@ class OuterExecution:
             "gw::/middle::trigger_pos",
             1,
         )
-        self.execution_trigger_position_gw__action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
-            self.action.get_interface_position(
-                "position<gw>"
-            ).particle.get_action(
-                local.my_domain_com.my_lib.middle.Middle
-            ),
-            self.scheduler,
+        self.action.get_interface_position(
+            "position<gw>"
+        ).particle.get_action(
+            local.my_domain_com.my_lib.middle.Middle
+        ).get_interface_position(
+            "position<trigger_pos>"
+        ).destroy_particle()
+        self.scheduler.destroy_completed(
             self.trace_execution,
-            "middle",
-            self.guarantees.trigger_position_gw__action_middle,
+            "gw::/middle::trigger_pos",
+            1,
         )
-        self.scheduler.submit(self.destroy_position_gw__action_middle__position_trigger_pos)
-        self.scheduler.submit(self.trigger_position_gw__action_middle__when_occupied_position_igw)
-        self.scheduler.submit(self.trigger_position_gw__action_middle__when_empty_position_igw__global_position_inner_result)
-        self.scheduler.submit(self.trigger_position_gw__action_middle__when_empty_position_out)
-        self.trigger_position_gw__action_middle__for_empty_rule_position_igw()
+        self.destroy_position_gw()
 
     def move_position_gw__action_middle__position_out_to_position_out(self):
         if not self.join_for_move_position_gw__action_middle__position_out_to_position_out.arrive():
@@ -152,23 +168,10 @@ class OuterExecution:
             "out",
             1,
         )
-        self.scheduler.submit(self.destroy_position_gw)
-        self.scheduler.continue_with(self.guarantees.guarantee_position_out)
-
-    def destroy_position_gw__action_middle__position_trigger_pos(self):
-        self.action.get_interface_position(
-            "position<gw>"
-        ).particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
-        ).get_interface_position(
-            "position<trigger_pos>"
-        ).destroy_particle()
-        self.scheduler.destroy_completed(
-            self.trace_execution,
-            "gw::/middle::trigger_pos",
-            1,
+        self.guarantees.position_out.publish(
+            self.scheduler,
+            self.destroy_position_gw,
         )
-        self.destroy_position_gw()
 
     def destroy_position_gw(self):
         if not self.join_for_destroy_position_gw.arrive():
@@ -184,22 +187,6 @@ class OuterExecution:
             "gw",
             1,
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_position_gw)
-
-    def trigger_position_gw__action_middle__when_occupied_position_igw(self):
-        if not self.join_for_trigger_position_gw__action_middle__when_occupied_position_igw.arrive():
-            return
-        self.execution_trigger_position_gw__action_middle.accept_when_occupied_position_igw()
-
-    def trigger_position_gw__action_middle__when_empty_position_igw__global_position_inner_result(self):
-        if not self.join_for_trigger_position_gw__action_middle__when_empty_position_igw__global_position_inner_result.arrive():
-            return
-        self.execution_trigger_position_gw__action_middle.accept_when_empty_position_igw__global_position_inner_result()
-
-    def trigger_position_gw__action_middle__when_empty_position_out(self):
-        if not self.join_for_trigger_position_gw__action_middle__when_empty_position_out.arrive():
-            return
-        self.execution_trigger_position_gw__action_middle.accept_when_empty_position_out()
-
-    def trigger_position_gw__action_middle__for_empty_rule_position_igw(self):
-        self.execution_trigger_position_gw__action_middle.accept_for_empty_rule_position_igw()
+        self.guarantees.position_gw.publish(
+            self.scheduler,
+        )

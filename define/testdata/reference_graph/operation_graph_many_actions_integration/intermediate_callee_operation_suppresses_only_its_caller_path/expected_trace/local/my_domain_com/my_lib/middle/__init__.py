@@ -30,12 +30,6 @@ class Middle(literal.Action):
 
 
 @final
-class MiddleGuarantees:
-    def __init__(self):
-        self.trigger_action_inner = local.my_domain_com.my_lib.inner.InnerGuarantees()
-
-
-@final
 class MiddleExecution:
     def __init__(
         self,
@@ -43,7 +37,6 @@ class MiddleExecution:
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
-        guarantees: MiddleGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
@@ -53,23 +46,53 @@ class MiddleExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = guarantees
         self.destruction_connections = destruction_connections
-        self.execution_trigger_action_inner: local.my_domain_com.my_lib.inner.InnerExecution
-        self.destruction_connection_trigger_action_inner: tracing.DestructionConnection
+        self.execution_action_inner: local.my_domain_com.my_lib.inner.InnerExecution
+        self.destruction_connection_action_inner: tracing.DestructionConnection
         self.destruction_position_global_position_parent__global_position_child: literal.Position
-        self.join_for_trigger_action_inner__for_empty_rule_global_position_parent = self.scheduler.create_join(3)
+        self.join_for_destroy_global_position_parent__global_position_child__global_position_grandchild: literal.Join
+        self.join_for_empty_rule_global_position_parent__global_position_child__global_position_grandchild: literal.Join
+        self.join_for_empty_rule_global_position_parent: literal.Join
+        self.join_for_action_inner__for_empty_rule_global_position_parent: literal.Join
+        self.destruction_connection_action_inner = tracing.DestructionConnection(
+            self.scheduler,
+            1,
+            self.destroy_global_position_parent__global_position_child,
+            forwarded_connection=self.destruction_connections.connection(local.my_domain_com.my_lib.inner.InnerExecution.continue_destroy_global_position_parent) if self.destruction_connections is not None else None,
+        )
+        self.execution_action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.inner.Inner
+            ),
+            self.scheduler,
+            self.trace_execution,
+            "inner",
+            destruction_connections=literal.DestructionConnections(
+            {
+                local.my_domain_com.my_lib.inner.InnerExecution.continue_destroy_global_position_parent: self.destruction_connection_action_inner,
+            },
+            forwarded=self.destruction_connections,
+            ),
+        )
+        self.execution_action_inner.join_for_empty_rule_global_position_parent = literal.NO_JOIN
+        self.execution_action_inner.join_for_destroy_global_position_parent = literal.NO_JOIN
 
     def accept_for_empty_rule_global_position_parent__global_position_child__global_position_grandchild(self):
+        if not self.join_for_empty_rule_global_position_parent__global_position_child__global_position_grandchild.arrive():
+            return
         self.destroy_global_position_parent__global_position_child__global_position_grandchild()
 
-    def accept_action_parent(self):
+    def on_action_parent_occupied(self):
         self.create_action_inner__position_trigger_pos()
 
     def accept_for_empty_rule_global_position_parent(self):
-        self.trigger_action_inner__for_empty_rule_global_position_parent()
+        if not self.join_for_empty_rule_global_position_parent.arrive():
+            return
+        self.action_inner__for_empty_rule_global_position_parent()
 
     def destroy_global_position_parent__global_position_child__global_position_grandchild(self):
+        if not self.join_for_destroy_global_position_parent__global_position_child__global_position_grandchild.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_global_position_parent__global_position_child__global_position_grandchild)
 
     def continue_destroy_global_position_parent__global_position_child__global_position_grandchild(self):
@@ -85,7 +108,7 @@ class MiddleExecution:
             "/parent::/child::/grandchild",
             1,
         )
-        self.trigger_action_inner__for_empty_rule_global_position_parent()
+        self.action_inner__for_empty_rule_global_position_parent()
 
     def create_action_inner__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -98,43 +121,6 @@ class MiddleExecution:
             "/inner::trigger_pos",
             1,
         )
-        self.destruction_connection_trigger_action_inner = tracing.DestructionConnection(
-            self.scheduler,
-            1,
-            self.destroy_global_position_parent__global_position_child,
-            forwarded_connection=self.destruction_connections.connection(local.my_domain_com.my_lib.inner.InnerExecution.continue_destroy_global_position_parent) if self.destruction_connections is not None else None,
-        )
-        self.execution_trigger_action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.inner.Inner
-            ),
-            self.scheduler,
-            self.trace_execution,
-            "inner",
-            self.guarantees.trigger_action_inner,
-            destruction_connections=literal.DestructionConnections(
-            {
-                local.my_domain_com.my_lib.inner.InnerExecution.continue_destroy_global_position_parent: self.destruction_connection_trigger_action_inner,
-            },
-            forwarded=self.destruction_connections,
-            ),
-        )
-        self.scheduler.submit(self.destroy_action_inner__position_trigger_pos)
-        self.trigger_action_inner__for_empty_rule_global_position_parent()
-
-    def destroy_global_position_parent__global_position_child(self):
-        literal.continue_destruction(self.continue_destroy_global_position_parent__global_position_child)
-
-    def continue_destroy_global_position_parent__global_position_child(self):
-        self.destruction_position_global_position_parent__global_position_child.destroy_particle()
-        self.scheduler.destroy_completed(
-            self.destruction_connection_trigger_action_inner.trace_execution,
-            "/parent::/child",
-            1,
-        )
-        self.destruction_connection_trigger_action_inner.complete()
-
-    def destroy_action_inner__position_trigger_pos(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.inner.Inner
         ).get_interface_position(
@@ -146,12 +132,24 @@ class MiddleExecution:
             1,
         )
 
-    def trigger_action_inner__for_empty_rule_global_position_parent(self):
-        if not self.join_for_trigger_action_inner__for_empty_rule_global_position_parent.arrive():
+    def destroy_global_position_parent__global_position_child(self):
+        literal.continue_destruction(self.continue_destroy_global_position_parent__global_position_child)
+
+    def continue_destroy_global_position_parent__global_position_child(self):
+        self.destruction_position_global_position_parent__global_position_child.destroy_particle()
+        self.scheduler.destroy_completed(
+            self.destruction_connection_action_inner.trace_execution,
+            "/parent::/child",
+            1,
+        )
+        self.destruction_connection_action_inner.complete()
+
+    def action_inner__for_empty_rule_global_position_parent(self):
+        if not self.join_for_action_inner__for_empty_rule_global_position_parent.arrive():
             return
         self.destruction_position_global_position_parent__global_position_child = self.action.on_particle.get_position(
             local.my_domain_com.my_lib.parent.Parent
         ).particle.get_position(
             local.my_domain_com.my_lib.child.Child
         )
-        self.execution_trigger_action_inner.accept_for_empty_rule_global_position_parent()
+        self.execution_action_inner.accept_for_empty_rule_global_position_parent()

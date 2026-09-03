@@ -35,8 +35,8 @@ class Other(literal.Action):
 @final
 class OtherGuarantees:
     def __init__(self):
-        self.guarantee_global_position_input: list[literal.Task] = []
-        self.guarantee_position_output: list[literal.Task] = []
+        self.global_position_input = literal.Guarantee()
+        self.position_output = literal.Guarantee()
 
 
 @final
@@ -45,19 +45,24 @@ class OtherExecution:
         self,
         action: Other,
         scheduler: literal.Scheduler,
-        guarantees: OtherGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
+        self.guarantees = OtherGuarantees()
         self.destruction_connections = destruction_connections
+        self.join_for_move_global_position_input_to_position_output: literal.Join
+        self.join_for_empty_rule_global_position_input: literal.Join
 
     def accept_for_empty_rule_global_position_input(self):
+        if not self.join_for_empty_rule_global_position_input.arrive():
+            return
         self.move_global_position_input_to_position_output()
 
     def move_global_position_input_to_position_output(self):
+        if not self.join_for_move_global_position_input_to_position_output.arrive():
+            return
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.input.Input
         ).move_particle_to(
@@ -65,8 +70,10 @@ class OtherExecution:
                 "position<output>"
             )
         )
-        self.scheduler.submit(self.destroy_position_output__global_position_item)
-        self.scheduler.continue_with(self.guarantees.guarantee_global_position_input)
+        self.guarantees.global_position_input.publish(
+            self.scheduler,
+            self.destroy_position_output__global_position_item,
+        )
 
     def destroy_position_output__global_position_item(self):
         literal.continue_destruction(self.continue_destroy_position_output__global_position_item)
@@ -86,4 +93,6 @@ class OtherExecution:
         self.action.get_interface_position(
             "position<output>"
         ).destroy_particle()
-        self.scheduler.continue_with(self.guarantees.guarantee_position_output)
+        self.guarantees.position_output.publish(
+            self.scheduler,
+        )

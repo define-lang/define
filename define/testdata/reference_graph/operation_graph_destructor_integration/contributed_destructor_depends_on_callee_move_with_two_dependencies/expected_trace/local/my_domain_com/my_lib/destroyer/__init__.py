@@ -33,7 +33,7 @@ class Destroyer(literal.Action):
 @final
 class DestroyerGuarantees:
     def __init__(self):
-        self.guarantee_position_parent: list[literal.Task] = []
+        self.position_parent = literal.Guarantee()
 
 
 @final
@@ -44,7 +44,6 @@ class DestroyerExecution:
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
-        guarantees: DestroyerGuarantees,
         *,
         destruction_connections: literal.DestructionConnections | None = None,
     ):
@@ -54,7 +53,7 @@ class DestroyerExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = guarantees
+        self.guarantees = DestroyerGuarantees()
         self.destruction_connections = destruction_connections
         self.local_position_held_required = literal.LocalPosition(
             "position<held_required>",
@@ -64,16 +63,25 @@ class DestroyerExecution:
             ),
             scheduler=self.scheduler,
         )
+        self.join_for_move_position_parent__global_position_required_to_position_held_required: literal.Join
         self.join_for_move_position_held_required_to_position_parent__global_position_required = self.scheduler.create_join(2)
-        self.join_for_destroy_position_parent = self.scheduler.create_join(2)
+        self.join_for_destroy_position_parent: literal.Join
+        self.join_for_empty_rule_position_parent__global_position_required: literal.Join
+        self.join_for_empty_rule_position_parent: literal.Join
 
     def accept_for_empty_rule_position_parent__global_position_required(self):
+        if not self.join_for_empty_rule_position_parent__global_position_required.arrive():
+            return
         self.move_position_parent__global_position_required_to_position_held_required()
 
     def accept_for_empty_rule_position_parent(self):
+        if not self.join_for_empty_rule_position_parent.arrive():
+            return
         self.destroy_position_parent()
 
     def move_position_parent__global_position_required_to_position_held_required(self):
+        if not self.join_for_move_position_parent__global_position_required_to_position_held_required.arrive():
+            return
         self.action.get_interface_position(
             "position<parent>"
         ).particle.get_position(
@@ -174,4 +182,6 @@ class DestroyerExecution:
             "parent",
             1,
         )
-        self.scheduler.continue_with(self.guarantees.guarantee_position_parent)
+        self.guarantees.position_parent.publish(
+            self.scheduler,
+        )

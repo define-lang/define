@@ -16,7 +16,7 @@ class Test(literal.EntryPoint):
             None,
             "test",
         )
-        execution.create_position_holder()
+        execution.on_action_parent_occupied()
 
 
 @final
@@ -39,10 +39,11 @@ class TestExecution:
             ),
             scheduler=self.scheduler,
         )
-        self.execution_trigger_position_holder__action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
-        self.execution_trigger_position_holder__action_middle_2: local.my_domain_com.my_lib.middle.MiddleExecution
-        self.join_for_trigger_position_holder__action_middle__action_parent = self.scheduler.create_join(2)
-        self.join_for_trigger_position_holder__action_middle_2__action_parent = self.scheduler.create_join(2)
+        self.execution_position_holder__action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
+        self.execution_position_holder__action_middle_2: local.my_domain_com.my_lib.middle.MiddleExecution
+
+    def on_action_parent_occupied(self):
+        self.create_position_holder()
 
     def create_position_holder(self):
         self.local_position_holder.create_particle()
@@ -51,9 +52,19 @@ class TestExecution:
             "holder",
             1,
         )
+        self.execution_position_holder__action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
+            self.scheduler,
+            self.trace_execution,
+            "middle",
+        )
+        self.execution_position_holder__action_middle_2 = local.my_domain_com.my_lib.middle.MiddleExecution(
+            self.scheduler,
+            self.trace_execution,
+            "middle#2",
+        )
         self.scheduler.submit(self.create_position_holder__action_middle__position_trigger_pos)
-        self.scheduler.submit(self.trigger_position_holder__action_middle__action_parent)
-        self.trigger_position_holder__action_middle_2__action_parent()
+        self.scheduler.submit(self.execution_position_holder__action_middle.on_action_parent_occupied)
+        self.execution_position_holder__action_middle_2.on_action_parent_occupied()
 
     def create_position_holder__action_middle__position_trigger_pos(self):
         self.local_position_holder.particle.get_action(
@@ -66,15 +77,6 @@ class TestExecution:
             "holder::/middle::trigger_pos",
             1,
         )
-        self.execution_trigger_position_holder__action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
-            self.scheduler,
-            self.trace_execution,
-            "middle",
-        )
-        self.scheduler.submit(self.destroy_position_holder__action_middle__position_trigger_pos)
-        self.trigger_position_holder__action_middle__action_parent()
-
-    def destroy_position_holder__action_middle__position_trigger_pos(self):
         self.local_position_holder.particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
         ).get_interface_position(
@@ -95,15 +97,6 @@ class TestExecution:
             "holder::/middle::trigger_pos",
             2,
         )
-        self.execution_trigger_position_holder__action_middle_2 = local.my_domain_com.my_lib.middle.MiddleExecution(
-            self.scheduler,
-            self.trace_execution,
-            "middle#2",
-        )
-        self.scheduler.submit(self.destroy_position_holder__action_middle__position_trigger_pos_2)
-        self.trigger_position_holder__action_middle_2__action_parent()
-
-    def destroy_position_holder__action_middle__position_trigger_pos_2(self):
         self.local_position_holder.particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
         ).get_interface_position(
@@ -120,13 +113,3 @@ class TestExecution:
             "holder",
             1,
         )
-
-    def trigger_position_holder__action_middle__action_parent(self):
-        if not self.join_for_trigger_position_holder__action_middle__action_parent.arrive():
-            return
-        self.execution_trigger_position_holder__action_middle.accept_action_parent()
-
-    def trigger_position_holder__action_middle_2__action_parent(self):
-        if not self.join_for_trigger_position_holder__action_middle_2__action_parent.arrive():
-            return
-        self.execution_trigger_position_holder__action_middle_2.accept_action_parent()

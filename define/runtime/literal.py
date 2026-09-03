@@ -1,7 +1,11 @@
-"""Runtime library for literal Python transpilation of Define programs."""
+"""Runtime library for literal Python transpilation of Define programs.
+
+See ``define/compiler/operation_graph_execution_design.md`` and ``define/compiler/codegen/literal/python/execution_codegen_design.md`` for the shared design.
+"""
 
 from __future__ import annotations
 
+import dataclasses
 import itertools
 import os
 import queue
@@ -22,6 +26,24 @@ type Tasks = Sequence[Task]
 type DestructionContinuation = Callable[..., None]
 
 
+@dataclasses.dataclass(slots=True)
+class Guarantee:
+    """Tasks released when one Automated Action Guarantee is published."""
+
+    inits: list[Task] = dataclasses.field(default_factory=list)
+    consumers: list[Task] = dataclasses.field(default_factory=list)
+
+    def publish(
+        self,
+        scheduler: Scheduler,
+        *publication_consumers: Task,
+    ):
+        """Init Action Executions before releasing ordinary consumers."""
+        for init in self.inits:
+            init()
+        scheduler.continue_with([*publication_consumers, *self.consumers])
+
+
 class Join:
     """A dependency join that releases its continuation on the final arrival."""
 
@@ -36,6 +58,21 @@ class Join:
     def arrive(self) -> bool:
         """Return true exactly once, on the final expected arrival."""
         return next(self._arrivals) == self._final_arrival
+
+
+@final
+class NoJoin(Join):
+    """A continuation with no other arrivals to wait for."""
+
+    def __init__(self):  # pyright: ignore[reportMissingSuperCall]
+        """Init a continuation that is always ready."""
+
+    @override
+    def arrive(self) -> bool:
+        return True
+
+
+NO_JOIN = NoJoin()
 
 
 @final

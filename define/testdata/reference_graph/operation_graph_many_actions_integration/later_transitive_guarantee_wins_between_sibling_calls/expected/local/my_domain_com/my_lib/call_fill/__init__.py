@@ -25,30 +25,27 @@ class CallFill(literal.Action):
 
 
 @final
-class CallFillGuarantees:
-    def __init__(self):
-        self.trigger_action_fill_item = local.my_domain_com.my_lib.fill_item.FillItemGuarantees()
-
-
-@final
 class CallFillExecution:
     def __init__(
         self,
         action: CallFill,
         scheduler: literal.Scheduler,
-        guarantees: CallFillGuarantees,
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = guarantees
-        self.execution_trigger_action_fill_item: local.my_domain_com.my_lib.fill_item.FillItemExecution
-        self.join_for_trigger_action_fill_item__when_empty_global_position_item = self.scheduler.create_join(2)
+        self.execution_action_fill_item: local.my_domain_com.my_lib.fill_item.FillItemExecution
+        self.execution_action_fill_item = local.my_domain_com.my_lib.fill_item.FillItemExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.fill_item.FillItem
+            ),
+            self.scheduler,
+        )
 
-    def accept_action_parent(self):
+    def on_action_parent_occupied(self):
         self.create_action_fill_item__position_trigger_pos()
 
     def accept_when_empty_global_position_item(self):
-        self.trigger_action_fill_item__when_empty_global_position_item()
+        self.execution_action_fill_item.accept_when_empty_global_position_item()
 
     def create_action_fill_item__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -56,24 +53,8 @@ class CallFillExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.execution_trigger_action_fill_item = local.my_domain_com.my_lib.fill_item.FillItemExecution(
-            self.action.on_particle.get_action(
-                local.my_domain_com.my_lib.fill_item.FillItem
-            ),
-            self.scheduler,
-            self.guarantees.trigger_action_fill_item,
-        )
-        self.scheduler.submit(self.destroy_action_fill_item__position_trigger_pos)
-        self.trigger_action_fill_item__when_empty_global_position_item()
-
-    def destroy_action_fill_item__position_trigger_pos(self):
         self.action.on_particle.get_action(
             local.my_domain_com.my_lib.fill_item.FillItem
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
-
-    def trigger_action_fill_item__when_empty_global_position_item(self):
-        if not self.join_for_trigger_action_fill_item__when_empty_global_position_item.arrive():
-            return
-        self.execution_trigger_action_fill_item.accept_when_empty_global_position_item()

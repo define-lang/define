@@ -15,15 +15,8 @@ class Test(literal.EntryPoint):
             scheduler,
             None,
             "test",
-            TestGuarantees(),
         )
-        execution.create_position_outer()
-
-
-@final
-class TestGuarantees:
-    def __init__(self):
-        self.trigger_position_outer__action_outer_destructor = local.my_domain_com.my_lib.outer_destructor.OuterDestructorGuarantees()
+        execution.on_action_parent_occupied()
 
 
 @final
@@ -33,14 +26,12 @@ class TestExecution:
         scheduler: literal.Scheduler,
         caller_execution: object | None,
         action_name: str,
-        guarantees: TestGuarantees,
     ):
         self.scheduler = scheduler
         self.trace_execution = scheduler.execution_created(
             caller_execution,
             action_name,
         )
-        self.guarantees = guarantees
         self.local_position_outer = literal.LocalPosition(
             "position<outer>",
             constraints=(
@@ -48,8 +39,10 @@ class TestExecution:
             ),
             scheduler=self.scheduler,
         )
-        self.execution_trigger_position_outer__action_outer_destructor: local.my_domain_com.my_lib.outer_destructor.OuterDestructorExecution
-        self.join_for_trigger_position_outer__action_outer_destructor__action_parent = self.scheduler.create_join(2)
+        self.execution_position_outer__action_outer_destructor: local.my_domain_com.my_lib.outer_destructor.OuterDestructorExecution
+
+    def on_action_parent_occupied(self):
+        self.create_position_outer()
 
     def create_position_outer(self):
         self.local_position_outer.create_particle()
@@ -58,15 +51,13 @@ class TestExecution:
             "outer",
             1,
         )
-        self.execution_trigger_position_outer__action_outer_destructor = local.my_domain_com.my_lib.outer_destructor.OuterDestructorExecution(
+        self.execution_position_outer__action_outer_destructor = local.my_domain_com.my_lib.outer_destructor.OuterDestructorExecution(
             self.scheduler,
             self.trace_execution,
             "outer_destructor",
-            self.guarantees.trigger_position_outer__action_outer_destructor,
         )
         self.scheduler.submit(self.destroy_position_outer)
-        self.scheduler.submit(self.trigger_position_outer__action_outer_destructor__action_parent)
-        self.trigger_position_outer__action_outer_destructor__action_parent()
+        self.execution_position_outer__action_outer_destructor.on_action_parent_occupied()
 
     def destroy_position_outer(self):
         self.local_position_outer.destroy_particle()
@@ -75,8 +66,3 @@ class TestExecution:
             "outer",
             1,
         )
-
-    def trigger_position_outer__action_outer_destructor__action_parent(self):
-        if not self.join_for_trigger_position_outer__action_outer_destructor__action_parent.arrive():
-            return
-        self.execution_trigger_position_outer__action_outer_destructor.accept_action_parent()

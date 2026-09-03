@@ -2,14 +2,45 @@
   {
     "operation": {
       "execution": {
-        "caller": null,
-        "action_name": "test"
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "middle"
       },
       "operation_name": "create",
-      "target": "/middle::trigger_pos",
+      "target": "/inner::trigger_pos",
       "occurrence": 1
     },
     "dependencies": []
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "middle"
+      },
+      "operation_name": "destroy",
+      "target": "/inner::trigger_pos",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "middle"
+        },
+        "operation_name": "create",
+        "target": "/inner::trigger_pos",
+        "occurrence": 1
+      }
+    ]
   },
   {
     "operation": {
@@ -48,14 +79,23 @@
   {
     "operation": {
       "execution": {
-        "caller": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "action_name": "middle"
+        "caller": null,
+        "action_name": "test"
       },
       "operation_name": "create",
-      "target": "/inner::trigger_pos",
+      "target": "/middle::trigger_pos",
+      "occurrence": 1
+    },
+    "dependencies": []
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "operation_name": "destroy",
+      "target": "/middle::trigger_pos",
       "occurrence": 1
     },
     "dependencies": [
@@ -156,15 +196,6 @@
           "action_name": "test"
         },
         "operation_name": "create",
-        "target": "/middle::trigger_pos",
-        "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "create",
         "target": "/parent::/child::/grandchild::/greatgrandchild",
         "occurrence": 1
       }
@@ -184,15 +215,6 @@
       "occurrence": 1
     },
     "dependencies": [
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "create",
-        "target": "/middle::trigger_pos",
-        "occurrence": 1
-      },
       {
         "execution": {
           "caller": null,
@@ -239,28 +261,7 @@
           "action_name": "test"
         },
         "operation_name": "create",
-        "target": "/middle::trigger_pos",
-        "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "create",
         "target": "/parent::/sibling",
-        "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": {
-            "caller": null,
-            "action_name": "test"
-          },
-          "action_name": "middle"
-        },
-        "operation_name": "create",
-        "target": "/inner::trigger_pos",
         "occurrence": 1
       },
       {
@@ -300,28 +301,7 @@
           "action_name": "test"
         },
         "operation_name": "create",
-        "target": "/middle::trigger_pos",
-        "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "create",
         "target": "/parent::/sibling",
-        "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": {
-            "caller": null,
-            "action_name": "test"
-          },
-          "action_name": "middle"
-        },
-        "operation_name": "create",
-        "target": "/inner::trigger_pos",
         "occurrence": 1
       },
       {
@@ -361,28 +341,7 @@
           "action_name": "test"
         },
         "operation_name": "create",
-        "target": "/middle::trigger_pos",
-        "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "create",
         "target": "/parent::/sibling",
-        "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": {
-            "caller": null,
-            "action_name": "test"
-          },
-          "action_name": "middle"
-        },
-        "operation_name": "create",
-        "target": "/inner::trigger_pos",
         "occurrence": 1
       },
       {
@@ -418,28 +377,7 @@
           "action_name": "test"
         },
         "operation_name": "create",
-        "target": "/middle::trigger_pos",
-        "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "create",
         "target": "/parent::/sibling",
-        "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": {
-            "caller": null,
-            "action_name": "test"
-          },
-          "action_name": "middle"
-        },
-        "operation_name": "create",
-        "target": "/inner::trigger_pos",
         "occurrence": 1
       },
       {
