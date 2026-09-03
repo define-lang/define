@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import pytest
-
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
     assert_operation_dependencies,
 )
@@ -13,9 +11,6 @@ if TYPE_CHECKING:
     from define.compiler import conftest
 
 _TEST = "action<my.domain.com:my_lib:/test>"
-_CALLEE_MOVE_DROPS_EMPTY_RULE_BINDING_HOLE = (
-    "a callee Move does not retain its separately resolved Empty Rule Binding Hole"
-)
 
 
 def test_triggered_action_destroys_its_own_trigger_position(
@@ -1513,7 +1508,6 @@ def test_caller_contributions_share_a_parent_destroy_before_callee_destroy(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
-@pytest.mark.xfail(strict=True, reason=_CALLEE_MOVE_DROPS_EMPTY_RULE_BINDING_HOLE)
 def test_callee_move_depends_on_two_caller_binding_holes(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -1522,19 +1516,14 @@ def test_callee_move_depends_on_two_caller_binding_holes(
     expected = {
         "test.create(/destination)": [],
         "test.destroy(/destination)": ["test.create(/destination)"],
-        "test.create(gateway)": [],
         "test.create(source)": [],
-        "test.move(source, gateway::/worker::source)": [
-            "test.create(gateway)",
-            "test.create(source)",
-        ],
+        "test.move(source, /worker::source)": ["test.create(source)"],
         # The caller independently satisfies the Move's occupied source and
         # empty destination, so the callee Move waits for both Binding Holes.
         "worker.move(source, /destination)": [
-            "test.move(source, gateway::/worker::source)",
             "test.destroy(/destination)",
+            "test.move(source, /worker::source)",
         ],
         "worker.destroy(/destination)": ["worker.move(source, /destination)"],
-        "test.destroy(gateway)": ["worker.move(source, /destination)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)

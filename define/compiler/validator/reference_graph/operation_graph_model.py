@@ -147,11 +147,17 @@ class ParticleChildOperations:
             snapshots[position] = ParticleChildOperations(operations)
         return snapshots
 
-    def all_precede(self, operation: MoveNode) -> bool:
-        """Return whether every child operation precedes ``operation``."""
-        return not self.operations or (
-            self.operations[0].operation.operation_order < operation.operation_order
-        )
+    def without_operations_preceding(
+        self,
+        operation: MoveNode | MoveGuaranteeNode,
+    ) -> ParticleChildOperations:
+        """Exclude child operations that precede ``operation``."""
+        for index, child_operation in enumerate(self.operations):
+            if child_operation.operation.operation_order < operation.operation_order:
+                if index == 0:
+                    return NO_CHILD_OPERATIONS
+                return ParticleChildOperations(self.operations[:index])
+        return self
 
     def child_position_set(self) -> frozenset[tuple[str, ...]]:
         """Return the relative child positions with preceding operations."""

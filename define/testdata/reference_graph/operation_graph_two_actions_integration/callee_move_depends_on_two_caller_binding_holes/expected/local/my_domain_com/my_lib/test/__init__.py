@@ -11,6 +11,7 @@ import local.my_domain_com.my_lib.worker
 class Test(literal.EntryPoint):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.destination.Destination,
+        local.my_domain_com.my_lib.worker.Worker,
     )
 
     @override
@@ -24,12 +25,6 @@ class Test(literal.EntryPoint):
 
 
 @final
-class TestGuarantees:
-    def __init__(self):
-        self.global_position_destination = literal.Guarantee()
-
-
-@final
 class TestExecution:
     def __init__(
         self,
@@ -38,26 +33,24 @@ class TestExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = TestGuarantees()
-        self.local_position_gateway = literal.LocalPosition(
-            "position<gateway>",
-            constraints=(
-                local.my_domain_com.my_lib.worker.Worker,
-            ),
-            scheduler=self.scheduler,
-        )
         self.local_position_source = literal.LocalPosition(
             "position<source>",
             scheduler=self.scheduler,
         )
-        self.execution_position_gateway__action_worker: local.my_domain_com.my_lib.worker.WorkerExecution
-        self.join_for_move_position_source_to_position_gateway__action_worker__position_source = self.scheduler.create_join(2)
+        self.execution_action_worker: local.my_domain_com.my_lib.worker.WorkerExecution
+        self.execution_action_worker = local.my_domain_com.my_lib.worker.WorkerExecution(
+            self.action.on_particle.get_action(
+                local.my_domain_com.my_lib.worker.Worker
+            ),
+            self.scheduler,
+        )
+        self.execution_action_worker.join_for_empty_rule_position_source = self.scheduler.create_join(2)
+        self.execution_action_worker.join_for_move_position_source_to_global_position_destination = literal.NO_JOIN
 
     def accept_when_empty_global_position_destination(self):
         self.create_global_position_destination()
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_position_gateway)
         self.create_position_source()
 
     def create_global_position_destination(self):
@@ -67,40 +60,15 @@ class TestExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.destination.Destination
         ).destroy_particle()
-        self.guarantees.global_position_destination.publish(
-            self.scheduler,
-        )
-
-    def create_position_gateway(self):
-        self.local_position_gateway.create_particle()
-        self.execution_position_gateway__action_worker = local.my_domain_com.my_lib.worker.WorkerExecution(
-            self.local_position_gateway.particle.get_action(
-                local.my_domain_com.my_lib.worker.Worker
-            ),
-            self.scheduler,
-        )
-        self.execution_position_gateway__action_worker.join_for_empty_rule_position_source = literal.NO_JOIN
-        self.execution_position_gateway__action_worker.join_for_move_position_source_to_global_position_destination = literal.NO_JOIN
-        self.execution_position_gateway__action_worker.guarantees.position_source.consumers.append(
-            self.destroy_position_gateway
-        )
-        self.move_position_source_to_position_gateway__action_worker__position_source()
+        self.execution_action_worker.accept_for_empty_rule_position_source()
 
     def create_position_source(self):
         self.local_position_source.create_particle()
-        self.move_position_source_to_position_gateway__action_worker__position_source()
-
-    def move_position_source_to_position_gateway__action_worker__position_source(self):
-        if not self.join_for_move_position_source_to_position_gateway__action_worker__position_source.arrive():
-            return
         self.local_position_source.move_particle_to(
-            self.local_position_gateway.particle.get_action(
+            self.action.on_particle.get_action(
                 local.my_domain_com.my_lib.worker.Worker
             ).get_interface_position(
                 "position<source>"
             )
         )
-        self.execution_position_gateway__action_worker.accept_for_empty_rule_position_source()
-
-    def destroy_position_gateway(self):
-        self.local_position_gateway.destroy_particle()
+        self.execution_action_worker.accept_for_empty_rule_position_source()

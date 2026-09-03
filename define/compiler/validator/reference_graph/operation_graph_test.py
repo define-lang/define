@@ -311,20 +311,3 @@ def test_particle_child_operations_keeps_only_newest_comparable_operations(
     )
 
     assert set(child_operations.operations) == expected_operations
-
-
-def test_particle_child_operations_all_precede():
-    child_operations = (
-        operation_graph_model.ParticleChildOperations.from_preceding_operations(
-            (
-                (("position<a>",), _operation_node(2)),
-                (("position<b>",), _operation_node(4)),
-            )
-        )
-    )
-
-    assert child_operations.all_precede(_operation_node(5))
-    assert not child_operations.all_precede(_operation_node(4))
-    assert operation_graph_model.ParticleChildOperations().all_precede(
-        _operation_node(0)
-    )

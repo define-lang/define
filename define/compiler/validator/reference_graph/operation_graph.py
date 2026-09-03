@@ -521,9 +521,13 @@ class OperationGraphBuilder:
         # A move that brought the whole particle here already depends on every
         # older child operation, so retaining them would add redundant edges.
         if isinstance(
-            operation, operation_graph_model.MoveNode
-        ) and child_operations.all_precede(operation):
-            child_operations = operation_graph_model.NO_CHILD_OPERATIONS
+            operation,
+            (
+                operation_graph_model.MoveNode,
+                operation_graph_model.MoveGuaranteeNode,
+            ),
+        ):
+            child_operations = child_operations.without_operations_preceding(operation)
         return operation_graph_model.RequirementSatisfaction(
             operation, child_operations
         )

@@ -86,7 +86,7 @@ class TestExecution:
             self.trace_execution,
             "worker#2",
         )
-        self.execution_position_gateway__action_worker_2.join_for_empty_rule_position_item = self.scheduler.create_join(3)
+        self.execution_position_gateway__action_worker_2.join_for_empty_rule_position_item = self.scheduler.create_join(2)
         self.execution_position_gateway__action_worker_2.join_for_empty_rule_position_trigger_pos = literal.NO_JOIN
         self.execution_position_gateway__action_worker_2.join_for_move_position_item_to_position_holder = literal.NO_JOIN
         self.execution_position_gateway__action_worker_2.join_for_destroy_position_trigger_pos = literal.NO_JOIN
@@ -128,8 +128,7 @@ class TestExecution:
             "gateway::/worker::item::/a",
             1,
         )
-        self.scheduler.submit(self.execution_position_gateway__action_worker.accept_for_empty_rule_position_item)
-        self.execution_position_gateway__action_worker_2.accept_for_empty_rule_position_item()
+        self.execution_position_gateway__action_worker.accept_for_empty_rule_position_item()
 
     def create_position_gateway__action_worker__position_trigger_pos(self):
         self.local_position_gateway.particle.get_action(

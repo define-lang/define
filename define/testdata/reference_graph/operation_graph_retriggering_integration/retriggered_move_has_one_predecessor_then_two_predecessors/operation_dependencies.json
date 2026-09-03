@@ -281,15 +281,6 @@
           "action_name": "test"
         },
         "operation_name": "create",
-        "target": "gateway::/worker::item::/a",
-        "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "create",
         "target": "gateway::/worker::item::/c",
         "occurrence": 1
       },

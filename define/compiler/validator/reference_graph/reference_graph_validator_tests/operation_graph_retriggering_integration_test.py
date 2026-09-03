@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import pytest
-
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
     assert_operation_dependencies,
 )
@@ -13,7 +11,6 @@ if TYPE_CHECKING:
     from define.compiler import conftest
 
 _TEST = "action<my.domain.com:my_lib:/test>"
-_RETRIGGERED_EMPTY_RULE_IS_NOT_TRANSITIVELY_MINIMAL = "a retriggered Empty Rule retains an earlier Unchanged Guarantee on which its new child operations already depend"
 
 
 def test_action_that_destroys_its_own_trigger_position_is_triggered_twice(
@@ -243,9 +240,6 @@ def test_retriggered_action_uses_prior_unchanged_interface_guarantee(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
-@pytest.mark.xfail(
-    strict=True, reason=_RETRIGGERED_EMPTY_RULE_IS_NOT_TRANSITIVELY_MINIMAL
-)
 def test_retriggered_move_has_one_predecessor_then_two_predecessors(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -280,9 +274,9 @@ def test_retriggered_move_has_one_predecessor_then_two_predecessors(
         "test.destroy(gateway::/worker::item::/b)": ["worker#2.move(holder, item)"],
         "test.destroy(gateway::/worker::item::/c)": ["worker#2.move(holder, item)"],
         "test.destroy(gateway::/worker::item)": [
-            "test.destroy(gateway::/worker::item::/a)",
-            "test.destroy(gateway::/worker::item::/b)",
             "test.destroy(gateway::/worker::item::/c)",
+            "test.destroy(gateway::/worker::item::/b)",
+            "test.destroy(gateway::/worker::item::/a)",
         ],
         "test.destroy(gateway)": [
             "test.destroy(gateway::/worker::item)",
