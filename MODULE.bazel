@@ -45,9 +45,7 @@ git_override(
 
 git_override(
     module_name = "rules_lean",
-    commit = "6abaa70b3b917304752719ae539c59eacdaa521c",
-    patch_strip = 1,
-    patches = ["//patches:rules_lean_silent_axiom_audit.patch"],
+    commit = "e3b343ff799554a1e1a1d158d4a96eac5cdaa3ea",
     remote = "https://github.com/tomato-bazel/rules_lean.git",
 )
 
