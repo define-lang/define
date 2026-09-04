@@ -7,23 +7,21 @@
 
 ## Problems
 
-Due to the way that particle destruction is defined in
-[DLP 31](00031-destroying-particles.md), there is no way to guarantee that any
-sort of "cleanup" code will run when you destroy a particle. This happens
-because actions that a particle has are removed before the particle is
-destroyed, so there can't be any actions that reference the position by the time
-it is removed.
+Since [DLP 31](00031-destroying-particles.md) banned actions that trigger
+arbitrarily on the absence of a particle, there is no way to guarantee that any
+sort of "cleanup" code will run when you destroy a particle.
 
 However, it's often necessary to guarantee that some action happens when a
 particle is destroyed. For example, if you have a library that generates
 temporary files, you need to be confident the file will be deleted when the
-program ends. If you open a socket, you need to close it. And so forth.
+program ends. If you open a socket, you need to close it. If you have a buffer,
+you need to flush it. And so forth.
 
 Most programming languages handle this with "destructors," which are functions
 that run right before an object is destroyed. They involve doing all the cleanup
 for a whole class.
 
-### The Destruction Cascade Causes a Problem
+### Destruction Ordering
 
 We have a particularly special problem. Imagine this program:
 
@@ -57,7 +55,7 @@ define the potential position<mv:example.com:example:/buffer> {
     # need to write to the disk before the program terminates.
 }
 
-define the potential position<mv:example.com:example:/temp_file/create> {
+define the potential action<mv:example.com:example:/temp_file/create> {
     it also assigns the position</file_name>.
     it also assigns the position</file_handle>.
 
@@ -94,7 +92,7 @@ define the potential position<mv:example.com:example:/temp_file> {
 
 define the position<x> {
     it may only contain particles where {
-        it has the position<mv:example.com:example:/temp_file>.
+        it has the position</temp_file>.
     }
 }
 create a particle in position<x>.
@@ -103,8 +101,7 @@ create a particle in position<x>::action</temp_file/create>::position<run>.
 destroy the particle in position<x>.
 ```
 
-This results in a dependency tree that looks like this, respecting the order in
-which everything was assigned:
+This results in a dependency tree that looks like this:
 
 ```
 position<x>
@@ -124,27 +121,8 @@ position<x>
       -- position<completed>
 ```
 
-According to [DLP 31](00031-destroying-particles.md), that destruction statement
-cascades like this:
-
-1. Destroy the particle in `action</temp_file/create>::position<completed>`.
-2. Destroy the particle in `action</temp_file/create>::position<run>`.
-3. Unassign `action</temp_file/create>` from
-   `position<x>::position</temp_file>`.
-4. Unassign `action</file_handle/construct>` from `position</file_handle>`.
-5. Destroy the particle in `position</file_handle>::position</file_system>`.
-6. Unassign `position</file_system>` from `position</file_handle>`.
-7. Destroy the particle in `position</file_handle>`.
-8. Unassign `position</file_handle>` from `position<x>::position</temp_file>`.
-9. Destroy the particle in `position</file_name>`.
-10. Unassign `position</file_name>` from `position<x>::position</temp_file>`.
-11. Unassign `action</temp_file/construct>` from
-    `position<x>::position</temp_file>`.
-12. Destroy the particle in `position</buffer>`.
-13. Unassign `position</buffer>` from `position<x>::position</temp_file>`.
-14. Destroy the particle in `position<x>::position</temp_file>`.
-15. Unassign `position</temp_file>` from `position<x>`.
-16. Destroy the particle in `position<x>`.
+According to [DLP 31](00031-destroying-particles.md), everything gets destroyed
+simultaneously.
 
 However, during destruction, we need to do the following:
 
@@ -155,12 +133,8 @@ However, during destruction, we need to do the following:
 (Yes, it doesn't make sense to flush the file just to delete it, but pretend
 that we need to do that for some reason in our program.)
 
-Those three things have to happen in exactly that order, but the cascade doesn't
-indicate that they depend on each other at all. The only thing that knows all
-three of those positions exist is `position</temp_file>`. However, by the time
-we get to destroying the particle in `position</temp_file>`, it no longer has
-any qualities and so it can't _know_ about those other positions in order to use
-them for cleanup.
+Those three things have to happen in exactly that order, but we destroy trees of
+particles like that simultaneously and instantaneously.
 
 ### Local Destructors
 
@@ -213,37 +187,62 @@ We add a new trigger condition that actions can check:
 We refer to this as a "destructor condition," and any action that checks this
 condition as a "destructor."
 
-Actions containing this condition may check any other condition they wish, as
-well, which allows for the implementation of conditional destructors.
-
 Like constructors, destructors are ordinary actions with normal Action Statement
-Blocks, and so they may _not_ refer to the particle itself.
+Blocks, and so they may _not_ refer to the particle that they are assigned to.
 
 ### When It Is Checked
 
-During the destruction cascade defined in
-[DLP 31](00031-destroying-particles.md), destruction conditions are checked
-before the particles of an action would be destroyed. If the action would
-trigger, it is logically triggered at that point during the cascade, and should
-be _verified_ as though that is when it triggered. (However, its actual moment
-of triggering at runtime is determined in the normal way that Define determines
-when actions trigger, described in a later proposal.)
+Destructors start when the particle they are assigned to is about to be
+destroyed. More technically, this means that the destructor condition is checked
+immediately before destroying a particle that has a destructor on it.
 
-This is an exception to the rule that actions may not trigger during the
-cascade.
+This means, in the simplest case, that all destructors trigger simultaneously
+during the destruction of a particle and its transitive children.
 
-For clarity, this means destructors will trigger in the reverse order they were
-assigned to a particle (the cascade inherently behaves that way).
+Destructors may also trigger other actions, which trigger normally.
 
 Note that these semantics make constructors and destructors somewhat mirror each
 other: constructors run _after_ a particle is _created_, and destructors run
 _before_ a particle is _destroyed_. So there's always a particle taking an
 action.
 
+### Destructor Ordering
+
+Destructors create a dependency order during destruction that imposes a partial
+order upon particle destruction.
+
+**Destructors always run before the particles they interact with are
+destroyed.**
+
+Note that use of interface positions on destructors should be rare, however. The
+more common ordering mechanism for destructors will be through implied positions
+(they will run before any implied position they interact with is destroyed,
+which could include child positions of implied positions if the destructor moves
+around or destroys parent particles). In other words, if a destructor implies
+`position</buffer>` then `position</buffer>` cannot be destroyed until that
+destructor completes or no longer needs to access `position</buffer>`. This is
+how Define programs implement destruction-time required dependencies and solve
+the problems of destruction ordering.
+
+Interestingly, destructors do _not_ have to run before their parent particle is
+destroyed. Conceptually, destructors run _simultaneously_ with the destruction
+of their parent particle. As a result of this rule, this often means that
+destructors on child positions can run simultaneously with destructors on parent
+positions.
+
+Even when a destructor depends on an implied position, destructors on the
+children of that implied position may run simultaneously with the destructor on
+the parent position, due to the rules above.
+
+Exactly _how_ this ordering manifests in Define will be covered by a later
+proposal, but the above are the logical rules for how it works for the sake of
+verifying programs.
+
 ### Static Analysis Requirement
 
 The compiler must be able to know statically, during compilation, exactly when
-any destructor will trigger. This must be possible without super-linear growth
+any destructor will trigger. (It is fine for that timing to be "simultaneously
+with all this other stuff.") This must be possible without super-linear growth
 of complexity or memory usage for large programs when compiling.
 
 ## A Real Program
@@ -277,10 +276,9 @@ define the potential position<mv:example.com:example:/temp_file> {
 }
 ```
 
-That destructor fires at the very beginning of the cascade---before Step 1 of
-the sequence shown in the Problems section---because `/temp_file/destroy` is the
-last action assigned to the particle and is therefore the first quality
-unassigned during destruction.
+Because this destructor depends on `position</buffer>`,
+`position</file_handle>`, and `position</file_name>`, it is guaranteed to be run
+before those particles are destroyed.
 
 Local particles would be destroyed exactly the same way---by defining a
 potential action and assigning it to that particle. That does mean that anything
@@ -298,12 +296,12 @@ to be able to assign destructors to _particles_, not positions.
 The destructor semantics for position-defined destructors were also very complex
 (you can see them in the commit history of this doc.)
 
-This solution is not only elegant (it doesn't really have to change the cascade
-at all), it is also tremendously more flexible than the destructor system of
-most programming languages. You can specify multiple destructors. You can re-use
-one destructor's code across multiple different "types." You can have
-conditional destructors that only fire when the action is in the state where it
-actually needs the destructor.
+This solution is not only elegant (it changes destruction ordering in the
+minimal fashion necessary), it is also tremendously more flexible than the
+destructor system of most programming languages. You can specify multiple
+destructors. You can re-use one destructor's code across multiple different
+"types." You can have conditional destructors that only fire when the action is
+in the state where it actually needs the destructor.
 
 The one trade-off is that you have to add the action to any position you need
 destroyed in that way. However, you can easily add it to a global position and
@@ -312,15 +310,16 @@ on it.
 
 ## Forward Compatibility
 
-This is a very hard decision to walk back, because we are allowing complex
-trigger conditions in actions. However, I am relatively convinced that this
-solution is the only reasonable logical solution (that is, there actually are no
-other options that make sense for Define, for destructor implementation).
+This is a very hard decision to walk back, because we are allowing a type of
+action with very specific semantics. However, I am relatively convinced that
+this solution is the only reasonable logical solution (that is, there actually
+are no other options that make sense for Define, for destructor implementation).
 
-Now, theoretically, provided we enforce that destructor triggering is always
-statically analyzable, we can still convert Define programs into using some
-other system, but it could get pretty messy, because we would have to make sure
-the destructors trigger under the exact same conditions.
+If we change our design for destructors in a way that enforces some other
+ordering in the future, we could refactor existing programs into that order. It
+would change their functionality, but that would be intentional. We would still
+have enough information in existing programs to know what the minimal safe order
+is, due to interface/implied position dependencies.
 
 ## Refactoring Existing Systems
 
@@ -328,6 +327,8 @@ To my knowledge, this system is significantly more powerful than the destructor
 syntax available in any other programming language. As such, we should be able
 to implement the destructor syntax of every other language. The one thing we
 wouldn't necessarily do is implement the destructor _semantics_ of those
-languages, because we have very specific destruction orders. As such,
+languages, because we have very specific destruction semantics. As such,
 refactoring existing programming languages into Define might require some
-explicit destructor behavior.
+explicit destructor behavior. However, it's also possible that we have more
+rigorous destructor semantics than most languages and thus our safety guarantees
+are better at performing the _intent_ of destructors in other languages.
