@@ -1357,72 +1357,37 @@ destroy_particle_statement =
     "destroy the particle in", " ", position_reference, terminator ;
 ```
 
-### Cascading Destruction
+### Simultaneous Transitive Destruction
 
-When a particle is destroyed, all of the particles in the positions it defines
-are also destroyed.
+When a particle is destroyed, every particle in its transitive child positions
+is also destroyed.
 
-Qualities are unassigned from the particle in reverse order to how they were
-assigned to it. (Because requirement statements assign qualities topologically
-in order according to their dependency tree, qualities are inherently removed in
-reverse topological order.)
-
-Before a position quality is unassigned, its particle is destroyed.
-
-All position constraints defined by a position's definition are suspended at the
-start of destruction until destruction completes.
-
-Before removing an action from a particle, all particles that are still
-contained in interface positions of that action are destroyed in reverse order
-of when the positions were defined. Once removal of an action begins (and thus
-its defined particles must be destroyed), the action may no longer trigger or
-check its conditions.
-
-Destruction completes as though it were a written series of unassignment and
-destruction statements. Any action that triggers due to destruction of a child
-particle fires immediately after that child's destruction is complete. This
-means that a child particle's destruction may trigger an action before the
-destruction of the parent particle is complete.
-
-Actions that would trigger due to the removal of a quality from a particle do
-not fire due to the automatic quality removal process that happens during
-destruction.
-
-The compiler may optimize this process and does not have to actually unassign
-every quality, as long as it ensures identical behavior occurs as if it had done
-so.
+The particle and its transitive child particles are logically destroyed
+simultaneously.
 
 ### Automatic Destruction
 
 Particles that can no longer possibly be referenced are automatically destroyed.
 
-At the end of an Action Statements Block, any particles still existing in
+At the end of an Action Statements Block, all particles still existing in
 positions that are only defined locally within that Action Statements Block are
-automatically destroyed in reverse order of their position definition
-statements.
+simultaneously automatically destroyed.
 
-The compiler behaves as through there were destruction statements at the end of
-an Action Statements Block to implement this. If the compiler is uncertain about
-whether a position still contains a particle, it only destroys the particle if
-one is present.
+The compiler treats automatic destruction as occurring at the end of the Action
+Statements Block. If the compiler is uncertain whether a position still contains
+a particle, it destroys the particle only when one is present.
 
 ### Optimization of Destruction
 
-When the compiler knows that destruction is free of side effects (there are no
-action triggers watching for the destruction of that particle, including no
-triggers watching any of the other positions that particle transitively
-defines), the compiler may automatically destroy local particles within an
-Action Statements Block the instant they are no longer relevant.
-
-When safe, the compiler may destroy multiple particles simultaneously (in
-parallel).
+When destruction is free of side effects, the compiler may automatically destroy
+a local particle as soon as it can no longer be referenced.
 
 ## Destructors
 
 Proposals:
 
 - [DLP 34: Destructors](../proposals/00034-destructors.md)
-- [DLP 41: Modular Destructor Analysis](../proposals/00041-modular-destructor-analysis.md)
+- [DLP 41: Modular Destruction Analysis](../proposals/00041-modular-destruction-analysis.md)
 
 The Destructor Condition Statement is `this particle is being destroyed`
 followed by a statement terminator. An action whose Trigger Conditions Block
@@ -1441,20 +1406,16 @@ particle is in a particular state.
 
 ### When Destructors Are Checked
 
-During the destruction cascade described in
-[Cascading Destruction](#cascading-destruction), the compiler checks destructor
-conditions immediately before the particles in the interface position of the
-action would be destroyed, and triggers any destructors assigned to that
-particle. Destructors behave identically to normally triggered actions, in terms
-of their concurrency behavior.
+Immediately before a particle is destroyed, the compiler triggers every
+destructor assigned to the particle. Destructors then run as an ordinary action.
 
-This is an exception to the rule that actions may not trigger during the
-cascade.
+### Destructor Action Guarantees
 
-### Destructors Produce No Guarantees
-
-Upon completion, a destructor must leave all contracted positions in the state
-they were in when the action started.
+For every contracted position, a destructor has an Action Guarantee that the
+position's state upon completion is identical to its state when the destructor
+started. An occupied position contains the same particle in the same position
+with the same qualities. These unchanged Action Guarantees are the complete set
+of Action Guarantees produced by a destructor.
 
 ### Destructor Requirement Verification
 
@@ -1492,15 +1453,14 @@ A Destruction Contract records that the specific particle that occupied the
 contracted position was destroyed, not merely that the position became empty.
 This is called a Destruction Fact.
 
-When an action destroys more than one particle in its contracted positions, the
-contract records those destructions in the order they were executed.
+Every explicit or automatic destruction of a particle in a contracted position
+has its own Destruction Fact.
 
 #### Child State
 
-Before destroying a particle in a contracted position, the compiler takes a
-snapshot of the occupancy state of all of that particle's transitive child
-positions. This snapshot is recorded in the Destruction Contract and is called
-the Child State.
+For each Destruction Fact, the compiler records the known occupancy state of the
+destroyed particle's transitive child positions immediately before destruction
+begins. This is called the Child State.
 
 An action may not know the full state of every transitive child position,
 because it may not be aware of every quality on the destroyed particle. Each
@@ -1510,12 +1470,16 @@ the parent particle was destroyed.
 
 #### When Destructors in Contracts Are Verified
 
-A destructor is verified as soon as the compiler knows the destructor is
-assigned to a particle and knows the state of all positions that destructor has
-[Automatic Action Requirements](#automatic-action-requirements) on. When the
-compiler is missing either of these pieces of information, it passes on any
-not-yet-verified destructor to an action's callers for verification, as part of
-the Destruction Contract.
+A destructor is verified as soon as the compiler knows that it is assigned to a
+particle and knows the state of every position on which the destructor has an
+[Automatic Action Requirement](#automatic-action-requirements). The Destruction
+Contract carries each remaining destructor to the action's callers, until its
+requirements can be verified.
+
+When the Child State does not provide a required position's state, the action in
+which the destructor is assigned to the particle gains the corresponding
+Automatic Action Requirement. That requirement is propagated through callers
+according to the ordinary rules for Automatic Action Requirements.
 
 ## Dead Code
 
@@ -1601,9 +1565,9 @@ Define are preserved.
 
 ### The Particle Operation Dependency Graph
 
-Every Create Particle Statement, Move Particle Statement, and Destroy Particle
-Statement is a "Particle Operation." Create and Destroy each operate on a single
-position, and Move operates on both of its positions.
+Every Create Particle Statement, Move Particle Statement, and individual
+particle destruction is a "Particle Operation." Create and Destroy each operate
+on a single position, and Move operates on both of its positions.
 
 The compiler constructs a directed acyclic graph of dependencies between
 Particle Operations. These rules inherently create a transitively-reduced
