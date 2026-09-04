@@ -6,10 +6,10 @@ from __future__ import annotations
 import shutil
 from dataclasses import dataclass, replace
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Literal, cast
 
 import pytest
-from hypothesis import HealthCheck, given, settings
+from hypothesis import HealthCheck, example, given, settings
 from hypothesis import strategies as st
 
 from define.compiler import driver, exceptions, parser, parser_exceptions
@@ -24,10 +24,7 @@ _AUTHORITY_DOMAINS = ["example.com", "define-lang.org", "test.io", "my.domain.co
 _UNIVERSE_NAMES = ["my_lib", "core", "fuzz_test", "std"]
 _PATH_SEGMENTS = ["path", "hello", "sub", "dir", "leaf", "foo", "bar"]
 _LOCAL_NAMES = ["x", "my_pos", "local", "inner", "_tmp", "pos2", "node_1"]
-_CHAIN_LOCALS_FOR_CREATE = ["src_pos", "src_pos2", "src_pos3", "src_pos4"]
 _MOVE_POSITION_NAMES = ["mv_a", "mv_b", "mv_c", "mv_d", "mv_e"]
-_ACTION_WITH_INNER_FILE = "action_with_inner.dfn"
-_INNER_POS_IN_ACTION = "inner_pos"
 _VALID_ROOT_UNIVERSES = [
     "mv:define-lang.org:fuzz_test",
     "mv:define-lang.org:fuzz_root",
@@ -89,6 +86,7 @@ def _action_simple(universe_name: str, rel_def_file: str) -> str:
         f"    it happens when {{\n"
         f"        the position<_noop> has a particle.\n"
         f"    }} and it does {{\n"
+        f"        destroy the particle in position<_noop>.\n"
         f"        define the position<__noop>.\n"
         f"        create a particle in position<__noop>.\n"
         f"    }}\n"
@@ -223,13 +221,15 @@ def _action_block_with_name(
     include_action_close_comment: bool = False,
     blank_lines_in_blocks: bool = False,
     trigger_condition_ref: str = "position<run>",
+    trigger_kind: Literal["presence", "constructor", "destructor"] = "presence",
     quality_implications: list[tuple[str, str]] | None = None,
 ) -> str:
     lines = [f"define the potential action<{action_name}> {{"]
     if quality_implications:
         for typed_kind, impl_name in quality_implications:
             lines.append(f"{indent}it also assigns the {typed_kind}<{impl_name}>.")
-    lines.append(f"{indent}define the position<run>.")
+    if trigger_kind == "presence":
+        lines.append(f"{indent}define the position<run>.")
     for local in outer_locals:
         lines.extend(local.rstrip("\n").splitlines())
 
@@ -237,7 +237,12 @@ def _action_block_with_name(
     if include_trigger_comment:
         trigger_line += " # trigger comment"
     lines.append(trigger_line)
-    lines.append(f"{indent}{indent}the {trigger_condition_ref} has a particle.")
+    if trigger_kind == "constructor":
+        lines.append(f"{indent}{indent}this particle is created.")
+    elif trigger_kind == "destructor":
+        lines.append(f"{indent}{indent}this particle is being destroyed.")
+    else:
+        lines.append(f"{indent}{indent}the {trigger_condition_ref} has a particle.")
     if blank_lines_in_blocks:
         lines.append("")
     action_open = f"{indent}}} and it does {{"
@@ -265,6 +270,7 @@ def _action_with_block(
     include_action_close_comment: bool = False,
     blank_lines_in_blocks: bool = False,
     trigger_condition_ref: str = "position<run>",
+    trigger_kind: Literal["presence", "constructor", "destructor"] = "presence",
     quality_implications: list[tuple[str, str]] | None = None,
 ) -> str:
     return _action_block_with_name(
@@ -276,6 +282,7 @@ def _action_with_block(
         include_action_close_comment=include_action_close_comment,
         blank_lines_in_blocks=blank_lines_in_blocks,
         trigger_condition_ref=trigger_condition_ref,
+        trigger_kind=trigger_kind,
         quality_implications=quality_implications,
     )
 
@@ -398,16 +405,14 @@ def position_definitions(draw: st.DrawFn) -> str:
 @st.composite
 def action_definitions_simple(draw: st.DrawFn) -> str:
     name = draw(global_names())
-    return (
-        f"define the potential action<{name}> {{\n"
-        f"    define the position<_noop>.\n"
-        f"    it happens when {{\n"
-        f"        the position<_noop> has a particle.\n"
-        f"    }} and it does {{\n"
-        f"        define the position<__noop>.\n"
-        f"        create a particle in position<__noop>.\n"
-        f"    }}\n"
-        f"}}\n"
+    return _action_block_with_name(
+        name,
+        trigger_kind=draw(st.sampled_from(["presence", "constructor", "destructor"])),
+        outer_locals=[],
+        inner_locals=[
+            _local_position_simple("__noop", indent="        "),
+            _create_particle_statement("position<__noop>", indent="        "),
+        ],
     )
 
 
@@ -478,6 +483,7 @@ def action_definitions_with_block(draw: st.DrawFn) -> str:
             _destroy_particle_statement(position_reference, indent=inner_indent)
         )
     trigger_condition_ref = draw(create_particle_references())
+    inner_locals = list(draw(st.permutations(inner_locals)))
     return _action_block_with_name(
         name,
         outer_locals=outer_locals,
@@ -487,11 +493,11 @@ def action_definitions_with_block(draw: st.DrawFn) -> str:
         include_action_close_comment=include_action_close_comment,
         blank_lines_in_blocks=blank_lines_in_blocks,
         trigger_condition_ref=trigger_condition_ref,
+        trigger_kind=draw(st.sampled_from(["presence", "constructor", "destructor"])),
     )
 
 
 _PROJECT_FQUN = "mv:define-lang.org:fuzz_test"
-_VALID_NAME = f"{_PROJECT_FQUN}:/test"
 _ANOTHER_VALID_PATH = "/another_test"
 _THIRD_VALID_PATH = "/third_test"
 _VALID_REFERENCE_PATHS = [_ANOTHER_VALID_PATH, _THIRD_VALID_PATH]
@@ -532,53 +538,24 @@ def _implication_chain_reference(typed_kind: str, name: str) -> str:
     return f"action<{name}>::position<_noop>"
 
 
-def _valid_local_definition_strategy(
-    local_name: str, indent: str
-) -> st.SearchStrategy[str]:
-    return st.one_of(
-        st.just(_local_position_simple(local_name, indent=indent)),
-        _valid_reference_options().map(
-            lambda reqs: _local_position_with_requirements(
-                local_name, reqs, indent=indent
-            )
-        ),
-    )
-
-
-@st.composite
-def _valid_create_spec(
-    draw: st.DrawFn,
-    *,
+def _local_position_with_used_constraints(
     local_name: str,
+    requirements: list[tuple[str, str]],
+    *,
     indent: str,
-    allow_target_another_test: bool,
-    allow_target_inner_pos: bool,
-) -> tuple[str, str | None]:
-    kinds = ["local_direct"]
-    if allow_target_another_test:
-        kinds.append("local_chained")
-    if allow_target_inner_pos:
-        kinds.append("local_chained_via_action")
-    kind = draw(st.sampled_from(kinds))
-    if kind == "local_direct":
-        return (
-            f"position<{local_name}>",
-            _local_position_simple(local_name, indent=indent),
+) -> str:
+    statements = [
+        _local_position_with_requirements(local_name, requirements, indent=indent),
+        _create_particle_statement(f"position<{local_name}>", indent=indent),
+    ]
+    for kind, name in requirements:
+        child = _implication_chain_reference(kind, name)
+        statements.append(
+            _create_particle_statement(
+                f"position<{local_name}>::{child}", indent=indent
+            )
         )
-    action_path = _definition_path(_ACTION_WITH_INNER_FILE)
-    if kind == "local_chained_via_action":
-        return (
-            f"position<{local_name}>::action<{action_path}>::position<{_INNER_POS_IN_ACTION}>",
-            _local_position_with_requirements(
-                local_name, [("action", action_path)], indent=indent
-            ),
-        )
-    return (
-        f"position<{local_name}>::position<{_ANOTHER_VALID_PATH}>",
-        _local_position_with_requirements(
-            local_name, [("position", _ANOTHER_VALID_PATH)], indent=indent
-        ),
-    )
+    return "".join(statements)
 
 
 _TRAILING_COMMENT_TAGS = [
@@ -627,170 +604,107 @@ def _decorated_source(draw: st.DrawFn, source: str) -> str:
 
 
 @st.composite
+def particle_operation_sequences(draw: st.DrawFn) -> list[str]:
+    occupied: set[str] = set()
+    defined: set[str] = set()
+    statements: list[str] = []
+    for _ in range(draw(st.integers(min_value=1, max_value=40))):
+        empty_names = [name for name in _MOVE_POSITION_NAMES if name not in occupied]
+        occupied_names = [name for name in _MOVE_POSITION_NAMES if name in occupied]
+        kinds: list[str] = []
+        if empty_names:
+            kinds.append("create")
+        if occupied_names:
+            kinds.append("destroy")
+            if empty_names:
+                kinds.append("move")
+        kind = draw(st.sampled_from(kinds))
+        if kind in ("create", "move"):
+            target = draw(st.sampled_from(empty_names))
+            if target not in defined:
+                statements.append(_local_position_simple(target, indent="        "))
+                defined.add(target)
+            if kind == "create":
+                statements.append(
+                    _create_particle_statement(f"position<{target}>", indent="        ")
+                )
+            else:
+                source = draw(st.sampled_from(occupied_names))
+                statements.append(
+                    _move_particle_statement(
+                        f"position<{source}>", f"position<{target}>", indent="        "
+                    )
+                )
+                occupied.remove(source)
+            occupied.add(target)
+        else:
+            source = draw(st.sampled_from(occupied_names))
+            statements.append(
+                _destroy_particle_statement(f"position<{source}>", indent="        ")
+            )
+            occupied.remove(source)
+    return statements
+
+
+@st.composite
 def valid_sources(draw: st.DrawFn) -> str:
-    include_position = draw(st.booleans())
-    include_action = draw(st.booleans())
-    if not include_position and not include_action:
-        include_position = True
-
     fragments: list[str] = []
-    if include_position:
-        position_kind = draw(st.sampled_from(["simple", "constrained"]))
-        if position_kind == "simple":
-            fragments.append(f"define the potential position<{_VALID_NAME}>.\n")
+    if draw(st.booleans()):
+        requirements = draw(_valid_reference_options())
+        fragments.append(
+            _position_with_requirements(_PROJECT_FQUN, "test.dfn", requirements)
+        )
+
+    statements: list[str] = []
+    implications = draw(_valid_implications_strategy())
+    for kind, name in implications:
+        statements.append(
+            _create_particle_statement(
+                _implication_chain_reference(kind, name), indent="        "
+            )
+        )
+    local_names = draw(
+        st.lists(st.sampled_from(_LOCAL_NAMES), min_size=1, max_size=6, unique=True)
+    )
+    for local_name in local_names:
+        if draw(st.booleans()):
+            statements.append(
+                _local_position_with_used_constraints(
+                    local_name, draw(_valid_reference_options()), indent="        "
+                )
+            )
         else:
-            requirements = draw(_valid_reference_options())
-            fragments.append(
-                _position_with_requirements(
-                    _PROJECT_FQUN,
-                    "test.dfn",
-                    requirements,
+            statements.extend(
+                [
+                    _local_position_simple(local_name, indent="        "),
+                    _create_particle_statement(
+                        f"position<{local_name}>", indent="        "
+                    ),
+                ]
+            )
+        if draw(st.booleans()):
+            statements.append(
+                _destroy_particle_statement(
+                    f"position<{local_name}>", indent="        "
                 )
             )
 
-    if include_action:
-        action_kind = draw(st.sampled_from(["simple", "block"]))
-        if action_kind == "simple":
-            fragments.append(
-                f"define the potential action<{_VALID_NAME}> {{\n    define the position<_noop>.\n    it happens when {{\n        the position<_noop> has a particle.\n    }} and it does {{\n        define the position<__noop>.\n        create a particle in position<__noop>.\n    }}\n}}\n"
-            )
-        else:
-            outer_indent = "    "
-            inner_indent = "        "
-            include_trigger_comment = draw(st.booleans())
-            include_action_close_comment = draw(st.booleans())
-            blank_lines_in_blocks = draw(st.booleans())
-            action_implications = draw(_valid_implications_strategy())
-            local_names = draw(
-                st.lists(
-                    st.sampled_from(_LOCAL_NAMES),
-                    min_size=0,
-                    max_size=6,
-                    unique=True,
-                )
-            )
-            split_idx = draw(st.integers(min_value=0, max_value=len(local_names)))
-            outer_names = local_names[:split_idx]
-            inner_names = local_names[split_idx:]
-            outer_locals: list[str] = []
-            inner_locals: list[str] = []
-            for impl_kind, impl_name in action_implications:
-                inner_locals.append(
-                    _create_particle_statement(
-                        _implication_chain_reference(impl_kind, impl_name),
-                        indent=inner_indent,
-                    )
-                )
-            create_count = draw(
-                st.integers(min_value=0, max_value=len(_CHAIN_LOCALS_FOR_CREATE))
-            )
-            another_test_targeted = False
-            inner_pos_targeted = False
-            for i in range(create_count):
-                ref, outer_def = draw(
-                    _valid_create_spec(
-                        local_name=_CHAIN_LOCALS_FOR_CREATE[i],
-                        indent=outer_indent,
-                        allow_target_another_test=not another_test_targeted,
-                        allow_target_inner_pos=not inner_pos_targeted,
-                    )
-                )
-                if outer_def is not None:
-                    outer_locals.append(outer_def)
-                last_segment = ref.split("::")[-1]
-                if _ANOTHER_VALID_PATH in last_segment:
-                    another_test_targeted = True
-                elif _INNER_POS_IN_ACTION in last_segment:
-                    inner_pos_targeted = True
-                inner_locals.append(
-                    _create_particle_statement(ref, indent=inner_indent)
-                )
-            move_count = draw(
-                st.integers(min_value=0, max_value=len(_MOVE_POSITION_NAMES) - 1)
-            )
-            if move_count > 0:
-                needed = _MOVE_POSITION_NAMES[: move_count + 1]
-                for pos_name in needed:
-                    outer_locals.append(
-                        _local_position_simple(pos_name, indent=outer_indent)
-                    )
-                inner_locals.append(
-                    _create_particle_statement(
-                        f"position<{needed[0]}>", indent=inner_indent
-                    )
-                )
-                for i in range(move_count):
-                    inner_locals.append(
-                        _move_particle_statement(
-                            f"position<{needed[i]}>",
-                            f"position<{needed[i + 1]}>",
-                            indent=inner_indent,
-                        )
-                    )
-            destroy_count = draw(st.integers(min_value=0, max_value=4))
-            for i in range(destroy_count):
-                destroy_local = f"destroy_pos_{i}"
-                inner_locals.append(
-                    _local_position_simple(destroy_local, indent=inner_indent)
-                )
-                inner_locals.append(
-                    _create_particle_statement(
-                        f"position<{destroy_local}>", indent=inner_indent
-                    )
-                )
-                inner_locals.append(
-                    _destroy_particle_statement(
-                        f"position<{destroy_local}>", indent=inner_indent
-                    )
-                )
-            outer_locals += [
-                draw(_valid_local_definition_strategy(local_name, outer_indent))
-                for local_name in outer_names
-            ]
-            inner_locals += [
-                draw(_valid_local_definition_strategy(local_name, inner_indent))
-                for local_name in inner_names
-            ]
-            if not inner_locals:
-                fallback_name = "fallback_pos"
-                outer_locals.append(
-                    _local_position_simple(fallback_name, indent=outer_indent)
-                )
-                inner_locals.append(
-                    _create_particle_statement(
-                        f"position<{fallback_name}>", indent=inner_indent
-                    )
-                )
-            trigger_condition_ref = "position<run>"
-            fragments.append(
-                _action_with_block(
-                    _PROJECT_FQUN,
-                    "test.dfn",
-                    outer_locals=outer_locals,
-                    inner_locals=inner_locals,
-                    indent=outer_indent,
-                    include_trigger_comment=include_trigger_comment,
-                    include_action_close_comment=include_action_close_comment,
-                    blank_lines_in_blocks=blank_lines_in_blocks,
-                    trigger_condition_ref=trigger_condition_ref,
-                    quality_implications=action_implications or None,
-                )
-            )
-
-    separator = draw(
-        st.sampled_from(
-            [
-                "",
-                "\n",
-                "# between definitions\n",
-                "\n# between definitions\n",
-            ]
+    statements.extend(draw(particle_operation_sequences()))
+    fragments.append(
+        _action_with_block(
+            _PROJECT_FQUN,
+            "test.dfn",
+            outer_locals=[],
+            inner_locals=statements,
+            trigger_kind="constructor",
+            quality_implications=implications,
+            include_trigger_comment=draw(st.booleans()),
+            include_action_close_comment=draw(st.booleans()),
+            blank_lines_in_blocks=draw(st.booleans()),
         )
     )
-    raw = separator.join(fragments)
-    if draw(st.booleans()):
-        return draw(_decorated_source(raw))
-    return raw
+    separator = draw(st.sampled_from(["", "\n", "# between definitions\n"]))
+    return draw(_decorated_source(separator.join(fragments)))
 
 
 @st.composite
@@ -820,23 +734,18 @@ def action_definitions_with_implications(draw: st.DrawFn) -> str:
         if impl_kind == "position"
         else f"action<{impl_name}>::position<_noop>"
     )
-    return (
-        f"define the potential action<{name}> {{\n"
-        f"    it also assigns the {impl_kind}<{impl_name}>.\n"
-        f"    define the position<_noop>.\n"
-        f"    it happens when {{\n"
-        f"        the position<_noop> has a particle.\n"
-        f"    }} and it does {{\n"
-        f"        define the position<__noop>.\n"
-        f"        create a particle in {body_ref}.\n"
-        f"    }}\n"
-        f"}}\n"
+    return _action_block_with_name(
+        name,
+        trigger_kind=draw(st.sampled_from(["presence", "constructor", "destructor"])),
+        quality_implications=[(impl_kind, impl_name)],
+        outer_locals=[],
+        inner_locals=[_create_particle_statement(body_ref, indent="        ")],
     )
 
 
 @st.composite
 def syntactic_sources(draw: st.DrawFn) -> str:
-    """Generate syntactically valid sources with random names (for mutations)."""
+    """Generate definition-shaped sources without enforcing source validity."""
     num_defs = draw(st.integers(min_value=1, max_value=5))
     defs: list[str] = []
     for _ in range(num_defs):
@@ -876,11 +785,90 @@ _MUTATIONS = [
     "remove_structural_char",
     "remove_particle_statement_space",
     "insert_unicode",
+    "insert_fragment",
+    "replace_span",
+    "truncate",
+    "duplicate_line",
+    "remove_line",
+    "swap_lines",
+    "change_indentation",
+    "replace_condition",
+]
+
+_SYNTAX_FRAGMENTS = [
+    "define the potential position</p>.\n",
+    "define the potential action</a> {\n",
+    "define the position<p>.\n",
+    "it also assigns the action</a>.\n",
+    "it may only contain particles where {\n",
+    "it has the position</p>.\n",
+    "it happens when {\n",
+    "this particle is created.\n",
+    "this particle is being destroyed.\n",
+    "the position<p> has a particle.\n",
+    "} and it does {\n",
+    "create a particle in position<p>.\n",
+    "move the particle in position<p> to position<q>.\n",
+    "destroy the particle in position<p>.\n",
+    "position<p>",
+    "action</a>::position<p>",
+    "::",
+    "\n",
+    " {\n",
+    "}\n",
+    ".\n",
+    "# comment\n",
 ]
 
 
 def _mutate_source(source: str, draw: st.DrawFn) -> str:
     mutation = draw(st.sampled_from(_MUTATIONS))
+
+    if mutation in ("insert_fragment", "replace_span", "truncate"):
+        start = draw(st.integers(min_value=0, max_value=len(source)))
+        if mutation == "truncate":
+            return source[:start]
+        end = start
+        if mutation == "replace_span":
+            end = draw(st.integers(min_value=start, max_value=len(source)))
+        fragment = draw(st.sampled_from(_SYNTAX_FRAGMENTS))
+        return source[:start] + fragment + source[end:]
+
+    if mutation in (
+        "duplicate_line",
+        "remove_line",
+        "swap_lines",
+        "change_indentation",
+    ):
+        lines = source.splitlines(keepends=True)
+        if not lines:
+            return source
+        index = draw(st.integers(min_value=0, max_value=len(lines) - 1))
+        if mutation == "duplicate_line":
+            lines.insert(index, lines[index])
+        elif mutation == "remove_line":
+            del lines[index]
+        elif mutation == "swap_lines":
+            other = draw(st.integers(min_value=0, max_value=len(lines) - 1))
+            lines[index], lines[other] = lines[other], lines[index]
+        else:
+            indentation = draw(
+                st.sampled_from(["", " ", "   ", "        ", "\t", " \t"])
+            )
+            lines[index] = indentation + lines[index].lstrip(" \t")
+        return "".join(lines)
+
+    if mutation == "replace_condition":
+        conditions = [
+            "this particle is created",
+            "this particle is being destroyed",
+            "the position<run> has a particle",
+        ]
+        present = [condition for condition in conditions if condition in source]
+        if present:
+            return source.replace(
+                draw(st.sampled_from(present)), draw(st.sampled_from(conditions)), 1
+            )
 
     if mutation == "delete_char" and len(source) > 1:
         idx = draw(st.integers(min_value=0, max_value=len(source) - 1))
@@ -909,8 +897,15 @@ def _mutate_source(source: str, draw: st.DrawFn) -> str:
             "it happens when",
             "and it does",
             "it also assigns the",
+            "this particle is created",
+            "this particle is being destroyed",
+            "it may only contain particles where",
+            "it has the",
         ]
-        keyword = draw(st.sampled_from(keywords))
+        present_keywords = [keyword for keyword in keywords if keyword in source]
+        if not present_keywords:
+            return source
+        keyword = draw(st.sampled_from(present_keywords))
         indices: list[int] = []
         start = 0
         while (pos := source.find(keyword, start)) != -1:
@@ -962,7 +957,7 @@ def _mutate_source(source: str, draw: st.DrawFn) -> str:
 
 @st.composite
 def mutated_sources(draw: st.DrawFn) -> str:
-    source = draw(syntactic_sources())
+    source = draw(st.one_of(syntactic_sources(), valid_sources()))
     num_mutations = draw(st.integers(min_value=1, max_value=3))
     for _ in range(num_mutations):
         source = _mutate_source(source, draw)
@@ -1023,19 +1018,15 @@ def _build_action_local_constraints_project(root_universe: str) -> ProjectCase:
         "test.dfn": _action_with_block(
             root_universe,
             "test.dfn",
-            outer_locals=[
-                _local_position_with_requirements(
-                    "outer_pos",
-                    [("position", "/target")],
-                    indent="    ",
-                )
-            ],
+            trigger_kind="constructor",
+            outer_locals=[],
             inner_locals=[
-                _local_position_with_requirements(
-                    "inner_pos",
-                    [("action", "/target")],
-                    indent="        ",
-                )
+                _local_position_with_used_constraints(
+                    "first", [("position", "/target")], indent="        "
+                ),
+                _local_position_with_used_constraints(
+                    "second", [("action", "/target")], indent="        "
+                ),
             ],
             include_trigger_comment=True,
             include_action_close_comment=True,
@@ -1151,9 +1142,10 @@ def _build_cross_fqun_action_statements_project(
         "test.dfn": _action_with_block(
             root_universe,
             "test.dfn",
+            trigger_kind="constructor",
             outer_locals=[],
             inner_locals=[
-                _local_position_with_requirements(
+                _local_position_with_used_constraints(
                     "inner_pos",
                     [("position", _global_name(child_universe, "target.dfn"))],
                     indent="        ",
@@ -1190,11 +1182,11 @@ def _build_move_particle_project(root_universe: str) -> ProjectCase:
         "test.dfn": _action_with_block(
             root_universe,
             "test.dfn",
-            outer_locals=[
-                _local_position_simple("from_pos", indent="    "),
-                _local_position_simple("to_pos", indent="    "),
-            ],
+            trigger_kind="constructor",
+            outer_locals=[],
             inner_locals=[
+                _local_position_simple("from_pos", indent="        "),
+                _local_position_simple("to_pos", indent="        "),
                 _create_particle_statement("position<from_pos>", indent="        "),
                 _move_particle_statement(
                     "position<from_pos>", "position<to_pos>", indent="        "
@@ -1217,6 +1209,7 @@ def _build_action_quality_implication_project(
         "test.dfn": _action_with_block(
             root_universe,
             "test.dfn",
+            trigger_kind="constructor",
             outer_locals=[],
             inner_locals=[
                 _create_particle_statement(
@@ -1252,6 +1245,7 @@ def _build_destroy_particle_project(root_universe: str) -> ProjectCase:
         "test.dfn": _action_with_block(
             root_universe,
             "test.dfn",
+            trigger_kind="constructor",
             outer_locals=[],
             inner_locals=[
                 _local_position_simple("destroy_pos", indent="        "),
@@ -1263,6 +1257,93 @@ def _build_destroy_particle_project(root_universe: str) -> ProjectCase:
     return ProjectCase(
         entrypoint="test.dfn",
         roots=(ProjectRootCase("", root_universe, root_files, {}),),
+    )
+
+
+def _build_lifecycle_project(
+    universe_name: str, *, repetitions: int, explicit_destruction: bool
+) -> ProjectCase:
+    child = "position</child>"
+    files = {
+        "child.dfn": _position_simple(universe_name, "child.dfn"),
+        "initialize.dfn": _action_with_block(
+            universe_name,
+            "initialize.dfn",
+            trigger_kind="constructor",
+            quality_implications=[("position", "/child")],
+            outer_locals=[],
+            inner_locals=[_create_particle_statement(child, indent="        ")],
+        ),
+        "cleanup.dfn": _action_with_block(
+            universe_name,
+            "cleanup.dfn",
+            trigger_kind="destructor",
+            quality_implications=[("position", "/child")],
+            outer_locals=[],
+            inner_locals=[
+                _local_position_simple("temporary", indent="        "),
+                _move_particle_statement(
+                    child, "position<temporary>", indent="        "
+                ),
+                _move_particle_statement(
+                    "position<temporary>", child, indent="        "
+                ),
+            ],
+        ),
+        "relay.dfn": _join_lines(
+            [
+                f"define the potential action<{_global_name(universe_name, 'relay.dfn')}> {{",
+                "    define the position<incoming>.",
+                "    define the position<result>.",
+                "    it happens when {",
+                "        the position<incoming> has a particle.",
+                "    } and it does {",
+                "        move the particle in position<incoming> to position<result>.",
+                "    }",
+                "}",
+            ]
+        ),
+    }
+    statements = [
+        _local_position_with_requirements(
+            "item",
+            [("action", "/initialize"), ("action", "/cleanup")],
+            indent="        ",
+        ),
+        _create_particle_statement("position<item>", indent="        "),
+    ]
+    # Reusing the interface positions exercises guarantees across executions,
+    # including qualities and destructors unknown to the relay's contract.
+    for _ in range(repetitions):
+        statements.extend(
+            [
+                _move_particle_statement(
+                    "position<item>",
+                    "action</relay>::position<incoming>",
+                    indent="        ",
+                ),
+                _move_particle_statement(
+                    "action</relay>::position<result>",
+                    "position<item>",
+                    indent="        ",
+                ),
+            ]
+        )
+    if explicit_destruction:
+        statements.append(
+            _destroy_particle_statement("position<item>", indent="        ")
+        )
+    files["test.dfn"] = _action_with_block(
+        universe_name,
+        "test.dfn",
+        trigger_kind="constructor",
+        quality_implications=[("action", "/relay")],
+        outer_locals=[],
+        inner_locals=statements,
+    )
+    return ProjectCase(
+        entrypoint="test.dfn",
+        roots=(ProjectRootCase("", universe_name, files, {}),),
     )
 
 
@@ -1283,6 +1364,7 @@ def valid_project_cases(draw: st.DrawFn) -> ProjectCase:
                 "move_local",
                 "action_quality_implication",
                 "destroy_local",
+                "lifecycle",
             ]
         )
     )
@@ -1315,6 +1397,12 @@ def valid_project_cases(draw: st.DrawFn) -> ProjectCase:
     elif project_kind == "action_quality_implication":
         project_case = _build_action_quality_implication_project(
             root_universe, child_universe
+        )
+    elif project_kind == "lifecycle":
+        project_case = _build_lifecycle_project(
+            root_universe,
+            repetitions=draw(st.integers(min_value=1, max_value=8)),
+            explicit_destruction=draw(st.booleans()),
         )
     else:
         project_case = _build_destroy_particle_project(root_universe)
@@ -1372,19 +1460,6 @@ def fuzz_project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         + _position_simple(_PROJECT_FQUN, "third_test.dfn"),
         encoding="utf-8",
     )
-    (tmp_path / _ACTION_WITH_INNER_FILE).write_text(
-        _action_with_block(
-            _PROJECT_FQUN,
-            _ACTION_WITH_INNER_FILE,
-            outer_locals=[_local_position_simple(_INNER_POS_IN_ACTION, indent="    ")],
-            inner_locals=[
-                _create_particle_statement(
-                    f"position<{_INNER_POS_IN_ACTION}>", indent="        "
-                ),
-            ],
-        ),
-        encoding="utf-8",
-    )
     monkeypatch.chdir(tmp_path)
     return tmp_path
 
@@ -1405,21 +1480,12 @@ def _materialize_project_case(tmp_path: Path, project_case: ProjectCase) -> None
 def _assert_results_are_clean(
     results: list[validation_result.FileValidationResult], source_hint: str
 ) -> None:
-    diagnostics_seen = [diag for result in results for diag in result.diagnostics]
-    exceptions_seen = [
-        result.exception for result in results if result.exception is not None
-    ]
-    if diagnostics_seen or exceptions_seen:
-        rendered = "\n".join(
-            [f"exception: {exc!r}" for exc in exceptions_seen]
-            + [f"diagnostic: {diag!r}" for diag in diagnostics_seen]
-        )
-        pytest.fail(
-            "Expected clean validation results, got errors:\n"
-            + f"{rendered}\n"
-            + f"\nProject:\n{source_hint}",
-            pytrace=False,
-        )
+    for result in results:
+        if result.diagnostics or result.exception is not None:
+            pytest.fail(
+                f"Expected clean validation results, got:\n{results!r}\n\nProject:\n{source_hint}",
+                pytrace=False,
+            )
 
 
 def _assert_only_parser_syntax_exceptions(
@@ -1429,22 +1495,14 @@ def _assert_only_parser_syntax_exceptions(
         parser_exceptions.DefineSyntaxError,
         exceptions.SourceFileNotFoundError,
     )
-    exceptions_seen = [
-        result.exception for result in results if result.exception is not None
-    ]
-    unclassified_errors = [
-        error for error in exceptions_seen if not isinstance(error, allowed_exceptions)
-    ]
-    if unclassified_errors:
-        rendered_errors = "\n".join(
-            f"- {error!r}:\n\t{error!s}" for error in unclassified_errors
-        )
-        pytest.fail(
-            "Unclassified errors:\n"
-            + f"{rendered_errors}\n"
-            + f"\nSource:\n{source_hint}",
-            pytrace=False,
-        )
+    for result in results:
+        if result.exception is not None and not isinstance(
+            result.exception, allowed_exceptions
+        ):
+            pytest.fail(
+                f"Unclassified error: {result.exception!r}\n{result.exception!s}\n\nResults:\n{results!r}\n\nSource:\n{source_hint}",
+                pytrace=False,
+            )
 
 
 def _project_case_debug_text(project_case: ProjectCase) -> str:
@@ -1499,6 +1557,8 @@ def _random_path_segment_bytes(draw: st.DrawFn) -> bytes:
 _GLOBAL_NAME_CONTEXTS = [
     "position_def",
     "action_def",
+    "constructor",
+    "destructor",
     "position_req",
     "action_req",
     "create_ref",
@@ -1512,6 +1572,13 @@ _GLOBAL_NAME_CONTEXTS = [
 
 
 def _global_name_context_template(context: str) -> str:
+    if context in ("constructor", "destructor"):
+        return _action_block_with_name(
+            _NAME_MARKER,
+            trigger_kind="constructor" if context == "constructor" else "destructor",
+            outer_locals=[],
+            inner_locals=[_local_position_simple("local", indent="        ")],
+        )
     if context == "position_def":
         return f"define the potential position<{_NAME_MARKER}>.\n"
     if context == "action_def":
@@ -1767,6 +1834,16 @@ def test_valid_syntax_validates_cleanly(fuzz_project: Path, source: str):
     suppress_health_check=[HealthCheck.function_scoped_fixture],
 )
 @given(project_case=valid_project_cases())
+@example(
+    project_case=_build_lifecycle_project(
+        _PROJECT_FQUN, repetitions=8, explicit_destruction=True
+    )
+)
+@example(
+    project_case=_build_lifecycle_project(
+        _PROJECT_FQUN, repetitions=8, explicit_destruction=False
+    )
+)
 def test_valid_projects_validate_cleanly(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, project_case: ProjectCase
 ):
