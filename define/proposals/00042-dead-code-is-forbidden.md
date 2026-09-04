@@ -368,10 +368,10 @@ actually do in that case? Well, you must have stored the lock as a particle
 somewhere that the destructor can access. That means an implied
 `position</lock>` that both `action</lock>` and `action</unlock_on_destroy>`
 could reference. Oh, so that means the lock is actually a _child_ particle of
-the parent, which will get destroyed as part of the destruction cascade before
-the parent does. So then why isn't the destructor just on `position</lock>`,
-which `action</lock>` already had to reference? That also unlocks the lock no
-matter what happens or what action set it.
+the parent, which will get destroyed simultaneously with its parent. So then why
+isn't the destructor just on `position</lock>`, which `action</lock>` already
+had to reference? That also unlocks the lock no matter what happens or what
+action set it.
 
 Well, you could say "but I only want to auto-unlock it if it was set by
 `action</lock>`. But implying a destructor doesn't guarantee that

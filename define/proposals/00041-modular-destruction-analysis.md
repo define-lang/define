@@ -1,4 +1,4 @@
-# Define Language Proposal 41: Modular Destructor Analysis
+# Define Language Proposal 41: Modular Destruction Analysis
 
 - **Author:** Max Kanat-Alexander
 - **Status:** Draft
@@ -7,11 +7,59 @@
 
 ## Problems
 
-[DLP 34 (Destructors)](00034-destructors.md) proposes a flexible system of
-destructors. However, it creates a particularly tricky set of problems for
-modular analysis.
+[DLP 31 (Destroying Particles)](00031-destroying-particles.md) proposes a system
+of statically-analyzable destruction where all destruction happens
+instantaneously and simultaneously. [DLP 34 (Destructors)](00034-destructors.md)
+enhances that with a flexible system of destructors, but also imposes a partial
+order on that destruction based on how destructors depend on other data in the
+program.
 
-### 1: Called Actions Don't Know About the Parent's Added Destructors
+This creates a very powerful destruction system for Define. However, it also
+creates a very difficult set of problems for modular analysis.
+
+### 1: Static Analysis of Destruction Across Actions
+
+Imagine that one action triggers another, and the called action destroys a
+particle that the caller created, like this:
+
+```define
+define the potential action</creator> {
+    it has the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<holder> {
+            it may only contain particles where {
+                it has the action</destroyer>.
+            }
+        }
+        create a particle in position<holder>.
+        create a particle in position<holder>::action</destroyer>::position<run>.
+    }
+}
+
+define the potential action</destroyer> {
+    it has the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+    }
+}
+```
+
+That looks simple enough. The compiler sees a particle in run, destroys it, end
+of story.
+
+What if there's another action that triggers `action</destroyer>`, though, and
+it passes in a particle with many children? Now the compiler has to know that it
+has to destroy `position<run>` and its children.
+
+What if there are many callers that do that, and they are even further up the
+transitive call chain? How many possible combinations of destructions do we have
+to evaluate? How do we do so modularly?
+
+### 2: Called Actions Don't Know About the Parent's Added Destructors
 
 Imagine that in Action A, we have a position named `position<my_file>` with the
 qualities `position</file>` and `action</destructor>`, where
@@ -30,19 +78,6 @@ that destructor when that particle is destroyed. However, modular verification
 that destruction is safe has potentially very complex computational cost if not
 handled correctly.
 
-### 2: Destructor Ordering
-
-[DLP 34 (Destructors)](00034-destructors.md) specifies that destructors are
-processed in LIFO order (in reverse order of assignment). This is particularly
-important when taking into account the existence of implied positions and
-actions---destructors that were added last _must_ run first, because they could
-be referencing implied positions.
-
-However, contracted positions on actions don't have to specify their constraints
-in the same _order_ that the caller did. The caller may have assigned qualities
-in a different order than how they are listed. So how do we know what order the
-destructors are going to be run in, at compile time?
-
 ### 3: Callees Can Make Changes
 
 When verifying a destructor, what matters is the state of positions at the time
@@ -57,9 +92,8 @@ locations.
 ### 4: Destructors Can Modify implied Positions
 
 A destructor can imply qualities just like any other action can, which will
-automatically mean that quality gets unassigned only after the destructor runs
-(and thus, any particles in implied positions only get destroyed after the
-destructor runs). However, this adds tremendous complexity to the destruction
+automatically mean that any positions on that quality get destroyed only after
+the destructor runs. However, this adds tremendous complexity to the destruction
 cascade, because it means that one destructor could change what's actually going
 to _run_ on another destructor. (It could change the state of the world that the
 next destructor sees.)
@@ -71,19 +105,26 @@ all children of implied positions.
 This adds a potentially enormous computational cost to calculating whether
 destructors are safe, because they can change things that happen after them.
 
+And as above, all of this could change as you move up the call stack of actions.
+So one action believes a set of destructors execute simultaneously, while a
+higher caller knows they have a dependency on each other because they interact
+with the same actions.
+
 ## Solution
 
-Each action checks only the destructors that _it_ added. However, it checks them
-as though they were running at the moment of destruction, not running inside of
-their own action.
+Each action checks only the destructors that _it_ added and validates the
+destruction of positions that _it_ knows about. However, it validates these
+things as though they were running at the moment of destruction, not running
+inside of their own action.
 
-Thus, the action that destroys a particle verifies any destructors that _it_
-added immediately, acting as though the destructor action was triggered and ran
-synchronously immediately before destruction of the particle the destructor is
-attached to.
+Thus, the action that destroys a particle (the "destroyer") verifies any
+destructors and destroyed particles that _it_ added immediately. Then higher
+callers verify destructions that _they_ know about, but as though they were
+happening in the destroyer.
 
-The complexity of the solution comes in when you have to deal with destructors
-that were added by the caller.
+Validating the destroyer is simple. The complexity of the solution comes in when
+you have to deal with destructors that were added by the caller, and child
+positions that only the caller knows the existence of.
 
 ### Forbidden Actions In Destructors
 
@@ -122,7 +163,7 @@ had when we started."**
 We have to modify the action contract to contain additional data for contracted
 positions.
 
-These additions only occur when an action destroys a particles in a contracted
+These additions only occur when an action destroys a particle in a contracted
 position explicitly or automatically.
 
 #### Destruction Fact
@@ -130,24 +171,37 @@ position explicitly or automatically.
 Action contracts must contain the information that the relevant particle was
 destroyed (not just that the contracted position is empty, but specifically that
 _that_ particle got destroyed). This is the only way that a caller can know to
-check the verification of destructors that it added.
+check the verification of destructors and child positions that only it knows
+about.
 
-Destructions must be contained in the contract in the order they were executed,
-so that we know that the requirements of later destructions are fulfilled by the
-guarantees of earlier destructions.
+There is no ordering requirement for destructions in a Destruction Contract,
+unless a destructor imposes an order by interacting with implied positions, in
+which case the compiler should store the contract information in a way to make
+it efficient to analyze the ordering requirements as it walks up the call stack
+of actions.
+
+(Just to be clear, a destructor obviously must also run before its interface
+positions are destroyed, but that's a self-contained fact about a destructor, so
+there are no particularly complex ordering considerations, there.)
+
+Note that interactions by a destructor with its own interface positions cannot
+impose an ordering between destructors, as they cannot access each others'
+interface positions unless they imply each other.
 
 #### Child State
 
 Action contracts must contain anything known about the state of all children of
 destroyed particles immediately before destruction started. This is needed
-because a caller could add a destructor that quality-requires one of the other
-children of the destroyed point, and it will need to know the state of that
-position to know whether what it _does_ with that position is valid.
+because a caller could add a destructor that implies one of the other children
+of the destroyed particle, and it will need to know the state of that position
+to know whether what it _does_ with that position is valid.
 
 To be clear, this is the full state of all transitive child positions that would
 be destroyed. It's not just the state of direct child particles. What we need to
 know is whether or not there are particles in all transitive child positions,
-right before destruction happens.
+right before destruction happens. We also can't just limit ourselves just to
+positions that our currently-known destructors interact with, because we can't
+know if a higher caller will need more info.
 
 Because the action that is performing the destruction may not be aware of every
 quality on the destroyed particle, it may not _know_ the state of every particle
@@ -195,7 +249,7 @@ and why (ideally indicating where the particle gets destroyed).
 The above algorithm only describes the verification that the compiler must do at
 compile time to prove that destructors are safe. However, the algorithm does
 expose the complexity that different destructors run based on different call
-chains. There are three ways a compiler could implement this in code generation:
+chains. There are four ways a compiler could implement this in code generation:
 
 1. **Tables**: Use some lookup mechanism to "attach" destructors to particles at
    runtime. When the particle is freed, inject code to check if it has
@@ -209,10 +263,17 @@ chains. There are three ways a compiler could implement this in code generation:
 3. **Monomorphization**: Generate a separate set of functions for each call
    chain that has a different destructor stack. This should usually work but
    sometimes will result in a combinatorial blowup of functions to generate.
+4. **Continuation Passing**: Pass a continuation or function pointer down the
+   stack, with code in the destroyer that "understands" how to appropriately
+   integrate caller-contributed destruction work. This is very flexible but has
+   the cost of dynamic overhead in situations that you might otherwise be able
+   to compile more efficient code if you had full static knowledge of the
+   program.
 
 Thus, the compiler will need to make this trade-off intelligently, probably
-between Branching and Monomorphization. This is mostly noted here as the subject
-of a future proposal around compiler optimization and code generation.
+between Continuation Passing and Monomorphization. This is mostly noted here as
+the subject of a future proposal around compiler optimization and code
+generation.
 
 ## A Real Program
 
@@ -337,11 +398,11 @@ needs.
 
 ## Forward Compatibility
 
-One of the cool things about this proposal is that destructors are independent
-of each other. In fact, I'm not even sure we _need_ ordering guarantees for them
-anymore. Thus, not only can we statically know everything about destructors at
-compile time, we could theoretically safely reorder them in the future (at
-least, from the perspective of the compiler's verifier).
+One of the cool things about this proposal is that destructors can be verified
+completely independently of each other, allowing our "simultaneous destruction"
+design. Thus, not only can we statically know everything about destructors at
+compile time, we can safely reorder them however we want provided we satisfy the
+requirements of our partial order.
 
 ## Refactoring Existing Systems
 
