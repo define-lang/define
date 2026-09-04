@@ -58,6 +58,7 @@ class ValidateProject(Protocol):
         sub_roots: dict[str, str] | None = ...,
         entry_file: str = ...,
         allow_entry_action_interface_positions: bool = ...,
+        allow_entry_action_occupied_implied_position_requirements: bool = ...,
     ) -> FullValidationResult:
         """Validate a project with the given files."""
         ...
@@ -83,6 +84,9 @@ def validate_project(
         # Pass True only when a validation test specifically requires an entry
         # action with interface positions.
         allow_entry_action_interface_positions: bool = False,
+        # Pass True only when a validation test specifically requires an entry
+        # action with an occupied implied-position requirement.
+        allow_entry_action_occupied_implied_position_requirements: bool = False,
     ) -> FullValidationResult:
         test_helpers.write_project_config(tmp_path, universe_name)
         if local_deps is not None:
@@ -109,7 +113,11 @@ def validate_project(
             max_workers=max_workers,
         )
         return _run_reference_graph_validation(
-            structural_result, max_workers=max_workers
+            structural_result,
+            max_workers=max_workers,
+            allow_entry_action_occupied_implied_position_requirements=(
+                allow_entry_action_occupied_implied_position_requirements
+            ),
         )
 
     return _run
@@ -123,6 +131,7 @@ class ValidateTestdataNonFilesystemWithReferenceGraph(Protocol):
         *,
         max_workers: int | None = ...,
         allow_entry_action_interface_positions: bool = ...,
+        allow_entry_action_occupied_implied_position_requirements: bool = ...,
     ) -> validation_result.ProgramValidationResult:
         """Run structural and reference graph validation."""
         ...
@@ -246,6 +255,9 @@ def validate_testdata_non_filesystem_with_reference_graph(
         # Pass True only when a validation test specifically requires an entry
         # action with interface positions.
         allow_entry_action_interface_positions: bool = False,
+        # Pass True only when a validation test specifically requires an entry
+        # action with an occupied implied-position requirement.
+        allow_entry_action_occupied_implied_position_requirements: bool = False,
     ) -> validation_result.ProgramValidationResult:
         monkeypatch.chdir(directory)
         result = program_validator.ProgramStructuralValidator(
@@ -254,10 +266,13 @@ def validate_testdata_non_filesystem_with_reference_graph(
                 allow_entry_action_interface_positions
             ),
         ).validate_program_non_filesystem(source, max_workers=max_workers)
-        reference_graph_validator.ReferenceGraphValidator(
-            result.reference_graph,
-            result.definition_results,
-        ).validate(max_workers=max_workers)
+        _run_reference_graph_validation(
+            result,
+            max_workers=max_workers,
+            allow_entry_action_occupied_implied_position_requirements=(
+                allow_entry_action_occupied_implied_position_requirements
+            ),
+        )
         return result
 
     return _run
@@ -267,11 +282,17 @@ def _run_reference_graph_validation(
     structural_result: validation_result.ProgramValidationResult,
     *,
     max_workers: int | None = None,
+    allow_entry_action_occupied_implied_position_requirements: bool = False,
 ) -> FullValidationResult:
-    reference_graph_result = reference_graph_validator.ReferenceGraphValidator(
+    validator = reference_graph_validator.ReferenceGraphValidator(
         structural_result.reference_graph,
         structural_result.definition_results,
-    ).validate(max_workers=max_workers)
+        entry_action=structural_result.entry_action,
+        allow_entry_action_occupied_implied_position_requirements=(
+            allow_entry_action_occupied_implied_position_requirements
+        ),
+    )
+    reference_graph_result = validator.validate(max_workers=max_workers)
     return FullValidationResult(
         program_result=structural_result,
         reference_graph_result=reference_graph_result,
@@ -286,6 +307,7 @@ class ValidateTestdataProjectWithReferenceGraph(Protocol):
         *,
         max_workers: int | None = ...,
         allow_entry_action_interface_positions: bool = ...,
+        allow_entry_action_occupied_implied_position_requirements: bool = ...,
     ) -> FullValidationResult:
         """Run structural and reference graph validation."""
         ...
@@ -305,6 +327,9 @@ def validate_testdata_project_with_reference_graph(
         # Pass True only when a validation test specifically requires an entry
         # action with interface positions.
         allow_entry_action_interface_positions: bool = False,
+        # Pass True only when a validation test specifically requires an entry
+        # action with an occupied implied-position requirement.
+        allow_entry_action_occupied_implied_position_requirements: bool = False,
     ) -> FullValidationResult:
         monkeypatch.chdir(directory)
         structural_result = program_validator.ProgramStructuralValidator(
@@ -314,7 +339,11 @@ def validate_testdata_project_with_reference_graph(
             ),
         ).validate_program(PurePosixPath("test.dfn"), max_workers=max_workers)
         return _run_reference_graph_validation(
-            structural_result, max_workers=max_workers
+            structural_result,
+            max_workers=max_workers,
+            allow_entry_action_occupied_implied_position_requirements=(
+                allow_entry_action_occupied_implied_position_requirements
+            ),
         )
 
     return _run

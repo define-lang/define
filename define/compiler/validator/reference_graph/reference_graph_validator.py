@@ -5,13 +5,14 @@ from __future__ import annotations
 import typing
 from dataclasses import dataclass
 
-from define.compiler import ast
+from define.compiler import ast, diagnostics
 from define.compiler.graphs import (
     action_call_graph,
     reference_graph,
     reference_graph_executor,
 )
 from define.compiler.validator.reference_graph import (
+    action_contract,
     definition_postorder_validator,
     operation_graph,
     reference_graph_validation_state,
@@ -39,7 +40,7 @@ class ReferenceGraphValidationResult:
 # action in this graph, to make sure that caller requirements are detected.
 # (Otherwise developers can write bad action code and not realize it.)
 class ReferenceGraphValidator:
-    """Verifies all definitions using the reference graph.
+    """Verifies definitions using the reference graph.
 
     This is the primary logical validator of Define. After completing structural
     validation, this step walks through the reference graph in DFS post-order
@@ -50,7 +51,9 @@ class ReferenceGraphValidator:
     _definition_results: typed_name_dict.TypedNameDict[
         ast.GlobalTypedName, validation_result.DefinitionValidationResult
     ]
+    _entry_action: ast.ActionDefinition | None
     _validation_state: reference_graph_validation_state.ReferenceGraphValidationState
+    _allow_entry_action_occupied_implied_position_requirements: bool
 
     def __init__(
         self,
@@ -58,12 +61,23 @@ class ReferenceGraphValidator:
         definition_results: typed_name_dict.TypedNameDict[
             ast.GlobalTypedName, validation_result.DefinitionValidationResult
         ],
+        *,
+        entry_action: ast.ActionDefinition | None,
+        allow_entry_action_occupied_implied_position_requirements: bool = False,
     ):
-        """Initialize with the reference graph and definition results."""
+        """Initialize with the reference graph and definition results.
+
+        allow_entry_action_occupied_implied_position_requirements exists only
+        for validation tests of behavior that requires such a program.
+        """
         self._reference_graph = graph
         self._definition_results = definition_results
+        self._entry_action = entry_action
         self._validation_state = (
             reference_graph_validation_state.ReferenceGraphValidationState()
+        )
+        self._allow_entry_action_occupied_implied_position_requirements = (
+            allow_entry_action_occupied_implied_position_requirements
         )
 
     def validate(
@@ -92,6 +106,11 @@ class ReferenceGraphValidator:
             for edge in result.edges:
                 call_graph.add_edge(edge.source, edge.target)
             operation_graphs[definition.typed_name] = result.operation_graph
+        if (
+            self._entry_action is not None
+            and not self._allow_entry_action_occupied_implied_position_requirements
+        ):
+            self._validate_entry_action_requirements(self._entry_action)
         return ReferenceGraphValidationResult(
             definition_order=definition_order,
             action_call_graph=call_graph,
@@ -116,3 +135,22 @@ class ReferenceGraphValidator:
         ).analyze()
         self._validation_state.publish_contract(definition.typed_name, result.contract)
         return result
+
+    def _validate_entry_action_requirements(
+        self,
+        entry_action: ast.ActionDefinition,
+    ):
+        definition_result = self._definition_results[entry_action.typed_name]
+        contract = self._validation_state.get_contract(entry_action.typed_name)
+        for requirement in contract.requirements.values():
+            if (
+                requirement.position.starts_with_global
+                and requirement.required_state
+                == action_contract.PositionOccupancyState.OCCUPIED
+            ):
+                definition_result.add_diagnostic(
+                    diagnostics.EntryPointOccupiedImpliedPositionRequirementDiagnostic(
+                        location=requirement.inferred_at,
+                        position_name=requirement.position.source_chained_name,
+                    )
+                )

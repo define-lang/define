@@ -669,7 +669,9 @@ def test_move_from_empty_action_interface_does_not_mark_action_alive(
 def test_transitive_action_interface_occupied_without_trigger_is_dead(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_occupied_implied_position_requirements=True
+    )
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
@@ -704,7 +706,9 @@ def test_transitive_action_interface_occupied_without_trigger_is_dead(
 def test_transitive_action_interface_particle_destroyed_before_trigger_is_dead(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_occupied_implied_position_requirements=True
+    )
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1

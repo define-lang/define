@@ -17,6 +17,7 @@ from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
     from define.compiler.conftest import (
+        ValidateProject,
         ValidateTestdataProjectWithReferenceGraph,
     )
 
@@ -24,6 +25,82 @@ _TEST = "action<my.domain.com:my_lib:/test>"
 _CONSUMER = "action<my.domain.com:my_lib:/consumer>"
 _INITIALIZER = "action<my.domain.com:my_lib:/initializer>"
 _P = "action<my.domain.com:my_lib:/p>"
+
+
+def test_entry_point_occupied_implied_position_requirement_reports_diagnostic(
+    validate_project: ValidateProject,
+):
+    result = validate_project(
+        {
+            "implied.dfn": "define the potential position<my.domain.com:my_lib:/implied>.\n",
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    it also assigns the position</implied>.\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
+                "        destroy the particle in position</implied>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+
+    assert result.program_result.all_exceptions == []
+    all_diagnostics = result.program_result.all_diagnostics
+    assert len(all_diagnostics) == 1
+    diagnostic = all_diagnostics[0]
+    assert isinstance(
+        diagnostic,
+        diagnostics.EntryPointOccupiedImpliedPositionRequirementDiagnostic,
+    )
+    assert diagnostic.position_name == "position</implied>"
+    assert diagnostic.location.line == 6
+    assert diagnostic.location.column == 33
+
+
+def test_entry_point_transitive_occupied_requirement_reports_diagnostic(
+    validate_project: ValidateProject,
+):
+    result = validate_project(
+        {
+            "shared.dfn": "define the potential position<my.domain.com:my_lib:/shared>.\n",
+            "worker.dfn": (
+                "define the potential action<my.domain.com:my_lib:/worker> {\n"
+                "    it also assigns the position</shared>.\n"
+                "    define the position<trigger>.\n"
+                "    it happens when {\n"
+                "        the position<trigger> has a particle.\n"
+                "    } and it does {\n"
+                "        destroy the particle in position</shared>.\n"
+                "        destroy the particle in position<trigger>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    it also assigns the action</worker>.\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
+                "        create a particle in action</worker>::position<trigger>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+
+    assert result.program_result.all_exceptions == []
+    all_diagnostics = result.program_result.all_diagnostics
+    assert len(all_diagnostics) == 1
+    diagnostic = all_diagnostics[0]
+    assert isinstance(
+        diagnostic,
+        diagnostics.EntryPointOccupiedImpliedPositionRequirementDiagnostic,
+    )
+    assert diagnostic.position_name == "position</shared>"
+    assert diagnostic.location.line == 6
+    assert diagnostic.location.column == 30
 
 
 def test_occupied_interface_requirement_always_violated(

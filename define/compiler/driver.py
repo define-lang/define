@@ -220,10 +220,12 @@ class Driver:
         """Run reference graph validation and produce the compiler result."""
         # TODO: Make ReferenceGraphValidator return diagnostics instead of
         # adding them to definitions itself?
-        reference_graph_result = reference_graph_validator.ReferenceGraphValidator(
+        validator = reference_graph_validator.ReferenceGraphValidator(
             program_result.reference_graph,
             program_result.definition_results,
-        ).validate(max_workers=max_threads)
+            entry_action=program_result.entry_action,
+        )
+        reference_graph_result = validator.validate(max_workers=max_threads)
         return CompilerValidationResult(
             program_validation=program_result,
             definition_order=reference_graph_result.definition_order,

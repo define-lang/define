@@ -809,6 +809,17 @@ class EntryPointInterfacePositionDiagnostic(Diagnostic):
 
 
 @dataclass
+class EntryPointOccupiedImpliedPositionRequirementDiagnostic(Diagnostic):
+    """Diagnostic for an occupied implied-position requirement on the entry point."""
+
+    position_name: str
+    message_format: ClassVar[str] = (
+        "the entry point action of a Define program must not infer that implied"
+        " position '{self.position_name}' is occupied"
+    )
+
+
+@dataclass
 class IncorrectIndentationDiagnostic(Diagnostic):
     """Diagnostic for when a line has incorrect indentation."""
 

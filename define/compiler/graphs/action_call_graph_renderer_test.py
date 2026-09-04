@@ -63,10 +63,12 @@ def _build_graph(
     monkeypatch.chdir(tmp_path)
     entry_point = PurePosixPath(next(iter(files)))
     program_result = pv.validate_program(entry_point)
-    reference_graph_result = reference_graph_validator.ReferenceGraphValidator(
+    validator = reference_graph_validator.ReferenceGraphValidator(
         program_result.reference_graph,
         program_result.definition_results,
-    ).validate()
+        entry_action=program_result.entry_action,
+    )
+    reference_graph_result = validator.validate()
     if not expect_errors:
         test_helpers.assert_no_errors(program_result)
     return reference_graph_result.action_call_graph

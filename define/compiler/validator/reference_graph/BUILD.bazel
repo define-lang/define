@@ -312,10 +312,12 @@ py_library(
         "//tools:__subpackages__",
     ],
     deps = [
+        ":action_contract",
         ":definition_postorder_validator",
         ":operation_graph",
         ":reference_graph_validation_state",
         "//define/compiler:ast",
+        "//define/compiler:diagnostics",
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/graphs:action_call_graph",
         "//define/compiler/graphs:reference_graph",

@@ -112,6 +112,7 @@ def test_independent_actions_validate_in_parallel():
         result = reference_graph_validator.ReferenceGraphValidator(
             structural_result.reference_graph,
             structural_result.definition_results,
+            entry_action=structural_result.entry_action,
         ).validate(max_workers=2)
 
     assert_no_errors(structural_result)
@@ -145,6 +146,7 @@ def test_referenced_action_finishes_before_referencing_action_starts():
         reference_graph_validator.ReferenceGraphValidator(
             structural_result.reference_graph,
             structural_result.definition_results,
+            entry_action=structural_result.entry_action,
         ).validate(max_workers=2)
 
     assert completed_actions == {_CALLEE_NAME, _CALLER_NAME}
@@ -177,6 +179,7 @@ def test_shared_referenced_definition_is_validated_once():
         reference_graph_validator.ReferenceGraphValidator(
             structural_result.reference_graph,
             structural_result.definition_results,
+            entry_action=structural_result.entry_action,
         ).validate(max_workers=3)
 
     assert validation_count_by_action == {
@@ -211,6 +214,7 @@ def test_reference_failure_prevents_referencing_action_validation():
         reference_graph_validator.ReferenceGraphValidator(
             structural_result.reference_graph,
             structural_result.definition_results,
+            entry_action=structural_result.entry_action,
         ).validate(max_workers=2)
 
     assert analyzed_actions == {_CALLEE_NAME, _SECOND_CALLEE_NAME}

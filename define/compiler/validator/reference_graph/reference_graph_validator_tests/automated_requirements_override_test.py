@@ -31,7 +31,9 @@ def test_action_caller_occupied_overrides_inner_empty(
 def test_action_caller_empty_overrides_inner_occupied(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_occupied_implied_position_requirements=True
+    )
     assert_no_errors(result.program_result)
 
 

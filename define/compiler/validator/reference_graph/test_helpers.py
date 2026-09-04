@@ -41,6 +41,7 @@ def get_results(
         reference_graph_validator.ReferenceGraphValidator(
             structural.reference_graph,
             structural.definition_results,
+            entry_action=structural.entry_action,
         ).validate()
     return results
 
