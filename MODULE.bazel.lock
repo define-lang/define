@@ -41,8 +41,8 @@
     "https://bcr.bazel.build/modules/aspect_rules_js/3.4.1/MODULE.bazel": "e46853c134b48bc84c9bb5c4a4c8ae792dcfd5277acac9d90c444d65fa43dd19",
     "https://bcr.bazel.build/modules/aspect_rules_js/3.4.1/source.json": "b11f550b53d451800ebd0b4f38a048aea33fbfbd78fb5c77dca847f6b9b47a3b",
     "https://bcr.bazel.build/modules/aspect_rules_lint/0.12.0/MODULE.bazel": "e767c5dbfeb254ec03275a7701b5cfde2c4d2873676804bc7cb27ddff3728fed",
-    "https://bcr.bazel.build/modules/aspect_rules_lint/2.8.0/MODULE.bazel": "68e006fca1b1d1586f6d97287be84f32ea23251564bf04bb8cde0d0439f00915",
-    "https://bcr.bazel.build/modules/aspect_rules_lint/2.8.0/source.json": "478058e736ac4efb2426d5be83d0bccac045e5638ad58a623b4a1a0bad5d4298",
+    "https://bcr.bazel.build/modules/aspect_rules_lint/2.9.0/MODULE.bazel": "d2b5471ea7e3078b8228359f2b5a1c28817a32bca842e40625284fd3474ddee9",
+    "https://bcr.bazel.build/modules/aspect_rules_lint/2.9.0/source.json": "e9abf42d80f342ff5ef1b148573c86bb0c4e5a84a73ebab6f636648c3466cc21",
     "https://bcr.bazel.build/modules/aspect_tools_telemetry/0.5.0/MODULE.bazel": "ba637a3c23e2713a14b946f1cf218f5575239fb0002bf97a8ec390dd35f6f98e",
     "https://bcr.bazel.build/modules/aspect_tools_telemetry/0.5.1/MODULE.bazel": "9d94e5c22c0019995c0a3216a6abb1717dc3f35acccf4e6267a55d6df38367aa",
     "https://bcr.bazel.build/modules/aspect_tools_telemetry/0.5.2/MODULE.bazel": "c715a5fb6b13a0086c061618f00d033a4ab6d76cbd1083e38d7ca953b5e547f4",
@@ -419,7 +419,7 @@
     "@@aspect_tools_telemetry+//:extension.bzl%telemetry": {
       "general": {
         "bzlTransitiveDigest": "ihzLOoAnQP6Y5iSYOhEjvb6uxEbA6ZgH8Qikau2lGRU=",
-        "usagesDigest": "uY//vfZiL9pK5zrq7gNcSYB4dSuZqgw4DkeuvmlwQnc=",
+        "usagesDigest": "TXD8jWSIrf8WRsqRyQbu21NRSGE/dpOLznIXA06pgF8=",
         "recordedInputs": [
           "REPO_MAPPING:aspect_tools_telemetry+,bazel_lib bazel_lib+",
           "REPO_MAPPING:aspect_tools_telemetry+,bazel_skylib bazel_skylib+",
@@ -431,11 +431,11 @@
             "attributes": {
               "deps": {
                 "aspect_rules_py": "",
-                "aspect_rules_lint": "2.8.0",
+                "aspect_rules_lint": "2.9.0",
                 "aspect_rules_js": "3.4.1",
                 "aspect_tools_telemetry": "0.5.2"
               },
-              "last_notice": 2
+              "last_notice": 3
             }
           }
         },
