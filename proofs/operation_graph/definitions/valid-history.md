@@ -277,8 +277,9 @@ proofs can conclude “for every valid Define program execution”:
    “previous” the meaning used by all three resolved graph rules;
 3. the states at Action Requirement, Action Guarantee, and Destruction Contract
    boundaries agree with the resolved operation transitions; and
-4. prefix replacement gives distinct resolved positions to distinct Action
-   Executions while preserving every parent and child relationship; and
+4. prefix replacement distinguishes separate local positions of Action
+   Executions, preserves shared implied positions and reused interface
+   positions, and preserves every parent and child relationship; and
 5. the resolved position names that may be queried at each index are exactly
    those supplied by Position Definitions, Action Executions, valid position
    references, and Move name changes.

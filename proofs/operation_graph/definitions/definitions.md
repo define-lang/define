@@ -41,14 +41,21 @@ occurrences.
 
 ## Resolved positions
 
-A _resolved position_ identifies one position for one particular sequence of
-Action Executions and particles. Thus, the same global position name used by two
-different Action Executions denotes two different resolved positions.
+A _resolved position_ identifies the position on which a resolved Particle
+Operation acts. Different Action Executions do not necessarily use different
+resolved positions. For example, two actions can operate on the same implied
+position of the same particle, and successive executions of one action reuse its
+interface positions. Those accesses must retain the same resolved position so
+the graph rules account for their previous Particle Operations.
 
 For the proof, represent a resolved position by its sequence of position-name
 components. Action names that occur between position names in Define syntax do
-not add another position component. The occurrence identities associated with
-the components distinguish separate Action Executions.
+not add another position component. Components distinguish separate positions,
+including different actions' interface positions and local positions belonging
+to separate Action Executions, while preserving shared positions across
+executions. Replacing a position's particle does not erase that position's
+operation history. Constructing these components from source remains part of the
+source-to-history obligations below.
 
 Write
 

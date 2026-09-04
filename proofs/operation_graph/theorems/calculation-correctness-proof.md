@@ -29,9 +29,12 @@ empties a related position. A Move additionally writes entries under the changed
 names of the moved particle's transitive child positions.
 
 The source-to-history construction must derive this persistence from resolved
-Position Definitions and Action Executions. Distinct Action Executions have
-distinct resolved names, so persistence cannot make one execution collect an
-unrelated occurrence from another execution.
+Position Definitions and Action Executions. Local positions belonging to
+separate Action Executions need distinct names, but shared implied positions and
+reused interface positions must retain their names across executions. An
+execution may therefore collect an earlier execution's Particle Operation on one
+of those shared positions. Distinct occurrence identities do not imply distinct
+resolved positions.
 
 ## Entry facts
 
