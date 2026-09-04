@@ -109,14 +109,13 @@ compiler will forbid it.
 
 ### Automatic Destruction
 
-At the end of an Action Statements Block, any particles still existing in
+At the end of an Action Statements Block, all particles still existing in
 positions that are only defined locally within that Action Statements Block are
-automatically destroyed in reverse order of their position definition
-statements.
+simultaneously automatically destroyed.
 
-In essence, the compiler inserts destruction statements at the end of an Action
-Statements Block to implement this. Currently, the language allows the compiler
-to deterministically know which positions will or won't contain particles.
+Currently, the language allows the compiler to deterministically know which
+positions will or won't contain particles, so the compiler can know exactly how
+and when to perform auto-destruction.
 
 In the future, if the compiler is uncertain about whether a position still
 contains a particle, the compiler will insert code that only destroys particles
@@ -127,233 +126,174 @@ longer possibly be referenced.
 
 ### Optimization of Destruction
 
-In situations where the compiler knows that destruction is free of side effects
-(there are no action triggers watching for the destruction of that particle,
-including no triggers watching any of the other positions that particle
-transitively defines), the compiler may choose to automatically destroy local
-particles within an Action Statements Block the instant they are no longer
-relevant to the code in the Action Statements Block.
+In situations where the compiler knows that destruction is free of side effects,
+the compiler may choose to automatically destroy local particles within an
+Action Statements Block the instant they are no longer relevant to the code in
+the Action Statements Block.
 
-When safe, the compiler may choose to destroy multiple particles simultaneously
-(in parallel).
+### Forbidding Action Triggering on Absence
 
-### Cascading Destruction
+Actions may not trigger due to the _absence_ of a particle. This solves the
+Trigger Paradox problem entirely. The necessary functionality that is enabled by
+that behavior in other programming languages will be solved in a different way
+in a future proposal.
+
+### Simultaneous Transitive Destruction
 
 When a particle is destroyed, all of the particles in the positions it defines
 are also destroyed.
 
-Conceptually what happens when this occurs is that qualities are unassigned from
-the particle in reverse order to how they were assigned to it. (Note: because
-requirement statements assign qualities topologically in order according to
-their dependency tree, this inherently means that qualities will be removed in
-reverse topological order when that matters.)
-
-Before a position quality is unassigned, its particle is destroyed.
-
-Thus, in our example above in the Trigger Paradoxes section, the `ensure_floor`
-action would not run when destroying `position<house>`, because that action
-would be removed from `position<house>` before `position</floor>` was removed.
-
-During this process we inherently violate position constraints on the particle
-we are destroying. As such, this behaves similarly to creating a particle with
-respect to position constraints: all constraints defined by the position
-definition are suspended at the start of destruction until destruction
-completes.
-
-Before removing an action from a particle, destroy all particles that are still
-contained in positions defined in the Action Definition Block, in reverse order
-of when the positions were defined. (Reverse the order in which the position
-definitions are written in the Action Definition Block.) Destroying these
-particles may not trigger the action that we are mid removing (but may trigger
-another action). Once we start removing an action from a particle (and thus have
-to destroy the particles it defines) it may no longer trigger or check its
-conditions.
-
-Destruction completes as though it were a written series of unassignment and
-destruction statements in code to perform all necessary unassignments and all
-cascading of destruction. Thus, any action that triggers due to destruction of a
-particle fires immediately after its destruction is complete. This means that if
-a particle defines a position, the destruction of a particle in that child
-position may trigger an action asynchronously before the destruction of the
-parent particle is complete.
-
-The compiler may optimize this process and does not have to actually manually
-unassign every quality, it just needs to ensure identical behavior occurs as if
-it _had_ done so.
-
-Actions that would trigger due to the removal of a quality from a particle do
-not fire due to this quality removal process that happens automatically during
-destruction.
+Conceptually, both the destroyed particle and all of its transitive children are
+destroyed instantaneously, except where other rules of Define would impose a
+dependency order between those destructions.
 
 ## A Real Program
 
+Here is a direct destruction with two levels of child positions:
+
 ```
-define the potential position<mv:example.com:example:/kitchen>.
-define the potential position<mv:example.com:example:/trash_can>.
-define the potential position<mv:example.com:example:/backyard>.
-define the potential position<mv:example.com:example:/toy>.
-define the potential position<mv:example.com:example:/bedroom> {
-    it also assigns the position</toy>.
-}
-define the potential position<mv:example.com:example:/house> {
-    it may only contain particles where {
-        it has the position</kitchen>.
-        it has the position</bedroom>.
-        it has the position</backyard>.
-    }
+define the potential position<mv:example.com:example:/leaf>.
+
+define the potential position<mv:example.com:example:/branch> {
+    it also assigns the position</leaf>.
 }
 
-define the potential action<mv:example.com:example:/enter_house> {
-    it also assigns the position</house>.
-
-    define the position<door>.
-
+define the potential action<mv:example.com:example:/destroy_tree> {
     it happens when {
-        the position<door> has a particle.
+        this particle is created.
     } and it does {
-        create a particle in position</house>.
-        create a particle in position</house>::position</bedroom>.
-        create a particle in position</house>::position</backyard>.
-        create a particle in position</house>::position</kitchen>.
-        destroy the particle in position<door>.
-    }
-}
-
-define the potential action<mv:example.com:example:/make_bed> {
-    define the position<do_it>.
-    define the position<bed>.
-
-    it happens when {
-        the position<do_it> has a particle.
-    } and it does {
-        create a particle in position<bed>.
-        destroy the particle in position<do_it>.
-    }
-}
-
-define the potential action<mv:example.com:example:/get_angry> {
-    it also assigns the action</make_bed>.
-
-    define the position<cooled_down>.
-    define the position<got_angry>.
-
-    it happens when {
-        NOT action</make_bed>::position<bed> has a particle.
-    } and it does {
-        create a particle in position<got_angry>.
-        define the position<toy>.
-        create a particle in position<toy>.
-        create a particle in position<cooled_down>.
-        # The particle toy is now automatically destroyed here.
-    }
-}
-
-define the potential action<mv:example.com:example:/clean_kitchen> {
-    it also assigns the action</enter_house>.
-    it also assigns the position</trash_can>.
-
-    define the position<remember_to_clean>.
-    define the position<trash>.
-
-    it happens when {
-        the position<remember_to_clean> has a particle.
-        AND
-        the position<trash> has a particle.
-    } and it does {
-        create a particle in action</enter_house>::position<door>.
-        move the particle in position<trash> to position</trash_can>.
-        destroy the particle in position</trash_can>.
-        destroy the particle in position<remember_to_clean>.
-    }
-}
-
-define the potential action<mv:example.com:example:/run_program> {
-    it happens when {
-        # Some syntax that causes it to trigger when the program starts
-    } and it does {
-        define the position<person> {
+        define the position<tree> {
             it may only contain particles where {
-                it has the action</clean_kitchen>.
-                it has the action</get_angry>.
-                it has the action</make_bed>.
-                it has the position</house>.
+                it has the position</branch>.
             }
         }
-        define the position<dog>.
-        create a particle in position<dog>.
+        create a particle in position<tree>.
+        create a particle in position<tree>::position</branch>.
+        create a particle in position<tree>::position</branch>::position</leaf>.
 
-        # This assigns positions in the following order:
-        # 1. position</house>
-        # 2. position</trash_can>
-        # 3. action</clean_kitchen>
-        # 4. action</make_bed>
-        # 5. action</get_angry>
-        #
-        # Most of that happens via quality implication statements.
-        create a particle in position<person>.
+        # This also destroys the particles in position</branch> and
+        # position</leaf>; every transitive child particle is destroyed.
+        destroy the particle in position<tree>.
+    }
+}
+```
 
-        create a particle in position<person>::action</clean_kitchen>::position<trash>.
+Destruction works the same way when another action performs it:
 
-        # This creates the house by calling enter_house. It assigns the following positions
-        # to position</house>, in the following order:
-        # 1. position</kitchen>.
-        # 2. position</bedroom>.
-        # 3. position</backyard>.
-        #
-        # Note that it creates particles in a different order (which doesn't matter).
-        create a particle in position<person>::action</clean_kitchen>::position<remember_to_clean>.
+```
+define the potential position<mv:example.com:example:/furniture>.
 
-        # We are a magical person who can clean the kitchen and make the bed simultaneously.
-        create a particle in position<person>::action</make_bed>::position<do_it>.
+define the potential position<mv:example.com:example:/room> {
+    it also assigns the position</furniture>.
+}
 
-        # This triggers get_angry.
-        destroy the particle in position<person>::action</make_bed>::position<bed>.
-        create a particle in position<person>::action</make_bed>::position<do_it>.
+define the potential action<mv:example.com:example:/demolish> {
+    define the position<target> {
+        it may only contain particles where {
+            it has the position</room>.
+        }
+    }
+    define the position<run>.
 
-        destroy the particle in position<person>::position</house>::position</bedroom>.
-        # Now automatically, at the end of the action, here is what happens:
-        # 1. The particle in position<person> starts destruction, which
-        #    triggers these changes on that particle:
-        #    (a) Destroy the particle in action</get_angry>::position<got_angry>.
-        #    (b) Destroy the particle in action</get_angry>::position<cooled_down>.
-        #    (c) Remove the action</get_angry>
-        #    (d) Destroy the particle in action</make_bed>::position<bed>.
-        #    (e) Remove the action</make_bed>
-        #    (f) Remove the action</clean_kitchen>
-        #    (g) Remove the position</trash_can>
-        #    (h) Start destruction of the particle in position</house>,
-        #        which triggers these changes on that particle:
-        #        i. Destroy the particle in position</backyard>.
-        #        ii. Remove the position</backyard>.
-        #        iii. Remove the position</bedroom> (already empty).
-        #        iv. Destroy the particle in position</kitchen>.
-        #        v. Remove the position</kitchen>.
-        #   (i) Destruction of the particle in position</house> completes. If
-        #       any actions were watching for position<person>::position</house> to
-        #       become empty, they would now fire (though this could only be a "wait
-        #       until" block).
-        # 2. Destruction of the particle in position<person> completes. If any
-        #    actions were watching for position<person> to become empty, they would now
-        #    fire.
-        # 3. The particle in position<dog> is destroyed, and any relevant trigger
-        #    conditions check themselves.
-        # 4. position<person> and position<dog> simultaneously cease to exist and may no
-        #    longer be referenced by any part of the program.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        # This destroys the target particle and every transitive child particle,
+        # including the particles in position</room> and position</furniture>.
+        destroy the particle in position<target>.
+        destroy the particle in position<run>.
+    }
+}
+
+define the potential action<mv:example.com:example:/renovate> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<building> {
+            it may only contain particles where {
+                it has the action</demolish>.
+            }
+        }
+        create a particle in position<building>.
+        create a particle in position<building>::action</demolish>::position<target>.
+        create a particle in position<building>::action</demolish>::position<target>::position</room>.
+        create a particle in position<building>::action</demolish>::position<target>::position</room>::position</furniture>.
+
+        # Triggering action</demolish> destroys all three particles created in
+        # its position<target> chain, without the caller naming each Destroy.
+        create a particle in position<building>::action</demolish>::position<run>.
     }
 }
 ```
 
 ## Why This is the Right Solution
 
-The cascade is specified in the only order that guarantees safe destruction.
+Destroying all particles simultaneously is essentially choosing _no_ ordering of
+destruction. It is the safest baseline from which to start, and then other rules
+of Define impose the ordering.
 
-We destroy action-defined positions and local particles in reverse order of
-their definitions because we need some deterministic ordering (so that we can
-statically analyze programs and know exactly what happens) and because that is
-the easiest sequence for the compiler to check (position definition order is
-completely static). It also might help if we ever introduce a future syntax that
-allows positions to refer to each other in their definitions (it would give us
-some hope that that syntax continues to work correctly during destruction).
+It _does_ mean that compiler implementation details can change the sequence in
+which code actually executes, meaning that we cannot know _exactly_ what will
+happen statically in a program, in a way. The real constraint it imposes upon us
+is that (unless some dependency is imposed on destruction order by other rules)
+that we have to make it such that a program analyzes identically regardless of
+the actual order in which destruction occurs, or that all analyzers behave as
+though particles are all destroyed instantly at the same time together (which is
+the safer analysis assumption).
+
+My present belief (having actually done extensive work to implement this in the
+compiler at the time I'm writing this) is that it's actually much simpler to
+implement the analysis for simultaneous destruction than it was to implement the
+analysis for ordered destruction.
+
+The limitation this solution places on us is that any form of destruction
+ordering that is required _outside_ of the program must be imposed upon Define
+programs as internal dependency ordering. However, I believe that's fine,
+because I think programs _must_ express those dependencies naturally. For
+example, a buffer that must be flushed before a file is closed, there is some
+dependency relationship there that can be exploited to enforce that order. Every
+situation that I could come up with, when represented properly in a program,
+enforced an actual dependency relationship within the program, and the syntax
+and semantics of Define seemed like they would enforce that relationship
+successfully. There's still a risk if we fail to implement parts of the standard
+library correctly, directly expose syscalls to the programmer, or allow other
+forms of unsafe direct access to the "outside world." However, within the
+confines of Define itself, I believe this decision to be safe.
+
+### Previous Solution: The Destruction Cascade
+
+This proposal used to describe a system where child particles were destroyed
+before parents, and all particles were destroyed in reverse order of how their
+_qualities_ were assigned to their parent particle. This was called the
+"destruction cascade."
+
+At the time, I believed that triggering actions upon the absence of particles
+would be a necessary part of Define, and this reverse-order cascade seemed to be
+the simplest way to guarantee correctness in that world. It also seemed to
+create a predictable world for static analysis.
+
+The primary problem I Was trying to solve was the ability to refer to particles
+during the process of destruction, before they were destroyed. However, it
+turned out to be much simpler to simply ban triggering actions on particle
+absence, which solves the whole problem in a different way.
+
+Particles in local positions were destroyed in reverse order to when their
+positions were defined. Action interface positions were destroyed in a similar
+order (reverse definition order). I chose that order because I believed we
+needed some deterministic ordering so that we could statically analyze programs
+and know exactly what happens, and because definition order was the easiest
+sequence for the compiler to check within a single action (position definition
+order is completely static). It also protected us if we ever introduced a future
+syntax that allowed positions to refer to each other in their definitions (it
+would give us some hope that that syntax continues to work correctly during
+destruction).
+
+However, imposing a fixed ordering on destruction became impossible to reason
+through across actions. If one action defines child positions in one order but
+the caller defined them in a different order, which order did we choose? We
+would have had to go back to the creation point of every particle to know how to
+destroy it, which created a computationally untenable (and very complex) static
+analysis problem in large programs.
 
 ### Alternative Solutions
 
@@ -371,20 +311,25 @@ Originally I chose to auto-delete particles in reverse order of their creation
 instead of reverse order of their position definitions, but that gets a bit
 confusing when you move particles around (especially if you moved a particle
 from an action-defined position into a local position, where you have no idea
-when the action-defined position was created).
+when the action-defined position was created). There was an interesting lesson
+there, though: creation has to do with positions and can reason about positions,
+but destruction always has to do with the particle, because it could have moved
+from its creation position into a position with different (looser) constraints.
 
 ## Forward Compatibility
 
-Any time we set an order for anything, we create a forward compatibility risk,
-as programmers then rely on that being the order. The ordering described in this
-proposal should be safe, but there's a slight chance we would have to change the
-ordering of destruction for local positions. For the cascade, I believe I have
-specified it to occur in the only possible logical order that is safe and
-prevents impossible situations (like trying to refer to positions that don't
-exist while tearing down a particle).
+Refusing to set an order and requiring that order to happen simultaneously
+leaves some of the aspects of destruction up to the implementation details of a
+compiler. However, having any form of safe simultaneity does tend to lead toward
+similar properties across implementations. Plus, given that any future required
+dependencies would have to be expressed in Define code, analysis would still
+tell us the required _partial_ order of destruction. Thus we could preserve that
+partial order in future implementations if we change our mind.
 
-Otherwise, the syntax is unambiguous. The "end of action" behavior is also
-unambiguous because we can tell where actions end in the syntax.
+In a way, we are choosing to impose _no_ restriction, which actually makes it
+quite easy to change our minds in the future, since "run this in any order" is a
+superset of any given order that we choose. Plus it's not _really_ "any order,"
+it's simultaneous.
 
 ## Refactoring Existing Systems
 
