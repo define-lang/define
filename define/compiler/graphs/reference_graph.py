@@ -57,6 +57,7 @@ class ReferenceGraph:
         # possible, but would use about 1.1 GB for five million definitions with
         # three references each.
         self._depth_by_name: dict[str, int] = {}
+        self._next_definition_depth: int = 0
         self._definition_by_name: dict[str, ast.QualityDefinition] = {}
 
     def add_definition(self, definition: ast.QualityDefinition):
@@ -127,7 +128,11 @@ class ReferenceGraph:
     def _add_name(self, definition_name: str):
         if definition_name not in self._references_by_name:
             self._references_by_name[definition_name] = {}
-            self._depth_by_name[definition_name] = 0
+            # An unreferenced definition can precede every known definition.
+            # Starting each at zero would repeatedly renumber an entire chain
+            # when definitions refer to previously defined names.
+            self._depth_by_name[definition_name] = self._next_definition_depth
+            self._next_definition_depth -= 1
 
     # Algorithm: Worklist-based forward propagation of topological-depth
     # constraints.
