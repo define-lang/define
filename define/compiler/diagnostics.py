@@ -923,7 +923,7 @@ class DestructorProducesEmptyGuaranteeDiagnostic(DestructorGuaranteeDiagnostic):
     """Diagnostic for when a destructor leaves a contracted position empty that started occupied."""
 
     message_format: ClassVar[str] = (
-        "a destructor must leave every position in the state it was in when it started.\n"
+        "a destructor must leave every contracted position in the state it was in when it started.\n"
         "However, this line empties '{self.position_name}' and then nothing puts the same"
         " particle back into that position."
     )
@@ -934,7 +934,7 @@ class DestructorProducesOccupiedGuaranteeDiagnostic(DestructorGuaranteeDiagnosti
     """Diagnostic for when a destructor leaves a new particle in a contracted position."""
 
     message_format: ClassVar[str] = (
-        "a destructor must leave every position in the state it was in when it started.\n"
+        "a destructor must leave every contracted position in the state it was in when it started.\n"
         "However, this line creates a new particle in '{self.position_name}' and then"
         " nothing removes it from that position."
     )
@@ -948,7 +948,7 @@ class DestructorProducesOccupiedByExistingGuaranteeDiagnostic(
 
     origin_name: str
     message_format: ClassVar[str] = (
-        "a destructor must leave every position in the state it was in when it started.\n"
+        "a destructor must leave every contracted position in the state it was in when it started.\n"
         "However, this line moves a particle from '{self.origin_name}' into"
         " '{self.position_name}' and then nothing moves it back out of that position."
     )

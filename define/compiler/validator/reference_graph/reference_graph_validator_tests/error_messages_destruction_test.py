@@ -336,7 +336,7 @@ def test_destructor_moved_guarantee_names_contracted_origin_format(
         File "test.dfn", line 16, column 30
                 move the particle in position<incoming> to position<tmp>.
                                      ^
-        a destructor must leave every position in the state it was in when it started.
+        a destructor must leave every contracted position in the state it was in when it started.
         However, this line empties 'position<incoming>' and then nothing puts the same particle back into that position.""")
     )
     assert (
@@ -345,7 +345,7 @@ def test_destructor_moved_guarantee_names_contracted_origin_format(
         File "test.dfn", line 17, column 65
                 move the particle in position<tmp>::position</child> to position<dest>.
                                                                         ^
-        a destructor must leave every position in the state it was in when it started.
+        a destructor must leave every contracted position in the state it was in when it started.
         However, this line moves a particle from 'position<incoming>::position</child>' into 'position<dest>' and then nothing moves it back out of that position.""")
     )
 
@@ -374,7 +374,7 @@ def test_destructor_occupied_guarantee_format(
         File "test.dfn", line 6, column 30
                 create a particle in position<item>.
                                      ^
-        a destructor must leave every position in the state it was in when it started.
+        a destructor must leave every contracted position in the state it was in when it started.
         However, this line creates a new particle in 'position<item>' and then nothing removes it from that position.""")
     )
 
