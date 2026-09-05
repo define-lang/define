@@ -1581,6 +1581,18 @@ same DAG.
 We have [proofs](../../proofs/operation_graph/) for some of the logic in this
 section.
 
+#### Particle Operation Recency
+
+A Particle Operation is more recent than another when it would occur later in a
+program executed serially according to this spec excluding this Particle
+Operation Dependency Graph section.
+
+Logically simultaneous Particle Operations (such as destroys of transitive child
+particles) have identical recency.
+
+Recency does not describe runtime execution order. The dependency graph
+determines which operations may execute concurrently or in a different order.
+
 #### The Fill Rule
 
 Filling a position depends on the single most recent previous Particle Operation
@@ -1602,13 +1614,16 @@ particle.
 
 ##### Comparison
 
-When any position operated on by one of those Particle Operations is the same
-as, a transitive parent of, or a transitive child of a position operated on by
-another, only the more recent Particle Operation remains a dependency.
+Use the following rules to exclude some of the collected Particle Operations:
 
-Note: every Particle Operation selected during Collection participates in this
-comparison. A Particle Operation excluded by a more recent operation can still
-exclude an older operation.
+- Exclude a collected Particle Operation if a more recent collected Particle
+  Operation operates on a position that is the same as, a transitive parent of,
+  or a transitive child of any position operated on by the first operation.
+- Exclude a collected Destroy if another collected Destroy has identical recency
+  and operates on a transitive parent of the first Destroy's position.
+
+Every collected Particle Operation participates in determining these exclusions,
+including operations that are themselves excluded.
 
 ##### Move Correction
 
