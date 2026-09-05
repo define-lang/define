@@ -340,16 +340,10 @@ class CalleeBindingPlan:
     post_init_guarantee_consumption_plans: list[GuaranteeConsumptionPlan] = field(
         default_factory=list
     )
-    _caller_fanouts_containing_init: list[tuple[InitPlan, list[FanoutContinuation]]] = (
-        field(
-            default_factory=list,
-            repr=False,
-        )
-    )
-    _requires_init_before_caller_fanout: bool = field(
+    # Chosen once after caller fanouts and callee configuration are known.
+    requires_separate_init: bool = field(
         init=False,
         default=False,
-        repr=False,
     )
 
     @property
@@ -408,29 +402,6 @@ class CalleeBindingPlan:
         return bool(self.callee_fanout.continuations)
 
     @property
-    def configures_action_executions_after_init(self) -> bool:
-        """Whether the caller configures Action Executions after their init."""
-        return bool(
-            self.post_init_join_assignments
-            or self.post_init_guarantee_consumption_plans
-        )
-
-    @property
-    def requires_separate_init(self) -> bool:
-        """Whether a caller must invoke init before the callee fanout."""
-        return bool(
-            self.has_continuations
-            and (
-                self._requires_init_before_caller_fanout
-                or any(
-                    len(continuations) != 1
-                    for _, continuations in self._caller_fanouts_containing_init
-                )
-                or self.configures_action_executions_after_init
-            )
-        )
-
-    @property
     def caller_invokes_init_method(self) -> bool:
         """Whether this Callee Binding makes the caller invoke an init method."""
         return self.requires_separate_init or (
@@ -446,6 +417,20 @@ class CalleeBindingPlan:
     def requires_caller_method(self) -> bool:
         """Whether invoking this Callee Binding requires caller-side work."""
         return not self.inline_after_local_operation and self._has_caller_work
+
+    def has_work_to_inline(self) -> bool:
+        """Whether caller work can follow a sole caller Particle Operation inline."""
+        # Whether the caller performs this work immediately after its Particle
+        # Operation affects whether init must be separate, not the other way around.
+        if self.has_inits:
+            return True
+        if self.guarantee_dependencies:
+            return True
+        if self.contributed_destruction_operations:
+            return True
+        return (
+            self._callee_binding.callee_destroy_for_empty_or_fill_dependency is not None
+        )
 
     @property
     def _has_caller_work(self) -> bool:
@@ -467,42 +452,6 @@ class CalleeBindingPlan:
             and not self.requires_separate_init
             and not self.inline_after_local_operation
         )
-
-    def add_to(
-        self,
-        inits: InitPlan,
-        continuations: list[FanoutContinuation],
-    ):
-        """Add this Callee Binding to the init and fanout it requires."""
-        if self.has_inits:
-            inits.callee_binding_plans.append(self)
-            self._caller_fanouts_containing_init.append((inits, continuations))
-        if self.has_continuations:
-            continuations.append(self)
-
-    def place_after_local_operation(self, fragment: ActionFragment):
-        """Place caller work immediately after its sole Particle Operation."""
-        self.inline_after_local_operation = True
-        fragment.inline_callee_binding_plans.append(self)
-        if self.has_continuations:
-            if self.has_inits:
-                self._requires_init_before_caller_fanout = True
-            fragment.fanout_continuations.append(self)
-
-    def finalize_init(self):
-        """Let a Callee Binding Hole perform init used only by its fanout."""
-        self._requires_init_before_caller_fanout = (
-            self._requires_init_before_caller_fanout
-            or any(
-                len(continuations) != 1
-                for _, continuations in self._caller_fanouts_containing_init
-            )
-        )
-        if self.has_continuations and not self.configures_action_executions_after_init:
-            for inits, continuations in self._caller_fanouts_containing_init:
-                if len(continuations) == 1:
-                    inits.callee_binding_plans.remove(self)
-        self._caller_fanouts_containing_init.clear()
 
 
 type JoinTarget = ActionFragment | BindingHoleFanout | CalleeBindingPlan
@@ -532,6 +481,90 @@ class _CalleeBindingPlans:
             for callee_binding_plan in self.by_callee_binding.values()
             if callee_binding_plan.requires_caller_method
         ]
+
+
+@dataclass(slots=True)
+class _CallerFanoutWithInitCandidates:
+    """A caller fanout and the callee inits it may require."""
+
+    continuations: list[FanoutContinuation]
+    callee_init_candidates: list[CalleeBindingPlan] = field(default_factory=list)
+
+
+@typing.final
+class _CalleeBindingInitPlanner:
+    """Choose caller init calls after fanouts and callee configuration are known."""
+
+    def __init__(self):
+        self._caller_fanouts: dict[InitPlan, _CallerFanoutWithInitCandidates] = {}
+
+    def record_callee_binding_in_fanout(
+        self,
+        callee_binding: CalleeBindingPlan,
+        inits: InitPlan,
+        continuations: list[FanoutContinuation],
+    ):
+        """Record a callee init candidate and its runnable continuation."""
+        if callee_binding.has_inits:
+            fanout = self._caller_fanouts.get(inits)
+            if fanout is None:
+                fanout = _CallerFanoutWithInitCandidates(continuations)
+                self._caller_fanouts[inits] = fanout
+            fanout.callee_init_candidates.append(callee_binding)
+        if callee_binding.has_continuations:
+            continuations.append(callee_binding)
+
+    def has_inits_or_candidates(self, inits: InitPlan) -> bool:
+        """Whether an InitPlan has planned inits or pending callee init candidates."""
+        return inits.has_inits or inits in self._caller_fanouts
+
+    def plan(
+        self,
+        callee_bindings: Iterable[CalleeBindingPlan],
+        callee_joins: list[_CalleeJoinPlan],
+    ):
+        """Choose init ownership and add only the required caller init calls."""
+        # Several Joins and caller fanouts can require the same callee init;
+        # they contribute one decision, not additional runtime invocations.
+        bindings_requiring_separate_init: set[CalleeBindingPlan] = set()
+        for callee_join in callee_joins:
+            if isinstance(
+                callee_join.plan_receiving_join_assignment, CalleeBindingPlan
+            ):
+                bindings_requiring_separate_init.add(
+                    callee_join.plan_receiving_join_assignment
+                )
+        for fanout in self._caller_fanouts.values():
+            # Another Binding Hole in this fanout can use the new execution,
+            # so all init must finish before any of its continuations start.
+            if len(fanout.continuations) != 1:
+                bindings_requiring_separate_init.update(fanout.callee_init_candidates)
+        for callee_binding in callee_bindings:
+            callee_binding.requires_separate_init = self._requires_separate_init(
+                callee_binding, bindings_requiring_separate_init
+            )
+        for inits, fanout in self._caller_fanouts.items():
+            for callee_binding in fanout.callee_init_candidates:
+                if callee_binding.caller_invokes_init_method:
+                    inits.callee_binding_plans.append(callee_binding)
+
+    @staticmethod
+    def _requires_separate_init(
+        callee_binding: CalleeBindingPlan,
+        bindings_requiring_separate_init: set[CalleeBindingPlan],
+    ) -> bool:
+        # An init-only Binding Hole has no runnable work to separate from init.
+        if not callee_binding.has_continuations:
+            return False
+        # Join assignment or another continuation in the caller fanout needs
+        # the new execution before the callee starts runnable work.
+        if callee_binding in bindings_requiring_separate_init:
+            return True
+        # Register Guarantee consumptions before callee work can publish them.
+        if callee_binding.post_init_guarantee_consumption_plans:
+            return True
+        # Inline caller work performs init before scheduling the callee fanout.
+        return callee_binding.inline_after_local_operation and callee_binding.has_inits
 
 
 @dataclass(frozen=True, slots=True, eq=False)
@@ -987,12 +1020,14 @@ class _CalleeBindingPlanner:
             operation_graph_model.ResolvedCalleeDestroy,
             DestructionConnection,
         ],
+        init_planner: _CalleeBindingInitPlanner,
     ):
         self._resolved_action = resolved_action
         self._planned_actions = planned_actions
         self._action_fragment_plans = action_fragment_plans
         self._action_executions = action_executions
         self._destruction_connections = destruction_connections
+        self._init_planner = init_planner
 
     def plan(self) -> _CalleeBindingPlans:
         """Plan direct Callee Bindings and Binding Hole fanouts."""
@@ -1040,15 +1075,17 @@ class _CalleeBindingPlanner:
             sole_caller_particle_operation = (
                 callee_binding.sole_caller_particle_operation
             )
+            has_work_to_inline = callee_binding_plan.has_work_to_inline()
             for operation in callee_binding.caller_dependencies.local_operations:
                 fragment = self._action_fragment_plans.fragment_for_operation[operation]
-                if (
-                    callee_binding_plan.requires_caller_method
-                    or callee_binding_plan.has_inits
-                ) and operation is sole_caller_particle_operation:
-                    callee_binding_plan.place_after_local_operation(fragment)
+                if operation is sole_caller_particle_operation and has_work_to_inline:
+                    callee_binding_plan.inline_after_local_operation = True
+                    fragment.inline_callee_binding_plans.append(callee_binding_plan)
+                    if callee_binding_plan.has_continuations:
+                        fragment.fanout_continuations.append(callee_binding_plan)
                     continue
-                callee_binding_plan.add_to(
+                self._init_planner.record_callee_binding_in_fanout(
+                    callee_binding_plan,
                     fragment.inits,
                     fragment.fanout_continuations,
                 )
@@ -1089,7 +1126,8 @@ class _CalleeBindingPlanner:
                 binding_hole_fanout = binding_hole_fanout_by_binding_hole[
                     caller_binding_hole
                 ]
-                callee_binding_plan_by_callee_binding[callee_binding].add_to(
+                self._init_planner.record_callee_binding_in_fanout(
+                    callee_binding_plan_by_callee_binding[callee_binding],
                     binding_hole_fanout.inits,
                     binding_hole_fanout.continuations,
                 )
@@ -1171,6 +1209,7 @@ class _InitPlanner:
             list[DestructionConnection],
         ],
         init_locator: _ActionExecutionInitLocator,
+        callee_binding_init_planner: _CalleeBindingInitPlanner,
     ):
         self._resolved_action = resolved_action
         self._resolved_actions = resolved_actions
@@ -1182,6 +1221,7 @@ class _InitPlanner:
             destruction_connections_by_guarantee
         )
         self._init_locator = init_locator
+        self._callee_binding_init_planner = callee_binding_init_planner
 
     def plan(self) -> _InitPlans:
         """Plan init and assign every Guarantee consumption."""
@@ -1273,8 +1313,8 @@ class _InitPlanner:
             assigned_consumption_plans.extend(consumption_plans)
         return assigned_consumption_plans
 
-    @staticmethod
     def _plan_consumptions_after_guarantee_inits(
+        self,
         guarantee_consumption_plans: Collection[GuaranteeConsumptionPlan],
     ) -> tuple[
         list[GuaranteeConsumptionPlan],
@@ -1344,7 +1384,12 @@ class _InitPlanner:
             consumption_plan.continuations[:] = remaining_continuations
             # Do not register a Guarantee consumption after all of its uses have
             # moved to the newly initialized Action Executions.
-            if consumption_plan.inits.has_inits or remaining_continuations:
+            if (
+                self._callee_binding_init_planner.has_inits_or_candidates(
+                    consumption_plan.inits
+                )
+                or remaining_continuations
+            ):
                 retained_consumption_plans.append(consumption_plan)
         return retained_consumption_plans, consumption_plans_by_execution
 
@@ -1425,7 +1470,8 @@ class _InitPlanner:
                     dependency,
                     guarantee_consumption_plans_by_guarantee,
                 )
-                callee_binding_plan.add_to(
+                self._callee_binding_init_planner.record_callee_binding_in_fanout(
+                    callee_binding_plan,
                     consumption_plan.inits,
                     consumption_plan.continuations,
                 )
@@ -1464,6 +1510,16 @@ class _InitPlanner:
         return consumption_plan
 
 
+@dataclass(frozen=True, slots=True)
+class _CalleeJoinPlan:
+    """A callee Join and the execution configuration that can assign it."""
+
+    caller_resolved_join: CallerResolvedJoin
+    callee_binding: operation_graph_action_resolver.CalleeBinding
+    execution_path: tuple[operation_graph_model.ActionExecution, ...]
+    plan_receiving_join_assignment: ActionExecutionPlan | CalleeBindingPlan | None
+
+
 @typing.final
 class _CallerResolvedJoinPlanner:
     """Plan Joins whose realized predecessors depend on an action's caller."""
@@ -1487,16 +1543,21 @@ class _CallerResolvedJoinPlanner:
         self._action_executions = action_executions
         self._init_locator = init_locator
 
-    def plan(self) -> list[CallerResolvedJoin]:
+    def plan(self, callee_joins: list[_CalleeJoinPlan]) -> list[CallerResolvedJoin]:
         """Plan this action's caller-resolved Joins and callee assignments."""
-        caller_resolved_joins = self._plan_callee_caller_resolved_joins()
+        caller_resolved_joins: list[CallerResolvedJoin] = []
+        for callee_join in callee_joins:
+            propagated_join = self._plan_callee_caller_resolved_join(callee_join)
+            if propagated_join is not None:
+                caller_resolved_joins.append(propagated_join)
         caller_resolved_joins.extend(self._binding_hole_caller_resolved_joins())
         caller_resolved_joins.extend(self._fragment_caller_resolved_joins())
         caller_resolved_joins.extend(self._callee_binding_caller_resolved_joins())
         return caller_resolved_joins
 
-    def _plan_callee_caller_resolved_joins(self) -> list[CallerResolvedJoin]:
-        caller_resolved_joins: list[CallerResolvedJoin] = []
+    def locate_callee_join_assignments(self) -> list[_CalleeJoinPlan]:
+        """Locate callee configuration before choosing caller init and invocations."""
+        callee_joins: list[_CalleeJoinPlan] = []
         for action_execution in self._action_executions.values():
             execution = action_execution.execution
             callee_plan = self._planned_actions[execution.callee_action_name]
@@ -1504,28 +1565,65 @@ class _CallerResolvedJoinPlanner:
                 execution
             ]
             for caller_resolved_join in callee_plan.caller_resolved_joins:
-                propagated_join = self._plan_callee_caller_resolved_join(
-                    action_execution,
-                    resolved_execution,
-                    caller_resolved_join,
+                callee_binding = resolved_execution.callee_bindings[
+                    caller_resolved_join.caller_binding_hole
+                ]
+                callee_joins.append(
+                    _CalleeJoinPlan(
+                        caller_resolved_join=caller_resolved_join,
+                        callee_binding=callee_binding,
+                        execution_path=(
+                            execution,
+                            *caller_resolved_join.execution_path,
+                        ),
+                        plan_receiving_join_assignment=self._plan_receiving_join_assignment(
+                            action_execution,
+                            resolved_execution,
+                            caller_resolved_join,
+                            callee_binding,
+                        ),
+                    )
                 )
-                if propagated_join is not None:
-                    caller_resolved_joins.append(propagated_join)
-        return caller_resolved_joins
+        return callee_joins
 
-    def _plan_callee_caller_resolved_join(
+    def _plan_receiving_join_assignment(
         self,
         action_execution: ActionExecutionPlan,
         resolved_execution: operation_graph_action_resolver.ResolvedActionExecution,
         caller_resolved_join: CallerResolvedJoin,
+        callee_binding: operation_graph_action_resolver.CalleeBinding,
+    ) -> ActionExecutionPlan | CalleeBindingPlan | None:
+        if not caller_resolved_join.execution_path:
+            # A direct callee exists when the caller configures it. Whether its
+            # Binding Hole Join is assigned or propagated depends on invocation
+            # planning, but neither choice requires a later init point.
+            return action_execution
+        if (
+            not callee_binding.concrete_dependency_count
+            and callee_binding.caller_binding_hole is not None
+        ):
+            # This caller cannot assign a transitive Join whose Binding Hole
+            # remains unresolved, so it requires no execution configuration here.
+            return None
+        init_plan = self._init_locator.callee_binding_plan(
+            resolved_execution,
+            caller_resolved_join.execution_path,
+        )
+        if init_plan is not None:
+            return init_plan
+        return action_execution
+
+    def _plan_callee_caller_resolved_join(
+        self,
+        callee_join: _CalleeJoinPlan,
     ) -> CallerResolvedJoin | None:
+        caller_resolved_join = callee_join.caller_resolved_join
         fixed_dependency_count = caller_resolved_join.fixed_dependency_count
         resolves_direct_binding_hole = bool(
             isinstance(caller_resolved_join.target, BindingHoleFanout)
             and not caller_resolved_join.execution_path
         )
-        binding_hole = caller_resolved_join.caller_binding_hole
-        callee_binding = resolved_execution.callee_bindings[binding_hole]
+        callee_binding = callee_join.callee_binding
         propagated_binding_hole = None
         if resolves_direct_binding_hole:
             callee_binding_plan = self._callee_binding_plans.by_callee_binding[
@@ -1540,45 +1638,28 @@ class _CallerResolvedJoinPlanner:
             fixed_dependency_count += 1
         else:
             propagated_binding_hole = callee_binding.caller_binding_hole
-        execution_path = (
-            action_execution.execution,
-            *caller_resolved_join.execution_path,
-        )
         if propagated_binding_hole is not None:
             return CallerResolvedJoin(
-                execution_path,
+                callee_join.execution_path,
                 caller_resolved_join.target,
                 fixed_dependency_count,
                 propagated_binding_hole,
             )
-        self._assign_callee_join(
-            action_execution,
-            resolved_execution,
-            CalleeJoinAssignment(
-                execution_path,
-                caller_resolved_join.target,
-                fixed_dependency_count,
-            ),
+        assignment = CalleeJoinAssignment(
+            callee_join.execution_path,
+            caller_resolved_join.target,
+            fixed_dependency_count,
         )
+        # Propagated Joins need no assignment in this action; they returned above.
+        plan_receiving_join_assignment = typing.cast(
+            "ActionExecutionPlan | CalleeBindingPlan",
+            callee_join.plan_receiving_join_assignment,
+        )
+        if isinstance(plan_receiving_join_assignment, CalleeBindingPlan):
+            plan_receiving_join_assignment.post_init_join_assignments.append(assignment)
+        else:
+            plan_receiving_join_assignment.callee_join_assignments.append(assignment)
         return None
-
-    def _assign_callee_join(
-        self,
-        action_execution: ActionExecutionPlan,
-        resolved_execution: operation_graph_action_resolver.ResolvedActionExecution,
-        assignment: CalleeJoinAssignment,
-    ):
-        if len(assignment.execution_path) == 1:
-            action_execution.callee_join_assignments.append(assignment)
-            return
-        init_plan = self._init_locator.callee_binding_plan(
-            resolved_execution,
-            assignment.execution_path[1:],
-        )
-        if init_plan is None:
-            action_execution.callee_join_assignments.append(assignment)
-            return
-        init_plan.post_init_join_assignments.append(assignment)
 
     def _binding_hole_caller_resolved_joins(self) -> list[CallerResolvedJoin]:
         caller_resolved_joins: list[CallerResolvedJoin] = []
@@ -1658,12 +1739,14 @@ class _ActionPlanBuilder:
         action_executions = self._plan_action_executions(
             destruction_connection_plans,
         )
+        callee_binding_init_planner = _CalleeBindingInitPlanner()
         callee_binding_plans = _CalleeBindingPlanner(
             self._resolved_action,
             self._planned_actions,
             action_fragment_plans,
             action_executions,
             destruction_connection_plans.destruction_connection_by_callee_destroy,
+            callee_binding_init_planner,
         ).plan()
         init_locator = _ActionExecutionInitLocator(
             self._resolved_action,
@@ -1679,17 +1762,21 @@ class _ActionPlanBuilder:
             action_executions,
             destruction_connection_plans.connections_by_guarantee,
             init_locator,
+            callee_binding_init_planner,
         ).plan()
-        caller_resolved_joins = _CallerResolvedJoinPlanner(
+        join_planner = _CallerResolvedJoinPlanner(
             self._resolved_action,
             self._planned_actions,
             action_fragment_plans,
             callee_binding_plans,
             action_executions,
             init_locator,
-        ).plan()
-        for callee_binding_plan in callee_binding_plans.by_callee_binding.values():
-            callee_binding_plan.finalize_init()
+        )
+        callee_joins = join_planner.locate_callee_join_assignments()
+        callee_binding_init_planner.plan(
+            callee_binding_plans.by_callee_binding.values(), callee_joins
+        )
+        caller_resolved_joins = join_planner.plan(callee_joins)
         return ActionPlan(
             fragments=action_fragment_plans.fragments,
             binding_hole_fanouts=callee_binding_plans.binding_hole_fanouts,
