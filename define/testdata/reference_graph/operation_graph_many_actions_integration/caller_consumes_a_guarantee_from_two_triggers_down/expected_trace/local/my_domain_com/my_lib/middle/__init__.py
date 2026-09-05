@@ -67,7 +67,21 @@ class MiddleExecution:
         self.join_for_empty_rule_position_igw: literal.Join
 
     def accept_when_occupied_position_igw(self):
-        self.create_position_igw__action_inner__position_trigger_pos()
+        self.execution_position_igw__action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
+            self.action.get_interface_position(
+                "position<igw>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.inner.Inner
+            ),
+            self.scheduler,
+            self.trace_execution,
+            "inner",
+        )
+        self.execution_position_igw__action_inner.guarantees.global_position_inner_result.consumers.append(
+            self.move_position_igw__global_position_inner_result_to_position_out
+        )
+
+        self.continue_when_occupied_position_igw()
 
     def init_when_occupied_position_igw(self):
         self.execution_position_igw__action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
@@ -83,6 +97,9 @@ class MiddleExecution:
         self.execution_position_igw__action_inner.guarantees.global_position_inner_result.consumers.append(
             self.move_position_igw__global_position_inner_result_to_position_out
         )
+
+    def continue_when_occupied_position_igw(self):
+        self.create_position_igw__action_inner__position_trigger_pos()
 
     def accept_when_empty_position_igw__global_position_inner_result(self):
         self.execution_position_igw__action_inner.accept_when_empty_global_position_inner_result()

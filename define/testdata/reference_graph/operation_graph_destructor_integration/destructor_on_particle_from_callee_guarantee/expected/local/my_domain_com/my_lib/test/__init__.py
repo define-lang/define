@@ -48,7 +48,7 @@ class TestExecution:
             self.scheduler,
         )
         self.execution_position_box__action_maker.guarantees.position_result.inits.append(
-            self.init_position_box__action_maker__position_result__action_destructor
+            self.init_position_box__action_maker__position_result
         )
         self.execution_position_box__action_maker.guarantees.position_result.consumers.append(
             self.destroy_position_box__action_maker__position_result
@@ -82,7 +82,7 @@ class TestExecution:
             return
         self.local_position_box.destroy_particle()
 
-    def init_position_box__action_maker__position_result__action_destructor(self):
+    def init_position_box__action_maker__position_result(self):
         self.execution_position_box__action_maker__position_result__action_destructor = local.my_domain_com.my_lib.destructor.DestructorExecution(
             self.scheduler,
         )

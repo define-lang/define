@@ -114,7 +114,7 @@ class TestExecution:
             self.destruction_connection_action_destroyer_2.complete
         )
         self.execution_action_destroyer.init_when_occupied_position_parent()
-        self.scheduler.submit(self.execution_action_destroyer.accept_when_occupied_position_parent)
+        self.scheduler.submit(self.execution_action_destroyer.continue_when_occupied_position_parent)
         self.scheduler.submit(self.execution_action_destroyer.accept_when_empty_position_parent__action_maker__position_result)
         self.execution_action_destroyer__position_parent__action_destruct.accept_for_empty_rule_global_position_sibling()
 

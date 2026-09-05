@@ -58,9 +58,29 @@ class RunnerExecution:
         self.join_for_empty_rule_position_run: literal.Join
 
     def accept_when_occupied_position_wrapper(self):
-        self.scheduler.submit(self.create_position_wrapper__action_middle__position_box)
-        self.scheduler.submit(self.create_position_wrapper__action_middle__position_run)
-        self.execution_position_wrapper__action_middle.on_action_parent_occupied()
+        self.execution_position_wrapper__action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
+            self.action.get_interface_position(
+                "position<wrapper>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.middle.Middle
+            ),
+            self.scheduler,
+        )
+        self.execution_position_wrapper__action_middle.join_for_empty_rule_position_box = literal.NO_JOIN
+        self.execution_position_wrapper__action_middle.join_for_empty_rule_position_run = literal.NO_JOIN
+        self.execution_position_wrapper__action_middle.join_for_move_position_box_to_position_inner_holder__action_inner__position_input = self.scheduler.create_join(2)
+        self.execution_position_wrapper__action_middle.join_for_destroy_position_run = literal.NO_JOIN
+        self.execution_position_wrapper__action_middle.guarantees.position_box.consumers.append(
+            self.destroy_position_wrapper
+        )
+        self.execution_position_wrapper__action_middle.guarantees.position_final.consumers.append(
+            self.destroy_position_wrapper
+        )
+        self.execution_position_wrapper__action_middle.guarantees.position_run.consumers.append(
+            self.destroy_position_wrapper
+        )
+
+        self.continue_when_occupied_position_wrapper()
 
     def init_when_occupied_position_wrapper(self):
         self.execution_position_wrapper__action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
@@ -84,6 +104,11 @@ class RunnerExecution:
         self.execution_position_wrapper__action_middle.guarantees.position_run.consumers.append(
             self.destroy_position_wrapper
         )
+
+    def continue_when_occupied_position_wrapper(self):
+        self.scheduler.submit(self.create_position_wrapper__action_middle__position_box)
+        self.scheduler.submit(self.create_position_wrapper__action_middle__position_run)
+        self.execution_position_wrapper__action_middle.on_action_parent_occupied()
 
     def accept_when_empty_position_wrapper__action_middle__position_final(self):
         if not self.join_when_empty_position_wrapper__action_middle__position_final.arrive():

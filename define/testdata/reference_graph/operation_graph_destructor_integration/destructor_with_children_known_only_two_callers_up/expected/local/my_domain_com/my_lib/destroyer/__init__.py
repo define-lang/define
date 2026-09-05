@@ -53,12 +53,19 @@ class DestroyerExecution:
         self.destroy_position_run()
 
     def accept_when_occupied_position_run(self):
-        self.execution_position_run__action_destruct.on_action_parent_occupied()
+        self.execution_position_run__action_destruct = local.my_domain_com.my_lib.destruct.DestructExecution(
+            self.scheduler,
+        )
+
+        self.continue_when_occupied_position_run()
 
     def init_when_occupied_position_run(self):
         self.execution_position_run__action_destruct = local.my_domain_com.my_lib.destruct.DestructExecution(
             self.scheduler,
         )
+
+    def continue_when_occupied_position_run(self):
+        self.execution_position_run__action_destruct.on_action_parent_occupied()
 
     def destroy_position_run(self):
         if not self.join_for_destroy_position_run.arrive():

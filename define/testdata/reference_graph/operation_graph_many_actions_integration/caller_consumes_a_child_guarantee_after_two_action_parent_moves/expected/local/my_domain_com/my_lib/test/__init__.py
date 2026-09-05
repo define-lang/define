@@ -76,7 +76,7 @@ class TestExecution:
         ).create_particle()
         self.execution_position_gateway__action_middle.init_when_occupied_position_source()
         self.scheduler.submit(self.create_position_gateway__action_middle__position_source__global_position_marker)
-        self.scheduler.submit(self.execution_position_gateway__action_middle.accept_when_occupied_position_source)
+        self.scheduler.submit(self.execution_position_gateway__action_middle.continue_when_occupied_position_source)
         self.execution_position_gateway__action_middle.accept_when_empty_position_source__global_position_result()
 
     def create_position_gateway__action_middle__position_source__global_position_marker(self):

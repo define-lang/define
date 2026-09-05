@@ -33,7 +33,7 @@ _EMPTY_RULE_BINDING_HOLE_BASE_PREFIX = "for_empty_rule_"
 _EXECUTION_PREFIX = "execution_"
 _GLOBAL_NAME_PREFIX = "global_"
 _GUARANTEE_FANOUT_PREFIX = "accept_guarantee_"
-_INIT_ACTION_EXECUTION_PREFIX = "init_"
+_INIT_PREFIX = "init_"
 _CONTINUE_PREFIX = "continue_"
 _JOIN_PREFIX = "join_"
 _JOIN_FOR_PREFIX = "join_for_"
@@ -99,7 +99,9 @@ class ActionNames:
         operation_graph_model.DestructionFragmentDestroyNode, str
     ]
     guarantees: dict[action_plan.ActionGuarantees, str]
-    action_execution_init_method_names: dict[operation_graph_model.ActionExecution, str]
+    guarantee_consumption_init_method_names: dict[
+        action_plan.GuaranteeConsumptionPlan, str
+    ]
     deferred_guarantee_registration_method_names: dict[
         action_plan.DeferredGuaranteeRegistration, str
     ]
@@ -140,6 +142,38 @@ class ActionNames:
         )
         return execution_name + _MEMBER_ACCESS_SEPARATOR + callee_method_name
 
+    def callee_binding_init_method_name(
+        self,
+        callee_binding_plan: action_plan.CalleeBindingPlan,
+    ) -> str | None:
+        """Return the callee init method invoked by this plan."""
+        if not callee_binding_plan.caller_invokes_init_method:
+            return None
+        binding_hole_names = self._generated_actions[
+            callee_binding_plan.execution.callee_action_name
+        ].binding_holes[callee_binding_plan.callee_binding_hole]
+        if callee_binding_plan.requires_separate_init:
+            return typing.cast(
+                "str",
+                binding_hole_names.separate_init_method_name,
+            )
+        return binding_hole_names.method_name
+
+    def _callee_continuation_invocation_method_name(
+        self,
+        callee_binding_plan: action_plan.CalleeBindingPlan,
+    ) -> str:
+        """Return the direct invocation of a callee Binding Hole continuation."""
+        execution = callee_binding_plan.execution
+        execution_name = self.action_executions[execution].execution_name
+        callee_method_name = typing.cast(
+            "str",
+            self._generated_actions[execution.callee_action_name]
+            .binding_holes[callee_binding_plan.callee_binding_hole]
+            .continuation_method_name,
+        )
+        return execution_name + _MEMBER_ACCESS_SEPARATOR + callee_method_name
+
     def _fanout_continuation_method_name(
         self,
         continuation: action_plan.FanoutContinuation,
@@ -149,13 +183,13 @@ class ActionNames:
             case action_plan.ActionFragment():
                 return self.fragments[continuation]
             case action_plan.CalleeBindingPlan():
-                if continuation.inits_action_executions:
+                if continuation.requires_separate_init:
                     invocation_method_name = self.callee_binding_invocations.get(
                         continuation
                     )
                     if invocation_method_name is not None:
                         return invocation_method_name
-                    return self._callee_binding_hole_invocation_method_name(
+                    return self._callee_continuation_invocation_method_name(
                         continuation
                     )
                 return self._callee_binding_method_name(continuation)
@@ -272,7 +306,9 @@ class ActionNameGenerator:
         destruction_connections = self._destruction_connection_names(action_executions)
         destruction_positions = self._destruction_position_names()
         guarantees = self._guarantee_names()
-        action_execution_init_method_names = self._action_execution_init_method_names()
+        guarantee_consumption_init_method_names = (
+            self._guarantee_consumption_init_method_names()
+        )
         deferred_guarantee_registration_method_names = (
             self._deferred_guarantee_registration_method_names()
         )
@@ -291,7 +327,9 @@ class ActionNameGenerator:
             destruction_connections=destruction_connections,
             destruction_positions=destruction_positions,
             guarantees=guarantees,
-            action_execution_init_method_names=(action_execution_init_method_names),
+            guarantee_consumption_init_method_names=(
+                guarantee_consumption_init_method_names
+            ),
             deferred_guarantee_registration_method_names=(
                 deferred_guarantee_registration_method_names
             ),
@@ -328,15 +366,15 @@ class ActionNameGenerator:
             # API contract for.
             elif len(inits.action_executions) == 1 and not inits.callee_binding_plans:
                 execution = inits.action_executions[0]
-                method_name = (
-                    _INIT_ACTION_EXECUTION_PREFIX
-                    + self._typed_chain_identifier(execution.action_chain)
+                method_name = _INIT_PREFIX + self._typed_chain_identifier(
+                    execution.action_chain
                 )
             else:
-                method_name = _INIT_ACTION_EXECUTION_PREFIX + base_name
+                method_name = _INIT_PREFIX + base_name
+            method_name = self._execution_allocator.allocate(method_name)
             names[binding_hole] = action_context.GeneratedBindingHoleNames(
                 base_name,
-                self._execution_allocator.allocate(method_name),
+                method_name,
             )
         for fanout in self._plan.binding_hole_fanouts.values():
             if not fanout.inits.has_inits or not fanout.continuations:
@@ -345,7 +383,12 @@ class ActionNameGenerator:
             binding_hole_names = names[binding_hole]
             binding_hole_names.separate_init_method_name = (
                 self._execution_allocator.allocate(
-                    _INIT_ACTION_EXECUTION_PREFIX + binding_hole_names.base_name
+                    _INIT_PREFIX + binding_hole_names.base_name
+                )
+            )
+            binding_hole_names.continuation_method_name = (
+                self._execution_allocator.allocate(
+                    _CONTINUE_PREFIX + binding_hole_names.base_name
                 )
             )
         return names
@@ -449,7 +492,22 @@ class ActionNameGenerator:
         names: dict[action_plan.CalleeBindingPlan, str] = {}
         for callee_binding_plan in self._plan.callee_binding_method_plans:
             action_execution = callee_binding_plan.execution
-            if callee_binding_plan.guarantee_dependencies:
+            if (
+                callee_binding_plan.requires_separate_init
+                or not callee_binding_plan.has_continuations
+            ):
+                callee_binding_hole_base_name = (
+                    self._generated_actions[action_execution.callee_action_name]
+                    .binding_holes[callee_binding_plan.callee_binding_hole]
+                    .base_name
+                )
+                method_name = self._execution_allocator.allocate(
+                    _INIT_PREFIX
+                    + action_execution_names[action_execution].canonical_name
+                    + _CALLEE_BINDING_METHOD_SEPARATOR
+                    + callee_binding_hole_base_name
+                )
+            elif callee_binding_plan.guarantee_dependencies:
                 method_name = self._execution_allocator.allocate(
                     _GUARANTEE_FANOUT_PREFIX
                     + self._typed_chain_identifier(action_execution.action_chain)
@@ -473,10 +531,7 @@ class ActionNameGenerator:
     ) -> dict[action_plan.CalleeBindingPlan, str]:
         names: dict[action_plan.CalleeBindingPlan, str] = {}
         for callee_binding_plan in self._plan.callee_binding_method_plans:
-            if not (
-                callee_binding_plan.inits_action_executions
-                and callee_binding_plan.has_continuations
-            ):
+            if not callee_binding_plan.requires_separate_init:
                 continue
             names[callee_binding_plan] = self._execution_allocator.allocate(
                 _GUARANTEE_FANOUT_PREFIX
@@ -529,20 +584,26 @@ class ActionNameGenerator:
             )
         return guarantee_names
 
-    def _action_execution_init_method_names(
+    def _guarantee_consumption_init_method_names(
         self,
-    ) -> dict[operation_graph_model.ActionExecution, str]:
-        method_names: dict[operation_graph_model.ActionExecution, str] = {}
-        executions_needing_methods: set[operation_graph_model.ActionExecution] = set()
+    ) -> dict[action_plan.GuaranteeConsumptionPlan, str]:
+        method_names: dict[action_plan.GuaranteeConsumptionPlan, str] = {}
         for consumption_plan in self._plan.guarantee_consumption_plans:
-            executions_needing_methods.update(consumption_plan.inits.action_executions)
-        for planned_execution in self._plan.action_executions.values():
-            execution = planned_execution.execution
-            if execution not in executions_needing_methods:
+            if not consumption_plan.inits.has_inits:
                 continue
-            method_names[execution] = self._execution_allocator.allocate(
-                _INIT_ACTION_EXECUTION_PREFIX
-                + self._typed_chain_identifier(execution.action_chain)
+            path_names: list[str] = []
+            for execution in consumption_plan.guarantee.executions:
+                path_names.append(self._typed_chain_identifier(execution.action_chain))
+            publishing_action = self._generated_actions[
+                consumption_plan.guarantee.executions[-1].callee_action_name
+            ]
+            path_names.append(
+                publishing_action.guarantee_names_by_operation[
+                    consumption_plan.guarantee.operation
+                ]
+            )
+            method_names[consumption_plan] = self._execution_allocator.allocate(
+                _INIT_PREFIX + _TYPED_CHAIN_SEPARATOR.join(path_names)
             )
         return method_names
 

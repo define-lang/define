@@ -55,10 +55,7 @@ class RightExecution:
         self.execution_action_right_child.accept_for_empty_rule_global_position_marker()
 
     def accept_when_occupied_global_position_marker(self):
-        self.accept_guarantee_action_right_child()
-
-    def init_when_occupied_global_position_marker(self):
-        self.action_right_child__when_occupied_global_position_marker()
+        self.execution_action_right_child.accept_when_occupied_global_position_marker()
 
     def create_action_right_child__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -71,9 +68,3 @@ class RightExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
-
-    def action_right_child__when_occupied_global_position_marker(self):
-        self.execution_action_right_child.init_when_occupied_global_position_marker()
-
-    def accept_guarantee_action_right_child(self):
-        self.execution_action_right_child.accept_when_occupied_global_position_marker()

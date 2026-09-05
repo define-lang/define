@@ -4,7 +4,7 @@
 {% from "callee_binding_plans.j2" import callee_binding_plan_methods %}
 {% from "destruction_contract_destructor.j2" import destruction_contract_destructor_methods %}
 {% from "guarantee_consumption.j2" import deferred_guarantee_registration_methods %}
-{% from "triggered_action_execution.j2" import action_execution_init_methods %}
+{% from "triggered_action_execution.j2" import init_methods %}
 {% macro action_execution(action_class_name, execution) %}
 
 @final
@@ -12,7 +12,7 @@ class {{ execution.execution_class_name }}:
 {{ action_execution_init(action_class_name, execution) -}}
 {{ binding_hole_fanout_methods(execution.binding_hole_fanouts) -}}
 {{ action_fragment_methods(execution.fragments) -}}
-{{ action_execution_init_methods(execution.action_execution_init_methods) -}}
+{{ init_methods(execution.init_methods) -}}
 {{ deferred_guarantee_registration_methods(execution.deferred_guarantee_registrations) -}}
 {{ callee_binding_plan_methods(execution.callee_binding_plans) -}}
 {{ destruction_contract_destructor_methods(execution.action_executions) -}}

@@ -105,7 +105,7 @@ class TestExecution:
             local.my_domain_com.my_lib.sibling.Sibling
         )
         self.execution_action_destroyer.init_when_occupied_position_parent()
-        self.scheduler.submit(self.execution_action_destroyer.accept_when_occupied_position_parent)
+        self.scheduler.submit(self.execution_action_destroyer.continue_when_occupied_position_parent)
         self.scheduler.submit(self.execution_action_destroyer.accept_when_empty_position_parent__action_maker__position_first)
         self.execution_action_destroyer.accept_when_empty_position_parent__action_maker__position_second()
 

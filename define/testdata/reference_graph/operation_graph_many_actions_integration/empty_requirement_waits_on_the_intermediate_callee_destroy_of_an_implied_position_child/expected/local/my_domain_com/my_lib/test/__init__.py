@@ -63,7 +63,7 @@ class TestExecution:
             self.destroy_position_box__action_middle__position_gw__global_position_holder__global_position_a
         )
         self.scheduler.submit(self.create_position_box__action_middle__position_gw__global_position_holder)
-        self.execution_position_box__action_middle.accept_when_occupied_position_gw()
+        self.execution_position_box__action_middle.continue_when_occupied_position_gw()
 
     def create_position_box__action_middle__position_gw__global_position_holder(self):
         self.local_position_box.particle.get_action(

@@ -63,7 +63,13 @@ class DestroyerExecution:
         self.destroy_position_target()
 
     def accept_when_occupied_position_target(self):
-        self.execution_position_target__action_known_destructor.on_action_parent_occupied()
+        self.execution_position_target__action_known_destructor = local.my_domain_com.my_lib.known_destructor.KnownDestructorExecution(
+            self.scheduler,
+            self.trace_execution,
+            "known_destructor",
+        )
+
+        self.continue_when_occupied_position_target()
 
     def init_when_occupied_position_target(self):
         self.execution_position_target__action_known_destructor = local.my_domain_com.my_lib.known_destructor.KnownDestructorExecution(
@@ -71,6 +77,9 @@ class DestroyerExecution:
             self.trace_execution,
             "known_destructor",
         )
+
+    def continue_when_occupied_position_target(self):
+        self.execution_position_target__action_known_destructor.on_action_parent_occupied()
 
     def destroy_position_target(self):
         if not self.join_for_destroy_position_target.arrive():

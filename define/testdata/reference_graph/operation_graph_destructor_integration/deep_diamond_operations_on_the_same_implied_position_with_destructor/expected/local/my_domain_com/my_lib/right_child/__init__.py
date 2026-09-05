@@ -54,12 +54,19 @@ class RightChildExecution:
         self.destroy_global_position_marker()
 
     def accept_when_occupied_global_position_marker(self):
-        self.execution_global_position_marker__action_destructor.on_action_parent_occupied()
+        self.execution_global_position_marker__action_destructor = local.my_domain_com.my_lib.destructor.DestructorExecution(
+            self.scheduler,
+        )
+
+        self.continue_when_occupied_global_position_marker()
 
     def init_when_occupied_global_position_marker(self):
         self.execution_global_position_marker__action_destructor = local.my_domain_com.my_lib.destructor.DestructorExecution(
             self.scheduler,
         )
+
+    def continue_when_occupied_global_position_marker(self):
+        self.execution_global_position_marker__action_destructor.on_action_parent_occupied()
 
     def destroy_global_position_marker(self):
         if not self.join_for_destroy_global_position_marker.arrive():

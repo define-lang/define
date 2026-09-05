@@ -16,14 +16,14 @@
 .{{ assignment.member_name }} = {{ join_value(assignment.dependency_count, "self.scheduler") }}
     {% endfor %}
     {% for consumption in callee_binding_plan.post_init_guarantee_consumptions %}
-        {% for method_name in consumption.init_method_names %}
-{{ configure_guarantee_consumption(consumption, "inits", method_name) -}}
-        {% endfor %}
+        {% if consumption.init_method_name is not none %}
+{{ configure_guarantee_consumption(consumption, "inits", consumption.init_method_name) -}}
+        {% endif %}
         {% for method_name in consumption.consumer_method_names %}
 {{ configure_guarantee_consumption(consumption, "consumers", method_name) -}}
         {% endfor %}
     {% endfor %}
-    {% if callee_binding_plan.invokes_callee_binding_hole_after_setup %}
+    {% if callee_binding_plan.invokes_callee_binding_hole %}
         self.{{ callee_binding_plan.action_execution_name }}.{{ callee_binding_plan.callee_binding_hole_method_name }}()
     {% endif %}
 {% endmacro %}
@@ -36,10 +36,10 @@
             return
         {% endif %}
 {{ callee_binding_plan_body(callee_binding_plan) -}}
-        {% if callee_binding_plan.invocation_method_name is not none %}
+    {% if callee_binding_plan.invocation_method_name is not none %}
 
     def {{ callee_binding_plan.invocation_method_name }}(self):
-        self.{{ callee_binding_plan.action_execution_name }}.{{ callee_binding_plan.callee_binding_hole_method_name }}()
-        {% endif %}
+        self.{{ callee_binding_plan.action_execution_name }}.{{ callee_binding_plan.callee_continuation_method_name }}()
+    {% endif %}
     {% endfor %}
 {% endmacro %}

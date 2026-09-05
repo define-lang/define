@@ -62,7 +62,20 @@ class MiddleExecution:
         self.move_position_gw__global_position_source_particle_to_position_gw__action_inner__position_source()
 
     def accept_when_occupied_position_gw(self):
-        self.create_position_gw__action_inner__position_trigger_pos()
+        self.execution_position_gw__action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
+            self.action.get_interface_position(
+                "position<gw>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.inner.Inner
+            ),
+            self.scheduler,
+        )
+        self.execution_position_gw__action_inner.join_for_move_position_source_to_position_holder = literal.NO_JOIN
+        self.execution_position_gw__action_inner.guarantees.position_source__move__position_holder.consumers.append(
+            self.destroy_position_gw__action_inner__position_holder
+        )
+
+        self.continue_when_occupied_position_gw()
 
     def init_when_occupied_position_gw(self):
         self.execution_position_gw__action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
@@ -77,6 +90,9 @@ class MiddleExecution:
         self.execution_position_gw__action_inner.guarantees.position_source__move__position_holder.consumers.append(
             self.destroy_position_gw__action_inner__position_holder
         )
+
+    def continue_when_occupied_position_gw(self):
+        self.create_position_gw__action_inner__position_trigger_pos()
 
     def accept_when_empty_position_gw__action_inner__position_holder(self):
         if not self.join_when_empty_position_gw__action_inner__position_holder.arrive():

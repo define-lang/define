@@ -96,7 +96,7 @@ class TestExecution:
         )
         self.execution_action_destroyer.init_when_occupied_position_first()
         self.scheduler.submit(self.execution_action_destroyer.accept_for_empty_rule_position_first)
-        self.execution_action_destroyer.accept_when_occupied_position_first()
+        self.execution_action_destroyer.continue_when_occupied_position_first()
 
     def create_position_second_source(self):
         self.local_position_second_source.create_particle()

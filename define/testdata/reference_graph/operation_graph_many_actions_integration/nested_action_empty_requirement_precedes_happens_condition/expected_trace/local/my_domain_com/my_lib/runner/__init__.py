@@ -94,7 +94,7 @@ class RunnerExecution:
         )
         self.execution_position_wrapper__action_middle.init_when_occupied_position_box()
         self.execution_position_wrapper__action_middle.execution_position_box__action_worker.join_for_empty_rule_position_input = literal.NO_JOIN
-        self.execution_position_wrapper__action_middle.accept_when_occupied_position_box()
+        self.execution_position_wrapper__action_middle.continue_when_occupied_position_box()
 
     def create_position_wrapper__action_middle__position_run(self):
         self.local_position_wrapper.particle.get_action(

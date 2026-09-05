@@ -585,7 +585,7 @@ class TestExecution:
         )
         # The result Guarantee makes the Destructor's Action Parent available.
         self.execution_position_box__action_maker.guarantees.position_result.inits.append(
-            self.init_position_box__action_maker__position_result__action_destructor
+            self.init_position_box__action_maker__position_result
         )
         self.scheduler.submit(
             self.create_position_box__action_maker__position_run
@@ -605,7 +605,7 @@ class TestExecution:
         ).destroy_particle()
         self.destroy_position_box()
 
-    def init_position_box__action_maker__position_result__action_destructor(self):
+    def init_position_box__action_maker__position_result(self):
         self.execution_position_box__action_maker__position_result__action_destructor = (
             local.my_domain_com.my_lib.destructor.DestructorExecution(
                 self.local_position_box.particle.get_action(
@@ -1085,10 +1085,7 @@ class TestExecution:
             )
         )
         self.execution_position_box__action_maker.guarantees.position_result.inits.append(
-            self.init_position_box__action_maker__position_result__action_destruct_b
-        )
-        self.execution_position_box__action_maker.guarantees.position_result.inits.append(
-            self.init_position_box__action_maker__position_result__action_destruct_a
+            self.init_position_box__action_maker__position_result
         )
         # The Destroy and both Destructor branches have the same preceding
         # Create and no dependencies on one another.
@@ -1113,7 +1110,9 @@ class TestExecution:
         ).destroy_particle()
         self.destroy_position_box()
 
-    def init_position_box__action_maker__position_result__action_destruct_b(self):
+    def init_position_box__action_maker__position_result(self):
+        # This one Guarantee init inits both Destructor Action Executions before
+        # its consumers run.
         self.execution_position_box__action_maker__position_result__action_destruct_b = (
             local.my_domain_com.my_lib.destruct_b.DestructBExecution(
                 self.scheduler,
@@ -1122,8 +1121,6 @@ class TestExecution:
         self.execution_position_box__action_maker.guarantees.position_result.consumers.append(
             self.accept_guarantee_position_box__action_maker__position_result__action_destruct_b
         )
-
-    def init_position_box__action_maker__position_result__action_destruct_a(self):
         self.execution_position_box__action_maker__position_result__action_destruct_a = (
             local.my_domain_com.my_lib.destruct_a.DestructAExecution(
                 self.scheduler,
@@ -1337,7 +1334,7 @@ class TestExecution:
         self.execution_position_box__action_carrier.join_for_move_position_source_to_position_result = literal.NO_JOIN
         self.execution_position_box__action_carrier.join_for_destroy_position_run = literal.NO_JOIN
         self.execution_position_box__action_carrier.guarantees.position_source__move__position_result.inits.append(
-            self.init_position_box__action_carrier__position_result__action_worker
+            self.init_position_box__action_carrier__position_source__move__position_result
         )
         self.execution_position_box__action_carrier.guarantees.position_source__move__position_result.consumers.append(
             self.create_position_box__action_carrier__position_result__action_worker__position_run
@@ -1350,7 +1347,7 @@ class TestExecution:
         )
         self.execution_position_box__action_carrier.accept_when_empty_position_source()
 
-    def init_position_box__action_carrier__position_result__action_worker(self):
+    def init_position_box__action_carrier__position_source__move__position_result(self):
         self.execution_position_box__action_carrier__position_result__action_worker = (
             local.my_domain_com.my_lib.worker.WorkerExecution(
                 self.local_position_box.particle.get_action(

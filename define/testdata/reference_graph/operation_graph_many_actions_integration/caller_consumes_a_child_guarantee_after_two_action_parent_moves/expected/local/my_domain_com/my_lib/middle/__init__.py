@@ -69,7 +69,19 @@ class MiddleExecution:
         self.join_when_empty_position_holder: literal.Join
 
     def accept_when_occupied_position_source(self):
-        self.create_position_source__action_child__position_trigger_pos()
+        self.execution_position_source__action_child = local.my_domain_com.my_lib.child.ChildExecution(
+            self.action.get_interface_position(
+                "position<source>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.child.Child
+            ),
+            self.scheduler,
+        )
+        self.execution_position_source__action_child.guarantees.global_position_result.consumers.append(
+            self.move_position_source_to_position_intermediate
+        )
+
+        self.continue_when_occupied_position_source()
 
     def init_when_occupied_position_source(self):
         self.execution_position_source__action_child = local.my_domain_com.my_lib.child.ChildExecution(
@@ -83,6 +95,9 @@ class MiddleExecution:
         self.execution_position_source__action_child.guarantees.global_position_result.consumers.append(
             self.move_position_source_to_position_intermediate
         )
+
+    def continue_when_occupied_position_source(self):
+        self.create_position_source__action_child__position_trigger_pos()
 
     def accept_when_empty_position_source__global_position_result(self):
         self.execution_position_source__action_child.accept_when_empty_global_position_result()

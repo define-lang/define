@@ -24,7 +24,7 @@ if typing.TYPE_CHECKING:
 
 @dataclass(frozen=True, slots=True)
 class GeneratedGuaranteeConsumptions:
-    """Generated Guarantee consumptions grouped by their setup location."""
+    """Generated Guarantee consumptions and their Action Execution associations."""
 
     context_by_plan: dict[
         action_plan.GuaranteeConsumptionPlan,
@@ -118,20 +118,10 @@ class ActionGuaranteesGenerator:
         execution_member_names, guarantee_name = self._names_for_resolved_guarantee(
             consumption_plan.guarantee
         )
-        init_method_names: list[str] = []
-        for execution in consumption_plan.inits.action_executions:
-            init_method_names.append(
-                self._names.action_execution_init_method_names[execution]
-            )
-        init_method_names.extend(
-            self._names.callee_binding_plan_method_names(
-                consumption_plan.inits.callee_binding_plans,
-            )
-        )
         return template_context.GuaranteeConsumptionContext(
             execution_member_names,
             guarantee_name,
-            init_method_names,
+            self._names.guarantee_consumption_init_method_names.get(consumption_plan),
             self._names.fanout_continuation_method_names(
                 consumption_plan.continuations,
             ),
@@ -212,7 +202,7 @@ class ActionGuaranteesGenerator:
         consumption = template_context.GuaranteeConsumptionContext(
             execution_member_names,
             guarantee_name,
-            [method_name],
+            method_name,
             [],
         )
         return (

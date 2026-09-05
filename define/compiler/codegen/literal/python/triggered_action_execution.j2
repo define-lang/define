@@ -59,15 +59,15 @@
 .{{ assignment.member_name }} = {{ join_value(assignment.dependency_count, "self.scheduler") }}
     {% endfor %}
     {% for consumption in action_execution.guarantee_consumptions %}
-        {% for method_name in consumption.init_method_names %}
-{{ configure_guarantee_consumption(consumption, "inits", method_name) -}}
-        {% endfor %}
+        {% if consumption.init_method_name is not none %}
+{{ configure_guarantee_consumption(consumption, "inits", consumption.init_method_name) -}}
+        {% endif %}
         {% for method_name in consumption.consumer_method_names %}
 {{ configure_guarantee_consumption(consumption, "consumers", method_name) -}}
         {% endfor %}
     {% endfor %}
 {% endmacro %}
-{% macro init_action_executions(inits) %}
+{% macro run_inits(inits) %}
     {% for action_execution in inits.action_executions %}
 {{ _construct_action_execution(action_execution) -}}
 {{ _configure_action_execution(action_execution) -}}
@@ -76,11 +76,10 @@
         self.{{ method_name }}()
     {% endfor %}
 {% endmacro %}
-{% macro action_execution_init_methods(init_methods) %}
+{% macro init_methods(init_methods) %}
     {% for init_method in init_methods %}
 
     def {{ init_method.method_name }}(self):
-{{ _construct_action_execution(init_method.action_execution) -}}
-{{ _configure_action_execution(init_method.action_execution) -}}
+{{ run_inits(init_method.inits) -}}
     {% endfor %}
 {% endmacro %}

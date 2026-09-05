@@ -81,5 +81,5 @@ class MiddleExecution:
         self.guarantees.position_run.publish(
             self.scheduler,
             self.execution_action_destroyer.accept_for_empty_rule_position_run,
-            self.execution_action_destroyer.accept_when_occupied_position_run,
+            self.execution_action_destroyer.continue_when_occupied_position_run,
         )

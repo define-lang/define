@@ -41,14 +41,11 @@ class TestExecution:
             ),
             self.scheduler,
         )
-        self.execution_action_left.execution_action_left_child.guarantees.global_position_marker.inits.append(
-            self.accept_guarantee_action_right_2
-        )
         self.execution_action_left.execution_action_left_child.guarantees.global_position_marker.consumers.append(
             self.accept_guarantee_action_right
         )
         self.execution_action_left.execution_action_left_child.guarantees.global_position_marker.consumers.append(
-            self.accept_guarantee_action_right_3
+            self.accept_guarantee_action_right_2
         )
         self.execution_action_right = local.my_domain_com.my_lib.right.RightExecution(
             self.action.on_particle.get_action(
@@ -97,7 +94,4 @@ class TestExecution:
         self.execution_action_right.accept_for_empty_rule_global_position_marker()
 
     def accept_guarantee_action_right_2(self):
-        self.execution_action_right.init_when_occupied_global_position_marker()
-
-    def accept_guarantee_action_right_3(self):
         self.execution_action_right.accept_when_occupied_global_position_marker()

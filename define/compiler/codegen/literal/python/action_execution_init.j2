@@ -1,5 +1,5 @@
 {% from "action_statements.j2" import action_statements %}
-{% from "triggered_action_execution.j2" import init_action_executions %}
+{% from "triggered_action_execution.j2" import run_inits %}
 {% macro action_execution_init(action_class_name, execution) %}
     {% set destruction_connection_class = "tracing.DestructionConnection" if execution.trace_operations else "literal.DestructionConnection" %}
     def __init__(
@@ -64,5 +64,5 @@
         self.{{ callee_binding_plan.join_member_name }} = self.scheduler.create_join({{ callee_binding_plan.dependency_count }})
         {% endif %}
     {% endfor %}
-{{ init_action_executions(execution.creation_inits) -}}
+{{ run_inits(execution.creation_inits) -}}
 {% endmacro %}

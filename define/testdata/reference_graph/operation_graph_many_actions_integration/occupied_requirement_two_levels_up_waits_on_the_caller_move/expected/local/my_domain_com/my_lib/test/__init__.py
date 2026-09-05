@@ -74,7 +74,7 @@ class TestExecution:
         ).create_particle()
         self.execution_position_box__action_middle.init_when_occupied_position_gw()
         self.scheduler.submit(self.move_position_source_to_position_box__action_middle__position_gw__global_position_value)
-        self.execution_position_box__action_middle.accept_when_occupied_position_gw()
+        self.execution_position_box__action_middle.continue_when_occupied_position_gw()
 
     def move_position_source_to_position_box__action_middle__position_gw__global_position_value(self):
         if not self.join_for_move_position_source_to_position_box__action_middle__position_gw__global_position_value.arrive():

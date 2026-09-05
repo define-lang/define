@@ -63,7 +63,20 @@ class MiddleExecution:
         self.move_position_gateway__global_position_source_particle_to_position_gateway__action_inner__position_source()
 
     def accept_when_occupied_position_gateway(self):
-        self.create_position_gateway__action_inner__position_trigger_pos()
+        self.execution_position_gateway__action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
+            self.action.get_interface_position(
+                "position<gateway>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.inner.Inner
+            ),
+            self.scheduler,
+        )
+        self.execution_position_gateway__action_inner.join_for_move_position_source_to_position_destination = literal.NO_JOIN
+        self.execution_position_gateway__action_inner.guarantees.position_destination__global_position_child.consumers.append(
+            self.destroy_position_gateway__action_inner__position_destination
+        )
+
+        self.continue_when_occupied_position_gateway()
 
     def init_when_occupied_position_gateway(self):
         self.execution_position_gateway__action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
@@ -78,6 +91,9 @@ class MiddleExecution:
         self.execution_position_gateway__action_inner.guarantees.position_destination__global_position_child.consumers.append(
             self.destroy_position_gateway__action_inner__position_destination
         )
+
+    def continue_when_occupied_position_gateway(self):
+        self.create_position_gateway__action_inner__position_trigger_pos()
 
     def accept_when_empty_position_gateway__action_inner__position_destination(self):
         if not self.join_when_empty_position_gateway__action_inner__position_destination.arrive():

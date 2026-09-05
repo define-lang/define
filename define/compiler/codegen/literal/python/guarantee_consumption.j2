@@ -11,9 +11,9 @@
     {% for deferred in registrations %}
 
     def {{ deferred.method_name }}(self):
-        {% for method_name in deferred.consumption.init_method_names %}
-{{ configure_guarantee_consumption(deferred.consumption, "inits", method_name) -}}
-        {% endfor %}
+        {% if deferred.consumption.init_method_name is not none %}
+{{ configure_guarantee_consumption(deferred.consumption, "inits", deferred.consumption.init_method_name) -}}
+        {% endif %}
         {% for method_name in deferred.consumption.consumer_method_names %}
 {{ configure_guarantee_consumption(deferred.consumption, "consumers", method_name) -}}
         {% endfor %}

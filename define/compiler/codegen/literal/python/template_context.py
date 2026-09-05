@@ -117,7 +117,7 @@ class ActionFragmentContext:
 
     method_name: str
     statements: list[ActionStatementContext]
-    inits: ActionExecutionInitsContext
+    inits: InitContext
     fanout_continuation_method_names: list[str]
     inline_callee_binding_plans: list[CalleeBindingPlanContext]
     guarantee_name: str | None
@@ -182,8 +182,8 @@ class TriggeredActionExecutionContext:
 
 
 @dataclass
-class ActionExecutionInitsContext:
-    """Generated Action Execution init performed synchronously."""
+class InitContext:
+    """Generated runtime-state init performed synchronously."""
 
     action_executions: list[TriggeredActionExecutionContext]
     callee_binding_method_names: list[str]
@@ -204,7 +204,7 @@ class GuaranteeConsumptionContext:
 
     execution_member_names: list[str]
     guarantee_name: str
-    init_method_names: list[str]
+    init_method_name: str | None
     consumer_method_names: list[str]
 
 
@@ -230,9 +230,10 @@ class CalleeBindingPlanContext:
 
     action_execution_name: str
     callee_binding_hole_method_name: str
+    callee_continuation_method_name: str | None
     method_name: str | None
     invocation_method_name: str | None
-    invokes_callee_binding_hole_after_setup: bool
+    invokes_callee_binding_hole: bool
     dependency_count: int
     join_is_assigned_by_caller: bool
     requires_join_check: bool
@@ -250,17 +251,18 @@ class BindingHoleFanoutContext:
     binding_hole_method_name: str
     requires_join_check: bool
     join_member_name: str | None
-    inits: ActionExecutionInitsContext
+    inits: InitContext
     separate_init_method_name: str | None
+    continuation_method_name: str | None
     fanout_continuation_method_names: list[str]
 
 
 @dataclass
-class ActionExecutionInitMethodContext:
-    """A generated method that inits one Action Execution."""
+class InitMethodContext:
+    """A generated method that performs one init plan."""
 
     method_name: str
-    action_execution: TriggeredActionExecutionContext
+    inits: InitContext
 
 
 @dataclass
@@ -273,8 +275,8 @@ class ActionExecutionContext:
     fragments: list[ActionFragmentContext]
     binding_hole_fanouts: list[BindingHoleFanoutContext]
     action_executions: list[TriggeredActionExecutionContext]
-    creation_inits: ActionExecutionInitsContext
-    action_execution_init_methods: list[ActionExecutionInitMethodContext]
+    creation_inits: InitContext
+    init_methods: list[InitMethodContext]
     callee_binding_plans: list[CalleeBindingPlanContext]
     guarantees: GuaranteesContext | None
     accepts_destruction_connections: bool

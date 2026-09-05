@@ -62,7 +62,7 @@ class TestExecution:
         self.guarantees.global_position_shared.publish(
             self.scheduler,
             self.execution_action_middle.accept_when_empty_global_position_shared__global_position_marker,
-            self.execution_action_middle.accept_when_occupied_global_position_shared,
+            self.execution_action_middle.continue_when_occupied_global_position_shared,
         )
 
     def create_action_middle__position_trigger_pos(self):

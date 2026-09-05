@@ -50,7 +50,7 @@ class TestExecution:
             self.scheduler,
         )
         self.execution_position_box__action_middle.execution_action_inner.guarantees.global_position_child.inits.append(
-            self.init_position_box__global_position_child__action_destructor
+            self.init_position_box__action_middle__action_inner__global_position_child
         )
         self.execution_position_box__action_middle.execution_action_inner.guarantees.global_position_child.consumers.append(
             self.destroy_position_box__global_position_child
@@ -83,7 +83,7 @@ class TestExecution:
             return
         self.local_position_box.destroy_particle()
 
-    def init_position_box__global_position_child__action_destructor(self):
+    def init_position_box__action_middle__action_inner__global_position_child(self):
         self.execution_position_box__global_position_child__action_destructor = local.my_domain_com.my_lib.destructor.DestructorExecution(
             self.scheduler,
         )

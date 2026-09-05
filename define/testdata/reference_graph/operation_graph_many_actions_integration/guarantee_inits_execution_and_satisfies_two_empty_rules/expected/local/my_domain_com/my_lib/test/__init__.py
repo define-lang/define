@@ -52,7 +52,7 @@ class TestExecution:
         self.execution_position_box__action_carrier.join_for_move_position_source_to_position_result = literal.NO_JOIN
         self.execution_position_box__action_carrier.join_for_destroy_position_run = literal.NO_JOIN
         self.execution_position_box__action_carrier.guarantees.position_source__move__position_result.inits.append(
-            self.init_position_box__action_carrier__position_result__action_worker
+            self.init_position_box__action_carrier__position_source__move__position_result
         )
         self.execution_position_box__action_carrier.guarantees.position_source__move__position_result.consumers.append(
             self.create_position_box__action_carrier__position_result__action_worker__position_run
@@ -96,7 +96,7 @@ class TestExecution:
             return
         self.local_position_box.destroy_particle()
 
-    def init_position_box__action_carrier__position_result__action_worker(self):
+    def init_position_box__action_carrier__position_source__move__position_result(self):
         self.execution_position_box__action_carrier__position_result__action_worker = local.my_domain_com.my_lib.worker.WorkerExecution(
             self.local_position_box.particle.get_action(
                 local.my_domain_com.my_lib.carrier.Carrier

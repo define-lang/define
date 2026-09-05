@@ -56,7 +56,7 @@ class TestExecution:
         self.execution_action_runner.init_when_occupied_position_wrapper()
         self.execution_action_runner.execution_position_wrapper__action_middle.join_when_empty_position_final = literal.NO_JOIN
         self.execution_action_runner.execution_position_wrapper__action_middle.join_for_move_position_inner_holder__action_inner__position_output_to_position_final = literal.NO_JOIN
-        self.execution_action_runner.accept_when_occupied_position_wrapper()
+        self.execution_action_runner.continue_when_occupied_position_wrapper()
 
     def create_action_runner__position_run(self):
         self.action.on_particle.get_action(

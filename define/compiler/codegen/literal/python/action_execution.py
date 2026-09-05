@@ -110,7 +110,7 @@ class ActionExecutionGenerator:
             statement_generator,
             guarantee_consumptions,
         )
-        action_execution_init_methods = self._generate_action_execution_init_methods(
+        init_methods = self._generate_init_methods(
             names,
             action_execution_contexts_by_execution,
         )
@@ -153,7 +153,7 @@ class ActionExecutionGenerator:
                 self._plan.creation_inits,
                 action_execution_contexts_by_execution,
             ),
-            action_execution_init_methods=action_execution_init_methods,
+            init_methods=init_methods,
             deferred_guarantee_registrations=deferred_guarantee_registrations,
             callee_binding_plans=callee_binding_plan_contexts,
             guarantees=guarantees_context,
@@ -305,6 +305,9 @@ class ActionExecutionGenerator:
                     separate_init_method_name=(
                         binding_hole_names.separate_init_method_name
                     ),
+                    continuation_method_name=(
+                        binding_hole_names.continuation_method_name
+                    ),
                     fanout_continuation_method_names=(
                         names.fanout_continuation_method_names(
                             binding_hole_fanout.continuations,
@@ -317,13 +320,13 @@ class ActionExecutionGenerator:
     def _generate_inits_context(
         self,
         names: action_names.ActionNames,
-        inits: action_plan.ActionExecutionInits,
+        inits: action_plan.InitPlan,
         action_execution_contexts_by_execution: dict[
             operation_graph_model.ActionExecution,
             template_context.TriggeredActionExecutionContext,
         ],
-    ) -> template_context.ActionExecutionInitsContext:
-        return template_context.ActionExecutionInitsContext(
+    ) -> template_context.InitContext:
+        return template_context.InitContext(
             action_executions=[
                 action_execution_contexts_by_execution[action_execution]
                 for action_execution in inits.action_executions
@@ -383,28 +386,25 @@ class ActionExecutionGenerator:
                     position=statement_generator.build_position(operation.target),
                 )
             )
-        init_method_name = None
-        if callee_binding_plan.inits_action_executions:
-            init_method_name = (
-                binding_hole_names.separate_init_method_name
-                or binding_hole_names.method_name
-            )
         return template_context.CalleeBindingPlanContext(
             action_execution_name=names.action_executions[execution].execution_name,
             callee_binding_hole_method_name=binding_hole_names.method_name,
+            callee_continuation_method_name=(
+                binding_hole_names.continuation_method_name
+            ),
             method_name=names.callee_binding_plans.get(callee_binding_plan),
             invocation_method_name=names.callee_binding_invocations.get(
                 callee_binding_plan
             ),
-            invokes_callee_binding_hole_after_setup=(
-                callee_binding_plan.invokes_callee_binding_hole_after_setup
+            invokes_callee_binding_hole=(
+                callee_binding_plan.invokes_callee_binding_hole
             ),
             dependency_count=callee_binding_plan.dependency_count,
             join_is_assigned_by_caller=callee_binding_plan.join_is_assigned_by_caller,
             requires_join_check=callee_binding_plan.requires_join_check,
             join_member_name=names.join_member_names.get(callee_binding_plan),
             destruction_positions=destruction_positions,
-            init_method_name=init_method_name,
+            init_method_name=names.callee_binding_init_method_name(callee_binding_plan),
             post_init_join_assignments=[
                 self._nested_callee_join_assignment_context(assignment, names)
                 for assignment in callee_binding_plan.post_init_join_assignments
@@ -426,23 +426,27 @@ class ActionExecutionGenerator:
             execution_member_names=execution_member_names,
         )
 
-    def _generate_action_execution_init_methods(
+    def _generate_init_methods(
         self,
         names: action_names.ActionNames,
         action_execution_contexts_by_execution: dict[
             operation_graph_model.ActionExecution,
             template_context.TriggeredActionExecutionContext,
         ],
-    ) -> list[template_context.ActionExecutionInitMethodContext]:
-        init_methods: list[template_context.ActionExecutionInitMethodContext] = []
+    ) -> list[template_context.InitMethodContext]:
+        init_methods: list[template_context.InitMethodContext] = []
         for (
-            action_execution,
+            consumption_plan,
             method_name,
-        ) in names.action_execution_init_method_names.items():
+        ) in names.guarantee_consumption_init_method_names.items():
             init_methods.append(
-                template_context.ActionExecutionInitMethodContext(
+                template_context.InitMethodContext(
                     method_name,
-                    action_execution_contexts_by_execution[action_execution],
+                    self._generate_inits_context(
+                        names,
+                        consumption_plan.inits,
+                        action_execution_contexts_by_execution,
+                    ),
                 )
             )
         return init_methods

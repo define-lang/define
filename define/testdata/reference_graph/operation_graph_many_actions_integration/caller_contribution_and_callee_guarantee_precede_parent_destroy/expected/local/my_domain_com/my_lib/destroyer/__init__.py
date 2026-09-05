@@ -52,7 +52,19 @@ class DestroyerExecution:
         self.join_for_empty_rule_position_parent: literal.Join
 
     def accept_when_occupied_position_parent(self):
-        self.create_position_parent__action_maker__position_trigger_pos()
+        self.execution_position_parent__action_maker = local.my_domain_com.my_lib.maker.MakerExecution(
+            self.action.get_interface_position(
+                "position<parent>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.maker.Maker
+            ),
+            self.scheduler,
+        )
+        self.execution_position_parent__action_maker.guarantees.position_result.consumers.append(
+            self.destroy_position_parent
+        )
+
+        self.continue_when_occupied_position_parent()
 
     def init_when_occupied_position_parent(self):
         self.execution_position_parent__action_maker = local.my_domain_com.my_lib.maker.MakerExecution(
@@ -66,6 +78,9 @@ class DestroyerExecution:
         self.execution_position_parent__action_maker.guarantees.position_result.consumers.append(
             self.destroy_position_parent
         )
+
+    def continue_when_occupied_position_parent(self):
+        self.create_position_parent__action_maker__position_trigger_pos()
 
     def accept_when_empty_position_parent__action_maker__position_result(self):
         self.execution_position_parent__action_maker.accept_when_empty_position_result()

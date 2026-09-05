@@ -121,7 +121,7 @@ class CallerBExecution:
         )
         self.execution_position_destroyer_particle__action_destroyer.init_when_occupied_position_target()
         self.scheduler.submit(self.execution_position_destroyer_particle__action_destroyer.accept_for_empty_rule_position_target)
-        self.execution_position_destroyer_particle__action_destroyer.accept_when_occupied_position_target()
+        self.execution_position_destroyer_particle__action_destroyer.continue_when_occupied_position_target()
 
     def create_position_destroyer_particle__action_destroyer__position_trigger_pos(self):
         self.local_position_destroyer_particle.particle.get_action(

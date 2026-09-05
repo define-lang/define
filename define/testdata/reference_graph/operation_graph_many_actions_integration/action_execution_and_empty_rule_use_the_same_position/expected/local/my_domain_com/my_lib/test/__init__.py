@@ -60,7 +60,7 @@ class TestExecution:
             "position<source>"
         ).create_particle()
         self.execution_position_gateway__action_middle.init_when_occupied_position_source()
-        self.execution_position_gateway__action_middle.accept_when_occupied_position_source()
+        self.execution_position_gateway__action_middle.continue_when_occupied_position_source()
 
     def create_position_gateway__action_middle__position_trigger_pos(self):
         self.local_position_gateway.particle.get_action(

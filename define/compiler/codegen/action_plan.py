@@ -59,8 +59,8 @@ type DestructionConnectionContinuation = (
 
 
 @dataclass(slots=True, eq=False)
-class ActionExecutionInits:
-    """Action Execution init performed together before runnable work starts."""
+class InitPlan:
+    """Runtime-state init performed together before runnable work starts."""
 
     callee_binding_plans: list[CalleeBindingPlan] = field(
         init=False, default_factory=list
@@ -89,7 +89,7 @@ class ActionExecutionInits:
 
     @property
     def has_inits(self) -> bool:
-        """Whether this plan performs any Action Execution init."""
+        """Whether this plan performs any init."""
         return bool(self.action_executions or self.callee_binding_plans)
 
 
@@ -106,9 +106,9 @@ class ActionFragment:
         init=False,
         default_factory=list,
     )
-    inits: ActionExecutionInits = field(
+    inits: InitPlan = field(
         init=False,
-        default_factory=ActionExecutionInits,
+        default_factory=InitPlan,
     )
     fanout_continuations: list[FanoutContinuation] = field(
         init=False,
@@ -304,9 +304,9 @@ class BindingHoleFanout:
     """Init and runnable fanout for one Binding Hole."""
 
     binding_hole: operation_graph_action_resolver.ResolvedBindingHole
-    inits: ActionExecutionInits = field(
+    inits: InitPlan = field(
         init=False,
-        default_factory=ActionExecutionInits,
+        default_factory=InitPlan,
     )
     continuations: list[FanoutContinuation] = field(
         init=False,
@@ -339,6 +339,17 @@ class CalleeBindingPlan:
     post_init_join_assignments: list[CalleeJoinAssignment] = field(default_factory=list)
     post_init_guarantee_consumption_plans: list[GuaranteeConsumptionPlan] = field(
         default_factory=list
+    )
+    _caller_fanouts_containing_init: list[tuple[InitPlan, list[FanoutContinuation]]] = (
+        field(
+            default_factory=list,
+            repr=False,
+        )
+    )
+    _requires_init_before_caller_fanout: bool = field(
+        init=False,
+        default=False,
+        repr=False,
     )
 
     @property
@@ -387,14 +398,44 @@ class CalleeBindingPlan:
         return self._callee_binding.caller_binding_hole
 
     @property
-    def inits_action_executions(self) -> bool:
-        """Whether this invocation synchronously inits Action Executions."""
+    def has_inits(self) -> bool:
+        """Whether this invocation synchronously performs init."""
         return self.callee_fanout.inits.has_inits
 
     @property
     def has_continuations(self) -> bool:
         """Whether this invocation starts runnable continuations after init."""
         return bool(self.callee_fanout.continuations)
+
+    @property
+    def configures_action_executions_after_init(self) -> bool:
+        """Whether the caller configures Action Executions after their init."""
+        return bool(
+            self.post_init_join_assignments
+            or self.post_init_guarantee_consumption_plans
+        )
+
+    @property
+    def requires_separate_init(self) -> bool:
+        """Whether a caller must invoke init before the callee fanout."""
+        return bool(
+            self.has_continuations
+            and (
+                self._requires_init_before_caller_fanout
+                or any(
+                    len(continuations) != 1
+                    for _, continuations in self._caller_fanouts_containing_init
+                )
+                or self.configures_action_executions_after_init
+            )
+        )
+
+    @property
+    def caller_invokes_init_method(self) -> bool:
+        """Whether this Callee Binding makes the caller invoke an init method."""
+        return self.requires_separate_init or (
+            self.has_inits and not self.has_continuations
+        )
 
     @property
     def fixed_dependency_count(self) -> int:
@@ -404,36 +445,64 @@ class CalleeBindingPlan:
     @property
     def requires_caller_method(self) -> bool:
         """Whether invoking this Callee Binding requires caller-side work."""
-        if self.inline_after_local_operation:
-            return False
+        return not self.inline_after_local_operation and self._has_caller_work
+
+    @property
+    def _has_caller_work(self) -> bool:
+        """Whether this Callee Binding performs work specific to its caller."""
         return bool(
             self.guarantee_dependencies
             or self.contributed_destruction_operations
             or self._callee_binding.callee_destroy_for_empty_or_fill_dependency
             is not None
-            or self.inits_action_executions
+            or self.requires_separate_init
             or self.post_init_guarantee_consumption_plans
         )
 
     @property
-    def invokes_callee_binding_hole_after_setup(self) -> bool:
-        """Whether the caller method enters the callee after performing setup."""
+    def invokes_callee_binding_hole(self) -> bool:
+        """Whether the caller method invokes the callee Binding Hole."""
         return bool(
             self.has_continuations
-            and not self.inits_action_executions
+            and not self.requires_separate_init
             and not self.inline_after_local_operation
         )
 
     def add_to(
         self,
-        inits: ActionExecutionInits,
+        inits: InitPlan,
         continuations: list[FanoutContinuation],
     ):
         """Add this Callee Binding to the init and fanout it requires."""
-        if self.inits_action_executions:
+        if self.has_inits:
             inits.callee_binding_plans.append(self)
+            self._caller_fanouts_containing_init.append((inits, continuations))
         if self.has_continuations:
             continuations.append(self)
+
+    def place_after_local_operation(self, fragment: ActionFragment):
+        """Place caller work immediately after its sole Particle Operation."""
+        self.inline_after_local_operation = True
+        fragment.inline_callee_binding_plans.append(self)
+        if self.has_continuations:
+            if self.has_inits:
+                self._requires_init_before_caller_fanout = True
+            fragment.fanout_continuations.append(self)
+
+    def finalize_init(self):
+        """Let a Callee Binding Hole perform init used only by its fanout."""
+        self._requires_init_before_caller_fanout = (
+            self._requires_init_before_caller_fanout
+            or any(
+                len(continuations) != 1
+                for _, continuations in self._caller_fanouts_containing_init
+            )
+        )
+        if self.has_continuations and not self.configures_action_executions_after_init:
+            for inits, continuations in self._caller_fanouts_containing_init:
+                if len(continuations) == 1:
+                    inits.callee_binding_plans.remove(self)
+        self._caller_fanouts_containing_init.clear()
 
 
 type JoinTarget = ActionFragment | BindingHoleFanout | CalleeBindingPlan
@@ -479,9 +548,9 @@ class GuaranteeConsumptionPlan:
     """This action's work that consumes one resolved callee Action Guarantee."""
 
     guarantee: operation_graph.ResolvedGuarantee
-    inits: ActionExecutionInits = field(
+    inits: InitPlan = field(
         init=False,
-        default_factory=ActionExecutionInits,
+        default_factory=InitPlan,
     )
     continuations: list[FanoutContinuation] = field(
         init=False,
@@ -493,7 +562,7 @@ class GuaranteeConsumptionPlan:
 class _ActionExecutionInitPlacements:
     """The plan points that init Action Executions."""
 
-    creation_inits: ActionExecutionInits
+    creation_inits: InitPlan
     binding_hole_by_action_execution: dict[
         operation_graph_model.ActionExecution,
         operation_graph_action_resolver.ResolvedBindingHole,
@@ -501,10 +570,10 @@ class _ActionExecutionInitPlacements:
 
 
 @dataclass(frozen=True, slots=True)
-class _ActionExecutionInitPlans:
-    """Action Execution init and Guarantee consumption plans."""
+class _InitPlans:
+    """Init and Guarantee consumption plans."""
 
-    creation_inits: ActionExecutionInits
+    creation_inits: InitPlan
     guarantee_consumption_plans: list[GuaranteeConsumptionPlan]
     init_binding_hole_by_action_execution: dict[
         operation_graph_model.ActionExecution,
@@ -525,7 +594,7 @@ class ActionPlan:
         operation_graph_model.ActionExecution,
         ActionExecutionPlan,
     ]
-    creation_inits: ActionExecutionInits
+    creation_inits: InitPlan
     callee_binding_method_plans: list[CalleeBindingPlan]
     guarantee_consumption_plans: list[GuaranteeConsumptionPlan]
     init_binding_hole_by_action_execution: dict[
@@ -975,12 +1044,9 @@ class _CalleeBindingPlanner:
                 fragment = self._action_fragment_plans.fragment_for_operation[operation]
                 if (
                     callee_binding_plan.requires_caller_method
-                    and operation is sole_caller_particle_operation
-                ):
-                    callee_binding_plan.inline_after_local_operation = True
-                    fragment.inline_callee_binding_plans.append(callee_binding_plan)
-                    if callee_binding_plan.has_continuations:
-                        fragment.fanout_continuations.append(callee_binding_plan)
+                    or callee_binding_plan.has_inits
+                ) and operation is sole_caller_particle_operation:
+                    callee_binding_plan.place_after_local_operation(fragment)
                     continue
                 callee_binding_plan.add_to(
                     fragment.inits,
@@ -1070,7 +1136,7 @@ class _ActionExecutionInitLocator:
 
     def inits_include_execution_path(
         self,
-        inits: ActionExecutionInits,
+        inits: InitPlan,
         execution_path: tuple[operation_graph_model.ActionExecution, ...],
     ) -> bool:
         """Whether the inits construct every execution along one path."""
@@ -1086,8 +1152,8 @@ class _ActionExecutionInitLocator:
 
 
 @typing.final
-class _ActionExecutionInitPlanner:
-    """Plan Action Execution init and Guarantee consumption."""
+class _InitPlanner:
+    """Plan runtime-state init and Guarantee consumption."""
 
     def __init__(
         self,
@@ -1117,20 +1183,20 @@ class _ActionExecutionInitPlanner:
         )
         self._init_locator = init_locator
 
-    def plan(self) -> _ActionExecutionInitPlans:
+    def plan(self) -> _InitPlans:
         """Plan init and assign every Guarantee consumption."""
         (
             init_placements,
             guarantee_consumption_plans,
         ) = self._plan_action_execution_inits()
         assigned_consumption_plans = self._assign_guarantee_consumption_plans(
-            guarantee_consumption_plans,
+            guarantee_consumption_plans.values(),
         )
         # No empty BindingHoleFanout validation is needed: the resolver includes a
         # Binding Hole in with_runtime_consumers only because a Particle Operation,
         # Callee Binding, or Action Execution consumes it, and planning those
         # consumers populates its init or runnable fanout.
-        return _ActionExecutionInitPlans(
+        return _InitPlans(
             init_placements.creation_inits,
             assigned_consumption_plans,
             init_placements.binding_hole_by_action_execution,
@@ -1275,7 +1341,7 @@ class _ActionExecutionInitPlanner:
                 post_init_consumption.continuations.append(continuation)
             # Retaining these Callee Bindings here would evaluate their bound
             # methods before the Action Execution exists.
-            consumption_plan.continuations = remaining_continuations
+            consumption_plan.continuations[:] = remaining_continuations
             # Do not register a Guarantee consumption after all of its uses have
             # moved to the newly initialized Action Executions.
             if consumption_plan.inits.has_inits or remaining_continuations:
@@ -1286,7 +1352,7 @@ class _ActionExecutionInitPlanner:
         self,
     ) -> tuple[
         _ActionExecutionInitPlacements,
-        Collection[GuaranteeConsumptionPlan],
+        dict[operation_graph.ResolvedGuarantee, GuaranteeConsumptionPlan],
     ]:
         """Plan Action Execution init when its Action Parent becomes occupied."""
         # Every use of one resolved Guarantee must share a plan so its publication
@@ -1296,7 +1362,7 @@ class _ActionExecutionInitPlanner:
             GuaranteeConsumptionPlan,
         ] = {}
 
-        creation_inits = ActionExecutionInits()
+        creation_inits = InitPlan()
         init_binding_hole_by_action_execution: dict[
             operation_graph_model.ActionExecution,
             operation_graph_action_resolver.ResolvedBindingHole,
@@ -1380,7 +1446,7 @@ class _ActionExecutionInitPlanner:
                 creation_inits,
                 init_binding_hole_by_action_execution,
             ),
-            guarantee_consumption_plans_by_guarantee.values(),
+            guarantee_consumption_plans_by_guarantee,
         )
 
     @staticmethod
@@ -1604,7 +1670,7 @@ class _ActionPlanBuilder:
             self._planned_actions,
             callee_binding_plans.by_callee_binding,
         )
-        init_plans = _ActionExecutionInitPlanner(
+        init_plans = _InitPlanner(
             self._resolved_action,
             self._resolved_actions,
             self._planned_actions,
@@ -1622,6 +1688,8 @@ class _ActionPlanBuilder:
             action_executions,
             init_locator,
         ).plan()
+        for callee_binding_plan in callee_binding_plans.by_callee_binding.values():
+            callee_binding_plan.finalize_init()
         return ActionPlan(
             fragments=action_fragment_plans.fragments,
             binding_hole_fanouts=callee_binding_plans.binding_hole_fanouts,

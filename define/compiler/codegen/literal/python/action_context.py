@@ -103,6 +103,7 @@ class GeneratedBindingHoleNames:
     base_name: str
     method_name: str
     separate_init_method_name: str | None = None
+    continuation_method_name: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

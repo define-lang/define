@@ -1,5 +1,5 @@
 {% from "method_invocation.j2" import invoke_method %}
-{% from "triggered_action_execution.j2" import init_action_executions %}
+{% from "triggered_action_execution.j2" import run_inits %}
 {% macro binding_hole_fanout_methods(binding_hole_fanouts) %}
     {% for binding_hole_fanout in binding_hole_fanouts %}
 
@@ -8,16 +8,26 @@
         if not self.{{ binding_hole_fanout.join_member_name }}.arrive():
             return
         {% endif %}
-        {% if binding_hole_fanout.separate_init_method_name is none %}
-{{ init_action_executions(binding_hole_fanout.inits) -}}
-        {% endif %}
-        {% for method_name in binding_hole_fanout.fanout_continuation_method_names %}
+        {% if binding_hole_fanout.continuation_method_name is not none %}
+{{ run_inits(binding_hole_fanout.inits) }}
+        self.{{ binding_hole_fanout.continuation_method_name }}()
+        {% else %}
+{{ run_inits(binding_hole_fanout.inits) -}}
+            {% for method_name in binding_hole_fanout.fanout_continuation_method_names %}
         {{ invoke_method(method_name, submit=not loop.last) }}
-        {% endfor %}
-        {% if binding_hole_fanout.separate_init_method_name is not none %}
+            {% endfor %}
+        {% endif %}
+        {% if binding_hole_fanout.continuation_method_name is not none %}
 
     def {{ binding_hole_fanout.separate_init_method_name }}(self):
-{{ init_action_executions(binding_hole_fanout.inits) -}}
+{{ run_inits(binding_hole_fanout.inits) -}}
+        {% endif %}
+        {% if binding_hole_fanout.continuation_method_name is not none %}
+
+    def {{ binding_hole_fanout.continuation_method_name }}(self):
+            {% for method_name in binding_hole_fanout.fanout_continuation_method_names %}
+        {{ invoke_method(method_name, submit=not loop.last) }}
+            {% endfor %}
         {% endif %}
     {% endfor %}
 {% endmacro %}

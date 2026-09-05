@@ -92,7 +92,7 @@ class TestExecution:
         self.execution_position_box__action_outer.init_when_occupied_position_gw()
         self.execution_position_box__action_outer.execution_position_gw__action_middle.join_when_empty_position_out = literal.NO_JOIN
         self.execution_position_box__action_outer.execution_position_gw__action_middle.join_for_move_position_igw__global_position_inner_result_to_position_out = literal.NO_JOIN
-        self.execution_position_box__action_outer.accept_when_occupied_position_gw()
+        self.execution_position_box__action_outer.continue_when_occupied_position_gw()
 
     def create_position_box__action_outer__position_trigger_pos(self):
         self.local_position_box.particle.get_action(

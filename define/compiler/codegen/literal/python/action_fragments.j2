@@ -1,7 +1,7 @@
 {% from "action_statements.j2" import action_statements %}
 {% from "position_expression.j2" import position_expression %}
 {% from "method_invocation.j2" import invoke_method %}
-{% from "triggered_action_execution.j2" import init_action_executions %}
+{% from "triggered_action_execution.j2" import run_inits %}
 {% from "callee_binding_plans.j2" import callee_binding_plan_body %}
 {% macro action_fragment_body(fragment) %}
     {% if fragment.guarantee_dependent_destroy_position is not none %}
@@ -9,7 +9,7 @@
         self.{{ destruction_position.member_name }} = {{ position_expression(destruction_position.position) }}
     {% endif %}
 {{ action_statements(fragment.statements) -}}
-{{ init_action_executions(fragment.inits) -}}
+{{ run_inits(fragment.inits) -}}
     {% for callee_binding_plan in fragment.inline_callee_binding_plans %}
 {{ callee_binding_plan_body(callee_binding_plan) -}}
     {% endfor %}

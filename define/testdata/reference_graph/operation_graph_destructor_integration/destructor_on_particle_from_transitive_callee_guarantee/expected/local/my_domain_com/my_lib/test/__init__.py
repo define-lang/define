@@ -51,7 +51,7 @@ class TestExecution:
         self.execution_position_gateway__action_middle.join_when_empty_position_result = literal.NO_JOIN
         self.execution_position_gateway__action_middle.join_for_move_position_box__action_inner__position_result_to_position_result = literal.NO_JOIN
         self.execution_position_gateway__action_middle.guarantees.position_result.inits.append(
-            self.init_position_gateway__action_middle__position_result__action_destructor
+            self.init_position_gateway__action_middle__position_result
         )
         self.scheduler.submit(self.create_position_gateway__action_middle__position_run)
         self.execution_position_gateway__action_middle.on_action_parent_occupied()
@@ -89,7 +89,7 @@ class TestExecution:
             return
         self.local_position_gateway.destroy_particle()
 
-    def init_position_gateway__action_middle__position_result__action_destructor(self):
+    def init_position_gateway__action_middle__position_result(self):
         self.execution_position_gateway__action_middle__position_result__action_destructor = local.my_domain_com.my_lib.destructor.DestructorExecution(
             self.local_position_gateway.particle.get_action(
                 local.my_domain_com.my_lib.middle.Middle

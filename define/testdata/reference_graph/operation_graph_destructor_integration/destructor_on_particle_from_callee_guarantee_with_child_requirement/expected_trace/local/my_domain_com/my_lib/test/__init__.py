@@ -64,7 +64,7 @@ class TestExecution:
             "maker",
         )
         self.execution_position_box__action_maker.guarantees.position_result.inits.append(
-            self.init_position_box__action_maker__position_result__action_destructor
+            self.init_position_box__action_maker__position_result
         )
         self.scheduler.submit(self.create_position_box__action_maker__position_run)
         self.execution_position_box__action_maker.accept_when_empty_position_result()
@@ -127,7 +127,7 @@ class TestExecution:
             1,
         )
 
-    def init_position_box__action_maker__position_result__action_destructor(self):
+    def init_position_box__action_maker__position_result(self):
         self.execution_position_box__action_maker__position_result__action_destructor = local.my_domain_com.my_lib.destructor.DestructorExecution(
             self.local_position_box.particle.get_action(
                 local.my_domain_com.my_lib.maker.Maker

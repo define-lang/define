@@ -66,7 +66,7 @@ class TestExecution:
         self.execution_position_box__action_middle.init_when_occupied_position_gateway()
         self.execution_position_box__action_middle.execution_position_gateway__action_inner.join_for_empty_rule_position_source = literal.NO_JOIN
         self.scheduler.submit(self.create_position_box__action_middle__position_gateway__global_position_source_particle)
-        self.execution_position_box__action_middle.accept_when_occupied_position_gateway()
+        self.execution_position_box__action_middle.continue_when_occupied_position_gateway()
 
     def create_position_box__action_middle__position_gateway__global_position_source_particle(self):
         self.local_position_box.particle.get_action(

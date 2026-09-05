@@ -67,7 +67,7 @@ class TestExecution:
         self.execution_position_box__action_maker.join_when_empty_global_position_child = literal.NO_JOIN
         self.execution_position_box__action_maker.join_for_move_position_temp_to_global_position_child = literal.NO_JOIN
         self.execution_position_box__action_maker.guarantees.global_position_child.inits.append(
-            self.init_position_box__global_position_child__action_destructor
+            self.init_position_box__action_maker__global_position_child
         )
         self.execution_position_box__action_maker.guarantees.global_position_child.consumers.append(
             self.destroy_position_box__global_position_child
@@ -119,7 +119,7 @@ class TestExecution:
             1,
         )
 
-    def init_position_box__global_position_child__action_destructor(self):
+    def init_position_box__action_maker__global_position_child(self):
         self.execution_position_box__global_position_child__action_destructor = local.my_domain_com.my_lib.destructor.DestructorExecution(
             self.scheduler,
             self.trace_execution,

@@ -63,8 +63,25 @@ class MiddleExecution:
         self.join_for_empty_rule_position_run: literal.Join
 
     def accept_when_occupied_position_box(self):
-        self.scheduler.submit(self.create_position_box__action_worker__position_input)
-        self.create_position_box__action_worker__position_run()
+        self.execution_position_box__action_worker = local.my_domain_com.my_lib.worker.WorkerExecution(
+            self.action.get_interface_position(
+                "position<box>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.worker.Worker
+            ),
+            self.scheduler,
+        )
+        self.execution_position_box__action_worker.join_for_empty_rule_position_run = literal.NO_JOIN
+        self.execution_position_box__action_worker.join_for_move_position_input_to_position_output = literal.NO_JOIN
+        self.execution_position_box__action_worker.join_for_destroy_position_run = literal.NO_JOIN
+        self.execution_position_box__action_worker.guarantees.position_input__move__position_output.consumers.append(
+            self.move_position_box__action_worker__position_output_to_position_final
+        )
+        self.execution_position_box__action_worker.guarantees.position_run.consumers.append(
+            self.destroy_position_box
+        )
+
+        self.continue_when_occupied_position_box()
 
     def init_when_occupied_position_box(self):
         self.execution_position_box__action_worker = local.my_domain_com.my_lib.worker.WorkerExecution(
@@ -84,6 +101,10 @@ class MiddleExecution:
         self.execution_position_box__action_worker.guarantees.position_run.consumers.append(
             self.destroy_position_box
         )
+
+    def continue_when_occupied_position_box(self):
+        self.scheduler.submit(self.create_position_box__action_worker__position_input)
+        self.create_position_box__action_worker__position_run()
 
     def accept_when_empty_position_box__action_worker__position_output(self):
         if not self.join_when_empty_position_box__action_worker__position_output.arrive():

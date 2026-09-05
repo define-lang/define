@@ -69,7 +69,7 @@ class TestExecution:
             "position<gw>"
         ).create_particle()
         self.execution_position_box__action_middle.init_when_occupied_position_gw()
-        self.scheduler.submit(self.execution_position_box__action_middle.accept_when_occupied_position_gw)
+        self.scheduler.submit(self.execution_position_box__action_middle.continue_when_occupied_position_gw)
         self.execution_position_box__action_middle.accept_when_empty_position_gw__action_inner__position_out()
 
     def create_position_box__action_middle__position_trigger_pos(self):
