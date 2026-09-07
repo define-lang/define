@@ -846,6 +846,9 @@ Below, when we talk about a "parent name," we mean the name in the chain
 immediately before the name we are talking about. In
 `position<a>::position</b>`, `position<a>` is the parent name of `position</b>`.
 
+An "intermediate position" is any position in a Position Reference except its
+final position.
+
 Unless otherwise stated, the rules for all position references are:
 
 - The first name in the chain must have been defined _before_ it is referenced.
@@ -853,7 +856,7 @@ Unless otherwise stated, the rules for all position references are:
   an explicit (not implied) constraint on their parent name.
 - For local position names, the parent name must be an action and the local
   position must be defined in the Action Definition Block of that action.
-- Every position in the chain except the last must already contain a particle.
+- Every intermediate position must already contain a particle.
 - The statement that uses the position reference determines whether the last
   position in the chain must contain a particle or be empty.
 
@@ -1365,6 +1368,15 @@ is also destroyed.
 The particle and its transitive child particles are logically destroyed
 simultaneously.
 
+Conceptually, particle destruction involves two phases:
+
+1. **Vacation**: Particles instantaneously and simultaneously all cease to
+   occupy their positions. (We say they "vacate" their positions.) They maintain
+   their positional relationships to each other through their own child,
+   interface, and implied positions, but they are no longer accessible to the
+   program outside of the process of destruction.
+2. **Vanishment**: Particles cease to exist (we say they "vanish").
+
 ### Automatic Destruction
 
 Particles that can no longer possibly be referenced are automatically destroyed.
@@ -1408,6 +1420,25 @@ particle is in a particular state.
 
 Immediately before a particle is destroyed, the compiler triggers every
 destructor assigned to the particle. Destructors then run as an ordinary action.
+
+### Destructors and Destruction Ordering
+
+Destructors occur during destruction, and as such can operate on particles being
+destroyed after Vacation and before Vanishment.
+
+Any particle that a destructor or its transitively triggered actions interacts
+with from the destructor's contracted positions is available to that destructor
+in its pre-Vacation state. Such a particle does not vanish until the destructor
+and its transitively triggered action no longer need to interact with it.
+
+Note that moving a particle counts as an interaction with all of that particle's
+transitive child particles.
+
+This imposes a partial order on Vanishment, but not Vacation.
+
+When multiple destructors are triggered by the same simultaneous destruction,
+the compiler may choose any ordering of them when necessary, respecting any
+other rules that order operations in Define.
 
 ### Destructor Action Guarantees
 
@@ -1563,14 +1594,60 @@ each other. It may then choose to generate code that runs those concurrent
 chains of operations in parallel, provided the other logical guarantees of
 Define are preserved.
 
+### Particle Operations
+
+The following "Particle Operations" exist in Define:
+
+- **Create**: A Create Particle Statement creates a particle in its "target"
+  position.
+- **Move**: A Move Particle Statement moves a particle from one position to
+  another. This empties the Move's "source" position and fills its "target"
+  position.
+- **Vacate**: A Destroy Particle Statement or auto-destruction causes a particle
+  to vacate its position, leaving that position empty. Each particle
+  transitively destroyed gets its own Vacate operation.
+- **Vanish**: After a particle vacates its position and is no longer needed by
+  any destructor code, it vanishes.
+
+When a Vanish operation for a particle immediately follows the Vacate operation
+of that same particle, the Vacate operation may be skipped and replaced with
+only a Vanish operation.
+
+### Particle Operation Position References
+
+Each Particle Operation is caused by some written statement. For the purposes of
+this definition, Automatic Destruction is treated as though it were a Destroy
+Particle Statement with the relevant local position as its target.
+
+Each Particle Operation has its own specific Position References.
+
+Create, Move and Vacate have the Position References written directly in their
+statements.
+
+Transitive child Vacate operations have no Position References. Any step that
+says to collect or analyze Position References for an operation can be skipped
+for these operations.
+
+Vacate operations that are caused via a Destruction Contract are evaluated as
+though they were Destroy Particle Statements within the action performing the
+destroy (just as Destruction Contracts are normally evaluated).
+
+### Particle Operation Recency
+
+A Particle Operation is more "recent" than another when it would occur later in
+a program executed serially according to this spec excluding this Particle
+Operation Dependency Graph section.
+
+Logically simultaneous Particle Operations, such as the Vacates in a
+simultaneous destruction, have identical recency.
+
+Recency does not describe runtime execution order. The dependency graph
+determines which operations may execute concurrently or in a different order.
+
 ### The Particle Operation Dependency Graph
 
-Every Create Particle Statement, Move Particle Statement, and individual
-particle destruction is a "Particle Operation." Create and Destroy each operate
-on a single position, and Move operates on both of its positions.
-
 The compiler constructs a directed acyclic graph of dependencies between
-Particle Operations. These rules inherently create a transitively-reduced
+Particle Operations. The rules below inherently create a transitively-reduced
 minimal DAG of the exact dependencies for maximum safe concurrency, without
 having to perform any transitive reduction algorithms on the full graph.
 
@@ -1578,74 +1655,93 @@ Note that the compiler is not bound to literally implement the rules below
 exactly as written if there is a more efficient implementation that produces the
 same DAG.
 
-We have [proofs](../../proofs/operation_graph/) for some of the logic in this
+We have extensive [proofs](../../proofs/operation_graph/) for the logic in this
 section.
 
-#### Particle Operation Recency
+#### Constructing the Graph
 
-A Particle Operation is more recent than another when it would occur later in a
-program executed serially according to this spec excluding this Particle
-Operation Dependency Graph section.
+Process Creates, Moves, and Vacates in Particle Operation Recency order. For
+each operation, use the position information defined below to perform three
+phases:
 
-Logically simultaneous Particle Operations (such as destroys of transitive child
-particles) have identical recency.
+1. **Collection:** collect candidates for the operation's dependencies.
+2. **Comparison:** compare those candidates to choose its dependencies.
+3. **Recording the Operation's Effects:** update the position information for
+   subsequent operations.
 
-Recency does not describe runtime execution order. The dependency graph
-determines which operations may execute concurrently or in a different order.
+#### Position Setters and Readers
 
-#### The Fill Rule
+For each position, keep track of:
 
-Filling a position depends on the single most recent previous Particle Operation
-among the ones on that position and its transitive parent positions.
+- Its "setter": the most recently processed Particle Operation that filled or
+  emptied it.
+- Its "readers": the Particle Operations processed after its setter where this
+  position is an intermediate position.
 
-#### The Empty Rule
+For a child position of a particle, its initial setter is that parent particle's
+Create. Other positions initially have no setter. Every position initially has
+no readers.
 
-The Empty Rule has three phases that must logically occur.
+#### Collection
 
-##### Collection
+Collect candidates for the current Particle Operation's dependencies:
 
-Collect the most recent previous Particle Operation on the emptied position and
-the most recent previous Particle Operation on each of its transitive parent and
-child positions.
+- For a Create's or Move's target position, collect its setter, when one exists.
+- For each intermediate position in the operation's Position References, collect
+  its setter.
+- For a Move's source or the position emptied by a Vacate, collect its readers.
+  If there are none, collect its setter instead.
+- For each parent particle of a position or action in the operation's Position
+  References, collect that particle's Create.
 
-When collecting those Particle Operations, a Move Particle Statement is also
-considered a Particle Operation on each transitive child position of the moved
-particle.
+Combine all candidates. (Note that an operation collected for several reasons is
+still one candidate.)
 
-##### Comparison
+Omit candidates in the following cases:
 
-Use the following rules to exclude some of the collected Particle Operations:
+- Omit a parent particle’s Create if another collected operation is a setter or
+  reader of one of its child positions. The setter or reader must be a different
+  operation from that parent particle’s Create.
+- If a collected candidate is a reader of an intermediate position in the
+  operation's Position References, omit that position's setter.
 
-- Exclude a collected Particle Operation if a more recent collected Particle
-  Operation operates on a position that is the same as, a transitive parent of,
-  or a transitive child of any position operated on by the first operation.
-- Exclude a collected Destroy if another collected Destroy has identical recency
-  and operates on a transitive parent of the first Destroy's position.
+Determine all such omissions using the combined collection before removing any
+candidates.
 
-Every collected Particle Operation participates in determining these exclusions,
-including operations that are themselves excluded.
+#### Comparison
 
-##### Move Correction
+Start with an empty set of dependencies for the current Particle Operation.
+Examine the candidates in topological order of the already calculated dependency
+graph, with dependent operations before their dependencies.
 
-After the Comparison, if a remaining dependency is a Move Particle Statement and
-another remaining dependency depends on that Move Particle Statement, directly
-or indirectly, only the more recent dependency remains.
+For each candidate, if an operation already in the set depends on it, directly
+or indirectly, skip it. Otherwise, add the candidate to the set.
 
-#### The Move Rule
+#### Recording the Operation's Effects
 
-To determine the dependencies of a Move Particle Statement, combine the Particle
-Operations that the Empty Rule's Collection gathers for the source position (the
-"Empty Dependencies") with the Particle Operation that the Fill Rule identifies
-for filling the target position (the "Fill Dependency", when one exists), and
-then apply the Empty Rule's Comparison and Move Correction once to the combined
-set.
+After calculating a Particle Operation's dependencies:
 
-After applying those comparisons, remove the Fill Dependency if any remaining
-Empty Dependency depends on it, directly or indirectly.
+- Record it as a reader of each intermediate position for which it collected
+  candidates.
+- For each position it fills or empties, make it that position's setter and
+  clear that position's readers.
+
+A reader may be removed from a position's readers when another reader of that
+position depends on it, directly or indirectly. In particular, when recording an
+operation as a reader, we may remove any other reader of that position collected
+as a candidate for the operation's dependencies. This applies even if Comparison
+skipped that candidate.
+
+#### Processing Destructor Operations
+
+Vacates empty positions for code running _outside_ of their Simultaneous
+Transitive Destruction. They do not change the occupancy, setters, or readers
+used when processing operations of destructors (and actions they transitively
+trigger) on child positions of particles selected for that destruction.
 
 #### The Action Parent Rule
 
-When the above rules identify no dependency for a Particle Operation, the
+When the above rules identify no dependency for a Create, Move, or Vacate, the
 operation depends on the most recent previous Particle Operation on the current
 action’s parent position or one of that position’s transitive parent positions.
 
@@ -1653,8 +1749,7 @@ The operation that triggered the action is not automatically a dependency.
 
 Note that this rule is only necessary as an implementation detail for resolving
 dependencies modularly within a single action. When considering a whole program,
-the Fill Rule, Empty Rule, and Move Rule alone create a complete,
-transitively-minimal operation graph.
+the rules above alone create a complete, transitively-minimal operation graph.
 
 ### Executing Particle Operations Concurrently
 
@@ -1673,9 +1768,9 @@ action to complete.
 
 ### Parallelism is not Mandatory
 
-The compiler is not required emit code that actually runs operations in parallel
-just because it would be safe to do so. It may choose whatever execution
-strategy it judges best, as long as it respects this specification.
+The compiler is not required to emit code that actually runs operations in
+parallel just because it would be safe to do so. It may choose whatever
+execution strategy it judges best, as long as it respects this specification.
 
 ## Starting Define Programs
 
