@@ -1,0 +1,30 @@
+load("@aspect_rules_py//py:defs.bzl", "py_library")
+load("//tools/bzl:format.bzl", "format_test")
+load("//tools/bzl:pyright.bzl", "pyright_test")
+
+py_library(
+    name = "algorithm",
+    srcs = ["algorithm.py"],
+    deps = [":graph"],
+)
+
+py_library(
+    name = "graph",
+    srcs = ["graph.py"],
+)
+
+format_test(
+    name = "format_test",
+    size = "small",
+    srcs = glob(["*.py"]),
+    python = "@multitool//tools/ruff",
+)
+
+pyright_test(
+    name = "pyright_test",
+    size = "small",
+    deps = [
+        ":algorithm",
+        ":graph",
+    ],
+)
