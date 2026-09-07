@@ -135,7 +135,7 @@ theorem vacancy_target_enabled_iff_agrees {qualities : Nat → Nat → Prop}
 inductive Operation where
   | create (target : Reference) (particle : Nat)
   | move (source target : Reference) (particle : Nat)
-  | destroy (target : VacancyTarget) (particle : Nat)
+  | vacate (target : VacancyTarget) (particle : Nat)
 
 def Operation.Enabled (qualities : Nat → Nat → Prop) (state : State) : Operation → Prop
   | .create target particle =>
@@ -145,7 +145,7 @@ def Operation.Enabled (qualities : Nat → Nat → Prop) (state : State) : Opera
       source.Enabled qualities state ∧ target.Enabled qualities state ∧
         state (.occupancy source.position) = some particle ∧
         state (.occupancy target.position) = none
-  | .destroy target particle =>
+  | .vacate target particle =>
       target.Enabled qualities state ∧ state (.occupancy target.position) = some particle
 
 def Operation.keys : Operation → List Key
@@ -153,7 +153,7 @@ def Operation.keys : Operation → List Key
       .occupancy target.position :: .existence particle :: target.keys
   | .move source target _ =>
       .occupancy source.position :: .occupancy target.position :: (source.keys ++ target.keys)
-  | .destroy target _ => .occupancy target.position :: target.keys
+  | .vacate target _ => .occupancy target.position :: target.keys
 
 def Operation.changes : Operation → Key → Option (Option Nat)
   | .create target particle, key =>
@@ -162,7 +162,7 @@ def Operation.changes : Operation → Key → Option (Option Nat)
   | .move source target particle, key =>
       if key = .occupancy source.position then some none
       else if key = .occupancy target.position then some (some particle) else none
-  | .destroy target _, key => if key = .occupancy target.position then some none else none
+  | .vacate target _, key => if key = .occupancy target.position then some none else none
 
 def Operation.effect (operation : Operation) (original : State) :
     ExactEffects.Effect Key (Option Nat) where
@@ -196,7 +196,7 @@ theorem operation_enabled_iff_agrees {qualities : Nat → Nat → Prop}
         reference_enabled_iff_agrees target valid.2.1]
       simp [Operation.keys, agrees_cons, agrees_append, valid.2.2.1, valid.2.2.2,
         and_comm, and_left_comm, and_assoc]
-  | destroy target particle =>
+  | vacate target particle =>
       simp only [Operation.Enabled] at valid ⊢
       rw [vacancy_target_enabled_iff_agrees target valid.1]
       simp [Operation.keys, agrees_cons, valid.2, and_comm]
@@ -242,7 +242,7 @@ theorem operation_effect_valid {qualities : Nat → Nat → Prop}
           subst after
           exact ⟨none, by simp [Operation.effect, Operation.keys, valid.2.2.2], by simp⟩
         · simp [Operation.effect, Operation.changes, source_key, target_key] at change
-  | destroy target particle =>
+  | vacate target particle =>
       simp only [Operation.Enabled] at valid
       by_cases target_key : key = .occupancy target.position
       · subst key
@@ -262,7 +262,7 @@ def Operation.execute : Operation → State → State
   | .move source target particle, state =>
       (state.set (.occupancy source.position) none).set
         (.occupancy target.position) (some particle)
-  | .destroy target _, state => state.set (.occupancy target.position) none
+  | .vacate target _, state => state.set (.occupancy target.position) none
 
 theorem enabled_move_positions_differ {qualities : Nat → Nat → Prop}
     {state : State} {source target : Reference} {particle : Nat}
@@ -292,7 +292,7 @@ theorem effect_apply_eq_execute {qualities : Nat → Nat → Prop}
       · simp [Operation.effect, ExactEffects.Effect.apply, Operation.changes,
           Operation.execute, State.set, at_source]
         split <;> rfl
-  | destroy target particle =>
+  | vacate target particle =>
       simp [Operation.effect, ExactEffects.Effect.apply, Operation.changes,
         Operation.execute, State.set]
       split <;> rfl
@@ -342,7 +342,7 @@ theorem execute_preserves_wellFormed {qualities : Nat → Nat → Prop}
       obtain ⟨source_valid, target_valid, source_occupied, target_empty⟩ := valid
       simp only [State.WellFormed, Operation.execute, State.set] at *
       grind
-  | destroy target particle =>
+  | vacate target particle =>
       simp only [State.WellFormed, Operation.execute, State.set] at *
       grind
 

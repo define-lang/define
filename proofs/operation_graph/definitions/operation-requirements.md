@@ -8,9 +8,7 @@ Assignment Semantics, Requirements Follow Particles, Creating Particles, Moving
 Particles, and Destroying Particles in the specification, interpreted using the
 [conceptual definitions](definitions.md#conceptual-meaning-of-particles-positions-and-operations).
 
-The current graph calculation is not evidence that a requirement exists. This
-document derives semantic requirements independently of a graph calculation; it
-does not claim that the former Fill, Empty, or Move Rules implement them.
+These semantic requirements are derived independently of the graph calculation.
 
 ## What an operation must preserve
 
@@ -56,10 +54,10 @@ requires distinct source and destination references, the specified restriction
 against moving a particle into a position it defines, and the destination's
 required qualities.
 
-Destroy requires a particle selected for destruction. A Destroy Particle
+Vacate requires a particle selected for destruction. A Destroy Particle
 Statement selects its target and the particles in its transitive child positions
-from the common state immediately before destruction. Its individual Destroys
-are not fresh evaluations of the statement after preceding Destroys.
+from the common state immediately before destruction. Its individual Vacates are
+not fresh evaluations of the statement after preceding Vacates.
 
 These occupancy and identity requirements are different. Moving a particle away
 and putting another at its former position restores occupancy but does not
@@ -90,7 +88,7 @@ requirement that every transitively moved particle already exist.
 
 ### Vacancy and continued existence
 
-A Destroy vertex denotes vacancy, not completion of destruction. Original
+A Vacate vertex denotes vacancy, not completion of destruction. Original
 particles remain available for destructor operations under Simultaneous
 Transitive Destruction. Distinct destructors share those particles and their
 changing state. There is no separate original particle for each destructor.
@@ -100,10 +98,10 @@ vacancy of that position. A destructor's operation requiring the continued
 existence of an original particle instead constrains when that particle may
 cease to exist. The latter does not, by itself, constrain its vacancy vertex.
 
-The lifetime rule expressly counts moving a particle as interaction with its
-transitive child particles. This is not a rule that every such interaction
-changes the occupancy of every defined position. Lifetime protection and
-conflicting occupancy requirements cannot be substituted for each other.
+The [Vanish rules](../theorems/vanishment-proof.md) distinguish an actual
+requirement for a particle's existence from movement with an ancestor. The
+latter does not, by itself, prolong lifetime after Vacation or change child
+occupancy.
 
 ## An exchange proved from these requirements
 
@@ -122,22 +120,21 @@ moves the same `P` between the same two positions. Afterward `P` occupies
 `dest`, its `/marker` is occupied, and `source` is empty. Both the operation
 requirements and the resulting spatial relationships are preserved.
 
-No invocation of the former Empty Rule is used in this argument. Nor does it
-assume that identity permits retargeting a chained reference. A Create written
-as `source::/marker` would require occupancy at `source`, which the Move
-removes. A Create written as `dest::/marker` would require occupancy at `dest`,
-which the Move supplies. Those explicit accesses cannot exchange with this Move
-in the same way.
+This does not assume that identity permits retargeting a chained reference. A
+Create written as `source::/marker` would require occupancy at `source`, which
+the Move removes. A Create written as `dest::/marker` would require occupancy at
+`dest`, which the Move supplies. Those explicit accesses cannot exchange with
+this Move in the same way.
 
-For a direct implied Destroy of the marker particle with no destructors of its
+For a direct implied Vacate of the marker particle with no destructors of its
 own, the argument is analogous. The selected target is the position defined by
 `P`, not a reference through the caller's `source`. The Move preserves both `P`
-and the marker's occupancy relative to it. Destroy empties only that defined
+and the marker's occupancy relative to it. Vacate empties only that defined
 position and does not change occupancy at `source` or `dest`. No external effect
 or additional destructor operation is part of this particular exchange.
 
 This justifies the constructor integration example with two constructors that
-successively Create and Destroy particles in the same implied `/marker`. Their
+successively Create and Vacate particles in the same implied `/marker`. Their
 four operations remain ordered by occupancy of `/marker`. The parent Move need
 not wait for them. The caller's subsequent Create at `dest::/marker` must wait
 for both the Move and the final constructor vacancy: they satisfy different
@@ -160,12 +157,12 @@ The second Create triggers `/construct_child`. In the serial reference
 execution, its Create of `R` precedes the caller's destruction, which selects
 `P`, `Q`, and `R` for simultaneous destruction.
 
-The individual Destroys share logical recency. That does not require every
-individual Destroy to wait for all ordinary operations preceding the group in
-the reference execution. The Destroy of `R` must wait for the Create of `R`;
-that Create in turn requires the creation of `Q`, which supplies the implied
-position to the triggered constructor. The Create of `R` does not traverse
-`parent` or use `P` to obtain `/leaf`.
+The individual Vacates share logical recency. That does not require every
+individual Vacate to wait for all ordinary operations preceding the group in the
+reference execution. The Vacate of `R` must wait for the Create of `R`; that
+Create in turn requires the creation of `Q`, which supplies the implied position
+to the triggered constructor. The Create of `R` does not traverse `parent` or
+use `P` to obtain `/leaf`.
 
 Consequently `P`'s vacancy can precede the Create of `R`. This is not justified
 by assuming that `P` remains alive for that Create: in the absence of another
@@ -174,14 +171,10 @@ of `R` as well. The fact that `Q` occupied a position defined by `P` does not
 make every subsequent operation on a position defined by `Q` an interaction with
 `P`.
 
-The earlier argument that retained destructor access must first be extended to
-this constructor was mistaken. It tried to preserve an unnecessary dependency on
-`P`. The constructor accesses its directly implied position; it does not
-re-evaluate the caller's earlier chain through `parent`. Requirements on a
-particle must not be propagated to every transitive ancestor merely because
-those relationships occur in the serial reference execution.
+Requirements on a particle must not be propagated to every transitive ancestor
+merely because those relationships occur in the serial reference execution.
 
-This conclusion supplies neither an order between Destroys nor an exemption from
+This conclusion supplies neither an order between Vacates nor an exemption from
 an actual interaction. A destructor that accesses contracted positions can still
 impose the lifetime constraints specified by Destruction Ordering During
 Destructors.
@@ -193,7 +186,7 @@ The [general construction](../theorems/requirement-construction.md) and
 [scheduling argument](../theorems/requirement-scheduling-proof.md) handle both
 references of Moves, geometric restrictions, selected vacancies, and shared
 retained state. In particular, they do not treat a simultaneous selection as
-repeated current-state reads by its individual Destroys.
+repeated current-state reads by its individual Vacates.
 
 The [exact-effect lemmas](operation-effects.md) can be used only after the
 chosen representation preserves these requirements. Representing every

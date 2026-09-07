@@ -3,12 +3,11 @@
 ## Scope and premises
 
 This proves scheduling properties of the
-[requirement construction](requirement-construction.md), not of the former Fill,
-Empty, Comparison, and Move calculation. Fix a valid serial reference execution,
-with a permitted serial order of destructors. Keep its Particle Operation
-occurrences, assigned particles, and actual references. Identical-recency
-Destroys remain unordered. No Action Parent Rule or whole-action runtime barrier
-is used.
+[requirement construction](requirement-construction.md). Fix a valid serial
+reference execution, with a permitted serial order of destructors. Keep its
+Particle Operation occurrences, assigned particles, and actual references.
+Identical-recency Vacates remain unordered. No Action Parent Rule or
+whole-action runtime barrier is used.
 
 The source premises are the reference, creation, movement, detachment,
 destructor, and contract rules used in the
@@ -28,17 +27,17 @@ that original position share the latter component.
 The initial retained value is supplied by the last preceding operation changing
 that position's occupancy, or by its initial empty state. In the mathematical
 effect representation, initialize the retained component to the occupancy
-immediately before that supplier. The supplier makes the same genuine occupancy
-change on this component as on the ordinary component. If no such supplier
-exists, initialize the retained component to empty; access to its defining
-particle still requires that particle's creation.
+immediately before that setter. The setter makes the same genuine occupancy
+change on this component as on the ordinary component. If no such setter exists,
+initialize the retained component to empty; access to its defining particle
+still requires that particle's creation.
 
 This initialization is not a physical copy of an earlier state. Before the
-supplier no retained use of its resulting state can execute. Earlier ordinary
-changes still operate on ordinary occupancy. At the supplier the two
-observations agree, and subsequent original accesses use their shared changing
-state. This represents the inherited supplier without an artificial unavailable
-value or a runtime copying operation at destruction.
+setter no retained use of its resulting state can execute. Earlier ordinary
+changes still operate on ordinary occupancy. At the setter the two observations
+agree, and subsequent original accesses use their shared changing state. This
+represents the inherited setter without an artificial unavailable value or a
+runtime copying operation at destruction.
 
 Ordinary reads of the last occupied state before destruction require the same
 retained value, as well as their ordinary occupancy. A retained operation that
@@ -47,13 +46,13 @@ value changes, no such ordinary use remains pending. Its subsequent readers and
 changes are calculated normally. This is exactly the inherited-reader
 construction, not a requirement that ordinary code see a separate physical copy.
 
-A selected Destroy changes its ordinary selected occupancy to empty. It does not
+A selected Vacate changes its ordinary selected occupancy to empty. It does not
 change the retained component. Its written reference requirements, when there is
-a written target, remain actual occupancy requirements. An implicit child
-Destroy has no newly written ancestor chain. Its selection identifies the
-original position and particle, not a replacement obtained after a peer Destroy.
-It requires the supplier at that selected position, not every supplier
-encountered while discovering ancestors of the selection.
+a written target, remain actual occupancy requirements. An implicit child Vacate
+has no newly written ancestor chain. Its selection identifies the original
+position and particle, not a replacement obtained after a peer Vacate. It
+requires the setter at that selected position, not every setter encountered
+while discovering ancestors of the selection.
 
 For an inbound position whose defining particle survives the destruction, no
 retained copy of that inbound position is needed: the destroyed particle's own
@@ -66,36 +65,35 @@ the newly selected particles.
 Every component change has a preceding required value different from its new
 value. For ordinary occupancy and existence this is the ordinary proof. A
 vacancy changes its selected particle to empty. Initial supply of a retained
-component repeats the supplier's actual occupied-to-empty or empty-to-occupied
+component repeats the setter's actual occupied-to-empty or empty-to-occupied
 change. Subsequent retained Creates and Moves change empty to occupied or
 occupied to empty. A destructor can also Create a temporary particle and
-subsequently Destroy it. When that new destruction does not select the
-position's defining particle, its vacancy genuinely changes the current
-occupancy from that temporary particle to empty, even when this occupancy is
-retained state from an earlier destruction. The new particle's own retained
-state is handled separately by the same construction. Being executed by a
-destructor does not make its Destroy exempt from the vacancy requirements of
-this new destruction.
+subsequently Vacate it. When that new destruction does not select the position's
+defining particle, its vacancy genuinely changes the current occupancy from that
+temporary particle to empty, even when this occupancy is retained state from an
+earlier destruction. The new particle's own retained state is handled separately
+by the same construction. Being executed by a destructor does not make its
+Vacate exempt from the vacancy requirements of this new destruction.
 
 The source check below still matters: a component change must protect an actual
 particle or occupancy requirement, not merely a value in this representation.
 
 ## The candidates have exactly the effect-conflict reachability
 
-For each ordinary component, last supplier and intervening readers are the
+For each ordinary component, last setter and intervening readers are the
 standard exact-effect collection. For a retained component, that collection
-starts with the original supplier and preceding ordinary readers, followed by
-the destructor operations in their chosen reference order. This is precisely
-what inheritance supplies. Shared destructor accesses do not start separate
+starts with the original setter and preceding ordinary readers, followed by the
+destructor operations in their chosen reference order. This is precisely what
+inheritance supplies. Shared destructor accesses do not start separate
 collections.
 
 Consequently the componentwise conflict-collection argument applies to both
 kinds of component. Its two directions prove equality of reachability: every
 collected edge is a conflict, and every earlier conflict is reached through the
-last supplier and intervening changes or readers. Combining components takes the
+last setter and intervening changes or readers. Combining components takes the
 union of their edges. No minimality or scheduling conclusion is used here.
 
-Distinct Destroys of the same simultaneous selection change distinct ordinary
+Distinct Vacates of the same simultaneous selection change distinct ordinary
 components and do not change each other's retained state. An implicit child has
 no ancestor-reference reads. A written target's strict intermediate positions
 are outside its selected transitive children. Automatic Destruction likewise
@@ -123,7 +121,7 @@ execution:
   removes the original positions used by pending destruction work. A retained
   Move may already have changed the original state; the vacancy still uses its
   saved selection rather than evaluating that changed state afresh.
-- For retained accesses, their initial supplier and earlier ordinary users have
+- For retained accesses, their initial setter and earlier ordinary users have
   the required order. Subsequent accesses share the same changing original
   state. No ordinary use can observe an inconsistent retained copy: any such use
   would conflict with the retained change through its inherited requirement.
@@ -177,12 +175,12 @@ conflict. For the specified Particle Operations there are the following cases:
    occupancy has only one incoming association per particle. Two adjacent Moves
    directly moving the same particle therefore share the first Move's
    destination and the second Move's source; those effects conflict. A Move
-   followed by an ordinary Destroy of its destination similarly conflicts. A
+   followed by an ordinary Vacate of its destination similarly conflicts. A
    selected vacancy and a retained Move are different: the vacancy releases the
    saved ordinary occupancy, while the Move changes the original state available
    to destruction work. They do not purport to move two copies of a particle. An
    intervening series of Moves is covered by the corresponding successive
-   occupied-state suppliers.
+   occupied-state setters.
 4. **Movement changes spatial relationships transitively.** Relative positions
    move with their defining particles. The reference-shape and shared
    accessibility arguments show that preserving actual endpoint requirements
@@ -190,12 +188,12 @@ conflict. For the specified Particle Operations there are the following cases:
    participants to those of the reference execution or make a transitive child
    occupancy an additional endpoint requirement.
 5. **A needed particle ceases to exist.** Vacancy is not that event. The
-   separate completion argument below retains particles through their actual
-   uses, including the interactions required by destructor Moves, and only then
-   completes their destruction. No dependency on a vacancy is justified merely
-   by this lifetime requirement.
+   [Vanish argument](vanishment-proof.md) retains particles through their actual
+   uses, without retaining them solely for transitive movement, and only then
+   permits them to vanish. No dependency on a vacancy is justified merely by
+   this lifetime requirement.
 
-Create, Move, and Destroy have no further particle effects in the stated scope.
+Create, Move, and Vacate have no further particle effects in the stated scope.
 Qualities required by a Move's destination remain qualities of the same selected
 particle. Action Contracts determine the valid source occurrences under
 consideration; they do not add a runtime operation or whole-action barrier. Thus
@@ -212,9 +210,9 @@ endpoints adjacent. Safety was proved independently above. Reverse only these
 two occurrences; all other relative orders are unchanged.
 
 For ordinary conflicts, the ordinary proof supplies the source obstruction. For
-a vacancy after its selected occupancy supplier, reversal omits the selected
+a vacancy after its selected occupancy setter, reversal omits the selected
 particle or attempts to vacate a position before the Move supplying its
-occupant. A Move of an ancestor is not such a supplier. For a vacancy after an
+occupant. A Move of an ancestor is not such a setter. For a vacancy after an
 actual ordinary use, reversal makes that use's occupied reference empty. For
 reuse after vacancy at a surviving defining particle's position, reversal
 attempts to fill that still-occupied position. A replacement's differently
@@ -222,13 +220,13 @@ defined child position does not create this conflict.
 
 The additional retained conflicts have two possible origins:
 
-1. The original state has not yet been supplied. If its supplier Creates the
+1. The original state has not yet been supplied. If its setter Creates the
    needed particle or its defining particle, that particle or position does not
-   yet exist. If its supplier is a Move or an earlier vacancy, reversing the
-   pair leaves the required position occupied instead of empty, or empty instead
-   of occupied by the selected particle. The obstruction is the original source
-   occupancy: the supplier's preceding value differs from the value needed by
-   the subsequent operation.
+   yet exist. If its setter is a Move or an earlier vacancy, reversing the pair
+   leaves the required position occupied instead of empty, or empty instead of
+   occupied by the selected particle. The obstruction is the original source
+   occupancy: the setter's preceding value differs from the value needed by the
+   subsequent operation.
 2. An inherited ordinary use precedes a retained change. Reversing this order
    moves the original particle out of the position that the ordinary use
    actually requires. The ordinary use cannot recover it from a copied value or
@@ -237,7 +235,7 @@ The additional retained conflicts have two possible origins:
 
 After initial supply, retained operations have the same ordinary Create/Move
 obstructions on their shared original state. For further destruction during a
-destructor, the selected-supplier, preceding-use, and reuse cases above apply to
+destructor, the selected-setter, preceding-use, and reuse cases above apply to
 that destruction's current occupancy. In particular, destroying a temporary
 particle in an initially empty retained position supplies the empty state needed
 by a subsequent Create there; those operations are not made independent by the
@@ -257,13 +255,10 @@ does not claim that every safe graph must choose the same orientation.
 
 ## Completion of destruction and unbounded execution
 
-The safety argument kept created particles available. Apply the separate
-last-actual-interaction argument to insert completion of destruction afterward.
-Its interactions are those of the resulting schedule, including the transitive
-particles actually involved in destructor Moves, not a fixed list from the
-serial execution. It retains an original particle through every actual need
-without imposing an order on independent vacancy vertices or preserving every
-ancestor's existence.
+The occupancy safety argument keeps required particles available. The
+[Vanish proof](vanishment-proof.md) derives their exact lifetime dependencies
+and proves that inserting Vanishes preserves those requirements. No additional
+ordering between Create, Move, and Vacate occurrences is introduced.
 
 For an unbounded reference execution indexed by natural numbers, take any finite
 runtime prefix and a reference prefix containing all its occurrences. Edges
@@ -298,6 +293,5 @@ reversals for these representations.
 The derivation of source occurrences and their reference or component
 representations, the geometric accessibility argument, and the completion of
 destruction remain English proofs. The Lean results are not a fully checked
-source-language translation. Neither the former resolved-name formalization nor
-the existing integration expectations should be relabeled as verifying those
-remaining English arguments.
+source-language translation. Integration expectations do not replace those
+English arguments.

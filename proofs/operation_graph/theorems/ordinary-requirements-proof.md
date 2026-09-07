@@ -4,9 +4,8 @@
 
 This argument derives source correspondence for the ordinary part of the
 [requirement construction](requirement-construction.md), before introducing
-destruction. It does not prove the former Fill and Empty Rules. The
-[reference-shape proof](reference-shape-proof.md) supplies the geometric
-invariant used below.
+destruction. The [reference-shape proof](reference-shape-proof.md) supplies the
+geometric invariant used below.
 
 Fix the occurrences contributed by a valid serial reference execution. Preserve
 their Action Executions, written references, and selected particles. This does
@@ -149,7 +148,7 @@ before an earlier use leaves that use's required position empty. These are
 source failures by the two-direction correspondence, not merely changes in
 compiler bookkeeping.
 
-Orient conflicts by the reference execution. Last suppliers and intervening uses
+Orient conflicts by the reference execution. Last setters and intervening uses
 have exactly that conflict reachability, by the
 [exact-effect collection argument](../definitions/operation-effects.md#collecting-conflicts-without-comparing-every-pair).
 Particle-existence requirements follow the unique creator; this scope has no
@@ -172,7 +171,7 @@ components.
 `particle_requirements.lean` checks the structured-reference observation lemma,
 both directions of operation enabledness, genuine effect changes, equality of
 the occupancy transitions, and preservation of existence and single occupancy.
-It also represents a selected vacancy separately from a written Destroy target:
+It also represents a selected vacancy separately from a written Vacate target:
 the former has no invented reference chain, while the latter retains its
 reference requirements. Neither removes particle existence as its vacancy
 effect. Those distinctions use the separate destruction argument, not an

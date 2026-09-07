@@ -2,11 +2,8 @@
 
 ## Scope
 
-This derives requirements for the graph construction now written in the
-specification. The former Fill, Empty, Comparison, and Move calculation remains
-represented by the older resolved-name Lean proofs; those are not a
-formalization of this replacement. The specification identifies Destroy vertices
-with vacancy, separately from the end of a particle's existence.
+This derives ordering requirements from the specification, with Vacate and
+Vanish treated separately.
 
 The goal is to derive ordering from the semantics before choosing a graph
 construction. A candidate construction must prove safety and necessity before
@@ -34,22 +31,22 @@ destructor state, with their semantic correspondence developed in the
    before that Move, or the preceding relationships after it. A later Move may
    restore a relationship; necessity must be proved for the proposed ordering,
    not assumed for every pair that ever affects the same particle.
-3. A Destroy denotes vacancy. Its former particle can remain available to
+3. A Vacate denotes vacancy. Its former particle can remain available to
    destructors after that vacancy. Reuse of the vacated position does not access
    the retained original particle. The vacancy must still follow ordinary
    operations whose required occupancy it would invalidate.
-4. A destructor's interactions determine how long original particles must remain
-   available. Moving an implied particle interacts with its transitive child
-   particles. Moving one child does not imply moving its siblings. Calls made by
-   the destructor are ordinary actions and retain their actual effects.
+4. Actual references and directly moved particles determine lifetime
+   requirements. Transitive movement alone does not prolong lifetime after
+   Vacation. Calls made by a destructor are ordinary actions and contribute
+   their own requirements.
 5. Original particles are shared between destructors. Availability after vacancy
    does not make two conflicting Moves independent. A model that gives each
    destructor a separate copy of its required particle changes Define's
    semantics even if both copies are later discarded.
 
 These statements follow from Position References, Moving Particles, Simultaneous
-Transitive Destruction, and Destruction Ordering During Destructors. None uses
-the current graph's reachability as evidence that an ordering is necessary.
+Transitive Destruction, and Destructors and Destruction Ordering. None uses the
+current graph's reachability as evidence that an ordering is necessary.
 
 ## An ordering choice remains even when every particle survives
 
@@ -122,11 +119,9 @@ That implementation choice is not a semantic premise for this proof.
 
 ## Consequence for the construction goal
 
-The serial-model proof already distinguishes inclusion-minimal safety from a
-[global maximum admitting every safe execution](maximum-safe-concurrency-proof.md#why-the-result-is-not-a-global-maximum).
-The example above establishes the same issue with a single preserved particle
-and unchanged destructor guarantees; it is not an artifact of ignoring particle
-identity in the earlier Create-and-Destroy example.
+A graph need not admit every safe ordering to be inclusion-minimal for safety.
+The example above establishes that distinction while preserving particle
+identity and the unchanged destructor guarantees.
 
 The specification permits the compiler to choose any serial ordering of the
 destructors triggered by a simultaneous destruction for determining recency. The
@@ -149,73 +144,3 @@ destructor, that new destructor is triggered by a subsequent destruction. Its
 serial execution remains within that subsequent destruction; it is not another
 member of the earlier choice. The runtime graph can still relax this serial
 placement wherever actual requirements permit.
-
-## Graph facts available after semantic ordering is established
-
-### An implied position during a Move
-
-Consider a constructor assigned to the particle created in `source`. It implies
-`/marker`, initially empty, and its body is:
-
-```text
-create a particle in position</marker>.
-```
-
-The caller subsequently executes:
-
-```text
-move the particle in position<source> to position<destination>.
-```
-
-Assume `destination` is empty and has no additional constraints. Under the
-former Empty Rule, the Move follows the constructor's Create: that Create is the
-most recent operation on a child position of `source` and excludes the earlier
-Create at `source` during Comparison.
-
-A direct implied-position reference requires the position defined by the
-constructor's assigned particle, without requiring that particle to remain at
-`source`. Thus both orders satisfy the source and destination occupancy
-conditions. Creating the marker first makes the Move move both particles. Moving
-first moves the empty defined position, and the constructor creates the marker
-there afterward. Both end with the same particles in the same positions. They
-differ in whether the marker already exists during the Move and where its
-creation occurs spatially.
-
-This is not the earlier rejected reordering of `Destroy destination::/marker`
-before the Move. That explicit position reference requires a particle in
-`destination`. The constructor's written reference is directly to its implied
-position. Collapsing the two reference forms into the same full spatial name
-before deriving their requirements would assume the issue away.
-
-The [operation-requirement derivation](../definitions/operation-requirements.md)
-proves this exchange by checking each operation's requirements, not just the
-final state. Requiring the Create to retain its reference execution's spatial
-location would add a requirement absent from its direct implied reference. This
-does not establish anything about unspecified future value operations or
-external calls. The former graph calculation specified an order; that fact alone
-cannot prove its semantic necessity. The requirement-based rules instead
-preserve the actual reference requirements used in this argument.
-
-### Conditional graph and scheduling results
-
-The [exact-effect model](../definitions/operation-effects.md) provides an
-independent adjacent-exchange proof and an adjacent noncommutation proof for
-precise requirements and genuine state changes. Its source-correspondence
-obligations remain explicit; those algebraic theorems do not assume that the
-translation from Define has already been proved.
-
-For a chosen transitive precedence relation with natural-number ranks that
-strictly decrease along its edges, `cover_graph.lean` already proves that its
-cover pairs have exactly its reachability, are transitively minimal, and belong
-to every graph with that reachability. The finite rank difference discharges the
-finiteness needed between related occurrences even for an unbounded history.
-These are reusable mathematical facts, not assumptions about which Particle
-Operations need ordering.
-
-Defining the candidate graph to be this cover graph is a mathematical baseline,
-not a scalable compiler algorithm. The
-[requirement construction](requirement-construction.md) derives collection and
-Comparison and proves their equivalence to this baseline. This does not by
-itself bound the cost of implementing Comparison's reachability queries. Neither
-an all-pairs comparison nor a full graph transitive reduction is being proposed
-as the compiler implementation.

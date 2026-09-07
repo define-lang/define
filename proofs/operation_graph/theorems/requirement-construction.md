@@ -2,24 +2,20 @@
 
 ## Scope
 
-This is the requirement-based construction now written in the specification,
-derived from the
-[operation requirements](../definitions/operation-requirements.md), not from the
-former Fill, Empty, and Move Rules. The
-[scheduling argument](requirement-scheduling-proof.md) supplies its English
-source correspondence, safety, and edge-necessity argument. The generic
-collection and reduction are checked in Lean. Structured-reference occupancy and
-shared destructor-state components are checked in `particle_requirements.lean`
-and `retained_requirements.lean`, with scheduling correspondence in
-`particle_scheduling.lean`. Source interpretation, geometric accessibility, and
-completion of destruction are English proofs. The older resolved-name
-formalization concerns a different construction.
+This proves the specification's Collection, Comparison, and Recording the
+Operation's Effects phases. The
+[operation requirements](../definitions/operation-requirements.md) are derived
+independently of the graph; the
+[scheduling proof](requirement-scheduling-proof.md) establishes source safety
+and edge necessity. Lean checks the component state models and the incremental
+graph calculation. Source interpretation and geometric accessibility remain
+English proofs.
 
 ## Objects used by the construction
 
 Fix a valid serial reference execution, including a permitted serial order for
 the destructors triggered by each simultaneous destruction. An occurrence is one
-Particle Operation contributed by that execution. Simultaneous Destroys retain
+Particle Operation contributed by that execution. Simultaneous Vacates retain
 identical recency; their enumeration is not an ordering premise.
 
 For the mathematical calculation, distinguish positions by the particle and
@@ -68,8 +64,9 @@ requirements.
 
 ### Emptying a position by Move
 
-A Move source requires its current occupied record. Add that record's supplier
-and all preceding operations requiring it. The Move ends that occupancy and
+A Move source requires its current occupied record. Collect its readers if there
+are any; otherwise collect its setter. Each reader already follows the setter,
+so collecting both would add no reachability. The Move ends that occupancy and
 supplies an empty source state and an occupied destination state.
 
 Apply the reference checks to both source and destination, and combine their
@@ -96,38 +93,46 @@ reversals for Creates and Moves. Its scope does not include destruction.
 Resolve the selected particles using the state immediately before destruction.
 For each particle, retain its selected position relative to its defining
 particle, or its local declaration where applicable, and that position's
-occupied-state supplier. Traversing ancestors to discover the selected set does
-not make those traversals runtime requirements of every selected Destroy.
+occupied-state setter. Traversing ancestors to discover the selected set does
+not make those traversals runtime requirements of every selected Vacate.
 
-The Destroy of the statement's target still has the requirements of the
+The Vacate of the statement's target still has the requirements of the
 statement's actual position reference. Record its uses of occupied intermediate
 positions just as for any written reference. These intermediates are outside the
 selected transitive child positions. Preserving the selected particle does not
 waive those reference requirements.
 
-Do not insert the additional Destroys generated for transitive children into the
+Do not insert the additional Vacates generated for transitive children into the
 current readers of their selected ancestors. Those children do not each have a
 newly written chained reference. In particular, their recorded selections do not
-cause a parent's Destroy to wait for a child Destroy, or a child Destroy to wait
-for its parent's Destroy.
+cause a parent's Vacate to wait for a child Vacate, or a child Vacate to wait
+for its parent's Vacate.
 
 The selected particles need not all have been created before the first vacancy
-vertex executes at runtime. Each individual Destroy must wait for the
-occurrences needed for its own selected particle and position. Selection is not
-an additional runtime traversal that imposes a barrier before the entire group.
+vertex executes at runtime. Each individual Vacate must wait for the occurrences
+needed for its own selected particle and position. Selection is not an
+additional runtime traversal that imposes a barrier before the entire group.
 
 ### Individual vacancies
 
-For Automatic Destruction, select the particles in the applicable local
-positions from the common preceding state. These selections do not acquire
-invented written references. If several selected local positions are processed
-together, calculate all their transitive selections before recording any of
-their vacancies. Their enumeration supplies no dependencies between them.
+For Automatic Destruction, the spec treats each applicable local position as the
+target of a Destroy Particle Statement. Its local reference has no intermediate
+positions or assigned-quality supplier. Its additional child Vacates have no
+Position References. Destruction Contracts use the references from the action
+performing the destruction, as specified, not new references from a later
+caller.
 
-For each individual Destroy, add its selected occupancy supplier and the
-preceding ordinary operations requiring that occupancy. The Destroy supplies the
-ordinary empty state for its own position. Compute every member from the common
-preceding state, without using another member as a newly discovered predecessor.
+For each individual Vacate, collect its selected position's readers if there are
+any, or its setter otherwise. The Vacate supplies ordinary empty occupancy for
+its own position.
+
+These Vacates select distinct positions. Only statement targets introduce
+references, whose intermediate positions are outside the selected destruction;
+the child Vacates have no references. Recording one Vacate therefore changes
+neither the setter nor the readers queried by another equal-recency Vacate. It
+does not change which particle's Create supplies a referenced quality.
+Processing equal-recency Vacates in any order consequently gives the same
+candidates and effects; no separate batch-processing rule is needed.
 
 For the statement's target, also apply the actual reference requirements above.
 
@@ -139,9 +144,9 @@ silently substituted for the other.
 
 For example, a written `destroy ... parent::/child` requires occupancy at
 `parent`. A subsequent Move from `parent` therefore waits for that target
-Destroy. This differs from an implicitly selected child Destroy in the
-destruction of `parent` itself. Saving a selection is not a general exemption
-for written references to become invalid before their statements execute.
+Vacate. This differs from an implicitly selected child Vacate in the destruction
+of `parent` itself. Saving a selection is not a general exemption for written
+references to become invalid before their statements execute.
 
 ### Retained destructor operations
 
@@ -152,7 +157,7 @@ share subsequent changes to its positions; there is no private copy per
 destructor. Apply the ordinary read, fill, and Move rules to their actual
 references in this retained state, in the chosen serial reference order.
 
-The initial retained records inherit their original suppliers and the preceding
+The initial retained records inherit their original setters and the preceding
 ordinary operations that required them. For example, a retained Move that takes
 an original particle out of a position must wait for preceding ordinary uses of
 that occupied position, even though it does not wait for the vacancy merely to
@@ -166,67 +171,59 @@ is not destroyed, reuse of its vacated position must still follow the vacancy
 that empties it. The proof must account for both cases; it may not give every
 subsequent use of a position an independent state.
 
-## Particle requirements and completion of destruction
+## Collection omissions and reader removal
 
-An operation that needs a particle or a position it defines must follow the
-creation that supplies that particle. This requirement does not, by itself,
-require the particle to remain at its original position. Occupancy requirements
-of the operation's actual references remain separate.
+The componentwise collection includes some candidates that the spec omits before
+Comparison. Each omission preserves reachability in the already-calculated
+graph:
 
-A particle cannot cease to exist before an operation that actually needs it. The
-destructor lifetime rule additionally specifies transitive interactions for
-Moves. Completing destruction must respect those interactions, but the vacancy
-vertex is not that completion. Do not turn every last-use condition into an edge
-to the vacancy vertex.
+- A reader of an intermediate position follows its setter. If both are
+  candidates, retaining the reader covers the setter.
+- A setter or reader of a position defined by `P`, other than `P`'s Create
+  itself, follows that Create. The operation requires the position supplied by
+  `P`'s assigned quality, whether by an actual reference or its selected
+  vacancy. Its position's occupancy setter ultimately follows the same Create.
+  Thus a collected such operation covers `P`'s Create, regardless of the reason
+  that Create was collected.
 
-Do not propagate a requirement for a particle to all of its transitive
-ancestors. In particular, completion of the destruction of `parent` need not
-wait for an operation directly accessing `/leaf` defined by the particle that
-was in `parent::/child`. The existence and actual interactions of the particles
-used by that operation, not the spelling of an earlier caller reference,
-determine its lifetime requirements.
+These facts are maintained by induction over the processed occurrences.
+Initially a particle's Create is its child positions' setter. Each later
+reference use collects the needed quality supplier, and every change follows the
+preceding setter or readers. Omitting that Create is justified only by an
+already-processed operation with the established path; it does not assume the
+current operation's dependencies. An implicit vacancy obtains the same path
+through its selected occupancy, not through an invented parent reference.
 
-### Completion after the last actual interaction
+The spec determines omissions from the combined collection before removing any
+candidate. A candidate covering another may itself be omitted. Following the
+covering candidates cannot cycle, because each link is a nonempty path in the
+preceding acyclic graph. The collection is finite, so the chain ends at a
+candidate not omitted. Every omitted candidate is therefore reachable through a
+remaining candidate. These omissions preserve the componentwise collection's
+reachability; Comparison then preserves it again while choosing direct edges.
 
-There is a separate conditional argument for completing destruction without
-ordering independent operations. Fix a finite particle-operation schedule that
-is valid when created particles are not reclaimed. For each selected particle
-`P`, collect its individual vacancy and all actual interactions requiring `P` in
-that schedule. Include use of a position defined by `P`, and the transitive
-interactions expressly required for destructor Moves. Do not include an
-operation merely because a name in an earlier caller's code made `P` a
-transitive ancestor of the particle used.
+Reader removal has the same invariant. If a remembered reader is removed because
+another reader depends on it, the retained reader covers it for every subsequent
+operation that empties that occupied position. A chain of such removals
+preserves the path inductively. When recording the current operation as a
+reader, it reaches every candidate it collected, including candidates omitted
+before or during Comparison. Removing a previous reader collected in that way
+therefore preserves the invariant even when it did not become a direct
+dependency.
 
-Determine these interactions before inserting any completion of destruction. In
-particular, do not remove a particle first and then claim that a later Move does
-not interact with it because it has already been removed. Which particles a Move
-interacts with is determined by the position state in the schedule without
-reclamation; it need not be a fixed list from the serial reference execution.
+None of these arguments assumes semantic minimality. They establish the
+correspondence between the spec's specific Collection and Recording phases and
+the complete componentwise conflict relation.
 
-The collection is finite and has a last occurrence. Complete destruction of `P`
-after that occurrence. Every operation that needs `P` then precedes its
-completion, and the vacancy has occurred. No later operation observes its
-removal or uses a position whose access needs `P`. The retained original
-particles whose own interactions continue are not reclaimed merely because they
-were transitive children of `P`.
+## Particle requirements and Vanish
 
-Insert these completions in schedule order. Induction shows that each remaining
-operation has the same requirements satisfied and the same relevant state as in
-the schedule without reclamation: every particle it needs has a last interaction
-at or after that operation. Thus the completions introduce no ordering between
-the Particle Operations. They also do not require every destructor to finish
-before any particle can cease to exist.
-
-For an unbounded schedule, the same argument applies to each particle with a
-finite last interaction after its vacancy. A particle with infinitely many
-future required interactions cannot yet finish destruction. No step requires
-waiting for termination of the entire program.
-
-This proves existence of suitable completion times conditional on the actual
-interaction and source-state correspondence. It does not prove that a compiler
-can find the interaction sets cheaply by enumerating every transitive child for
-every Move. A compact implementation of that analysis remains a separate
-obligation.
+Actual Position References require the particle supplying each assigned quality,
+without requiring that particle to remain at the caller's earlier position. A
+Move also requires the particle it moves directly. The
+[Vanish proof](vanishment-proof.md) collects these operations and the selected
+particle's Vacate, applies Comparison, and proves that this suffices for
+existence without changing the occupancy graph. Transitive movement alone adds
+no lifetime requirement.
 
 ## Comparison and graph properties
 
@@ -244,7 +241,7 @@ strictly backward edges and hence acyclicity. The general cover-graph results
 then supply transitive minimality independently of any claim that the semantic
 candidate sets are complete.
 
-For ordinary occupied records, the most-recent-supplier and intervening-reader
+For ordinary occupied records, the most-recent-setter and intervening-reader
 calculation has the same conflict reachability as collecting every earlier
 conflict. A read follows the last change; a change follows intervening readers
 and the preceding change. Earlier conflicts are reached through successive
@@ -321,16 +318,16 @@ show that reversing them violates an actual source requirement. The finite
 adjacent-cover theorem supplies the order-theoretic construction. The remaining
 source checks are:
 
-| Reason for the candidate                   | Source requirement that the adjacent reversal must violate                            |
-| ------------------------------------------ | ------------------------------------------------------------------------------------- |
-| Creation of a needed particle              | The particle, or the position quality supplied by it, does not yet exist              |
-| Supply of current occupied state           | The actual reference or Move source does not yet have its selected particle           |
-| Supply of current empty state              | A Create or Move destination is still occupied                                        |
-| Ending occupancy after an ordinary use     | The earlier operation's occupied reference or source has become empty                 |
-| Initial retained supplier or inherited use | A destructor lacks its required original state, or changes it before the ordinary use |
+| Reason for the candidate                 | Source requirement that the adjacent reversal must violate                            |
+| ---------------------------------------- | ------------------------------------------------------------------------------------- |
+| Creation of a needed particle            | The particle, or the position quality supplied by it, does not yet exist              |
+| Supply of current occupied state         | The actual reference or Move source does not yet have its selected particle           |
+| Supply of current empty state            | A Create or Move destination is still occupied                                        |
+| Ending occupancy after an ordinary use   | The earlier operation's occupied reference or source has become empty                 |
+| Initial retained setter or inherited use | A destructor lacks its required original state, or changes it before the ordinary use |
 
 A saved selection does not supply an additional row of ancestor-occupancy
-requirements. Its final occupied-state supplier belongs to the ordinary supply
+requirements. Its final occupied-state setter belongs to the ordinary supply
 case. For a written target, the actual reference requirements also apply. Adding
 a dependency on every Move encountered while discovering an implicit child would
 incorrectly fix that child's position in space while its defining particle
@@ -372,8 +369,7 @@ reversal of a reduced edge. `particle_requirements.lean` and
 component correspondences, and `particle_scheduling.lean` transfers their
 executions in both directions. The source interpretation and geometric and
 lifetime arguments linked above remain English proofs. This is not a fully
-checked source-language translation, and the former fixed-name model cannot
-supply one.
+checked source-language translation.
 
 A compiler representation must not expand every Move into all transitive child
 positions or copy a whole destruction structure for each ancestor. The

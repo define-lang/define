@@ -22,11 +22,15 @@ shared-state components in
 their execution correspondence in
 [`particle_scheduling.lean`](theorems/particle_scheduling.lean).
 
+The [Vanish extension](theorems/vanishment-proof.md) derives lifetime candidates
+from actual references and directly moved particles, with no new ordering among
+Creates, Moves, or Vacates. Its lifetime components are checked in
+`vanishment_requirements.lean`. `vanishment_graph.lean` checks that adding the
+Vanishes preserves existing reachability, acyclicity, and transitive minimality.
+
 The derivation of those representations from valid source, geometric
 accessibility, and completion of destruction is an English argument. This is not
-a Lean-checked compiler or a fully formalized source-language semantics. The
-older resolved-name formalization describes a previous graph calculation; it
-must not be mistaken for verification of the revised rules.
+a Lean-checked compiler or a fully formalized source-language semantics.
 
 Maximum safe concurrency here means that removing a remaining dependency would
 admit an invalid execution within the chosen dependency orientation. It does not
@@ -47,6 +51,9 @@ mean that one graph admits every possible safe serial ordering of destructors.
    removal of redundant candidates, and completion of destruction.
 5. [Scheduling proof](theorems/requirement-scheduling-proof.md): safety, edge
    necessity, and unbounded execution.
+6. [Vanish extension](theorems/vanishment-proof.md): lifetime collection, source
+   correspondence, graph safety and necessity, and concurrency-preserving
+   fusion.
 
 [Ordering derivation](theorems/ordering-derivation.md) explains why a serial
 destructor-order choice is needed, and why a direct implied reference can allow
@@ -61,14 +68,7 @@ here.
 
 - `definitions/` contains conceptual definitions and mathematical models.
 - `theorems/` contains English arguments and Lean proofs.
-- `witnesses/` contains checked examples, counterexamples, and bounded searches.
-  Examples support the general arguments; they do not replace them.
-
-The [former calculation](definitions/calculation.md),
-[former completeness proof](theorems/completeness-proof.md), and
-[former scheduling analysis](theorems/maximum-safe-concurrency-proof.md)
-document the earlier resolved-name models and the limitations discovered in
-them. Their checked graph facts remain facts about those models, not the current
-requirement-based construction.
+- `witnesses/` contains the checked destructor-order counterexample. Examples
+  support the general arguments; they do not replace them.
 
 See [Building proofs](../README.md#building-proofs) for the Lean build command.
