@@ -1,0 +1,21 @@
+# The caller configures a Destructor after a Requirement propagated through
+# several actions inits its execution, before independent Requirements run.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</outer>.
+    it also assigns the position</target>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<source> {
+            it may only contain particles where {
+                it has the action</extra_destructor>.
+                it has the action</known_destructor>.
+            }
+        }
+        create a particle in position<source>.
+        move the particle in position<source> to position</target>.
+        define the position<run_source>.
+        create a particle in position<run_source>.
+        move the particle in position<run_source> to action</outer>::position<run>.
+    }
+}

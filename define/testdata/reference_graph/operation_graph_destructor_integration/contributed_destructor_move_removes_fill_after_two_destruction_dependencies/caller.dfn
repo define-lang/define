@@ -1,0 +1,15 @@
+define the potential action<my.domain.com:my_lib:/caller> {
+    it also assigns the action</middle>.
+    define the position<run> {
+        it may only contain particles where {
+            it has the action</extra_destructor>.
+            it has the position</marker>.
+            it has the position</destinations>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        move the particle in position<run> to action</middle>::position<run>.
+    }
+}

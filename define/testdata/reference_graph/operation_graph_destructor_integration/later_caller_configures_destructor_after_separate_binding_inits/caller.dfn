@@ -1,0 +1,30 @@
+define the potential action<my.domain.com:my_lib:/caller> {
+    it also assigns the action</wrapper>.
+    define the position<run> {
+        it may only contain particles where {
+            it has the action</extra_destructor>.
+            it has the action</known_destructor>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<source> {
+            it may only contain particles where {
+                it has the action</outer>.
+                it has the position</carrier>.
+            }
+        }
+        define the position<carrier_source> {
+            it may only contain particles where {
+                it has the action</middle>.
+                it has the position</payload>.
+            }
+        }
+        create a particle in position<source>.
+        create a particle in position<carrier_source>.
+        move the particle in position<run> to position<carrier_source>::position</payload>.
+        move the particle in position<carrier_source> to position<source>::position</carrier>.
+        move the particle in position<source> to action</wrapper>::position<run>.
+    }
+}

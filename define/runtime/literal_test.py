@@ -24,6 +24,27 @@ def _local_position(
 
 
 class TestGuarantee:
+    def test_publish_without_consumers(self):
+        literal.Guarantee().publish(literal.Scheduler())
+
+    def test_init_replaces_a_consumer_before_it_can_run(self):
+        scheduler = literal.Scheduler(max_threads=1)
+        released: list[str] = []
+
+        def original():
+            released.append("original")
+
+        guarantee = literal.Guarantee(consumers=[original])
+
+        def configure():
+            guarantee.consumers.remove(original)
+            guarantee.consumers.append(lambda: released.append("replacement"))
+
+        guarantee.inits.append(configure)
+        guarantee.publish(scheduler)
+
+        assert released == ["replacement"]
+
     def test_lists_are_distinct_between_guarantees(self):
         first = literal.Guarantee()
         second = literal.Guarantee()
@@ -57,8 +78,6 @@ class TestGuarantee:
         guarantee.consumers.append(lambda: release("destroy"))
 
         class Entry(literal.EntryPoint):
-            typed_name: ClassVar[str] = "action<entry>"
-
             @override
             def execute(self, _scheduler: literal.Scheduler):
                 guarantee.publish(scheduler)
@@ -74,8 +93,6 @@ class TestGuarantee:
         guarantee.consumers.append(lambda: released.append("caller"))
 
         class Entry(literal.EntryPoint):
-            typed_name: ClassVar[str] = "action<entry>"
-
             @override
             def execute(self, _scheduler: literal.Scheduler):
                 guarantee.publish(
@@ -101,8 +118,6 @@ class TestGuarantee:
         guarantee.consumers.append(lambda: consume("caller"))
 
         class Entry(literal.EntryPoint):
-            typed_name: ClassVar[str] = "action<entry>"
-
             @override
             def execute(self, _scheduler: literal.Scheduler):
                 guarantee.publish(

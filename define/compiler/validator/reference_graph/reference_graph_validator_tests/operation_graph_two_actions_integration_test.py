@@ -14,10 +14,6 @@ if TYPE_CHECKING:
 
 _TEST = "action<my.domain.com:my_lib:/test>"
 
-_SIMULTANEOUS_CALLER_CONTRIBUTED_DESTRUCTION_NOT_RESOLVED = (
-    "caller-contributed Destroy operations still order simultaneous callee Destroys"
-)
-
 
 def test_triggered_action_destroys_its_own_trigger_position(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
@@ -192,6 +188,11 @@ def test_callee_move_of_a_caller_filled_position_waits_on_every_child_the_caller
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    raises=AssertionError,
+    reason="S5: compose destruction dependencies without ordering simultaneous Destroys",
+)
 def test_callee_destroy_of_a_caller_filled_position_waits_on_the_caller_child_fill(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -207,12 +208,13 @@ def test_callee_destroy_of_a_caller_filled_position_waits_on_the_caller_child_fi
             "test.create(gateway::/other::input::/item)"
         ],
         "test.create(gateway::/other::trigger_pos)": ["test.create(gateway)"],
-        # Destroying the caller-created particle waits for the deepest child
-        # Create before the destruction cascade continues to its parent names.
+        # Both simultaneous Destroys wait for the deepest child Create.
         "other.destroy(input::/item::/deep)": [
             "test.create(gateway::/other::input::/item::/deep)"
         ],
-        "other.destroy(input::/item)": ["other.destroy(input::/item::/deep)"],
+        "other.destroy(input::/item)": [
+            "test.create(gateway::/other::input::/item::/deep)"
+        ],
         "test.destroy(gateway::/other::input)": ["other.destroy(input::/item)"],
         "test.destroy(gateway::/other::trigger_pos)": [
             "test.create(gateway::/other::trigger_pos)"
@@ -549,6 +551,11 @@ def test_callee_fill_of_a_child_does_not_wait_on_the_caller_fill_of_a_sibling_ch
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    raises=AssertionError,
+    reason="S3: retain child-operation dependencies independently of occupancy Guarantees",
+)
 def test_caller_operation_waits_on_callee_output_not_later_callee_operations(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -569,6 +576,7 @@ def test_caller_operation_waits_on_callee_output_not_later_callee_operations(
         "test.destroy(gateway)": [
             "test.destroy(gateway::/other::output)",
             "test.destroy(gateway::/other::trigger_pos)",
+            "other.destroy(late)",
         ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
@@ -970,7 +978,9 @@ def test_emptying_a_four_level_particle_waits_only_on_the_deepest_caller_operati
 
 
 @pytest.mark.xfail(
-    strict=True, reason=_SIMULTANEOUS_CALLER_CONTRIBUTED_DESTRUCTION_NOT_RESOLVED
+    strict=True,
+    raises=AssertionError,
+    reason="S5: compose destruction dependencies without ordering simultaneous Destroys",
 )
 def test_intermediate_callee_emptying_reaches_a_deeper_caller_operation(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
@@ -1241,6 +1251,11 @@ def test_parallel_callee_local_operation_chains_wait_on_action_parent_operation(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    raises=AssertionError,
+    reason="S3: retain child-operation dependencies independently of occupancy Guarantees",
+)
 def test_trigger_inlines_callee_internal_dependencies(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -1261,11 +1276,17 @@ def test_trigger_inlines_callee_internal_dependencies(
         "test.destroy(gateway)": [
             "test.destroy(gateway::/other::output)",
             "test.destroy(gateway::/other::trigger_pos)",
+            "other.destroy(scratch)",
         ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    raises=AssertionError,
+    reason="S5: compose destruction dependencies without ordering simultaneous Destroys",
+)
 def test_callee_known_child_and_caller_unknown_sibling_are_disjoint(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -1296,7 +1317,6 @@ def test_callee_known_child_and_caller_unknown_sibling_are_disjoint(
         # The Empty Rule for the parent uses the latest operation on each child
         # position rather than the sibling Destroy created at the same time.
         "destroyer.destroy(parent)": [
-            "destroyer.destroy(parent::/sibling)",
             "destroyer.move(keeper, parent::/child)",
         ],
         "test.destroy(/destroyer::trigger_pos)": [
@@ -1306,6 +1326,11 @@ def test_callee_known_child_and_caller_unknown_sibling_are_disjoint(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    raises=AssertionError,
+    reason="S5: compose destruction dependencies without ordering simultaneous Destroys",
+)
 def test_caller_only_child_assigned_before_callee_known_child_is_disjoint(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -1336,7 +1361,6 @@ def test_caller_only_child_assigned_before_callee_known_child_is_disjoint(
         # The Empty Rule for the parent uses the latest operation on each child
         # position rather than the sibling Destroy created at the same time.
         "destroyer.destroy(parent)": [
-            "destroyer.destroy(parent::/sibling)",
             "destroyer.move(keeper, parent::/child)",
         ],
         "test.destroy(/destroyer::trigger_pos)": [
@@ -1346,6 +1370,11 @@ def test_caller_only_child_assigned_before_callee_known_child_is_disjoint(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    raises=AssertionError,
+    reason="S5: compose destruction dependencies without ordering simultaneous Destroys",
+)
 def test_local_cascade_uses_caller_fragment_for_occupied_child(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -1357,14 +1386,18 @@ def test_local_cascade_uses_caller_fragment_for_occupied_child(
         "test.move(source, /triggered::run)": ["test.create(source::/a)"],
         "triggered.move(run, /target)": ["test.move(source, /triggered::run)"],
         "triggered.move(/target, local)": ["triggered.move(run, /target)"],
-        # The contributed child Destroy follows the particle across both Moves
-        # and must finish before the local-position Destroy.
+        # The final Move precedes both simultaneous Destroys.
         "triggered.destroy(local::/a)": ["triggered.move(/target, local)"],
-        "triggered.destroy(local)": ["triggered.destroy(local::/a)"],
+        "triggered.destroy(local)": ["triggered.move(/target, local)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    raises=AssertionError,
+    reason="S5: compose destruction dependencies without ordering simultaneous Destroys",
+)
 def test_auto_destruction_uses_caller_fragment_for_occupied_child(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -1376,14 +1409,18 @@ def test_auto_destruction_uses_caller_fragment_for_occupied_child(
         "test.move(source, /triggered::run)": ["test.create(source::/a)"],
         "triggered.move(run, /target)": ["test.move(source, /triggered::run)"],
         "triggered.move(/target, local)": ["triggered.move(run, /target)"],
-        # The caller-only child must be destroyed before the callee's local
-        # position is automatically destroyed.
+        # Automatic destruction has the same simultaneous Destroy dependencies.
         "triggered.destroy(local::/a)": ["triggered.move(/target, local)"],
-        "triggered.destroy(local)": ["triggered.destroy(local::/a)"],
+        "triggered.destroy(local)": ["triggered.move(/target, local)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    raises=AssertionError,
+    reason="S5: compose destruction dependencies without ordering simultaneous Destroys",
+)
 def test_caller_contributed_child_destruction_precedes_later_operation(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -1401,7 +1438,7 @@ def test_caller_contributed_child_destruction_precedes_later_operation(
             "test.move(child_particle, source::/run)"
         ],
         "destroyer.destroy(run::/run::/child)": ["test.move(source, /destroyer::run)"],
-        "destroyer.destroy(run::/run)": ["destroyer.destroy(run::/run::/child)"],
+        "destroyer.destroy(run::/run)": ["test.move(source, /destroyer::run)"],
         # The caller-contributed child Destroy must remain before the later parent
         # Destroy recorded after the contracted particle's destruction cascade.
         "destroyer.destroy(run)": ["destroyer.destroy(run::/run)"],
@@ -1410,7 +1447,9 @@ def test_caller_contributed_child_destruction_precedes_later_operation(
 
 
 @pytest.mark.xfail(
-    strict=True, reason=_SIMULTANEOUS_CALLER_CONTRIBUTED_DESTRUCTION_NOT_RESOLVED
+    strict=True,
+    raises=AssertionError,
+    reason="S5: compose destruction dependencies without ordering simultaneous Destroys",
 )
 def test_caller_contributes_one_destroy_before_shared_callee_destroy(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
@@ -1443,10 +1482,9 @@ def test_caller_contributes_one_destroy_before_shared_callee_destroy(
         "other.destroy(parent::/child::/grandchild::/greatgrandchild)": [
             "test.create(gateway::/other::parent::/child::/grandchild::/greatgrandchild)"
         ],
-        # The explicit grandchild Destroy waits for the contribution belonging to
-        # its distinct Destruction Fact.
+        # The grandchild and greatgrandchild are destroyed simultaneously.
         "other.destroy(parent::/child::/grandchild)": [
-            "other.destroy(parent::/child::/grandchild::/greatgrandchild)",
+            "test.create(gateway::/other::parent::/child::/grandchild::/greatgrandchild)",
         ],
         # The child Destroy applies the Empty Rule to the most recent operations
         # on the caller-known sibling and callee-known grandchild positions.
@@ -1470,6 +1508,11 @@ def test_caller_contributes_one_destroy_before_shared_callee_destroy(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    raises=AssertionError,
+    reason="S5: compose destruction dependencies without ordering simultaneous Destroys",
+)
 def test_caller_contributions_share_a_parent_destroy_before_callee_destroy(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -1491,15 +1534,11 @@ def test_caller_contributions_share_a_parent_destroy_before_callee_destroy(
         "destroyer.destroy(parent::/branch::/a)": [
             "test.move(source, /destroyer::parent)"
         ],
-        # The separately begun contributions share this caller-contributed
-        # parent-position Destroy before the callee destroys parent.
+        # The Move precedes every Destroy in this simultaneous destruction.
         "destroyer.destroy(parent::/branch)": [
-            "destroyer.destroy(parent::/branch::/a)",
-            "destroyer.destroy(parent::/branch::/b)",
+            "test.move(source, /destroyer::parent)",
         ],
-        # The callee's parent Destroy waits on the shared caller-contributed
-        # branch Destroy.
-        "destroyer.destroy(parent)": ["destroyer.destroy(parent::/branch)"],
+        "destroyer.destroy(parent)": ["test.move(source, /destroyer::parent)"],
         "test.destroy(/destroyer::trigger_pos)": [
             "test.create(/destroyer::trigger_pos)"
         ],

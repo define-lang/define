@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import pytest
+
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
     assert_operation_dependencies,
 )
@@ -95,6 +97,11 @@ def test_operation_on_a_child_of_the_trigger_position(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    raises=AssertionError,
+    reason="S5: compose destruction dependencies without ordering simultaneous Destroys",
+)
 def test_destroy_of_trigger_particle_uses_caller_fragment_for_occupied_child(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -105,9 +112,9 @@ def test_destroy_of_trigger_particle_uses_caller_fragment_for_occupied_child(
         "test.create(source::/a)": ["test.create(source)"],
         "test.move(source, /triggered::run)": ["test.create(source::/a)"],
         "triggered.move(run, /target)": ["test.move(source, /triggered::run)"],
-        # The caller-known child Destroy must finish before the Destroy of the
-        # particle that satisfied the Trigger Conditions Block.
+        # Simultaneous destruction cannot order these Destroys; the preceding
+        # Move is the latest operation on both positions.
         "triggered.destroy(/target::/a)": ["triggered.move(run, /target)"],
-        "triggered.destroy(/target)": ["triggered.destroy(/target::/a)"],
+        "triggered.destroy(/target)": ["triggered.move(run, /target)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)

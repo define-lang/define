@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import queue
 import threading
-from typing import TYPE_CHECKING, ClassVar, override
+from typing import TYPE_CHECKING, override
 
 import pytest
 
@@ -58,8 +58,6 @@ def _assert_execution_thread_count(
         _ = barrier.wait()
 
     class Entry(literal.EntryPoint):
-        typed_name: ClassVar[str] = "action<entry>"
-
         @override
         def execute(self, scheduler: literal.Scheduler):
             for _ in range(expected_count - 1):
@@ -111,8 +109,6 @@ class TestScheduler:
 
     def test_scheduler_is_single_use(self):
         class Entry(literal.EntryPoint):
-            typed_name: ClassVar[str] = "action<entry>"
-
             @override
             def execute(self, _scheduler: literal.Scheduler):
                 pass
@@ -132,8 +128,6 @@ class TestScheduler:
         execution_threads: list[int] = []
 
         class Entry(literal.EntryPoint):
-            typed_name: ClassVar[str] = "action<entry>"
-
             @override
             def execute(self, scheduler: literal.Scheduler):
                 scheduler.submit(
@@ -151,8 +145,6 @@ class TestScheduler:
             raise ValueError("worker failed")
 
         class Entry(literal.EntryPoint):
-            typed_name: ClassVar[str] = "action<entry>"
-
             @override
             def execute(self, scheduler: literal.Scheduler):
                 scheduler.submit(fail)
@@ -171,8 +163,6 @@ class TestScheduler:
             calls.append("direct")
 
         class Entry(literal.EntryPoint):
-            typed_name: ClassVar[str] = "action<entry>"
-
             @override
             def execute(self, scheduler: literal.Scheduler):
                 scheduler.continue_with((submitted, direct))
@@ -192,8 +182,6 @@ class TestScheduler:
             calls.append("second")
 
         class Entry(literal.EntryPoint):
-            typed_name: ClassVar[str] = "action<entry>"
-
             @override
             def execute(self, scheduler: literal.Scheduler):
                 scheduler.submit_all((first, second))
@@ -233,8 +221,6 @@ class TestScheduler:
                 scheduler.submit(lambda index=index: child(index))
 
         class Entry(literal.EntryPoint):
-            typed_name: ClassVar[str] = "action<entry>"
-
             @override
             def execute(self, scheduler: literal.Scheduler):
                 for offset in range(0, 400, 100):
@@ -262,8 +248,6 @@ class TestScheduler:
                 scheduler.submit(task)
 
         class Entry(literal.EntryPoint):
-            typed_name: ClassVar[str] = "action<entry>"
-
             @override
             def execute(self, scheduler: literal.Scheduler):
                 scheduler.submit(task)
@@ -309,8 +293,6 @@ class TestScheduler:
             _ = child_finished.wait()
 
         class Entry(literal.EntryPoint):
-            typed_name: ClassVar[str] = "action<entry>"
-
             @override
             def execute(self, scheduler: literal.Scheduler):
                 scheduler.submit(first)
@@ -363,8 +345,6 @@ class TestScheduler:
             calls.append("parent")
 
         class Entry(literal.EntryPoint):
-            typed_name: ClassVar[str] = "action<entry>"
-
             @override
             def execute(self, scheduler: literal.Scheduler):
                 scheduler.submit(parent)
@@ -418,8 +398,6 @@ class TestScheduler:
             _ = finish_task.wait()
 
         class Entry(literal.EntryPoint):
-            typed_name: ClassVar[str] = "action<entry>"
-
             @override
             def execute(self, scheduler: literal.Scheduler):
                 scheduler.submit(task)
@@ -464,8 +442,6 @@ class TestScheduler:
         calls: list[str] = []
 
         class Entry(literal.EntryPoint):
-            typed_name: ClassVar[str] = "action<entry>"
-
             @override
             def execute(self, scheduler: literal.Scheduler):
                 scheduler.submit(lambda: calls.append("task"))
@@ -483,8 +459,6 @@ class TestScheduler:
             raise exception
 
         class Entry(literal.EntryPoint):
-            typed_name: ClassVar[str] = "action<entry>"
-
             @override
             def execute(self, scheduler: literal.Scheduler):
                 scheduler.submit(lambda: fail(ValueError("first")))
@@ -499,8 +473,6 @@ class TestScheduler:
         calls: list[str] = []
 
         class Entry(literal.EntryPoint):
-            typed_name: ClassVar[str] = "action<entry>"
-
             @override
             def execute(self, scheduler: literal.Scheduler):
                 for _ in range(100):
@@ -523,8 +495,6 @@ class TestScheduler:
             raise AssertionError("worker failed")
 
         class Entry(literal.EntryPoint):
-            typed_name: ClassVar[str] = "action<entry>"
-
             @override
             def execute(self, scheduler: literal.Scheduler):
                 scheduler.submit(fail)
@@ -546,8 +516,6 @@ class TestScheduler:
             worker_finished.set()
 
         class Entry(literal.EntryPoint):
-            typed_name: ClassVar[str] = "action<entry>"
-
             @override
             def execute(self, scheduler: literal.Scheduler):
                 scheduler.submit(finish)
@@ -627,8 +595,6 @@ class TestDestructionConnection:
         continuation_started = threading.Event()
 
         class Entry(literal.EntryPoint):
-            typed_name: ClassVar[str] = "action<entry>"
-
             @override
             def execute(self, scheduler: literal.Scheduler):
                 def work():
@@ -658,8 +624,6 @@ class TestDestructionConnection:
         calls: list[str] = []
 
         class Entry(literal.EntryPoint):
-            typed_name: ClassVar[str] = "action<entry>"
-
             @override
             def execute(self, scheduler: literal.Scheduler):
                 def forwarded_work():
@@ -692,8 +656,6 @@ class TestDestructionConnection:
         calls: list[str] = []
 
         class Entry(literal.EntryPoint):
-            typed_name: ClassVar[str] = "action<entry>"
-
             @override
             def execute(self, scheduler: literal.Scheduler):
                 def first():
@@ -725,8 +687,6 @@ class TestDestructionConnection:
         calls: list[str] = []
 
         class Entry(literal.EntryPoint):
-            typed_name: ClassVar[str] = "action<entry>"
-
             @override
             def execute(self, scheduler: literal.Scheduler):
                 def higher_work():
@@ -790,8 +750,6 @@ class TestDestructionConnection:
         second_started = threading.Event()
 
         class Entry(literal.EntryPoint):
-            typed_name: ClassVar[str] = "action<entry>"
-
             @override
             def execute(self, scheduler: literal.Scheduler):
                 def first():
@@ -829,8 +787,6 @@ class TestDestructionConnection:
         forwarded_started = threading.Event()
 
         class Entry(literal.EntryPoint):
-            typed_name: ClassVar[str] = "action<entry>"
-
             @override
             def execute(self, scheduler: literal.Scheduler):
                 def forwarded_work():
@@ -872,7 +828,6 @@ class TestDestructionConnection:
         calls: list[str] = []
 
         class Entry(literal.EntryPoint):
-            typed_name: ClassVar[str] = "action<entry>"
             destruction_connections: literal.DestructionConnections | None = None
 
             def continue_destroy(self):
@@ -890,7 +845,6 @@ class TestDestructionConnection:
         calls: list[str] = []
 
         class Entry(literal.EntryPoint):
-            typed_name: ClassVar[str] = "action<entry>"
             destruction_connections: literal.DestructionConnections | None = None
 
             def continue_destroy(self):
@@ -924,7 +878,6 @@ class TestDestructionConnection:
         calls: list[str] = []
 
         class Entry(literal.EntryPoint):
-            typed_name: ClassVar[str] = "action<entry>"
             destruction_connections: literal.DestructionConnections | None = None
 
             def continue_destroy(self):

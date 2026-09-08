@@ -47,8 +47,6 @@ def test_destruction_connection_propagates_execution_through_forwarded_connectio
     executions: list[_ContinuationExecution] = []
 
     class Entry(literal.EntryPoint):
-        typed_name: typing.ClassVar[str] = "action<entry>"
-
         @typing.override
         def execute(self, scheduler: literal.Scheduler):
             destruction_continuation = _ContinuationExecution.continue_destroy
@@ -93,8 +91,6 @@ def test_destruction_connection_propagates_execution_through_forwarded_connectio
 
 def test_caller_destructor_not_preceding_callee_destroy_preserves_destroy_dependency():
     class Entry(literal.EntryPoint):
-        typed_name: typing.ClassVar[str] = "action<entry>"
-
         @typing.override
         def execute(self, scheduler: literal.Scheduler):
             dependency_execution = scheduler.execution_created(None, "test")
@@ -177,6 +173,43 @@ def test_caller_destructor_not_preceding_callee_destroy_preserves_destroy_depend
     assert scheduler.operation_dependencies[destroy] == (move,)
 
 
+def test_guarantee_consumers_preserve_independent_trace_dependencies():
+    class Entry(literal.EntryPoint):
+        @typing.override
+        def execute(self, scheduler: literal.Scheduler):
+            caller = scheduler.execution_created(None, "test")
+            callee = scheduler.execution_created(caller, "callee")
+            destructor = scheduler.execution_created(callee, "destructor")
+            scheduler.move_completed(caller, "source", "target", 1)
+
+            def destroy():
+                scheduler.destroy_completed(callee, "target", 1)
+
+            def run_destructor():
+                scheduler.create_completed(destructor, "_noop", 1)
+
+            guarantee = literal.Guarantee(consumers=[destroy])
+            guarantee.consumers.append(run_destructor)
+            guarantee.publish(scheduler)
+
+    scheduler = tracing.TracingScheduler(max_threads=2)
+    scheduler.start(Entry)
+
+    caller = tracing.ActionExecutionIdentity(None, "test")
+    callee = tracing.ActionExecutionIdentity(caller, "callee")
+    destructor = tracing.ActionExecutionIdentity(callee, "destructor")
+    move = tracing.OperationIdentity(caller, "move", "source", "target", 1)
+    destroy = tracing.OperationIdentity(callee, "destroy", None, "target", 1)
+    destructor_create = tracing.OperationIdentity(
+        destructor, "create", None, "_noop", 1
+    )
+    assert scheduler.operation_dependencies == {
+        move: (),
+        destroy: (move,),
+        destructor_create: (move,),
+    }
+
+
 def test_action_execution_identity_retains_each_caller():
     scheduler = tracing.TracingScheduler()
 
@@ -228,8 +261,6 @@ def test_completion_hooks_record_operation_dependencies():
 
 def test_submitted_tasks_retain_only_their_submission_dependencies():
     class Entry(literal.EntryPoint):
-        typed_name: typing.ClassVar[str] = "action<entry>"
-
         @typing.override
         def execute(self, scheduler: literal.Scheduler):
             execution = scheduler.execution_created(None, "test")
@@ -257,8 +288,6 @@ def test_submitted_tasks_retain_only_their_submission_dependencies():
 
 def test_join_combines_dependencies_from_every_arrival():
     class Entry(literal.EntryPoint):
-        typed_name: typing.ClassVar[str] = "action<entry>"
-
         @typing.override
         def execute(self, scheduler: literal.Scheduler):
             execution = scheduler.execution_created(None, "test")

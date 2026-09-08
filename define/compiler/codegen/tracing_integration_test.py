@@ -25,7 +25,13 @@ _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED = (
 _CALLER_ONLY_CHILD_DESTRUCTOR_NOT_GENERATED = (
     "a child Destructor known only through the creator is not generated"
 )
+_INDEPENDENT_INITIALIZATION_RACE = (
+    "S4: concurrent initialization can use a callee execution before it exists"
+)
 _UNSUPPORTED_CONCURRENT_RUNTIME_CASE_REASONS = {
+    "caller_configures_destructor_after_independent_inits": _INDEPENDENT_INITIALIZATION_RACE,
+    "caller_configures_multiple_destroys_after_independent_inits": _INDEPENDENT_INITIALIZATION_RACE,
+    "caller_configures_only_destructor_after_independent_inits": _INDEPENDENT_INITIALIZATION_RACE,
     "caller_interleaves_destructors_with_destroyer_known_destructors": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
     "caller_introduces_five_empty_children": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
     "caller_introduces_five_empty_children_between_occupied_children": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
@@ -35,6 +41,8 @@ _UNSUPPORTED_CONCURRENT_RUNTIME_CASE_REASONS = {
     "caller_introduces_three_empty_children_between_occupied_children": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
     "caller_introduces_three_occupied_children": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
     "caller_introduces_three_occupied_children_between_empty_children": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
+    "contributed_destructor_calls_action_with_child_destruction": _INDEPENDENT_INITIALIZATION_RACE,
+    "contributed_destructor_move_removes_fill_after_two_destruction_dependencies": _INDEPENDENT_INITIALIZATION_RACE,
     "creator_nonoverlapping_child_order_is_canonical_across_three_actions": _CALLER_ONLY_CHILD_DESTRUCTOR_NOT_GENERATED,
     "creator_reverse_child_order_is_canonical_across_three_actions": _CALLER_ONLY_CHILD_DESTRUCTOR_NOT_GENERATED,
     "destructor_ordering_move_retains_independent_empty_dependency": _CALLER_ADDED_DESTRUCTOR_ORDERING_NOT_GENERATED,
@@ -59,6 +67,8 @@ _RUNTIME_OPERATION_DEPENDENCY_RELATION_MISMATCH_CASES = {
     "all_positions_three_destroyer_empty_caller_occupied",
     "all_positions_three_destroyer_occupied_caller_occupied",
     "callee_child_state_precedes_destructor_knowledge",
+    "caller_configures_destructor_from_callee_guarantee",
+    "caller_configures_multiple_destroys_after_separate_binding_inits",
     "caller_contributed_child_destructor_depends_on_callee_guarantee",
     "caller_contributed_destructor_with_mixed_implied_position_state",
     "caller_destructor_between_two_destroyer_known_destructors",
@@ -72,6 +82,7 @@ _RUNTIME_OPERATION_DEPENDENCY_RELATION_MISMATCH_CASES = {
     "caller_introduces_three_occupied_children",
     "caller_introduces_three_occupied_children_between_empty_children",
     "caller_known_child_destroy_and_destructor_precede_parent_destroy",
+    "caller_known_child_destroy_is_independent_of_callee_sibling_moves",
     "creator_nonoverlapping_child_order_is_canonical_across_three_actions",
     "creator_reverse_child_order_is_canonical_across_three_actions",
     "destructor_ordering_action_parent_rule",
@@ -92,8 +103,11 @@ _RUNTIME_SCHEDULING_TABLE_MISMATCH_CASES = {
     "auto_destruction_of_child_with_caller_known_destructor",
     "callee_child_state_precedes_destructor_knowledge",
     "callee_move_waits_on_two_caller_child_operations_and_one_intermediate_child_operation",
+    "caller_configures_destructor_from_callee_guarantee",
+    "caller_configures_multiple_destroys_after_separate_binding_inits",
     "caller_contributed_child_destruction_precedes_later_operation",
     "caller_contributed_child_destructor_depends_on_callee_guarantee",
+    "caller_contributed_destruction_follows_transitive_move_guarantee",
     "caller_contributed_destructor_with_mixed_implied_position_state",
     "caller_destructor_between_two_destroyer_known_destructors",
     "caller_interleaves_destructors_with_destroyer_known_destructors",
@@ -106,6 +120,9 @@ _RUNTIME_SCHEDULING_TABLE_MISMATCH_CASES = {
     "caller_introduces_three_occupied_children",
     "caller_introduces_three_occupied_children_between_empty_children",
     "caller_known_child_destroy_and_destructor_precede_parent_destroy",
+    "caller_known_child_destroy_is_independent_of_callee_sibling_moves",
+    "caller_known_child_destroy_uses_binding_initialized_callee_fanout",
+    "caller_known_child_has_same_destructor_as_callee_known_parent",
     "caller_known_destructor_precedes_destroyer_known_child_destroy",
     "contributed_destructor_operates_on_child_of_occupied_requirement",
     "creator_nonoverlapping_child_order_is_canonical_across_three_actions",
@@ -125,6 +142,8 @@ _RUNTIME_SCHEDULING_TABLE_MISMATCH_CASES = {
     "direct_and_implied_destructor_executes_once",
     "direct_destructor_with_mixed_implied_position_state",
     "intermediate_callee_operation_suppresses_only_its_caller_path",
+    "later_caller_adds_destructor_to_contributed_child_destroy",
+    "later_caller_adds_independent_destructor_to_contributed_child_destroy",
     "multiple_newly_known_children_with_destructors",
     "nested_repeated_destructor_with_caller_known_child",
     "newly_known_grandchild_destructor_uses_callee_child_destroy",

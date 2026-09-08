@@ -1,0 +1,17 @@
+# The caller's Destructor follows the callee-known Destructor's /marker Destroy,
+# even though a local Move creates that execution several callees away.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</outer>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<source> {
+            it may only contain particles where {
+                it has the action</extra_destructor>.
+                it has the action</known_destructor>.
+            }
+        }
+        create a particle in position<source>.
+        move the particle in position<source> to action</outer>::position<run>.
+    }
+}

@@ -27,6 +27,7 @@ py_test(
     ],
     deps = [
         ":generated_program_runner",
+        ":test_helpers",
         "//define/compiler:driver",
         "//define/compiler/validator:test_helpers",
         "//define/runtime:literal",  # keep
@@ -125,6 +126,16 @@ py_library(
 )
 
 py_test(
+    name = "test_helpers_test",
+    size = "small",
+    srcs = ["test_helpers_test.py"],
+    deps = [
+        ":test_helpers",
+        "@pypi//pytest",
+    ],
+)
+
+py_test(
     name = "tracing_integration_test",
     size = "small",
     srcs = ["tracing_integration_test.py"],
@@ -172,6 +183,7 @@ pyright_test(
         ":operation_dependency_analysis",
         ":operation_dependency_analysis_test",
         ":test_helpers",
+        ":test_helpers_test",
         ":tracing_integration_test",
     ],
 )

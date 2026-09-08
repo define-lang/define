@@ -1,0 +1,18 @@
+define the potential action<my.domain.com:my_lib:/extra_destructor> {
+    it also assigns the position</marker>.
+    it also assigns the action</cleaner>.
+    it happens when {
+        this particle is being destroyed.
+    } and it does {
+        define the position<source> {
+            it may only contain particles where {
+                it has the position</child>.
+            }
+        }
+        create a particle in position<source>.
+        create a particle in position<source>::position</child>.
+        move the particle in position<source> to position</marker>.
+        create a particle in action</cleaner>::position<trigger_pos>.
+        destroy the particle in action</cleaner>::position<trigger_pos>.
+    }
+}

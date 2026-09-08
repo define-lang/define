@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 from define.compiler import driver
-from define.compiler.codegen import generated_program_runner
+from define.compiler.codegen import generated_program_runner, test_helpers
 from define.compiler.validator.test_helpers import assert_no_errors
 
 _TESTDATA_ROOT = Path("define/testdata/reference_graph")
@@ -37,11 +37,11 @@ _ADDITIONAL_CALLER_ENTRY_SOURCE = """    } and it does {
 class _Case:
     name: str
     baseline: Path
-    callee_module: Path
 
 
 @dataclass(frozen=True, slots=True)
 class _DestructorContributionCase(_Case):
+    callee_module: Path
     caller_sources: Path
 
 
@@ -51,21 +51,18 @@ _CASES = (
         _TESTDATA_ROOT
         / "operation_graph_two_actions_integration"
         / "callee_known_child_and_caller_unknown_sibling_are_disjoint",
-        Path("local/my_domain_com/my_lib/destroyer/__init__.py"),
     ),
     _Case(
         "local_cascade",
         _TESTDATA_ROOT
         / "operation_graph_two_actions_integration"
         / "local_cascade_uses_caller_fragment_for_occupied_child",
-        Path("local/my_domain_com/my_lib/triggered/__init__.py"),
     ),
     _Case(
         "transitive_disjoint",
         _TESTDATA_ROOT
         / "operation_graph_many_actions_integration"
         / "destruction_cascade_includes_disjoint_child_paths_from_two_callers",
-        Path("local/my_domain_com/my_lib/destroyer/__init__.py"),
     ),
 )
 
@@ -93,6 +90,129 @@ _DESTRUCTOR_CONTRIBUTION_CASES = (
         ),
     ),
 )
+
+
+_LATER_INIT_CONFIGURATION_CASES = [
+    pytest.param(
+        "contributed_destructor_move_removes_fill_after_two_destruction_dependencies",
+        "extra_destructor",
+        ("test", "caller"),
+        marks=pytest.mark.xfail(
+            strict=False,
+            raises=pytest.fail.Exception,
+            reason="S4: concurrent initialization can use a callee execution before it exists",
+        ),
+    ),
+    pytest.param(
+        "caller_configures_destructor_after_independent_inits",
+        "extra_destructor",
+        ("test", "caller"),
+        marks=pytest.mark.xfail(
+            strict=False,
+            raises=pytest.fail.Exception,
+            reason="S4: concurrent initialization can use a callee execution before it exists",
+        ),
+    ),
+    pytest.param(
+        "caller_configures_multiple_destroys_after_independent_inits",
+        "extra_destructor",
+        ("test", "caller"),
+        marks=pytest.mark.xfail(
+            strict=False,
+            raises=pytest.fail.Exception,
+            reason="S4: concurrent initialization can use a callee execution before it exists",
+        ),
+    ),
+    pytest.param(
+        "caller_configures_multiple_destroys_after_separate_binding_inits",
+        "extra_destructor",
+        ("test",),
+    ),
+    pytest.param(
+        "caller_configures_destructor_after_callee_guarantee_and_local_move",
+        "extra_destructor",
+        ("test",),
+    ),
+    pytest.param(
+        "caller_configures_destructor_after_callee_initializes_fanout_owner",
+        "extra_destructor",
+        ("test",),
+    ),
+    pytest.param(
+        "caller_configures_destructor_after_two_separate_binding_inits",
+        "extra_destructor",
+        ("test",),
+    ),
+    pytest.param(
+        "caller_configures_destructor_after_three_separate_binding_inits",
+        "extra_destructor",
+        ("test",),
+    ),
+    pytest.param(
+        "later_caller_configures_destructor_after_separate_binding_inits",
+        "later_destructor",
+        ("test",),
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    ("case_name", "additional_destructor", "contributing_sources"),
+    _LATER_INIT_CONFIGURATION_CASES,
+)
+def test_later_init_configuration_does_not_change_generated_callees(
+    case_name: str,
+    additional_destructor: str,
+    contributing_sources: tuple[str, ...],
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+):
+    case = _TESTDATA_ROOT / "operation_graph_destructor_integration" / case_name
+    expected = (case / "expected").resolve()
+    project = tmp_path / "project"
+    generated = tmp_path / "generated"
+    shutil.copytree(case, project)
+    contributing_modules = _remove_destructor_constraints(
+        project, additional_destructor, contributing_sources
+    )
+    _compile_and_run_project(project, generated, monkeypatch)
+    expected_files = _generated_files(expected)
+    actual_files = _generated_files(generated)
+    additional_destructor_module = Path(
+        f"local/my_domain_com/my_lib/{additional_destructor}/__init__.py"
+    )
+    assert actual_files == expected_files - {additional_destructor_module}
+    test_helpers.assert_generated_files_match(
+        expected, generated, actual_files - contributing_modules
+    )
+
+
+def _remove_destructor_constraints(
+    project: Path,
+    additional_destructor: str,
+    contributing_sources: tuple[str, ...],
+) -> set[Path]:
+    contributing_modules: set[Path] = set()
+    constraint = f"it has the action</{additional_destructor}>."
+    for source_name in contributing_sources:
+        source = project / f"{source_name}.dfn"
+        source_text = source.read_text()
+        assert source_text.count(constraint) == 1
+        retained_lines: list[str] = []
+        for line in source_text.splitlines(keepends=True):
+            if line.strip() != constraint:
+                retained_lines.append(line)
+        source.write_text("".join(retained_lines))
+        contributing_modules.add(
+            Path(f"local/my_domain_com/my_lib/{source_name}/__init__.py")
+        )
+    return contributing_modules
+
+
+def _generated_files(directory: Path) -> set[Path]:
+    return {
+        path.relative_to(directory) for path in directory.rglob("*") if path.is_file()
+    }
 
 
 def _add_additional_caller(source: str) -> str:
@@ -130,7 +250,7 @@ def _assert_only_additional_caller_was_added(expected: str, actual: str):
         pytest.fail("".join(diff))
 
 
-def _compile_project(
+def _compile_and_run_project(
     project: Path,
     generated: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -138,9 +258,6 @@ def _compile_project(
     monkeypatch.chdir(project)
     result = driver.Driver().compile_program(Path("test.dfn"), generated)
     assert_no_errors(result)
-
-
-def _assert_generated_program_runs(generated: Path):
     runtime_result = generated_program_runner.run_generated_program(generated)
     if runtime_result.process.returncode != 0:
         pytest.fail(runtime_result.process.stderr)
@@ -157,8 +274,7 @@ def _generate_with_additional_caller(
     test_source = project / "test.dfn"
     _ = test_source.write_text(_add_additional_caller(test_source.read_text()))
     shutil.copyfile(additional_caller_source, project / "additional_caller.dfn")
-    _compile_project(project, generated, monkeypatch)
-    _assert_generated_program_runs(generated)
+    _compile_and_run_project(project, generated, monkeypatch)
 
 
 @pytest.mark.parametrize("case", _CASES, ids=[case.name for case in _CASES])
@@ -181,22 +297,12 @@ def test_adding_a_caller_does_not_change_generated_callees(
         monkeypatch,
     )
 
-    expected_files = {
-        path.relative_to(baseline_expected)
-        for path in baseline_expected.rglob("*")
-        if path.is_file()
-    }
-    actual_files = {
-        path.relative_to(generated) for path in generated.rglob("*") if path.is_file()
-    }
+    expected_files = _generated_files(baseline_expected)
+    actual_files = _generated_files(generated)
     assert actual_files == expected_files | {_ADDITIONAL_CALLER_MODULE}
-    assert (generated / case.callee_module).read_text() == (
-        baseline_expected / case.callee_module
-    ).read_text()
-    for generated_file in expected_files - {_TEST_MODULE}:
-        assert (generated / generated_file).read_text() == (
-            baseline_expected / generated_file
-        ).read_text()
+    test_helpers.assert_generated_files_match(
+        baseline_expected, generated, expected_files - {_TEST_MODULE}
+    )
     _assert_only_additional_caller_was_added(
         (baseline_expected / _TEST_MODULE).read_text(),
         (generated / _TEST_MODULE).read_text(),
@@ -219,8 +325,7 @@ def test_adding_a_destructor_contributing_caller_does_not_change_generated_calle
     shutil.copytree(case_root, baseline_project)
     shutil.copyfile(caller_sources / "baseline_test.dfn", baseline_project / "test.dfn")
     baseline_generated = tmp_path / "baseline_generated"
-    _compile_project(baseline_project, baseline_generated, monkeypatch)
-    _assert_generated_program_runs(baseline_generated)
+    _compile_and_run_project(baseline_project, baseline_generated, monkeypatch)
 
     project_with_contributing_caller = tmp_path / "project_with_contributing_caller"
     generated_with_contributing_caller = tmp_path / "generated_with_contributing_caller"
@@ -232,9 +337,9 @@ def test_adding_a_destructor_contributing_caller_does_not_change_generated_calle
         monkeypatch,
     )
 
-    assert (baseline_generated / case.callee_module).read_text() == (
-        generated_with_contributing_caller / case.callee_module
-    ).read_text()
+    test_helpers.assert_generated_files_match(
+        baseline_generated, generated_with_contributing_caller, {case.callee_module}
+    )
     _assert_only_additional_caller_was_added(
         (baseline_generated / _TEST_MODULE).read_text(),
         (generated_with_contributing_caller / _TEST_MODULE).read_text(),

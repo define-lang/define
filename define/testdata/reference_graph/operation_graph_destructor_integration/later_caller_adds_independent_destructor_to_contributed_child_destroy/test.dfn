@@ -1,0 +1,23 @@
+# A caller-added Destructor's local work follows the callee's Move, but remains
+# independent of both simultaneous Destroys contributed by earlier actions.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</middle>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<source> {
+            it may only contain particles where {
+                it has the position</child>.
+            }
+        }
+        define the position<child_source> {
+            it may only contain particles where {
+                it has the action</destructor>.
+            }
+        }
+        create a particle in position<source>.
+        create a particle in position<child_source>.
+        move the particle in position<child_source> to position<source>::position</child>.
+        move the particle in position<source> to action</middle>::position<target>.
+    }
+}

@@ -45,7 +45,15 @@ _CALLEE_CHILD_DESTROY_DEPENDENCY_NOT_GENERATED = (
 _DESTRUCTION_CASCADE_NOT_GENERATED = (
     "generated destruction cascade ordering differs from the Operation Graph"
 )
+_INDEPENDENT_INITIALIZATION_RACE = (
+    "S4: concurrent initialization can use a callee execution before it exists"
+)
 _UNSUPPORTED_RUNTIME_TEST_CASE_REASONS = {
+    "operation_graph_destructor_integration/caller_configures_destructor_after_independent_inits": _INDEPENDENT_INITIALIZATION_RACE,
+    "operation_graph_destructor_integration/caller_configures_multiple_destroys_after_independent_inits": _INDEPENDENT_INITIALIZATION_RACE,
+    "operation_graph_destructor_integration/caller_configures_only_destructor_after_independent_inits": _INDEPENDENT_INITIALIZATION_RACE,
+    "operation_graph_destructor_integration/contributed_destructor_calls_action_with_child_destruction": _INDEPENDENT_INITIALIZATION_RACE,
+    "operation_graph_destructor_integration/contributed_destructor_move_removes_fill_after_two_destruction_dependencies": _INDEPENDENT_INITIALIZATION_RACE,
     "operation_graph_many_actions_integration/caller_consumes_a_child_guarantee_after_an_empty_rule_move": _CALLEE_CHILD_DESTROY_DEPENDENCY_NOT_GENERATED,
     "operation_graph_many_actions_integration/caller_consumes_a_child_guarantee_after_two_action_parent_moves": _CALLEE_CHILD_DESTROY_DEPENDENCY_NOT_GENERATED,
     "operation_graph_many_actions_integration/child_guarantee_with_distinct_occupied_action_parent_and_empty_rule_binding_holes": _CALLEE_CHILD_DESTROY_DEPENDENCY_NOT_GENERATED,

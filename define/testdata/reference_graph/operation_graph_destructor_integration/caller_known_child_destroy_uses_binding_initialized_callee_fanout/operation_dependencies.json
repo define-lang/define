@@ -1,0 +1,281 @@
+[
+  {
+    "operation": {
+      "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "operation_name": "create",
+      "target": "payload_source",
+      "occurrence": 1
+    },
+    "dependencies": []
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "operation_name": "create",
+      "target": "payload_source::/child",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "operation_name": "create",
+        "target": "payload_source",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "operation_name": "create",
+      "target": "source",
+      "occurrence": 1
+    },
+    "dependencies": []
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "operation_name": "move",
+      "source": "payload_source",
+      "target": "source::/payload",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "operation_name": "create",
+        "target": "payload_source::/child",
+        "occurrence": 1
+      },
+      {
+        "execution": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "operation_name": "create",
+        "target": "source",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "operation_name": "move",
+      "source": "source",
+      "target": "/outer::run",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "operation_name": "move",
+        "source": "payload_source",
+        "target": "source::/payload",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "outer"
+      },
+      "operation_name": "move",
+      "source": "run::/payload",
+      "target": "run::/destroyer::target",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "operation_name": "move",
+        "source": "source",
+        "target": "/outer::run",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "outer"
+        },
+        "action_name": "destroyer"
+      },
+      "operation_name": "move",
+      "source": "target",
+      "target": "holder",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "outer"
+        },
+        "operation_name": "move",
+        "source": "run::/payload",
+        "target": "run::/destroyer::target",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": null,
+          "action_name": "test"
+        },
+        "action_name": "outer"
+      },
+      "operation_name": "destroy",
+      "target": "run",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": {
+            "caller": {
+              "caller": null,
+              "action_name": "test"
+            },
+            "action_name": "outer"
+          },
+          "action_name": "destroyer"
+        },
+        "operation_name": "move",
+        "source": "target",
+        "target": "holder",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "outer"
+        },
+        "action_name": "destroyer"
+      },
+      "operation_name": "destroy",
+      "target": "holder::/child",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": {
+            "caller": {
+              "caller": null,
+              "action_name": "test"
+            },
+            "action_name": "outer"
+          },
+          "action_name": "destroyer"
+        },
+        "operation_name": "move",
+        "source": "target",
+        "target": "holder",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "outer"
+        },
+        "action_name": "destroyer"
+      },
+      "operation_name": "destroy",
+      "target": "holder",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": {
+            "caller": {
+              "caller": null,
+              "action_name": "test"
+            },
+            "action_name": "outer"
+          },
+          "action_name": "destroyer"
+        },
+        "operation_name": "move",
+        "source": "target",
+        "target": "holder",
+        "occurrence": 1
+      },
+      {
+        "execution": {
+          "caller": {
+            "caller": {
+              "caller": null,
+              "action_name": "test"
+            },
+            "action_name": "outer"
+          },
+          "action_name": "destroyer"
+        },
+        "operation_name": "destroy",
+        "target": "holder::/child",
+        "occurrence": 1
+      }
+    ]
+  }
+]

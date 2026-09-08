@@ -1,0 +1,21 @@
+define the potential action<my.domain.com:my_lib:/starter> {
+    define the position<run> {
+        it may only contain particles where {
+            it has the action</wrapper>.
+            it has the position</crate>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<gateway> {
+            it may only contain particles where {
+                it has the action</wrapper>.
+                it has the position</crate>.
+            }
+        }
+        move the particle in position<run> to position<gateway>.
+        move the particle in position<gateway>::position</crate> to position<gateway>::action</wrapper>::position<run>.
+        destroy the particle in position<gateway>.
+    }
+}

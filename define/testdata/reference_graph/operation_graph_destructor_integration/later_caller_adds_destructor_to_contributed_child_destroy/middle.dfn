@@ -1,0 +1,16 @@
+define the potential action<my.domain.com:my_lib:/middle> {
+    it also assigns the action</destroyer>.
+    define the position<target> {
+        it may only contain particles where {
+            it has the position</child>.
+        }
+    }
+    it happens when {
+        the position<target> has a particle.
+    } and it does {
+        define the position<retained_child>.
+        move the particle in position<target>::position</child> to position<retained_child>.
+        move the particle in position<retained_child> to position<target>::position</child>.
+        move the particle in position<target> to action</destroyer>::position<target>.
+    }
+}

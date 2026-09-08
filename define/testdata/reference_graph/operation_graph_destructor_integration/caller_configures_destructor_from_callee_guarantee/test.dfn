@@ -1,0 +1,13 @@
+# The caller learns the additional Destructor from a callee's Guarantee.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</maker>.
+    it also assigns the action</destroyer>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in action</maker>::position<run>.
+        create a particle in action</destroyer>::position<trigger_pos>.
+        destroy the particle in action</maker>::position<run>.
+        destroy the particle in action</destroyer>::position<trigger_pos>.
+    }
+}

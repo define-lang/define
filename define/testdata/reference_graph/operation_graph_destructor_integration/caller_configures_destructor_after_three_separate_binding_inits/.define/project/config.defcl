@@ -1,0 +1,3 @@
+project: {
+  universe_name: "my.domain.com:my_lib"
+}

@@ -1,0 +1,11 @@
+define the potential action<my.domain.com:my_lib:/extra_destructor> {
+    it also assigns the position</marker>.
+    it also assigns the position</destinations>.
+    it happens when {
+        this particle is being destroyed.
+    } and it does {
+        move the particle in position</marker> to position</destinations>::position</second>.
+        move the particle in position</destinations>::position</second> to position</destinations>::position</third>.
+        move the particle in position</destinations>::position</third> to position</marker>.
+    }
+}

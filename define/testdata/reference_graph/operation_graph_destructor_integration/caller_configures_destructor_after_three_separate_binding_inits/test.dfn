@@ -1,0 +1,33 @@
+# The additional caller requires a third init event, so configuration cannot
+# assume that the second init constructs every remaining Action Execution.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</wrapper>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<source> {
+            it may only contain particles where {
+                it has the action</outer>.
+                it has the position</carrier>.
+            }
+        }
+        define the position<carrier_source> {
+            it may only contain particles where {
+                it has the action</middle>.
+                it has the position</payload>.
+            }
+        }
+        define the position<payload_source> {
+            it may only contain particles where {
+                it has the action</extra_destructor>.
+                it has the action</known_destructor>.
+            }
+        }
+        create a particle in position<source>.
+        create a particle in position<carrier_source>.
+        create a particle in position<payload_source>.
+        move the particle in position<payload_source> to position<carrier_source>::position</payload>.
+        move the particle in position<carrier_source> to position<source>::position</carrier>.
+        move the particle in position<source> to action</wrapper>::position<run>.
+    }
+}

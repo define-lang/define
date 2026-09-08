@@ -1,0 +1,10 @@
+define the potential action<my.domain.com:my_lib:/extra_destructor> {
+    it also assigns the position</marker>.
+    it happens when {
+        this particle is being destroyed.
+    } and it does {
+        define the position<retained_marker>.
+        move the particle in position</marker> to position<retained_marker>.
+        move the particle in position<retained_marker> to position</marker>.
+    }
+}

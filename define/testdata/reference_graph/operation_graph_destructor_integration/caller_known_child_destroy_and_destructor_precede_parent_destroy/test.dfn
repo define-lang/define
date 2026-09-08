@@ -1,7 +1,6 @@
-# The two caller-only Destructors have independent requirements, while the
-# caller-contributed child of /required is destroyed after its parent particle's
-# Destructor, so the Empty Rule retains only that later child Destroy before the
-# Destroy of /required.
+# The two caller-only Destructors have independent requirements. The Destroys
+# of /required and its child are simultaneous, so both depend on the Destructor's
+# final Move of /required rather than on either Destroy.
 define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the action</destroyer>.
     it happens when {

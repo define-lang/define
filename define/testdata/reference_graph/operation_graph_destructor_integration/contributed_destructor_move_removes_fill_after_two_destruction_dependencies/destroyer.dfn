@@ -1,0 +1,18 @@
+define the potential action<my.domain.com:my_lib:/destroyer> {
+    define the position<trigger_pos>.
+    define the position<target> {
+        it may only contain particles where {
+            it has the position</marker>.
+            it has the position</destinations>.
+        }
+    }
+    it happens when {
+        the position<trigger_pos> has a particle.
+    } and it does {
+        define the position<retained_marker>.
+        move the particle in position<target>::position</marker> to position<retained_marker>.
+        move the particle in position<retained_marker> to position<target>::position</marker>.
+        create a particle in position<target>::position</destinations>.
+        destroy the particle in position<target>.
+    }
+}

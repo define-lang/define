@@ -1,0 +1,41 @@
+# Registration must wait for the callee to construct the Action Execution
+# whose later Particle Operation makes the next configuration possible.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</starter>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<source> {
+            it may only contain particles where {
+                it has the action</wrapper>.
+                it has the position</crate>.
+            }
+        }
+        define the position<crate_source> {
+            it may only contain particles where {
+                it has the action</outer>.
+                it has the position</carrier>.
+            }
+        }
+        define the position<carrier_source> {
+            it may only contain particles where {
+                it has the action</middle>.
+                it has the position</payload>.
+            }
+        }
+        define the position<payload_source> {
+            it may only contain particles where {
+                it has the action</extra_destructor>.
+                it has the action</known_destructor>.
+            }
+        }
+        create a particle in position<source>.
+        create a particle in position<crate_source>.
+        create a particle in position<carrier_source>.
+        create a particle in position<payload_source>.
+        move the particle in position<payload_source> to position<carrier_source>::position</payload>.
+        move the particle in position<carrier_source> to position<crate_source>::position</carrier>.
+        move the particle in position<crate_source> to position<source>::position</crate>.
+        move the particle in position<source> to action</starter>::position<run>.
+    }
+}

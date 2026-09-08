@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import pytest
+
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
     assert_operation_dependencies,
 )
@@ -29,6 +31,11 @@ def test_action_that_destroys_its_own_trigger_position_is_triggered_twice(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    raises=AssertionError,
+    reason="S5: compose destruction dependencies without ordering simultaneous Destroys",
+)
 def test_destroying_action_reused_with_known_child_empty_then_occupied(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -52,11 +59,16 @@ def test_destroying_action_reused_with_known_child_empty_then_occupied(
             "destroyer.destroy(/target)",
         ],
         "destroyer#2.destroy(/target::/child)": ["destroyer#2.move(run, /target)"],
-        "destroyer#2.destroy(/target)": ["destroyer#2.destroy(/target::/child)"],
+        "destroyer#2.destroy(/target)": ["destroyer#2.move(run, /target)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    raises=AssertionError,
+    reason="S5: compose destruction dependencies without ordering simultaneous Destroys",
+)
 def test_reused_callee_receives_distinct_destruction_connections_per_execution(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -69,7 +81,7 @@ def test_reused_callee_receives_distinct_destruction_connections_per_execution(
         "destroyer.move(run, /target)": ["test.move(first, /destroyer::run)"],
         # The first caller-known child Destroy belongs to the first Action Execution.
         "destroyer.destroy(/target::/first_child)": ["destroyer.move(run, /target)"],
-        "destroyer.destroy(/target)": ["destroyer.destroy(/target::/first_child)"],
+        "destroyer.destroy(/target)": ["destroyer.move(run, /target)"],
         "test.create(second)": [],
         "test.create(second::/second_child)": ["test.create(second)"],
         "test.move(second, /destroyer::run)": [
@@ -85,11 +97,16 @@ def test_reused_callee_receives_distinct_destruction_connections_per_execution(
         "destroyer#2.destroy(/target::/second_child)": [
             "destroyer#2.move(run, /target)"
         ],
-        "destroyer#2.destroy(/target)": ["destroyer#2.destroy(/target::/second_child)"],
+        "destroyer#2.destroy(/target)": ["destroyer#2.move(run, /target)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    raises=AssertionError,
+    reason="S5: compose destruction dependencies without ordering simultaneous Destroys",
+)
 def test_repeated_destroying_action_invocations_include_caller_dependent_children(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -100,9 +117,7 @@ def test_repeated_destroying_action_invocations_include_caller_dependent_childre
         "test.create(first::/child)": ["test.create(first)"],
         "test.move(first, /destroyer::run)": ["test.create(first::/child)"],
         "destroyer.destroy(run::/child)": ["test.move(first, /destroyer::run)"],
-        "destroyer.destroy(run)": [
-            "destroyer.destroy(run::/child)",
-        ],
+        "destroyer.destroy(run)": ["test.move(first, /destroyer::run)"],
         "test.create(second)": [],
         "test.create(second::/child)": ["test.create(second)"],
         "test.move(second, /destroyer::run)": [
@@ -110,13 +125,16 @@ def test_repeated_destroying_action_invocations_include_caller_dependent_childre
             "destroyer.destroy(run)",
         ],
         "destroyer#2.destroy(run::/child)#2": ["test.move(second, /destroyer::run)"],
-        "destroyer#2.destroy(run)": [
-            "destroyer#2.destroy(run::/child)#2",
-        ],
+        "destroyer#2.destroy(run)": ["test.move(second, /destroyer::run)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    raises=AssertionError,
+    reason="S5: compose destruction dependencies without ordering simultaneous Destroys",
+)
 def test_only_relevant_retrigger_receives_forwarded_destruction_connections(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -134,7 +152,7 @@ def test_only_relevant_retrigger_receives_forwarded_destruction_connections(
             "middle.create(local)",
             "destroyer.destroy(run)",
         ],
-        "destroyer.destroy(run)": ["destroyer.destroy(run::/child)"],
+        "destroyer.destroy(run)": ["middle.move(run, /destroyer::run)"],
         # The locally created particle has no caller-known child, so its Destroy
         # depends directly on the second Action Execution's Move.
         "destroyer#2.destroy(run)": ["middle.move(local, /destroyer::run)"],

@@ -13,15 +13,13 @@ if TYPE_CHECKING:
     from define.compiler import conftest
 
 _TEST = "action<my.domain.com:my_lib:/test>"
-_RESOLVED_GUARANTEE_MOVE_CORRECTION_NOT_IMPLEMENTED = "Move Correction does not follow dependency paths through resolved Action Guarantees"
-_CALLEE_CHILD_DESTROY_DEPENDENCIES_NOT_RESOLVED = (
-    "a caller Destroy does not retain every callee child Destroy dependency"
-)
-_SIMULTANEOUS_CALLER_CONTRIBUTED_DESTRUCTION_NOT_RESOLVED = (
-    "caller-contributed Destroy operations still order simultaneous callee Destroys"
-)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    raises=AssertionError,
+    reason="S3: retain child-operation dependencies independently of occupancy Guarantees",
+)
 def test_binding_hole_fans_out_to_multiple_fragments_and_multiple_callee_bindings(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -51,7 +49,11 @@ def test_binding_hole_fans_out_to_multiple_fragments_and_multiple_callee_binding
         "test.destroy(gateway::/middle::trigger_pos)": [
             "test.create(gateway::/middle::trigger_pos)"
         ],
-        "test.destroy(gateway)": ["test.destroy(gateway::/middle::trigger_pos)"],
+        "test.destroy(gateway)": [
+            "test.destroy(gateway::/middle::trigger_pos)",
+            "middle.destroy(/child_a::trigger_pos)",
+            "middle.destroy(/child_b::trigger_pos)",
+        ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
@@ -133,6 +135,11 @@ def test_action_execution_and_empty_rule_use_the_same_position(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    raises=AssertionError,
+    reason="S3: retain child-operation dependencies independently of occupancy Guarantees",
+)
 def test_empty_rule_adds_a_caller_child_operation_to_a_move(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -164,12 +171,17 @@ def test_empty_rule_adds_a_caller_child_operation_to_a_move(
         ],
         "test.destroy(gateway)": [
             "test.destroy(gateway::/middle::trigger_pos)",
-            "middle.move(source, holder)",
+            "middle.destroy(holder)",
         ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    raises=AssertionError,
+    reason="S3: retain child-operation dependencies independently of occupancy Guarantees",
+)
 def test_caller_consumes_a_child_guarantee_after_an_empty_rule_move(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -202,6 +214,7 @@ def test_caller_consumes_a_child_guarantee_after_an_empty_rule_move(
         ],
         "test.destroy(gateway::/middle::holder)": [
             "test.move(gateway::/middle::holder::/result, result)",
+            "middle.destroy(holder::/child::trigger_pos)",
         ],
         "test.destroy(gateway::/middle::trigger_pos)": [
             "test.create(gateway::/middle::trigger_pos)"
@@ -217,6 +230,11 @@ def test_caller_consumes_a_child_guarantee_after_an_empty_rule_move(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    raises=AssertionError,
+    reason="S3: retain child-operation dependencies independently of occupancy Guarantees",
+)
 def test_moved_particle_requirement_does_not_affect_replacement_at_origin(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -260,6 +278,7 @@ def test_moved_particle_requirement_does_not_affect_replacement_at_origin(
         ],
         "test.destroy(gateway)": [
             "test.destroy(gateway::/middle::trigger_pos)",
+            "middle.move(holder, inner_holder::/inner::input)",
             "middle.destroy(source)",
         ],
     }
@@ -316,7 +335,9 @@ def test_middle_child_operation_reaches_inner_move_and_destroy(
 
 
 @pytest.mark.xfail(
-    strict=True, reason=_RESOLVED_GUARANTEE_MOVE_CORRECTION_NOT_IMPLEMENTED
+    strict=True,
+    raises=AssertionError,
+    reason="S3: apply Move Correction through Guarantees and parent Moves",
 )
 def test_caller_consumes_a_child_guarantee_after_two_action_parent_moves(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
@@ -353,7 +374,7 @@ def test_caller_consumes_a_child_guarantee_after_two_action_parent_moves(
         ],
         "test.destroy(gateway::/middle::holder)": [
             "test.move(gateway::/middle::holder::/result, result)",
-            "test.destroy(gateway::/middle::holder::/marker)",
+            "middle.destroy(holder::/child::trigger_pos)",
         ],
         "test.destroy(gateway::/middle::trigger_pos)": [
             "test.create(gateway::/middle::trigger_pos)"
@@ -370,7 +391,9 @@ def test_caller_consumes_a_child_guarantee_after_two_action_parent_moves(
 
 
 @pytest.mark.xfail(
-    strict=True, reason=_RESOLVED_GUARANTEE_MOVE_CORRECTION_NOT_IMPLEMENTED
+    strict=True,
+    raises=AssertionError,
+    reason="S3: apply Move Correction through Guarantees and parent Moves",
 )
 def test_parent_destroy_excludes_guaranteed_move_on_later_dependency_path(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
@@ -399,7 +422,8 @@ def test_parent_destroy_excludes_guaranteed_move_on_later_dependency_path(
 
 @pytest.mark.xfail(
     strict=True,
-    reason="a caller Destroy does not depend on a callee Destroy at a child position after the callee moves the parent particle",
+    raises=AssertionError,
+    reason="S3: retain child-operation dependencies independently of occupancy Guarantees",
 )
 def test_child_guarantee_with_distinct_occupied_action_parent_and_empty_rule_binding_holes(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
@@ -434,9 +458,8 @@ def test_child_guarantee_with_distinct_occupied_action_parent_and_empty_rule_bin
             "middle.move(source, holder)"
         ],
         "test.destroy(gateway::/middle::holder)": [
-            "middle.destroy(holder::/child::trigger_pos)",
             "test.move(gateway::/middle::holder::/result, result)",
-            "test.destroy(gateway::/middle::holder::/marker)",
+            "middle.destroy(holder::/child::trigger_pos)",
         ],
         "test.destroy(gateway::/middle::trigger_pos)": [
             "test.create(gateway::/middle::trigger_pos)"
@@ -692,6 +715,11 @@ def test_empty_requirement_waits_on_the_intermediate_callee_destroy_that_clears_
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    raises=AssertionError,
+    reason="S3: retain child-operation dependencies independently of occupancy Guarantees",
+)
 def test_empty_requirement_waits_on_the_intermediate_callee_destroy_of_an_implied_position_child(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -717,7 +745,10 @@ def test_empty_requirement_waits_on_the_intermediate_callee_destroy_of_an_implie
         ],
         "test.destroy(box::/middle::gw::/holder::/a)": ["inner.create(/holder::/a)"],
         "test.destroy(box::/middle::gw::/holder)": ["inner.create(/holder::/a)"],
-        "test.destroy(box::/middle::gw)": ["inner.create(/holder::/a)"],
+        "test.destroy(box::/middle::gw)": [
+            "middle.destroy(gw::/inner::trigger_pos)",
+            "inner.create(/holder::/a)",
+        ],
         "test.destroy(box::/middle::trigger_pos)": [
             "test.create(box::/middle::trigger_pos)"
         ],
@@ -1094,6 +1125,11 @@ def test_implied_position_children_wait_on_the_two_levels_up_caller_fill(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    raises=AssertionError,
+    reason="S3: retain child-operation dependencies independently of occupancy Guarantees",
+)
 def test_implied_action_inherits_the_current_actions_parent_position(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -1114,9 +1150,13 @@ def test_implied_action_inherits_the_current_actions_parent_position(
         "test.destroy(local::/parent::/middle::trigger_pos)": [
             "test.create(local::/parent::/middle::trigger_pos)"
         ],
-        "test.destroy(local)": ["test.destroy(local::/parent::/middle::trigger_pos)"],
+        "test.destroy(local)": [
+            "test.destroy(local::/parent::/middle::trigger_pos)",
+            "middle.destroy(/inner::trigger_pos)",
+        ],
         "test.destroy(local::/parent)": [
-            "test.destroy(local::/parent::/middle::trigger_pos)"
+            "test.destroy(local::/parent::/middle::trigger_pos)",
+            "middle.destroy(/inner::trigger_pos)",
         ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
@@ -1142,6 +1182,11 @@ def test_implied_position_grandchildren_wait_on_the_two_levels_up_caller_fill(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    raises=AssertionError,
+    reason="S5: compose destruction dependencies without ordering simultaneous Destroys",
+)
 def test_intermediate_callee_operation_suppresses_only_its_caller_path(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -1160,7 +1205,7 @@ def test_intermediate_callee_operation_suppresses_only_its_caller_path(
             "test.create(/parent::/child::/grandchild::/greatgrandchild)"
         ],
         "middle.destroy(/parent::/child::/grandchild)": [
-            "middle.destroy(/parent::/child::/grandchild::/greatgrandchild)"
+            "test.create(/parent::/child::/grandchild::/greatgrandchild)"
         ],
         "middle.create(/inner::trigger_pos)": [],
         # Middle's operation supersedes the distant caller operations only on
@@ -1172,8 +1217,8 @@ def test_intermediate_callee_operation_suppresses_only_its_caller_path(
             "middle.destroy(/parent::/child::/grandchild)",
         ],
         "inner.destroy(/parent)": [
-            "inner.destroy(/parent::/child)",
-            "inner.destroy(/parent::/sibling)",
+            "middle.destroy(/parent::/child::/grandchild)",
+            "test.create(/parent::/sibling)",
         ],
         "middle.destroy(/inner::trigger_pos)": ["middle.create(/inner::trigger_pos)"],
         "test.destroy(/middle::trigger_pos)": ["test.create(/middle::trigger_pos)"],
@@ -1232,7 +1277,8 @@ def test_moved_in_parent_children_branch_from_the_carrying_move(
 
 @pytest.mark.xfail(
     strict=True,
-    reason="a caller Destroy does not depend on every callee Destroy at its child positions",
+    raises=AssertionError,
+    reason="S3: retain child-operation dependencies independently of occupancy Guarantees",
 )
 def test_input_carried_through_two_moves_reaches_the_triggered_inner(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
@@ -1270,7 +1316,7 @@ def test_input_carried_through_two_moves_reaches_the_triggered_inner(
             "middle.create(inner_holder::/inner::run)"
         ],
         "middle.destroy(inner_holder)": [
-            "middle.destroy(inner_holder::/inner::run)",
+            "middle.create(inner_holder::/inner::run)",
             "inner.destroy(input)",
         ],
         "outer.destroy(middle_holder::/middle::run)": [
@@ -1279,8 +1325,8 @@ def test_input_carried_through_two_moves_reaches_the_triggered_inner(
         # Destroying middle_holder waits for the final operations that empty
         # both of its interface positions.
         "test.destroy(outer_holder::/outer::middle_holder)": [
-            "middle.move(input, inner_holder::/inner::input)",
             "outer.destroy(middle_holder::/middle::run)",
+            "middle.move(input, inner_holder::/inner::input)",
         ],
         "test.destroy(outer_holder::/outer::run)": [
             "test.create(outer_holder::/outer::run)"
@@ -1363,6 +1409,11 @@ def test_caller_consumes_a_nested_guarantee(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    raises=AssertionError,
+    reason="S5: compose destruction dependencies without ordering simultaneous Destroys",
+)
 def test_callee_move_of_a_position_filled_two_levels_up_waits_on_the_caller_child_fill(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -1387,9 +1438,7 @@ def test_callee_move_of_a_position_filled_two_levels_up_waits_on_the_caller_chil
             "middle.move(gw::/source_particle, gw::/inner::source)",
         ],
         "middle.destroy(gw::/inner::holder::/a)": ["inner.move(source, holder)"],
-        "middle.destroy(gw::/inner::holder)": [
-            "middle.destroy(gw::/inner::holder::/a)"
-        ],
+        "middle.destroy(gw::/inner::holder)": ["inner.move(source, holder)"],
         "middle.destroy(gw::/inner::trigger_pos)": [
             "middle.create(gw::/inner::trigger_pos)"
         ],
@@ -1408,6 +1457,11 @@ def test_callee_move_of_a_position_filled_two_levels_up_waits_on_the_caller_chil
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    raises=AssertionError,
+    reason="S5: compose destruction dependencies without ordering simultaneous Destroys",
+)
 def test_callee_move_waits_on_two_caller_child_operations_and_one_intermediate_child_operation(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -1432,7 +1486,7 @@ def test_callee_move_waits_on_two_caller_child_operations_and_one_intermediate_c
             "test.move(/input::/third, third_holder)",
         ],
         "inner.destroy(holder::/first)": ["inner.move(/input, holder)"],
-        "inner.destroy(holder)": ["inner.destroy(holder::/first)"],
+        "inner.destroy(holder)": ["inner.move(/input, holder)"],
         "middle_action.destroy(/inner::trigger_pos)": [
             "middle_action.create(/inner::trigger_pos)"
         ],
@@ -1512,7 +1566,9 @@ def test_caller_consumes_a_guarantee_from_two_triggers_down(
 
 
 @pytest.mark.xfail(
-    strict=True, reason=_RESOLVED_GUARANTEE_MOVE_CORRECTION_NOT_IMPLEMENTED
+    strict=True,
+    raises=AssertionError,
+    reason="S3: apply Move Correction through Guarantees and parent Moves",
 )
 def test_transitive_child_guarantee_follows_particle_through_move(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
@@ -1555,8 +1611,8 @@ def test_transitive_child_guarantee_follows_particle_through_move(
             "middle.create(inner_holder::/inner::trigger_pos)"
         ],
         "middle.destroy(inner_holder)": [
+            "middle.create(inner_holder::/inner::trigger_pos)",
             "middle.move(inner_holder::/inner::input, inner_parent)",
-            "middle.destroy(inner_holder::/inner::trigger_pos)",
         ],
         "outer.move(middle_holder::/middle::inner_parent::/result_value, result_holder)": [
             "middle.move(result_holder, inner_parent::/result_value)"
@@ -1571,8 +1627,8 @@ def test_transitive_child_guarantee_follows_particle_through_move(
             "outer.create(middle_holder::/middle::trigger_pos)"
         ],
         "outer.destroy(middle_holder)": [
+            "outer.create(middle_holder::/middle::trigger_pos)",
             "outer.move(middle_holder::/middle::inner_parent, destination)",
-            "outer.destroy(middle_holder::/middle::trigger_pos)",
         ],
         # The final consumer waits for the guaranteed child to follow its parent
         # through both actions' explicit shuttles and moves.
@@ -1711,6 +1767,11 @@ def test_callee_move_empty_rule_binding_hole_binds_multiple_caller_guarantees(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    raises=AssertionError,
+    reason="S5: compose destruction dependencies without ordering simultaneous Destroys",
+)
 def test_propagated_empty_rule_combines_caller_operation_and_callee_guarantee(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -1736,8 +1797,7 @@ def test_propagated_empty_rule_combines_caller_operation_and_callee_guarantee(
             "mover.move(/parent, destination)"
         ],
         "middle.destroy(/mover::destination)": [
-            "middle.destroy(/mover::destination::/guaranteed_child)",
-            "middle.destroy(/mover::destination::/direct_child)",
+            "mover.move(/parent, destination)",
         ],
         "middle.destroy(/mover::trigger_pos)": ["middle.create(/mover::trigger_pos)"],
         "test.destroy(/filler::trigger_pos)": ["test.create(/filler::trigger_pos)"],
@@ -1746,6 +1806,11 @@ def test_propagated_empty_rule_combines_caller_operation_and_callee_guarantee(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    raises=AssertionError,
+    reason="S5: compose destruction dependencies without ordering simultaneous Destroys",
+)
 def test_propagated_destroy_empty_rule_retains_two_intermediate_caller_child_operations(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -1759,11 +1824,10 @@ def test_propagated_destroy_empty_rule_retains_two_intermediate_caller_child_ope
         "middle.create(/destroyer::trigger_pos)": [],
         "destroyer.destroy(/parent::/first)": ["middle.create(/parent::/first)"],
         "destroyer.destroy(/parent::/second)": ["middle.create(/parent::/second)"],
-        # The parent Destroy waits for the independent Destroys of both child
-        # positions after the Empty Rule passes through /middle to /test.
+        # The Empty Rule retains both child Creates for the parent Destroy.
         "destroyer.destroy(/parent)": [
-            "destroyer.destroy(/parent::/second)",
-            "destroyer.destroy(/parent::/first)",
+            "middle.create(/parent::/first)",
+            "middle.create(/parent::/second)",
         ],
         "destroyer.destroy(trigger_pos)": ["middle.create(/destroyer::trigger_pos)"],
         "test.destroy(/middle::trigger_pos)": ["test.create(/middle::trigger_pos)"],
@@ -1801,6 +1865,11 @@ def test_propagated_empty_rule_retains_two_intermediate_caller_child_operations(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    raises=AssertionError,
+    reason="S5: compose destruction dependencies without ordering simultaneous Destroys",
+)
 def test_destruction_cascade_child_state_crosses_two_actions(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -1818,13 +1887,17 @@ def test_destruction_cascade_child_state_crosses_two_actions(
         "inner.destroy(inner_run::/a)": ["middle.move(run, /inner::inner_run)"],
         "inner.destroy(inner_run::/b)": ["middle.move(run, /inner::inner_run)"],
         "inner.destroy(inner_run)": [
-            "inner.destroy(inner_run::/b)",
-            "inner.destroy(inner_run::/a)",
+            "middle.move(run, /inner::inner_run)",
         ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    raises=AssertionError,
+    reason="S5: compose destruction dependencies without ordering simultaneous Destroys",
+)
 def test_destruction_cascade_implied_child_state_crosses_two_actions(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -1841,8 +1914,8 @@ def test_destruction_cascade_implied_child_state_crosses_two_actions(
         "inner.destroy(/parent::/a)": ["test.create(/parent::/a)"],
         "inner.destroy(/parent::/b)": ["test.create(/parent::/b)"],
         "inner.destroy(/parent)": [
-            "inner.destroy(/parent::/b)",
-            "inner.destroy(/parent::/a)",
+            "test.create(/parent::/a)",
+            "test.create(/parent::/b)",
         ],
         "inner.destroy(trigger_pos)": ["middle.create(/inner::trigger_pos)"],
         "middle.destroy(trigger_pos)": ["test.create(/middle::trigger_pos)"],
@@ -1850,6 +1923,11 @@ def test_destruction_cascade_implied_child_state_crosses_two_actions(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    raises=AssertionError,
+    reason="S5: compose destruction dependencies without ordering simultaneous Destroys",
+)
 def test_auto_destruction_child_state_crosses_two_actions(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -1865,18 +1943,21 @@ def test_auto_destruction_child_state_crosses_two_actions(
         ],
         "middle.move(run, /inner::inner_run)": ["test.move(source, /middle::run)"],
         "inner.move(inner_run, local)": ["middle.move(run, /inner::inner_run)"],
-        # The Destruction Contract crosses middle, and both caller-only child
-        # Destroys must finish before inner automatically destroys local.
+        # The final Move precedes all three simultaneous Destroys.
         "inner.destroy(local::/a)": ["inner.move(inner_run, local)"],
         "inner.destroy(local::/b)": ["inner.move(inner_run, local)"],
         "inner.destroy(local)": [
-            "inner.destroy(local::/b)",
-            "inner.destroy(local::/a)",
+            "inner.move(inner_run, local)",
         ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    raises=AssertionError,
+    reason="S5: compose destruction dependencies without ordering simultaneous Destroys",
+)
 def test_destruction_cascade_includes_disjoint_child_paths_from_two_callers(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -1897,7 +1978,9 @@ def test_destruction_cascade_includes_disjoint_child_paths_from_two_callers(
         "middle_a:destroyer.destroy(run::/a)": [
             "middle_a.move(box, destroyer_holder::/destroyer::run)"
         ],
-        "middle_a:destroyer.destroy(run)": ["middle_a:destroyer.destroy(run::/a)"],
+        "middle_a:destroyer.destroy(run)": [
+            "middle_a.move(box, destroyer_holder::/destroyer::run)"
+        ],
         "middle_a.destroy(destroyer_holder)": ["middle_a:destroyer.destroy(run)"],
         "middle_a.destroy(run)": ["test.create(/middle_a::run)"],
         "middle_b.create(destroyer_holder)": [],
@@ -1910,13 +1993,20 @@ def test_destruction_cascade_includes_disjoint_child_paths_from_two_callers(
         "middle_b:destroyer.destroy(run::/b)": [
             "middle_b.move(box, destroyer_holder::/destroyer::run)"
         ],
-        "middle_b:destroyer.destroy(run)": ["middle_b:destroyer.destroy(run::/b)"],
+        "middle_b:destroyer.destroy(run)": [
+            "middle_b.move(box, destroyer_holder::/destroyer::run)"
+        ],
         "middle_b.destroy(destroyer_holder)": ["middle_b:destroyer.destroy(run)"],
         "middle_b.destroy(run)": ["test.create(/middle_b::run)"],
     }
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    raises=AssertionError,
+    reason="S5: compose destruction dependencies without ordering simultaneous Destroys",
+)
 def test_destruction_cascade_includes_shared_child_path_from_two_callers_once(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -1937,7 +2027,9 @@ def test_destruction_cascade_includes_shared_child_path_from_two_callers_once(
         "middle_a:destroyer.destroy(run::/child)": [
             "middle_a.move(box, destroyer_holder::/destroyer::run)"
         ],
-        "middle_a:destroyer.destroy(run)": ["middle_a:destroyer.destroy(run::/child)"],
+        "middle_a:destroyer.destroy(run)": [
+            "middle_a.move(box, destroyer_holder::/destroyer::run)"
+        ],
         "middle_a.destroy(destroyer_holder)": ["middle_a:destroyer.destroy(run)"],
         "middle_a.destroy(run)": ["test.create(/middle_a::run)"],
         "middle_b.create(destroyer_holder)": [],
@@ -1950,7 +2042,9 @@ def test_destruction_cascade_includes_shared_child_path_from_two_callers_once(
         "middle_b:destroyer.destroy(run::/child)": [
             "middle_b.move(box, destroyer_holder::/destroyer::run)"
         ],
-        "middle_b:destroyer.destroy(run)": ["middle_b:destroyer.destroy(run::/child)"],
+        "middle_b:destroyer.destroy(run)": [
+            "middle_b.move(box, destroyer_holder::/destroyer::run)"
+        ],
         "middle_b.destroy(destroyer_holder)": ["middle_b:destroyer.destroy(run)"],
         "middle_b.destroy(run)": ["test.create(/middle_b::run)"],
     }
@@ -1958,7 +2052,9 @@ def test_destruction_cascade_includes_shared_child_path_from_two_callers_once(
 
 
 @pytest.mark.xfail(
-    strict=True, reason=_SIMULTANEOUS_CALLER_CONTRIBUTED_DESTRUCTION_NOT_RESOLVED
+    strict=True,
+    raises=AssertionError,
+    reason="S5: compose destruction dependencies without ordering simultaneous Destroys",
 )
 def test_caller_contribution_and_callee_guarantee_precede_parent_destroy(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
@@ -1984,8 +2080,8 @@ def test_caller_contribution_and_callee_guarantee_precede_parent_destroy(
         # The child operations performed before destruction are the Empty Rule
         # dependencies of the simultaneous parent Destroy.
         "destroyer.destroy(parent)": [
-            "maker.destroy(result)",
             "destroyer.create(parent::/maker::trigger_pos)",
+            "maker.destroy(result)",
         ],
         "test.destroy(/destroyer::trigger_pos)": [
             "test.create(/destroyer::trigger_pos)"
@@ -1995,7 +2091,9 @@ def test_caller_contribution_and_callee_guarantee_precede_parent_destroy(
 
 
 @pytest.mark.xfail(
-    strict=True, reason=_SIMULTANEOUS_CALLER_CONTRIBUTED_DESTRUCTION_NOT_RESOLVED
+    strict=True,
+    raises=AssertionError,
+    reason="S5: compose destruction dependencies without ordering simultaneous Destroys",
 )
 def test_destruction_cascade_mixes_known_child_states_with_caller_dependent_state(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
@@ -2038,7 +2136,9 @@ def test_destruction_cascade_mixes_known_child_states_with_caller_dependent_stat
 
 
 @pytest.mark.xfail(
-    strict=True, reason=_SIMULTANEOUS_CALLER_CONTRIBUTED_DESTRUCTION_NOT_RESOLVED
+    strict=True,
+    raises=AssertionError,
+    reason="S5: compose destruction dependencies without ordering simultaneous Destroys",
 )
 def test_same_callee_callers_assign_child_qualities_in_opposite_orders(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
@@ -2111,7 +2211,8 @@ def test_same_callee_callers_assign_child_qualities_in_opposite_orders(
 
 @pytest.mark.xfail(
     strict=True,
-    reason=_CALLEE_CHILD_DESTROY_DEPENDENCIES_NOT_RESOLVED,
+    raises=AssertionError,
+    reason="S3: retain child-operation dependencies independently of occupancy Guarantees",
 )
 def test_guarantee_inits_execution_and_satisfies_two_empty_rules(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
@@ -2147,6 +2248,11 @@ def test_guarantee_inits_execution_and_satisfies_two_empty_rules(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    raises=AssertionError,
+    reason="S5: compose destruction dependencies without ordering simultaneous Destroys",
+)
 def test_destruction_association_with_multiple_binding_sources(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -2182,7 +2288,7 @@ def test_destruction_association_with_multiple_binding_sources(
             "test.create(/caller_parent::/child_b)",
         ],
         "mover.destroy(discard::/caller_only)": ["test.move(trash, /mover::discard)"],
-        "mover.destroy(discard)": ["mover.destroy(discard::/caller_only)"],
+        "mover.destroy(discard)": ["test.move(trash, /mover::discard)"],
         "mover.destroy(guaranteed_destination::/child_a)": [
             "mover.move(/guaranteed_parent, guaranteed_destination)"
         ],

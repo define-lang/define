@@ -1,5 +1,5 @@
-# A caller-known Destructor and two destroyer-known sibling particles independently
-# precede the Destroy of their parent position in /destroyer.
+# The caller-known Destructor's final child operation supersedes the Move of
+# /required. Simultaneous child Destroys cannot precede their parent Destroy.
 define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the action</destroyer>.
     it happens when {

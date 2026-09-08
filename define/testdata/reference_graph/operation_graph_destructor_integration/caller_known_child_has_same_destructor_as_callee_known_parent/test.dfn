@@ -1,0 +1,17 @@
+# Verifying a Destructor on the parent does not verify it on a different particle.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</destroyer>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<source> {
+            it may only contain particles where {
+                it has the action</destructor>.
+                it has the position</child>.
+            }
+        }
+        create a particle in position<source>.
+        create a particle in position<source>::position</child>.
+        move the particle in position<source> to action</destroyer>::position<run>.
+    }
+}

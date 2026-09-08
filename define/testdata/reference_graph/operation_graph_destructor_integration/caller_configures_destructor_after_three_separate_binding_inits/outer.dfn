@@ -1,0 +1,14 @@
+define the potential action<my.domain.com:my_lib:/outer> {
+    define the position<run> {
+        it may only contain particles where {
+            it has the action</middle>.
+            it has the position</payload>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        move the particle in position<run>::position</payload> to position<run>::action</middle>::position<run>.
+        destroy the particle in position<run>.
+    }
+}
