@@ -30,9 +30,9 @@ class Mover(literal.Action):
 @final
 class MoverGuarantees:
     def __init__(self):
-        self.position_source = literal.Guarantee()
-        self.position_destination = literal.Guarantee()
-        self.position_run = literal.Guarantee()
+        self.position_source = literal.Fanout()
+        self.position_destination = literal.Fanout()
+        self.position_run = literal.Fanout()
 
 
 @final

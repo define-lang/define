@@ -26,7 +26,7 @@ class Producer(literal.Action):
 @final
 class ProducerGuarantees:
     def __init__(self):
-        self.position_input__move__position_result = literal.Guarantee()
+        self.position_input__move__position_result = literal.Fanout()
 
 
 @final

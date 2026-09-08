@@ -20,8 +20,8 @@ class ExtraDestructor(literal.Action):
 @final
 class ExtraDestructorGuarantees:
     def __init__(self):
-        self.global_position_destinations__global_position_second = literal.Guarantee()
-        self.global_position_destinations__global_position_third__move__global_position_marker = literal.Guarantee()
+        self.global_position_destinations__global_position_second = literal.Fanout()
+        self.global_position_destinations__global_position_third__move__global_position_marker = literal.Fanout()
 
 
 @final

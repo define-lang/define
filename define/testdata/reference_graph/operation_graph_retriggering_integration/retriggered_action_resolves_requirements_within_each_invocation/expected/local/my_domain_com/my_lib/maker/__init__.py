@@ -26,7 +26,7 @@ class Maker(literal.Action):
 @final
 class MakerGuarantees:
     def __init__(self):
-        self.position_out = literal.Guarantee()
+        self.position_out = literal.Fanout()
 
 
 @final

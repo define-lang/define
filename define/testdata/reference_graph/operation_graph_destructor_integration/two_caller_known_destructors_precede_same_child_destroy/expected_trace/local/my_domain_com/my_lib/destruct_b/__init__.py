@@ -16,7 +16,7 @@ class DestructB(literal.Action):
 @final
 class DestructBGuarantees:
     def __init__(self):
-        self.global_position_required = literal.Guarantee()
+        self.global_position_required = literal.Fanout()
 
 
 @final

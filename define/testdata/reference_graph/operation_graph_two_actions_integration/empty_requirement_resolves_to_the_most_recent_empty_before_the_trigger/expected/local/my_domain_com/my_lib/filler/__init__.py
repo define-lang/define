@@ -26,8 +26,8 @@ class Filler(literal.Action):
 @final
 class FillerGuarantees:
     def __init__(self):
-        self.position_slot = literal.Guarantee()
-        self.position_trigger_pos = literal.Guarantee()
+        self.position_slot = literal.Fanout()
+        self.position_trigger_pos = literal.Fanout()
 
 
 @final

@@ -17,7 +17,7 @@ class ConstructB(literal.Action):
 @final
 class ConstructBGuarantees:
     def __init__(self):
-        self.global_position_inner = literal.Guarantee()
+        self.global_position_inner = literal.Fanout()
 
 
 @final

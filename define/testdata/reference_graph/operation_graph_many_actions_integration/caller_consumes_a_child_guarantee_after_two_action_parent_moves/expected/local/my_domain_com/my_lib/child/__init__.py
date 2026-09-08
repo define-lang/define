@@ -27,7 +27,7 @@ class Child(literal.Action):
 @final
 class ChildGuarantees:
     def __init__(self):
-        self.global_position_result = literal.Guarantee()
+        self.global_position_result = literal.Fanout()
 
 
 @final

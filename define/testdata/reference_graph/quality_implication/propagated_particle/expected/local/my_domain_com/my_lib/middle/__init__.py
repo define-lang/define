@@ -40,9 +40,9 @@ class Middle(literal.Action):
 @final
 class MiddleGuarantees:
     def __init__(self):
-        self.position_box = literal.Guarantee()
-        self.position_final = literal.Guarantee()
-        self.position_run = literal.Guarantee()
+        self.position_box = literal.Fanout()
+        self.position_final = literal.Fanout()
+        self.position_run = literal.Fanout()
 
 
 @final

@@ -38,8 +38,8 @@ class Inner(literal.Action):
 @final
 class InnerGuarantees:
     def __init__(self):
-        self.position_source__move__position_destination = literal.Guarantee()
-        self.position_destination__global_position_child = literal.Guarantee()
+        self.position_source__move__position_destination = literal.Fanout()
+        self.position_destination__global_position_child = literal.Fanout()
 
 
 @final

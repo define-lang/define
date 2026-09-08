@@ -31,7 +31,7 @@ class Filler(literal.Action):
 @final
 class FillerGuarantees:
     def __init__(self):
-        self.position_run__move__global_position_target = literal.Guarantee()
+        self.position_run__move__global_position_target = literal.Fanout()
 
 
 @final

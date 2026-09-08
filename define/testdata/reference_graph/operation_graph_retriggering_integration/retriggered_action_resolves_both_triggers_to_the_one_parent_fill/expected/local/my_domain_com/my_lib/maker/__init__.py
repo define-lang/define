@@ -31,7 +31,7 @@ class Maker(literal.Action):
 @final
 class MakerGuarantees:
     def __init__(self):
-        self.position_held__global_position_c = literal.Guarantee()
+        self.position_held__global_position_c = literal.Fanout()
 
 
 @final

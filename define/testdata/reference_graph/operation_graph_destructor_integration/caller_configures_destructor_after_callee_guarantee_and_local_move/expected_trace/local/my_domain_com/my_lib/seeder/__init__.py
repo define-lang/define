@@ -27,7 +27,7 @@ class Seeder(literal.Action):
 @final
 class SeederGuarantees:
     def __init__(self):
-        self.global_position_result = literal.Guarantee()
+        self.global_position_result = literal.Fanout()
 
 
 @final

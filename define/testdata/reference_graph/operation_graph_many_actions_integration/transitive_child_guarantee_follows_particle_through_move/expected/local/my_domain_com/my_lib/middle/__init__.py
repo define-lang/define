@@ -32,8 +32,8 @@ class Middle(literal.Action):
 @final
 class MiddleGuarantees:
     def __init__(self):
-        self.position_inner_parent = literal.Guarantee()
-        self.position_inner_parent__global_position_result_value = literal.Guarantee()
+        self.position_inner_parent = literal.Fanout()
+        self.position_inner_parent__global_position_result_value = literal.Fanout()
 
 
 @final

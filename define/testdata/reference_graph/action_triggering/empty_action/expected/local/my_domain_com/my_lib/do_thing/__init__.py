@@ -22,7 +22,7 @@ class DoThing(literal.Action):
 @final
 class DoThingGuarantees:
     def __init__(self):
-        self.position_pp = literal.Guarantee()
+        self.position_pp = literal.Fanout()
 
 
 @final

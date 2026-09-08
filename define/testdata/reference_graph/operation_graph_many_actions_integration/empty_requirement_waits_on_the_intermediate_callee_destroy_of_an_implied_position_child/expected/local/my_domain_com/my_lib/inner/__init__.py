@@ -28,7 +28,7 @@ class Inner(literal.Action):
 @final
 class InnerGuarantees:
     def __init__(self):
-        self.global_position_holder__global_position_a = literal.Guarantee()
+        self.global_position_holder__global_position_a = literal.Fanout()
 
 
 @final

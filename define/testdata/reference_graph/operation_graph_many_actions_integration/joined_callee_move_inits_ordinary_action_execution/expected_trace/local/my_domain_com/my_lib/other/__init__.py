@@ -44,8 +44,8 @@ class Other(literal.Action):
 @final
 class OtherGuarantees:
     def __init__(self):
-        self.position_source__move__position_destination = literal.Guarantee()
-        self.position_trigger_pos = literal.Guarantee()
+        self.position_source__move__position_destination = literal.Fanout()
+        self.position_trigger_pos = literal.Fanout()
 
 
 @final

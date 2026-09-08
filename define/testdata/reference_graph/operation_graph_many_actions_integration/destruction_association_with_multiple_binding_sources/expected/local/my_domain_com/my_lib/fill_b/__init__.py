@@ -28,7 +28,7 @@ class FillB(literal.Action):
 @final
 class FillBGuarantees:
     def __init__(self):
-        self.global_position_guaranteed_parent__global_position_child_b = literal.Guarantee()
+        self.global_position_guaranteed_parent__global_position_child_b = literal.Fanout()
 
 
 @final

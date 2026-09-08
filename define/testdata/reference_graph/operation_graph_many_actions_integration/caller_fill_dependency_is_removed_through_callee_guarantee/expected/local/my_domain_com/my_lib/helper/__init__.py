@@ -29,7 +29,7 @@ class Helper(literal.Action):
 @final
 class HelperGuarantees:
     def __init__(self):
-        self.global_position_slot__move__global_position_out = literal.Guarantee()
+        self.global_position_slot__move__global_position_out = literal.Fanout()
 
 
 @final

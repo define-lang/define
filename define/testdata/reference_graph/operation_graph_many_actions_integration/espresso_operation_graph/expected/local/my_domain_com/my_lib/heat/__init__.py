@@ -26,7 +26,7 @@ class Heat(literal.Action):
 @final
 class HeatGuarantees:
     def __init__(self):
-        self.position_cold_water__move__position_hot_water = literal.Guarantee()
+        self.position_cold_water__move__position_hot_water = literal.Fanout()
 
 
 @final

@@ -42,7 +42,7 @@ class Test(literal.EntryPoint):
 @final
 class TestGuarantees:
     def __init__(self):
-        self.global_position_holder = literal.Guarantee()
+        self.global_position_holder = literal.Fanout()
 
 
 @final

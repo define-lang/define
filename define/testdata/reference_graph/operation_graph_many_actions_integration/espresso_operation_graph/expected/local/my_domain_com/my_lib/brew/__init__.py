@@ -34,9 +34,9 @@ class Brew(literal.Action):
 @final
 class BrewGuarantees:
     def __init__(self):
-        self.position_cup = literal.Guarantee()
-        self.position_water = literal.Guarantee()
-        self.position_grounds__move__position_spent_puck = literal.Guarantee()
+        self.position_cup = literal.Fanout()
+        self.position_water = literal.Fanout()
+        self.position_grounds__move__position_spent_puck = literal.Fanout()
 
 
 @final

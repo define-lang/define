@@ -34,9 +34,9 @@ class Other(literal.Action):
 @final
 class OtherGuarantees:
     def __init__(self):
-        self.global_position_intermediate = literal.Guarantee()
-        self.global_position_input = literal.Guarantee()
-        self.position_sink = literal.Guarantee()
+        self.global_position_intermediate = literal.Fanout()
+        self.global_position_input = literal.Fanout()
+        self.position_sink = literal.Fanout()
 
 
 @final

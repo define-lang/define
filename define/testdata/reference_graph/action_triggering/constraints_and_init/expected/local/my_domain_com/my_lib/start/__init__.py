@@ -22,7 +22,7 @@ class Start(literal.Action):
 @final
 class StartGuarantees:
     def __init__(self):
-        self.position_pp = literal.Guarantee()
+        self.position_pp = literal.Fanout()
 
 
 @final

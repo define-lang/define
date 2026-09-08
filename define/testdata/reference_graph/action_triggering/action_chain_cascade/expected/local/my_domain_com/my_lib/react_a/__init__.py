@@ -31,8 +31,8 @@ class ReactA(literal.Action):
 @final
 class ReactAGuarantees:
     def __init__(self):
-        self.position_result = literal.Guarantee()
-        self.position_trigger = literal.Guarantee()
+        self.position_result = literal.Fanout()
+        self.position_trigger = literal.Fanout()
 
 
 @final

@@ -30,7 +30,7 @@ class Producer(literal.Action):
 @final
 class ProducerGuarantees:
     def __init__(self):
-        self.global_position_input__global_position_a__move__global_position_holder = literal.Guarantee()
+        self.global_position_input__global_position_a__move__global_position_holder = literal.Fanout()
 
 
 @final

@@ -26,7 +26,7 @@ class Move(literal.Action):
 @final
 class MoveGuarantees:
     def __init__(self):
-        self.position_input__move__position_output = literal.Guarantee()
+        self.position_input__move__position_output = literal.Fanout()
 
 
 @final

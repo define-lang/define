@@ -33,8 +33,8 @@ class KickOff(literal.Action):
 @final
 class KickOffGuarantees:
     def __init__(self):
-        self.position_output = literal.Guarantee()
-        self.position_trigger = literal.Guarantee()
+        self.position_output = literal.Fanout()
+        self.position_trigger = literal.Fanout()
 
 
 @final

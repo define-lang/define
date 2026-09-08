@@ -27,7 +27,7 @@ class Triggered(literal.Action):
 @final
 class TriggeredGuarantees:
     def __init__(self):
-        self.position_run__move__global_position_implied = literal.Guarantee()
+        self.position_run__move__global_position_implied = literal.Fanout()
 
 
 @final

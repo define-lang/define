@@ -27,8 +27,8 @@ class Worker(literal.Action):
 @final
 class WorkerGuarantees:
     def __init__(self):
-        self.position_source = literal.Guarantee()
-        self.global_position_destination = literal.Guarantee()
+        self.position_source = literal.Fanout()
+        self.global_position_destination = literal.Fanout()
 
 
 @final

@@ -38,8 +38,8 @@ class Carrier(literal.Action):
 @final
 class CarrierGuarantees:
     def __init__(self):
-        self.position_source__move__position_result = literal.Guarantee()
-        self.position_run = literal.Guarantee()
+        self.position_source__move__position_result = literal.Fanout()
+        self.position_run = literal.Fanout()
 
 
 @final

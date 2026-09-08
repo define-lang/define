@@ -16,7 +16,7 @@ class Other(literal.Action):
 @final
 class OtherGuarantees:
     def __init__(self):
-        self.global_position_filled = literal.Guarantee()
+        self.global_position_filled = literal.Fanout()
 
 
 @final

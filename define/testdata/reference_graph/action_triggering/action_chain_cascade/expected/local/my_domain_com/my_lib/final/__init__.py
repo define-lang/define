@@ -22,7 +22,7 @@ class Final(literal.Action):
 @final
 class FinalGuarantees:
     def __init__(self):
-        self.position_trigger = literal.Guarantee()
+        self.position_trigger = literal.Fanout()
 
 
 @final

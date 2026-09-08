@@ -22,7 +22,7 @@ class PerformOperation(literal.Action):
 @final
 class PerformOperationGuarantees:
     def __init__(self):
-        self.position_operation_trigger = literal.Guarantee()
+        self.position_operation_trigger = literal.Fanout()
 
 
 @final

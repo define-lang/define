@@ -22,7 +22,7 @@ class ReactB(literal.Action):
 @final
 class ReactBGuarantees:
     def __init__(self):
-        self.position_trigger = literal.Guarantee()
+        self.position_trigger = literal.Fanout()
 
 
 @final

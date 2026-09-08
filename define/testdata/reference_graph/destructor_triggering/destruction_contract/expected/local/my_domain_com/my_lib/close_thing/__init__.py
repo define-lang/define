@@ -26,7 +26,7 @@ class CloseThing(literal.Action):
 @final
 class CloseThingGuarantees:
     def __init__(self):
-        self.position_target = literal.Guarantee()
+        self.position_target = literal.Fanout()
 
 
 @final

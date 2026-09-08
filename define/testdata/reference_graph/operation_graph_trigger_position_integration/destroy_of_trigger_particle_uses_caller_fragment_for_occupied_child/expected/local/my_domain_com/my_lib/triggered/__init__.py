@@ -27,8 +27,8 @@ class Triggered(literal.Action):
 @final
 class TriggeredGuarantees:
     def __init__(self):
-        self.position_run = literal.Guarantee()
-        self.global_position_target = literal.Guarantee()
+        self.position_run = literal.Fanout()
+        self.global_position_target = literal.Fanout()
 
 
 @final

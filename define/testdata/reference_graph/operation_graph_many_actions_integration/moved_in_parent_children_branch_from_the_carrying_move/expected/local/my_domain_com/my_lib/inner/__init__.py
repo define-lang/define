@@ -33,8 +33,8 @@ class Inner(literal.Action):
 @final
 class InnerGuarantees:
     def __init__(self):
-        self.position_input__global_position_parent__global_position_a = literal.Guarantee()
-        self.position_input__global_position_parent__global_position_b = literal.Guarantee()
+        self.position_input__global_position_parent__global_position_a = literal.Fanout()
+        self.position_input__global_position_parent__global_position_b = literal.Fanout()
 
 
 @final

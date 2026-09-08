@@ -22,7 +22,7 @@ class Constructor(literal.Action):
 @final
 class ConstructorGuarantees:
     def __init__(self):
-        self.position_output = literal.Guarantee()
+        self.position_output = literal.Fanout()
 
 
 @final

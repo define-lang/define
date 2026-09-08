@@ -58,9 +58,9 @@ reviewed before implementation diverges.
 
 ## Guarantees
 
-- `Guarantee.inits` synchronously performs every Action Execution init
-  associated with the Guarantee. One callable performs all init at the same plan
-  point, and every init completes before any ordinary consumer is released.
+- `Fanout.inits` synchronously performs every Action Execution init associated
+  with the Guarantee. One callable performs all init at the same plan point, and
+  every init completes before any ordinary consumer is released.
 - Guarantee consumers are actual Action Fragment or Binding Hole tasks. Do not
   add a method whose only role is to dispatch a predetermined consumer list.
 - Register a propagated Guarantee consumer once on the terminal Guarantee

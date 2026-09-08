@@ -31,7 +31,7 @@ class Outer(literal.Action):
 @final
 class OuterGuarantees:
     def __init__(self):
-        self.position_run = literal.Guarantee()
+        self.position_run = literal.Fanout()
 
 
 @final

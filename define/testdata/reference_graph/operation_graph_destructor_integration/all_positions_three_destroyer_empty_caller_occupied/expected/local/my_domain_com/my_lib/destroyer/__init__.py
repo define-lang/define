@@ -35,7 +35,7 @@ class Destroyer(literal.Action):
 @final
 class DestroyerGuarantees:
     def __init__(self):
-        self.position_target = literal.Guarantee()
+        self.position_target = literal.Fanout()
 
 
 @final

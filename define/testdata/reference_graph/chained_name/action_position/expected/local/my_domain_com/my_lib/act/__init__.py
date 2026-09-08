@@ -31,8 +31,8 @@ class Act(literal.Action):
 @final
 class ActGuarantees:
     def __init__(self):
-        self.position_trigger_pos = literal.Guarantee()
-        self.position_run = literal.Guarantee()
+        self.position_trigger_pos = literal.Fanout()
+        self.position_run = literal.Fanout()
 
 
 @final

@@ -30,7 +30,7 @@ class Middle(literal.Action):
 @final
 class MiddleGuarantees:
     def __init__(self):
-        self.global_position_shared__global_position_marker = literal.Guarantee()
+        self.global_position_shared__global_position_marker = literal.Fanout()
 
 
 @final

@@ -22,7 +22,7 @@ class First(literal.Action):
 @final
 class FirstGuarantees:
     def __init__(self):
-        self.position_trigger_pos = literal.Guarantee()
+        self.position_trigger_pos = literal.Fanout()
 
 
 @final

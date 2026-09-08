@@ -27,7 +27,7 @@ class Forwarder(literal.Action):
 @final
 class ForwarderGuarantees:
     def __init__(self):
-        self.position_trigger_pos = literal.Guarantee()
+        self.position_trigger_pos = literal.Fanout()
 
 
 @final

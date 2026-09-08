@@ -18,8 +18,8 @@ class FirstDestructor(literal.Action):
 @final
 class FirstDestructorGuarantees:
     def __init__(self):
-        self.global_position_first = literal.Guarantee()
-        self.global_position_marker = literal.Guarantee()
+        self.global_position_first = literal.Fanout()
+        self.global_position_marker = literal.Fanout()
 
 
 @final

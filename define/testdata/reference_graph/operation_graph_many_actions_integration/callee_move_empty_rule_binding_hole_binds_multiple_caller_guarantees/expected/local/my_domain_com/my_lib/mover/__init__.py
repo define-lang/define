@@ -37,7 +37,7 @@ class Mover(literal.Action):
 @final
 class MoverGuarantees:
     def __init__(self):
-        self.global_position_parent__move__position_dest = literal.Guarantee()
+        self.global_position_parent__move__position_dest = literal.Fanout()
 
 
 @final

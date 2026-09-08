@@ -33,8 +33,8 @@ class Test(literal.EntryPoint):
 @final
 class TestGuarantees:
     def __init__(self):
-        self.global_position_left = literal.Guarantee()
-        self.global_position_right = literal.Guarantee()
+        self.global_position_left = literal.Fanout()
+        self.global_position_right = literal.Fanout()
 
 
 @final

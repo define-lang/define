@@ -30,9 +30,9 @@ class Process(literal.Action):
 @final
 class ProcessGuarantees:
     def __init__(self):
-        self.position_input = literal.Guarantee()
-        self.position_config = literal.Guarantee()
-        self.position_trigger = literal.Guarantee()
+        self.position_input = literal.Fanout()
+        self.position_config = literal.Fanout()
+        self.position_trigger = literal.Fanout()
 
 
 @final

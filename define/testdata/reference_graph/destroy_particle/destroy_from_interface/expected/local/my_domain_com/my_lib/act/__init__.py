@@ -26,8 +26,8 @@ class Act(literal.Action):
 @final
 class ActGuarantees:
     def __init__(self):
-        self.position_src = literal.Guarantee()
-        self.position_trigger = literal.Guarantee()
+        self.position_src = literal.Fanout()
+        self.position_trigger = literal.Fanout()
 
 
 @final

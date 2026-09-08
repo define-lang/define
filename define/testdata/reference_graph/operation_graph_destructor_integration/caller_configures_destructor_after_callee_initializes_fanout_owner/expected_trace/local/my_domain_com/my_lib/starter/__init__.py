@@ -29,7 +29,7 @@ class Starter(literal.Action):
 @final
 class StarterGuarantees:
     def __init__(self):
-        self.position_run = literal.Guarantee()
+        self.position_run = literal.Fanout()
 
 
 @final

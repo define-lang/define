@@ -16,7 +16,7 @@ class SecondDestructor(literal.Action):
 @final
 class SecondDestructorGuarantees:
     def __init__(self):
-        self.global_position_marker = literal.Guarantee()
+        self.global_position_marker = literal.Fanout()
 
 
 @final

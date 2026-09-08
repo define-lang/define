@@ -22,7 +22,7 @@ class Destructor(literal.Action):
 @final
 class DestructorGuarantees:
     def __init__(self):
-        self.position_item = literal.Guarantee()
+        self.position_item = literal.Fanout()
 
 
 @final

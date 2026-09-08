@@ -6,7 +6,7 @@
 class {{ guarantees.class_name }}:
     def __init__(self):
         {% for guarantee_name in guarantees.guarantee_names %}
-        self.{{ guarantee_name }} = literal.Guarantee()
+        self.{{ guarantee_name }} = literal.Fanout()
         {% endfor %}
     {% endif %}
 {% endmacro %}

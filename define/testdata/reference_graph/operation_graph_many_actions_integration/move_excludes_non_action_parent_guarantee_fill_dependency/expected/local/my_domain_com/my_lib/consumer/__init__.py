@@ -29,7 +29,7 @@ class Consumer(literal.Action):
 @final
 class ConsumerGuarantees:
     def __init__(self):
-        self.global_position_box__global_position_item__move__global_position_box__global_position_destination = literal.Guarantee()
+        self.global_position_box__global_position_item__move__global_position_box__global_position_destination = literal.Fanout()
 
 
 @final

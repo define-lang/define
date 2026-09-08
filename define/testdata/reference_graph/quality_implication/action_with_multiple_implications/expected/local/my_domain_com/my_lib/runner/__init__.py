@@ -29,9 +29,9 @@ class Runner(literal.Action):
 @final
 class RunnerGuarantees:
     def __init__(self):
-        self.global_position_marker_a = literal.Guarantee()
-        self.global_position_marker_b = literal.Guarantee()
-        self.position_run = literal.Guarantee()
+        self.global_position_marker_a = literal.Fanout()
+        self.global_position_marker_b = literal.Fanout()
+        self.position_run = literal.Fanout()
 
 
 @final

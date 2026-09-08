@@ -38,9 +38,9 @@ class Act(literal.Action):
 @final
 class ActGuarantees:
     def __init__(self):
-        self.position_iface_dest = literal.Guarantee()
-        self.position_chain_dest = literal.Guarantee()
-        self.position_trigger = literal.Guarantee()
+        self.position_iface_dest = literal.Fanout()
+        self.position_chain_dest = literal.Fanout()
+        self.position_trigger = literal.Fanout()
 
 
 @final

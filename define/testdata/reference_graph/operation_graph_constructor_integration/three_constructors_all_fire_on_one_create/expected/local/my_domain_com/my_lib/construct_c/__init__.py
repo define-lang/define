@@ -16,7 +16,7 @@ class ConstructC(literal.Action):
 @final
 class ConstructCGuarantees:
     def __init__(self):
-        self.global_position_marker_c = literal.Guarantee()
+        self.global_position_marker_c = literal.Fanout()
 
 
 @final

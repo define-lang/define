@@ -51,12 +51,12 @@ class Mover(literal.Action):
 @final
 class MoverGuarantees:
     def __init__(self):
-        self.global_position_guaranteed_parent = literal.Guarantee()
-        self.global_position_caller_parent = literal.Guarantee()
-        self.position_discard = literal.Guarantee()
-        self.position_guaranteed_destination = literal.Guarantee()
-        self.position_caller_destination = literal.Guarantee()
-        self.position_trigger_pos = literal.Guarantee()
+        self.global_position_guaranteed_parent = literal.Fanout()
+        self.global_position_caller_parent = literal.Fanout()
+        self.position_discard = literal.Fanout()
+        self.position_guaranteed_destination = literal.Fanout()
+        self.position_caller_destination = literal.Fanout()
+        self.position_trigger_pos = literal.Fanout()
 
 
 @final

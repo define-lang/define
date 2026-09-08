@@ -26,7 +26,7 @@ class Triggered(literal.Action):
 @final
 class TriggeredGuarantees:
     def __init__(self):
-        self.position_run__move__position_dest = literal.Guarantee()
+        self.position_run__move__position_dest = literal.Fanout()
 
 
 @final

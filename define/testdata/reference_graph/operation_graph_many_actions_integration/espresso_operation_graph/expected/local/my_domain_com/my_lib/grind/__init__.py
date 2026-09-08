@@ -26,7 +26,7 @@ class Grind(literal.Action):
 @final
 class GrindGuarantees:
     def __init__(self):
-        self.position_beans__move__position_grounds = literal.Guarantee()
+        self.position_beans__move__position_grounds = literal.Fanout()
 
 
 @final

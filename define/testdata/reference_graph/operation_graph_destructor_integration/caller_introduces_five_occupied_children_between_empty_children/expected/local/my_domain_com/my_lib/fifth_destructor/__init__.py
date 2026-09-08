@@ -18,8 +18,8 @@ class FifthDestructor(literal.Action):
 @final
 class FifthDestructorGuarantees:
     def __init__(self):
-        self.global_position_fifth = literal.Guarantee()
-        self.global_position_marker = literal.Guarantee()
+        self.global_position_fifth = literal.Fanout()
+        self.global_position_marker = literal.Fanout()
 
 
 @final

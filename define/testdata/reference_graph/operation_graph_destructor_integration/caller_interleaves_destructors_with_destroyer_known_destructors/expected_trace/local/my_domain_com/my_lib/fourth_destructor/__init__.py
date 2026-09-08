@@ -16,7 +16,7 @@ class FourthDestructor(literal.Action):
 @final
 class FourthDestructorGuarantees:
     def __init__(self):
-        self.global_position_marker = literal.Guarantee()
+        self.global_position_marker = literal.Fanout()
 
 
 @final

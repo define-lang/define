@@ -23,9 +23,9 @@ def _local_position(
     return literal.LocalPosition(name, constraints, scheduler=scheduler)
 
 
-class TestGuarantee:
+class TestFanout:
     def test_publish_without_consumers(self):
-        literal.Guarantee().publish(literal.Scheduler())
+        literal.Fanout().publish(literal.Scheduler())
 
     def test_init_replaces_a_consumer_before_it_can_run(self):
         scheduler = literal.Scheduler(max_threads=1)
@@ -34,7 +34,7 @@ class TestGuarantee:
         def original():
             released.append("original")
 
-        guarantee = literal.Guarantee(consumers=[original])
+        guarantee = literal.Fanout(consumers=[original])
 
         def configure():
             guarantee.consumers.remove(original)
@@ -46,8 +46,8 @@ class TestGuarantee:
         assert released == ["replacement"]
 
     def test_lists_are_distinct_between_guarantees(self):
-        first = literal.Guarantee()
-        second = literal.Guarantee()
+        first = literal.Fanout()
+        second = literal.Fanout()
 
         first.inits.append(lambda: None)
         first.consumers.append(lambda: None)
@@ -59,7 +59,7 @@ class TestGuarantee:
         scheduler = literal.Scheduler(max_threads=1)
         init_order: list[str] = []
         released: list[str] = []
-        guarantee = literal.Guarantee()
+        guarantee = literal.Fanout()
 
         def release(name: str):
             assert init_order == ["first", "second"]
@@ -89,7 +89,7 @@ class TestGuarantee:
     def test_publish_releases_callee_and_caller_consumers(self):
         scheduler = literal.Scheduler(max_threads=1)
         released: list[str] = []
-        guarantee = literal.Guarantee()
+        guarantee = literal.Fanout()
         guarantee.consumers.append(lambda: released.append("caller"))
 
         class Entry(literal.EntryPoint):
@@ -109,7 +109,7 @@ class TestGuarantee:
         publishing_thread = threading.current_thread()
         consumer_threads: dict[str, threading.Thread] = {}
         consumers_started = threading.Barrier(3)
-        guarantee = literal.Guarantee()
+        guarantee = literal.Fanout()
 
         def consume(name: str):
             consumer_threads[name] = threading.current_thread()

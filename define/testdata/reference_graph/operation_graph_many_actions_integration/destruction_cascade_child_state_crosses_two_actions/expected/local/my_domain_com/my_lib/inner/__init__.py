@@ -22,7 +22,7 @@ class Inner(literal.Action):
 @final
 class InnerGuarantees:
     def __init__(self):
-        self.position_inner_run = literal.Guarantee()
+        self.position_inner_run = literal.Fanout()
 
 
 @final

@@ -22,7 +22,7 @@ class Child(literal.Action):
 @final
 class ChildGuarantees:
     def __init__(self):
-        self.position_trigger_pos = literal.Guarantee()
+        self.position_trigger_pos = literal.Fanout()
 
 
 @final

@@ -16,7 +16,7 @@ class DestructSibling(literal.Action):
 @final
 class DestructSiblingGuarantees:
     def __init__(self):
-        self.global_position_sibling = literal.Guarantee()
+        self.global_position_sibling = literal.Fanout()
 
 
 @final

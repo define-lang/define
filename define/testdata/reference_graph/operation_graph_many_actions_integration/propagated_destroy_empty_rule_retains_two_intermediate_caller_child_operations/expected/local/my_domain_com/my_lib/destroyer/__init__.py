@@ -27,8 +27,8 @@ class Destroyer(literal.Action):
 @final
 class DestroyerGuarantees:
     def __init__(self):
-        self.global_position_parent = literal.Guarantee()
-        self.position_trigger_pos = literal.Guarantee()
+        self.global_position_parent = literal.Fanout()
+        self.position_trigger_pos = literal.Fanout()
 
 
 @final

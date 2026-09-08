@@ -30,8 +30,8 @@ class Other(literal.Action):
 @final
 class OtherGuarantees:
     def __init__(self):
-        self.position_output = literal.Guarantee()
-        self.position_late = literal.Guarantee()
+        self.position_output = literal.Fanout()
+        self.position_late = literal.Fanout()
 
 
 @final

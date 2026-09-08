@@ -27,7 +27,7 @@ class Middle(literal.Action):
 @final
 class MiddleGuarantees:
     def __init__(self):
-        self.position_trigger_pos = literal.Guarantee()
+        self.position_trigger_pos = literal.Fanout()
 
 
 @final

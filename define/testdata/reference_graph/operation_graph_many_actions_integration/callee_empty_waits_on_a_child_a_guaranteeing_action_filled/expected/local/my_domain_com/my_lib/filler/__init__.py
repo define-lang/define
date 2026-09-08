@@ -29,7 +29,7 @@ class Filler(literal.Action):
 @final
 class FillerGuarantees:
     def __init__(self):
-        self.global_position_parent__global_position_child__global_position_gc = literal.Guarantee()
+        self.global_position_parent__global_position_child__global_position_gc = literal.Fanout()
 
 
 @final

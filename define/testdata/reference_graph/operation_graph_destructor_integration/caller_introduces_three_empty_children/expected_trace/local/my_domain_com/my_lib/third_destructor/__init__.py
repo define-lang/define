@@ -18,8 +18,8 @@ class ThirdDestructor(literal.Action):
 @final
 class ThirdDestructorGuarantees:
     def __init__(self):
-        self.global_position_third = literal.Guarantee()
-        self.global_position_marker = literal.Guarantee()
+        self.global_position_third = literal.Fanout()
+        self.global_position_marker = literal.Fanout()
 
 
 @final

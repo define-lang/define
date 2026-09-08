@@ -25,7 +25,7 @@ class Test(literal.EntryPoint):
 @final
 class TestGuarantees:
     def __init__(self):
-        self.global_position_parent = literal.Guarantee()
+        self.global_position_parent = literal.Fanout()
 
 
 @final

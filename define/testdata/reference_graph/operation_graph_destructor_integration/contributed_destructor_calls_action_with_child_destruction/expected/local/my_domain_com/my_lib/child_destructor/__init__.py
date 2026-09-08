@@ -16,7 +16,7 @@ class ChildDestructor(literal.Action):
 @final
 class ChildDestructorGuarantees:
     def __init__(self):
-        self.global_position_child_marker = literal.Guarantee()
+        self.global_position_child_marker = literal.Fanout()
 
 
 @final

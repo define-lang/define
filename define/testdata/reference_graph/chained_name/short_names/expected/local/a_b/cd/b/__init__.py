@@ -22,7 +22,7 @@ class B(literal.Action):
 @final
 class BGuarantees:
     def __init__(self):
-        self.position_t = literal.Guarantee()
+        self.position_t = literal.Fanout()
 
 
 @final

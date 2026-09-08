@@ -27,8 +27,8 @@ class Implied(literal.Action):
 @final
 class ImpliedGuarantees:
     def __init__(self):
-        self.global_position_transitive_implied = literal.Guarantee()
-        self.position_run = literal.Guarantee()
+        self.global_position_transitive_implied = literal.Fanout()
+        self.position_run = literal.Fanout()
 
 
 @final

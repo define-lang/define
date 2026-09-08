@@ -22,7 +22,7 @@ class InnerDestroyer(literal.Action):
 @final
 class InnerDestroyerGuarantees:
     def __init__(self):
-        self.position_target = literal.Guarantee()
+        self.position_target = literal.Fanout()
 
 
 @final

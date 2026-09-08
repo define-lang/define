@@ -18,8 +18,8 @@ class Worker(literal.Action):
 @final
 class WorkerGuarantees:
     def __init__(self):
-        self.global_position_first_interface = literal.Guarantee()
-        self.global_position_second_interface = literal.Guarantee()
+        self.global_position_first_interface = literal.Fanout()
+        self.global_position_second_interface = literal.Fanout()
 
 
 @final

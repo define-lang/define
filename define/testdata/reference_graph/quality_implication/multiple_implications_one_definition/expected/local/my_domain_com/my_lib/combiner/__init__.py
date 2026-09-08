@@ -18,8 +18,8 @@ class Combiner(literal.Action):
 @final
 class CombinerGuarantees:
     def __init__(self):
-        self.global_position_first_marker = literal.Guarantee()
-        self.global_position_second_marker = literal.Guarantee()
+        self.global_position_first_marker = literal.Fanout()
+        self.global_position_second_marker = literal.Fanout()
 
 
 @final

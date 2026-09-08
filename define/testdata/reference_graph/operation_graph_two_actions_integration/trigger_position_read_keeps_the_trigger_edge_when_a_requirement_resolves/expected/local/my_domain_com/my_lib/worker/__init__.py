@@ -26,7 +26,7 @@ class Worker(literal.Action):
 @final
 class WorkerGuarantees:
     def __init__(self):
-        self.position_in__move__position_out = literal.Guarantee()
+        self.position_in__move__position_out = literal.Fanout()
 
 
 @final

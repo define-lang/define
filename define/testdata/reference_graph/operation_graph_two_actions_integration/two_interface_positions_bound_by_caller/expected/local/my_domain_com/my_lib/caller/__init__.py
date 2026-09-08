@@ -38,9 +38,9 @@ class Caller(literal.Action):
 @final
 class CallerGuarantees:
     def __init__(self):
-        self.position_first_gateway = literal.Guarantee()
-        self.position_second_gateway = literal.Guarantee()
-        self.position_run = literal.Guarantee()
+        self.position_first_gateway = literal.Fanout()
+        self.position_second_gateway = literal.Fanout()
+        self.position_run = literal.Fanout()
 
 
 @final

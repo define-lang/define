@@ -32,7 +32,7 @@ class Other(literal.Action):
 @final
 class OtherGuarantees:
     def __init__(self):
-        self.position_box__global_position_child__global_position_grandchild = literal.Guarantee()
+        self.position_box__global_position_child__global_position_grandchild = literal.Fanout()
 
 
 @final

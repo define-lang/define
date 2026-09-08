@@ -38,7 +38,7 @@ class Other(literal.Action):
 @final
 class OtherGuarantees:
     def __init__(self):
-        self.position_source__move__position_holder = literal.Guarantee()
+        self.position_source__move__position_holder = literal.Fanout()
 
 
 @final

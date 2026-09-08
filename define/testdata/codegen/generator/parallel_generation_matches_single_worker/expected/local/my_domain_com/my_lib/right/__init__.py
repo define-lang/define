@@ -27,7 +27,7 @@ class Right(literal.Action):
 @final
 class RightGuarantees:
     def __init__(self):
-        self.position_trigger = literal.Guarantee()
+        self.position_trigger = literal.Fanout()
 
 
 @final

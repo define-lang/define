@@ -26,7 +26,7 @@ class Later(literal.Action):
 @final
 class LaterGuarantees:
     def __init__(self):
-        self.position_target = literal.Guarantee()
+        self.position_target = literal.Fanout()
 
 
 @final

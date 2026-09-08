@@ -43,10 +43,10 @@ class Runner(literal.Action):
 @final
 class RunnerGuarantees:
     def __init__(self):
-        self.global_position_marker = literal.Guarantee()
-        self.position_input_a = literal.Guarantee()
-        self.position_input_b = literal.Guarantee()
-        self.position_run = literal.Guarantee()
+        self.global_position_marker = literal.Fanout()
+        self.position_input_a = literal.Fanout()
+        self.position_input_b = literal.Fanout()
+        self.position_run = literal.Fanout()
 
 
 @final

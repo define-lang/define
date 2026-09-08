@@ -28,7 +28,7 @@ class MakeThing(literal.Action):
 @final
 class MakeThingGuarantees:
     def __init__(self):
-        self.position_result = literal.Guarantee()
+        self.position_result = literal.Fanout()
 
 
 @final

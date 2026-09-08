@@ -30,8 +30,8 @@ class Worker(literal.Action):
 @final
 class WorkerGuarantees:
     def __init__(self):
-        self.position_second = literal.Guarantee()
-        self.position_third = literal.Guarantee()
+        self.position_second = literal.Fanout()
+        self.position_third = literal.Fanout()
 
 
 @final

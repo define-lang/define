@@ -33,8 +33,8 @@ class Worker(literal.Action):
 @final
 class WorkerGuarantees:
     def __init__(self):
-        self.position_state__global_position_occupied = literal.Guarantee()
-        self.position_source__move__position_state__global_position_target = literal.Guarantee()
+        self.position_state__global_position_occupied = literal.Fanout()
+        self.position_source__move__position_state__global_position_target = literal.Fanout()
 
 
 @final

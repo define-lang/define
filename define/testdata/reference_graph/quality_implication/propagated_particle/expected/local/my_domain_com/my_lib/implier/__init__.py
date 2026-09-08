@@ -16,7 +16,7 @@ class Implier(literal.Action):
 @final
 class ImplierGuarantees:
     def __init__(self):
-        self.global_position_implied = literal.Guarantee()
+        self.global_position_implied = literal.Fanout()
 
 
 @final

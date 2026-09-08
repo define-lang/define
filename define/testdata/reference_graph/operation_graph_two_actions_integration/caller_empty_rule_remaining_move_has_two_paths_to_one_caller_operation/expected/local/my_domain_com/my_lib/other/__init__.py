@@ -40,10 +40,10 @@ class Other(literal.Action):
 @final
 class OtherGuarantees:
     def __init__(self):
-        self.position_holder_a = literal.Guarantee()
-        self.position_holder_b = literal.Guarantee()
-        self.global_position_input = literal.Guarantee()
-        self.position_holder_c = literal.Guarantee()
+        self.position_holder_a = literal.Fanout()
+        self.position_holder_b = literal.Fanout()
+        self.global_position_input = literal.Fanout()
+        self.position_holder_c = literal.Fanout()
 
 
 @final

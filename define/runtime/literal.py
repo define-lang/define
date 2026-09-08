@@ -27,7 +27,7 @@ type DestructionContinuation = Callable[..., None]
 
 
 @dataclasses.dataclass(slots=True)
-class Guarantee:
+class Fanout:
     """Tasks released when one Automated Action Guarantee is published."""
 
     inits: list[Task] = dataclasses.field(default_factory=list)

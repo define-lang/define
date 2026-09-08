@@ -16,7 +16,7 @@ class KnownDestructor(literal.Action):
 @final
 class KnownDestructorGuarantees:
     def __init__(self):
-        self.global_position_marker = literal.Guarantee()
+        self.global_position_marker = literal.Fanout()
 
 
 @final

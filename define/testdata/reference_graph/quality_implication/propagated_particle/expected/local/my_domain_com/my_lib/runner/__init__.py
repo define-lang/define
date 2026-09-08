@@ -32,8 +32,8 @@ class Runner(literal.Action):
 @final
 class RunnerGuarantees:
     def __init__(self):
-        self.position_wrapper = literal.Guarantee()
-        self.position_run = literal.Guarantee()
+        self.position_wrapper = literal.Fanout()
+        self.position_run = literal.Fanout()
 
 
 @final

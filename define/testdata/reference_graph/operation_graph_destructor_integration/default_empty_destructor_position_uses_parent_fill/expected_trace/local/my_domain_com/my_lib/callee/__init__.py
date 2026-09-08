@@ -31,7 +31,7 @@ class Callee(literal.Action):
 @final
 class CalleeGuarantees:
     def __init__(self):
-        self.position_src = literal.Guarantee()
+        self.position_src = literal.Fanout()
 
 
 @final

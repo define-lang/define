@@ -29,7 +29,7 @@ class Inner(literal.Action):
 @final
 class InnerGuarantees:
     def __init__(self):
-        self.global_position_input__move__global_position_destination = literal.Guarantee()
+        self.global_position_input__move__global_position_destination = literal.Fanout()
 
 
 @final

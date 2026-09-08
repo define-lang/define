@@ -31,8 +31,8 @@ class Triggered(literal.Action):
 @final
 class TriggeredGuarantees:
     def __init__(self):
-        self.position_input__global_position_child = literal.Guarantee()
-        self.position_run = literal.Guarantee()
+        self.position_input__global_position_child = literal.Fanout()
+        self.position_run = literal.Fanout()
 
 
 @final

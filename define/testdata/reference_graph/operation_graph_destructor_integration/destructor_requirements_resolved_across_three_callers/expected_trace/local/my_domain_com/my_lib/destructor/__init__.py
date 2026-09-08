@@ -20,9 +20,9 @@ class Destructor(literal.Action):
 @final
 class DestructorGuarantees:
     def __init__(self):
-        self.global_position_callee_known = literal.Guarantee()
-        self.global_position_middle_known = literal.Guarantee()
-        self.global_position_creator_known = literal.Guarantee()
+        self.global_position_callee_known = literal.Fanout()
+        self.global_position_middle_known = literal.Fanout()
+        self.global_position_creator_known = literal.Fanout()
 
 
 @final

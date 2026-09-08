@@ -33,8 +33,8 @@ class Inner(literal.Action):
 @final
 class InnerGuarantees:
     def __init__(self):
-        self.position_result = literal.Guarantee()
-        self.position_result__global_position_marker = literal.Guarantee()
+        self.position_result = literal.Fanout()
+        self.position_result__global_position_marker = literal.Fanout()
 
 
 @final

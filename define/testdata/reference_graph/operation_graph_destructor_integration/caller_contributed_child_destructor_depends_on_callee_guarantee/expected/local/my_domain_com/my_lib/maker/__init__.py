@@ -26,8 +26,8 @@ class Maker(literal.Action):
 @final
 class MakerGuarantees:
     def __init__(self):
-        self.position_result = literal.Guarantee()
-        self.position_trigger_pos = literal.Guarantee()
+        self.position_result = literal.Fanout()
+        self.position_trigger_pos = literal.Fanout()
 
 
 @final

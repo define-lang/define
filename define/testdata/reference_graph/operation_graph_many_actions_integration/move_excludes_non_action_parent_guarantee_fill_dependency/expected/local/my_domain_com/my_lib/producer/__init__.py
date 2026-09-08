@@ -29,7 +29,7 @@ class Producer(literal.Action):
 @final
 class ProducerGuarantees:
     def __init__(self):
-        self.global_position_input__move__global_position_box = literal.Guarantee()
+        self.global_position_input__move__global_position_box = literal.Fanout()
 
 
 @final

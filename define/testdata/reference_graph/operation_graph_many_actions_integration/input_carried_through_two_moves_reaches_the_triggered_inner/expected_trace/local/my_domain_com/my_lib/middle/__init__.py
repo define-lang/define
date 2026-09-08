@@ -32,7 +32,7 @@ class Middle(literal.Action):
 @final
 class MiddleGuarantees:
     def __init__(self):
-        self.position_input = literal.Guarantee()
+        self.position_input = literal.Fanout()
 
 
 @final

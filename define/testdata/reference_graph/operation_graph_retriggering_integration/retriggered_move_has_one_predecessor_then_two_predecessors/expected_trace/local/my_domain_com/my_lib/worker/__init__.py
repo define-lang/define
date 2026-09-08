@@ -35,8 +35,8 @@ class Worker(literal.Action):
 @final
 class WorkerGuarantees:
     def __init__(self):
-        self.position_item = literal.Guarantee()
-        self.position_trigger_pos = literal.Guarantee()
+        self.position_item = literal.Fanout()
+        self.position_trigger_pos = literal.Fanout()
 
 
 @final

@@ -21,10 +21,10 @@ class Destructor(literal.Action):
 @final
 class DestructorGuarantees:
     def __init__(self):
-        self.global_position_occupied_first = literal.Guarantee()
-        self.global_position_occupied_first__global_position_transitive = literal.Guarantee()
-        self.global_position_empty = literal.Guarantee()
-        self.global_position_occupied_last = literal.Guarantee()
+        self.global_position_occupied_first = literal.Fanout()
+        self.global_position_occupied_first__global_position_transitive = literal.Fanout()
+        self.global_position_empty = literal.Fanout()
+        self.global_position_occupied_last = literal.Fanout()
 
 
 @final

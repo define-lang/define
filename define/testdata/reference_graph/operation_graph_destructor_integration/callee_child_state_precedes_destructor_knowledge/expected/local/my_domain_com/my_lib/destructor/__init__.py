@@ -18,8 +18,8 @@ class Destructor(literal.Action):
 @final
 class DestructorGuarantees:
     def __init__(self):
-        self.global_position_occupied = literal.Guarantee()
-        self.global_position_empty = literal.Guarantee()
+        self.global_position_occupied = literal.Fanout()
+        self.global_position_empty = literal.Fanout()
 
 
 @final

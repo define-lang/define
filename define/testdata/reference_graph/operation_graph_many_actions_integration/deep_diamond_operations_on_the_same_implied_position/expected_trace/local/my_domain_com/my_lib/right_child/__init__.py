@@ -27,7 +27,7 @@ class RightChild(literal.Action):
 @final
 class RightChildGuarantees:
     def __init__(self):
-        self.global_position_marker = literal.Guarantee()
+        self.global_position_marker = literal.Fanout()
 
 
 @final

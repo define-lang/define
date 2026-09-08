@@ -22,7 +22,7 @@ class Shared(literal.Action):
 @final
 class SharedGuarantees:
     def __init__(self):
-        self.position_trigger = literal.Guarantee()
+        self.position_trigger = literal.Fanout()
 
 
 @final

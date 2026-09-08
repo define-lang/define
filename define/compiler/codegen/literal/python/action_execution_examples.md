@@ -206,9 +206,9 @@ Expected `middle/__init__.py`:
 @final
 class MiddleGuarantees:
     def __init__(self):
-        self.position_final = literal.Guarantee()
-        self.position_box = literal.Guarantee()
-        self.position_run = literal.Guarantee()
+        self.position_final = literal.Fanout()
+        self.position_box = literal.Fanout()
+        self.position_run = literal.Fanout()
 
 
 @final
@@ -515,8 +515,8 @@ Expected `runner/__init__.py`:
 @final
 class RunnerGuarantees:
     def __init__(self):
-        self.position_first__move__position_first_result = literal.Guarantee()
-        self.position_second__move__position_second_result = literal.Guarantee()
+        self.position_first__move__position_first_result = literal.Fanout()
+        self.position_second__move__position_second_result = literal.Fanout()
 
 
 @final
@@ -726,9 +726,9 @@ Expected generated `maker/__init__.py`:
 @final
 class MakerGuarantees:
     def __init__(self):
-        self.position_result = literal.Guarantee()
+        self.position_result = literal.Fanout()
         self.position_result__global_position_marker = (
-            literal.Guarantee()
+            literal.Fanout()
         )
 
 
@@ -783,7 +783,7 @@ Expected generated `destructor/__init__.py`:
 @final
 class DestructorGuarantees:
     def __init__(self):
-        self.global_position_marker = literal.Guarantee()
+        self.global_position_marker = literal.Fanout()
 
 
 @final
@@ -1228,7 +1228,7 @@ Expected generated `maker/__init__.py`:
 @final
 class MakerGuarantees:
     def __init__(self):
-        self.position_result = literal.Guarantee()
+        self.position_result = literal.Fanout()
 
 
 @final
@@ -1485,9 +1485,9 @@ Expected generated `carrier/__init__.py`:
 class CarrierGuarantees:
     def __init__(self):
         self.position_source__move__position_result = (
-            literal.Guarantee()
+            literal.Fanout()
         )
-        self.position_run = literal.Guarantee()
+        self.position_run = literal.Fanout()
 
 
 @final
@@ -1562,7 +1562,7 @@ Expected generated `worker/__init__.py`:
 @final
 class WorkerGuarantees:
     def __init__(self):
-        self.position_run = literal.Guarantee()
+        self.position_run = literal.Fanout()
 
 
 @final
@@ -1735,8 +1735,8 @@ Expected generated `triggered/__init__.py`:
 @final
 class TriggeredGuarantees:
     def __init__(self):
-        self.position_run = literal.Guarantee()
-        self.global_position_target = literal.Guarantee()
+        self.position_run = literal.Fanout()
+        self.global_position_target = literal.Fanout()
 
 
 @final
@@ -2062,7 +2062,7 @@ Expected generated `maker/__init__.py`:
 @final
 class MakerGuarantees:
     def __init__(self):
-        self.position_result = literal.Guarantee()
+        self.position_result = literal.Fanout()
 
 
 @final
@@ -2134,7 +2134,7 @@ Expected generated `worker/__init__.py`:
 @final
 class WorkerGuarantees:
     def __init__(self):
-        self.position_run = literal.Guarantee()
+        self.position_run = literal.Fanout()
 
 
 @final
@@ -2205,7 +2205,7 @@ Expected generated `test/__init__.py`:
 @final
 class TestGuarantees:
     def __init__(self):
-        self.global_position_dest = literal.Guarantee()
+        self.global_position_dest = literal.Fanout()
 
 
 @final
@@ -2287,7 +2287,7 @@ Expected generated `other/__init__.py`:
 @final
 class OtherGuarantees:
     def __init__(self):
-        self.global_position_dest = literal.Guarantee()
+        self.global_position_dest = literal.Fanout()
 
 
 @final
@@ -2489,8 +2489,8 @@ Expected generated `worker/__init__.py`:
 @final
 class WorkerGuarantees:
     def __init__(self):
-        self.position_item = literal.Guarantee()
-        self.position_trigger_pos = literal.Guarantee()
+        self.position_item = literal.Fanout()
+        self.position_trigger_pos = literal.Fanout()
 
 
 @final
@@ -2702,8 +2702,8 @@ Expected generated `other/__init__.py`:
 @final
 class OtherGuarantees:
     def __init__(self):
-        self.position_src__move__position_dest = literal.Guarantee()
-        self.position_trigger_pos = literal.Guarantee()
+        self.position_src__move__position_dest = literal.Fanout()
+        self.position_trigger_pos = literal.Fanout()
 
 
 @final
@@ -2825,7 +2825,7 @@ Expected generated `worker/__init__.py`:
 @final
 class WorkerGuarantees:
     def __init__(self):
-        self.position_run = literal.Guarantee()
+        self.position_run = literal.Fanout()
 
 
 @final
@@ -3342,7 +3342,7 @@ Expected generated `inner/__init__.py`:
 @final
 class InnerGuarantees:
     def __init__(self):
-        self.global_position_input = literal.Guarantee()
+        self.global_position_input = literal.Fanout()
 
 
 @final

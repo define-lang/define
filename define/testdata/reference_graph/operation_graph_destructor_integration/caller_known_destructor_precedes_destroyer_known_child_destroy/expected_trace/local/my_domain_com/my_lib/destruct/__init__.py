@@ -16,7 +16,7 @@ class Destruct(literal.Action):
 @final
 class DestructGuarantees:
     def __init__(self):
-        self.global_position_required = literal.Guarantee()
+        self.global_position_required = literal.Fanout()
 
 
 @final

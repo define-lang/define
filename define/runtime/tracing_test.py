@@ -188,7 +188,7 @@ def test_guarantee_consumers_preserve_independent_trace_dependencies():
             def run_destructor():
                 scheduler.create_completed(destructor, "_noop", 1)
 
-            guarantee = literal.Guarantee(consumers=[destroy])
+            guarantee = literal.Fanout(consumers=[destroy])
             guarantee.consumers.append(run_destructor)
             guarantee.publish(scheduler)
 

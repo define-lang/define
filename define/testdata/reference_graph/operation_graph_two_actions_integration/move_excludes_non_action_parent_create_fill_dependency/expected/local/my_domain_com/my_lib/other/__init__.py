@@ -33,7 +33,7 @@ class Other(literal.Action):
 @final
 class OtherGuarantees:
     def __init__(self):
-        self.position_box__global_position_item__move__position_box__global_position_destination = literal.Guarantee()
+        self.position_box__global_position_item__move__position_box__global_position_destination = literal.Fanout()
 
 
 @final
