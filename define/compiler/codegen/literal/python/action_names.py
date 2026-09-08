@@ -675,29 +675,31 @@ class ActionNameGenerator:
     def _fragment_method_names(self) -> dict[action_plan.ActionFragment, str]:
         method_names: dict[action_plan.ActionFragment, str] = {}
         for fragment in self._plan.fragments:
-            first_operation = fragment.operations[0]
-            target = self._typed_chain_identifier(
-                first_operation.target.canonical_chained_name_tuple
+            method_names[fragment] = self._execution_allocator.allocate(
+                self._operation_name(fragment.operations[0])
             )
-            match first_operation:
-                case operation_graph_model.MoveNode():
-                    source = self._typed_chain_identifier(
-                        first_operation.source.canonical_chained_name_tuple
-                    )
-                    base = (
-                        _MOVE_FRAGMENT_PREFIX + source + _MOVE_TARGET_SEPARATOR + target
-                    )
-                case operation_graph_model.CreateNode():
-                    base = _CREATE_FRAGMENT_PREFIX + target
-                case operation_graph_model.DestroyNode():
-                    base = _DESTROY_FRAGMENT_PREFIX + target
-                case _:
-                    raise TypeError(
-                        "unsupported Particle Operation: "
-                        + type(first_operation).__name__
-                    )
-            method_names[fragment] = self._execution_allocator.allocate(base)
         return method_names
+
+    def _operation_name(
+        self, operation: operation_graph_model.PositionOperationNode
+    ) -> str:
+        target = self._typed_chain_identifier(
+            operation.target.canonical_chained_name_tuple
+        )
+        match operation:
+            case operation_graph_model.MoveNode():
+                source = self._typed_chain_identifier(
+                    operation.source.canonical_chained_name_tuple
+                )
+                return _MOVE_FRAGMENT_PREFIX + source + _MOVE_TARGET_SEPARATOR + target
+            case operation_graph_model.CreateNode():
+                return _CREATE_FRAGMENT_PREFIX + target
+            case operation_graph_model.DestroyNode():
+                return _DESTROY_FRAGMENT_PREFIX + target
+            case _:
+                raise TypeError(
+                    "unsupported Particle Operation: " + type(operation).__name__
+                )
 
     def _continue_destroy_method_names(
         self,
