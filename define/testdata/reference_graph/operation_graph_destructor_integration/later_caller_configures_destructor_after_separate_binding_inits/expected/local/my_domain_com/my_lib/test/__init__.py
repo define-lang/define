@@ -53,8 +53,10 @@ class TestExecution:
         self.execution_action_caller.join_for_move_position_run_to_position_carrier_source__global_position_payload = self.scheduler.create_join(2)
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_position_source)
-        self.execution_action_caller.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_position_source,
+            self.execution_action_caller.on_action_parent_occupied,
+        )
 
     def create_position_source(self):
         self.local_position_source.create_particle()

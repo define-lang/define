@@ -22,9 +22,11 @@ class Test(literal.EntryPoint):
         )
         execution.execution_action_triggered.join_for_empty_rule_global_position_implied = scheduler.create_join(2)
         execution.join_when_empty_action_triggered__position_dest = literal.NO_JOIN
-        scheduler.submit(execution.accept_when_empty_global_position_implied)
-        scheduler.submit(execution.on_action_parent_occupied)
-        execution.accept_when_empty_action_triggered__position_dest()
+        scheduler.continue_with(
+            execution.accept_when_empty_global_position_implied,
+            execution.on_action_parent_occupied,
+            execution.accept_when_empty_action_triggered__position_dest,
+        )
 
 
 @final

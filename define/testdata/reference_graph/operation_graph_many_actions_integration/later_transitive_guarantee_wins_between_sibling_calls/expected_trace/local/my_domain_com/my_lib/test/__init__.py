@@ -22,8 +22,10 @@ class Test(literal.EntryPoint):
             None,
             "test",
         )
-        scheduler.submit(execution.on_action_parent_occupied)
-        execution.accept_when_empty_global_position_item()
+        scheduler.continue_with(
+            execution.on_action_parent_occupied,
+            execution.accept_when_empty_global_position_item,
+        )
 
 
 @final
@@ -63,8 +65,10 @@ class TestExecution:
         )
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_action_run_both__position_trigger_pos)
-        self.execution_action_run_both.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_action_run_both__position_trigger_pos,
+            self.execution_action_run_both.on_action_parent_occupied,
+        )
 
     def accept_when_empty_global_position_item(self):
         self.execution_action_run_both.accept_when_empty_global_position_item()

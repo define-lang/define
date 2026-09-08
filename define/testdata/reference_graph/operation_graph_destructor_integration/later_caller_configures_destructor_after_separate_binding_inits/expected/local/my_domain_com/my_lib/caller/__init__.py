@@ -86,8 +86,10 @@ class CallerExecution:
         self.execution_action_wrapper.join_for_destroy_position_run = literal.NO_JOIN
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_position_source)
-        self.create_position_carrier_source()
+        self.scheduler.continue_with(
+            self.create_position_source,
+            self.create_position_carrier_source,
+        )
 
     def accept_for_empty_rule_position_run(self):
         if not self.join_for_empty_rule_position_run.arrive():

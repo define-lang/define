@@ -86,8 +86,10 @@ class TestExecution:
         self.execution_position_gateway__action_middle.guarantees.position_source.consumers.append(
             self.destroy_position_gateway
         )
-        self.scheduler.submit(self.create_position_gateway__action_middle__position_source)
-        self.create_position_gateway__action_middle__position_trigger_pos()
+        self.scheduler.continue_with(
+            self.create_position_gateway__action_middle__position_source,
+            self.create_position_gateway__action_middle__position_trigger_pos,
+        )
 
     def create_position_gateway__action_middle__position_source(self):
         self.local_position_gateway.particle.get_action(
@@ -101,9 +103,11 @@ class TestExecution:
             1,
         )
         self.execution_position_gateway__action_middle.init_when_occupied_position_source()
-        self.scheduler.submit(self.create_position_gateway__action_middle__position_source__global_position_marker)
-        self.scheduler.submit(self.execution_position_gateway__action_middle.continue_when_occupied_position_source)
-        self.execution_position_gateway__action_middle.accept_when_empty_position_source__global_position_result()
+        self.scheduler.continue_with(
+            self.create_position_gateway__action_middle__position_source__global_position_marker,
+            self.execution_position_gateway__action_middle.continue_when_occupied_position_source,
+            self.execution_position_gateway__action_middle.accept_when_empty_position_source__global_position_result,
+        )
 
     def create_position_gateway__action_middle__position_source__global_position_marker(self):
         self.local_position_gateway.particle.get_action(
@@ -123,8 +127,10 @@ class TestExecution:
         ).get_interface_position(
             "position<holder>"
         )
-        self.scheduler.submit(self.destroy_position_gateway__action_middle__position_holder)
-        self.execution_position_gateway__action_middle.accept_for_empty_rule_position_source()
+        self.scheduler.continue_with(
+            self.destroy_position_gateway__action_middle__position_holder,
+            self.execution_position_gateway__action_middle.accept_for_empty_rule_position_source,
+        )
 
     def create_position_gateway__action_middle__position_trigger_pos(self):
         self.local_position_gateway.particle.get_action(
@@ -164,8 +170,10 @@ class TestExecution:
             "result",
             1,
         )
-        self.scheduler.submit(self.destroy_position_gateway__action_middle__position_holder)
-        self.destroy_position_result()
+        self.scheduler.continue_with(
+            self.destroy_position_gateway__action_middle__position_holder,
+            self.destroy_position_result,
+        )
 
     def destroy_position_gateway__action_middle__position_holder(self):
         if not self.join_for_destroy_position_gateway__action_middle__position_holder.arrive():

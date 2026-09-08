@@ -72,8 +72,10 @@ class TestExecution:
         self.execution_position_box__action_maker.guarantees.position_result.consumers.append(
             self.destroy_position_box__action_maker__position_result
         )
-        self.scheduler.submit(self.create_position_box__action_maker__position_run)
-        self.execution_position_box__action_maker.accept_when_empty_position_result()
+        self.scheduler.continue_with(
+            self.create_position_box__action_maker__position_run,
+            self.execution_position_box__action_maker.accept_when_empty_position_result,
+        )
 
     def create_position_box__action_maker__position_run(self):
         self.local_position_box.particle.get_action(
@@ -91,8 +93,10 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         )
-        self.scheduler.submit(self.destroy_position_box)
-        self.destroy_position_box__action_maker__position_run()
+        self.scheduler.continue_with(
+            self.destroy_position_box,
+            self.destroy_position_box__action_maker__position_run,
+        )
 
     def destroy_position_box__action_maker__position_result(self):
         self.destruction_position_position_box__action_maker__position_result.destroy_particle()

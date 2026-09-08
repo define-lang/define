@@ -18,8 +18,10 @@ class Test(literal.EntryPoint):
             self,
             scheduler,
         )
-        scheduler.submit(execution.on_action_parent_occupied)
-        execution.accept_when_empty_global_position_marker()
+        scheduler.continue_with(
+            execution.on_action_parent_occupied,
+            execution.accept_when_empty_global_position_marker,
+        )
 
 
 @final

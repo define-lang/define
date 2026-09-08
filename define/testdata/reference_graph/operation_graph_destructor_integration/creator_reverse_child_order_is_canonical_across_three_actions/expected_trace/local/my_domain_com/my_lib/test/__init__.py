@@ -116,9 +116,11 @@ class TestExecution:
         self.execution_position_carrier__action_worker.guarantees.global_position_second_interface.consumers.append(
             self.move_position_carrier_to_action_middle__position_target
         )
-        self.scheduler.submit(self.create_position_carrier__global_position_third)
-        self.scheduler.submit(self.execution_position_carrier__action_worker.accept_when_empty_global_position_first_interface)
-        self.execution_position_carrier__action_worker.accept_when_empty_global_position_second_interface()
+        self.scheduler.continue_with(
+            self.create_position_carrier__global_position_third,
+            self.execution_position_carrier__action_worker.accept_when_empty_global_position_first_interface,
+            self.execution_position_carrier__action_worker.accept_when_empty_global_position_second_interface,
+        )
 
     def create_position_carrier__global_position_third(self):
         self.local_position_carrier.particle.get_position(
@@ -168,9 +170,11 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.third.Third
         )
-        self.scheduler.submit(self.execution_action_middle.accept_when_empty_position_target__global_position_first)
-        self.scheduler.submit(self.execution_action_middle.accept_when_empty_position_target__global_position_second)
-        self.execution_action_middle.accept_when_empty_position_target__global_position_fifth()
+        self.scheduler.continue_with(
+            self.execution_action_middle.accept_when_empty_position_target__global_position_first,
+            self.execution_action_middle.accept_when_empty_position_target__global_position_second,
+            self.execution_action_middle.accept_when_empty_position_target__global_position_fifth,
+        )
 
     def destroy_action_middle__position_target__global_position_second_interface(self):
         self.destruction_position_action_middle__position_target__global_position_second_interface.destroy_particle()

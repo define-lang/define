@@ -65,8 +65,10 @@ class MiddleBExecution:
         self.join_for_empty_rule_position_run: literal.Join
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_position_destroyer_holder)
-        self.create_position_box()
+        self.scheduler.continue_with(
+            self.create_position_destroyer_holder,
+            self.create_position_box,
+        )
 
     def accept_for_empty_rule_position_run(self):
         if not self.join_for_empty_rule_position_run.arrive():
@@ -102,8 +104,10 @@ class MiddleBExecution:
 
     def create_position_box(self):
         self.local_position_box.create_particle()
-        self.scheduler.submit(self.create_position_box__global_position_sibling)
-        self.create_position_box__global_position_child()
+        self.scheduler.continue_with(
+            self.create_position_box__global_position_sibling,
+            self.create_position_box__global_position_child,
+        )
 
     def create_position_box__global_position_sibling(self):
         self.local_position_box.particle.get_position(

@@ -79,8 +79,10 @@ class TestExecution:
         self.execution_position_parent__action_mover.guarantees.position_run.consumers.append(
             self.destroy_position_parent
         )
-        self.scheduler.submit(self.create_position_parent__action_mover__position_source)
-        self.create_position_parent__action_mover__position_run()
+        self.scheduler.continue_with(
+            self.create_position_parent__action_mover__position_source,
+            self.create_position_parent__action_mover__position_run,
+        )
 
     def create_position_parent__action_mover__position_source(self):
         self.local_position_parent.particle.get_action(

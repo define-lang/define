@@ -33,8 +33,10 @@ class TestExecution:
         self.join_for_move_position_a_to_position_b = self.scheduler.create_join(2)
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_position_a)
-        self.create_position_b()
+        self.scheduler.continue_with(
+            self.create_position_a,
+            self.create_position_b,
+        )
 
     def create_position_a(self):
         self.local_position_a.create_particle()

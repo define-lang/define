@@ -22,9 +22,11 @@ class Test(literal.EntryPoint):
             self,
             scheduler,
         )
-        scheduler.submit(execution.accept_when_empty_global_position_input)
-        scheduler.submit(execution.accept_when_empty_global_position_destination)
-        execution.on_action_parent_occupied()
+        scheduler.continue_with(
+            execution.accept_when_empty_global_position_input,
+            execution.accept_when_empty_global_position_destination,
+            execution.on_action_parent_occupied,
+        )
 
 
 @final
@@ -56,8 +58,10 @@ class TestExecution:
         self.create_global_position_destination()
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_action_middle__position_trigger_pos)
-        self.execution_action_middle.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_action_middle__position_trigger_pos,
+            self.execution_action_middle.on_action_parent_occupied,
+        )
 
     def create_global_position_input(self):
         self.action.on_particle.get_position(

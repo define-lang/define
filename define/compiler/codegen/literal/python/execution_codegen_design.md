@@ -45,6 +45,9 @@ reviewed before implementation diverges.
   `on_action_parent_occupied`.
 - A fanout schedules zero-argument Action Fragment or Binding Hole methods and
   runs one branch on the current thread.
+- Render zero continuations without a call, one continuation as a direct call,
+  and multiple continuations with `Scheduler.continue_with` in their existing
+  order. Complete synchronous initialization and Join checks before the call.
 - Consecutive Particle Operations in one Action Fragment remain together. Add a
   separate generated method only for a stable Binding Hole, scheduling, a join,
   reuse, caller-specific work, or another actual runtime role.

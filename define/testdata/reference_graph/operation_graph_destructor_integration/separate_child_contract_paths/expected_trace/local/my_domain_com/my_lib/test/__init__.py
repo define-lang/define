@@ -108,9 +108,11 @@ class TestExecution:
         self.execution_action_destroyer.join_for_destroy_position_target = self.scheduler.create_join(2)
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_position_source)
-        self.scheduler.submit(self.create_position_left_source)
-        self.create_position_right_source()
+        self.scheduler.continue_with(
+            self.create_position_source,
+            self.create_position_left_source,
+            self.create_position_right_source,
+        )
 
     def create_position_source(self):
         self.local_position_source.create_particle()
@@ -119,8 +121,10 @@ class TestExecution:
             "source",
             1,
         )
-        self.scheduler.submit(self.move_position_left_source_to_position_source__global_position_left)
-        self.move_position_right_source_to_position_source__global_position_right()
+        self.scheduler.continue_with(
+            self.move_position_left_source_to_position_source__global_position_left,
+            self.move_position_right_source_to_position_source__global_position_right,
+        )
 
     def create_position_left_source(self):
         self.local_position_left_source.create_particle()
@@ -225,8 +229,10 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.extra.Extra
         )
-        self.scheduler.submit(self.execution_action_destroyer.accept_for_empty_rule_position_target__global_position_left)
-        self.execution_action_destroyer.accept_for_empty_rule_position_target__global_position_right()
+        self.scheduler.continue_with(
+            self.execution_action_destroyer.accept_for_empty_rule_position_target__global_position_left,
+            self.execution_action_destroyer.accept_for_empty_rule_position_target__global_position_right,
+        )
 
     def destroy_action_destroyer__position_target__global_position_left__global_position_extra(self):
         self.destruction_position_action_destroyer__position_target__global_position_left__global_position_extra.destroy_particle()

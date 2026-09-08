@@ -95,9 +95,11 @@ class OuterExecution:
         self.execution_position_middle_holder__action_middle.guarantees.position_run.consumers.append(
             self.destroy_position_middle_holder
         )
-        self.scheduler.submit(self.move_position_input_to_position_middle_holder__action_middle__position_input)
-        self.scheduler.submit(self.create_position_middle_holder__action_middle__position_run)
-        self.execution_position_middle_holder__action_middle.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.move_position_input_to_position_middle_holder__action_middle__position_input,
+            self.create_position_middle_holder__action_middle__position_run,
+            self.execution_position_middle_holder__action_middle.on_action_parent_occupied,
+        )
 
     def move_position_input_to_position_middle_holder__action_middle__position_input(self):
         if not self.join_for_move_position_input_to_position_middle_holder__action_middle__position_input.arrive():

@@ -25,9 +25,11 @@ class Test(literal.EntryPoint):
         execution.join_when_empty_global_position_input = literal.NO_JOIN
         execution.join_when_empty_action_other__position_output = literal.NO_JOIN
         execution.join_for_move_position_holder_a_to_global_position_input = scheduler.create_join(2)
-        scheduler.submit(execution.on_action_parent_occupied)
-        scheduler.submit(execution.accept_when_empty_global_position_input)
-        execution.accept_when_empty_action_other__position_output()
+        scheduler.continue_with(
+            execution.on_action_parent_occupied,
+            execution.accept_when_empty_global_position_input,
+            execution.accept_when_empty_action_other__position_output,
+        )
 
 
 @final
@@ -64,8 +66,10 @@ class TestExecution:
         self.execution_action_other.join_for_move_global_position_input_to_position_output = literal.NO_JOIN
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_position_box)
-        self.create_action_other__position_trigger_pos()
+        self.scheduler.continue_with(
+            self.create_position_box,
+            self.create_action_other__position_trigger_pos,
+        )
 
     def accept_when_empty_global_position_input(self):
         if not self.join_when_empty_global_position_input.arrive():

@@ -59,8 +59,10 @@ class TestExecution:
             self.trace_execution,
             "destructor",
         )
-        self.scheduler.submit(self.create_position_box__global_position_child)
-        self.execution_position_box__action_destructor.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_position_box__global_position_child,
+            self.execution_position_box__action_destructor.on_action_parent_occupied,
+        )
 
     def create_position_box__global_position_child(self):
         self.local_position_box.particle.get_position(
@@ -74,8 +76,10 @@ class TestExecution:
         self.destruction_position_position_box__global_position_child = self.local_position_box.particle.get_position(
             local.my_domain_com.my_lib.child.Child
         )
-        self.scheduler.submit(self.destroy_position_box)
-        self.destroy_position_box__global_position_child()
+        self.scheduler.continue_with(
+            self.destroy_position_box,
+            self.destroy_position_box__global_position_child,
+        )
 
     def destroy_position_box(self):
         self.local_position_box.destroy_particle()

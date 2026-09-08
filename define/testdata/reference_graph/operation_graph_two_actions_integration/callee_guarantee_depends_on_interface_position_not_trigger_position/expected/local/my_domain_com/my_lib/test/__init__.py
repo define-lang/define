@@ -55,8 +55,10 @@ class TestExecution:
         self.execution_position_gateway__action_worker.guarantees.position_input__move__position_output.consumers.append(
             self.destroy_position_gateway__action_worker__position_output
         )
-        self.scheduler.submit(self.create_position_gateway__action_worker__position_input)
-        self.create_position_gateway__action_worker__position_trigger()
+        self.scheduler.continue_with(
+            self.create_position_gateway__action_worker__position_input,
+            self.create_position_gateway__action_worker__position_trigger,
+        )
 
     def create_position_gateway__action_worker__position_input(self):
         self.local_position_gateway.particle.get_action(

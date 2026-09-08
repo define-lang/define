@@ -25,9 +25,11 @@ class Test(literal.EntryPoint):
         )
         execution.execution_action_middle_action.join_for_empty_rule_global_position_input = scheduler.create_join(2)
         execution.join_when_empty_action_inner__position_holder = literal.NO_JOIN
-        scheduler.submit(execution.accept_when_empty_global_position_input)
-        scheduler.submit(execution.on_action_parent_occupied)
-        execution.accept_when_empty_action_inner__position_holder()
+        scheduler.continue_with(
+            execution.accept_when_empty_global_position_input,
+            execution.on_action_parent_occupied,
+            execution.accept_when_empty_action_inner__position_holder,
+        )
 
 
 @final
@@ -62,8 +64,10 @@ class TestExecution:
         self.create_global_position_input()
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_action_middle_action__position_trigger_pos)
-        self.execution_action_middle_action.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_action_middle_action__position_trigger_pos,
+            self.execution_action_middle_action.on_action_parent_occupied,
+        )
 
     def accept_when_empty_action_inner__position_holder(self):
         if not self.join_when_empty_action_inner__position_holder.arrive():
@@ -74,8 +78,10 @@ class TestExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.input.Input
         ).create_particle()
-        self.scheduler.submit(self.create_global_position_input__global_position_origin)
-        self.execution_action_middle_action.accept_when_empty_global_position_input__global_position_marker()
+        self.scheduler.continue_with(
+            self.create_global_position_input__global_position_origin,
+            self.execution_action_middle_action.accept_when_empty_global_position_input__global_position_marker,
+        )
 
     def create_global_position_input__global_position_origin(self):
         self.action.on_particle.get_position(
@@ -111,8 +117,10 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.target.Target
         ).move_particle_to(self.local_position_holder_c)
-        self.scheduler.submit(self.destroy_position_holder_c)
-        self.execution_action_middle_action.accept_for_empty_rule_global_position_input()
+        self.scheduler.continue_with(
+            self.destroy_position_holder_c,
+            self.execution_action_middle_action.accept_for_empty_rule_global_position_input,
+        )
 
     def destroy_position_holder_c(self):
         self.local_position_holder_c.destroy_particle()

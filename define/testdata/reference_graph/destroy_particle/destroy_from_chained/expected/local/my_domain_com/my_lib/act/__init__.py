@@ -99,8 +99,10 @@ class ActExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.mid.Mid
         )
-        self.scheduler.submit(self.destroy_position_chain_src)
-        self.destroy_position_chain_src__global_position_mid()
+        self.scheduler.continue_with(
+            self.destroy_position_chain_src,
+            self.destroy_position_chain_src__global_position_mid,
+        )
 
     def destroy_position_chain_src(self):
         if not self.join_for_destroy_position_chain_src.arrive():

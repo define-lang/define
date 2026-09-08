@@ -95,8 +95,10 @@ class OtherExecution:
             "source",
             1,
         )
-        self.scheduler.submit(self.create_position_source__global_position_a)
-        self.create_position_source__global_position_b()
+        self.scheduler.continue_with(
+            self.create_position_source__global_position_a,
+            self.create_position_source__global_position_b,
+        )
 
     def create_position_source__global_position_a(self):
         self.action.get_interface_position(

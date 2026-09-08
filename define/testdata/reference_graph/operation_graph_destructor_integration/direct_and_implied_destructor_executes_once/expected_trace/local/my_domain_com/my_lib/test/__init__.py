@@ -152,8 +152,10 @@ class TestExecution:
         self.execution_action_destroyer__position_target__action_destructor.guarantees.global_position_marker.consumers.append(
             self.destroy_action_destroyer__position_target__global_position_marker
         )
-        self.scheduler.submit(self.execution_action_destroyer.accept_for_empty_rule_position_target)
-        self.execution_action_destroyer__position_target__action_destructor.accept_for_empty_rule_global_position_marker()
+        self.scheduler.continue_with(
+            self.execution_action_destroyer.accept_for_empty_rule_position_target,
+            self.execution_action_destroyer__position_target__action_destructor.accept_for_empty_rule_global_position_marker,
+        )
 
     def destroy_action_destroyer__position_target__global_position_marker(self):
         if not self.join_for_destroy_action_destroyer__position_target__global_position_marker.arrive():

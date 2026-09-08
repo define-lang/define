@@ -18,9 +18,11 @@ class Test(literal.EntryPoint):
             self,
             scheduler,
         )
-        scheduler.submit(execution.on_action_parent_occupied)
-        scheduler.submit(execution.accept_when_empty_action_caller__position_first_gateway)
-        execution.accept_when_empty_action_caller__position_second_gateway()
+        scheduler.continue_with(
+            execution.on_action_parent_occupied,
+            execution.accept_when_empty_action_caller__position_first_gateway,
+            execution.accept_when_empty_action_caller__position_second_gateway,
+        )
 
 
 @final

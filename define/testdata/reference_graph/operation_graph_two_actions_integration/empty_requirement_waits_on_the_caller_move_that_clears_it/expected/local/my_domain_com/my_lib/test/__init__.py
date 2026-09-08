@@ -76,8 +76,10 @@ class TestExecution:
         self.execution_position_gateway__action_other_2.guarantees.position_trigger_pos.consumers.append(
             self.destroy_position_gateway
         )
-        self.scheduler.submit(self.create_position_gateway__action_other__position_trigger_pos)
-        self.execution_position_gateway__action_other.accept_when_empty_position_slot()
+        self.scheduler.continue_with(
+            self.create_position_gateway__action_other__position_trigger_pos,
+            self.execution_position_gateway__action_other.accept_when_empty_position_slot,
+        )
 
     def create_position_gateway__action_other__position_trigger_pos(self):
         self.local_position_gateway.particle.get_action(
@@ -93,8 +95,10 @@ class TestExecution:
         ).get_interface_position(
             "position<slot>"
         ).move_particle_to(self.local_position_sink)
-        self.scheduler.submit(self.destroy_position_sink)
-        self.execution_position_gateway__action_other_2.accept_when_empty_position_slot()
+        self.scheduler.continue_with(
+            self.destroy_position_sink,
+            self.execution_position_gateway__action_other_2.accept_when_empty_position_slot,
+        )
 
     def create_position_gateway__action_other__position_trigger_pos_2(self):
         self.local_position_gateway.particle.get_action(

@@ -71,14 +71,18 @@ class TestExecution:
         self.execution_action_middle.join_for_move_position_target_to_action_destroyer__position_target = literal.NO_JOIN
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_position_source)
-        self.execution_action_middle.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_position_source,
+            self.execution_action_middle.on_action_parent_occupied,
+        )
 
     def create_position_source(self):
         self.local_position_source.create_particle()
-        self.scheduler.submit(self.create_position_source__global_position_callee_known)
-        self.scheduler.submit(self.create_position_source__global_position_middle_known)
-        self.create_position_source__global_position_creator_known()
+        self.scheduler.continue_with(
+            self.create_position_source__global_position_callee_known,
+            self.create_position_source__global_position_middle_known,
+            self.create_position_source__global_position_creator_known,
+        )
 
     def create_position_source__global_position_callee_known(self):
         self.local_position_source.particle.get_position(

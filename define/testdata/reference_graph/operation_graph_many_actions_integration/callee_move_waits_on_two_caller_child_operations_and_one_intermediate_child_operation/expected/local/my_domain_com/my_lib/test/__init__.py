@@ -22,8 +22,10 @@ class Test(literal.EntryPoint):
             self,
             scheduler,
         )
-        scheduler.submit(execution.accept_when_empty_global_position_input)
-        execution.on_action_parent_occupied()
+        scheduler.continue_with(
+            execution.accept_when_empty_global_position_input,
+            execution.on_action_parent_occupied,
+        )
 
 
 @final
@@ -58,16 +60,20 @@ class TestExecution:
         self.create_global_position_input()
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_action_middle_action__position_trigger_pos)
-        self.execution_action_middle_action.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_action_middle_action__position_trigger_pos,
+            self.execution_action_middle_action.on_action_parent_occupied,
+        )
 
     def create_global_position_input(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.input.Input
         ).create_particle()
-        self.scheduler.submit(self.create_global_position_input__global_position_second)
-        self.scheduler.submit(self.create_global_position_input__global_position_third)
-        self.execution_action_middle_action.accept_when_empty_global_position_input__global_position_first()
+        self.scheduler.continue_with(
+            self.create_global_position_input__global_position_second,
+            self.create_global_position_input__global_position_third,
+            self.execution_action_middle_action.accept_when_empty_global_position_input__global_position_first,
+        )
 
     def create_global_position_input__global_position_second(self):
         self.action.on_particle.get_position(
@@ -80,8 +86,10 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.second.Second
         ).move_particle_to(self.local_position_second_holder)
-        self.scheduler.submit(self.destroy_position_second_holder)
-        self.execution_action_middle_action.accept_for_empty_rule_global_position_input()
+        self.scheduler.continue_with(
+            self.destroy_position_second_holder,
+            self.execution_action_middle_action.accept_for_empty_rule_global_position_input,
+        )
 
     def destroy_position_second_holder(self):
         self.local_position_second_holder.destroy_particle()
@@ -97,8 +105,10 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.third.Third
         ).move_particle_to(self.local_position_third_holder)
-        self.scheduler.submit(self.destroy_position_third_holder)
-        self.execution_action_middle_action.accept_for_empty_rule_global_position_input()
+        self.scheduler.continue_with(
+            self.destroy_position_third_holder,
+            self.execution_action_middle_action.accept_for_empty_rule_global_position_input,
+        )
 
     def destroy_position_third_holder(self):
         self.local_position_third_holder.destroy_particle()

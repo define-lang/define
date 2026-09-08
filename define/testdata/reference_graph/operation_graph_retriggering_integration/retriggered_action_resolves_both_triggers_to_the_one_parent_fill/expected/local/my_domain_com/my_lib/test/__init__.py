@@ -73,8 +73,10 @@ class TestExecution:
         self.execution_position_gw__action_maker_2.guarantees.position_held__global_position_c.consumers.append(
             self.destroy_position_gw__action_maker__position_held__global_position_c_2
         )
-        self.scheduler.submit(self.create_position_gw__action_maker__position_held)
-        self.create_position_gw__action_maker__position_trigger_pos()
+        self.scheduler.continue_with(
+            self.create_position_gw__action_maker__position_held,
+            self.create_position_gw__action_maker__position_trigger_pos,
+        )
 
     def create_position_gw__action_maker__position_held(self):
         self.local_position_gw.particle.get_action(

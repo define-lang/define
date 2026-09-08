@@ -22,8 +22,10 @@ class Test(literal.EntryPoint):
         execution.execution_action_act.join_when_empty_position_iface_dest = literal.NO_JOIN
         execution.execution_action_act.join_for_move_position_src_b_to_position_iface_dest = scheduler.create_join(2)
         execution.join_when_empty_action_act__position_iface_dest = literal.NO_JOIN
-        scheduler.submit(execution.on_action_parent_occupied)
-        execution.accept_when_empty_action_act__position_iface_dest()
+        scheduler.continue_with(
+            execution.on_action_parent_occupied,
+            execution.accept_when_empty_action_act__position_iface_dest,
+        )
 
 
 @final
@@ -53,9 +55,11 @@ class TestExecution:
         self.execution_action_act.join_for_destroy_position_trigger = literal.NO_JOIN
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_action_act__position_chain_dest)
-        self.scheduler.submit(self.create_action_act__position_trigger)
-        self.execution_action_act.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_action_act__position_chain_dest,
+            self.create_action_act__position_trigger,
+            self.execution_action_act.on_action_parent_occupied,
+        )
 
     def accept_when_empty_action_act__position_iface_dest(self):
         if not self.join_when_empty_action_act__position_iface_dest.arrive():

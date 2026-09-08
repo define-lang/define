@@ -61,8 +61,10 @@ class TestExecution:
         self.execution_position_box__action_carrier.guarantees.position_run.consumers.append(
             self.destroy_position_box
         )
-        self.scheduler.submit(self.create_position_box__action_carrier__position_run)
-        self.execution_position_box__action_carrier.accept_when_empty_position_source()
+        self.scheduler.continue_with(
+            self.create_position_box__action_carrier__position_run,
+            self.execution_position_box__action_carrier.accept_when_empty_position_source,
+        )
 
     def create_position_box__action_carrier__position_run(self):
         self.local_position_box.particle.get_action(

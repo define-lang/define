@@ -34,8 +34,10 @@ class DestructorExecution:
         self.execution_action_forwarder.join_for_destroy_position_trigger_pos = literal.NO_JOIN
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_action_forwarder__position_trigger_pos)
-        self.execution_action_forwarder.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_action_forwarder__position_trigger_pos,
+            self.execution_action_forwarder.on_action_parent_occupied,
+        )
 
     def accept_for_empty_rule_global_position_marker(self):
         if not self.join_for_empty_rule_global_position_marker.arrive():

@@ -18,8 +18,10 @@ class Test(literal.EntryPoint):
             self,
             scheduler,
         )
-        scheduler.submit(execution.on_action_parent_occupied)
-        execution.accept_when_empty_global_position_marker()
+        scheduler.continue_with(
+            execution.on_action_parent_occupied,
+            execution.accept_when_empty_global_position_marker,
+        )
 
 
 @final
@@ -46,9 +48,11 @@ class TestExecution:
         self.execution_action_runner.join_for_destroy_position_run = literal.NO_JOIN
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_action_runner__position_input_a)
-        self.scheduler.submit(self.create_action_runner__position_input_b)
-        self.create_action_runner__position_run()
+        self.scheduler.continue_with(
+            self.create_action_runner__position_input_a,
+            self.create_action_runner__position_input_b,
+            self.create_action_runner__position_run,
+        )
 
     def accept_when_empty_global_position_marker(self):
         self.execution_action_runner.accept_when_empty_global_position_marker()

@@ -64,8 +64,10 @@ class TestExecution:
         self.execution_action_outer.join_for_destroy_position_run = literal.NO_JOIN
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_position_source)
-        self.create_position_payload_source()
+        self.scheduler.continue_with(
+            self.create_position_source,
+            self.create_position_payload_source,
+        )
 
     def create_position_source(self):
         self.local_position_source.create_particle()
@@ -91,5 +93,7 @@ class TestExecution:
             )
         )
         self.execution_action_outer.init_when_occupied_position_run()
-        self.scheduler.submit(self.execution_action_outer.accept_for_empty_rule_position_run__global_position_payload)
-        self.execution_action_outer.continue_when_occupied_position_run()
+        self.scheduler.continue_with(
+            self.execution_action_outer.accept_for_empty_rule_position_run__global_position_payload,
+            self.execution_action_outer.continue_when_occupied_position_run,
+        )

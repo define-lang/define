@@ -94,9 +94,11 @@ class TestExecution:
         self.execution_position_station__action_brew.guarantees.position_water.consumers.append(
             self.destroy_position_station
         )
-        self.scheduler.submit(self.create_position_station__action_grind__position_beans)
-        self.scheduler.submit(self.create_position_station__action_heat__position_cold_water)
-        self.execution_position_station__action_brew.accept_when_empty_position_cup()
+        self.scheduler.continue_with(
+            self.create_position_station__action_grind__position_beans,
+            self.create_position_station__action_heat__position_cold_water,
+            self.execution_position_station__action_brew.accept_when_empty_position_cup,
+        )
 
     def create_position_station__action_grind__position_beans(self):
         self.local_position_station.particle.get_action(

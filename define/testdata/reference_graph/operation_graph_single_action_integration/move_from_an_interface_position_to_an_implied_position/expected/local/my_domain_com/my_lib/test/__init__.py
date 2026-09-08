@@ -20,8 +20,10 @@ class Test(literal.EntryPoint):
         )
         execution.join_when_empty_global_position_implied = literal.NO_JOIN
         execution.join_for_move_position_source_to_global_position_implied = scheduler.create_join(2)
-        scheduler.submit(execution.on_action_parent_occupied)
-        execution.accept_when_empty_global_position_implied()
+        scheduler.continue_with(
+            execution.on_action_parent_occupied,
+            execution.accept_when_empty_global_position_implied,
+        )
 
 
 @final

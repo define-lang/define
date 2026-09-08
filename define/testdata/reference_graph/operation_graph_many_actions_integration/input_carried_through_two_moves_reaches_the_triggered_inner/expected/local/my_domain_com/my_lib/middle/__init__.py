@@ -85,8 +85,10 @@ class MiddleExecution:
         self.execution_position_inner_holder__action_inner.guarantees.position_input.consumers.append(
             self.destroy_position_inner_holder
         )
-        self.scheduler.submit(self.move_position_input_to_position_inner_holder__action_inner__position_input)
-        self.create_position_inner_holder__action_inner__position_run()
+        self.scheduler.continue_with(
+            self.move_position_input_to_position_inner_holder__action_inner__position_input,
+            self.create_position_inner_holder__action_inner__position_run,
+        )
 
     def move_position_input_to_position_inner_holder__action_inner__position_input(self):
         if not self.join_for_move_position_input_to_position_inner_holder__action_inner__position_input.arrive():
@@ -115,8 +117,10 @@ class MiddleExecution:
         ).get_interface_position(
             "position<run>"
         )
-        self.scheduler.submit(self.destroy_position_inner_holder)
-        self.destroy_position_inner_holder__action_inner__position_run()
+        self.scheduler.continue_with(
+            self.destroy_position_inner_holder,
+            self.destroy_position_inner_holder__action_inner__position_run,
+        )
 
     def destroy_position_inner_holder(self):
         if not self.join_for_destroy_position_inner_holder.arrive():

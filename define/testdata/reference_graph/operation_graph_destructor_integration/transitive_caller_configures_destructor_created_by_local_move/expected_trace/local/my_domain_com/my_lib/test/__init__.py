@@ -61,8 +61,10 @@ class TestExecution:
         self.execution_action_outer.join_for_move_position_run_to_action_middle__position_run = literal.NO_JOIN
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_position_source)
-        self.execution_action_outer.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_position_source,
+            self.execution_action_outer.on_action_parent_occupied,
+        )
 
     def create_position_source(self):
         self.local_position_source.create_particle()

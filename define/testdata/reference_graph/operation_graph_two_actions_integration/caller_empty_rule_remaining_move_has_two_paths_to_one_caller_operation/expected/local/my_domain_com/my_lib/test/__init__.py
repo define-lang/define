@@ -29,11 +29,13 @@ class Test(literal.EntryPoint):
         execution.join_when_empty_action_other__position_holder_a = literal.NO_JOIN
         execution.join_when_empty_action_other__position_holder_b = literal.NO_JOIN
         execution.join_when_empty_action_other__position_holder_c = literal.NO_JOIN
-        scheduler.submit(execution.accept_when_empty_global_position_input)
-        scheduler.submit(execution.on_action_parent_occupied)
-        scheduler.submit(execution.accept_when_empty_action_other__position_holder_a)
-        scheduler.submit(execution.accept_when_empty_action_other__position_holder_b)
-        execution.accept_when_empty_action_other__position_holder_c()
+        scheduler.continue_with(
+            execution.accept_when_empty_global_position_input,
+            execution.on_action_parent_occupied,
+            execution.accept_when_empty_action_other__position_holder_a,
+            execution.accept_when_empty_action_other__position_holder_b,
+            execution.accept_when_empty_action_other__position_holder_c,
+        )
 
 
 @final

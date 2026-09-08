@@ -22,8 +22,10 @@ class Test(literal.EntryPoint):
             None,
             "test",
         )
-        scheduler.submit(execution.on_action_parent_occupied)
-        execution.accept_when_empty_global_position_marker()
+        scheduler.continue_with(
+            execution.on_action_parent_occupied,
+            execution.accept_when_empty_global_position_marker,
+        )
 
 
 @final
@@ -69,10 +71,12 @@ class TestExecution:
         self.execution_action_right.join_for_empty_rule_global_position_marker = literal.NO_JOIN
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_action_left__position_trigger_pos)
-        self.scheduler.submit(self.create_action_right__position_trigger_pos)
-        self.scheduler.submit(self.execution_action_left.on_action_parent_occupied)
-        self.execution_action_right.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_action_left__position_trigger_pos,
+            self.create_action_right__position_trigger_pos,
+            self.execution_action_left.on_action_parent_occupied,
+            self.execution_action_right.on_action_parent_occupied,
+        )
 
     def accept_when_empty_global_position_marker(self):
         self.execution_action_left.accept_when_empty_global_position_marker()

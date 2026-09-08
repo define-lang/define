@@ -53,9 +53,11 @@ class TestExecution:
         self.join_for_destroy_position_gateway__action_worker__position_state = self.scheduler.create_join(2)
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_position_gateway)
-        self.scheduler.submit(self.create_position_state)
-        self.create_position_source()
+        self.scheduler.continue_with(
+            self.create_position_gateway,
+            self.create_position_state,
+            self.create_position_source,
+        )
 
     def create_position_gateway(self):
         self.local_position_gateway.create_particle()
@@ -84,8 +86,10 @@ class TestExecution:
         self.execution_position_gateway__action_worker.guarantees.position_source__move__position_state__global_position_target.consumers.append(
             self.destroy_position_gateway__action_worker__position_state__global_position_target
         )
-        self.scheduler.submit(self.move_position_source_to_position_gateway__action_worker__position_source)
-        self.move_position_state_to_position_gateway__action_worker__position_state()
+        self.scheduler.continue_with(
+            self.move_position_source_to_position_gateway__action_worker__position_source,
+            self.move_position_state_to_position_gateway__action_worker__position_state,
+        )
 
     def create_position_state(self):
         self.local_position_state.create_particle()
@@ -120,8 +124,10 @@ class TestExecution:
                 "position<state>"
             )
         )
-        self.scheduler.submit(self.execution_position_gateway__action_worker.accept_for_empty_rule_position_state__global_position_occupied)
-        self.execution_position_gateway__action_worker.accept_for_empty_rule_position_source()
+        self.scheduler.continue_with(
+            self.execution_position_gateway__action_worker.accept_for_empty_rule_position_state__global_position_occupied,
+            self.execution_position_gateway__action_worker.accept_for_empty_rule_position_source,
+        )
 
     def destroy_position_gateway__action_worker__position_state(self):
         if not self.join_for_destroy_position_gateway__action_worker__position_state.arrive():

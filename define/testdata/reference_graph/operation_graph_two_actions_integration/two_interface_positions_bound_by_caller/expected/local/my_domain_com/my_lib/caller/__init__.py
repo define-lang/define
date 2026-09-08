@@ -98,9 +98,11 @@ class CallerExecution:
         self.execution_position_first_gateway__action_worker.guarantees.position_third.consumers.append(
             self.destroy_position_first_gateway
         )
-        self.scheduler.submit(self.create_position_first_gateway__action_worker__position_second)
-        self.scheduler.submit(self.create_position_first_gateway__action_worker__position_third)
-        self.create_position_first_gateway__action_worker__position_first()
+        self.scheduler.continue_with(
+            self.create_position_first_gateway__action_worker__position_second,
+            self.create_position_first_gateway__action_worker__position_third,
+            self.create_position_first_gateway__action_worker__position_first,
+        )
 
     def create_position_first_gateway__action_worker__position_second(self):
         self.action.get_interface_position(
@@ -162,9 +164,11 @@ class CallerExecution:
         self.execution_position_second_gateway__action_worker.guarantees.position_third.consumers.append(
             self.destroy_position_second_gateway
         )
-        self.scheduler.submit(self.create_position_second_gateway__action_worker__position_second)
-        self.scheduler.submit(self.create_position_second_gateway__action_worker__position_third)
-        self.create_position_second_gateway__action_worker__position_first()
+        self.scheduler.continue_with(
+            self.create_position_second_gateway__action_worker__position_second,
+            self.create_position_second_gateway__action_worker__position_third,
+            self.create_position_second_gateway__action_worker__position_first,
+        )
 
     def create_position_second_gateway__action_worker__position_second(self):
         self.action.get_interface_position(

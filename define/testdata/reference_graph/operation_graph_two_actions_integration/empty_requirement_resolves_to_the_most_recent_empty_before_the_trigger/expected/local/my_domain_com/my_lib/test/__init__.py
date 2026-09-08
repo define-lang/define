@@ -95,8 +95,10 @@ class TestExecution:
         self.execution_position_gw__action_filler_3.guarantees.position_trigger_pos.consumers.append(
             self.destroy_position_gw
         )
-        self.scheduler.submit(self.create_position_gw__action_filler__position_trigger_pos)
-        self.execution_position_gw__action_filler.accept_when_empty_position_slot()
+        self.scheduler.continue_with(
+            self.create_position_gw__action_filler__position_trigger_pos,
+            self.execution_position_gw__action_filler.accept_when_empty_position_slot,
+        )
 
     def create_position_gw__action_filler__position_trigger_pos(self):
         self.local_position_gw.particle.get_action(

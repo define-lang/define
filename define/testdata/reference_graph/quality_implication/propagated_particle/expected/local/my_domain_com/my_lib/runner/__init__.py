@@ -106,9 +106,11 @@ class RunnerExecution:
         )
 
     def continue_when_occupied_position_wrapper(self):
-        self.scheduler.submit(self.create_position_wrapper__action_middle__position_box)
-        self.scheduler.submit(self.create_position_wrapper__action_middle__position_run)
-        self.execution_position_wrapper__action_middle.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_position_wrapper__action_middle__position_box,
+            self.create_position_wrapper__action_middle__position_run,
+            self.execution_position_wrapper__action_middle.on_action_parent_occupied,
+        )
 
     def accept_when_empty_position_wrapper__action_middle__position_final(self):
         if not self.join_when_empty_position_wrapper__action_middle__position_final.arrive():

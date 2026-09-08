@@ -53,9 +53,11 @@ class TestExecution:
         self.execution_position_gateway__action_other.guarantees.position_output.consumers.append(
             self.destroy_position_gateway__action_other__position_output
         )
-        self.scheduler.submit(self.create_position_gateway__action_other__position_trigger_pos)
-        self.scheduler.submit(self.execution_position_gateway__action_other.accept_when_empty_position_output)
-        self.execution_position_gateway__action_other.accept_when_empty_position_late()
+        self.scheduler.continue_with(
+            self.create_position_gateway__action_other__position_trigger_pos,
+            self.execution_position_gateway__action_other.accept_when_empty_position_output,
+            self.execution_position_gateway__action_other.accept_when_empty_position_late,
+        )
 
     def create_position_gateway__action_other__position_trigger_pos(self):
         self.local_position_gateway.particle.get_action(

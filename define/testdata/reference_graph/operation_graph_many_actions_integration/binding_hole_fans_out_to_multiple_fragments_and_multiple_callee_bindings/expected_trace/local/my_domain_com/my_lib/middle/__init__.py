@@ -65,12 +65,14 @@ class MiddleExecution:
         )
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_position_first)
-        self.scheduler.submit(self.create_position_second)
-        self.scheduler.submit(self.create_action_child_a__position_trigger_pos)
-        self.scheduler.submit(self.create_action_child_b__position_trigger_pos)
-        self.scheduler.submit(self.execution_action_child_a.on_action_parent_occupied)
-        self.execution_action_child_b.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_position_first,
+            self.create_position_second,
+            self.create_action_child_a__position_trigger_pos,
+            self.create_action_child_b__position_trigger_pos,
+            self.execution_action_child_a.on_action_parent_occupied,
+            self.execution_action_child_b.on_action_parent_occupied,
+        )
 
     def create_position_first(self):
         self.local_position_first.create_particle()

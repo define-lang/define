@@ -84,8 +84,10 @@ class MiddleExecution:
         self.execution_position_box__action_inner.guarantees.position_result__global_position_marker.consumers.append(
             self.move_position_box__action_inner__position_result__global_position_marker_to_position_held_marker
         )
-        self.scheduler.submit(self.create_position_box__action_inner__position_run)
-        self.execution_position_box__action_inner.accept_when_empty_position_result()
+        self.scheduler.continue_with(
+            self.create_position_box__action_inner__position_run,
+            self.execution_position_box__action_inner.accept_when_empty_position_result,
+        )
 
     def create_position_box__action_inner__position_run(self):
         self.local_position_box.particle.get_action(

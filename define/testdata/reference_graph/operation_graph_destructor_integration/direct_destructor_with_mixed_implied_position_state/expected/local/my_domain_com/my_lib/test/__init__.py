@@ -76,8 +76,10 @@ class TestExecution:
 
     def create_position_source(self):
         self.local_position_source.create_particle()
-        self.scheduler.submit(self.create_position_source__global_position_occupied_first)
-        self.create_position_source__global_position_occupied_last()
+        self.scheduler.continue_with(
+            self.create_position_source__global_position_occupied_first,
+            self.create_position_source__global_position_occupied_last,
+        )
 
     def create_position_source__global_position_occupied_first(self):
         self.local_position_source.particle.get_position(
@@ -134,9 +136,11 @@ class TestExecution:
         self.execution_action_destroyer.execution_position_target__action_destructor.join_for_empty_rule_global_position_occupied_last = literal.NO_JOIN
         self.execution_action_destroyer.execution_position_target__action_destructor.join_for_move_global_position_occupied_first_to_position_first_holder = literal.NO_JOIN
         self.execution_action_destroyer.execution_position_target__action_destructor.join_for_move_global_position_occupied_last_to_position_last_holder = literal.NO_JOIN
-        self.scheduler.submit(self.execution_action_destroyer.accept_when_empty_position_target__global_position_empty)
-        self.scheduler.submit(self.execution_action_destroyer.accept_for_empty_rule_position_target__global_position_occupied_last)
-        self.execution_action_destroyer.accept_for_empty_rule_position_target__global_position_occupied_first()
+        self.scheduler.continue_with(
+            self.execution_action_destroyer.accept_when_empty_position_target__global_position_empty,
+            self.execution_action_destroyer.accept_for_empty_rule_position_target__global_position_occupied_last,
+            self.execution_action_destroyer.accept_for_empty_rule_position_target__global_position_occupied_first,
+        )
 
     def destroy_action_destroyer__position_target__global_position_occupied_last(self):
         self.destruction_position_action_destroyer__position_target__global_position_occupied_last.destroy_particle()

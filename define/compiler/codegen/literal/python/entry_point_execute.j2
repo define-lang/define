@@ -1,4 +1,5 @@
 {% from "join_value.j2" import join_value %}
+{% from "fanout.j2" import run_fanout %}
 {% macro entry_point_execute(definition) -%}
     {% if definition.is_entry_point %}
 
@@ -21,12 +22,6 @@
             {%- endfor -%}
 .{{ assignment.member_name }} = {{ join_value(assignment.dependency_count, "scheduler") }}
         {% endfor %}
-        {% for method_name in definition.view_point_create_method_names %}
-            {% if not loop.last %}
-        scheduler.submit(execution.{{ method_name }})
-            {% else %}
-        execution.{{ method_name }}()
-            {% endif %}
-        {% endfor %}
+{{ run_fanout(definition.view_point_create_method_names, "execution", "scheduler") -}}
     {% endif %}
 {%- endmacro %}

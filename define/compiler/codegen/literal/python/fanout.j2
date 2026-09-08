@@ -1,0 +1,11 @@
+{% macro run_fanout(method_names, execution_name, scheduler_name) %}
+    {% if method_names | length == 1 %}
+        {{ execution_name }}.{{ method_names[0] }}()
+    {% elif method_names %}
+        {{ scheduler_name }}.continue_with(
+        {% for method_name in method_names %}
+            {{ execution_name }}.{{ method_name }},
+        {% endfor %}
+        )
+    {% endif %}
+{% endmacro %}

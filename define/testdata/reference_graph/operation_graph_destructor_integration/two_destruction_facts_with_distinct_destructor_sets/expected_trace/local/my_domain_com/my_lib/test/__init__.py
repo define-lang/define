@@ -93,9 +93,11 @@ class TestExecution:
         self.execution_action_destroyer.join_for_destroy_position_second = literal.NO_JOIN
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_position_first_source)
-        self.scheduler.submit(self.create_position_second_source)
-        self.create_action_destroyer__position_run()
+        self.scheduler.continue_with(
+            self.create_position_first_source,
+            self.create_position_second_source,
+            self.create_action_destroyer__position_run,
+        )
 
     def create_position_first_source(self):
         self.local_position_first_source.create_particle()
@@ -118,8 +120,10 @@ class TestExecution:
             1,
         )
         self.execution_action_destroyer.init_when_occupied_position_first()
-        self.scheduler.submit(self.execution_action_destroyer.accept_for_empty_rule_position_first)
-        self.execution_action_destroyer.continue_when_occupied_position_first()
+        self.scheduler.continue_with(
+            self.execution_action_destroyer.accept_for_empty_rule_position_first,
+            self.execution_action_destroyer.continue_when_occupied_position_first,
+        )
 
     def create_position_second_source(self):
         self.local_position_second_source.create_particle()

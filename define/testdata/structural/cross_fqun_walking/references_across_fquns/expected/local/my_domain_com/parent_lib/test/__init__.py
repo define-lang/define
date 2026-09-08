@@ -52,10 +52,12 @@ class TestExecution:
         self.execution_action_my_domain_com_child_lib_do_thing.join_for_destroy_position_trigger_pos = literal.NO_JOIN
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_action_do_thing__position_trigger_pos)
-        self.scheduler.submit(self.create_action_my_domain_com_child_lib_do_thing__position_trigger_pos)
-        self.scheduler.submit(self.execution_action_do_thing.on_action_parent_occupied)
-        self.execution_action_my_domain_com_child_lib_do_thing.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_action_do_thing__position_trigger_pos,
+            self.create_action_my_domain_com_child_lib_do_thing__position_trigger_pos,
+            self.execution_action_do_thing.on_action_parent_occupied,
+            self.execution_action_my_domain_com_child_lib_do_thing.on_action_parent_occupied,
+        )
 
     def create_action_do_thing__position_trigger_pos(self):
         self.action.on_particle.get_action(

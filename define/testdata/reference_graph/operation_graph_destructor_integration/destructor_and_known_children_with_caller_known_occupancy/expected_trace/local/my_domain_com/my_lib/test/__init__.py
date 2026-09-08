@@ -80,9 +80,11 @@ class TestExecution:
             "source",
             1,
         )
-        self.scheduler.submit(self.create_position_source__global_position_marker_a)
-        self.scheduler.submit(self.create_position_source__global_position_marker_b)
-        self.create_position_source__global_position_maybe_empty()
+        self.scheduler.continue_with(
+            self.create_position_source__global_position_marker_a,
+            self.create_position_source__global_position_marker_b,
+            self.create_position_source__global_position_maybe_empty,
+        )
 
     def create_position_source__global_position_marker_a(self):
         self.local_position_source.particle.get_position(
@@ -142,6 +144,8 @@ class TestExecution:
             "/middle::run",
             1,
         )
-        self.scheduler.submit(self.execution_action_middle.accept_for_empty_rule_position_run__global_position_marker_a)
-        self.scheduler.submit(self.execution_action_middle.accept_for_empty_rule_position_run__global_position_marker_b)
-        self.execution_action_middle.accept_when_empty_position_run__global_position_maybe_empty()
+        self.scheduler.continue_with(
+            self.execution_action_middle.accept_for_empty_rule_position_run__global_position_marker_a,
+            self.execution_action_middle.accept_for_empty_rule_position_run__global_position_marker_b,
+            self.execution_action_middle.accept_when_empty_position_run__global_position_maybe_empty,
+        )

@@ -59,9 +59,11 @@ class TestExecution:
             self.trace_execution,
             "destructor",
         )
-        self.scheduler.submit(self.destroy_position_box)
-        self.scheduler.submit(self.execution_position_box__action_destructor.on_action_parent_occupied)
-        self.execution_position_box__action_destructor.accept_when_empty_global_position_implied()
+        self.scheduler.continue_with(
+            self.destroy_position_box,
+            self.execution_position_box__action_destructor.on_action_parent_occupied,
+            self.execution_position_box__action_destructor.accept_when_empty_global_position_implied,
+        )
 
     def destroy_position_box(self):
         self.local_position_box.destroy_particle()

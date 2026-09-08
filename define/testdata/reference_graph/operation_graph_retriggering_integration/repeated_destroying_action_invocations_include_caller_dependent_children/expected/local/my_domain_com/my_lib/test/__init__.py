@@ -93,8 +93,10 @@ class TestExecution:
         self.execution_action_destroyer_2.join_for_destroy_position_run = literal.NO_JOIN
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_position_first)
-        self.create_position_second()
+        self.scheduler.continue_with(
+            self.create_position_first,
+            self.create_position_second,
+        )
 
     def create_position_first(self):
         self.local_position_first.create_particle()

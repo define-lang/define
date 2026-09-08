@@ -99,8 +99,10 @@ class OuterExecution:
         )
 
     def continue_when_occupied_position_gw(self):
-        self.scheduler.submit(self.create_position_gw__action_middle__position_igw)
-        self.create_position_gw__action_middle__position_trigger_pos()
+        self.scheduler.continue_with(
+            self.create_position_gw__action_middle__position_igw,
+            self.create_position_gw__action_middle__position_trigger_pos,
+        )
 
     def accept_when_empty_position_gw__action_middle__position_out(self):
         if not self.join_when_empty_position_gw__action_middle__position_out.arrive():
@@ -126,8 +128,10 @@ class OuterExecution:
             "position<igw>"
         ).create_particle()
         self.execution_position_gw__action_middle.init_when_occupied_position_igw()
-        self.scheduler.submit(self.execution_position_gw__action_middle.continue_when_occupied_position_igw)
-        self.execution_position_gw__action_middle.accept_when_empty_position_igw__global_position_inner_result()
+        self.scheduler.continue_with(
+            self.execution_position_gw__action_middle.continue_when_occupied_position_igw,
+            self.execution_position_gw__action_middle.accept_when_empty_position_igw__global_position_inner_result,
+        )
 
     def create_position_gw__action_middle__position_trigger_pos(self):
         self.action.get_interface_position(

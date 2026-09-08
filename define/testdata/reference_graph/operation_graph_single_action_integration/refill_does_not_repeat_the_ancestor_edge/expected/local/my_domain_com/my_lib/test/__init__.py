@@ -52,8 +52,10 @@ class TestExecution:
         self.destruction_position_position_parent__global_position_child_2 = self.local_position_parent.particle.get_position(
             local.my_domain_com.my_lib.child.Child
         )
-        self.scheduler.submit(self.destroy_position_parent)
-        self.destroy_position_parent__global_position_child()
+        self.scheduler.continue_with(
+            self.destroy_position_parent,
+            self.destroy_position_parent__global_position_child,
+        )
 
     def destroy_position_parent(self):
         self.local_position_parent.destroy_particle()

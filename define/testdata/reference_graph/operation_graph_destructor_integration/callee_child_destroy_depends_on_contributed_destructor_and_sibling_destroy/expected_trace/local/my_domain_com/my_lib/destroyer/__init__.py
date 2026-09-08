@@ -96,8 +96,10 @@ class DestroyerExecution:
             "held_required",
             1,
         )
-        self.scheduler.submit(self.create_position_held_required__global_position_extra_a)
-        self.create_position_held_required__global_position_extra_b()
+        self.scheduler.continue_with(
+            self.create_position_held_required__global_position_extra_a,
+            self.create_position_held_required__global_position_extra_b,
+        )
 
     def create_position_held_required__global_position_extra_a(self):
         self.local_position_held_required.particle.get_position(
@@ -156,10 +158,12 @@ class DestroyerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.extra_b.ExtraB
         )
-        self.scheduler.submit(self.destroy_position_parent)
-        self.scheduler.submit(self.destroy_position_parent__global_position_required)
-        self.scheduler.submit(self.destroy_position_parent__global_position_required__global_position_extra_a)
-        self.destroy_position_parent__global_position_required__global_position_extra_b()
+        self.scheduler.continue_with(
+            self.destroy_position_parent,
+            self.destroy_position_parent__global_position_required,
+            self.destroy_position_parent__global_position_required__global_position_extra_a,
+            self.destroy_position_parent__global_position_required__global_position_extra_b,
+        )
 
     def destroy_position_parent(self):
         if not self.join_for_destroy_position_parent.arrive():

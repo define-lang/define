@@ -45,16 +45,20 @@ class TestExecution:
         self.destruction_position_position_holder_second__action_second__position_trigger_pos: literal.Position
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_position_holder_first)
-        self.create_position_holder_second()
+        self.scheduler.continue_with(
+            self.create_position_holder_first,
+            self.create_position_holder_second,
+        )
 
     def create_position_holder_first(self):
         self.local_position_holder_first.create_particle()
         self.execution_position_holder_first__action_first = local.my_domain_com.my_lib.first.FirstExecution(
             self.scheduler,
         )
-        self.scheduler.submit(self.create_position_holder_first__action_first__position_trigger_pos)
-        self.execution_position_holder_first__action_first.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_position_holder_first__action_first__position_trigger_pos,
+            self.execution_position_holder_first__action_first.on_action_parent_occupied,
+        )
 
     def create_position_holder_first__action_first__position_trigger_pos(self):
         self.local_position_holder_first.particle.get_action(
@@ -75,8 +79,10 @@ class TestExecution:
         self.execution_position_holder_second__action_second = local.my_domain_com.my_lib.second.SecondExecution(
             self.scheduler,
         )
-        self.scheduler.submit(self.create_position_holder_second__action_second__position_trigger_pos)
-        self.execution_position_holder_second__action_second.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_position_holder_second__action_second__position_trigger_pos,
+            self.execution_position_holder_second__action_second.on_action_parent_occupied,
+        )
 
     def create_position_holder_second__action_second__position_trigger_pos(self):
         self.local_position_holder_second.particle.get_action(

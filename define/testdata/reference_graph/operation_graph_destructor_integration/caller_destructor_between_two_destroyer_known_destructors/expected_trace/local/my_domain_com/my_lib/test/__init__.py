@@ -62,8 +62,10 @@ class TestExecution:
         self.join_for_destroy_position_destroyer_particle = self.scheduler.create_join(2)
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_position_destroyer_particle)
-        self.create_position_carrier()
+        self.scheduler.continue_with(
+            self.create_position_destroyer_particle,
+            self.create_position_carrier,
+        )
 
     def create_position_destroyer_particle(self):
         self.local_position_destroyer_particle.create_particle()
@@ -95,8 +97,10 @@ class TestExecution:
         self.execution_position_destroyer_particle__action_destroyer.guarantees.position_target.consumers.append(
             self.destroy_position_destroyer_particle
         )
-        self.scheduler.submit(self.move_position_carrier_to_position_destroyer_particle__action_destroyer__position_target)
-        self.create_position_destroyer_particle__action_destroyer__position_trigger_pos()
+        self.scheduler.continue_with(
+            self.move_position_carrier_to_position_destroyer_particle__action_destroyer__position_target,
+            self.create_position_destroyer_particle__action_destroyer__position_trigger_pos,
+        )
 
     def create_position_carrier(self):
         self.local_position_carrier.create_particle()
@@ -160,8 +164,10 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         )
-        self.scheduler.submit(self.destroy_position_destroyer_particle)
-        self.destroy_position_destroyer_particle__action_destroyer__position_trigger_pos()
+        self.scheduler.continue_with(
+            self.destroy_position_destroyer_particle,
+            self.destroy_position_destroyer_particle__action_destroyer__position_trigger_pos,
+        )
 
     def destroy_position_destroyer_particle(self):
         if not self.join_for_destroy_position_destroyer_particle.arrive():

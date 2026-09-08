@@ -113,8 +113,10 @@ class RunnerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.quality_a.QualityA
         )
-        self.scheduler.submit(self.destroy_position_input_a)
-        self.destroy_position_input_a__global_position_quality_a()
+        self.scheduler.continue_with(
+            self.destroy_position_input_a,
+            self.destroy_position_input_a__global_position_quality_a,
+        )
 
     def create_position_input_b__global_position_quality_b(self):
         self.action.get_interface_position(
@@ -127,8 +129,10 @@ class RunnerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.quality_b.QualityB
         )
-        self.scheduler.submit(self.destroy_position_input_b)
-        self.destroy_position_input_b__global_position_quality_b()
+        self.scheduler.continue_with(
+            self.destroy_position_input_b,
+            self.destroy_position_input_b__global_position_quality_b,
+        )
 
     def destroy_position_input_a(self):
         if not self.join_for_destroy_position_input_a.arrive():

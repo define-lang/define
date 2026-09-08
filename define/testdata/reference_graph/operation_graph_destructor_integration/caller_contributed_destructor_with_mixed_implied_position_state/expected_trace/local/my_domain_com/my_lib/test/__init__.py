@@ -95,8 +95,10 @@ class TestExecution:
             "source",
             1,
         )
-        self.scheduler.submit(self.create_position_source__global_position_occupied_first)
-        self.create_position_source__global_position_occupied_last()
+        self.scheduler.continue_with(
+            self.create_position_source__global_position_occupied_first,
+            self.create_position_source__global_position_occupied_last,
+        )
 
     def create_position_source__global_position_occupied_first(self):
         self.local_position_source.particle.get_position(
@@ -177,9 +179,11 @@ class TestExecution:
         self.execution_action_destroyer__position_target__action_destructor.guarantees.global_position_empty.consumers.append(
             self.destruction_connection_action_destroyer.complete
         )
-        self.scheduler.submit(self.execution_action_destroyer.accept_for_empty_rule_position_target)
-        self.scheduler.submit(self.execution_action_destroyer__position_target__action_destructor.accept_for_empty_rule_global_position_occupied_first)
-        self.execution_action_destroyer__position_target__action_destructor.accept_for_empty_rule_global_position_occupied_last()
+        self.scheduler.continue_with(
+            self.execution_action_destroyer.accept_for_empty_rule_position_target,
+            self.execution_action_destroyer__position_target__action_destructor.accept_for_empty_rule_global_position_occupied_first,
+            self.execution_action_destroyer__position_target__action_destructor.accept_for_empty_rule_global_position_occupied_last,
+        )
 
     def destroy_action_destroyer__position_target__global_position_occupied_last(self):
         if not self.join_for_destroy_action_destroyer__position_target__global_position_occupied_last.arrive():

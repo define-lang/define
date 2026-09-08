@@ -21,8 +21,10 @@ class Test(literal.EntryPoint):
             self,
             scheduler,
         )
-        scheduler.submit(execution.accept_when_empty_global_position_parent)
-        execution.on_action_parent_occupied()
+        scheduler.continue_with(
+            execution.accept_when_empty_global_position_parent,
+            execution.on_action_parent_occupied,
+        )
 
 
 @final

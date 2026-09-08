@@ -62,9 +62,11 @@ class TestExecution:
         self.execution_position_gateway__action_outer.guarantees.position_source.consumers.append(
             self.destroy_position_gateway
         )
-        self.scheduler.submit(self.create_position_gateway__action_outer__position_source)
-        self.scheduler.submit(self.create_position_gateway__action_outer__position_trigger_pos)
-        self.execution_position_gateway__action_outer.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_position_gateway__action_outer__position_source,
+            self.create_position_gateway__action_outer__position_trigger_pos,
+            self.execution_position_gateway__action_outer.on_action_parent_occupied,
+        )
 
     def create_position_gateway__action_outer__position_source(self):
         self.local_position_gateway.particle.get_action(
@@ -101,8 +103,10 @@ class TestExecution:
         ).get_interface_position(
             "position<destination>"
         )
-        self.scheduler.submit(self.destroy_position_gateway__action_outer__position_destination)
-        self.destroy_position_result()
+        self.scheduler.continue_with(
+            self.destroy_position_gateway__action_outer__position_destination,
+            self.destroy_position_result,
+        )
 
     def destroy_position_gateway__action_outer__position_destination(self):
         self.destruction_position_position_gateway__action_outer__position_destination.destroy_particle()

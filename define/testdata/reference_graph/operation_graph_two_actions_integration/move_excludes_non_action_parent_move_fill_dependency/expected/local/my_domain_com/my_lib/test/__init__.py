@@ -49,8 +49,10 @@ class TestExecution:
         self.join_for_destroy_position_gateway = self.scheduler.create_join(2)
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_position_gateway)
-        self.create_position_box()
+        self.scheduler.continue_with(
+            self.create_position_gateway,
+            self.create_position_box,
+        )
 
     def create_position_gateway(self):
         self.local_position_gateway.create_particle()

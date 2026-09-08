@@ -39,16 +39,20 @@ class TestExecution:
         self.destruction_position_position_gw__action_worker__position_trigger_pos: literal.Position
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_position_gw)
-        self.create_position_note()
+        self.scheduler.continue_with(
+            self.create_position_gw,
+            self.create_position_note,
+        )
 
     def create_position_gw(self):
         self.local_position_gw.create_particle()
         self.execution_position_gw__action_worker = local.my_domain_com.my_lib.worker.WorkerExecution(
             self.scheduler,
         )
-        self.scheduler.submit(self.create_position_gw__action_worker__position_trigger_pos)
-        self.execution_position_gw__action_worker.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_position_gw__action_worker__position_trigger_pos,
+            self.execution_position_gw__action_worker.on_action_parent_occupied,
+        )
 
     def create_position_gw__action_worker__position_trigger_pos(self):
         self.local_position_gw.particle.get_action(

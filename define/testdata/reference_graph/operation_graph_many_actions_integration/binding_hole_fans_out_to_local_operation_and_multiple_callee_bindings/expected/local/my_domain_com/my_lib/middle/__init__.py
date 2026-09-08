@@ -70,10 +70,12 @@ class MiddleExecution:
         )
 
     def continue_when_occupied_global_position_shared(self):
-        self.scheduler.submit(self.create_global_position_shared__action_child_a__position_trigger_pos)
-        self.scheduler.submit(self.create_global_position_shared__action_child_b__position_trigger_pos)
-        self.scheduler.submit(self.execution_global_position_shared__action_child_a.on_action_parent_occupied)
-        self.execution_global_position_shared__action_child_b.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_global_position_shared__action_child_a__position_trigger_pos,
+            self.create_global_position_shared__action_child_b__position_trigger_pos,
+            self.execution_global_position_shared__action_child_a.on_action_parent_occupied,
+            self.execution_global_position_shared__action_child_b.on_action_parent_occupied,
+        )
 
     def create_global_position_shared__global_position_marker(self):
         self.action.on_particle.get_position(

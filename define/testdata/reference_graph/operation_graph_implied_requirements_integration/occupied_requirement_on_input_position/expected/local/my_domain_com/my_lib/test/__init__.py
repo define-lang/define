@@ -43,8 +43,10 @@ class TestExecution:
         self.execution_action_triggered.join_for_destroy_position_run = literal.NO_JOIN
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_action_triggered__position_input)
-        self.create_action_triggered__position_run()
+        self.scheduler.continue_with(
+            self.create_action_triggered__position_input,
+            self.create_action_triggered__position_run,
+        )
 
     def create_action_triggered__position_input(self):
         self.action.on_particle.get_action(

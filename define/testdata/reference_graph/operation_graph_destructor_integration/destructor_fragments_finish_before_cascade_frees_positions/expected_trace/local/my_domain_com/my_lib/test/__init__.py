@@ -88,8 +88,10 @@ class TestExecution:
         self.execution_position_box__action_destruct.guarantees.global_position_marker_b.consumers.append(
             self.destroy_position_box__global_position_marker_b
         )
-        self.scheduler.submit(self.create_position_box__global_position_marker_a)
-        self.create_position_box__global_position_marker_b()
+        self.scheduler.continue_with(
+            self.create_position_box__global_position_marker_a,
+            self.create_position_box__global_position_marker_b,
+        )
 
     def create_position_box__global_position_marker_a(self):
         self.local_position_box.particle.get_position(

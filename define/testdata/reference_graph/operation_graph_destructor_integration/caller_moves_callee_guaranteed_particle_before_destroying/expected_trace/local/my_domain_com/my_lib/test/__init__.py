@@ -72,8 +72,10 @@ class TestExecution:
         self.execution_position_box__action_maker.guarantees.position_result.consumers.append(
             self.move_position_box__action_maker__position_result_to_position_held
         )
-        self.scheduler.submit(self.create_position_box__action_maker__position_run)
-        self.execution_position_box__action_maker.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_position_box__action_maker__position_run,
+            self.execution_position_box__action_maker.on_action_parent_occupied,
+        )
 
     def create_position_box__action_maker__position_run(self):
         self.local_position_box.particle.get_action(
@@ -91,8 +93,10 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         )
-        self.scheduler.submit(self.destroy_position_box)
-        self.destroy_position_box__action_maker__position_run()
+        self.scheduler.continue_with(
+            self.destroy_position_box,
+            self.destroy_position_box__action_maker__position_run,
+        )
 
     def move_position_box__action_maker__position_result_to_position_held(self):
         self.local_position_box.particle.get_action(
@@ -111,9 +115,11 @@ class TestExecution:
             self.trace_execution,
             "destructor",
         )
-        self.scheduler.submit(self.destroy_position_held)
-        self.scheduler.submit(self.destroy_position_box)
-        self.execution_position_held__action_destructor.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.destroy_position_held,
+            self.destroy_position_box,
+            self.execution_position_held__action_destructor.on_action_parent_occupied,
+        )
 
     def destroy_position_held(self):
         self.local_position_held.destroy_particle()

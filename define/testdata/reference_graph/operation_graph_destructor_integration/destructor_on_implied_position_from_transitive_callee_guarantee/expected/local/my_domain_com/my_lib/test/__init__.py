@@ -57,9 +57,11 @@ class TestExecution:
         self.execution_position_box__action_middle.execution_action_inner.guarantees.global_position_child.consumers.append(
             self.destroy_position_box__global_position_child
         )
-        self.scheduler.submit(self.create_position_box__action_middle__position_run)
-        self.scheduler.submit(self.execution_position_box__action_middle.on_action_parent_occupied)
-        self.execution_position_box__action_middle.accept_when_empty_global_position_child()
+        self.scheduler.continue_with(
+            self.create_position_box__action_middle__position_run,
+            self.execution_position_box__action_middle.on_action_parent_occupied,
+            self.execution_position_box__action_middle.accept_when_empty_global_position_child,
+        )
 
     def create_position_box__action_middle__position_run(self):
         self.local_position_box.particle.get_action(
@@ -72,8 +74,10 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         )
-        self.scheduler.submit(self.destroy_position_box)
-        self.destroy_position_box__action_middle__position_run()
+        self.scheduler.continue_with(
+            self.destroy_position_box,
+            self.destroy_position_box__action_middle__position_run,
+        )
 
     def destroy_position_box__global_position_child(self):
         self.destruction_position_position_box__global_position_child.destroy_particle()

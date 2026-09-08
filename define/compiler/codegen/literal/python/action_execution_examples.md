@@ -48,10 +48,10 @@ class TestExecution:
         )
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(
-            self.create_action_runner__position_run
+        self.scheduler.continue_with(
+            self.create_action_runner__position_run,
+            self.execution_action_runner.on_action_parent_occupied,
         )
-        self.execution_action_runner.on_action_parent_occupied()
 
     def create_action_runner__position_run(self):
         self.action.on_particle.get_action(
@@ -135,10 +135,10 @@ class RunnerExecution:
         self.execution_position_wrapper__action_middle.guarantees.position_run.consumers.append(
             self.destroy_position_wrapper
         )
-        self.scheduler.submit(
-            self.create_position_wrapper__action_middle__position_box
+        self.scheduler.continue_with(
+            self.create_position_wrapper__action_middle__position_box,
+            self.create_position_wrapper__action_middle__position_run,
         )
-        self.create_position_wrapper__action_middle__position_run()
 
     def create_position_wrapper__action_middle__position_box(self):
         self.local_position_wrapper.particle.get_action(
@@ -247,10 +247,10 @@ class MiddleExecution:
         self.continue_when_occupied_position_box()
 
     def continue_when_occupied_position_box(self):
-        self.scheduler.submit(
-            self.create_position_box__action_worker__position_input
+        self.scheduler.continue_with(
+            self.create_position_box__action_worker__position_input,
+            self.create_position_box__action_worker__position_run,
         )
-        self.create_position_box__action_worker__position_run()
 
     def init_when_occupied_position_box(self):
         self.execution_position_box__action_worker = (
@@ -442,10 +442,10 @@ class TestExecution:
         self.execution_position_runner_parent__action_runner.guarantees.position_first__move__position_first_result.consumers.extend(
             [self.destroy_position_runner_parent__action_runner__position_first_result, self.destroy_position_runner_parent]
         )
-        self.scheduler.submit(
-            self.create_position_runner_parent__action_runner__position_second
+        self.scheduler.continue_with(
+            self.create_position_runner_parent__action_runner__position_second,
+            self.create_position_runner_parent__action_runner__position_first,
         )
-        self.create_position_runner_parent__action_runner__position_first()
 
     def create_position_runner_parent__action_runner__position_first(self):
         self.local_position_runner_parent.particle.get_action(
@@ -617,10 +617,10 @@ class TestExecution:
         self.execution_position_box__action_maker.guarantees.position_result.inits.append(
             self.init_position_box__action_maker__position_result
         )
-        self.scheduler.submit(
-            self.create_position_box__action_maker__position_run
+        self.scheduler.continue_with(
+            self.create_position_box__action_maker__position_run,
+            self.execution_position_box__action_maker.accept_when_empty_position_result,
         )
-        self.execution_position_box__action_maker.accept_when_empty_position_result()
 
     def create_position_box__action_maker__position_run(self):
         self.local_position_box.particle.get_action(
@@ -633,8 +633,10 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         )
-        self.scheduler.submit(self.destroy_position_box)
-        self.destroy_position_box__action_maker__position_run()
+        self.scheduler.continue_with(
+            self.destroy_position_box,
+            self.destroy_position_box__action_maker__position_run,
+        )
 
     def destroy_position_box__action_maker__position_run(self):
         self.destruction_position_position_box__action_maker__position_run.destroy_particle()
@@ -873,10 +875,10 @@ class TestExecution:
                 self.scheduler,
             )
         )
-        self.scheduler.submit(
-            self.create_position_gateway__action_middle__position_trigger_pos
+        self.scheduler.continue_with(
+            self.create_position_gateway__action_middle__position_trigger_pos,
+            self.execution_position_gateway__action_middle.on_action_parent_occupied,
         )
-        self.execution_position_gateway__action_middle.on_action_parent_occupied()
 
     def create_position_gateway__action_middle__position_trigger_pos(self):
         self.local_position_gateway.particle.get_action(
@@ -942,12 +944,14 @@ class MiddleExecution:
         )
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_position_first)
-        self.scheduler.submit(self.create_position_second)
-        self.scheduler.submit(self.create_action_child_a__position_trigger_pos)
-        self.scheduler.submit(self.create_action_child_b__position_trigger_pos)
-        self.scheduler.submit(self.execution_action_child_a.on_action_parent_occupied)
-        self.execution_action_child_b.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_position_first,
+            self.create_position_second,
+            self.create_action_child_a__position_trigger_pos,
+            self.create_action_child_b__position_trigger_pos,
+            self.execution_action_child_a.on_action_parent_occupied,
+            self.execution_action_child_b.on_action_parent_occupied,
+        )
 
     def create_position_first(self):
         self.local_position_first.create_particle()
@@ -1129,10 +1133,10 @@ class TestExecution:
         self.execution_position_box__action_maker.guarantees.position_result.consumers.append(
             self.destroy_position_box__action_maker__position_result
         )
-        self.scheduler.submit(
-            self.create_position_box__action_maker__position_run
+        self.scheduler.continue_with(
+            self.create_position_box__action_maker__position_run,
+            self.execution_position_box__action_maker.accept_when_empty_position_result,
         )
-        self.execution_position_box__action_maker.accept_when_empty_position_result()
 
     def create_position_box__action_maker__position_run(self):
         self.local_position_box.particle.get_action(
@@ -1145,8 +1149,10 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         )
-        self.scheduler.submit(self.destroy_position_box)
-        self.destroy_position_box__action_maker__position_run()
+        self.scheduler.continue_with(
+            self.destroy_position_box,
+            self.destroy_position_box__action_maker__position_run,
+        )
 
     def destroy_position_box__action_maker__position_run(self):
         self.destruction_position_position_box__action_maker__position_run.destroy_particle()
@@ -1381,10 +1387,10 @@ class TestExecution:
         self.execution_position_box__action_carrier.guarantees.position_run.consumers.append(
             self.destroy_position_box
         )
-        self.scheduler.submit(
-            self.create_position_box__action_carrier__position_run
+        self.scheduler.continue_with(
+            self.create_position_box__action_carrier__position_run,
+            self.execution_position_box__action_carrier.accept_when_empty_position_source,
         )
-        self.execution_position_box__action_carrier.accept_when_empty_position_source()
 
     def init_position_box__action_carrier__position_source__move__position_result(self):
         self.execution_position_box__action_carrier__position_result__action_worker = (
@@ -1619,8 +1625,10 @@ class Test(literal.EntryPoint):
         execution.join_for_action_triggered__for_empty_rule_position_run = (
             scheduler.create_join(2)
         )
-        scheduler.submit(execution.on_action_parent_occupied)
-        execution.accept_when_empty_global_position_target()
+        scheduler.continue_with(
+            execution.on_action_parent_occupied,
+            execution.accept_when_empty_global_position_target,
+        )
 
 
 @final
@@ -1853,10 +1861,10 @@ class TestExecution:
         self.join_for_move_position_source_to_position_triggered_parent__action_triggered__position_run = self.scheduler.create_join(2)
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(
-            self.create_position_triggered_parent
+        self.scheduler.continue_with(
+            self.create_position_triggered_parent,
+            self.create_position_source,
         )
-        self.create_position_source()
 
     def create_position_triggered_parent(self):
         self.local_position_triggered_parent.create_particle()
@@ -1974,10 +1982,10 @@ class TestExecution:
         self.execution_position_maker_parent__action_maker.guarantees.position_result.inits.append(
             self.register_guarantee_position_run
         )
-        self.scheduler.submit(
-            self.create_position_maker_parent__action_maker__position_run
+        self.scheduler.continue_with(
+            self.create_position_maker_parent__action_maker__position_run,
+            self.execution_position_maker_parent__action_maker.accept_when_empty_position_result,
         )
-        self.execution_position_maker_parent__action_maker.accept_when_empty_position_result()
 
     def create_position_maker_parent__action_maker__position_run(self):
         self.local_position_maker_parent.particle.get_action(
@@ -1990,8 +1998,10 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         )
-        self.scheduler.submit(self.destroy_position_maker_parent)
-        self.destroy_position_maker_parent__action_maker__position_run()
+        self.scheduler.continue_with(
+            self.destroy_position_maker_parent,
+            self.destroy_position_maker_parent__action_maker__position_run,
+        )
 
     def destroy_position_maker_parent__action_maker__position_run(self):
         self.destruction_position_position_maker_parent__action_maker__position_run.destroy_particle()
@@ -2216,8 +2226,10 @@ class TestExecution:
         self.create_global_position_dest()
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_action_other__position_trigger_pos)
-        self.execution_action_other.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_action_other__position_trigger_pos,
+            self.execution_action_other.on_action_parent_occupied,
+        )
 
     def create_global_position_dest(self):
         self.action.on_particle.get_position(
@@ -2402,10 +2414,10 @@ class TestExecution:
         self.execution_position_gateway__action_worker_2.guarantees.position_trigger_pos.consumers.append(
             self.destroy_position_gateway
         )
-        self.scheduler.submit(
-            self.create_position_gateway__action_worker__position_item
+        self.scheduler.continue_with(
+            self.create_position_gateway__action_worker__position_item,
+            self.create_position_gateway__action_worker__position_trigger_pos,
         )
-        self.create_position_gateway__action_worker__position_trigger_pos()
 
     def create_position_gateway__action_worker__position_item(self):
         self.local_position_gateway.particle.get_action(
@@ -2593,10 +2605,10 @@ class TestExecution:
         self.execution_position_gateway__action_other.guarantees.position_src__move__position_dest.inits.append(
             self.register_guarantee_position_run
         )
-        self.scheduler.submit(
-            self.create_position_gateway__action_other__position_trigger_pos
+        self.scheduler.continue_with(
+            self.create_position_gateway__action_other__position_trigger_pos,
+            self.execution_position_gateway__action_other.accept_when_empty_position_src,
         )
-        self.execution_position_gateway__action_other.accept_when_empty_position_src()
 
     def create_position_gateway__action_other__position_trigger_pos(self):
         self.local_position_gateway.particle.get_action(
@@ -2714,8 +2726,10 @@ class OtherExecution:
 
     def create_position_src(self):
         self.action.get_interface_position("position<src>").create_particle()
-        self.scheduler.submit(self.create_position_src__global_position_a)
-        self.create_position_src__global_position_b()
+        self.scheduler.continue_with(
+            self.create_position_src__global_position_a,
+            self.create_position_src__global_position_b,
+        )
 
     def create_position_src__global_position_a(self):
         self.action.get_interface_position(
@@ -2883,8 +2897,10 @@ class TestExecution:
         )
         # The Destroy and both operations released by the Destructor's Action
         # Parent Binding Hole depend on this Create, not on one another.
-        self.scheduler.submit(self.destroy_position_box)
-        self.execution_position_box__action_destructor.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.destroy_position_box,
+            self.execution_position_box__action_destructor.on_action_parent_occupied,
+        )
 
     def destroy_position_box(self):
         self.local_position_box.destroy_particle()
@@ -2930,8 +2946,10 @@ class DestructorExecution:
     def on_action_parent_occupied(self):
         # The Action Parent Binding Hole is each fragment's complete predecessor
         # set, so the fanout invokes them directly without fragment joins.
-        self.scheduler.submit(self.create_position_first)
-        self.create_position_second()
+        self.scheduler.continue_with(
+            self.create_position_first,
+            self.create_position_second,
+        )
 
     def create_position_first(self):
         self.local_position_first.create_particle()
@@ -3001,8 +3019,10 @@ class TestExecution:
 
     def create_position_source(self):
         self.local_position_source.create_particle()
-        self.scheduler.submit(self.create_position_source__global_position_a)
-        self.create_position_source__global_position_b()
+        self.scheduler.continue_with(
+            self.create_position_source__global_position_a,
+            self.create_position_source__global_position_b,
+        )
 
     def create_position_source__global_position_a(self):
         self.local_position_source.particle.get_position(
@@ -3028,9 +3048,11 @@ class TestExecution:
             local.my_domain_com.my_lib.b.B
         )
         # The parent and both child Destroys depend on the Move, not each other.
-        self.scheduler.submit(self.destroy_position_destination)
-        self.scheduler.submit(self.destroy_position_destination__global_position_b)
-        self.destroy_position_destination__global_position_a()
+        self.scheduler.continue_with(
+            self.destroy_position_destination,
+            self.destroy_position_destination__global_position_b,
+            self.destroy_position_destination__global_position_a,
+        )
 
     def destroy_position_destination__global_position_a(self):
         self.destruction_position_position_destination__global_position_a.destroy_particle()
@@ -3091,8 +3113,10 @@ class Test(literal.EntryPoint):
     @override
     def execute(self, scheduler: literal.Scheduler):
         execution = TestExecution(self, scheduler)
-        scheduler.submit(execution.accept_when_empty_global_position_input)
-        execution.on_action_parent_occupied()
+        scheduler.continue_with(
+            execution.accept_when_empty_global_position_input,
+            execution.on_action_parent_occupied,
+        )
 
 
 @final
@@ -3125,22 +3149,20 @@ class TestExecution:
         self.create_global_position_input()
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(
-            self.create_action_middle_action__position_trigger_pos
+        self.scheduler.continue_with(
+            self.create_action_middle_action__position_trigger_pos,
+            self.execution_action_middle_action.on_action_parent_occupied,
         )
-        self.execution_action_middle_action.on_action_parent_occupied()
 
     def create_global_position_input(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.input.Input
         ).create_particle()
-        self.scheduler.submit(
-            self.create_global_position_input__global_position_second
+        self.scheduler.continue_with(
+            self.create_global_position_input__global_position_second,
+            self.create_global_position_input__global_position_third,
+            self.execution_action_middle_action.accept_when_empty_global_position_input__global_position_first,
         )
-        self.scheduler.submit(
-            self.create_global_position_input__global_position_third
-        )
-        self.execution_action_middle_action.accept_when_empty_global_position_input__global_position_first()
 
     def create_global_position_input__global_position_second(self):
         self.action.on_particle.get_position(
@@ -3153,8 +3175,10 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.second.Second
         ).move_particle_to(self.local_position_second_holder)
-        self.scheduler.submit(self.destroy_position_second_holder)
-        self.execution_action_middle_action.accept_for_empty_rule_global_position_input()
+        self.scheduler.continue_with(
+            self.destroy_position_second_holder,
+            self.execution_action_middle_action.accept_for_empty_rule_global_position_input,
+        )
 
     def destroy_position_second_holder(self):
         self.local_position_second_holder.destroy_particle()
@@ -3170,8 +3194,10 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.third.Third
         ).move_particle_to(self.local_position_third_holder)
-        self.scheduler.submit(self.destroy_position_third_holder)
-        self.execution_action_middle_action.accept_for_empty_rule_global_position_input()
+        self.scheduler.continue_with(
+            self.destroy_position_third_holder,
+            self.execution_action_middle_action.accept_for_empty_rule_global_position_input,
+        )
 
     def destroy_position_third_holder(self):
         self.local_position_third_holder.destroy_particle()

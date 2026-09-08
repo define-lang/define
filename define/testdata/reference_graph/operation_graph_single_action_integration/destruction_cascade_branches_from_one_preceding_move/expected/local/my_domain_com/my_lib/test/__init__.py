@@ -46,8 +46,10 @@ class TestExecution:
 
     def create_position_source(self):
         self.local_position_source.create_particle()
-        self.scheduler.submit(self.create_position_source__global_position_a)
-        self.create_position_source__global_position_b()
+        self.scheduler.continue_with(
+            self.create_position_source__global_position_a,
+            self.create_position_source__global_position_b,
+        )
 
     def create_position_source__global_position_a(self):
         self.local_position_source.particle.get_position(
@@ -71,9 +73,11 @@ class TestExecution:
         self.destruction_position_position_destination__global_position_b = self.local_position_destination.particle.get_position(
             local.my_domain_com.my_lib.b.B
         )
-        self.scheduler.submit(self.destroy_position_destination)
-        self.scheduler.submit(self.destroy_position_destination__global_position_a)
-        self.destroy_position_destination__global_position_b()
+        self.scheduler.continue_with(
+            self.destroy_position_destination,
+            self.destroy_position_destination__global_position_a,
+            self.destroy_position_destination__global_position_b,
+        )
 
     def destroy_position_destination(self):
         self.local_position_destination.destroy_particle()

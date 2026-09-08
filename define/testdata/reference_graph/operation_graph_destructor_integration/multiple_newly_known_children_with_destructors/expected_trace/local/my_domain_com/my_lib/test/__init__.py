@@ -90,8 +90,10 @@ class TestExecution:
             "source",
             1,
         )
-        self.scheduler.submit(self.create_position_source__global_position_extra_a)
-        self.create_position_source__global_position_extra_b()
+        self.scheduler.continue_with(
+            self.create_position_source__global_position_extra_a,
+            self.create_position_source__global_position_extra_b,
+        )
 
     def create_position_source__global_position_extra_a(self):
         self.local_position_source.particle.get_position(

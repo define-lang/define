@@ -18,8 +18,10 @@ class Test(literal.EntryPoint):
             self,
             scheduler,
         )
-        scheduler.submit(execution.on_action_parent_occupied)
-        execution.accept_when_empty_action_process__position_config()
+        scheduler.continue_with(
+            execution.on_action_parent_occupied,
+            execution.accept_when_empty_action_process__position_config,
+        )
 
 
 @final
@@ -44,9 +46,11 @@ class TestExecution:
         self.execution_action_process.join_for_destroy_position_trigger = literal.NO_JOIN
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_action_process__position_input)
-        self.scheduler.submit(self.create_action_process__position_trigger)
-        self.execution_action_process.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_action_process__position_input,
+            self.create_action_process__position_trigger,
+            self.execution_action_process.on_action_parent_occupied,
+        )
 
     def accept_when_empty_action_process__position_config(self):
         self.execution_action_process.accept_when_empty_position_config()

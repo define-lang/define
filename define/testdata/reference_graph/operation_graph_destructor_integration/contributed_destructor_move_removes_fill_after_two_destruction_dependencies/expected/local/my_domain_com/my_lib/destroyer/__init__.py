@@ -93,8 +93,10 @@ class DestroyerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         )
-        self.scheduler.submit(self.destroy_position_target)
-        self.destroy_position_target__global_position_marker()
+        self.scheduler.continue_with(
+            self.destroy_position_target,
+            self.destroy_position_target__global_position_marker,
+        )
 
     def create_position_target__global_position_destinations(self):
         self.action.get_interface_position(
@@ -107,8 +109,10 @@ class DestroyerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.destinations.Destinations
         )
-        self.scheduler.submit(self.destroy_position_target)
-        self.destroy_position_target__global_position_destinations()
+        self.scheduler.continue_with(
+            self.destroy_position_target,
+            self.destroy_position_target__global_position_destinations,
+        )
 
     def destroy_position_target(self):
         if not self.join_for_destroy_position_target.arrive():

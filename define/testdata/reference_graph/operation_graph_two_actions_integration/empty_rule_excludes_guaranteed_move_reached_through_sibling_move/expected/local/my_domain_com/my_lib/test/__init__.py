@@ -30,10 +30,12 @@ class Test(literal.EntryPoint):
         execution.join_when_empty_global_position_holder = literal.NO_JOIN
         execution.join_when_empty_global_position_intermediate = literal.NO_JOIN
         execution.join_for_move_global_position_holder_to_global_position_intermediate = scheduler.create_join(2)
-        scheduler.submit(execution.accept_when_empty_global_position_input)
-        scheduler.submit(execution.on_action_parent_occupied)
-        scheduler.submit(execution.accept_when_empty_global_position_holder)
-        execution.accept_when_empty_global_position_intermediate()
+        scheduler.continue_with(
+            execution.accept_when_empty_global_position_input,
+            execution.on_action_parent_occupied,
+            execution.accept_when_empty_global_position_holder,
+            execution.accept_when_empty_global_position_intermediate,
+        )
 
 
 @final

@@ -95,8 +95,10 @@ class DestroyerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.occupied.Occupied
         )
-        self.scheduler.submit(self.destroy_position_target)
-        self.destroy_position_target__global_position_occupied()
+        self.scheduler.continue_with(
+            self.destroy_position_target,
+            self.destroy_position_target__global_position_occupied,
+        )
 
     def create_position_target__global_position_empty(self):
         self.action.get_interface_position(

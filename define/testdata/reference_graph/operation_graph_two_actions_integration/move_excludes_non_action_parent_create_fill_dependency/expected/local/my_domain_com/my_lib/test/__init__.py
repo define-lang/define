@@ -60,8 +60,10 @@ class TestExecution:
         self.execution_position_gateway__action_other.guarantees.position_box__global_position_item__move__position_box__global_position_destination.consumers.append(
             self.destroy_position_gateway__action_other__position_box__global_position_destination
         )
-        self.scheduler.submit(self.create_position_gateway__action_other__position_box)
-        self.create_position_gateway__action_other__position_trigger_pos()
+        self.scheduler.continue_with(
+            self.create_position_gateway__action_other__position_box,
+            self.create_position_gateway__action_other__position_trigger_pos,
+        )
 
     def create_position_gateway__action_other__position_box(self):
         self.local_position_gateway.particle.get_action(

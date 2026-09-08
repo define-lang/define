@@ -70,9 +70,11 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.deep.Deep
         )
-        self.scheduler.submit(self.destroy_position_holder)
-        self.scheduler.submit(self.destroy_position_holder__global_position_target)
-        self.destroy_position_holder__global_position_target__global_position_deep()
+        self.scheduler.continue_with(
+            self.destroy_position_holder,
+            self.destroy_position_holder__global_position_target,
+            self.destroy_position_holder__global_position_target__global_position_deep,
+        )
 
     def destroy_position_holder(self):
         self.local_position_holder.destroy_particle()

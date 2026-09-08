@@ -42,8 +42,10 @@ class TestExecution:
         self.join_for_destroy_position_box = self.scheduler.create_join(2)
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_position_source)
-        self.create_position_box()
+        self.scheduler.continue_with(
+            self.create_position_source,
+            self.create_position_box,
+        )
 
     def create_position_source(self):
         self.local_position_source.create_particle()
@@ -64,8 +66,10 @@ class TestExecution:
         self.execution_position_box__action_middle.guarantees.position_gw.consumers.append(
             self.destroy_position_box
         )
-        self.scheduler.submit(self.create_position_box__action_middle__position_gw)
-        self.create_position_box__action_middle__position_trigger_pos()
+        self.scheduler.continue_with(
+            self.create_position_box__action_middle__position_gw,
+            self.create_position_box__action_middle__position_trigger_pos,
+        )
 
     def create_position_box__action_middle__position_gw(self):
         self.local_position_box.particle.get_action(
@@ -74,8 +78,10 @@ class TestExecution:
             "position<gw>"
         ).create_particle()
         self.execution_position_box__action_middle.init_when_occupied_position_gw()
-        self.scheduler.submit(self.move_position_source_to_position_box__action_middle__position_gw__global_position_value)
-        self.execution_position_box__action_middle.continue_when_occupied_position_gw()
+        self.scheduler.continue_with(
+            self.move_position_source_to_position_box__action_middle__position_gw__global_position_value,
+            self.execution_position_box__action_middle.continue_when_occupied_position_gw,
+        )
 
     def move_position_source_to_position_box__action_middle__position_gw__global_position_value(self):
         if not self.join_for_move_position_source_to_position_box__action_middle__position_gw__global_position_value.arrive():

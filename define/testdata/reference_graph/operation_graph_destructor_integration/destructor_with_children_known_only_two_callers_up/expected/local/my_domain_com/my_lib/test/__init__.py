@@ -78,8 +78,10 @@ class TestExecution:
         self.local_position_source.particle.get_position(
             local.my_domain_com.my_lib.extra.Extra
         ).create_particle()
-        self.scheduler.submit(self.create_position_source__global_position_extra__global_position_marker_a)
-        self.create_position_source__global_position_extra__global_position_marker_b()
+        self.scheduler.continue_with(
+            self.create_position_source__global_position_extra__global_position_marker_a,
+            self.create_position_source__global_position_extra__global_position_marker_b,
+        )
 
     def create_position_source__global_position_extra__global_position_marker_a(self):
         self.local_position_source.particle.get_position(

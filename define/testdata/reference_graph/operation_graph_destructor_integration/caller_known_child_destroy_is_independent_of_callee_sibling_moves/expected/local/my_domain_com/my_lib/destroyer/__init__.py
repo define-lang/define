@@ -90,8 +90,10 @@ class DestroyerExecution:
         self.destruction_position_position_parent__global_position_known = self.local_position_parent.particle.get_position(
             local.my_domain_com.my_lib.known.Known
         )
-        self.scheduler.submit(self.destroy_position_parent)
-        self.destroy_position_parent__global_position_known()
+        self.scheduler.continue_with(
+            self.destroy_position_parent,
+            self.destroy_position_parent__global_position_known,
+        )
 
     def destroy_position_parent(self):
         literal.continue_destruction(self.continue_destroy_position_parent)

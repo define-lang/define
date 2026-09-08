@@ -102,8 +102,10 @@ class OtherExecution:
                 "position<sink>"
             )
         )
-        self.scheduler.submit(self.destroy_global_position_input)
-        self.destroy_position_sink()
+        self.scheduler.continue_with(
+            self.destroy_global_position_input,
+            self.destroy_position_sink,
+        )
 
     def destroy_global_position_input(self):
         if not self.join_for_destroy_global_position_input.arrive():

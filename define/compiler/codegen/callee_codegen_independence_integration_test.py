@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import difflib
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
@@ -22,7 +21,6 @@ _TEST_MODULE = Path("local/my_domain_com/my_lib/test/__init__.py")
 _ADDITIONAL_CALLER_MODULE = Path(
     "local/my_domain_com/my_lib/additional_caller/__init__.py"
 )
-_ADDITIONAL_CALLER_NAME = "additional_caller"
 _ADDITIONAL_CALLER_ENTRY_SOURCE = """    } and it does {
         define the position<additional_caller_call> {
             it may only contain particles where {
@@ -223,33 +221,6 @@ def _add_additional_caller(source: str) -> str:
     )
 
 
-def _assert_only_additional_caller_was_added(expected: str, actual: str):
-    expected_lines = [line for line in expected.splitlines() if line]
-    actual_lines = [line for line in actual.splitlines() if line]
-    matcher = difflib.SequenceMatcher(a=expected_lines, b=actual_lines)
-    for (
-        tag,
-        _expected_start,
-        _expected_end,
-        actual_start,
-        actual_end,
-    ) in matcher.get_opcodes():
-        if tag == "equal":
-            continue
-        added_lines = actual_lines[actual_start:actual_end]
-        if tag == "insert" and any(  # pragma: no branch
-            _ADDITIONAL_CALLER_NAME in line for line in added_lines
-        ):
-            continue
-        diff = difflib.unified_diff(
-            expected.splitlines(keepends=True),
-            actual.splitlines(keepends=True),
-            fromfile="checked-in expected test module",
-            tofile="test module with an additional caller",
-        )
-        pytest.fail("".join(diff))
-
-
 def _compile_and_run_project(
     project: Path,
     generated: Path,
@@ -303,10 +274,6 @@ def test_adding_a_caller_does_not_change_generated_callees(
     test_helpers.assert_generated_files_match(
         baseline_expected, generated, expected_files - {_TEST_MODULE}
     )
-    _assert_only_additional_caller_was_added(
-        (baseline_expected / _TEST_MODULE).read_text(),
-        (generated / _TEST_MODULE).read_text(),
-    )
 
 
 @pytest.mark.parametrize(
@@ -339,8 +306,4 @@ def test_adding_a_destructor_contributing_caller_does_not_change_generated_calle
 
     test_helpers.assert_generated_files_match(
         baseline_generated, generated_with_contributing_caller, {case.callee_module}
-    )
-    _assert_only_additional_caller_was_added(
-        (baseline_generated / _TEST_MODULE).read_text(),
-        (generated_with_contributing_caller / _TEST_MODULE).read_text(),
     )

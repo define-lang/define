@@ -56,8 +56,10 @@ class TestExecution:
             self.trace_execution,
             "outer_destructor",
         )
-        self.scheduler.submit(self.destroy_position_outer)
-        self.execution_position_outer__action_outer_destructor.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.destroy_position_outer,
+            self.execution_position_outer__action_outer_destructor.on_action_parent_occupied,
+        )
 
     def destroy_position_outer(self):
         self.local_position_outer.destroy_particle()

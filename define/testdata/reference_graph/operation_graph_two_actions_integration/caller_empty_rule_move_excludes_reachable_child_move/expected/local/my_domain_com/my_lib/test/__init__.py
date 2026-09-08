@@ -25,9 +25,11 @@ class Test(literal.EntryPoint):
         )
         execution.execution_action_other.join_for_empty_rule_global_position_input = scheduler.create_join(2)
         execution.join_when_empty_action_other__position_holder = literal.NO_JOIN
-        scheduler.submit(execution.accept_when_empty_global_position_input)
-        scheduler.submit(execution.on_action_parent_occupied)
-        execution.accept_when_empty_action_other__position_holder()
+        scheduler.continue_with(
+            execution.accept_when_empty_global_position_input,
+            execution.on_action_parent_occupied,
+            execution.accept_when_empty_action_other__position_holder,
+        )
 
 
 @final
@@ -106,8 +108,10 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.target.Target
         ).move_particle_to(self.local_position_holder_c)
-        self.scheduler.submit(self.destroy_position_holder_c)
-        self.execution_action_other.accept_for_empty_rule_global_position_input()
+        self.scheduler.continue_with(
+            self.destroy_position_holder_c,
+            self.execution_action_other.accept_for_empty_rule_global_position_input,
+        )
 
     def destroy_position_holder_c(self):
         self.local_position_holder_c.destroy_particle()

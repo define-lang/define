@@ -85,13 +85,17 @@ class TestExecution:
         self.execution_action_destroyer.join_for_destroy_position_trigger_pos = literal.NO_JOIN
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_position_source)
-        self.create_action_destroyer__position_trigger_pos()
+        self.scheduler.continue_with(
+            self.create_position_source,
+            self.create_action_destroyer__position_trigger_pos,
+        )
 
     def create_position_source(self):
         self.local_position_source.create_particle()
-        self.scheduler.submit(self.create_position_source__global_position_required)
-        self.create_position_source__global_position_sibling()
+        self.scheduler.continue_with(
+            self.create_position_source__global_position_required,
+            self.create_position_source__global_position_sibling,
+        )
 
     def create_position_source__global_position_required(self):
         self.local_position_source.particle.get_position(
@@ -159,8 +163,10 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.extra.Extra
         )
-        self.scheduler.submit(self.execution_action_destroyer.accept_for_empty_rule_position_parent__global_position_required)
-        self.execution_action_destroyer__position_parent__action_destruct_sibling.accept_for_empty_rule_global_position_sibling()
+        self.scheduler.continue_with(
+            self.execution_action_destroyer.accept_for_empty_rule_position_parent__global_position_required,
+            self.execution_action_destroyer__position_parent__action_destruct_sibling.accept_for_empty_rule_global_position_sibling,
+        )
 
     def create_action_destroyer__position_trigger_pos(self):
         self.action.on_particle.get_action(

@@ -46,8 +46,10 @@ class SecondExecution:
         self.execution_position_box__action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
             self.scheduler,
         )
-        self.scheduler.submit(self.create_position_box__action_inner__position_trigger_pos)
-        self.execution_position_box__action_inner.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_position_box__action_inner__position_trigger_pos,
+            self.execution_position_box__action_inner.on_action_parent_occupied,
+        )
 
     def create_position_box__action_inner__position_trigger_pos(self):
         self.local_position_box.particle.get_action(

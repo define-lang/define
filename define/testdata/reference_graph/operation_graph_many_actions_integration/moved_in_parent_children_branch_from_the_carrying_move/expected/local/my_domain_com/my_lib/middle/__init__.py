@@ -115,8 +115,10 @@ class MiddleExecution:
         self.execution_position_gw__action_inner.guarantees.position_input__global_position_parent__global_position_b.consumers.append(
             self.destroy_position_gw__action_inner__position_input__global_position_parent__global_position_b
         )
-        self.scheduler.submit(self.move_position_iface_to_position_gw__action_inner__position_input)
-        self.create_position_gw__action_inner__position_run()
+        self.scheduler.continue_with(
+            self.move_position_iface_to_position_gw__action_inner__position_input,
+            self.create_position_gw__action_inner__position_run,
+        )
 
     def move_position_iface_to_position_gw__action_inner__position_input(self):
         if not self.join_for_move_position_iface_to_position_gw__action_inner__position_input.arrive():
@@ -146,8 +148,10 @@ class MiddleExecution:
         ).get_interface_position(
             "position<run>"
         )
-        self.scheduler.submit(self.destroy_position_gw)
-        self.destroy_position_gw__action_inner__position_run()
+        self.scheduler.continue_with(
+            self.destroy_position_gw,
+            self.destroy_position_gw__action_inner__position_run,
+        )
 
     def destroy_position_gw(self):
         if not self.join_for_destroy_position_gw.arrive():

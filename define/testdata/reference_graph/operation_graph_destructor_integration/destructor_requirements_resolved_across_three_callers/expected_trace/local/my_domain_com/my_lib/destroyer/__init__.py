@@ -89,8 +89,10 @@ class DestroyerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.callee_known.CalleeKnown
         )
-        self.scheduler.submit(self.destroy_position_target)
-        self.destroy_position_target__global_position_callee_known()
+        self.scheduler.continue_with(
+            self.destroy_position_target,
+            self.destroy_position_target__global_position_callee_known,
+        )
 
     def destroy_position_target(self):
         if not self.join_for_destroy_position_target.arrive():

@@ -70,8 +70,10 @@ class MiddleAExecution:
         self.join_for_empty_rule_position_run: literal.Join
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_position_destroyer_holder)
-        self.create_position_box()
+        self.scheduler.continue_with(
+            self.create_position_destroyer_holder,
+            self.create_position_box,
+        )
 
     def accept_for_empty_rule_position_run(self):
         if not self.join_for_empty_rule_position_run.arrive():

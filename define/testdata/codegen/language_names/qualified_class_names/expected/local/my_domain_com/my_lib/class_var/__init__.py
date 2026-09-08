@@ -66,12 +66,14 @@ class ClassVarExecution:
         self.join_for_empty_rule_position_trigger_pos: literal.Join
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_position_self)
-        self.scheduler.submit(self.create_position_self_2)
-        self.scheduler.submit(self.create_position_literal)
-        self.scheduler.submit(self.create_position_super)
-        self.scheduler.submit(self.create_position_type)
-        self.create_position_typing()
+        self.scheduler.continue_with(
+            self.create_position_self,
+            self.create_position_self_2,
+            self.create_position_literal,
+            self.create_position_super,
+            self.create_position_type,
+            self.create_position_typing,
+        )
 
     def accept_for_empty_rule_position_trigger_pos(self):
         if not self.join_for_empty_rule_position_trigger_pos.arrive():

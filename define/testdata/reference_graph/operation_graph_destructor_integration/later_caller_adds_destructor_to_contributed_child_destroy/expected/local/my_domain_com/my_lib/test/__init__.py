@@ -60,8 +60,10 @@ class TestExecution:
         self.execution_action_middle.join_for_move_position_target_to_action_destroyer__position_target = literal.NO_JOIN
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_position_source)
-        self.create_position_child_source()
+        self.scheduler.continue_with(
+            self.create_position_source,
+            self.create_position_child_source,
+        )
 
     def create_position_source(self):
         self.local_position_source.create_particle()

@@ -79,8 +79,10 @@ class TestExecution:
         self.execution_position_gateway__action_other.guarantees.position_parent.consumers.append(
             self.destroy_position_gateway
         )
-        self.scheduler.submit(self.create_position_gateway__action_other__position_parent)
-        self.create_position_gateway__action_other__position_trigger_pos()
+        self.scheduler.continue_with(
+            self.create_position_gateway__action_other__position_parent,
+            self.create_position_gateway__action_other__position_trigger_pos,
+        )
 
     def create_position_gateway__action_other__position_parent(self):
         self.local_position_gateway.particle.get_action(
@@ -95,8 +97,10 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.child.Child
         ).create_particle()
-        self.scheduler.submit(self.create_position_gateway__action_other__position_parent__global_position_child__global_position_sibling)
-        self.create_position_gateway__action_other__position_parent__global_position_child__global_position_grandchild()
+        self.scheduler.continue_with(
+            self.create_position_gateway__action_other__position_parent__global_position_child__global_position_sibling,
+            self.create_position_gateway__action_other__position_parent__global_position_child__global_position_grandchild,
+        )
 
     def create_position_gateway__action_other__position_parent__global_position_child__global_position_sibling(self):
         self.local_position_gateway.particle.get_action(
@@ -117,8 +121,10 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.sibling.Sibling
         )
-        self.scheduler.submit(self.execution_position_gateway__action_other.accept_for_empty_rule_position_parent)
-        self.execution_position_gateway__action_other.accept_for_empty_rule_position_parent__global_position_child()
+        self.scheduler.continue_with(
+            self.execution_position_gateway__action_other.accept_for_empty_rule_position_parent,
+            self.execution_position_gateway__action_other.accept_for_empty_rule_position_parent__global_position_child,
+        )
 
     def create_position_gateway__action_other__position_parent__global_position_child__global_position_grandchild(self):
         self.local_position_gateway.particle.get_action(

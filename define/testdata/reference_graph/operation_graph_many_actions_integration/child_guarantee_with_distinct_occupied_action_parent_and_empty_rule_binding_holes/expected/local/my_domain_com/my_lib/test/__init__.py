@@ -65,8 +65,10 @@ class TestExecution:
         self.execution_position_gateway__action_middle.guarantees.position_source__move__position_holder.consumers.append(
             self.destroy_position_gateway__action_middle__position_holder__global_position_marker
         )
-        self.scheduler.submit(self.create_position_gateway__action_middle__position_source)
-        self.create_position_gateway__action_middle__position_trigger_pos()
+        self.scheduler.continue_with(
+            self.create_position_gateway__action_middle__position_source,
+            self.create_position_gateway__action_middle__position_trigger_pos,
+        )
 
     def create_position_gateway__action_middle__position_source(self):
         self.local_position_gateway.particle.get_action(
@@ -75,9 +77,11 @@ class TestExecution:
             "position<source>"
         ).create_particle()
         self.execution_position_gateway__action_middle.init_when_occupied_position_source()
-        self.scheduler.submit(self.create_position_gateway__action_middle__position_source__global_position_marker)
-        self.scheduler.submit(self.execution_position_gateway__action_middle.continue_when_occupied_position_source)
-        self.execution_position_gateway__action_middle.accept_when_empty_position_source__global_position_result()
+        self.scheduler.continue_with(
+            self.create_position_gateway__action_middle__position_source__global_position_marker,
+            self.execution_position_gateway__action_middle.continue_when_occupied_position_source,
+            self.execution_position_gateway__action_middle.accept_when_empty_position_source__global_position_result,
+        )
 
     def create_position_gateway__action_middle__position_source__global_position_marker(self):
         self.local_position_gateway.particle.get_action(
@@ -116,8 +120,10 @@ class TestExecution:
         ).get_interface_position(
             "position<holder>"
         )
-        self.scheduler.submit(self.destroy_position_gateway__action_middle__position_holder)
-        self.destroy_position_result()
+        self.scheduler.continue_with(
+            self.destroy_position_gateway__action_middle__position_holder,
+            self.destroy_position_result,
+        )
 
     def destroy_position_gateway__action_middle__position_holder(self):
         self.destruction_position_position_gateway__action_middle__position_holder.destroy_particle()

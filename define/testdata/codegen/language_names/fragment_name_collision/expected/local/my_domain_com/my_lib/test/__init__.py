@@ -24,10 +24,12 @@ class Test(literal.EntryPoint):
             self,
             scheduler,
         )
-        scheduler.submit(execution.accept_when_empty_global_position_item_name)
-        scheduler.submit(execution.accept_when_empty_global_position_item_name_2)
-        scheduler.submit(execution.accept_when_empty_global_position_item_name_3)
-        execution.accept_when_empty_global_position_item_name_4()
+        scheduler.continue_with(
+            execution.accept_when_empty_global_position_item_name,
+            execution.accept_when_empty_global_position_item_name_2,
+            execution.accept_when_empty_global_position_item_name_3,
+            execution.accept_when_empty_global_position_item_name_4,
+        )
 
 
 @final

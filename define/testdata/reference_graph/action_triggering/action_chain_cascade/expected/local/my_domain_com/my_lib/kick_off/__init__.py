@@ -94,10 +94,12 @@ class KickOffExecution:
         self.execution_position_output__action_react_b.guarantees.position_trigger.consumers.append(
             self.destroy_position_output
         )
-        self.scheduler.submit(self.create_position_output__action_react_a__position_trigger)
-        self.scheduler.submit(self.create_position_output__action_react_b__position_trigger)
-        self.scheduler.submit(self.execution_position_output__action_react_a.accept_when_empty_position_result)
-        self.execution_position_output__action_react_b.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_position_output__action_react_a__position_trigger,
+            self.create_position_output__action_react_b__position_trigger,
+            self.execution_position_output__action_react_a.accept_when_empty_position_result,
+            self.execution_position_output__action_react_b.on_action_parent_occupied,
+        )
 
     def create_position_output__action_react_a__position_trigger(self):
         self.action.get_interface_position(

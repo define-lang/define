@@ -82,8 +82,10 @@ class MiddleExecution:
         self.execution_position_inner_holder__action_inner.guarantees.position_input__global_position_result_value.consumers.append(
             self.move_position_inner_holder__action_inner__position_input__global_position_result_value_to_position_result_holder
         )
-        self.scheduler.submit(self.move_position_inner_parent_to_position_inner_holder__action_inner__position_input)
-        self.create_position_inner_holder__action_inner__position_trigger_pos()
+        self.scheduler.continue_with(
+            self.move_position_inner_parent_to_position_inner_holder__action_inner__position_input,
+            self.create_position_inner_holder__action_inner__position_trigger_pos,
+        )
 
     def move_position_inner_parent_to_position_inner_holder__action_inner__position_input(self):
         if not self.join_for_move_position_inner_parent_to_position_inner_holder__action_inner__position_input.arrive():
@@ -110,8 +112,10 @@ class MiddleExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         )
-        self.scheduler.submit(self.destroy_position_inner_holder)
-        self.destroy_position_inner_holder__action_inner__position_trigger_pos()
+        self.scheduler.continue_with(
+            self.destroy_position_inner_holder,
+            self.destroy_position_inner_holder__action_inner__position_trigger_pos,
+        )
 
     def move_position_inner_holder__action_inner__position_input__global_position_result_value_to_position_result_holder(self):
         self.local_position_inner_holder.particle.get_action(

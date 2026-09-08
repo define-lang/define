@@ -22,11 +22,13 @@ class Test(literal.EntryPoint):
         execution.execution_action_act.join_when_empty_position_iface_dest = literal.NO_JOIN
         execution.execution_action_act.join_for_move_position_src_b_to_position_iface_dest = scheduler.create_join(2)
         execution.join_when_empty_action_act__position_iface_dest = literal.NO_JOIN
-        scheduler.submit(execution.on_action_parent_occupied)
-        scheduler.submit(execution.accept_when_empty_action_act__position_src_a)
-        scheduler.submit(execution.accept_when_empty_action_act__position_src_b)
-        scheduler.submit(execution.accept_when_empty_action_act__position_src_c)
-        execution.accept_when_empty_action_act__position_iface_dest()
+        scheduler.continue_with(
+            execution.on_action_parent_occupied,
+            execution.accept_when_empty_action_act__position_src_a,
+            execution.accept_when_empty_action_act__position_src_b,
+            execution.accept_when_empty_action_act__position_src_c,
+            execution.accept_when_empty_action_act__position_iface_dest,
+        )
 
 
 @final
@@ -56,8 +58,10 @@ class TestExecution:
         self.execution_action_act.join_for_destroy_position_trigger = literal.NO_JOIN
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_action_act__position_chain_dest)
-        self.create_action_act__position_trigger()
+        self.scheduler.continue_with(
+            self.create_action_act__position_chain_dest,
+            self.create_action_act__position_trigger,
+        )
 
     def accept_when_empty_action_act__position_src_a(self):
         self.execution_action_act.accept_when_empty_position_src_a()

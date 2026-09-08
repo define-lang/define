@@ -67,8 +67,10 @@ class TestExecution:
         self.execution_position_box__action_combiner.guarantees.global_position_second_marker.consumers.append(
             self.destroy_position_box__global_position_second_marker
         )
-        self.scheduler.submit(self.execution_position_box__action_combiner.accept_when_empty_global_position_first_marker)
-        self.execution_position_box__action_combiner.accept_when_empty_global_position_second_marker()
+        self.scheduler.continue_with(
+            self.execution_position_box__action_combiner.accept_when_empty_global_position_first_marker,
+            self.execution_position_box__action_combiner.accept_when_empty_global_position_second_marker,
+        )
 
     def destroy_position_box(self):
         if not self.join_for_destroy_position_box.arrive():

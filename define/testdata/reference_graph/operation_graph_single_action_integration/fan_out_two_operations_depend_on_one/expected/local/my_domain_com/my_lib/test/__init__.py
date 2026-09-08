@@ -37,8 +37,10 @@ class TestExecution:
     def create_position_a(self):
         self.local_position_a.create_particle()
         self.local_position_a.move_particle_to(self.local_position_b)
-        self.scheduler.submit(self.create_position_a_2)
-        self.destroy_position_b()
+        self.scheduler.continue_with(
+            self.create_position_a_2,
+            self.destroy_position_b,
+        )
 
     def create_position_a_2(self):
         self.local_position_a.create_particle()

@@ -80,9 +80,11 @@ class TestExecution:
             self.trace_execution,
             "destructor",
         )
-        self.scheduler.submit(self.destroy_position_box)
-        self.scheduler.submit(self.destroy_position_box__global_position_child)
-        self.execution_position_box__global_position_child__action_destructor.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.destroy_position_box,
+            self.destroy_position_box__global_position_child,
+            self.execution_position_box__global_position_child__action_destructor.on_action_parent_occupied,
+        )
 
     def destroy_position_box(self):
         self.local_position_box.destroy_particle()

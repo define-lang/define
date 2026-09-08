@@ -105,8 +105,10 @@ class DestroyerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.required.Required
         )
-        self.scheduler.submit(self.destroy_position_parent)
-        self.destroy_position_parent__global_position_required()
+        self.scheduler.continue_with(
+            self.destroy_position_parent,
+            self.destroy_position_parent__global_position_required,
+        )
 
     def destroy_position_parent(self):
         if not self.join_for_destroy_position_parent.arrive():

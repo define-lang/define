@@ -26,8 +26,10 @@ class DestructorExecution:
         )
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_position_first)
-        self.create_position_second()
+        self.scheduler.continue_with(
+            self.create_position_first,
+            self.create_position_second,
+        )
 
     def create_position_first(self):
         self.local_position_first.create_particle()

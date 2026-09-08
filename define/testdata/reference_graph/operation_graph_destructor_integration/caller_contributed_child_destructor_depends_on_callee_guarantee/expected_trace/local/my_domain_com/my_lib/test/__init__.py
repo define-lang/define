@@ -90,8 +90,10 @@ class TestExecution:
         self.execution_action_destroyer.join_for_destroy_position_parent = self.scheduler.create_join(2)
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_position_source)
-        self.create_action_destroyer__position_trigger_pos()
+        self.scheduler.continue_with(
+            self.create_position_source,
+            self.create_action_destroyer__position_trigger_pos,
+        )
 
     def create_position_source(self):
         self.local_position_source.create_particle()
@@ -147,9 +149,11 @@ class TestExecution:
             self.destruction_connection_action_destroyer_2.complete
         )
         self.execution_action_destroyer.init_when_occupied_position_parent()
-        self.scheduler.submit(self.execution_action_destroyer.continue_when_occupied_position_parent)
-        self.scheduler.submit(self.execution_action_destroyer.accept_when_empty_position_parent__action_maker__position_result)
-        self.execution_action_destroyer__position_parent__action_destruct.accept_for_empty_rule_global_position_sibling()
+        self.scheduler.continue_with(
+            self.execution_action_destroyer.continue_when_occupied_position_parent,
+            self.execution_action_destroyer.accept_when_empty_position_parent__action_maker__position_result,
+            self.execution_action_destroyer__position_parent__action_destruct.accept_for_empty_rule_global_position_sibling,
+        )
 
     def create_action_destroyer__position_trigger_pos(self):
         self.action.on_particle.get_action(

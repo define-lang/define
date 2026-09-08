@@ -57,9 +57,11 @@ class TestExecution:
         self.join_for_move_position_box1_to_position_action_holder__action_move__position_input = self.scheduler.create_join(2)
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_position_action_holder)
-        self.scheduler.submit(self.create_position_box1)
-        self.create_position_box2()
+        self.scheduler.continue_with(
+            self.create_position_action_holder,
+            self.create_position_box1,
+            self.create_position_box2,
+        )
 
     def create_position_action_holder(self):
         self.local_position_action_holder.create_particle()
@@ -116,8 +118,10 @@ class TestExecution:
         ).get_interface_position(
             "position<output>"
         ).move_particle_to(self.local_position_box2)
-        self.scheduler.submit(self.destroy_position_box2)
-        self.execution_position_action_holder__action_move_2.accept_for_empty_rule_position_input()
+        self.scheduler.continue_with(
+            self.destroy_position_box2,
+            self.execution_position_action_holder__action_move_2.accept_for_empty_rule_position_input,
+        )
 
     def move_position_box1_to_position_action_holder__action_move__position_input(self):
         if not self.join_for_move_position_box1_to_position_action_holder__action_move__position_input.arrive():
@@ -137,8 +141,10 @@ class TestExecution:
         ).get_interface_position(
             "position<output>"
         ).move_particle_to(self.local_position_dest)
-        self.scheduler.submit(self.create_position_dest__global_position_a)
-        self.destroy_position_action_holder()
+        self.scheduler.continue_with(
+            self.create_position_dest__global_position_a,
+            self.destroy_position_action_holder,
+        )
 
     def create_position_dest__global_position_a(self):
         self.local_position_dest.particle.get_position(
@@ -147,8 +153,10 @@ class TestExecution:
         self.destruction_position_position_dest__global_position_a = self.local_position_dest.particle.get_position(
             local.my_domain_com.my_lib.a.A
         )
-        self.scheduler.submit(self.destroy_position_dest)
-        self.destroy_position_dest__global_position_a()
+        self.scheduler.continue_with(
+            self.destroy_position_dest,
+            self.destroy_position_dest__global_position_a,
+        )
 
     def destroy_position_box2(self):
         self.local_position_box2.destroy_particle()

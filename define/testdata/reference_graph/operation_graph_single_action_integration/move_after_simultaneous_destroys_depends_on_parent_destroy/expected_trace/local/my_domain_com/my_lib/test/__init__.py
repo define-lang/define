@@ -83,8 +83,10 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.leaf.Leaf
         )
-        self.scheduler.submit(self.destroy_position_box__global_position_child)
-        self.destroy_position_box__global_position_child__global_position_leaf()
+        self.scheduler.continue_with(
+            self.destroy_position_box__global_position_child,
+            self.destroy_position_box__global_position_child__global_position_leaf,
+        )
 
     def destroy_position_box__global_position_child(self):
         self.destruction_position_position_box__global_position_child.destroy_particle()

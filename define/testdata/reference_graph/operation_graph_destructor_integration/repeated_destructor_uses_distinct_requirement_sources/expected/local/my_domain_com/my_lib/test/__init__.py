@@ -100,8 +100,10 @@ class TestExecution:
         self.execution_action_destroyer_2.join_for_destroy_position_target = literal.NO_JOIN
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_position_first_source)
-        self.create_position_second_source()
+        self.scheduler.continue_with(
+            self.create_position_first_source,
+            self.create_position_second_source,
+        )
 
     def create_position_first_source(self):
         self.local_position_first_source.create_particle()
@@ -130,8 +132,10 @@ class TestExecution:
         self.execution_action_destroyer__position_target__action_destructor.guarantees.global_position_marker.consumers.append(
             self.destroy_action_destroyer__position_target__global_position_marker
         )
-        self.scheduler.submit(self.execution_action_destroyer.accept_for_empty_rule_position_target)
-        self.execution_action_destroyer__position_target__action_destructor.accept_for_empty_rule_global_position_marker()
+        self.scheduler.continue_with(
+            self.execution_action_destroyer.accept_for_empty_rule_position_target,
+            self.execution_action_destroyer__position_target__action_destructor.accept_for_empty_rule_global_position_marker,
+        )
 
     def destroy_action_destroyer__position_target__global_position_marker(self):
         if not self.join_for_destroy_action_destroyer__position_target__global_position_marker.arrive():
@@ -178,8 +182,10 @@ class TestExecution:
         self.execution_action_destroyer__position_target__action_destructor_2.guarantees.global_position_marker.consumers.append(
             self.destroy_action_destroyer__position_target__global_position_marker_2
         )
-        self.scheduler.submit(self.execution_action_destroyer_2.accept_for_empty_rule_position_target)
-        self.execution_action_destroyer__position_target__action_destructor_2.accept_for_empty_rule_global_position_marker()
+        self.scheduler.continue_with(
+            self.execution_action_destroyer_2.accept_for_empty_rule_position_target,
+            self.execution_action_destroyer__position_target__action_destructor_2.accept_for_empty_rule_global_position_marker,
+        )
 
     def destroy_action_destroyer__position_target__global_position_marker_2(self):
         if not self.join_for_destroy_action_destroyer__position_target__global_position_marker_2.arrive():

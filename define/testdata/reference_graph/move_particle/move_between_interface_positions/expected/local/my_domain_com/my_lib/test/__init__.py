@@ -20,8 +20,10 @@ class Test(literal.EntryPoint):
         )
         execution.execution_action_runner.join_for_empty_rule_position_source = scheduler.create_join(2)
         execution.join_when_empty_action_runner__position_dest = literal.NO_JOIN
-        scheduler.submit(execution.on_action_parent_occupied)
-        execution.accept_when_empty_action_runner__position_dest()
+        scheduler.continue_with(
+            execution.on_action_parent_occupied,
+            execution.accept_when_empty_action_runner__position_dest,
+        )
 
 
 @final
@@ -46,8 +48,10 @@ class TestExecution:
         self.execution_action_runner.join_for_destroy_position_run = literal.NO_JOIN
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_action_runner__position_source)
-        self.create_action_runner__position_run()
+        self.scheduler.continue_with(
+            self.create_action_runner__position_source,
+            self.create_action_runner__position_run,
+        )
 
     def accept_when_empty_action_runner__position_dest(self):
         if not self.join_when_empty_action_runner__position_dest.arrive():

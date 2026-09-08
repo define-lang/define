@@ -23,9 +23,11 @@ class Test(literal.EntryPoint):
         execution.execution_action_middle.execution_action_mover.join_for_empty_rule_global_position_parent = scheduler.create_join(3)
         execution.execution_action_middle.join_for_empty_rule_global_position_parent = literal.NO_JOIN
         execution.join_when_empty_action_mover__position_destination = literal.NO_JOIN
-        scheduler.submit(execution.accept_when_empty_global_position_parent)
-        scheduler.submit(execution.on_action_parent_occupied)
-        execution.accept_when_empty_action_mover__position_destination()
+        scheduler.continue_with(
+            execution.accept_when_empty_global_position_parent,
+            execution.on_action_parent_occupied,
+            execution.accept_when_empty_action_mover__position_destination,
+        )
 
 
 @final
@@ -51,8 +53,10 @@ class TestExecution:
         self.create_global_position_parent()
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_action_middle__position_trigger_pos)
-        self.execution_action_middle.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_action_middle__position_trigger_pos,
+            self.execution_action_middle.on_action_parent_occupied,
+        )
 
     def accept_when_empty_action_mover__position_destination(self):
         if not self.join_when_empty_action_mover__position_destination.arrive():
@@ -63,8 +67,10 @@ class TestExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.parent.Parent
         ).create_particle()
-        self.scheduler.submit(self.execution_action_middle.accept_when_empty_global_position_parent__global_position_first)
-        self.execution_action_middle.accept_when_empty_global_position_parent__global_position_second()
+        self.scheduler.continue_with(
+            self.execution_action_middle.accept_when_empty_global_position_parent__global_position_first,
+            self.execution_action_middle.accept_when_empty_global_position_parent__global_position_second,
+        )
 
     def create_action_middle__position_trigger_pos(self):
         self.action.on_particle.get_action(

@@ -45,8 +45,10 @@ class DestructorExecution:
         )
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_action_forwarder__position_trigger_pos)
-        self.execution_action_forwarder.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_action_forwarder__position_trigger_pos,
+            self.execution_action_forwarder.on_action_parent_occupied,
+        )
 
     def accept_when_empty_global_position_implied(self):
         self.execution_action_forwarder.accept_when_empty_global_position_implied()

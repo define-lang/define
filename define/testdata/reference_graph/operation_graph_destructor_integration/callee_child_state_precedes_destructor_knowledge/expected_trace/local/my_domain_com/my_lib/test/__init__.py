@@ -65,9 +65,11 @@ class TestExecution:
         self.execution_action_middle.join_for_destroy_position_trigger = literal.NO_JOIN
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_position_source)
-        self.scheduler.submit(self.create_action_middle__position_trigger)
-        self.execution_action_middle.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_position_source,
+            self.create_action_middle__position_trigger,
+            self.execution_action_middle.on_action_parent_occupied,
+        )
 
     def create_position_source(self):
         self.local_position_source.create_particle()

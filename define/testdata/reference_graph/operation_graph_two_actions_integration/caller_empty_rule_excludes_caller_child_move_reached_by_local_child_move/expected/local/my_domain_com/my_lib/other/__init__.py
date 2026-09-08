@@ -124,8 +124,10 @@ class OtherExecution:
                 "position<holder>"
             )
         )
-        self.scheduler.submit(self.destroy_global_position_input)
-        self.destroy_position_holder()
+        self.scheduler.continue_with(
+            self.destroy_global_position_input,
+            self.destroy_position_holder,
+        )
 
     def destroy_global_position_input(self):
         if not self.join_for_destroy_global_position_input.arrive():

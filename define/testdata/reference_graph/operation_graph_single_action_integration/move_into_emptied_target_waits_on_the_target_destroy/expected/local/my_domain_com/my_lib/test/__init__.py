@@ -43,8 +43,10 @@ class TestExecution:
         self.join_for_move_position_src_to_position_dest = self.scheduler.create_join(2)
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_position_dest)
-        self.create_position_src()
+        self.scheduler.continue_with(
+            self.create_position_dest,
+            self.create_position_src,
+        )
 
     def create_position_dest(self):
         self.local_position_dest.create_particle()
@@ -72,8 +74,10 @@ class TestExecution:
         self.destruction_position_position_dest__global_position_child_2 = self.local_position_dest.particle.get_position(
             local.my_domain_com.my_lib.child.Child
         )
-        self.scheduler.submit(self.destroy_position_dest)
-        self.destroy_position_dest__global_position_child()
+        self.scheduler.continue_with(
+            self.destroy_position_dest,
+            self.destroy_position_dest__global_position_child,
+        )
 
     def destroy_position_dest(self):
         self.local_position_dest.destroy_particle()

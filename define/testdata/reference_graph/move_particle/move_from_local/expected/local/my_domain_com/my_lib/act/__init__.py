@@ -100,11 +100,13 @@ class ActExecution:
         self.join_for_empty_rule_position_trigger: literal.Join
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_position_src_a)
-        self.scheduler.submit(self.create_position_src_b)
-        self.scheduler.submit(self.create_position_src_c)
-        self.scheduler.submit(self.create_position_src_d)
-        self.create_position_local_chain_dest()
+        self.scheduler.continue_with(
+            self.create_position_src_a,
+            self.create_position_src_b,
+            self.create_position_src_c,
+            self.create_position_src_d,
+            self.create_position_local_chain_dest,
+        )
 
     def accept_when_empty_position_iface_dest(self):
         if not self.join_when_empty_position_iface_dest.arrive():
@@ -193,9 +195,11 @@ class ActExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.end_dest.EndDest
         )
-        self.scheduler.submit(self.destroy_position_chain_dest)
-        self.scheduler.submit(self.destroy_position_chain_dest__global_position_mid_dest)
-        self.destroy_position_chain_dest__global_position_mid_dest__global_position_end_dest()
+        self.scheduler.continue_with(
+            self.destroy_position_chain_dest,
+            self.destroy_position_chain_dest__global_position_mid_dest,
+            self.destroy_position_chain_dest__global_position_mid_dest__global_position_end_dest,
+        )
 
     def move_position_src_d_to_position_local_chain_dest__global_position_mid_local__global_position_end_local(self):
         if not self.join_for_move_position_src_d_to_position_local_chain_dest__global_position_mid_local__global_position_end_local.arrive():
@@ -215,9 +219,11 @@ class ActExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.end_local.EndLocal
         )
-        self.scheduler.submit(self.destroy_position_local_chain_dest)
-        self.scheduler.submit(self.destroy_position_local_chain_dest__global_position_mid_local)
-        self.destroy_position_local_chain_dest__global_position_mid_local__global_position_end_local()
+        self.scheduler.continue_with(
+            self.destroy_position_local_chain_dest,
+            self.destroy_position_local_chain_dest__global_position_mid_local,
+            self.destroy_position_local_chain_dest__global_position_mid_local__global_position_end_local,
+        )
 
     def destroy_position_chain_dest(self):
         if not self.join_for_destroy_position_chain_dest.arrive():

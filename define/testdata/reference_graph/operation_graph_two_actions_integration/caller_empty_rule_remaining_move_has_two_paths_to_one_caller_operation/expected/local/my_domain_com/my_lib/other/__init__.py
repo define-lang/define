@@ -102,8 +102,10 @@ class OtherExecution:
                 "position<holder_a>"
             )
         )
-        self.scheduler.submit(self.move_position_holder_a_to_position_holder_b)
-        self.create_global_position_input__global_position_a()
+        self.scheduler.continue_with(
+            self.move_position_holder_a_to_position_holder_b,
+            self.create_global_position_input__global_position_a,
+        )
 
     def move_position_holder_a_to_position_holder_b(self):
         if not self.join_for_move_position_holder_a_to_position_holder_b.arrive():
@@ -161,8 +163,10 @@ class OtherExecution:
                 "position<holder_c>"
             )
         )
-        self.scheduler.submit(self.destroy_global_position_input)
-        self.destroy_position_holder_c()
+        self.scheduler.continue_with(
+            self.destroy_global_position_input,
+            self.destroy_position_holder_c,
+        )
 
     def destroy_global_position_input(self):
         if not self.join_for_destroy_global_position_input.arrive():

@@ -55,8 +55,10 @@ class TestExecution:
             "box",
             1,
         )
-        self.scheduler.submit(self.create_position_box__global_position_a)
-        self.create_position_box__global_position_b()
+        self.scheduler.continue_with(
+            self.create_position_box__global_position_a,
+            self.create_position_box__global_position_b,
+        )
 
     def create_position_box__global_position_a(self):
         self.local_position_box.particle.get_position(
@@ -70,8 +72,10 @@ class TestExecution:
         self.destruction_position_position_box__global_position_a = self.local_position_box.particle.get_position(
             local.my_domain_com.my_lib.a.A
         )
-        self.scheduler.submit(self.destroy_position_box)
-        self.destroy_position_box__global_position_a()
+        self.scheduler.continue_with(
+            self.destroy_position_box,
+            self.destroy_position_box__global_position_a,
+        )
 
     def create_position_box__global_position_b(self):
         self.local_position_box.particle.get_position(
@@ -85,8 +89,10 @@ class TestExecution:
         self.destruction_position_position_box__global_position_b = self.local_position_box.particle.get_position(
             local.my_domain_com.my_lib.b.B
         )
-        self.scheduler.submit(self.destroy_position_box)
-        self.destroy_position_box__global_position_b()
+        self.scheduler.continue_with(
+            self.destroy_position_box,
+            self.destroy_position_box__global_position_b,
+        )
 
     def destroy_position_box(self):
         if not self.join_for_destroy_position_box.arrive():

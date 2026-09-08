@@ -99,8 +99,10 @@ class RunnerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.mid.Mid
         )
-        self.scheduler.submit(self.destroy_position_wrap)
-        self.destroy_position_wrap__global_position_mid()
+        self.scheduler.continue_with(
+            self.destroy_position_wrap,
+            self.destroy_position_wrap__global_position_mid,
+        )
 
     def destroy_position_wrap(self):
         if not self.join_for_destroy_position_wrap.arrive():

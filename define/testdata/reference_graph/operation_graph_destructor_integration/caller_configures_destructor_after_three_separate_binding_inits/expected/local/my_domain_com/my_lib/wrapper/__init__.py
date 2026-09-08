@@ -96,8 +96,10 @@ class WrapperExecution:
             )
         )
         self.execution_position_run__action_outer.init_when_occupied_position_run()
-        self.scheduler.submit(self.execution_position_run__action_outer.accept_for_empty_rule_position_run__global_position_payload)
-        self.execution_position_run__action_outer.continue_when_occupied_position_run()
+        self.scheduler.continue_with(
+            self.execution_position_run__action_outer.accept_for_empty_rule_position_run__global_position_payload,
+            self.execution_position_run__action_outer.continue_when_occupied_position_run,
+        )
 
     def destroy_position_run(self):
         if not self.join_for_destroy_position_run.arrive():

@@ -56,8 +56,10 @@ class TestExecution:
         self.join_for_destroy_position_carrier = self.scheduler.create_join(2)
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_position_carrier)
-        self.create_position_source()
+        self.scheduler.continue_with(
+            self.create_position_carrier,
+            self.create_position_source,
+        )
 
     def create_position_carrier(self):
         self.local_position_carrier.create_particle()
@@ -79,8 +81,10 @@ class TestExecution:
         self.execution_position_carrier__action_callee.guarantees.position_src.consumers.append(
             self.destroy_position_carrier
         )
-        self.scheduler.submit(self.move_position_source_to_position_carrier__action_callee__position_src)
-        self.create_position_carrier__action_callee__position_trigger_pos()
+        self.scheduler.continue_with(
+            self.move_position_source_to_position_carrier__action_callee__position_src,
+            self.create_position_carrier__action_callee__position_trigger_pos,
+        )
 
     def create_position_source(self):
         self.local_position_source.create_particle()

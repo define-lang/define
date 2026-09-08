@@ -84,8 +84,10 @@ class TestExecution:
             "source",
             1,
         )
-        self.scheduler.submit(self.create_position_source__global_position_known)
-        self.create_position_source__global_position_extra()
+        self.scheduler.continue_with(
+            self.create_position_source__global_position_known,
+            self.create_position_source__global_position_extra,
+        )
 
     def create_position_source__global_position_known(self):
         self.local_position_source.particle.get_position(

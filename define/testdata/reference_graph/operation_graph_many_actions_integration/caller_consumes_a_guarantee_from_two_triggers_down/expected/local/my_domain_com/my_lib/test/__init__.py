@@ -61,8 +61,10 @@ class TestExecution:
         self.execution_position_box__action_outer.guarantees.position_gw.consumers.append(
             self.destroy_position_box
         )
-        self.scheduler.submit(self.create_position_box__action_outer__position_gw)
-        self.create_position_box__action_outer__position_trigger_pos()
+        self.scheduler.continue_with(
+            self.create_position_box__action_outer__position_gw,
+            self.create_position_box__action_outer__position_trigger_pos,
+        )
 
     def create_position_box__action_outer__position_gw(self):
         self.local_position_box.particle.get_action(
@@ -95,8 +97,10 @@ class TestExecution:
         ).get_interface_position(
             "position<out>"
         ).move_particle_to(self.local_position_result)
-        self.scheduler.submit(self.destroy_position_result)
-        self.destroy_position_box()
+        self.scheduler.continue_with(
+            self.destroy_position_result,
+            self.destroy_position_box,
+        )
 
     def destroy_position_result(self):
         self.local_position_result.destroy_particle()

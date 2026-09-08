@@ -23,8 +23,10 @@ class Test(literal.EntryPoint):
         execution.execution_action_destroyer.execution_action_mover.join_for_empty_rule_position_run = scheduler.create_join(2)
         execution.execution_action_destroyer.join_when_empty_action_mover__position_result = literal.NO_JOIN
         execution.join_when_empty_action_mover__position_result = literal.NO_JOIN
-        scheduler.submit(execution.on_action_parent_occupied)
-        execution.accept_when_empty_action_mover__position_result()
+        scheduler.continue_with(
+            execution.on_action_parent_occupied,
+            execution.accept_when_empty_action_mover__position_result,
+        )
 
 
 @final

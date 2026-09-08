@@ -70,8 +70,10 @@ class ExtraDestructorExecution:
         self.execution_action_cleaner.join_for_destroy_global_position_marker = literal.NO_JOIN
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_position_source)
-        self.create_action_cleaner__position_trigger_pos()
+        self.scheduler.continue_with(
+            self.create_position_source,
+            self.create_action_cleaner__position_trigger_pos,
+        )
 
     def accept_when_empty_global_position_marker(self):
         if not self.join_when_empty_global_position_marker.arrive():

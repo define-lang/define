@@ -104,9 +104,11 @@ class TestExecution:
             self.destruction_connection_action_destroyer.complete
         )
         self.execution_action_destroyer.init_when_occupied_position_target()
-        self.scheduler.submit(self.execution_action_destroyer.accept_when_empty_position_target__global_position_first)
-        self.scheduler.submit(self.execution_action_destroyer.accept_when_empty_position_target__global_position_third)
-        self.execution_action_destroyer.accept_when_empty_position_target__global_position_marker()
+        self.scheduler.continue_with(
+            self.execution_action_destroyer.accept_when_empty_position_target__global_position_first,
+            self.execution_action_destroyer.accept_when_empty_position_target__global_position_third,
+            self.execution_action_destroyer.accept_when_empty_position_target__global_position_marker,
+        )
 
     def action_destroyer__position_target__action_second_destructor__when_empty_global_position_second(self):
         self.execution_action_destroyer__position_target__action_second_destructor.accept_when_empty_global_position_second()

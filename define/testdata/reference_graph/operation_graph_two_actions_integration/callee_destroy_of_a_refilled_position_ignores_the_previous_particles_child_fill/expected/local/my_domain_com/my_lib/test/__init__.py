@@ -21,8 +21,10 @@ class Test(literal.EntryPoint):
             self,
             scheduler,
         )
-        scheduler.submit(execution.accept_when_empty_global_position_origin)
-        execution.on_action_parent_occupied()
+        scheduler.continue_with(
+            execution.accept_when_empty_global_position_origin,
+            execution.on_action_parent_occupied,
+        )
 
 
 @final
@@ -66,8 +68,10 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.child.Child
         )
-        self.scheduler.submit(self.destroy_global_position_origin)
-        self.destroy_global_position_origin__global_position_child()
+        self.scheduler.continue_with(
+            self.destroy_global_position_origin,
+            self.destroy_global_position_origin__global_position_child,
+        )
 
     def destroy_global_position_origin(self):
         self.action.on_particle.get_position(

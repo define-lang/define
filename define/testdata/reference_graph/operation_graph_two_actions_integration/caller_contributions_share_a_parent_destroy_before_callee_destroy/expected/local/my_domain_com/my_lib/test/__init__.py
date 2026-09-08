@@ -69,16 +69,20 @@ class TestExecution:
         self.execution_action_destroyer.join_for_destroy_position_parent = literal.NO_JOIN
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_position_source)
-        self.create_action_destroyer__position_trigger_pos()
+        self.scheduler.continue_with(
+            self.create_position_source,
+            self.create_action_destroyer__position_trigger_pos,
+        )
 
     def create_position_source(self):
         self.local_position_source.create_particle()
         self.local_position_source.particle.get_position(
             local.my_domain_com.my_lib.branch.Branch
         ).create_particle()
-        self.scheduler.submit(self.create_position_source__global_position_branch__global_position_a)
-        self.create_position_source__global_position_branch__global_position_b()
+        self.scheduler.continue_with(
+            self.create_position_source__global_position_branch__global_position_a,
+            self.create_position_source__global_position_branch__global_position_b,
+        )
 
     def create_position_source__global_position_branch__global_position_a(self):
         self.local_position_source.particle.get_position(

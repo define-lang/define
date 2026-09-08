@@ -69,10 +69,12 @@ class RunBothExecution:
         self.execution_action_call_empty.join_for_empty_rule_global_position_item = literal.NO_JOIN
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_action_call_fill__position_trigger_pos)
-        self.scheduler.submit(self.create_action_call_empty__position_trigger_pos)
-        self.scheduler.submit(self.execution_action_call_fill.on_action_parent_occupied)
-        self.execution_action_call_empty.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_action_call_fill__position_trigger_pos,
+            self.create_action_call_empty__position_trigger_pos,
+            self.execution_action_call_fill.on_action_parent_occupied,
+            self.execution_action_call_empty.on_action_parent_occupied,
+        )
 
     def accept_when_empty_global_position_item(self):
         self.execution_action_call_fill.accept_when_empty_global_position_item()

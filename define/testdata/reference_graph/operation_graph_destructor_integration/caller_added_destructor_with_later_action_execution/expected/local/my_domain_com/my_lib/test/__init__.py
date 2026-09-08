@@ -59,9 +59,11 @@ class TestExecution:
         self.join_for_destroy_position_later_box = self.scheduler.create_join(2)
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_position_box)
-        self.scheduler.submit(self.create_position_later_box)
-        self.create_position_carrier()
+        self.scheduler.continue_with(
+            self.create_position_box,
+            self.create_position_later_box,
+            self.create_position_carrier,
+        )
 
     def create_position_box(self):
         self.local_position_box.create_particle()
@@ -86,8 +88,10 @@ class TestExecution:
         self.execution_position_box__action_callee.guarantees.position_target.consumers.append(
             self.destroy_position_box
         )
-        self.scheduler.submit(self.move_position_carrier_to_position_box__action_callee__position_target)
-        self.create_position_box__action_callee__position_run()
+        self.scheduler.continue_with(
+            self.move_position_carrier_to_position_box__action_callee__position_target,
+            self.create_position_box__action_callee__position_run,
+        )
 
     def create_position_later_box(self):
         self.local_position_later_box.create_particle()
@@ -112,8 +116,10 @@ class TestExecution:
         self.execution_position_later_box__action_later.guarantees.position_target.consumers.append(
             self.destroy_position_later_box
         )
-        self.scheduler.submit(self.move_position_carrier_to_position_later_box__action_later__position_target)
-        self.create_position_later_box__action_later__position_run()
+        self.scheduler.continue_with(
+            self.move_position_carrier_to_position_later_box__action_later__position_target,
+            self.create_position_later_box__action_later__position_run,
+        )
 
     def create_position_carrier(self):
         self.local_position_carrier.create_particle()
@@ -129,8 +135,10 @@ class TestExecution:
                 "position<target>"
             )
         )
-        self.scheduler.submit(self.create_position_carrier_2)
-        self.execution_position_box__action_callee.accept_for_empty_rule_position_target()
+        self.scheduler.continue_with(
+            self.create_position_carrier_2,
+            self.execution_position_box__action_callee.accept_for_empty_rule_position_target,
+        )
 
     def create_position_carrier_2(self):
         self.local_position_carrier.create_particle()
@@ -159,8 +167,10 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         )
-        self.scheduler.submit(self.destroy_position_box)
-        self.destroy_position_box__action_callee__position_run()
+        self.scheduler.continue_with(
+            self.destroy_position_box,
+            self.destroy_position_box__action_callee__position_run,
+        )
 
     def create_position_later_box__action_later__position_run(self):
         self.local_position_later_box.particle.get_action(
@@ -173,8 +183,10 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         )
-        self.scheduler.submit(self.destroy_position_later_box)
-        self.destroy_position_later_box__action_later__position_run()
+        self.scheduler.continue_with(
+            self.destroy_position_later_box,
+            self.destroy_position_later_box__action_later__position_run,
+        )
 
     def destroy_position_box(self):
         if not self.join_for_destroy_position_box.arrive():

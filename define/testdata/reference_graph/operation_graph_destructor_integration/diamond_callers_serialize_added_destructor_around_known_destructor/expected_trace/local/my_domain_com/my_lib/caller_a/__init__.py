@@ -78,8 +78,10 @@ class CallerAExecution:
         self.join_for_empty_rule_position_trigger_pos: literal.Join
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_position_destroyer_particle)
-        self.create_position_carrier()
+        self.scheduler.continue_with(
+            self.create_position_destroyer_particle,
+            self.create_position_carrier,
+        )
 
     def accept_for_empty_rule_position_trigger_pos(self):
         if not self.join_for_empty_rule_position_trigger_pos.arrive():
@@ -117,8 +119,10 @@ class CallerAExecution:
         self.execution_position_destroyer_particle__action_destroyer.guarantees.position_target.consumers.append(
             self.destroy_position_destroyer_particle
         )
-        self.scheduler.submit(self.move_position_carrier_to_position_destroyer_particle__action_destroyer__position_target)
-        self.create_position_destroyer_particle__action_destroyer__position_trigger_pos()
+        self.scheduler.continue_with(
+            self.move_position_carrier_to_position_destroyer_particle__action_destroyer__position_target,
+            self.create_position_destroyer_particle__action_destroyer__position_trigger_pos,
+        )
 
     def create_position_carrier(self):
         self.local_position_carrier.create_particle()
@@ -176,8 +180,10 @@ class CallerAExecution:
         self.execution_position_destroyer_particle__action_destroyer.init_position_target__action_known_destructor()
         self.execution_position_destroyer_particle__action_destroyer.execution_position_target__action_known_destructor.join_for_empty_rule_global_position_marker = literal.NO_JOIN
         self.execution_position_destroyer_particle__action_destroyer.execution_position_target__action_known_destructor.join_for_move_global_position_marker_to_position_holder = literal.NO_JOIN
-        self.scheduler.submit(self.execution_position_destroyer_particle__action_destroyer.accept_for_empty_rule_position_target__global_position_marker)
-        self.execution_position_destroyer_particle__action_destroyer__position_target__action_extra_destructor.accept_for_empty_rule_global_position_marker()
+        self.scheduler.continue_with(
+            self.execution_position_destroyer_particle__action_destroyer.accept_for_empty_rule_position_target__global_position_marker,
+            self.execution_position_destroyer_particle__action_destroyer__position_target__action_extra_destructor.accept_for_empty_rule_global_position_marker,
+        )
 
     def create_position_destroyer_particle__action_destroyer__position_trigger_pos(self):
         self.local_position_destroyer_particle.particle.get_action(
@@ -195,8 +201,10 @@ class CallerAExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         )
-        self.scheduler.submit(self.destroy_position_destroyer_particle)
-        self.destroy_position_destroyer_particle__action_destroyer__position_trigger_pos()
+        self.scheduler.continue_with(
+            self.destroy_position_destroyer_particle,
+            self.destroy_position_destroyer_particle__action_destroyer__position_trigger_pos,
+        )
 
     def destroy_position_destroyer_particle__action_destroyer__position_target__global_position_marker(self):
         if not self.join_for_destroy_position_destroyer_particle__action_destroyer__position_target__global_position_marker.arrive():

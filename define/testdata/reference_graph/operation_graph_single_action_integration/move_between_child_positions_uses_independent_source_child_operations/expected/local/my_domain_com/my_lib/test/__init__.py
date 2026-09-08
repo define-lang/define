@@ -48,8 +48,10 @@ class TestExecution:
         self.local_position_box.particle.get_position(
             local.my_domain_com.my_lib.origin.Origin
         ).create_particle()
-        self.scheduler.submit(self.create_position_box__global_position_origin__global_position_first)
-        self.create_position_box__global_position_origin__global_position_second()
+        self.scheduler.continue_with(
+            self.create_position_box__global_position_origin__global_position_first,
+            self.create_position_box__global_position_origin__global_position_second,
+        )
 
     def create_position_box__global_position_origin__global_position_first(self):
         self.local_position_box.particle.get_position(
@@ -90,10 +92,12 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.second.Second
         )
-        self.scheduler.submit(self.destroy_position_box)
-        self.scheduler.submit(self.destroy_position_box__global_position_destination)
-        self.scheduler.submit(self.destroy_position_box__global_position_destination__global_position_first)
-        self.destroy_position_box__global_position_destination__global_position_second()
+        self.scheduler.continue_with(
+            self.destroy_position_box,
+            self.destroy_position_box__global_position_destination,
+            self.destroy_position_box__global_position_destination__global_position_first,
+            self.destroy_position_box__global_position_destination__global_position_second,
+        )
 
     def destroy_position_box(self):
         self.local_position_box.destroy_particle()

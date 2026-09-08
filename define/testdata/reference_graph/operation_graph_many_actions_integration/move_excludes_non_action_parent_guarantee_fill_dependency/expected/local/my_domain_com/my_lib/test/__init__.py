@@ -24,9 +24,11 @@ class Test(literal.EntryPoint):
         )
         execution.execution_action_producer.join_for_empty_rule_global_position_input = scheduler.create_join(2)
         execution.join_when_empty_global_position_box = literal.NO_JOIN
-        scheduler.submit(execution.accept_when_empty_global_position_input)
-        scheduler.submit(execution.on_action_parent_occupied)
-        execution.accept_when_empty_global_position_box()
+        scheduler.continue_with(
+            execution.accept_when_empty_global_position_input,
+            execution.on_action_parent_occupied,
+            execution.accept_when_empty_global_position_box,
+        )
 
 
 @final
@@ -66,8 +68,10 @@ class TestExecution:
         self.create_global_position_input()
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_action_producer__position_trigger_pos)
-        self.create_action_consumer__position_trigger_pos()
+        self.scheduler.continue_with(
+            self.create_action_producer__position_trigger_pos,
+            self.create_action_consumer__position_trigger_pos,
+        )
 
     def accept_when_empty_global_position_box(self):
         if not self.join_when_empty_global_position_box.arrive():

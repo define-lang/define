@@ -60,8 +60,10 @@ class TestExecution:
             self.trace_execution,
             "middle",
         )
-        self.scheduler.submit(self.create_position_gateway__action_middle__position_trigger_pos)
-        self.execution_position_gateway__action_middle.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_position_gateway__action_middle__position_trigger_pos,
+            self.execution_position_gateway__action_middle.on_action_parent_occupied,
+        )
 
     def create_position_gateway__action_middle__position_trigger_pos(self):
         self.local_position_gateway.particle.get_action(

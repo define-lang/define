@@ -1,6 +1,6 @@
 {% from "action_statements.j2" import action_statements %}
 {% from "position_expression.j2" import position_expression %}
-{% from "method_invocation.j2" import invoke_method %}
+{% from "fanout.j2" import run_fanout %}
 {% from "triggered_action_execution.j2" import run_inits %}
 {% from "callee_binding_plans.j2" import callee_binding_plan_body %}
 {% macro action_fragment_body(fragment) %}
@@ -20,9 +20,7 @@
         {% endfor %}
         )
     {% else %}
-        {% for method_name in fragment.fanout_continuation_method_names %}
-        {{ invoke_method(method_name, submit=not loop.last) }}
-        {% endfor %}
+{{ run_fanout(fragment.fanout_continuation_method_names, "self", "self.scheduler") -}}
     {% endif %}
 {% endmacro %}
 {% macro action_fragment_methods(fragments) %}

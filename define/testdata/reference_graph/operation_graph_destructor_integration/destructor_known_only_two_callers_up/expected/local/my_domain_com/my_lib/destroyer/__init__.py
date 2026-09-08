@@ -97,8 +97,10 @@ class DestroyerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.marker_a.MarkerA
         )
-        self.scheduler.submit(self.destroy_position_run)
-        self.destroy_position_run__global_position_marker_a()
+        self.scheduler.continue_with(
+            self.destroy_position_run,
+            self.destroy_position_run__global_position_marker_a,
+        )
 
     def move_position_run__global_position_marker_b_to_position_holder_b(self):
         if not self.join_for_move_position_run__global_position_marker_b_to_position_holder_b.arrive():
@@ -120,8 +122,10 @@ class DestroyerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.marker_b.MarkerB
         )
-        self.scheduler.submit(self.destroy_position_run)
-        self.destroy_position_run__global_position_marker_b()
+        self.scheduler.continue_with(
+            self.destroy_position_run,
+            self.destroy_position_run__global_position_marker_b,
+        )
 
     def destroy_position_run(self):
         if not self.join_for_destroy_position_run.arrive():

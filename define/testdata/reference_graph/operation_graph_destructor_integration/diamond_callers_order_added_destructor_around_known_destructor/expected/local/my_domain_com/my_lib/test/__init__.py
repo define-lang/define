@@ -44,10 +44,12 @@ class TestExecution:
         )
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_action_caller_a__position_trigger_pos)
-        self.scheduler.submit(self.create_action_caller_b__position_trigger_pos)
-        self.scheduler.submit(self.execution_action_caller_a.on_action_parent_occupied)
-        self.execution_action_caller_b.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_action_caller_a__position_trigger_pos,
+            self.create_action_caller_b__position_trigger_pos,
+            self.execution_action_caller_a.on_action_parent_occupied,
+            self.execution_action_caller_b.on_action_parent_occupied,
+        )
 
     def create_action_caller_a__position_trigger_pos(self):
         self.action.on_particle.get_action(

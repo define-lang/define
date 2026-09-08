@@ -113,8 +113,10 @@ class MiddleExecution:
         )
 
     def continue_when_occupied_position_box(self):
-        self.scheduler.submit(self.create_position_box__action_worker__position_input)
-        self.create_position_box__action_worker__position_run()
+        self.scheduler.continue_with(
+            self.create_position_box__action_worker__position_input,
+            self.create_position_box__action_worker__position_run,
+        )
 
     def accept_when_empty_position_box__action_worker__position_output(self):
         if not self.join_when_empty_position_box__action_worker__position_output.arrive():

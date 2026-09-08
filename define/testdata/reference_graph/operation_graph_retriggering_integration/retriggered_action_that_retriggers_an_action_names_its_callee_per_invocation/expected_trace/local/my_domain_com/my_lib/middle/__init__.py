@@ -66,9 +66,11 @@ class MiddleExecution:
             self.trace_execution,
             "worker#2",
         )
-        self.scheduler.submit(self.create_position_gw__action_worker__position_trigger_pos)
-        self.scheduler.submit(self.execution_position_gw__action_worker.on_action_parent_occupied)
-        self.execution_position_gw__action_worker_2.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_position_gw__action_worker__position_trigger_pos,
+            self.execution_position_gw__action_worker.on_action_parent_occupied,
+            self.execution_position_gw__action_worker_2.on_action_parent_occupied,
+        )
 
     def create_position_gw__action_worker__position_trigger_pos(self):
         self.local_position_gw.particle.get_action(
@@ -107,8 +109,10 @@ class MiddleExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         )
-        self.scheduler.submit(self.destroy_position_gw)
-        self.destroy_position_gw__action_worker__position_trigger_pos()
+        self.scheduler.continue_with(
+            self.destroy_position_gw,
+            self.destroy_position_gw__action_worker__position_trigger_pos,
+        )
 
     def destroy_position_gw(self):
         self.local_position_gw.destroy_particle()

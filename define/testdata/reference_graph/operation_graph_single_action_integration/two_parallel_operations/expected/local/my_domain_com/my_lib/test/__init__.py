@@ -32,8 +32,10 @@ class TestExecution:
         )
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_position_a)
-        self.create_position_b()
+        self.scheduler.continue_with(
+            self.create_position_a,
+            self.create_position_b,
+        )
 
     def create_position_a(self):
         self.local_position_a.create_particle()

@@ -23,8 +23,10 @@ class Test(literal.EntryPoint):
             self,
             scheduler,
         )
-        scheduler.submit(execution.accept_when_empty_global_position_input)
-        execution.on_action_parent_occupied()
+        scheduler.continue_with(
+            execution.accept_when_empty_global_position_input,
+            execution.on_action_parent_occupied,
+        )
 
 
 @final
@@ -98,8 +100,10 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.target.Target
         ).move_particle_to(self.local_position_holder_c)
-        self.scheduler.submit(self.destroy_position_holder_c)
-        self.execution_action_other.accept_for_empty_rule_global_position_input()
+        self.scheduler.continue_with(
+            self.destroy_position_holder_c,
+            self.execution_action_other.accept_for_empty_rule_global_position_input,
+        )
 
     def destroy_position_holder_c(self):
         self.local_position_holder_c.destroy_particle()

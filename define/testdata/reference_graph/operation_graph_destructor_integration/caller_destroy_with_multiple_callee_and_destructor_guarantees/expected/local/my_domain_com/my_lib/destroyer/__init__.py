@@ -123,8 +123,10 @@ class DestroyerExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         )
-        self.scheduler.submit(self.destroy_position_parent)
-        self.destroy_position_parent__action_maker__position_trigger_pos()
+        self.scheduler.continue_with(
+            self.destroy_position_parent,
+            self.destroy_position_parent__action_maker__position_trigger_pos,
+        )
 
     def destroy_position_parent(self):
         if not self.join_for_destroy_position_parent.arrive():

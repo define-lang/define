@@ -62,8 +62,10 @@ class OuterExecution:
         )
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_action_caller__position_run)
-        self.execution_action_caller.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_action_caller__position_run,
+            self.execution_action_caller.on_action_parent_occupied,
+        )
 
     def accept_for_empty_rule_position_run(self):
         if not self.join_for_empty_rule_position_run.arrive():

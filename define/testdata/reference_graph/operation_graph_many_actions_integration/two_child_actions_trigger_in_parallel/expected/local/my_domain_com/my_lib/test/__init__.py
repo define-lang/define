@@ -64,8 +64,10 @@ class TestExecution:
         self.execution_position_box__action_second.guarantees.position_trigger_pos.consumers.append(
             self.destroy_position_box
         )
-        self.scheduler.submit(self.create_position_box__action_first__position_trigger_pos)
-        self.create_position_box__action_second__position_trigger_pos()
+        self.scheduler.continue_with(
+            self.create_position_box__action_first__position_trigger_pos,
+            self.create_position_box__action_second__position_trigger_pos,
+        )
 
     def create_position_box__action_first__position_trigger_pos(self):
         self.local_position_box.particle.get_action(

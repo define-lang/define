@@ -68,8 +68,10 @@ class TestExecution:
         self.execution_position_gw__action_maker_2.guarantees.position_out.consumers.append(
             self.move_position_gw__action_maker__position_out_to_position_second_result
         )
-        self.scheduler.submit(self.create_position_gw__action_maker__position_trigger_pos)
-        self.execution_position_gw__action_maker.accept_when_empty_position_out()
+        self.scheduler.continue_with(
+            self.create_position_gw__action_maker__position_trigger_pos,
+            self.execution_position_gw__action_maker.accept_when_empty_position_out,
+        )
 
     def create_position_gw__action_maker__position_trigger_pos(self):
         self.local_position_gw.particle.get_action(
@@ -102,8 +104,10 @@ class TestExecution:
         ).get_interface_position(
             "position<out>"
         ).move_particle_to(self.local_position_first_result)
-        self.scheduler.submit(self.destroy_position_first_result)
-        self.execution_position_gw__action_maker_2.accept_when_empty_position_out()
+        self.scheduler.continue_with(
+            self.destroy_position_first_result,
+            self.execution_position_gw__action_maker_2.accept_when_empty_position_out,
+        )
 
     def move_position_gw__action_maker__position_out_to_position_second_result(self):
         self.local_position_gw.particle.get_action(
@@ -111,8 +115,10 @@ class TestExecution:
         ).get_interface_position(
             "position<out>"
         ).move_particle_to(self.local_position_second_result)
-        self.scheduler.submit(self.destroy_position_second_result)
-        self.destroy_position_gw()
+        self.scheduler.continue_with(
+            self.destroy_position_second_result,
+            self.destroy_position_gw,
+        )
 
     def destroy_position_first_result(self):
         self.local_position_first_result.destroy_particle()

@@ -21,8 +21,10 @@ class Test(literal.EntryPoint):
         )
         execution.join_when_empty_global_position_target = literal.NO_JOIN
         execution.join_for_action_triggered__for_empty_rule_position_run = scheduler.create_join(2)
-        scheduler.submit(execution.on_action_parent_occupied)
-        execution.accept_when_empty_global_position_target()
+        scheduler.continue_with(
+            execution.on_action_parent_occupied,
+            execution.accept_when_empty_global_position_target,
+        )
 
 
 @final

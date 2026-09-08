@@ -106,7 +106,9 @@ class TestExecution:
             1,
         )
         self.execution_action_destroyer.init_when_occupied_position_target()
-        self.scheduler.submit(self.execution_action_destroyer.accept_when_empty_position_target__global_position_first)
-        self.scheduler.submit(self.execution_action_destroyer.accept_when_empty_position_target__global_position_third)
-        self.scheduler.submit(self.execution_action_destroyer.accept_when_empty_position_target__global_position_second)
-        self.execution_action_destroyer.accept_when_empty_position_target__global_position_marker()
+        self.scheduler.continue_with(
+            self.execution_action_destroyer.accept_when_empty_position_target__global_position_first,
+            self.execution_action_destroyer.accept_when_empty_position_target__global_position_third,
+            self.execution_action_destroyer.accept_when_empty_position_target__global_position_second,
+            self.execution_action_destroyer.accept_when_empty_position_target__global_position_marker,
+        )

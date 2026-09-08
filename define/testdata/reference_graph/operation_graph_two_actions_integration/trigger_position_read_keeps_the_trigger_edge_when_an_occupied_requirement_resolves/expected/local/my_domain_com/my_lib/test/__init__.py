@@ -58,8 +58,10 @@ class TestExecution:
         self.execution_position_gw__action_worker.guarantees.position_in__move__position_box__global_position_y.consumers.append(
             self.destroy_position_gw__action_worker__position_box__global_position_y
         )
-        self.scheduler.submit(self.create_position_gw__action_worker__position_box)
-        self.create_position_gw__action_worker__position_in()
+        self.scheduler.continue_with(
+            self.create_position_gw__action_worker__position_box,
+            self.create_position_gw__action_worker__position_in,
+        )
 
     def create_position_gw__action_worker__position_box(self):
         self.local_position_gw.particle.get_action(

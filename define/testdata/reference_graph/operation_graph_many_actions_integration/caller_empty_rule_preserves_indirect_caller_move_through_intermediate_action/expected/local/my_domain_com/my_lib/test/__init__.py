@@ -30,10 +30,12 @@ class Test(literal.EntryPoint):
         execution.join_when_empty_global_position_intermediate = literal.NO_JOIN
         execution.join_for_move_global_position_input__global_position_a_to_global_position_holder = scheduler.create_join(2)
         execution.join_for_move_global_position_holder_to_global_position_intermediate = scheduler.create_join(2)
-        scheduler.submit(execution.accept_when_empty_global_position_input)
-        scheduler.submit(execution.accept_when_empty_global_position_holder)
-        scheduler.submit(execution.accept_when_empty_global_position_intermediate)
-        execution.on_action_parent_occupied()
+        scheduler.continue_with(
+            execution.accept_when_empty_global_position_input,
+            execution.accept_when_empty_global_position_holder,
+            execution.accept_when_empty_global_position_intermediate,
+            execution.on_action_parent_occupied,
+        )
 
 
 @final
@@ -88,15 +90,19 @@ class TestExecution:
         self.move_global_position_holder_to_global_position_intermediate()
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_action_middle_action__position_trigger_pos)
-        self.execution_action_middle_action.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_action_middle_action__position_trigger_pos,
+            self.execution_action_middle_action.on_action_parent_occupied,
+        )
 
     def create_global_position_input(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.input.Input
         ).create_particle()
-        self.scheduler.submit(self.create_global_position_input__global_position_a)
-        self.create_global_position_input__global_position_b()
+        self.scheduler.continue_with(
+            self.create_global_position_input__global_position_a,
+            self.create_global_position_input__global_position_b,
+        )
 
     def create_global_position_input__global_position_a(self):
         self.action.on_particle.get_position(

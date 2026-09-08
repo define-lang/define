@@ -83,8 +83,10 @@ class OuterExecution:
         )
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_action_filler__position_run)
-        self.execution_action_filler.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_action_filler__position_run,
+            self.execution_action_filler.on_action_parent_occupied,
+        )
 
     def accept_for_empty_rule_position_run(self):
         if not self.join_for_empty_rule_position_run.arrive():
@@ -165,8 +167,10 @@ class OuterExecution:
         self.execution_global_position_result__action_middle.execution_action_inner.execution_action_destroyer.guarantees.position_target.consumers.append(
             self.destroy_global_position_result
         )
-        self.scheduler.submit(self.move_global_position_result__global_position_payload_to_global_position_result__action_middle__position_run)
-        self.execution_global_position_result__action_middle.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.move_global_position_result__global_position_payload_to_global_position_result__action_middle__position_run,
+            self.execution_global_position_result__action_middle.on_action_parent_occupied,
+        )
 
     def move_global_position_result__global_position_payload_to_global_position_result__action_middle__position_run(self):
         self.action.on_particle.get_position(

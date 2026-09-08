@@ -27,8 +27,10 @@ class Test(literal.EntryPoint):
         )
         execution.execution_action_act.join_for_empty_rule_position_chain_src_b__global_position_mid_src_b__global_position_end_src_b = scheduler.create_join(2)
         execution.join_when_empty_action_act__position_iface_dest = literal.NO_JOIN
-        scheduler.submit(execution.on_action_parent_occupied)
-        execution.accept_when_empty_action_act__position_iface_dest()
+        scheduler.continue_with(
+            execution.on_action_parent_occupied,
+            execution.accept_when_empty_action_act__position_iface_dest,
+        )
 
 
 @final
@@ -73,11 +75,13 @@ class TestExecution:
         self.execution_action_act.join_for_destroy_position_trigger = literal.NO_JOIN
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_action_act__position_chain_src_a)
-        self.scheduler.submit(self.create_action_act__position_chain_src_b)
-        self.scheduler.submit(self.create_action_act__position_chain_src_c)
-        self.scheduler.submit(self.create_action_act__position_chain_dest)
-        self.create_action_act__position_trigger()
+        self.scheduler.continue_with(
+            self.create_action_act__position_chain_src_a,
+            self.create_action_act__position_chain_src_b,
+            self.create_action_act__position_chain_src_c,
+            self.create_action_act__position_chain_dest,
+            self.create_action_act__position_trigger,
+        )
 
     def accept_when_empty_action_act__position_iface_dest(self):
         if not self.join_when_empty_action_act__position_iface_dest.arrive():

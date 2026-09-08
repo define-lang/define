@@ -101,8 +101,10 @@ class MiddleExecution:
         )
 
     def continue_when_occupied_position_source(self):
-        self.scheduler.submit(self.create_position_source__action_child__position_trigger_pos)
-        self.execution_position_source__action_child.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_position_source__action_child__position_trigger_pos,
+            self.execution_position_source__action_child.on_action_parent_occupied,
+        )
 
     def accept_when_empty_position_source__global_position_result(self):
         self.execution_position_source__action_child.accept_when_empty_global_position_result()

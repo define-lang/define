@@ -101,8 +101,10 @@ class DestroyerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.known.Known
         )
-        self.scheduler.submit(self.destroy_position_run)
-        self.destroy_position_run__global_position_known()
+        self.scheduler.continue_with(
+            self.destroy_position_run,
+            self.destroy_position_run__global_position_known,
+        )
 
     def destroy_position_run(self):
         if not self.join_for_destroy_position_run.arrive():

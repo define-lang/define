@@ -27,9 +27,11 @@ class Test(literal.EntryPoint):
         )
         execution.join_when_empty_action_mover__position_dest = literal.NO_JOIN
         execution.join_for_accept_guarantee_action_mover = scheduler.create_join(3)
-        scheduler.submit(execution.accept_when_empty_global_position_parent)
-        scheduler.submit(execution.on_action_parent_occupied)
-        execution.accept_when_empty_action_mover__position_dest()
+        scheduler.continue_with(
+            execution.accept_when_empty_global_position_parent,
+            execution.on_action_parent_occupied,
+            execution.accept_when_empty_action_mover__position_dest,
+        )
 
 
 @final
@@ -95,8 +97,10 @@ class TestExecution:
         self.create_global_position_parent()
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_action_filler__position_trigger_pos)
-        self.create_action_mover__position_trigger_pos()
+        self.scheduler.continue_with(
+            self.create_action_filler__position_trigger_pos,
+            self.create_action_mover__position_trigger_pos,
+        )
 
     def accept_when_empty_action_mover__position_dest(self):
         if not self.join_when_empty_action_mover__position_dest.arrive():
@@ -107,8 +111,10 @@ class TestExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.parent.Parent
         ).create_particle()
-        self.scheduler.submit(self.create_global_position_parent__global_position_child_a)
-        self.create_global_position_parent__global_position_child_b()
+        self.scheduler.continue_with(
+            self.create_global_position_parent__global_position_child_a,
+            self.create_global_position_parent__global_position_child_b,
+        )
 
     def create_global_position_parent__global_position_child_a(self):
         self.action.on_particle.get_position(

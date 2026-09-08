@@ -97,8 +97,10 @@ class DestroyerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.left.Left
         )
-        self.scheduler.submit(self.destroy_position_target)
-        self.destroy_position_target__global_position_left()
+        self.scheduler.continue_with(
+            self.destroy_position_target,
+            self.destroy_position_target__global_position_left,
+        )
 
     def move_position_target__global_position_right_to_position_right_holder(self):
         if not self.join_for_move_position_target__global_position_right_to_position_right_holder.arrive():
@@ -120,8 +122,10 @@ class DestroyerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.right.Right
         )
-        self.scheduler.submit(self.destroy_position_target)
-        self.destroy_position_target__global_position_right()
+        self.scheduler.continue_with(
+            self.destroy_position_target,
+            self.destroy_position_target__global_position_right,
+        )
 
     def destroy_position_target(self):
         if not self.join_for_destroy_position_target.arrive():

@@ -46,8 +46,10 @@ class TestExecution:
         self.join_for_destroy_position_outer_holder = self.scheduler.create_join(2)
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_position_box)
-        self.create_position_outer_holder()
+        self.scheduler.continue_with(
+            self.create_position_box,
+            self.create_position_outer_holder,
+        )
 
     def create_position_box(self):
         self.local_position_box.create_particle()
@@ -69,9 +71,11 @@ class TestExecution:
         self.execution_position_outer_holder__action_outer.guarantees.position_middle_holder.inits.append(
             self.register_guarantee_position_inner_holder__action_inner__position_input
         )
-        self.scheduler.submit(self.move_position_box_to_position_outer_holder__action_outer__position_input)
-        self.scheduler.submit(self.create_position_outer_holder__action_outer__position_run)
-        self.execution_position_outer_holder__action_outer.accept_when_empty_position_middle_holder()
+        self.scheduler.continue_with(
+            self.move_position_box_to_position_outer_holder__action_outer__position_input,
+            self.create_position_outer_holder__action_outer__position_run,
+            self.execution_position_outer_holder__action_outer.accept_when_empty_position_middle_holder,
+        )
 
     def move_position_box_to_position_outer_holder__action_outer__position_input(self):
         if not self.join_for_move_position_box_to_position_outer_holder__action_outer__position_input.arrive():

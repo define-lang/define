@@ -56,8 +56,10 @@ class OuterExecution:
         self.execution_action_inner.join_for_destroy_position_run = literal.NO_JOIN
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_action_inner__position_run)
-        self.execution_action_inner.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_action_inner__position_run,
+            self.execution_action_inner.on_action_parent_occupied,
+        )
 
     def accept_for_empty_rule_position_run(self):
         if not self.join_for_empty_rule_position_run.arrive():

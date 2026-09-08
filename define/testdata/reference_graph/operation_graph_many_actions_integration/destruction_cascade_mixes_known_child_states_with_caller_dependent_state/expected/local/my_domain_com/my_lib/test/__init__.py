@@ -26,9 +26,11 @@ class Test(literal.EntryPoint):
         execution.join_when_empty_global_position_target = literal.NO_JOIN
         execution.join_when_empty_global_position_destination = literal.NO_JOIN
         execution.join_for_action_destroyer__for_empty_rule_position_run = scheduler.create_join(2)
-        scheduler.submit(execution.on_action_parent_occupied)
-        scheduler.submit(execution.accept_when_empty_global_position_target)
-        execution.accept_when_empty_global_position_destination()
+        scheduler.continue_with(
+            execution.on_action_parent_occupied,
+            execution.accept_when_empty_global_position_target,
+            execution.accept_when_empty_global_position_destination,
+        )
 
 
 @final
@@ -91,9 +93,11 @@ class TestExecution:
 
     def create_position_source(self):
         self.local_position_source.create_particle()
-        self.scheduler.submit(self.create_position_source__global_position_known_empty)
-        self.scheduler.submit(self.create_position_source__global_position_known_occupied)
-        self.create_position_source__global_position_maybe_child()
+        self.scheduler.continue_with(
+            self.create_position_source__global_position_known_empty,
+            self.create_position_source__global_position_known_occupied,
+            self.create_position_source__global_position_maybe_child,
+        )
 
     def create_position_source__global_position_known_empty(self):
         self.local_position_source.particle.get_position(

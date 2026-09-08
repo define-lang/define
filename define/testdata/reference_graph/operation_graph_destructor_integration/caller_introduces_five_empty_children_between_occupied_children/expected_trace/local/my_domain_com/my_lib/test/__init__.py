@@ -106,9 +106,11 @@ class TestExecution:
             "carrier",
             1,
         )
-        self.scheduler.submit(self.create_position_carrier__global_position_first)
-        self.scheduler.submit(self.create_position_carrier__global_position_third)
-        self.create_position_carrier__global_position_fifth()
+        self.scheduler.continue_with(
+            self.create_position_carrier__global_position_first,
+            self.create_position_carrier__global_position_third,
+            self.create_position_carrier__global_position_fifth,
+        )
 
     def create_position_carrier__global_position_first(self):
         self.local_position_carrier.particle.get_position(
@@ -250,9 +252,11 @@ class TestExecution:
             self.destruction_connection_action_destroyer.complete
         )
         self.execution_action_destroyer.init_when_occupied_position_target()
-        self.scheduler.submit(self.execution_action_destroyer.accept_when_empty_position_target__global_position_second)
-        self.scheduler.submit(self.execution_action_destroyer.accept_when_empty_position_target__global_position_fourth)
-        self.execution_action_destroyer.accept_when_empty_position_target__global_position_marker()
+        self.scheduler.continue_with(
+            self.execution_action_destroyer.accept_when_empty_position_target__global_position_second,
+            self.execution_action_destroyer.accept_when_empty_position_target__global_position_fourth,
+            self.execution_action_destroyer.accept_when_empty_position_target__global_position_marker,
+        )
 
     def action_destroyer__position_target__action_fifth_destructor__when_empty_global_position_fifth(self):
         self.execution_action_destroyer__position_target__action_fifth_destructor.accept_when_empty_global_position_fifth()

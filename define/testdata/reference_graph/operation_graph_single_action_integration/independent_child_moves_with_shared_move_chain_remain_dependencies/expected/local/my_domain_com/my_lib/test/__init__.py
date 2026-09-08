@@ -85,8 +85,10 @@ class TestExecution:
 
     def create_position_source(self):
         self.local_position_source.create_particle()
-        self.scheduler.submit(self.create_position_source__global_position_box_a)
-        self.create_position_source__global_position_box_b()
+        self.scheduler.continue_with(
+            self.create_position_source__global_position_box_a,
+            self.create_position_source__global_position_box_b,
+        )
 
     def create_position_source__global_position_box_a(self):
         self.local_position_source.particle.get_position(
@@ -115,20 +117,26 @@ class TestExecution:
         self.local_position_stage_a.move_particle_to(self.local_position_stage_b)
         self.local_position_stage_b.move_particle_to(self.local_position_workspace)
         self.local_position_workspace.move_particle_to(self.local_position_moved_marker)
-        self.scheduler.submit(self.create_position_workspace)
-        self.destroy_position_moved_marker()
+        self.scheduler.continue_with(
+            self.create_position_workspace,
+            self.destroy_position_moved_marker,
+        )
 
     def create_position_workspace(self):
         self.local_position_workspace.create_particle()
-        self.scheduler.submit(self.create_position_workspace__global_position_box_a)
-        self.create_position_workspace__global_position_box_b()
+        self.scheduler.continue_with(
+            self.create_position_workspace__global_position_box_a,
+            self.create_position_workspace__global_position_box_b,
+        )
 
     def create_position_workspace__global_position_box_a(self):
         self.local_position_workspace.particle.get_position(
             local.my_domain_com.my_lib.box_a.BoxA
         ).create_particle()
-        self.scheduler.submit(self.create_position_workspace__global_position_box_a__global_position_left)
-        self.create_position_workspace__global_position_box_a__global_position_right()
+        self.scheduler.continue_with(
+            self.create_position_workspace__global_position_box_a__global_position_left,
+            self.create_position_workspace__global_position_box_a__global_position_right,
+        )
 
     def create_position_workspace__global_position_box_a__global_position_left(self):
         self.local_position_workspace.particle.get_position(
@@ -144,8 +152,10 @@ class TestExecution:
         self.destruction_position_position_workspace__global_position_box_a = self.local_position_workspace.particle.get_position(
             local.my_domain_com.my_lib.box_a.BoxA
         )
-        self.scheduler.submit(self.destroy_position_workspace__global_position_box_a)
-        self.destroy_position_left_a_holder()
+        self.scheduler.continue_with(
+            self.destroy_position_workspace__global_position_box_a,
+            self.destroy_position_left_a_holder,
+        )
 
     def create_position_workspace__global_position_box_a__global_position_right(self):
         self.local_position_workspace.particle.get_position(
@@ -158,8 +168,10 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.right.Right
         ).move_particle_to(self.local_position_right_a_holder)
-        self.scheduler.submit(self.destroy_position_workspace__global_position_box_a)
-        self.destroy_position_right_a_holder()
+        self.scheduler.continue_with(
+            self.destroy_position_workspace__global_position_box_a,
+            self.destroy_position_right_a_holder,
+        )
 
     def destroy_position_workspace__global_position_box_a(self):
         if not self.join_for_destroy_position_workspace__global_position_box_a.arrive():
@@ -177,8 +189,10 @@ class TestExecution:
         self.local_position_workspace.particle.get_position(
             local.my_domain_com.my_lib.box_b.BoxB
         ).create_particle()
-        self.scheduler.submit(self.create_position_workspace__global_position_box_b__global_position_left)
-        self.create_position_workspace__global_position_box_b__global_position_right()
+        self.scheduler.continue_with(
+            self.create_position_workspace__global_position_box_b__global_position_left,
+            self.create_position_workspace__global_position_box_b__global_position_right,
+        )
 
     def create_position_workspace__global_position_box_b__global_position_left(self):
         self.local_position_workspace.particle.get_position(
@@ -194,8 +208,10 @@ class TestExecution:
         self.destruction_position_position_workspace__global_position_box_b = self.local_position_workspace.particle.get_position(
             local.my_domain_com.my_lib.box_b.BoxB
         )
-        self.scheduler.submit(self.destroy_position_workspace__global_position_box_b)
-        self.destroy_position_left_b_holder()
+        self.scheduler.continue_with(
+            self.destroy_position_workspace__global_position_box_b,
+            self.destroy_position_left_b_holder,
+        )
 
     def create_position_workspace__global_position_box_b__global_position_right(self):
         self.local_position_workspace.particle.get_position(
@@ -208,8 +224,10 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.right.Right
         ).move_particle_to(self.local_position_right_b_holder)
-        self.scheduler.submit(self.destroy_position_workspace__global_position_box_b)
-        self.destroy_position_right_b_holder()
+        self.scheduler.continue_with(
+            self.destroy_position_workspace__global_position_box_b,
+            self.destroy_position_right_b_holder,
+        )
 
     def destroy_position_workspace__global_position_box_b(self):
         if not self.join_for_destroy_position_workspace__global_position_box_b.arrive():

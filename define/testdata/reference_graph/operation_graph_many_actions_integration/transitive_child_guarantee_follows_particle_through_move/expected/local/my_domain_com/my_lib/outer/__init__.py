@@ -99,9 +99,11 @@ class OuterExecution:
         self.execution_position_middle_holder__action_middle.guarantees.position_inner_parent__global_position_result_value.consumers.append(
             self.move_position_middle_holder__action_middle__position_inner_parent__global_position_result_value_to_position_result_holder
         )
-        self.scheduler.submit(self.move_position_source_to_position_middle_holder__action_middle__position_inner_parent)
-        self.scheduler.submit(self.create_position_middle_holder__action_middle__position_trigger_pos)
-        self.execution_position_middle_holder__action_middle.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.move_position_source_to_position_middle_holder__action_middle__position_inner_parent,
+            self.create_position_middle_holder__action_middle__position_trigger_pos,
+            self.execution_position_middle_holder__action_middle.on_action_parent_occupied,
+        )
 
     def move_position_source_to_position_middle_holder__action_middle__position_inner_parent(self):
         if not self.join_for_move_position_source_to_position_middle_holder__action_middle__position_inner_parent.arrive():
@@ -130,8 +132,10 @@ class OuterExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         )
-        self.scheduler.submit(self.destroy_position_middle_holder)
-        self.destroy_position_middle_holder__action_middle__position_trigger_pos()
+        self.scheduler.continue_with(
+            self.destroy_position_middle_holder,
+            self.destroy_position_middle_holder__action_middle__position_trigger_pos,
+        )
 
     def move_position_middle_holder__action_middle__position_inner_parent__global_position_result_value_to_position_result_holder(self):
         self.local_position_middle_holder.particle.get_action(

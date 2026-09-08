@@ -40,8 +40,10 @@ class MiddleExecution:
         )
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_action_inner__position_trigger_pos)
-        self.execution_action_inner.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_action_inner__position_trigger_pos,
+            self.execution_action_inner.on_action_parent_occupied,
+        )
 
     def create_action_inner__position_trigger_pos(self):
         self.action.on_particle.get_action(

@@ -26,9 +26,11 @@ class Test(literal.EntryPoint):
         )
         execution.join_when_empty_action_mover__position_dest = literal.NO_JOIN
         execution.join_for_accept_guarantee_action_mover = scheduler.create_join(2)
-        scheduler.submit(execution.accept_when_empty_global_position_parent)
-        scheduler.submit(execution.on_action_parent_occupied)
-        execution.accept_when_empty_action_mover__position_dest()
+        scheduler.continue_with(
+            execution.accept_when_empty_global_position_parent,
+            execution.on_action_parent_occupied,
+            execution.accept_when_empty_action_mover__position_dest,
+        )
 
 
 @final
@@ -86,8 +88,10 @@ class TestExecution:
         self.create_global_position_parent()
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_action_filler__position_trigger_pos)
-        self.create_action_mover__position_trigger_pos()
+        self.scheduler.continue_with(
+            self.create_action_filler__position_trigger_pos,
+            self.create_action_mover__position_trigger_pos,
+        )
 
     def accept_when_empty_action_mover__position_dest(self):
         if not self.join_when_empty_action_mover__position_dest.arrive():

@@ -26,10 +26,12 @@ class Test(literal.EntryPoint):
         execution.join_when_empty_global_position_slot = literal.NO_JOIN
         execution.join_when_empty_global_position_out = literal.NO_JOIN
         execution.join_for_move_position_temp_to_global_position_slot = scheduler.create_join(2)
-        scheduler.submit(execution.accept_when_empty_global_position_destination)
-        scheduler.submit(execution.accept_when_empty_global_position_slot)
-        scheduler.submit(execution.on_action_parent_occupied)
-        execution.accept_when_empty_global_position_out()
+        scheduler.continue_with(
+            execution.accept_when_empty_global_position_destination,
+            execution.accept_when_empty_global_position_slot,
+            execution.on_action_parent_occupied,
+            execution.accept_when_empty_global_position_out,
+        )
 
 
 @final
@@ -70,8 +72,10 @@ class TestExecution:
         self.move_position_temp_to_global_position_slot()
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_action_mover__position_trigger_pos)
-        self.execution_action_mover.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_action_mover__position_trigger_pos,
+            self.execution_action_mover.on_action_parent_occupied,
+        )
 
     def accept_when_empty_global_position_out(self):
         if not self.join_when_empty_global_position_out.arrive():

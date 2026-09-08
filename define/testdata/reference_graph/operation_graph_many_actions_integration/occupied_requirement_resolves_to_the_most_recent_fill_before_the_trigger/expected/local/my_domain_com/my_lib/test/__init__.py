@@ -51,9 +51,11 @@ class TestExecution:
         self.join_for_move_position_gw_b__action_helper__position_out_to_position_gw_a__action_worker__position_slot = self.scheduler.create_join(2)
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_position_source)
-        self.scheduler.submit(self.create_position_gw_a)
-        self.create_position_gw_b()
+        self.scheduler.continue_with(
+            self.create_position_source,
+            self.create_position_gw_a,
+            self.create_position_gw_b,
+        )
 
     def create_position_source(self):
         self.local_position_source.create_particle()
@@ -110,8 +112,10 @@ class TestExecution:
                 "position<slot>"
             )
         )
-        self.scheduler.submit(self.create_position_source_2)
-        self.execution_position_gw_a__action_worker.accept_for_empty_rule_position_slot()
+        self.scheduler.continue_with(
+            self.create_position_source_2,
+            self.execution_position_gw_a__action_worker.accept_for_empty_rule_position_slot,
+        )
 
     def create_position_source_2(self):
         self.local_position_source.create_particle()
@@ -143,8 +147,10 @@ class TestExecution:
                 "position<slot>"
             )
         )
-        self.scheduler.submit(self.destroy_position_gw_b)
-        self.execution_position_gw_a__action_worker_2.accept_for_empty_rule_position_slot()
+        self.scheduler.continue_with(
+            self.destroy_position_gw_b,
+            self.execution_position_gw_a__action_worker_2.accept_for_empty_rule_position_slot,
+        )
 
     def destroy_position_gw_a(self):
         self.local_position_gw_a.destroy_particle()

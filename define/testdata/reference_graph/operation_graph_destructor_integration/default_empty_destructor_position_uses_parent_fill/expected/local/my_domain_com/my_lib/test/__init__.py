@@ -51,8 +51,10 @@ class TestExecution:
         self.execution_position_carrier__action_callee.guarantees.position_src.consumers.append(
             self.destroy_position_carrier
         )
-        self.scheduler.submit(self.create_position_carrier__action_callee__position_src)
-        self.create_position_carrier__action_callee__position_trigger_pos()
+        self.scheduler.continue_with(
+            self.create_position_carrier__action_callee__position_src,
+            self.create_position_carrier__action_callee__position_trigger_pos,
+        )
 
     def create_position_carrier__action_callee__position_src(self):
         self.local_position_carrier.particle.get_action(

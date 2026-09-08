@@ -55,8 +55,10 @@ class OuterExecution:
         self.destroy_global_position_slot()
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_action_middle__position_trigger_pos)
-        self.execution_action_middle.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_action_middle__position_trigger_pos,
+            self.execution_action_middle.on_action_parent_occupied,
+        )
 
     def destroy_global_position_slot(self):
         if not self.join_for_destroy_global_position_slot.arrive():

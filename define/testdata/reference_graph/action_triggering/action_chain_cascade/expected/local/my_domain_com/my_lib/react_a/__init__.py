@@ -77,8 +77,10 @@ class ReactAExecution:
         self.execution_position_result__action_final.guarantees.position_trigger.consumers.append(
             self.destroy_position_result
         )
-        self.scheduler.submit(self.create_position_result__action_final__position_trigger)
-        self.execution_position_result__action_final.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_position_result__action_final__position_trigger,
+            self.execution_position_result__action_final.on_action_parent_occupied,
+        )
 
     def create_position_result__action_final__position_trigger(self):
         self.action.get_interface_position(

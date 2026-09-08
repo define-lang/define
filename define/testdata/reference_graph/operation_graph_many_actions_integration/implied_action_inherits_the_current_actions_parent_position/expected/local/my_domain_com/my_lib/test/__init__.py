@@ -52,8 +52,10 @@ class TestExecution:
             ),
             self.scheduler,
         )
-        self.scheduler.submit(self.create_position_local__global_position_parent__action_middle__position_trigger_pos)
-        self.execution_position_local__global_position_parent__action_middle.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_position_local__global_position_parent__action_middle__position_trigger_pos,
+            self.execution_position_local__global_position_parent__action_middle.on_action_parent_occupied,
+        )
 
     def create_position_local__global_position_parent__action_middle__position_trigger_pos(self):
         self.local_position_local.particle.get_position(
@@ -74,8 +76,10 @@ class TestExecution:
         self.destruction_position_position_local__global_position_parent = self.local_position_local.particle.get_position(
             local.my_domain_com.my_lib.parent.Parent
         )
-        self.scheduler.submit(self.destroy_position_local)
-        self.destroy_position_local__global_position_parent()
+        self.scheduler.continue_with(
+            self.destroy_position_local,
+            self.destroy_position_local__global_position_parent,
+        )
 
     def destroy_position_local(self):
         self.local_position_local.destroy_particle()

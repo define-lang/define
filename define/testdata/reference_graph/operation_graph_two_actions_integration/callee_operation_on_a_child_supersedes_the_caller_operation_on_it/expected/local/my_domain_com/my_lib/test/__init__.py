@@ -58,8 +58,10 @@ class TestExecution:
         self.execution_position_gateway__action_other.guarantees.position_source__move__position_holder.consumers.append(
             self.destroy_position_gateway__action_other__position_holder
         )
-        self.scheduler.submit(self.create_position_gateway__action_other__position_source)
-        self.create_position_gateway__action_other__position_trigger_pos()
+        self.scheduler.continue_with(
+            self.create_position_gateway__action_other__position_source,
+            self.create_position_gateway__action_other__position_trigger_pos,
+        )
 
     def create_position_gateway__action_other__position_source(self):
         self.local_position_gateway.particle.get_action(

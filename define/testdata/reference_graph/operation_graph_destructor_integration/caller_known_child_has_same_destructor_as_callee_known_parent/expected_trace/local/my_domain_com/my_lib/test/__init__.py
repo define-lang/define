@@ -112,8 +112,10 @@ class TestExecution:
             local.my_domain_com.my_lib.child.Child
         )
         self.execution_action_destroyer.init_when_occupied_position_run()
-        self.scheduler.submit(self.execution_action_destroyer.accept_for_empty_rule_position_run)
-        self.execution_action_destroyer.continue_when_occupied_position_run()
+        self.scheduler.continue_with(
+            self.execution_action_destroyer.accept_for_empty_rule_position_run,
+            self.execution_action_destroyer.continue_when_occupied_position_run,
+        )
 
     def destroy_action_destroyer__position_run__global_position_child(self):
         self.destruction_position_action_destroyer__position_run__global_position_child.destroy_particle()

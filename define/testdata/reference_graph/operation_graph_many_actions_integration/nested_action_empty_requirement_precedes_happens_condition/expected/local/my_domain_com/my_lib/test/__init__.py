@@ -37,8 +37,10 @@ class TestExecution:
         )
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_action_runner__position_run)
-        self.execution_action_runner.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_action_runner__position_run,
+            self.execution_action_runner.on_action_parent_occupied,
+        )
 
     def create_action_runner__position_run(self):
         self.action.on_particle.get_action(

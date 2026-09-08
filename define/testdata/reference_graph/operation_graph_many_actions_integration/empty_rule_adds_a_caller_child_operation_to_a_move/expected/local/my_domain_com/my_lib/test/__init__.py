@@ -52,8 +52,10 @@ class TestExecution:
         self.execution_position_gateway__action_middle.guarantees.position_source.consumers.append(
             self.destroy_position_gateway
         )
-        self.scheduler.submit(self.create_position_gateway__action_middle__position_source)
-        self.create_position_gateway__action_middle__position_trigger_pos()
+        self.scheduler.continue_with(
+            self.create_position_gateway__action_middle__position_source,
+            self.create_position_gateway__action_middle__position_trigger_pos,
+        )
 
     def create_position_gateway__action_middle__position_source(self):
         self.local_position_gateway.particle.get_action(
@@ -62,8 +64,10 @@ class TestExecution:
             "position<source>"
         ).create_particle()
         self.execution_position_gateway__action_middle.init_when_occupied_position_source()
-        self.scheduler.submit(self.create_position_gateway__action_middle__position_source__global_position_marker)
-        self.execution_position_gateway__action_middle.continue_when_occupied_position_source()
+        self.scheduler.continue_with(
+            self.create_position_gateway__action_middle__position_source__global_position_marker,
+            self.execution_position_gateway__action_middle.continue_when_occupied_position_source,
+        )
 
     def create_position_gateway__action_middle__position_source__global_position_marker(self):
         self.local_position_gateway.particle.get_action(

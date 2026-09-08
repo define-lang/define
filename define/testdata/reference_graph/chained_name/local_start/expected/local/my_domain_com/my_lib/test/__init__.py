@@ -72,10 +72,12 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.d.D
         )
-        self.scheduler.submit(self.destroy_position_a)
-        self.scheduler.submit(self.destroy_position_a__global_position_b)
-        self.scheduler.submit(self.destroy_position_a__global_position_b__global_position_c)
-        self.destroy_position_a__global_position_b__global_position_c__global_position_d()
+        self.scheduler.continue_with(
+            self.destroy_position_a,
+            self.destroy_position_a__global_position_b,
+            self.destroy_position_a__global_position_b__global_position_c,
+            self.destroy_position_a__global_position_b__global_position_c__global_position_d,
+        )
 
     def destroy_position_a(self):
         self.local_position_a.destroy_particle()

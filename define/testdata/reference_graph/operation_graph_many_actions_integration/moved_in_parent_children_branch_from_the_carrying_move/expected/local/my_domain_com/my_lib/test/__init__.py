@@ -52,9 +52,11 @@ class TestExecution:
         self.execution_position_mw__action_middle.guarantees.position_iface.consumers.append(
             self.destroy_position_mw
         )
-        self.scheduler.submit(self.create_position_mw__action_middle__position_iface)
-        self.scheduler.submit(self.create_position_mw__action_middle__position_run)
-        self.execution_position_mw__action_middle.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_position_mw__action_middle__position_iface,
+            self.create_position_mw__action_middle__position_run,
+            self.execution_position_mw__action_middle.on_action_parent_occupied,
+        )
 
     def create_position_mw__action_middle__position_iface(self):
         self.local_position_mw.particle.get_action(

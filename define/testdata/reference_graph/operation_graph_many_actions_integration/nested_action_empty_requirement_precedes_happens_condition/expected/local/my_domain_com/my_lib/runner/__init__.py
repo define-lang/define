@@ -69,8 +69,10 @@ class RunnerExecution:
         self.execution_position_wrapper__action_middle.guarantees.position_final.consumers.append(
             self.destroy_position_wrapper__action_middle__position_final
         )
-        self.scheduler.submit(self.create_position_wrapper__action_middle__position_box)
-        self.create_position_wrapper__action_middle__position_run()
+        self.scheduler.continue_with(
+            self.create_position_wrapper__action_middle__position_box,
+            self.create_position_wrapper__action_middle__position_run,
+        )
 
     def create_position_wrapper__action_middle__position_box(self):
         self.local_position_wrapper.particle.get_action(

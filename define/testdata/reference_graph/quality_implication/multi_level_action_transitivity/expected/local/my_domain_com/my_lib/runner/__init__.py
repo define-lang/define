@@ -95,8 +95,10 @@ class RunnerExecution:
         self.execution_position_source__action_implier.execution_action_implied.guarantees.position_run.consumers.append(
             self.move_position_source_to_position_dest
         )
-        self.scheduler.submit(self.execution_position_source__action_implier.on_action_parent_occupied)
-        self.execution_position_source__action_implier.accept_when_empty_global_position_transitive_implied()
+        self.scheduler.continue_with(
+            self.execution_position_source__action_implier.on_action_parent_occupied,
+            self.execution_position_source__action_implier.accept_when_empty_global_position_transitive_implied,
+        )
 
     def move_position_source_to_position_dest(self):
         if not self.join_for_move_position_source_to_position_dest.arrive():

@@ -60,8 +60,10 @@ class TestExecution:
         self.execution_position_box__action_destructor.execution_action_forwarder.execution_action_filler.guarantees.global_position_marker.consumers.append(
             self.destroy_position_box__global_position_marker
         )
-        self.scheduler.submit(self.create_position_box__global_position_marker)
-        self.execution_position_box__action_destructor.on_action_parent_occupied()
+        self.scheduler.continue_with(
+            self.create_position_box__global_position_marker,
+            self.execution_position_box__action_destructor.on_action_parent_occupied,
+        )
 
     def create_position_box__global_position_marker(self):
         self.local_position_box.particle.get_position(

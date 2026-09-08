@@ -44,8 +44,10 @@ class TestExecution:
             ),
             self.scheduler,
         )
-        self.scheduler.submit(self.destroy_position_box)
-        self.execution_position_box__action_destructor.accept_when_empty_position_item()
+        self.scheduler.continue_with(
+            self.destroy_position_box,
+            self.execution_position_box__action_destructor.accept_when_empty_position_item,
+        )
 
     def destroy_position_box(self):
         self.local_position_box.destroy_particle()

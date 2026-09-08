@@ -46,8 +46,10 @@ class TestExecution:
         self.join_for_move_position_source_to_position_box = self.scheduler.create_join(2)
 
     def on_action_parent_occupied(self):
-        self.scheduler.submit(self.create_position_box)
-        self.create_position_source()
+        self.scheduler.continue_with(
+            self.create_position_box,
+            self.create_position_source,
+        )
 
     def create_position_box(self):
         self.local_position_box.create_particle()

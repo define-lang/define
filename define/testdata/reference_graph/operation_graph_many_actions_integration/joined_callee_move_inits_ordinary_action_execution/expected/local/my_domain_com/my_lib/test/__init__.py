@@ -69,8 +69,10 @@ class TestExecution:
         self.execution_position_gateway__action_other.guarantees.position_source__move__position_destination.inits.append(
             self.register_guarantee_position_run
         )
-        self.scheduler.submit(self.create_position_gateway__action_other__position_trigger_pos)
-        self.execution_position_gateway__action_other.accept_when_empty_position_source()
+        self.scheduler.continue_with(
+            self.create_position_gateway__action_other__position_trigger_pos,
+            self.execution_position_gateway__action_other.accept_when_empty_position_source,
+        )
 
     def create_position_gateway__action_other__position_trigger_pos(self):
         self.local_position_gateway.particle.get_action(
