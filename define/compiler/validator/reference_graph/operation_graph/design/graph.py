@@ -36,7 +36,7 @@ class Graph:
         return self.edges[self.offsets[operation] : self.offsets[operation + 1]]
 
     def append(self, dependencies: list[int]) -> int:
-        """Append an operation whose dependencies have already been calculated."""
+        """Append an operation before any terminal operations have been appended."""
         operation = len(self)
         height = 0
         for dependency in dependencies:
@@ -50,6 +50,19 @@ class Graph:
         self.offsets.append(len(self.edges))
         self.heights.append(height)
         self._first_consumer.append(-1)
+        return operation
+
+    def append_terminal(self, dependencies: list[int]) -> int:
+        """Append an operation with no dependents after all nonterminal operations."""
+        operation = len(self)
+        height = 0
+        for dependency in dependencies:
+            dependency_height = self.heights[dependency] + 1
+            if dependency_height > height:  # noqa: PLR1730 - Avoid a call per edge.
+                height = dependency_height
+            self.edges.append(dependency)
+        self.offsets.append(len(self.edges))
+        self.heights.append(height)
         return operation
 
     def _column(self, previous: int, following: int) -> bytearray:
@@ -105,6 +118,17 @@ class Graph:
 
     def reaches(self, following: int, previous: int) -> bool:
         """Test strict dependency reachability in the calculated graph."""
+        if previous >= len(self._first_consumer):
+            return False
+        if following < len(self._first_consumer):
+            return self.reaches_indexed(following, previous)
+        return any(
+            dependency == previous or self.reaches_indexed(dependency, previous)
+            for dependency in self.dependencies(following)
+        )
+
+    def reaches_indexed(self, following: int, previous: int) -> bool:
+        """Test strict reachability between operations added with append."""
         if following <= previous or self.heights[following] <= self.heights[previous]:
             return False
         if self._first_consumer[previous] < 0:

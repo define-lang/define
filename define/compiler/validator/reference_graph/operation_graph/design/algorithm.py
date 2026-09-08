@@ -5,13 +5,12 @@ from __future__ import annotations
 import dataclasses
 from typing import final
 
-from define.compiler.validator.reference_graph.operation_graph.design import graph
+from . import graph
 
-# These bound optional work without skipping useful shortcuts on longer
-# references. Measurement and crossover trade-offs are in the archived
-# thresholds.md linked from README.md.
+# These limits bound optional pruning; larger collections still receive full
+# Comparison, so skipping a shortcut cannot change the graph.
 MAX_PRUNING_CANDIDATES = 16
-MAX_SUPPLIER_SEARCH_CANDIDATES = 16
+MAX_SETTER_SEARCH_CANDIDATES = 16
 # Shared traversal avoids repeated searches in wide collections, but starts
 # too much traversal work when used for small collections.
 MAX_PAIRWISE_COMPARISON_CANDIDATES = 64
@@ -19,20 +18,42 @@ MAX_PAIRWISE_COMPARISON_CANDIDATES = 64
 
 @dataclasses.dataclass(slots=True, frozen=True)
 class Operation:
-    """Requirements of one operation, with repeated position accesses combined."""
+    """Resolved position and particle requirements of one Particle Operation."""
 
     occupied: tuple[int, ...] = ()
     fill: int | None = None
     empty: int | None = None
-    creators: tuple[int, ...] = ()
+    quality_particles: tuple[int, ...] = ()
     defines: tuple[int, ...] = ()
+    ordinary_occupants: tuple[int, ...] = ()
+    moved: int | None = None
+    vacated: int | None = None
+
+
+def classify(operations: list[Operation]) -> set[int]:
+    """Identify particles for which ordinary occupancy does not certify combination."""
+    separate: set[int] = set()
+    # Most particles may never Move; tracking later Moves avoids retaining
+    # every destroyed identity solely to detect retained movement.
+    moved_later: set[int] = set()
+    for operation in reversed(operations):
+        ordinary = operation.ordinary_occupants
+        covered = set(ordinary) if len(ordinary) > 1 else ordinary
+        for particle in operation.quality_particles:
+            if particle not in covered:
+                separate.add(particle)
+        if operation.vacated is not None and operation.vacated in moved_later:
+            separate.add(operation.vacated)
+        if operation.moved is not None:
+            moved_later.add(operation.moved)
+    return separate
 
 
 @dataclasses.dataclass(slots=True)
 class _Position:
-    supplier: int
-    uses: set[int] | None = None
-    creator: int | None = None
+    setter: int
+    readers: set[int] | None = None
+    parent_create: int | None = None
     recent_use: int | None = None
 
 
@@ -44,7 +65,7 @@ def compare(calculated: graph.Graph, candidates: set[int]) -> list[int]:
         first, second = candidates
         if calculated.heights[first] < calculated.heights[second]:
             first, second = second, first
-        if calculated.reaches(first, second):
+        if calculated.reaches_indexed(first, second):
             return [first]
         return [first, second]
     if len(candidates) > MAX_PAIRWISE_COMPARISON_CANDIDATES:
@@ -99,7 +120,7 @@ def compare(calculated: graph.Graph, candidates: set[int]) -> list[int]:
         return ordered
     kept: list[int] = []
     for candidate in ordered:
-        if not any(calculated.reaches(later, candidate) for later in kept):
+        if not any(calculated.reaches_indexed(later, candidate) for later in kept):
             kept.append(candidate)
     return kept
 
@@ -108,20 +129,30 @@ def compare(calculated: graph.Graph, candidates: set[int]) -> list[int]:
 class Calculator:
     """Calculate dependencies while following the specified serial state."""
 
-    def __init__(self, cache_targets: int = 1024, cache_bytes: int = 64 * 1024**2):
+    def __init__(
+        self,
+        separate_particles: set[int],
+        cache_targets: int = 1024,
+        cache_bytes: int = 64 * 1024**2,
+    ):
         """Keep occupancy analysis separate from dependency reachability."""
         self.graph = graph.Graph(cache_targets, cache_bytes)
         self._positions: dict[int, _Position] = {}
+        self._separate_particles = separate_particles
+        self._vanishes: dict[int, int] = {}
+        self._particle_uses: dict[int, set[int]] = {}
+        self._last_moves: dict[int, int] = {}
+        self._vacates: dict[int, int] = {}
 
     def retain(self, positions: dict[int, int]):
-        """Preserve selected records for shared destructor use before vacancy."""
+        """Preserve position information for shared destructor use."""
         for ordinary, retained in positions.items():
             state = self._positions[ordinary]
-            uses = None if state.uses is None else state.uses.copy()
+            readers = None if state.readers is None else state.readers.copy()
             self._positions[retained] = _Position(
-                state.supplier,
-                uses,
-                state.creator,
+                state.setter,
+                readers,
+                state.parent_create,
                 state.recent_use,
             )
 
@@ -131,56 +162,59 @@ class Calculator:
             del self._positions[position]
 
     def _collect(self, operation: Operation) -> set[int]:
-        candidates = set(operation.creators)
-        covered_creators: set[int] = set()
-        supplied_by_uses: list[_Position] = []
+        candidates = set(operation.quality_particles)
+        covered_creates: set[int] = set()
+        read_positions: list[_Position] = []
         required = operation.occupied
         if operation.fill is not None:
             required = (*required, operation.fill)
         for position in required:
             state = self._positions.get(position)
             if state is not None:
-                candidates.add(state.supplier)
-                if state.uses is not None:
-                    supplied_by_uses.append(state)
-                if state.creator is not None and state.supplier != state.creator:
-                    covered_creators.add(state.creator)
+                candidates.add(state.setter)
+                if state.readers is not None:
+                    read_positions.append(state)
+                if (
+                    state.parent_create is not None
+                    and state.setter != state.parent_create
+                ):
+                    covered_creates.add(state.parent_create)
         if operation.empty is not None:
             state = self._positions[operation.empty]
-            if state.uses is None:
-                candidates.add(state.supplier)
+            if state.readers is None:
+                candidates.add(state.setter)
             else:
-                candidates.update(state.uses)
-            if state.creator is not None and (
-                state.uses is not None or state.supplier != state.creator
+                candidates.update(state.readers)
+            if state.parent_create is not None and (
+                state.readers is not None or state.setter != state.parent_create
             ):
-                covered_creators.add(state.creator)
-        candidates.difference_update(covered_creators)
+                covered_creates.add(state.parent_create)
+        candidates.difference_update(covered_creates)
         covered: list[int] = []
-        for state in supplied_by_uses:
-            if state.supplier not in candidates:
+        for state in read_positions:
+            if state.setter not in candidates:
                 continue
-            assert state.uses is not None  # noqa: S101 - Established when collected above.
-            if len(candidates) <= MAX_SUPPLIER_SEARCH_CANDIDATES:
-                follows_fill = not candidates.isdisjoint(state.uses)
+            assert state.readers is not None  # noqa: S101 - Established when collected above.
+            if len(candidates) <= MAX_SETTER_SEARCH_CANDIDATES:
+                follows_fill = not candidates.isdisjoint(state.readers)
             else:
                 follows_fill = state.recent_use in candidates
             if follows_fill:
-                covered.append(state.supplier)
+                covered.append(state.setter)
         candidates.difference_update(covered)
         return candidates
 
-    def _record(self, operation: Operation, occurrence: int, dependencies: set[int]):
+    def _record(self, operation: Operation, occurrence: int, collected: set[int]):
         for position in operation.occupied:
             state = self._positions[position]
-            if state.uses is None:
-                state.uses = {occurrence}
+            if state.readers is None:
+                state.readers = {occurrence}
             else:
                 # Bounding this optional pruning keeps long references from
                 # multiplying work by an arbitrarily large dependency count.
-                if len(dependencies) <= MAX_PRUNING_CANDIDATES:
-                    state.uses.difference_update(dependencies)
-                state.uses.add(occurrence)
+                if len(collected) <= MAX_PRUNING_CANDIDATES:
+                    state.readers.difference_update(collected)
+                state.readers.add(occurrence)
             state.recent_use = occurrence
         for position in (operation.fill, operation.empty):
             if position is None:
@@ -189,14 +223,60 @@ class Calculator:
             if state is None:
                 self._positions[position] = _Position(occurrence)
             else:
-                state.supplier = occurrence
-                state.uses = None
+                state.setter = occurrence
+                state.readers = None
                 state.recent_use = None
         for position in operation.defines:
-            self._positions[position] = _Position(occurrence, creator=occurrence)
+            self._positions[position] = _Position(occurrence, parent_create=occurrence)
+
+        # A whole-input certificate makes even per-use filtering unnecessary.
+        if not self._separate_particles:
+            if operation.vacated is not None:
+                self._vanishes[operation.vacated] = occurrence
+            return
+
+        ordinary = operation.ordinary_occupants
+        covered = set(ordinary) if len(ordinary) > 1 else ordinary
+        for particle in operation.quality_particles:
+            if particle not in self._separate_particles or particle in covered:
+                continue
+            uses = self._particle_uses.setdefault(particle, set())
+            if len(collected) <= MAX_PRUNING_CANDIDATES:
+                uses.difference_update(collected)
+            uses.add(occurrence)
+        if operation.vacated is not None:
+            if operation.vacated in self._separate_particles:
+                self._vacates[operation.vacated] = occurrence
+            else:
+                self._vanishes[operation.vacated] = occurrence
+        if operation.moved is not None and operation.moved in self._separate_particles:
+            self._last_moves[operation.moved] = occurrence
+
+    def finish(self) -> dict[int, int]:
+        """Finish the graph; no further operations may be added."""
+        self._positions.clear()
+        for particle, vacate in self._vacates.items():
+            candidates = self._particle_uses.pop(particle, None)
+            if candidates is None:
+                candidates = {vacate}
+            else:
+                candidates.add(vacate)
+            moved = self._last_moves.pop(particle, None)
+            if moved is not None:
+                candidates.add(moved)
+            dependencies = compare(self.graph, candidates)
+            self._vanishes[particle] = (
+                vacate
+                if dependencies == [vacate]
+                else self.graph.append_terminal(dependencies)
+            )
+        self._particle_uses.clear()
+        self._last_moves.clear()
+        self._vacates.clear()
+        return self._vanishes
 
     def add(self, operation: Operation) -> int:
-        """Calculate and record one Create, Move, or Destroy."""
+        """Calculate and record one Create, Move, or Vacate."""
         candidates = self._collect(operation)
         dependencies = compare(self.graph, candidates)
         occurrence = self.graph.append(dependencies)
@@ -204,5 +284,5 @@ class Calculator:
         return occurrence
 
     def simultaneous(self, operations: list[Operation]) -> list[int]:
-        """Calculate vacancies belonging to one simultaneous destruction."""
+        """Calculate Vacates selected by one simultaneous destruction."""
         return [self.add(operation) for operation in operations]

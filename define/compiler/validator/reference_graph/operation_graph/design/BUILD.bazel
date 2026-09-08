@@ -5,7 +5,10 @@ load("//tools/bzl:pyright.bzl", "pyright_test")
 py_library(
     name = "algorithm",
     srcs = ["algorithm.py"],
-    deps = [":graph"],
+    # The dependency checker does not resolve relative imports.
+    deps = [
+        ":graph",  # keep
+    ],
 )
 
 py_library(
