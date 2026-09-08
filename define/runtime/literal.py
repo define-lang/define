@@ -41,7 +41,7 @@ class Fanout:
         """Init Action Executions before releasing ordinary consumers."""
         for init in self.inits:
             init()
-        self.scheduler.continue_with([*publication_consumers, *self.consumers])
+        self.scheduler.continue_with(*publication_consumers, *self.consumers)
 
 
 class Join:
@@ -281,7 +281,7 @@ class Scheduler:
         for method in methods:
             self.submit(method)
 
-    def continue_with(self, methods: Tasks):
+    def continue_with(self, *methods: Task):
         """Submit all but one bound method and run the final one directly."""
         if not methods:
             return

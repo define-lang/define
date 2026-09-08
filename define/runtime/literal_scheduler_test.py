@@ -152,12 +152,36 @@ class TestScheduler:
         with pytest.raises(ValueError, match="worker failed"):
             scheduler.start(Entry)
 
+    def test_continue_with_without_methods_does_not_submit_work(
+        self, monkeypatch: pytest.MonkeyPatch
+    ):
+        scheduler = literal.Scheduler()
+        submitted: list[literal.Task] = []
+        monkeypatch.setattr(scheduler, "submit", submitted.append)
+
+        scheduler.continue_with()
+
+        assert submitted == []
+
+    def test_continue_with_runs_one_method_directly(self):
+        calling_thread = threading.get_ident()
+        execution_threads: list[int] = []
+
+        literal.Scheduler().continue_with(
+            lambda: execution_threads.append(threading.get_ident())
+        )
+
+        assert execution_threads == [calling_thread]
+
     def test_continue_with_submits_all_but_the_final_method(self):
         scheduler = literal.Scheduler(max_threads=1)
         calls: list[str] = []
 
-        def submitted():
-            calls.append("submitted")
+        def first_submitted():
+            calls.append("first submitted")
+
+        def second_submitted():
+            calls.append("second submitted")
 
         def direct():
             calls.append("direct")
@@ -165,11 +189,11 @@ class TestScheduler:
         class Entry(literal.EntryPoint):
             @override
             def execute(self, scheduler: literal.Scheduler):
-                scheduler.continue_with((submitted, direct))
+                scheduler.continue_with(first_submitted, second_submitted, direct)
 
         scheduler.start(Entry)
 
-        assert calls == ["direct", "submitted"]
+        assert calls == ["direct", "first submitted", "second submitted"]
 
     def test_submit_all_submits_every_method(self):
         scheduler = literal.Scheduler(max_threads=1)
