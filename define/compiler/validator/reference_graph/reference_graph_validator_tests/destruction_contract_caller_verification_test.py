@@ -30,6 +30,37 @@ _D1 = "action<my.domain.com:my_lib:/d1>"
 _D2 = "action<my.domain.com:my_lib:/d2>"
 
 
+def test_parent_verification_does_not_skip_child_destructor(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_empty
+    assert (
+        all_diags[0].position_name
+        == "action</destroyer>::position<run>::position</child>::position</item>"
+    )
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+
+
+def test_propagated_child_verification_does_not_skip_parent_destructor(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_empty
+    assert (
+        all_diags[0].position_name == "action</middle>::position<run>::position</item>"
+    )
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+
+
 def test_destructor_diagnostic_retains_callee_local_assignment(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):

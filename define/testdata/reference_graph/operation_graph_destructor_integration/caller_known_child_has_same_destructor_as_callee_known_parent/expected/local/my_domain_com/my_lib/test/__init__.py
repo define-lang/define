@@ -47,6 +47,7 @@ class TestExecution:
             self.scheduler,
             1,
             self.destroy_action_destroyer__position_run__global_position_child,
+            self.run_action_destroyer__position_run__global_position_child__action_destructor,
         )
         self.execution_action_destroyer = local.my_domain_com.my_lib.destroyer.DestroyerExecution(
             self.action.on_particle.get_action(
@@ -93,3 +94,9 @@ class TestExecution:
     def destroy_action_destroyer__position_run__global_position_child(self):
         self.destruction_position_action_destroyer__position_run__global_position_child.destroy_particle()
         self.destruction_connection_action_destroyer.complete()
+
+    def run_action_destroyer__position_run__global_position_child__action_destructor(self):
+        execution = local.my_domain_com.my_lib.destructor.DestructorExecution(
+            self.scheduler,
+        )
+        execution.on_action_parent_occupied()

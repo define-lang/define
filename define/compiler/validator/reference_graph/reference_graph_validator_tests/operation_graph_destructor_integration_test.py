@@ -980,7 +980,7 @@ def test_caller_contributed_destruction_follows_transitive_move_guarantee(
 @pytest.mark.xfail(
     strict=True,
     raises=AssertionError,
-    reason="S1/S5: verify the child Destructor separately and distinguish its operations",
+    reason="S5: distinguish contributed Destructor operations and preserve simultaneous Destroys",
 )
 def test_caller_known_child_has_same_destructor_as_callee_known_parent(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,

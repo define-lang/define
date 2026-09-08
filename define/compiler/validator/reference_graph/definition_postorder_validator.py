@@ -508,9 +508,9 @@ class ActionPostorderValidator:
                 # handled through the normal requirements mechanism (fired and
                 # propagated as this action's own requirements), not through the
                 # Destruction Contract's requirement-verification mechanism.
-                verified_destructors=self._destructor_quality_assignments(
-                    particle.qualities
-                ),
+                verified_destructors={
+                    (): self._destructor_quality_assignments(particle.qualities)
+                },
                 is_auto_destruction=is_auto_destruction,
             )
         )
@@ -874,7 +874,7 @@ class ActionPostorderValidator:
                 caller_particle_position
             )
             merged_child_state.update(destruction_contract.child_state)
-        newly_verified: list[ast.GlobalTypedNameReference] = []
+        newly_verified: dict[tuple[str, ...], list[ast.GlobalTypedNameReference]] = {}
         destructor_contributions: list[
             operation_graph_model.VerifiedDestructionContractDestructor
         ] = []
@@ -932,13 +932,24 @@ class ActionPostorderValidator:
         destruction_contract: action_contract.DestructionContract,
         caller_particle: particle_info.ParticleInfo,
         merged_child_state: dict[tuple[str, ...], action_contract.ChildOccupancy],
-        newly_verified: list[ast.GlobalTypedNameReference],
+        newly_verified: dict[tuple[str, ...], list[ast.GlobalTypedNameReference]],
         trigger_step: action_contract.PropagationStep,
     ):
         # Carry the merged destruction-time picture and the destructors checked
         # so far upward; everything else describes the original destroyer and is
         # fixed. This definition's trigger of the callee leads the trigger chain,
         # since it runs before every hop already recorded below it.
+        verified_destructors = destruction_contract.verified_destructors.copy()
+        for position, qualities in newly_verified.items():
+            previously_verified = verified_destructors.get(position)
+            assignments = (
+                previously_verified.assignments
+                if previously_verified is not None
+                else ()
+            )
+            verified_destructors[position] = quality_assignment.QualityAssignments(
+                (*assignments, *qualities)
+            )
         self._destruction_contracts.append(
             action_contract.DestructionContract(
                 destroyed_position_contracted=caller_particle.origin_position,
@@ -947,12 +958,7 @@ class ActionPostorderValidator:
                     destruction_contract.destroyed_position_in_destroying_action
                 ),
                 child_state=merged_child_state,
-                verified_destructors=quality_assignment.QualityAssignments(
-                    (
-                        *destruction_contract.verified_destructors.assignments,
-                        *newly_verified,
-                    )
-                ),
+                verified_destructors=verified_destructors,
                 is_auto_destruction=destruction_contract.is_auto_destruction,
                 trigger_chain=(trigger_step, *destruction_contract.trigger_chain),
             )
@@ -968,7 +974,7 @@ class ActionPostorderValidator:
         trigger_step: action_contract.PropagationStep,
         merged_child_state: dict[tuple[str, ...], action_contract.ChildOccupancy],
         created_in_this_action: bool,
-        newly_verified: list[ast.GlobalTypedNameReference],
+        newly_verified: dict[tuple[str, ...], list[ast.GlobalTypedNameReference]],
         destructor_contributions: list[
             operation_graph_model.VerifiedDestructionContractDestructor
         ],
@@ -1047,8 +1053,12 @@ class ActionPostorderValidator:
                     "ast.ActionDefinition", definition_result.definition
                 )
                 destructor_contribution = None
-                if definition.is_destructor and not (
-                    destruction_contract.verified_destructors.has_quality(quality)
+                verified_destructors = destruction_contract.verified_destructors.get(
+                    relative_key
+                )
+                if definition.is_destructor and (
+                    verified_destructors is None
+                    or not verified_destructors.has_quality(quality)
                 ):
                     if destruction_contract_position is None:
                         destruction_contract_position = (
@@ -1126,7 +1136,7 @@ class ActionPostorderValidator:
         trigger_step: action_contract.PropagationStep,
         merged_child_state: dict[tuple[str, ...], action_contract.ChildOccupancy],
         created_in_this_action: bool,
-        newly_verified: list[ast.GlobalTypedNameReference],
+        newly_verified: dict[tuple[str, ...], list[ast.GlobalTypedNameReference]],
     ) -> operation_graph_model.VerifiedDestructionContractDestructor | None:
         """Verify one Destructor discovered through a Destruction Contract."""
         destructor_contract = self._validation_state.get_contract_or_none(
@@ -1192,7 +1202,10 @@ class ActionPostorderValidator:
                     destructor_quality=destructor_quality,
                 )
             )
-        newly_verified.append(destructor_quality)
+        newly_verified.setdefault(
+            destruction_contract_position.position_relative_to_destroyed_particle,
+            [],
+        ).append(destructor_quality)
         verified_requirements = [
             resolved_requirement.as_verified_destruction_contract_requirement()
             for resolved_requirement in resolved_requirements

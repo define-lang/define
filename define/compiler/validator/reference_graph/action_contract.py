@@ -271,8 +271,12 @@ class DestructionContract:
     # destroyed particle (the suffix that you would put after the particle's
     # position).
     child_state: dict[tuple[str, ...], ChildOccupancy]
-    # Destructors we have already verified, so consumers do not re-verify.
-    verified_destructors: quality_assignment.QualityAssignments
+    # Verification belongs to a particle, not just a quality: different child
+    # particles can have the same Destructor assigned to them. Initially, the
+    # only key is (), identifying the Destruction Contract's destroyed particle.
+    # Callers add nonempty relative child-position keys when they verify child
+    # Destructors; propagation preserves those keys.
+    verified_destructors: dict[tuple[str, ...], quality_assignment.QualityAssignments]
     # True when the destruction fact's local position was auto-destroyed at block
     # end rather than by an explicit Destroy statement.
     is_auto_destruction: bool

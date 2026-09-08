@@ -1,0 +1,18 @@
+# The parent's verified Destructor cannot satisfy the child's different state.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</destroyer>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<source> {
+            it may only contain particles where {
+                it has the action</destructor>.
+                it has the position</child>.
+            }
+        }
+        create a particle in position<source>.
+        create a particle in position<source>::position</child>.
+        create a particle in position<source>::position</child>::position</item>.
+        move the particle in position<source> to action</destroyer>::position<run>.
+    }
+}
