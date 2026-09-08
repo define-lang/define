@@ -12,8 +12,9 @@ that removes something waits for its uses.**
 
 There are two kinds of requirements:
 
-- **Particle requirements:** A particle must exist to access its assigned
-  qualities.
+- **Particle requirements:** A particle must exist to move it directly or to
+  access its assigned qualities. Those qualities include its positions and
+  actions.
 - **Position requirements:** A position must have the required occupant—or be
   empty.
 
@@ -26,9 +27,16 @@ Specifically:
 | Vacate    | The selected particle occupies the selected position before Vacation.  |
 | Vanish    | The particle has vacated and no remaining operation requires it alive. |
 
-Written position references also require their intermediate positions to have
-the appropriate particles. Direct implied access does **not** require the
-particle to remain at the position through which the caller accessed it.
+Position References also require their intermediate positions to have the
+appropriate particles. Access through an implied or interface position does
+**not**, by itself, require the particle to remain at the position through which
+the caller accessed it. The same operation may nevertheless have another
+reference that requires that occupancy.
+
+These requirements concern particular particles and positions, not just their
+names. A replacement particle has its own assigned positions; those are not the
+positions assigned to the previous particle, even when the same written name can
+refer to them.
 
 Moving a particle moves its defined positions, including empty ones. It does not
 fill or empty those positions relative to that particle.
@@ -89,7 +97,8 @@ After constructing the Create, Move, and Vacate dependencies, collect these
 candidates for each particle's Vanish:
 
 - Its Vacate.
-- Every Move directly moving that particle.
+- The most recent Move directly moving that particle, if any. Earlier direct
+  Moves are already dependencies of the later one.
 - Every Create, Move, or Vacate whose Position References use its assigned
   qualities, including through intermediate positions.
 
@@ -98,15 +107,47 @@ operations. Include uses in constructors, destructors, and actions they
 transitively trigger. Moving with another particle transitively does not, by
 itself, require a particle to remain alive after Vacation.
 
+An operation's use of assigned qualities needs no separate Vanish candidate when
+the same operation requires the particle to occupy an intermediate position
+without relying on the occupancy preserved for destructors. The position
+dependencies already put that operation before the particle leaves that
+position, and therefore before its Vacate. This also applies to an implied or
+interface reference when the same operation has that intermediate-position
+requirement.
+
+A candidate may be removed when another candidate for that Vanish already
+depends on it. In particular, when recording an operation that needs the
+particle, its Collection candidates may be removed from that particle's Vanish
+candidates, even if Comparison omitted them from its direct dependencies.
+
 Apply Comparison to those candidates. Vanish has no Position References, does
 not change setters or readers, and does not become another operation's
 dependency. Reusing a vacated position therefore need not wait for its previous
 particle to vanish.
 
-If a Vanish's only direct dependency is its Vacate, the two may be combined. The
-combined operation has the Vacate's dependencies and takes its place for
+## When Vacate and Vanish can be combined
+
+The two may be combined when every other operation that requires the particle or
+its assigned qualities is already a direct or indirect dependency of its Vacate.
+The combined operation has the Vacate's dependencies and takes its place for
 operations that depended on it. Otherwise, combining them could delay reuse of
 the position unnecessarily.
+
+This can be known before constructing a separate Vanish whenever both of these
+conditions hold:
+
+- Every operation using the particle's assigned qualities also requires that
+  particle to occupy an intermediate position, without relying on occupancy
+  preserved for destructors.
+- Every Move directly moving the particle is less recent than its Vacate.
+
+Both checks must include all operations, including those in transitively
+triggered actions that have not yet been processed. Merely having no destructor
+on the particle is not enough: constructors and other actions can also use its
+assigned qualities without requiring its ordinary occupancy.
+
+Failing these checks does not rule out combination. After Comparison, a Vanish
+whose only direct dependency is its Vacate can still be combined with it.
 
 ## Scope
 
