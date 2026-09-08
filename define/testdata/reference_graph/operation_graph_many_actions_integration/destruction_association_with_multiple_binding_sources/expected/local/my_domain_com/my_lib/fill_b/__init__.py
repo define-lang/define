@@ -27,8 +27,8 @@ class FillB(literal.Action):
 
 @final
 class FillBGuarantees:
-    def __init__(self):
-        self.global_position_guaranteed_parent__global_position_child_b = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_guaranteed_parent__global_position_child_b = literal.Fanout(scheduler)
 
 
 @final
@@ -40,7 +40,7 @@ class FillBExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = FillBGuarantees()
+        self.guarantees = FillBGuarantees(self.scheduler)
 
     def accept_when_empty_global_position_guaranteed_parent__global_position_child_b(self):
         self.create_global_position_guaranteed_parent__global_position_child_b()
@@ -52,5 +52,4 @@ class FillBExecution:
             local.my_domain_com.my_lib.child_b.ChildB
         ).create_particle()
         self.guarantees.global_position_guaranteed_parent__global_position_child_b.run(
-            self.scheduler,
         )

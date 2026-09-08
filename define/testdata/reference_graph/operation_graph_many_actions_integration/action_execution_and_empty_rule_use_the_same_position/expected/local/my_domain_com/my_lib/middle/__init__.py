@@ -34,8 +34,8 @@ class Middle(literal.Action):
 
 @final
 class MiddleGuarantees:
-    def __init__(self):
-        self.position_source__move__position_holder = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_source__move__position_holder = literal.Fanout(scheduler)
 
 
 @final
@@ -47,7 +47,7 @@ class MiddleExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = MiddleGuarantees()
+        self.guarantees = MiddleGuarantees(self.scheduler)
         self.execution_position_source__action_child: local.my_domain_com.my_lib.child.ChildExecution
         self.join_for_move_position_source_to_position_holder: literal.Join
         self.join_for_empty_rule_position_source: literal.Join
@@ -114,5 +114,4 @@ class MiddleExecution:
             )
         )
         self.guarantees.position_source__move__position_holder.run(
-            self.scheduler,
         )

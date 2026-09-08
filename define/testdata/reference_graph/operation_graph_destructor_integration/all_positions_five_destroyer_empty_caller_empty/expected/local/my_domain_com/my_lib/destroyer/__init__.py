@@ -38,8 +38,8 @@ class Destroyer(literal.Action):
 
 @final
 class DestroyerGuarantees:
-    def __init__(self):
-        self.position_target = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_target = literal.Fanout(scheduler)
 
 
 @final
@@ -53,7 +53,7 @@ class DestroyerExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = DestroyerGuarantees()
+        self.guarantees = DestroyerGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.execution_position_target__action_first_destructor: local.my_domain_com.my_lib.first_destructor.FirstDestructorExecution
         self.execution_position_target__action_second_destructor: local.my_domain_com.my_lib.second_destructor.SecondDestructorExecution
@@ -198,7 +198,6 @@ class DestroyerExecution:
             "position<target>"
         ).destroy_particle()
         self.guarantees.position_target.run(
-            self.scheduler,
         )
 
     def accept_guarantee_position_target__action_second_destructor(self):

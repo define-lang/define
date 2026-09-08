@@ -26,8 +26,8 @@ class Filler(literal.Action):
 
 @final
 class FillerGuarantees:
-    def __init__(self):
-        self.global_position_result = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_result = literal.Fanout(scheduler)
 
 
 @final
@@ -47,7 +47,7 @@ class FillerExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = FillerGuarantees()
+        self.guarantees = FillerGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.local_position_scratch = literal.LocalPosition(
             "position<scratch>",
@@ -92,7 +92,6 @@ class FillerExecution:
             1,
         )
         self.guarantees.global_position_result.run(
-            self.scheduler,
             self.destroy_position_scratch,
         )
 

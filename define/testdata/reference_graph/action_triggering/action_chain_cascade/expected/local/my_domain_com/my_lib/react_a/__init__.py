@@ -30,9 +30,9 @@ class ReactA(literal.Action):
 
 @final
 class ReactAGuarantees:
-    def __init__(self):
-        self.position_result = literal.Fanout()
-        self.position_trigger = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_result = literal.Fanout(scheduler)
+        self.position_trigger = literal.Fanout(scheduler)
 
 
 @final
@@ -46,7 +46,7 @@ class ReactAExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = ReactAGuarantees()
+        self.guarantees = ReactAGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.execution_position_result__action_final: local.my_domain_com.my_lib.final.FinalExecution
         self.join_for_destroy_position_trigger: literal.Join
@@ -95,7 +95,6 @@ class ReactAExecution:
             "position<result>"
         ).destroy_particle()
         self.guarantees.position_result.run(
-            self.scheduler,
         )
 
     def destroy_position_trigger(self):
@@ -108,5 +107,4 @@ class ReactAExecution:
             "position<trigger>"
         ).destroy_particle()
         self.guarantees.position_trigger.run(
-            self.scheduler,
         )

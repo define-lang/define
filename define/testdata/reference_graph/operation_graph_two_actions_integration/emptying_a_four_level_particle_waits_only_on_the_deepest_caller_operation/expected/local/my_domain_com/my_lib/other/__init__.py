@@ -30,8 +30,8 @@ class Other(literal.Action):
 
 @final
 class OtherGuarantees:
-    def __init__(self):
-        self.global_position_parent__move__position_out = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_parent__move__position_out = literal.Fanout(scheduler)
 
 
 @final
@@ -43,7 +43,7 @@ class OtherExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = OtherGuarantees()
+        self.guarantees = OtherGuarantees(self.scheduler)
         self.join_for_move_global_position_parent_to_position_out: literal.Join
         self.join_for_empty_rule_global_position_parent: literal.Join
 
@@ -63,5 +63,4 @@ class OtherExecution:
             )
         )
         self.guarantees.global_position_parent__move__position_out.run(
-            self.scheduler,
         )

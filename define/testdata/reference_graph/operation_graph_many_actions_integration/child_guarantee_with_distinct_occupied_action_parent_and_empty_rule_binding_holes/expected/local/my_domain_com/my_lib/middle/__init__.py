@@ -43,8 +43,8 @@ class Middle(literal.Action):
 
 @final
 class MiddleGuarantees:
-    def __init__(self):
-        self.position_source__move__position_holder = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_source__move__position_holder = literal.Fanout(scheduler)
 
 
 @final
@@ -56,7 +56,7 @@ class MiddleExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = MiddleGuarantees()
+        self.guarantees = MiddleGuarantees(self.scheduler)
         self.execution_position_source__action_child: local.my_domain_com.my_lib.child.ChildExecution
         self.destruction_position_position_holder__action_child__position_trigger_pos: literal.Position
         self.join_for_move_position_source_to_position_holder: literal.Join
@@ -130,7 +130,6 @@ class MiddleExecution:
             "position<trigger_pos>"
         )
         self.guarantees.position_source__move__position_holder.run(
-            self.scheduler,
             self.destroy_position_holder__action_child__position_trigger_pos,
         )
 

@@ -20,11 +20,11 @@ class Destructor(literal.Action):
 
 @final
 class DestructorGuarantees:
-    def __init__(self):
-        self.global_position_occupied_first = literal.Fanout()
-        self.global_position_occupied_first__global_position_transitive = literal.Fanout()
-        self.global_position_empty = literal.Fanout()
-        self.global_position_occupied_last = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_occupied_first = literal.Fanout(scheduler)
+        self.global_position_occupied_first__global_position_transitive = literal.Fanout(scheduler)
+        self.global_position_empty = literal.Fanout(scheduler)
+        self.global_position_occupied_last = literal.Fanout(scheduler)
 
 
 @final
@@ -36,7 +36,7 @@ class DestructorExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = DestructorGuarantees()
+        self.guarantees = DestructorGuarantees(self.scheduler)
         self.local_position_first_holder = literal.LocalPosition(
             "position<first_holder>",
             scheduler=self.scheduler,
@@ -79,7 +79,6 @@ class DestructorExecution:
             )
         )
         self.guarantees.global_position_occupied_first.run(
-            self.scheduler,
             self.move_global_position_occupied_first__global_position_transitive_to_position_transitive_holder,
         )
 
@@ -97,7 +96,6 @@ class DestructorExecution:
             )
         )
         self.guarantees.global_position_occupied_first__global_position_transitive.run(
-            self.scheduler,
         )
 
     def create_global_position_empty(self):
@@ -108,7 +106,6 @@ class DestructorExecution:
             local.my_domain_com.my_lib.empty.Empty
         ).destroy_particle()
         self.guarantees.global_position_empty.run(
-            self.scheduler,
         )
 
     def move_global_position_occupied_last_to_position_last_holder(self):
@@ -123,5 +120,4 @@ class DestructorExecution:
             )
         )
         self.guarantees.global_position_occupied_last.run(
-            self.scheduler,
         )

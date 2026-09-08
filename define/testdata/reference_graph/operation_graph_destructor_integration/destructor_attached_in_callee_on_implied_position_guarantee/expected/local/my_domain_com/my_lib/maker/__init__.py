@@ -27,8 +27,8 @@ class Maker(literal.Action):
 
 @final
 class MakerGuarantees:
-    def __init__(self):
-        self.global_position_child = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_child = literal.Fanout(scheduler)
 
 
 @final
@@ -40,7 +40,7 @@ class MakerExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = MakerGuarantees()
+        self.guarantees = MakerGuarantees(self.scheduler)
         self.local_position_temp = literal.LocalPosition(
             "position<temp>",
             constraints=(
@@ -72,5 +72,4 @@ class MakerExecution:
             )
         )
         self.guarantees.global_position_child.run(
-            self.scheduler,
         )

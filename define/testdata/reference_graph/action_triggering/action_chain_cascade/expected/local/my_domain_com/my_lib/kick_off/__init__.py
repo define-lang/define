@@ -32,9 +32,9 @@ class KickOff(literal.Action):
 
 @final
 class KickOffGuarantees:
-    def __init__(self):
-        self.position_output = literal.Fanout()
-        self.position_trigger = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_output = literal.Fanout(scheduler)
+        self.position_trigger = literal.Fanout(scheduler)
 
 
 @final
@@ -48,7 +48,7 @@ class KickOffExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = KickOffGuarantees()
+        self.guarantees = KickOffGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.execution_position_output__action_react_a: local.my_domain_com.my_lib.react_a.ReactAExecution
         self.execution_position_output__action_react_b: local.my_domain_com.my_lib.react_b.ReactBExecution
@@ -126,7 +126,6 @@ class KickOffExecution:
             "position<output>"
         ).destroy_particle()
         self.guarantees.position_output.run(
-            self.scheduler,
         )
 
     def destroy_position_trigger(self):
@@ -139,5 +138,4 @@ class KickOffExecution:
             "position<trigger>"
         ).destroy_particle()
         self.guarantees.position_trigger.run(
-            self.scheduler,
         )

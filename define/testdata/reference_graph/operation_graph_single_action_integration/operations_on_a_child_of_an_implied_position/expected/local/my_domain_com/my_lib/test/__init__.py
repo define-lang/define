@@ -24,8 +24,8 @@ class Test(literal.EntryPoint):
 
 @final
 class TestGuarantees:
-    def __init__(self):
-        self.global_position_implied = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_implied = literal.Fanout(scheduler)
 
 
 @final
@@ -37,7 +37,7 @@ class TestExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = TestGuarantees()
+        self.guarantees = TestGuarantees(self.scheduler)
         self.destruction_position_global_position_implied__global_position_child: literal.Position
 
     def accept_when_empty_global_position_implied(self):
@@ -65,7 +65,6 @@ class TestExecution:
             local.my_domain_com.my_lib.implied.Implied
         ).destroy_particle()
         self.guarantees.global_position_implied.run(
-            self.scheduler,
         )
 
     def destroy_global_position_implied__global_position_child(self):

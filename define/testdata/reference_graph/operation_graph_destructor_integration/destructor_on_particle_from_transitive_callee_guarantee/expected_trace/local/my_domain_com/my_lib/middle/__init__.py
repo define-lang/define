@@ -33,9 +33,9 @@ class Middle(literal.Action):
 
 @final
 class MiddleGuarantees:
-    def __init__(self):
-        self.position_result = literal.Fanout()
-        self.position_result__global_position_marker = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_result = literal.Fanout(scheduler)
+        self.position_result__global_position_marker = literal.Fanout(scheduler)
 
 
 @final
@@ -53,7 +53,7 @@ class MiddleExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = MiddleGuarantees()
+        self.guarantees = MiddleGuarantees(self.scheduler)
         self.local_position_box = literal.LocalPosition(
             "position<box>",
             constraints=(
@@ -159,7 +159,6 @@ class MiddleExecution:
             1,
         )
         self.guarantees.position_result.run(
-            self.scheduler,
             self.move_position_held_marker_to_position_result__global_position_marker,
             self.destroy_position_box,
         )
@@ -179,7 +178,6 @@ class MiddleExecution:
             1,
         )
         self.guarantees.position_result__global_position_marker.run(
-            self.scheduler,
         )
 
     def destroy_position_box(self):

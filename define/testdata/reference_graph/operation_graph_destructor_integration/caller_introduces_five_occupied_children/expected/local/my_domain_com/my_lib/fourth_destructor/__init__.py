@@ -17,9 +17,9 @@ class FourthDestructor(literal.Action):
 
 @final
 class FourthDestructorGuarantees:
-    def __init__(self):
-        self.global_position_fourth = literal.Fanout()
-        self.global_position_marker = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_fourth = literal.Fanout(scheduler)
+        self.global_position_marker = literal.Fanout(scheduler)
 
 
 @final
@@ -31,7 +31,7 @@ class FourthDestructorExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = FourthDestructorGuarantees()
+        self.guarantees = FourthDestructorGuarantees(self.scheduler)
         self.local_position_holder = literal.LocalPosition(
             "position<holder>",
             scheduler=self.scheduler,
@@ -59,7 +59,6 @@ class FourthDestructorExecution:
             )
         )
         self.guarantees.global_position_fourth.run(
-            self.scheduler,
         )
 
     def create_global_position_marker(self):
@@ -70,5 +69,4 @@ class FourthDestructorExecution:
             local.my_domain_com.my_lib.marker.Marker
         ).destroy_particle()
         self.guarantees.global_position_marker.run(
-            self.scheduler,
         )

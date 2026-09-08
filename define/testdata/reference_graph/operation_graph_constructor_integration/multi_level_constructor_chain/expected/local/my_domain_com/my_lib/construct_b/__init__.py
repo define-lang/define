@@ -16,8 +16,8 @@ class ConstructB(literal.Action):
 
 @final
 class ConstructBGuarantees:
-    def __init__(self):
-        self.global_position_inner = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_inner = literal.Fanout(scheduler)
 
 
 @final
@@ -29,7 +29,7 @@ class ConstructBExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = ConstructBGuarantees()
+        self.guarantees = ConstructBGuarantees(self.scheduler)
         self.execution_global_position_inner__action_construct_c: local.my_domain_com.my_lib.construct_c.ConstructCExecution
 
     def accept_when_empty_global_position_inner(self):
@@ -48,6 +48,5 @@ class ConstructBExecution:
             self.scheduler,
         )
         self.guarantees.global_position_inner.run(
-            self.scheduler,
             self.execution_global_position_inner__action_construct_c.accept_when_empty_global_position_leaf,
         )

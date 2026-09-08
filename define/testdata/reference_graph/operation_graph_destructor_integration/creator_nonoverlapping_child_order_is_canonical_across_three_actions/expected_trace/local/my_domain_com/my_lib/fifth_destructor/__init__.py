@@ -17,9 +17,9 @@ class FifthDestructor(literal.Action):
 
 @final
 class FifthDestructorGuarantees:
-    def __init__(self):
-        self.global_position_fifth = literal.Fanout()
-        self.global_position_marker = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_fifth = literal.Fanout(scheduler)
+        self.global_position_marker = literal.Fanout(scheduler)
 
 
 @final
@@ -37,7 +37,7 @@ class FifthDestructorExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = FifthDestructorGuarantees()
+        self.guarantees = FifthDestructorGuarantees(self.scheduler)
         self.local_position_holder = literal.LocalPosition(
             "position<holder>",
             scheduler=self.scheduler,
@@ -77,7 +77,6 @@ class FifthDestructorExecution:
             1,
         )
         self.guarantees.global_position_fifth.run(
-            self.scheduler,
         )
 
     def create_global_position_marker(self):
@@ -98,5 +97,4 @@ class FifthDestructorExecution:
             1,
         )
         self.guarantees.global_position_marker.run(
-            self.scheduler,
         )

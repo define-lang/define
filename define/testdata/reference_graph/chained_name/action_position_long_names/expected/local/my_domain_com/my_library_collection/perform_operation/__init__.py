@@ -30,9 +30,9 @@ class PerformOperation(literal.Action):
 
 @final
 class PerformOperationGuarantees:
-    def __init__(self):
-        self.position_operation_trigger = literal.Fanout()
-        self.position_run = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_operation_trigger = literal.Fanout(scheduler)
+        self.position_run = literal.Fanout(scheduler)
 
 
 @final
@@ -46,7 +46,7 @@ class PerformOperationExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = PerformOperationGuarantees()
+        self.guarantees = PerformOperationGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.local_position_result = literal.LocalPosition(
             "position<result>",
@@ -106,7 +106,6 @@ class PerformOperationExecution:
             "position<operation_trigger>"
         ).destroy_particle()
         self.guarantees.position_operation_trigger.run(
-            self.scheduler,
         )
 
     def destroy_position_run(self):
@@ -119,5 +118,4 @@ class PerformOperationExecution:
             "position<run>"
         ).destroy_particle()
         self.guarantees.position_run.run(
-            self.scheduler,
         )

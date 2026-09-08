@@ -26,8 +26,8 @@ class Test(literal.EntryPoint):
 
 @final
 class TestGuarantees:
-    def __init__(self):
-        self.global_position_shared = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_shared = literal.Fanout(scheduler)
 
 
 @final
@@ -39,7 +39,7 @@ class TestExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = TestGuarantees()
+        self.guarantees = TestGuarantees(self.scheduler)
         self.execution_action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
         self.destruction_position_action_middle__position_trigger_pos: literal.Position
         self.execution_action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
@@ -61,7 +61,6 @@ class TestExecution:
         ).create_particle()
         self.execution_action_middle.init_when_occupied_global_position_shared()
         self.guarantees.global_position_shared.run(
-            self.scheduler,
             self.execution_action_middle.accept_when_empty_global_position_shared__global_position_marker,
             self.execution_action_middle.continue_when_occupied_global_position_shared,
         )

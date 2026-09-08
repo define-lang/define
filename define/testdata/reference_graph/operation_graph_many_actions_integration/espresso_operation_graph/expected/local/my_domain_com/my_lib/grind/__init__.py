@@ -25,8 +25,8 @@ class Grind(literal.Action):
 
 @final
 class GrindGuarantees:
-    def __init__(self):
-        self.position_beans__move__position_grounds = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_beans__move__position_grounds = literal.Fanout(scheduler)
 
 
 @final
@@ -38,7 +38,7 @@ class GrindExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = GrindGuarantees()
+        self.guarantees = GrindGuarantees(self.scheduler)
         self.join_for_move_position_beans_to_position_grounds: literal.Join
         self.join_for_empty_rule_position_beans: literal.Join
 
@@ -58,5 +58,4 @@ class GrindExecution:
             )
         )
         self.guarantees.position_beans__move__position_grounds.run(
-            self.scheduler,
         )

@@ -25,8 +25,8 @@ class MiddleA(literal.Action):
 
 @final
 class MiddleAGuarantees:
-    def __init__(self):
-        self.position_run = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_run = literal.Fanout(scheduler)
 
 
 @final
@@ -46,7 +46,7 @@ class MiddleAExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = MiddleAGuarantees()
+        self.guarantees = MiddleAGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.local_position_box = literal.LocalPosition(
             "position<box>",
@@ -184,5 +184,4 @@ class MiddleAExecution:
             1,
         )
         self.guarantees.position_run.run(
-            self.scheduler,
         )

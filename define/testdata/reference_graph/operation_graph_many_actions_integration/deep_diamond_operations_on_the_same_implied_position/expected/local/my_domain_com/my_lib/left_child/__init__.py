@@ -26,8 +26,8 @@ class LeftChild(literal.Action):
 
 @final
 class LeftChildGuarantees:
-    def __init__(self):
-        self.global_position_marker = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_marker = literal.Fanout(scheduler)
 
 
 @final
@@ -39,7 +39,7 @@ class LeftChildExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = LeftChildGuarantees()
+        self.guarantees = LeftChildGuarantees(self.scheduler)
 
     def accept_when_empty_global_position_marker(self):
         self.create_global_position_marker()
@@ -49,5 +49,4 @@ class LeftChildExecution:
             local.my_domain_com.my_lib.marker.Marker
         ).create_particle()
         self.guarantees.global_position_marker.run(
-            self.scheduler,
         )

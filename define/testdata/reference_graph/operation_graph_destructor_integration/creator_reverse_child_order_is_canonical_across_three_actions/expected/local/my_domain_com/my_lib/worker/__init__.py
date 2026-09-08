@@ -17,9 +17,9 @@ class Worker(literal.Action):
 
 @final
 class WorkerGuarantees:
-    def __init__(self):
-        self.global_position_first_interface = literal.Fanout()
-        self.global_position_second_interface = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_first_interface = literal.Fanout(scheduler)
+        self.global_position_second_interface = literal.Fanout(scheduler)
 
 
 @final
@@ -31,7 +31,7 @@ class WorkerExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = WorkerGuarantees()
+        self.guarantees = WorkerGuarantees(self.scheduler)
 
     def accept_when_empty_global_position_first_interface(self):
         self.create_global_position_first_interface()
@@ -44,7 +44,6 @@ class WorkerExecution:
             local.my_domain_com.my_lib.first_interface.FirstInterface
         ).create_particle()
         self.guarantees.global_position_first_interface.run(
-            self.scheduler,
         )
 
     def create_global_position_second_interface(self):
@@ -52,5 +51,4 @@ class WorkerExecution:
             local.my_domain_com.my_lib.second_interface.SecondInterface
         ).create_particle()
         self.guarantees.global_position_second_interface.run(
-            self.scheduler,
         )

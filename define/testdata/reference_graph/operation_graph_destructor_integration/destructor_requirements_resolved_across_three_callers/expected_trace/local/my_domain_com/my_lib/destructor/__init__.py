@@ -19,10 +19,10 @@ class Destructor(literal.Action):
 
 @final
 class DestructorGuarantees:
-    def __init__(self):
-        self.global_position_callee_known = literal.Fanout()
-        self.global_position_middle_known = literal.Fanout()
-        self.global_position_creator_known = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_callee_known = literal.Fanout(scheduler)
+        self.global_position_middle_known = literal.Fanout(scheduler)
+        self.global_position_creator_known = literal.Fanout(scheduler)
 
 
 @final
@@ -40,7 +40,7 @@ class DestructorExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = DestructorGuarantees()
+        self.guarantees = DestructorGuarantees(self.scheduler)
         self.local_position_callee_holder = literal.LocalPosition(
             "position<callee_holder>",
             scheduler=self.scheduler,
@@ -91,7 +91,6 @@ class DestructorExecution:
             1,
         )
         self.guarantees.global_position_callee_known.run(
-            self.scheduler,
         )
 
     def create_global_position_middle_known(self):
@@ -112,7 +111,6 @@ class DestructorExecution:
             1,
         )
         self.guarantees.global_position_middle_known.run(
-            self.scheduler,
         )
 
     def move_global_position_creator_known_to_position_creator_holder(self):
@@ -139,5 +137,4 @@ class DestructorExecution:
             1,
         )
         self.guarantees.global_position_creator_known.run(
-            self.scheduler,
         )

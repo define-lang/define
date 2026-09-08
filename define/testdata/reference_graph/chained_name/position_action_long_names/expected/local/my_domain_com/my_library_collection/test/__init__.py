@@ -24,8 +24,8 @@ class Test(literal.EntryPoint):
 
 @final
 class TestGuarantees:
-    def __init__(self):
-        self.global_position_outer_position = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_outer_position = literal.Fanout(scheduler)
 
 
 @final
@@ -37,7 +37,7 @@ class TestExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = TestGuarantees()
+        self.guarantees = TestGuarantees(self.scheduler)
         self.execution_global_position_outer_position__action_perform_operation: local.my_domain_com.my_library_collection.perform_operation.PerformOperationExecution
 
     def accept_when_empty_global_position_outer_position(self):
@@ -58,7 +58,6 @@ class TestExecution:
         self.execution_global_position_outer_position__action_perform_operation.join_for_empty_rule_position_operation_trigger = literal.NO_JOIN
         self.execution_global_position_outer_position__action_perform_operation.join_for_destroy_position_operation_trigger = literal.NO_JOIN
         self.guarantees.global_position_outer_position.run(
-            self.scheduler,
             self.create_global_position_outer_position__action_perform_operation__position_operation_trigger,
             self.execution_global_position_outer_position__action_perform_operation.on_action_parent_occupied,
         )

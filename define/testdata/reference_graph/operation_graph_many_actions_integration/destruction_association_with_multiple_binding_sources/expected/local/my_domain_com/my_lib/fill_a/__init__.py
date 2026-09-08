@@ -27,8 +27,8 @@ class FillA(literal.Action):
 
 @final
 class FillAGuarantees:
-    def __init__(self):
-        self.global_position_guaranteed_parent__global_position_child_a = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_guaranteed_parent__global_position_child_a = literal.Fanout(scheduler)
 
 
 @final
@@ -40,7 +40,7 @@ class FillAExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = FillAGuarantees()
+        self.guarantees = FillAGuarantees(self.scheduler)
 
     def accept_when_empty_global_position_guaranteed_parent__global_position_child_a(self):
         self.create_global_position_guaranteed_parent__global_position_child_a()
@@ -52,5 +52,4 @@ class FillAExecution:
             local.my_domain_com.my_lib.child_a.ChildA
         ).create_particle()
         self.guarantees.global_position_guaranteed_parent__global_position_child_a.run(
-            self.scheduler,
         )

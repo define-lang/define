@@ -50,13 +50,13 @@ class Mover(literal.Action):
 
 @final
 class MoverGuarantees:
-    def __init__(self):
-        self.global_position_guaranteed_parent = literal.Fanout()
-        self.global_position_caller_parent = literal.Fanout()
-        self.position_discard = literal.Fanout()
-        self.position_guaranteed_destination = literal.Fanout()
-        self.position_caller_destination = literal.Fanout()
-        self.position_trigger_pos = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_guaranteed_parent = literal.Fanout(scheduler)
+        self.global_position_caller_parent = literal.Fanout(scheduler)
+        self.position_discard = literal.Fanout(scheduler)
+        self.position_guaranteed_destination = literal.Fanout(scheduler)
+        self.position_caller_destination = literal.Fanout(scheduler)
+        self.position_trigger_pos = literal.Fanout(scheduler)
 
 
 @final
@@ -70,7 +70,7 @@ class MoverExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = MoverGuarantees()
+        self.guarantees = MoverGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.destruction_position_position_guaranteed_destination__global_position_child_a: literal.Position
         self.destruction_position_position_guaranteed_destination__global_position_child_b: literal.Position
@@ -128,7 +128,6 @@ class MoverExecution:
             local.my_domain_com.my_lib.child_b.ChildB
         )
         self.guarantees.global_position_guaranteed_parent.run(
-            self.scheduler,
             self.destroy_position_guaranteed_destination__global_position_child_a,
             self.destroy_position_guaranteed_destination__global_position_child_b,
         )
@@ -154,7 +153,6 @@ class MoverExecution:
             local.my_domain_com.my_lib.child_b.ChildB
         )
         self.guarantees.global_position_caller_parent.run(
-            self.scheduler,
             self.destroy_position_caller_destination__global_position_child_a,
             self.destroy_position_caller_destination__global_position_child_b,
         )
@@ -169,7 +167,6 @@ class MoverExecution:
             "position<discard>"
         ).destroy_particle()
         self.guarantees.position_discard.run(
-            self.scheduler,
         )
 
     def destroy_position_guaranteed_destination__global_position_child_a(self):
@@ -196,7 +193,6 @@ class MoverExecution:
             "position<guaranteed_destination>"
         ).destroy_particle()
         self.guarantees.position_guaranteed_destination.run(
-            self.scheduler,
         )
 
     def destroy_position_caller_destination__global_position_child_a(self):
@@ -223,7 +219,6 @@ class MoverExecution:
             "position<caller_destination>"
         ).destroy_particle()
         self.guarantees.position_caller_destination.run(
-            self.scheduler,
         )
 
     def destroy_position_trigger_pos(self):
@@ -236,5 +231,4 @@ class MoverExecution:
             "position<trigger_pos>"
         ).destroy_particle()
         self.guarantees.position_trigger_pos.run(
-            self.scheduler,
         )

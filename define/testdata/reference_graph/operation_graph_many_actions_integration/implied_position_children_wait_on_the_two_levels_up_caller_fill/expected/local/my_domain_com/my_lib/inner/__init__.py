@@ -28,9 +28,9 @@ class Inner(literal.Action):
 
 @final
 class InnerGuarantees:
-    def __init__(self):
-        self.global_position_parent__global_position_child1 = literal.Fanout()
-        self.global_position_parent__global_position_child2 = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_parent__global_position_child1 = literal.Fanout(scheduler)
+        self.global_position_parent__global_position_child2 = literal.Fanout(scheduler)
 
 
 @final
@@ -42,7 +42,7 @@ class InnerExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = InnerGuarantees()
+        self.guarantees = InnerGuarantees(self.scheduler)
 
     def accept_when_empty_global_position_parent__global_position_child1(self):
         self.create_global_position_parent__global_position_child1()
@@ -57,7 +57,6 @@ class InnerExecution:
             local.my_domain_com.my_lib.child1.Child1
         ).create_particle()
         self.guarantees.global_position_parent__global_position_child1.run(
-            self.scheduler,
         )
 
     def create_global_position_parent__global_position_child2(self):
@@ -67,5 +66,4 @@ class InnerExecution:
             local.my_domain_com.my_lib.child2.Child2
         ).create_particle()
         self.guarantees.global_position_parent__global_position_child2.run(
-            self.scheduler,
         )

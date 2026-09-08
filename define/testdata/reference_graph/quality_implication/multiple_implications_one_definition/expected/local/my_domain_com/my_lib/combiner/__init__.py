@@ -17,9 +17,9 @@ class Combiner(literal.Action):
 
 @final
 class CombinerGuarantees:
-    def __init__(self):
-        self.global_position_first_marker = literal.Fanout()
-        self.global_position_second_marker = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_first_marker = literal.Fanout(scheduler)
+        self.global_position_second_marker = literal.Fanout(scheduler)
 
 
 @final
@@ -31,7 +31,7 @@ class CombinerExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = CombinerGuarantees()
+        self.guarantees = CombinerGuarantees(self.scheduler)
 
     def accept_when_empty_global_position_first_marker(self):
         self.create_global_position_first_marker()
@@ -44,7 +44,6 @@ class CombinerExecution:
             local.my_domain_com.my_lib.first_marker.FirstMarker
         ).create_particle()
         self.guarantees.global_position_first_marker.run(
-            self.scheduler,
         )
 
     def create_global_position_second_marker(self):
@@ -52,5 +51,4 @@ class CombinerExecution:
             local.my_domain_com.my_lib.second_marker.SecondMarker
         ).create_particle()
         self.guarantees.global_position_second_marker.run(
-            self.scheduler,
         )

@@ -26,8 +26,8 @@ class Test(literal.EntryPoint):
 
 @final
 class TestGuarantees:
-    def __init__(self):
-        self.global_position_item = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_item = literal.Fanout(scheduler)
 
 
 @final
@@ -39,7 +39,7 @@ class TestExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = TestGuarantees()
+        self.guarantees = TestGuarantees(self.scheduler)
         self.execution_action_run_both: local.my_domain_com.my_lib.run_both.RunBothExecution
         self.destruction_position_action_run_both__position_trigger_pos: literal.Position
         self.execution_action_run_both = local.my_domain_com.my_lib.run_both.RunBothExecution(
@@ -77,5 +77,4 @@ class TestExecution:
             local.my_domain_com.my_lib.item.Item
         ).create_particle()
         self.guarantees.global_position_item.run(
-            self.scheduler,
         )

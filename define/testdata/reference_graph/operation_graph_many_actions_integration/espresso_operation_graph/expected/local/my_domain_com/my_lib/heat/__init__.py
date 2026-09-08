@@ -25,8 +25,8 @@ class Heat(literal.Action):
 
 @final
 class HeatGuarantees:
-    def __init__(self):
-        self.position_cold_water__move__position_hot_water = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_cold_water__move__position_hot_water = literal.Fanout(scheduler)
 
 
 @final
@@ -38,7 +38,7 @@ class HeatExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = HeatGuarantees()
+        self.guarantees = HeatGuarantees(self.scheduler)
         self.join_for_move_position_cold_water_to_position_hot_water: literal.Join
         self.join_for_empty_rule_position_cold_water: literal.Join
 
@@ -58,5 +58,4 @@ class HeatExecution:
             )
         )
         self.guarantees.position_cold_water__move__position_hot_water.run(
-            self.scheduler,
         )

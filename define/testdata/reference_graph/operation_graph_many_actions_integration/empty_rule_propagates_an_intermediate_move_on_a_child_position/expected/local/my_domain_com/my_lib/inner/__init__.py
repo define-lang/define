@@ -28,8 +28,8 @@ class Inner(literal.Action):
 
 @final
 class InnerGuarantees:
-    def __init__(self):
-        self.global_position_input__move__global_position_destination = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_input__move__global_position_destination = literal.Fanout(scheduler)
 
 
 @final
@@ -41,7 +41,7 @@ class InnerExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = InnerGuarantees()
+        self.guarantees = InnerGuarantees(self.scheduler)
         self.join_for_move_global_position_input_to_global_position_destination: literal.Join
         self.join_for_empty_rule_global_position_input: literal.Join
 
@@ -61,5 +61,4 @@ class InnerExecution:
             )
         )
         self.guarantees.global_position_input__move__global_position_destination.run(
-            self.scheduler,
         )

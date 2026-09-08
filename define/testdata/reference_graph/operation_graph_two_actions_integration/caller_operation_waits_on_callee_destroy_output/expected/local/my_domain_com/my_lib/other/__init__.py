@@ -25,9 +25,9 @@ class Other(literal.Action):
 
 @final
 class OtherGuarantees:
-    def __init__(self):
-        self.position_output = literal.Fanout()
-        self.position_trigger_pos = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_output = literal.Fanout(scheduler)
+        self.position_trigger_pos = literal.Fanout(scheduler)
 
 
 @final
@@ -41,7 +41,7 @@ class OtherExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = OtherGuarantees()
+        self.guarantees = OtherGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.join_for_destroy_position_output: literal.Join
         self.join_for_destroy_position_trigger_pos: literal.Join
@@ -68,7 +68,6 @@ class OtherExecution:
             "position<output>"
         ).destroy_particle()
         self.guarantees.position_output.run(
-            self.scheduler,
         )
 
     def destroy_position_trigger_pos(self):
@@ -81,5 +80,4 @@ class OtherExecution:
             "position<trigger_pos>"
         ).destroy_particle()
         self.guarantees.position_trigger_pos.run(
-            self.scheduler,
         )

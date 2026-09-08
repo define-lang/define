@@ -25,8 +25,8 @@ class Helper(literal.Action):
 
 @final
 class HelperGuarantees:
-    def __init__(self):
-        self.position_slot__move__position_out = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_slot__move__position_out = literal.Fanout(scheduler)
 
 
 @final
@@ -38,7 +38,7 @@ class HelperExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = HelperGuarantees()
+        self.guarantees = HelperGuarantees(self.scheduler)
         self.join_for_move_position_slot_to_position_out: literal.Join
         self.join_for_empty_rule_position_slot: literal.Join
 
@@ -58,5 +58,4 @@ class HelperExecution:
             )
         )
         self.guarantees.position_slot__move__position_out.run(
-            self.scheduler,
         )

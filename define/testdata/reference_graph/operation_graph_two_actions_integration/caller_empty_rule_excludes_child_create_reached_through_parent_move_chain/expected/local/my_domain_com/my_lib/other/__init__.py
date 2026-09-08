@@ -34,9 +34,9 @@ class Other(literal.Action):
 
 @final
 class OtherGuarantees:
-    def __init__(self):
-        self.global_position_input = literal.Fanout()
-        self.position_output = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_input = literal.Fanout(scheduler)
+        self.position_output = literal.Fanout(scheduler)
 
 
 @final
@@ -50,7 +50,7 @@ class OtherExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = OtherGuarantees()
+        self.guarantees = OtherGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.destruction_position_position_output__global_position_item: literal.Position
         self.join_for_move_global_position_input_to_position_output: literal.Join
@@ -77,7 +77,6 @@ class OtherExecution:
             local.my_domain_com.my_lib.item.Item
         )
         self.guarantees.global_position_input.run(
-            self.scheduler,
             self.destroy_position_output__global_position_item,
         )
 
@@ -96,5 +95,4 @@ class OtherExecution:
             "position<output>"
         ).destroy_particle()
         self.guarantees.position_output.run(
-            self.scheduler,
         )

@@ -32,8 +32,8 @@ class Other(literal.Action):
 
 @final
 class OtherGuarantees:
-    def __init__(self):
-        self.position_box__global_position_item__move__position_box__global_position_destination = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_box__global_position_item__move__position_box__global_position_destination = literal.Fanout(scheduler)
 
 
 @final
@@ -45,7 +45,7 @@ class OtherExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = OtherGuarantees()
+        self.guarantees = OtherGuarantees(self.scheduler)
         self.join_for_move_position_box__global_position_item_to_position_box__global_position_destination: literal.Join
         self.join_when_empty_position_box__global_position_destination: literal.Join
 
@@ -80,5 +80,4 @@ class OtherExecution:
             )
         )
         self.guarantees.position_box__global_position_item__move__position_box__global_position_destination.run(
-            self.scheduler,
         )

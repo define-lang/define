@@ -30,8 +30,8 @@ class Mover(literal.Action):
 
 @final
 class MoverGuarantees:
-    def __init__(self):
-        self.global_position_out__move__global_position_destination = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_out__move__global_position_destination = literal.Fanout(scheduler)
 
 
 @final
@@ -43,7 +43,7 @@ class MoverExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = MoverGuarantees()
+        self.guarantees = MoverGuarantees(self.scheduler)
         self.execution_action_helper: local.my_domain_com.my_lib.helper.HelperExecution
         self.destruction_position_action_helper__position_trigger_pos: literal.Position
         self.join_for_move_global_position_out_to_global_position_destination: literal.Join
@@ -96,5 +96,4 @@ class MoverExecution:
             )
         )
         self.guarantees.global_position_out__move__global_position_destination.run(
-            self.scheduler,
         )

@@ -36,8 +36,8 @@ class Caller(literal.Action):
 
 @final
 class CallerGuarantees:
-    def __init__(self):
-        self.position_run = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_run = literal.Fanout(scheduler)
 
 
 @final
@@ -57,7 +57,7 @@ class CallerExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = CallerGuarantees()
+        self.guarantees = CallerGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.local_position_source = literal.LocalPosition(
             "position<source>",
@@ -137,7 +137,6 @@ class CallerExecution:
             1,
         )
         self.guarantees.position_run.run(
-            self.scheduler,
             self.move_position_carrier_source_to_position_source__global_position_carrier,
         )
 

@@ -32,9 +32,9 @@ class Worker(literal.Action):
 
 @final
 class WorkerGuarantees:
-    def __init__(self):
-        self.position_state__global_position_occupied = literal.Fanout()
-        self.position_source__move__position_state__global_position_target = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_state__global_position_occupied = literal.Fanout(scheduler)
+        self.position_source__move__position_state__global_position_target = literal.Fanout(scheduler)
 
 
 @final
@@ -48,7 +48,7 @@ class WorkerExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = WorkerGuarantees()
+        self.guarantees = WorkerGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.destruction_position_position_state__global_position_occupied: literal.Position
         self.join_for_destroy_position_state__global_position_occupied: literal.Join
@@ -79,7 +79,6 @@ class WorkerExecution:
     def continue_destroy_position_state__global_position_occupied(self):
         self.destruction_position_position_state__global_position_occupied.destroy_particle()
         self.guarantees.position_state__global_position_occupied.run(
-            self.scheduler,
         )
 
     def move_position_source_to_position_state__global_position_target(self):
@@ -95,5 +94,4 @@ class WorkerExecution:
             )
         )
         self.guarantees.position_source__move__position_state__global_position_target.run(
-            self.scheduler,
         )

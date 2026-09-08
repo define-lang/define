@@ -39,9 +39,9 @@ class Middle(literal.Action):
 
 @final
 class MiddleGuarantees:
-    def __init__(self):
-        self.position_target = literal.Fanout()
-        self.position_trigger = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_target = literal.Fanout(scheduler)
+        self.position_trigger = literal.Fanout(scheduler)
 
 
 @final
@@ -61,7 +61,7 @@ class MiddleExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = MiddleGuarantees()
+        self.guarantees = MiddleGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.execution_action_destroyer: local.my_domain_com.my_lib.destroyer.DestroyerExecution
         self.destruction_connection_action_destroyer: tracing.DestructionConnection
@@ -158,7 +158,6 @@ class MiddleExecution:
             self.destruction_connection_action_destroyer_2.complete
         )
         self.guarantees.position_target.run(
-            self.scheduler,
             self.execution_action_destroyer.accept_when_empty_position_target__global_position_occupied,
             self.execution_action_destroyer.accept_when_empty_position_target__global_position_empty,
         )
@@ -191,7 +190,6 @@ class MiddleExecution:
             1,
         )
         self.guarantees.position_trigger.run(
-            self.scheduler,
         )
 
     def action_destroyer__position_target__action_destructor__for_empty_rule_global_position_occupied(self):

@@ -32,9 +32,9 @@ class Other(literal.Action):
 
 @final
 class OtherGuarantees:
-    def __init__(self):
-        self.position_box__global_position_a = literal.Fanout()
-        self.position_box__global_position_b = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_box__global_position_a = literal.Fanout(scheduler)
+        self.position_box__global_position_b = literal.Fanout(scheduler)
 
 
 @final
@@ -46,7 +46,7 @@ class OtherExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = OtherGuarantees()
+        self.guarantees = OtherGuarantees(self.scheduler)
 
     def accept_when_empty_position_box__global_position_a(self):
         self.create_position_box__global_position_a()
@@ -61,7 +61,6 @@ class OtherExecution:
             local.my_domain_com.my_lib.a.A
         ).create_particle()
         self.guarantees.position_box__global_position_a.run(
-            self.scheduler,
         )
 
     def create_position_box__global_position_b(self):
@@ -71,5 +70,4 @@ class OtherExecution:
             local.my_domain_com.my_lib.b.B
         ).create_particle()
         self.guarantees.position_box__global_position_b.run(
-            self.scheduler,
         )

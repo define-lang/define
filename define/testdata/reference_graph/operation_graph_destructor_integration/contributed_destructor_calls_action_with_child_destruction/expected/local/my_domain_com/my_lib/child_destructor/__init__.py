@@ -15,8 +15,8 @@ class ChildDestructor(literal.Action):
 
 @final
 class ChildDestructorGuarantees:
-    def __init__(self):
-        self.global_position_child_marker = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_child_marker = literal.Fanout(scheduler)
 
 
 @final
@@ -28,7 +28,7 @@ class ChildDestructorExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = ChildDestructorGuarantees()
+        self.guarantees = ChildDestructorGuarantees(self.scheduler)
 
     def accept_when_empty_global_position_child_marker(self):
         self.create_global_position_child_marker()
@@ -41,5 +41,4 @@ class ChildDestructorExecution:
             local.my_domain_com.my_lib.child_marker.ChildMarker
         ).destroy_particle()
         self.guarantees.global_position_child_marker.run(
-            self.scheduler,
         )

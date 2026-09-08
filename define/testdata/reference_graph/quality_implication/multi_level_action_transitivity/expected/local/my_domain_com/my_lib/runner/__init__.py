@@ -38,10 +38,10 @@ class Runner(literal.Action):
 
 @final
 class RunnerGuarantees:
-    def __init__(self):
-        self.position_source = literal.Fanout()
-        self.position_dest = literal.Fanout()
-        self.position_run = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_source = literal.Fanout(scheduler)
+        self.position_dest = literal.Fanout(scheduler)
+        self.position_run = literal.Fanout(scheduler)
 
 
 @final
@@ -55,7 +55,7 @@ class RunnerExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = RunnerGuarantees()
+        self.guarantees = RunnerGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.execution_position_source__action_implier: local.my_domain_com.my_lib.implier.ImplierExecution
         self.destruction_position_position_dest__global_position_transitive_implied: literal.Position
@@ -114,7 +114,6 @@ class RunnerExecution:
             local.my_domain_com.my_lib.transitive_implied.TransitiveImplied
         )
         self.guarantees.position_source.run(
-            self.scheduler,
             self.destroy_position_dest__global_position_transitive_implied,
         )
 
@@ -124,7 +123,6 @@ class RunnerExecution:
             "position<dest>"
         ).destroy_particle()
         self.guarantees.position_dest.run(
-            self.scheduler,
         )
 
     def destroy_position_run(self):
@@ -137,5 +135,4 @@ class RunnerExecution:
             "position<run>"
         ).destroy_particle()
         self.guarantees.position_run.run(
-            self.scheduler,
         )

@@ -39,11 +39,11 @@ class Other(literal.Action):
 
 @final
 class OtherGuarantees:
-    def __init__(self):
-        self.position_holder_a = literal.Fanout()
-        self.position_holder_b = literal.Fanout()
-        self.global_position_input = literal.Fanout()
-        self.position_holder_c = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_holder_a = literal.Fanout(scheduler)
+        self.position_holder_b = literal.Fanout(scheduler)
+        self.global_position_input = literal.Fanout(scheduler)
+        self.position_holder_c = literal.Fanout(scheduler)
 
 
 @final
@@ -57,7 +57,7 @@ class OtherExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = OtherGuarantees()
+        self.guarantees = OtherGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.destruction_position_global_position_input__global_position_a: literal.Position
         self.join_for_move_global_position_input__global_position_a_to_position_holder_a: literal.Join
@@ -116,7 +116,6 @@ class OtherExecution:
             )
         )
         self.guarantees.position_holder_a.run(
-            self.scheduler,
             self.move_position_holder_b_to_global_position_input__global_position_a,
         )
 
@@ -147,7 +146,6 @@ class OtherExecution:
             )
         )
         self.guarantees.position_holder_b.run(
-            self.scheduler,
             self.move_global_position_input__global_position_a_to_position_holder_c,
         )
 
@@ -176,7 +174,6 @@ class OtherExecution:
             local.my_domain_com.my_lib.input.Input
         ).destroy_particle()
         self.guarantees.global_position_input.run(
-            self.scheduler,
         )
 
     def destroy_position_holder_c(self):
@@ -187,5 +184,4 @@ class OtherExecution:
             "position<holder_c>"
         ).destroy_particle()
         self.guarantees.position_holder_c.run(
-            self.scheduler,
         )

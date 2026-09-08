@@ -21,8 +21,8 @@ class Destructor(literal.Action):
 
 @final
 class DestructorGuarantees:
-    def __init__(self):
-        self.position_item = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_item = literal.Fanout(scheduler)
 
 
 @final
@@ -34,7 +34,7 @@ class DestructorExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = DestructorGuarantees()
+        self.guarantees = DestructorGuarantees(self.scheduler)
 
     def accept_when_empty_position_item(self):
         self.create_position_item()
@@ -47,5 +47,4 @@ class DestructorExecution:
             "position<item>"
         ).destroy_particle()
         self.guarantees.position_item.run(
-            self.scheduler,
         )

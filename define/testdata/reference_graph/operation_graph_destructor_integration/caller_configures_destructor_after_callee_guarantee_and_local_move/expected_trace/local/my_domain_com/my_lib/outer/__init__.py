@@ -34,9 +34,9 @@ class Outer(literal.Action):
 
 @final
 class OuterGuarantees:
-    def __init__(self):
-        self.position_run = literal.Fanout()
-        self.global_position_result = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_run = literal.Fanout(scheduler)
+        self.global_position_result = literal.Fanout(scheduler)
 
 
 @final
@@ -56,7 +56,7 @@ class OuterExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = OuterGuarantees()
+        self.guarantees = OuterGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.local_position_receiver = literal.LocalPosition(
             "position<receiver>",
@@ -132,7 +132,6 @@ class OuterExecution:
             1,
         )
         self.guarantees.position_run.run(
-            self.scheduler,
             self.move_position_receiver_to_global_position_result,
         )
 
@@ -204,5 +203,4 @@ class OuterExecution:
             1,
         )
         self.guarantees.global_position_result.run(
-            self.scheduler,
         )

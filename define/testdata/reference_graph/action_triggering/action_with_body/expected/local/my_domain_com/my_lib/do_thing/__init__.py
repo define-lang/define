@@ -21,8 +21,8 @@ class DoThing(literal.Action):
 
 @final
 class DoThingGuarantees:
-    def __init__(self):
-        self.position_trigger_pos = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_trigger_pos = literal.Fanout(scheduler)
 
 
 @final
@@ -36,7 +36,7 @@ class DoThingExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = DoThingGuarantees()
+        self.guarantees = DoThingGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.local_position_local_pos = literal.LocalPosition(
             "position<local_pos>",
@@ -67,5 +67,4 @@ class DoThingExecution:
             "position<trigger_pos>"
         ).destroy_particle()
         self.guarantees.position_trigger_pos.run(
-            self.scheduler,
         )

@@ -33,10 +33,10 @@ class Brew(literal.Action):
 
 @final
 class BrewGuarantees:
-    def __init__(self):
-        self.position_cup = literal.Fanout()
-        self.position_water = literal.Fanout()
-        self.position_grounds__move__position_spent_puck = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_cup = literal.Fanout(scheduler)
+        self.position_water = literal.Fanout(scheduler)
+        self.position_grounds__move__position_spent_puck = literal.Fanout(scheduler)
 
 
 @final
@@ -50,7 +50,7 @@ class BrewExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = BrewGuarantees()
+        self.guarantees = BrewGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.join_for_destroy_position_water: literal.Join
         self.join_for_move_position_grounds_to_position_spent_puck: literal.Join
@@ -75,7 +75,6 @@ class BrewExecution:
             "position<cup>"
         ).create_particle()
         self.guarantees.position_cup.run(
-            self.scheduler,
         )
 
     def destroy_position_water(self):
@@ -88,7 +87,6 @@ class BrewExecution:
             "position<water>"
         ).destroy_particle()
         self.guarantees.position_water.run(
-            self.scheduler,
         )
 
     def move_position_grounds_to_position_spent_puck(self):
@@ -102,5 +100,4 @@ class BrewExecution:
             )
         )
         self.guarantees.position_grounds__move__position_spent_puck.run(
-            self.scheduler,
         )

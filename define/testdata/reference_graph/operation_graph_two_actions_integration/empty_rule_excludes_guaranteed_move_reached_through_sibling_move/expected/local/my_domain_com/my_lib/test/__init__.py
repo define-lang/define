@@ -38,10 +38,10 @@ class Test(literal.EntryPoint):
 
 @final
 class TestGuarantees:
-    def __init__(self):
-        self.global_position_holder = literal.Fanout()
-        self.global_position_intermediate = literal.Fanout()
-        self.global_position_input = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_holder = literal.Fanout(scheduler)
+        self.global_position_intermediate = literal.Fanout(scheduler)
+        self.global_position_input = literal.Fanout(scheduler)
 
 
 @final
@@ -53,7 +53,7 @@ class TestExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = TestGuarantees()
+        self.guarantees = TestGuarantees(self.scheduler)
         self.execution_action_producer: local.my_domain_com.my_lib.producer.ProducerExecution
         self.destruction_position_global_position_input__global_position_b: literal.Position
         self.destruction_position_action_producer__position_trigger_pos: literal.Position
@@ -122,7 +122,6 @@ class TestExecution:
             )
         )
         self.guarantees.global_position_holder.run(
-            self.scheduler,
             self.move_global_position_intermediate_to_global_position_input__global_position_b,
         )
 
@@ -142,7 +141,6 @@ class TestExecution:
             local.my_domain_com.my_lib.b.B
         )
         self.guarantees.global_position_intermediate.run(
-            self.scheduler,
             self.destroy_global_position_input,
             self.destroy_global_position_input__global_position_b,
         )
@@ -152,7 +150,6 @@ class TestExecution:
             local.my_domain_com.my_lib.input.Input
         ).destroy_particle()
         self.guarantees.global_position_input.run(
-            self.scheduler,
         )
 
     def destroy_global_position_input__global_position_b(self):

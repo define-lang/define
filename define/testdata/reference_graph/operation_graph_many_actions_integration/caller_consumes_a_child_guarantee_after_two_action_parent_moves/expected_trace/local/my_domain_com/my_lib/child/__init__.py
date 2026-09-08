@@ -26,8 +26,8 @@ class Child(literal.Action):
 
 @final
 class ChildGuarantees:
-    def __init__(self):
-        self.global_position_result = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_result = literal.Fanout(scheduler)
 
 
 @final
@@ -45,7 +45,7 @@ class ChildExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = ChildGuarantees()
+        self.guarantees = ChildGuarantees(self.scheduler)
 
     def accept_when_empty_global_position_result(self):
         self.create_global_position_result()
@@ -60,5 +60,4 @@ class ChildExecution:
             1,
         )
         self.guarantees.global_position_result.run(
-            self.scheduler,
         )

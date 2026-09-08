@@ -29,9 +29,9 @@ class Other(literal.Action):
 
 @final
 class OtherGuarantees:
-    def __init__(self):
-        self.position_scratch = literal.Fanout()
-        self.position_output = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_scratch = literal.Fanout(scheduler)
+        self.position_output = literal.Fanout(scheduler)
 
 
 @final
@@ -43,7 +43,7 @@ class OtherExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = OtherGuarantees()
+        self.guarantees = OtherGuarantees(self.scheduler)
 
     def accept_when_empty_position_scratch(self):
         self.create_position_scratch()
@@ -59,7 +59,6 @@ class OtherExecution:
             "position<scratch>"
         ).destroy_particle()
         self.guarantees.position_scratch.run(
-            self.scheduler,
         )
 
     def create_position_output(self):
@@ -67,5 +66,4 @@ class OtherExecution:
             "position<output>"
         ).create_particle()
         self.guarantees.position_output.run(
-            self.scheduler,
         )

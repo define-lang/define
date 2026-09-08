@@ -30,8 +30,8 @@ class Inner(literal.Action):
 
 @final
 class InnerGuarantees:
-    def __init__(self):
-        self.position_input = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_input = literal.Fanout(scheduler)
 
 
 @final
@@ -51,7 +51,7 @@ class InnerExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = InnerGuarantees()
+        self.guarantees = InnerGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.destruction_position_position_input__global_position_child: literal.Position
         self.join_for_destroy_position_input__global_position_child: literal.Join
@@ -103,5 +103,4 @@ class InnerExecution:
             1,
         )
         self.guarantees.position_input.run(
-            self.scheduler,
         )

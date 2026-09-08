@@ -30,8 +30,8 @@ class Maker(literal.Action):
 
 @final
 class MakerGuarantees:
-    def __init__(self):
-        self.position_held__global_position_c = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_held__global_position_c = literal.Fanout(scheduler)
 
 
 @final
@@ -43,7 +43,7 @@ class MakerExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = MakerGuarantees()
+        self.guarantees = MakerGuarantees(self.scheduler)
 
     def accept_when_empty_position_held__global_position_c(self):
         self.create_position_held__global_position_c()
@@ -55,5 +55,4 @@ class MakerExecution:
             local.my_domain_com.my_lib.c.C
         ).create_particle()
         self.guarantees.position_held__global_position_c.run(
-            self.scheduler,
         )

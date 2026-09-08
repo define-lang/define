@@ -30,9 +30,9 @@ class Inner(literal.Action):
 
 @final
 class InnerGuarantees:
-    def __init__(self):
-        self.position_input = literal.Fanout()
-        self.position_run = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_input = literal.Fanout(scheduler)
+        self.position_run = literal.Fanout(scheduler)
 
 
 @final
@@ -46,7 +46,7 @@ class InnerExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = InnerGuarantees()
+        self.guarantees = InnerGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.destruction_position_position_input__global_position_data: literal.Position
         self.join_for_destroy_position_input__global_position_data: literal.Join
@@ -95,7 +95,6 @@ class InnerExecution:
             "position<input>"
         ).destroy_particle()
         self.guarantees.position_input.run(
-            self.scheduler,
         )
 
     def destroy_position_run(self):
@@ -108,5 +107,4 @@ class InnerExecution:
             "position<run>"
         ).destroy_particle()
         self.guarantees.position_run.run(
-            self.scheduler,
         )

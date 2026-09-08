@@ -29,10 +29,10 @@ class Mover(literal.Action):
 
 @final
 class MoverGuarantees:
-    def __init__(self):
-        self.position_source = literal.Fanout()
-        self.position_destination = literal.Fanout()
-        self.position_run = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_source = literal.Fanout(scheduler)
+        self.position_destination = literal.Fanout(scheduler)
+        self.position_run = literal.Fanout(scheduler)
 
 
 @final
@@ -46,7 +46,7 @@ class MoverExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = MoverGuarantees()
+        self.guarantees = MoverGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.local_position_intermediate = literal.LocalPosition(
             "position<intermediate>",
@@ -81,7 +81,6 @@ class MoverExecution:
             "position<source>"
         ).move_particle_to(self.local_position_intermediate)
         self.guarantees.position_source.run(
-            self.scheduler,
             self.move_position_intermediate_to_position_destination,
         )
 
@@ -94,7 +93,6 @@ class MoverExecution:
             )
         )
         self.guarantees.position_destination.run(
-            self.scheduler,
         )
 
     def destroy_position_run(self):
@@ -107,5 +105,4 @@ class MoverExecution:
             "position<run>"
         ).destroy_particle()
         self.guarantees.position_run.run(
-            self.scheduler,
         )

@@ -28,9 +28,9 @@ class Caller(literal.Action):
 
 @final
 class CallerGuarantees:
-    def __init__(self):
-        self.global_position_implied = literal.Fanout()
-        self.position_run = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_implied = literal.Fanout(scheduler)
+        self.position_run = literal.Fanout(scheduler)
 
 
 @final
@@ -44,7 +44,7 @@ class CallerExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = CallerGuarantees()
+        self.guarantees = CallerGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.execution_action_callee: local.my_domain_com.my_lib.callee.CalleeExecution
         self.join_for_destroy_position_run: literal.Join
@@ -85,7 +85,6 @@ class CallerExecution:
             local.my_domain_com.my_lib.implied.Implied
         ).destroy_particle()
         self.guarantees.global_position_implied.run(
-            self.scheduler,
         )
 
     def destroy_position_run(self):
@@ -98,5 +97,4 @@ class CallerExecution:
             "position<run>"
         ).destroy_particle()
         self.guarantees.position_run.run(
-            self.scheduler,
         )

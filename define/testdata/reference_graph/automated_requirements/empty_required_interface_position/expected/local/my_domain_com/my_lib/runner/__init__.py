@@ -25,9 +25,9 @@ class Runner(literal.Action):
 
 @final
 class RunnerGuarantees:
-    def __init__(self):
-        self.position_output = literal.Fanout()
-        self.position_run = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_output = literal.Fanout(scheduler)
+        self.position_run = literal.Fanout(scheduler)
 
 
 @final
@@ -41,7 +41,7 @@ class RunnerExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = RunnerGuarantees()
+        self.guarantees = RunnerGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.join_for_destroy_position_run: literal.Join
         self.join_for_empty_rule_position_run: literal.Join
@@ -59,7 +59,6 @@ class RunnerExecution:
             "position<output>"
         ).create_particle()
         self.guarantees.position_output.run(
-            self.scheduler,
         )
 
     def destroy_position_run(self):
@@ -72,5 +71,4 @@ class RunnerExecution:
             "position<run>"
         ).destroy_particle()
         self.guarantees.position_run.run(
-            self.scheduler,
         )

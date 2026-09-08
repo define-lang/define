@@ -21,8 +21,8 @@ class Start(literal.Action):
 
 @final
 class StartGuarantees:
-    def __init__(self):
-        self.position_pp = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_pp = literal.Fanout(scheduler)
 
 
 @final
@@ -36,7 +36,7 @@ class StartExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = StartGuarantees()
+        self.guarantees = StartGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.local_position_noop = literal.LocalPosition(
             "position<noop>",
@@ -67,5 +67,4 @@ class StartExecution:
             "position<pp>"
         ).destroy_particle()
         self.guarantees.position_pp.run(
-            self.scheduler,
         )

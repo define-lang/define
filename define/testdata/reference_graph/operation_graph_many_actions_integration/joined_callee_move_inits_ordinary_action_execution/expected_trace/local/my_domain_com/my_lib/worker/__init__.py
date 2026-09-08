@@ -21,8 +21,8 @@ class Worker(literal.Action):
 
 @final
 class WorkerGuarantees:
-    def __init__(self):
-        self.position_run = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_run = literal.Fanout(scheduler)
 
 
 @final
@@ -42,7 +42,7 @@ class WorkerExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = WorkerGuarantees()
+        self.guarantees = WorkerGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.join_for_destroy_position_run: literal.Join
         self.join_for_empty_rule_position_run: literal.Join
@@ -67,5 +67,4 @@ class WorkerExecution:
             1,
         )
         self.guarantees.position_run.run(
-            self.scheduler,
         )

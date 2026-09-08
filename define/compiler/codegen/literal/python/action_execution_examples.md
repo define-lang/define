@@ -205,10 +205,10 @@ Expected `middle/__init__.py`:
 ```python
 @final
 class MiddleGuarantees:
-    def __init__(self):
-        self.position_final = literal.Fanout()
-        self.position_box = literal.Fanout()
-        self.position_run = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_final = literal.Fanout(scheduler)
+        self.position_box = literal.Fanout(scheduler)
+        self.position_run = literal.Fanout(scheduler)
 
 
 @final
@@ -216,7 +216,7 @@ class MiddleExecution:
     def __init__(self, action, scheduler, *, destruction_connections=None):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = MiddleGuarantees()
+        self.guarantees = MiddleGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.execution_position_box__action_worker: (
             local.my_domain_com.my_lib.worker.WorkerExecution
@@ -306,7 +306,6 @@ class MiddleExecution:
             self.action.get_interface_position("position<final>")
         )
         self.guarantees.position_final.run(
-            self.scheduler,
             self.destroy_position_box,
         )
 
@@ -317,7 +316,7 @@ class MiddleExecution:
 
     def continue_destroy_position_box(self):
         self.action.get_interface_position("position<box>").destroy_particle()
-        self.guarantees.position_box.run(self.scheduler)
+        self.guarantees.position_box.run()
 ```
 
 Source for `worker/__init__.py` (`worker.dfn`):
@@ -344,7 +343,7 @@ class WorkerExecution:
     def __init__(self, action, scheduler, *, destruction_connections=None):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = WorkerGuarantees()
+        self.guarantees = WorkerGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.join_for_move_position_input_to_position_output: literal.Join
         self.join_for_empty_rule_position_input: literal.Join
@@ -362,9 +361,7 @@ class WorkerExecution:
         ).move_particle_to(
             self.action.get_interface_position("position<output>")
         )
-        self.guarantees.position_input__move__position_output.run(
-            self.scheduler
-        )
+        self.guarantees.position_input__move__position_output.run()
 ```
 
 ## Actions assigned to particles in local positions
@@ -514,9 +511,9 @@ Expected `runner/__init__.py`:
 ```python
 @final
 class RunnerGuarantees:
-    def __init__(self):
-        self.position_first__move__position_first_result = literal.Fanout()
-        self.position_second__move__position_second_result = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_first__move__position_first_result = literal.Fanout(scheduler)
+        self.position_second__move__position_second_result = literal.Fanout(scheduler)
 
 
 @final
@@ -528,7 +525,7 @@ class RunnerExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = RunnerGuarantees()
+        self.guarantees = RunnerGuarantees(self.scheduler)
         self.join_for_move_position_first_to_position_first_result: literal.Join
         self.join_for_move_position_second_to_position_second_result: literal.Join
         self.join_for_empty_rule_position_first: literal.Join
@@ -552,9 +549,7 @@ class RunnerExecution:
         ).move_particle_to(
             self.action.get_interface_position("position<first_result>")
         )
-        self.guarantees.position_first__move__position_first_result.run(
-            self.scheduler
-        )
+        self.guarantees.position_first__move__position_first_result.run()
 
     def move_position_second_to_position_second_result(self):
         if not self.join_for_move_position_second_to_position_second_result.arrive():
@@ -564,9 +559,7 @@ class RunnerExecution:
         ).move_particle_to(
             self.action.get_interface_position("position<second_result>")
         )
-        self.guarantees.position_second__move__position_second_result.run(
-            self.scheduler
-        )
+        self.guarantees.position_second__move__position_second_result.run()
 ```
 
 ## Destructor initialization before its child Requirement is satisfied
@@ -725,10 +718,10 @@ Expected generated `maker/__init__.py`:
 ```python
 @final
 class MakerGuarantees:
-    def __init__(self):
-        self.position_result = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_result = literal.Fanout(scheduler)
         self.position_result__global_position_marker = (
-            literal.Fanout()
+            literal.Fanout(scheduler)
         )
 
 
@@ -737,7 +730,7 @@ class MakerExecution:
     def __init__(self, action, scheduler):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = MakerGuarantees()
+        self.guarantees = MakerGuarantees(self.scheduler)
 
     def accept_when_empty_position_result(self):
         self.create_position_result()
@@ -747,7 +740,6 @@ class MakerExecution:
             "position<result>"
         ).create_particle()
         self.guarantees.position_result.run(
-            self.scheduler,
             self.create_position_result__global_position_marker,
         )
 
@@ -757,9 +749,7 @@ class MakerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         ).create_particle()
-        self.guarantees.position_result__global_position_marker.run(
-            self.scheduler
-        )
+        self.guarantees.position_result__global_position_marker.run()
 ```
 
 Source (`destructor.dfn`):
@@ -782,8 +772,8 @@ Expected generated `destructor/__init__.py`:
 ```python
 @final
 class DestructorGuarantees:
-    def __init__(self):
-        self.global_position_marker = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_marker = literal.Fanout(scheduler)
 
 
 @final
@@ -795,7 +785,7 @@ class DestructorExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = DestructorGuarantees()
+        self.guarantees = DestructorGuarantees(self.scheduler)
         self.local_position_holder = literal.LocalPosition(
             "position<holder>",
             scheduler=self.scheduler,
@@ -819,9 +809,7 @@ class DestructorExecution:
                 local.my_domain_com.my_lib.marker.Marker
             )
         )
-        self.guarantees.global_position_marker.run(
-            self.scheduler
-        )
+        self.guarantees.global_position_marker.run()
 ```
 
 ## One Binding Hole releases every kind of consumer
@@ -1227,8 +1215,8 @@ Expected generated `maker/__init__.py`:
 ```python
 @final
 class MakerGuarantees:
-    def __init__(self):
-        self.position_result = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_result = literal.Fanout(scheduler)
 
 
 @final
@@ -1236,7 +1224,7 @@ class MakerExecution:
     def __init__(self, action, scheduler):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = MakerGuarantees()
+        self.guarantees = MakerGuarantees(self.scheduler)
 
     def accept_when_empty_position_result(self):
         self.create_position_result()
@@ -1245,9 +1233,7 @@ class MakerExecution:
         self.action.get_interface_position(
             "position<result>"
         ).create_particle()
-        self.guarantees.position_result.run(
-            self.scheduler
-        )
+        self.guarantees.position_result.run()
 ```
 
 Source (`destruct_a.dfn`):
@@ -1483,11 +1469,11 @@ Expected generated `carrier/__init__.py`:
 ```python
 @final
 class CarrierGuarantees:
-    def __init__(self):
+    def __init__(self, scheduler: literal.Scheduler):
         self.position_source__move__position_result = (
-            literal.Fanout()
+            literal.Fanout(scheduler)
         )
-        self.position_run = literal.Fanout()
+        self.position_run = literal.Fanout(scheduler)
 
 
 @final
@@ -1495,7 +1481,7 @@ class CarrierExecution:
     def __init__(self, action, scheduler, *, destruction_connections=None):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = CarrierGuarantees()
+        self.guarantees = CarrierGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.join_for_move_position_source_to_position_result: literal.Join
         self.join_for_destroy_position_run: literal.Join
@@ -1529,9 +1515,7 @@ class CarrierExecution:
                 "position<result>"
             )
         )
-        self.guarantees.position_source__move__position_result.run(
-            self.scheduler
-        )
+        self.guarantees.position_source__move__position_result.run()
 
     def destroy_position_run(self):
         if not self.join_for_destroy_position_run.arrive():
@@ -1540,7 +1524,7 @@ class CarrierExecution:
 
     def continue_destroy_position_run(self):
         self.action.get_interface_position("position<run>").destroy_particle()
-        self.guarantees.position_run.run(self.scheduler)
+        self.guarantees.position_run.run()
 ```
 
 Source (`worker.dfn`):
@@ -1561,8 +1545,8 @@ Expected generated `worker/__init__.py`:
 ```python
 @final
 class WorkerGuarantees:
-    def __init__(self):
-        self.position_run = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_run = literal.Fanout(scheduler)
 
 
 @final
@@ -1570,7 +1554,7 @@ class WorkerExecution:
     def __init__(self, action, scheduler, *, destruction_connections=None):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = WorkerGuarantees()
+        self.guarantees = WorkerGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.join_for_destroy_position_run: literal.Join
         self.join_for_empty_rule_position_run: literal.Join
@@ -1587,7 +1571,7 @@ class WorkerExecution:
 
     def continue_destroy_position_run(self):
         self.action.get_interface_position("position<run>").destroy_particle()
-        self.guarantees.position_run.run(self.scheduler)
+        self.guarantees.position_run.run()
 ```
 
 ## Caller work before a callee Binding Hole
@@ -1734,9 +1718,9 @@ Expected generated `triggered/__init__.py`:
 ```python
 @final
 class TriggeredGuarantees:
-    def __init__(self):
-        self.position_run = literal.Fanout()
-        self.global_position_target = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_run = literal.Fanout(scheduler)
+        self.global_position_target = literal.Fanout(scheduler)
 
 
 @final
@@ -1750,7 +1734,7 @@ class TriggeredExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = TriggeredGuarantees()
+        self.guarantees = TriggeredGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.join_for_move_position_run_to_global_position_target: literal.Join
         self.join_for_empty_rule_position_run: literal.Join
@@ -1771,7 +1755,6 @@ class TriggeredExecution:
             )
         )
         self.guarantees.position_run.run(
-            self.scheduler,
             self.destroy_global_position_target,
         )
 
@@ -1784,7 +1767,7 @@ class TriggeredExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.target.Target
         ).destroy_particle()
-        self.guarantees.global_position_target.run(self.scheduler)
+        self.guarantees.global_position_target.run()
 ```
 
 ## Destruction Connection created with an Action Execution on a local-position particle
@@ -2061,8 +2044,8 @@ Expected generated `maker/__init__.py`:
 ```python
 @final
 class MakerGuarantees:
-    def __init__(self):
-        self.position_result = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_result = literal.Fanout(scheduler)
 
 
 @final
@@ -2070,7 +2053,7 @@ class MakerExecution:
     def __init__(self, action, scheduler):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = MakerGuarantees()
+        self.guarantees = MakerGuarantees(self.scheduler)
         self.execution_position_result__action_worker: (
             local.my_domain_com.my_lib.worker.WorkerExecution
         )
@@ -2097,7 +2080,6 @@ class MakerExecution:
         self.execution_position_result__action_worker.join_for_empty_rule_position_run = literal.NO_JOIN
         self.execution_position_result__action_worker.join_for_destroy_position_run = literal.NO_JOIN
         self.guarantees.position_result.run(
-            self.scheduler,
             self.create_position_result__action_worker__position_run,
             self.execution_position_result__action_worker.on_action_parent_occupied,
         )
@@ -2133,8 +2115,8 @@ Expected generated `worker/__init__.py`:
 ```python
 @final
 class WorkerGuarantees:
-    def __init__(self):
-        self.position_run = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_run = literal.Fanout(scheduler)
 
 
 @final
@@ -2142,7 +2124,7 @@ class WorkerExecution:
     def __init__(self, action, scheduler, *, destruction_connections=None):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = WorkerGuarantees()
+        self.guarantees = WorkerGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.local_position_scratch = literal.LocalPosition(
             "position<scratch>",
@@ -2170,7 +2152,7 @@ class WorkerExecution:
 
     def continue_destroy_position_run(self):
         self.action.get_interface_position("position<run>").destroy_particle()
-        self.guarantees.position_run.run(self.scheduler)
+        self.guarantees.position_run.run()
 ```
 
 ## A caller resolves a callee Move to two independent predecessors
@@ -2204,8 +2186,8 @@ Expected generated `test/__init__.py`:
 ```python
 @final
 class TestGuarantees:
-    def __init__(self):
-        self.global_position_dest = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_dest = literal.Fanout(scheduler)
 
 
 @final
@@ -2213,7 +2195,7 @@ class TestExecution:
     def __init__(self, action, scheduler):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = TestGuarantees()
+        self.guarantees = TestGuarantees(self.scheduler)
         self.execution_action_other = (
             local.my_domain_com.my_lib.other.OtherExecution(
                 self.action.on_particle.get_action(
@@ -2262,7 +2244,7 @@ class TestExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.dest.Dest
         ).destroy_particle()
-        self.guarantees.global_position_dest.run(self.scheduler)
+        self.guarantees.global_position_dest.run()
 ```
 
 Source (`other.dfn`):
@@ -2286,8 +2268,8 @@ Expected generated `other/__init__.py`:
 ```python
 @final
 class OtherGuarantees:
-    def __init__(self):
-        self.global_position_dest = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_dest = literal.Fanout(scheduler)
 
 
 @final
@@ -2295,7 +2277,7 @@ class OtherExecution:
     def __init__(self, action, scheduler):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = OtherGuarantees()
+        self.guarantees = OtherGuarantees(self.scheduler)
         self.local_position_src = literal.LocalPosition(
             "position<src>",
             scheduler=self.scheduler,
@@ -2323,7 +2305,7 @@ class OtherExecution:
                 local.my_domain_com.my_lib.dest.Dest
             )
         )
-        self.guarantees.global_position_dest.run(self.scheduler)
+        self.guarantees.global_position_dest.run()
 ```
 
 ## Repeated Action Executions have execution-scoped Guarantees
@@ -2488,9 +2470,9 @@ Expected generated `worker/__init__.py`:
 ```python
 @final
 class WorkerGuarantees:
-    def __init__(self):
-        self.position_item = literal.Fanout()
-        self.position_trigger_pos = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_item = literal.Fanout(scheduler)
+        self.position_trigger_pos = literal.Fanout(scheduler)
 
 
 @final
@@ -2498,7 +2480,7 @@ class WorkerExecution:
     def __init__(self, action, scheduler, *, destruction_connections=None):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = WorkerGuarantees()
+        self.guarantees = WorkerGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.local_position_holder = literal.LocalPosition(
             "position<holder>",
@@ -2528,9 +2510,7 @@ class WorkerExecution:
         self.local_position_holder.move_particle_to(
             self.action.get_interface_position("position<item>")
         )
-        self.guarantees.position_item.run(
-            self.scheduler
-        )
+        self.guarantees.position_item.run()
 
     def destroy_position_trigger_pos(self):
         if not self.join_for_destroy_position_trigger_pos.arrive():
@@ -2541,9 +2521,7 @@ class WorkerExecution:
         self.action.get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
-        self.guarantees.position_trigger_pos.run(
-            self.scheduler
-        )
+        self.guarantees.position_trigger_pos.run()
 ```
 
 ## A joined Particle Operation initializes an ordinary Action Execution
@@ -2701,9 +2679,9 @@ Expected generated `other/__init__.py`:
 ```python
 @final
 class OtherGuarantees:
-    def __init__(self):
-        self.position_src__move__position_dest = literal.Fanout()
-        self.position_trigger_pos = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_src__move__position_dest = literal.Fanout(scheduler)
+        self.position_trigger_pos = literal.Fanout(scheduler)
 
 
 @final
@@ -2711,7 +2689,7 @@ class OtherExecution:
     def __init__(self, action, scheduler, *, destruction_connections=None):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = OtherGuarantees()
+        self.guarantees = OtherGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.execution_position_dest__action_worker: (
             local.my_domain_com.my_lib.worker.WorkerExecution
@@ -2776,7 +2754,6 @@ class OtherExecution:
         self.execution_position_dest__action_worker.join_for_empty_rule_position_run = literal.NO_JOIN
         self.execution_position_dest__action_worker.join_for_destroy_position_run = literal.NO_JOIN
         self.guarantees.position_src__move__position_dest.run(
-            self.scheduler,
             self.create_position_dest__action_worker__position_run,
             self.execution_position_dest__action_worker.on_action_parent_occupied,
         )
@@ -2800,7 +2777,7 @@ class OtherExecution:
         self.action.get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
-        self.guarantees.position_trigger_pos.run(self.scheduler)
+        self.guarantees.position_trigger_pos.run()
 ```
 
 Source (`worker.dfn`):
@@ -2824,8 +2801,8 @@ Expected generated `worker/__init__.py`:
 ```python
 @final
 class WorkerGuarantees:
-    def __init__(self):
-        self.position_run = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_run = literal.Fanout(scheduler)
 
 
 @final
@@ -2833,7 +2810,7 @@ class WorkerExecution:
     def __init__(self, action, scheduler, *, destruction_connections=None):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = WorkerGuarantees()
+        self.guarantees = WorkerGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.local_position_scratch = literal.LocalPosition(
             "position<scratch>",
@@ -2861,7 +2838,7 @@ class WorkerExecution:
 
     def continue_destroy_position_run(self):
         self.action.get_interface_position("position<run>").destroy_particle()
-        self.guarantees.position_run.run(self.scheduler)
+        self.guarantees.position_run.run()
 ```
 
 ## A Destructor Binding Hole fans out without serializing its Destroy
@@ -3341,8 +3318,8 @@ Expected generated `inner/__init__.py`:
 ```python
 @final
 class InnerGuarantees:
-    def __init__(self):
-        self.global_position_input = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_input = literal.Fanout(scheduler)
 
 
 @final
@@ -3350,7 +3327,7 @@ class InnerExecution:
     def __init__(self, action, scheduler, *, destruction_connections=None):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = InnerGuarantees()
+        self.guarantees = InnerGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.local_position_holder = literal.LocalPosition(
             "position<holder>",
@@ -3371,7 +3348,6 @@ class InnerExecution:
             local.my_domain_com.my_lib.input.Input
         ).move_particle_to(self.local_position_holder)
         self.guarantees.global_position_input.run(
-            self.scheduler,
             self.destroy_position_holder,
         )
 

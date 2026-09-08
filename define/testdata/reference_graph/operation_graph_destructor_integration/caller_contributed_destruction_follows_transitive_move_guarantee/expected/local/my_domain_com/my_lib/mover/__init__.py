@@ -25,8 +25,8 @@ class Mover(literal.Action):
 
 @final
 class MoverGuarantees:
-    def __init__(self):
-        self.position_run__move__position_result = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_run__move__position_result = literal.Fanout(scheduler)
 
 
 @final
@@ -38,7 +38,7 @@ class MoverExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = MoverGuarantees()
+        self.guarantees = MoverGuarantees(self.scheduler)
         self.join_for_move_position_run_to_position_result: literal.Join
         self.join_for_empty_rule_position_run: literal.Join
 
@@ -58,5 +58,4 @@ class MoverExecution:
             )
         )
         self.guarantees.position_run__move__position_result.run(
-            self.scheduler,
         )

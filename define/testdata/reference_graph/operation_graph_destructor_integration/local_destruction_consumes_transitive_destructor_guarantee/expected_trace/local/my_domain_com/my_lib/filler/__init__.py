@@ -26,9 +26,9 @@ class Filler(literal.Action):
 
 @final
 class FillerGuarantees:
-    def __init__(self):
-        self.global_position_implied = literal.Fanout()
-        self.position_trigger_pos = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_implied = literal.Fanout(scheduler)
+        self.position_trigger_pos = literal.Fanout(scheduler)
 
 
 @final
@@ -48,7 +48,7 @@ class FillerExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = FillerGuarantees()
+        self.guarantees = FillerGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.join_for_destroy_position_trigger_pos: literal.Join
         self.join_for_empty_rule_position_trigger_pos: literal.Join
@@ -79,7 +79,6 @@ class FillerExecution:
             1,
         )
         self.guarantees.global_position_implied.run(
-            self.scheduler,
         )
 
     def destroy_position_trigger_pos(self):
@@ -97,5 +96,4 @@ class FillerExecution:
             1,
         )
         self.guarantees.position_trigger_pos.run(
-            self.scheduler,
         )

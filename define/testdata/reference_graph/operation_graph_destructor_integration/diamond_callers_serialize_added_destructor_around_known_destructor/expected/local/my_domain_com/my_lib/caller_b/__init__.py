@@ -26,8 +26,8 @@ class CallerB(literal.Action):
 
 @final
 class CallerBGuarantees:
-    def __init__(self):
-        self.position_trigger_pos = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_trigger_pos = literal.Fanout(scheduler)
 
 
 @final
@@ -41,7 +41,7 @@ class CallerBExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = CallerBGuarantees()
+        self.guarantees = CallerBGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.local_position_destroyer_particle = literal.LocalPosition(
             "position<destroyer_particle>",
@@ -181,7 +181,6 @@ class CallerBExecution:
             "position<trigger_pos>"
         ).destroy_particle()
         self.guarantees.position_trigger_pos.run(
-            self.scheduler,
         )
 
     def destroy_position_destroyer_particle(self):

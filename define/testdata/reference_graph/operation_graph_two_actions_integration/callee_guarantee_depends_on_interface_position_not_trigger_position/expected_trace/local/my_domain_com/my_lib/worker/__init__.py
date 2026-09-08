@@ -29,8 +29,8 @@ class Worker(literal.Action):
 
 @final
 class WorkerGuarantees:
-    def __init__(self):
-        self.position_input__move__position_output = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_input__move__position_output = literal.Fanout(scheduler)
 
 
 @final
@@ -48,7 +48,7 @@ class WorkerExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = WorkerGuarantees()
+        self.guarantees = WorkerGuarantees(self.scheduler)
         self.join_for_move_position_input_to_position_output: literal.Join
         self.join_for_empty_rule_position_input: literal.Join
 
@@ -74,5 +74,4 @@ class WorkerExecution:
             1,
         )
         self.guarantees.position_input__move__position_output.run(
-            self.scheduler,
         )

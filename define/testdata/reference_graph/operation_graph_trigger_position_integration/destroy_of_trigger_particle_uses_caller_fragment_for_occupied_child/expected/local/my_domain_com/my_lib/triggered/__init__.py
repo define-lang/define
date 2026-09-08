@@ -26,9 +26,9 @@ class Triggered(literal.Action):
 
 @final
 class TriggeredGuarantees:
-    def __init__(self):
-        self.position_run = literal.Fanout()
-        self.global_position_target = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_run = literal.Fanout(scheduler)
+        self.global_position_target = literal.Fanout(scheduler)
 
 
 @final
@@ -42,7 +42,7 @@ class TriggeredExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = TriggeredGuarantees()
+        self.guarantees = TriggeredGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.join_for_move_position_run_to_global_position_target: literal.Join
         self.join_for_empty_rule_position_run: literal.Join
@@ -63,7 +63,6 @@ class TriggeredExecution:
             )
         )
         self.guarantees.position_run.run(
-            self.scheduler,
             self.destroy_global_position_target,
         )
 
@@ -75,5 +74,4 @@ class TriggeredExecution:
             local.my_domain_com.my_lib.target.Target
         ).destroy_particle()
         self.guarantees.global_position_target.run(
-            self.scheduler,
         )

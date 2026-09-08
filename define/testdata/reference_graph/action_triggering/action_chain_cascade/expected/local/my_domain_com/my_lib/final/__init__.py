@@ -21,8 +21,8 @@ class Final(literal.Action):
 
 @final
 class FinalGuarantees:
-    def __init__(self):
-        self.position_trigger = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_trigger = literal.Fanout(scheduler)
 
 
 @final
@@ -36,7 +36,7 @@ class FinalExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = FinalGuarantees()
+        self.guarantees = FinalGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.local_position_complete = literal.LocalPosition(
             "position<complete>",
@@ -67,5 +67,4 @@ class FinalExecution:
             "position<trigger>"
         ).destroy_particle()
         self.guarantees.position_trigger.run(
-            self.scheduler,
         )

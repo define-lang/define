@@ -31,8 +31,8 @@ class Test(literal.EntryPoint):
 
 @final
 class TestGuarantees:
-    def __init__(self):
-        self.global_position_bundle = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_bundle = literal.Fanout(scheduler)
 
 
 @final
@@ -50,7 +50,7 @@ class TestExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = TestGuarantees()
+        self.guarantees = TestGuarantees(self.scheduler)
         self.execution_action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
         self.destruction_connection_action_middle: tracing.DestructionConnection
         self.destruction_position_action_middle__position_target__global_position_occupied_first__global_position_transitive: literal.Position
@@ -142,7 +142,6 @@ class TestExecution:
             local.my_domain_com.my_lib.occupied_first.OccupiedFirst
         )
         self.guarantees.global_position_bundle.run(
-            self.scheduler,
             self.execution_action_middle.accept_when_empty_position_target__global_position_occupied_last,
         )
 

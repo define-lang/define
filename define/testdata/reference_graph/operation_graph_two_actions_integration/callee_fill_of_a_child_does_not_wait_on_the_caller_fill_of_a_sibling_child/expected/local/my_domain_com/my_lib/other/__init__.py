@@ -36,9 +36,9 @@ class Other(literal.Action):
 
 @final
 class OtherGuarantees:
-    def __init__(self):
-        self.position_box__global_position_b = literal.Fanout()
-        self.position_box__global_position_a__move__position_keeper = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_box__global_position_b = literal.Fanout(scheduler)
+        self.position_box__global_position_a__move__position_keeper = literal.Fanout(scheduler)
 
 
 @final
@@ -50,7 +50,7 @@ class OtherExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = OtherGuarantees()
+        self.guarantees = OtherGuarantees(self.scheduler)
         self.join_for_move_position_box__global_position_a_to_position_keeper: literal.Join
         self.join_for_empty_rule_position_box__global_position_a: literal.Join
 
@@ -69,7 +69,6 @@ class OtherExecution:
             local.my_domain_com.my_lib.b.B
         ).create_particle()
         self.guarantees.position_box__global_position_b.run(
-            self.scheduler,
         )
 
     def move_position_box__global_position_a_to_position_keeper(self):
@@ -85,5 +84,4 @@ class OtherExecution:
             )
         )
         self.guarantees.position_box__global_position_a__move__position_keeper.run(
-            self.scheduler,
         )

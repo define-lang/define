@@ -30,18 +30,18 @@ type DestructionContinuation = Callable[..., None]
 class Fanout:
     """Tasks released when one Automated Action Guarantee is published."""
 
+    scheduler: Scheduler
     inits: list[Task] = dataclasses.field(default_factory=list)
     consumers: list[Task] = dataclasses.field(default_factory=list)
 
     def run(
         self,
-        scheduler: Scheduler,
         *publication_consumers: Task,
     ):
         """Init Action Executions before releasing ordinary consumers."""
         for init in self.inits:
             init()
-        scheduler.continue_with([*publication_consumers, *self.consumers])
+        self.scheduler.continue_with([*publication_consumers, *self.consumers])
 
 
 class Join:

@@ -15,8 +15,8 @@ class ConstructA(literal.Action):
 
 @final
 class ConstructAGuarantees:
-    def __init__(self):
-        self.global_position_marker = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_marker = literal.Fanout(scheduler)
 
 
 @final
@@ -28,7 +28,7 @@ class ConstructAExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = ConstructAGuarantees()
+        self.guarantees = ConstructAGuarantees(self.scheduler)
 
     def accept_when_empty_global_position_marker(self):
         self.create_global_position_marker()
@@ -38,5 +38,4 @@ class ConstructAExecution:
             local.my_domain_com.my_lib.marker.Marker
         ).create_particle()
         self.guarantees.global_position_marker.run(
-            self.scheduler,
         )

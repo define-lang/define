@@ -37,9 +37,9 @@ class Carrier(literal.Action):
 
 @final
 class CarrierGuarantees:
-    def __init__(self):
-        self.position_source__move__position_result = literal.Fanout()
-        self.position_run = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_source__move__position_result = literal.Fanout(scheduler)
+        self.position_run = literal.Fanout(scheduler)
 
 
 @final
@@ -53,7 +53,7 @@ class CarrierExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = CarrierGuarantees()
+        self.guarantees = CarrierGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.join_for_move_position_source_to_position_result: literal.Join
         self.join_for_destroy_position_run: literal.Join
@@ -90,7 +90,6 @@ class CarrierExecution:
             )
         )
         self.guarantees.position_source__move__position_result.run(
-            self.scheduler,
         )
 
     def destroy_position_run(self):
@@ -103,5 +102,4 @@ class CarrierExecution:
             "position<run>"
         ).destroy_particle()
         self.guarantees.position_run.run(
-            self.scheduler,
         )

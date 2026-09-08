@@ -36,8 +36,8 @@ class Mover(literal.Action):
 
 @final
 class MoverGuarantees:
-    def __init__(self):
-        self.global_position_parent__move__position_dest = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_parent__move__position_dest = literal.Fanout(scheduler)
 
 
 @final
@@ -49,7 +49,7 @@ class MoverExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = MoverGuarantees()
+        self.guarantees = MoverGuarantees(self.scheduler)
         self.join_for_move_global_position_parent_to_position_dest: literal.Join
         self.join_for_empty_rule_global_position_parent: literal.Join
 
@@ -69,5 +69,4 @@ class MoverExecution:
             )
         )
         self.guarantees.global_position_parent__move__position_dest.run(
-            self.scheduler,
         )

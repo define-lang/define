@@ -26,9 +26,9 @@ class Filler(literal.Action):
 
 @final
 class FillerGuarantees:
-    def __init__(self):
-        self.global_position_implied = literal.Fanout()
-        self.position_trigger_pos = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_implied = literal.Fanout(scheduler)
+        self.position_trigger_pos = literal.Fanout(scheduler)
 
 
 @final
@@ -42,7 +42,7 @@ class FillerExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = FillerGuarantees()
+        self.guarantees = FillerGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.join_for_destroy_position_trigger_pos: literal.Join
         self.join_for_empty_rule_position_trigger_pos: literal.Join
@@ -63,7 +63,6 @@ class FillerExecution:
             local.my_domain_com.my_lib.implied.Implied
         ).destroy_particle()
         self.guarantees.global_position_implied.run(
-            self.scheduler,
         )
 
     def destroy_position_trigger_pos(self):
@@ -76,5 +75,4 @@ class FillerExecution:
             "position<trigger_pos>"
         ).destroy_particle()
         self.guarantees.position_trigger_pos.run(
-            self.scheduler,
         )

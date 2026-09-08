@@ -15,8 +15,8 @@ class Implier(literal.Action):
 
 @final
 class ImplierGuarantees:
-    def __init__(self):
-        self.global_position_implied = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_implied = literal.Fanout(scheduler)
 
 
 @final
@@ -28,7 +28,7 @@ class ImplierExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = ImplierGuarantees()
+        self.guarantees = ImplierGuarantees(self.scheduler)
 
     def accept_when_empty_global_position_implied(self):
         self.create_global_position_implied()
@@ -38,5 +38,4 @@ class ImplierExecution:
             local.my_domain_com.my_lib.implied.Implied
         ).create_particle()
         self.guarantees.global_position_implied.run(
-            self.scheduler,
         )

@@ -26,8 +26,8 @@ class RightChild(literal.Action):
 
 @final
 class RightChildGuarantees:
-    def __init__(self):
-        self.global_position_marker = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_marker = literal.Fanout(scheduler)
 
 
 @final
@@ -41,7 +41,7 @@ class RightChildExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = RightChildGuarantees()
+        self.guarantees = RightChildGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.join_for_destroy_global_position_marker: literal.Join
         self.join_for_empty_rule_global_position_marker: literal.Join
@@ -61,5 +61,4 @@ class RightChildExecution:
             local.my_domain_com.my_lib.marker.Marker
         ).destroy_particle()
         self.guarantees.global_position_marker.run(
-            self.scheduler,
         )

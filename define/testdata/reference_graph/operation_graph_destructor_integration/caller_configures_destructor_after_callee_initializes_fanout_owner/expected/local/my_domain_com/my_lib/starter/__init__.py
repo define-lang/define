@@ -28,8 +28,8 @@ class Starter(literal.Action):
 
 @final
 class StarterGuarantees:
-    def __init__(self):
-        self.position_run = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_run = literal.Fanout(scheduler)
 
 
 @final
@@ -43,7 +43,7 @@ class StarterExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = StarterGuarantees()
+        self.guarantees = StarterGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.local_position_gateway = literal.LocalPosition(
             "position<gateway>",
@@ -83,7 +83,6 @@ class StarterExecution:
             self.destroy_position_gateway
         )
         self.guarantees.position_run.run(
-            self.scheduler,
             self.move_position_gateway__global_position_crate_to_position_gateway__action_wrapper__position_run,
         )
 

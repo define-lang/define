@@ -31,9 +31,9 @@ class Runner(literal.Action):
 
 @final
 class RunnerGuarantees:
-    def __init__(self):
-        self.position_wrap = literal.Fanout()
-        self.position_run = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_wrap = literal.Fanout(scheduler)
+        self.position_run = literal.Fanout(scheduler)
 
 
 @final
@@ -47,7 +47,7 @@ class RunnerExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = RunnerGuarantees()
+        self.guarantees = RunnerGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.destruction_position_position_wrap__global_position_mid__global_position_leaf: literal.Position
         self.destruction_position_position_wrap__global_position_mid: literal.Position
@@ -112,7 +112,6 @@ class RunnerExecution:
             "position<wrap>"
         ).destroy_particle()
         self.guarantees.position_wrap.run(
-            self.scheduler,
         )
 
     def destroy_position_wrap__global_position_mid(self):
@@ -133,5 +132,4 @@ class RunnerExecution:
             "position<run>"
         ).destroy_particle()
         self.guarantees.position_run.run(
-            self.scheduler,
         )

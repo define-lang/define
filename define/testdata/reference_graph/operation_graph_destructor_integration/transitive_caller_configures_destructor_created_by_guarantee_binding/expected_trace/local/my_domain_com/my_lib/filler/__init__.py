@@ -30,8 +30,8 @@ class Filler(literal.Action):
 
 @final
 class FillerGuarantees:
-    def __init__(self):
-        self.position_run__move__global_position_target = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_run__move__global_position_target = literal.Fanout(scheduler)
 
 
 @final
@@ -49,7 +49,7 @@ class FillerExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = FillerGuarantees()
+        self.guarantees = FillerGuarantees(self.scheduler)
         self.join_for_move_position_run_to_global_position_target: literal.Join
         self.join_for_empty_rule_position_run: literal.Join
 
@@ -75,5 +75,4 @@ class FillerExecution:
             1,
         )
         self.guarantees.position_run__move__global_position_target.run(
-            self.scheduler,
         )

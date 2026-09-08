@@ -58,6 +58,8 @@ reviewed before implementation diverges.
 
 ## Guarantees
 
+- Each `Fanout` retains its Action Execution's scheduler from construction.
+  `Fanout.run` receives only the consumers for that invocation.
 - `Fanout.inits` synchronously performs every Action Execution init associated
   with the Guarantee. One callable performs all init at the same plan point, and
   every init completes before any ordinary consumer is released.

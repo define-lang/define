@@ -17,8 +17,8 @@ class Destructor(literal.Action):
 
 @final
 class DestructorGuarantees:
-    def __init__(self):
-        self.global_position_implied = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_implied = literal.Fanout(scheduler)
 
 
 @final
@@ -36,7 +36,7 @@ class DestructorExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = DestructorGuarantees()
+        self.guarantees = DestructorGuarantees(self.scheduler)
         self.execution_action_forwarder: local.my_domain_com.my_lib.forwarder.ForwarderExecution
         self.execution_action_forwarder = local.my_domain_com.my_lib.forwarder.ForwarderExecution(
             self.action.on_particle.get_action(
@@ -90,5 +90,4 @@ class DestructorExecution:
             1,
         )
         self.guarantees.global_position_implied.run(
-            self.scheduler,
         )

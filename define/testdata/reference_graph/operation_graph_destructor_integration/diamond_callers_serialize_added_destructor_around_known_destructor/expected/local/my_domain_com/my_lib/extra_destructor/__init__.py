@@ -15,8 +15,8 @@ class ExtraDestructor(literal.Action):
 
 @final
 class ExtraDestructorGuarantees:
-    def __init__(self):
-        self.global_position_marker = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_marker = literal.Fanout(scheduler)
 
 
 @final
@@ -28,7 +28,7 @@ class ExtraDestructorExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = ExtraDestructorGuarantees()
+        self.guarantees = ExtraDestructorGuarantees(self.scheduler)
         self.local_position_holder = literal.LocalPosition(
             "position<holder>",
             scheduler=self.scheduler,
@@ -53,5 +53,4 @@ class ExtraDestructorExecution:
             )
         )
         self.guarantees.global_position_marker.run(
-            self.scheduler,
         )

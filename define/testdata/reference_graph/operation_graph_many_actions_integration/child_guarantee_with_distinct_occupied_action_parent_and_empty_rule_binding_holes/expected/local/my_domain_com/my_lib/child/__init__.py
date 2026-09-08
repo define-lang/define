@@ -26,8 +26,8 @@ class Child(literal.Action):
 
 @final
 class ChildGuarantees:
-    def __init__(self):
-        self.global_position_result = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_result = literal.Fanout(scheduler)
 
 
 @final
@@ -39,7 +39,7 @@ class ChildExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = ChildGuarantees()
+        self.guarantees = ChildGuarantees(self.scheduler)
         self.local_position_scratch = literal.LocalPosition(
             "position<scratch>",
             scheduler=self.scheduler,
@@ -60,5 +60,4 @@ class ChildExecution:
             local.my_domain_com.my_lib.result.Result
         ).create_particle()
         self.guarantees.global_position_result.run(
-            self.scheduler,
         )

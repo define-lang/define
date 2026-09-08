@@ -27,8 +27,8 @@ class MakeThing(literal.Action):
 
 @final
 class MakeThingGuarantees:
-    def __init__(self):
-        self.position_result = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_result = literal.Fanout(scheduler)
 
 
 @final
@@ -46,7 +46,7 @@ class MakeThingExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = MakeThingGuarantees()
+        self.guarantees = MakeThingGuarantees(self.scheduler)
         self.local_position_temp = literal.LocalPosition(
             "position<temp>",
             constraints=(
@@ -89,5 +89,4 @@ class MakeThingExecution:
             1,
         )
         self.guarantees.position_result.run(
-            self.scheduler,
         )

@@ -31,8 +31,8 @@ class Inner(literal.Action):
 
 @final
 class InnerGuarantees:
-    def __init__(self):
-        self.position_run = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_run = literal.Fanout(scheduler)
 
 
 @final
@@ -46,7 +46,7 @@ class InnerExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = InnerGuarantees()
+        self.guarantees = InnerGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.execution_action_destroyer: local.my_domain_com.my_lib.destroyer.DestroyerExecution
         self.destruction_connection_action_destroyer: literal.DestructionConnection
@@ -107,7 +107,6 @@ class InnerExecution:
         self.execution_action_destroyer.execution_position_target__action_known_destructor.join_for_empty_rule_global_position_marker = literal.NO_JOIN
         self.execution_action_destroyer.execution_position_target__action_known_destructor.join_for_move_global_position_marker_to_position_retained_marker = literal.NO_JOIN
         self.guarantees.position_run.run(
-            self.scheduler,
             self.execution_action_destroyer.accept_for_empty_rule_position_target__global_position_marker,
         )
 

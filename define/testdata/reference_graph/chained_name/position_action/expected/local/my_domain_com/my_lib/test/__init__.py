@@ -24,8 +24,8 @@ class Test(literal.EntryPoint):
 
 @final
 class TestGuarantees:
-    def __init__(self):
-        self.global_position_a = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_a = literal.Fanout(scheduler)
 
 
 @final
@@ -37,7 +37,7 @@ class TestExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = TestGuarantees()
+        self.guarantees = TestGuarantees(self.scheduler)
         self.execution_global_position_a__action_act: local.my_domain_com.my_lib.act.ActExecution
 
     def accept_when_empty_global_position_a(self):
@@ -58,7 +58,6 @@ class TestExecution:
         self.execution_global_position_a__action_act.join_for_empty_rule_position_trigger_pos = literal.NO_JOIN
         self.execution_global_position_a__action_act.join_for_destroy_position_trigger_pos = literal.NO_JOIN
         self.guarantees.global_position_a.run(
-            self.scheduler,
             self.create_global_position_a__action_act__position_trigger_pos,
             self.execution_global_position_a__action_act.on_action_parent_occupied,
         )

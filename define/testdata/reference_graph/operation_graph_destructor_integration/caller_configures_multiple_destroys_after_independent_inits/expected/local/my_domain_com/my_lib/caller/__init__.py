@@ -32,8 +32,8 @@ class Caller(literal.Action):
 
 @final
 class CallerGuarantees:
-    def __init__(self):
-        self.position_run = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_run = literal.Fanout(scheduler)
 
 
 @final
@@ -47,7 +47,7 @@ class CallerExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = CallerGuarantees()
+        self.guarantees = CallerGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.execution_action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
         self.join_for_move_position_run_to_action_middle__position_run: literal.Join
@@ -94,6 +94,5 @@ class CallerExecution:
             )
         )
         self.guarantees.position_run.run(
-            self.scheduler,
             self.execution_action_middle.accept_for_empty_rule_position_run,
         )

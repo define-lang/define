@@ -26,8 +26,8 @@ class Outer(literal.Action):
 
 @final
 class OuterGuarantees:
-    def __init__(self):
-        self.position_run = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_run = literal.Fanout(scheduler)
 
 
 @final
@@ -41,7 +41,7 @@ class OuterExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = OuterGuarantees()
+        self.guarantees = OuterGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.execution_action_inner: local.my_domain_com.my_lib.inner.InnerExecution
         self.join_for_destroy_position_run: literal.Join
@@ -82,5 +82,4 @@ class OuterExecution:
             "position<run>"
         ).destroy_particle()
         self.guarantees.position_run.run(
-            self.scheduler,
         )

@@ -26,8 +26,8 @@ class EmptyItem(literal.Action):
 
 @final
 class EmptyItemGuarantees:
-    def __init__(self):
-        self.global_position_item = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_item = literal.Fanout(scheduler)
 
 
 @final
@@ -41,7 +41,7 @@ class EmptyItemExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = EmptyItemGuarantees()
+        self.guarantees = EmptyItemGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.join_for_destroy_global_position_item: literal.Join
         self.join_for_empty_rule_global_position_item: literal.Join
@@ -61,5 +61,4 @@ class EmptyItemExecution:
             local.my_domain_com.my_lib.item.Item
         ).destroy_particle()
         self.guarantees.global_position_item.run(
-            self.scheduler,
         )

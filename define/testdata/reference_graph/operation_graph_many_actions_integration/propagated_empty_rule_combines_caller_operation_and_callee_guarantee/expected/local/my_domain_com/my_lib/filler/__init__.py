@@ -27,8 +27,8 @@ class Filler(literal.Action):
 
 @final
 class FillerGuarantees:
-    def __init__(self):
-        self.global_position_parent__global_position_guaranteed_child = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_parent__global_position_guaranteed_child = literal.Fanout(scheduler)
 
 
 @final
@@ -40,7 +40,7 @@ class FillerExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = FillerGuarantees()
+        self.guarantees = FillerGuarantees(self.scheduler)
 
     def accept_when_empty_global_position_parent__global_position_guaranteed_child(self):
         self.create_global_position_parent__global_position_guaranteed_child()
@@ -52,5 +52,4 @@ class FillerExecution:
             local.my_domain_com.my_lib.guaranteed_child.GuaranteedChild
         ).create_particle()
         self.guarantees.global_position_parent__global_position_guaranteed_child.run(
-            self.scheduler,
         )

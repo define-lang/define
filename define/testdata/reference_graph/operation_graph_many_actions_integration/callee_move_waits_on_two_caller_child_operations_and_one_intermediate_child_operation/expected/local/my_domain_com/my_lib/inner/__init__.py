@@ -26,8 +26,8 @@ class Inner(literal.Action):
 
 @final
 class InnerGuarantees:
-    def __init__(self):
-        self.global_position_input = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_input = literal.Fanout(scheduler)
 
 
 @final
@@ -41,7 +41,7 @@ class InnerExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = InnerGuarantees()
+        self.guarantees = InnerGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.local_position_holder = literal.LocalPosition(
             "position<holder>",
@@ -62,7 +62,6 @@ class InnerExecution:
             local.my_domain_com.my_lib.input.Input
         ).move_particle_to(self.local_position_holder)
         self.guarantees.global_position_input.run(
-            self.scheduler,
             self.destroy_position_holder,
         )
 

@@ -37,8 +37,8 @@ class Inner(literal.Action):
 
 @final
 class InnerGuarantees:
-    def __init__(self):
-        self.position_source__move__position_holder = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_source__move__position_holder = literal.Fanout(scheduler)
 
 
 @final
@@ -50,7 +50,7 @@ class InnerExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = InnerGuarantees()
+        self.guarantees = InnerGuarantees(self.scheduler)
         self.join_for_move_position_source_to_position_holder: literal.Join
         self.join_for_empty_rule_position_source: literal.Join
 
@@ -70,5 +70,4 @@ class InnerExecution:
             )
         )
         self.guarantees.position_source__move__position_holder.run(
-            self.scheduler,
         )

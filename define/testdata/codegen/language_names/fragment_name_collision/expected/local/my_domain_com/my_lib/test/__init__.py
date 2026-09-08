@@ -32,11 +32,11 @@ class Test(literal.EntryPoint):
 
 @final
 class TestGuarantees:
-    def __init__(self):
-        self.global_position_item_name = literal.Fanout()
-        self.global_position_item_name_2 = literal.Fanout()
-        self.global_position_item_name_3 = literal.Fanout()
-        self.global_position_item_name_4 = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_item_name = literal.Fanout(scheduler)
+        self.global_position_item_name_2 = literal.Fanout(scheduler)
+        self.global_position_item_name_3 = literal.Fanout(scheduler)
+        self.global_position_item_name_4 = literal.Fanout(scheduler)
 
 
 @final
@@ -48,7 +48,7 @@ class TestExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = TestGuarantees()
+        self.guarantees = TestGuarantees(self.scheduler)
 
     def accept_when_empty_global_position_item_name(self):
         self.create_global_position_item_name()
@@ -67,7 +67,6 @@ class TestExecution:
             local.my_domain_com.my_lib.item.name.ItemName
         ).create_particle()
         self.guarantees.global_position_item_name.run(
-            self.scheduler,
         )
 
     def create_global_position_item_name_2(self):
@@ -75,7 +74,6 @@ class TestExecution:
             local.my_domain_com.my_lib.item.name_2.ItemName2
         ).create_particle()
         self.guarantees.global_position_item_name_2.run(
-            self.scheduler,
         )
 
     def create_global_position_item_name_3(self):
@@ -83,7 +81,6 @@ class TestExecution:
             local.my_domain_com.my_lib.item.name_3.ItemName3
         ).create_particle()
         self.guarantees.global_position_item_name_3.run(
-            self.scheduler,
         )
 
     def create_global_position_item_name_4(self):
@@ -91,5 +88,4 @@ class TestExecution:
             local.my_domain_com.my_lib.item_name.ItemName
         ).create_particle()
         self.guarantees.global_position_item_name_4.run(
-            self.scheduler,
         )

@@ -34,10 +34,10 @@ class Destroyer(literal.Action):
 
 @final
 class DestroyerGuarantees:
-    def __init__(self):
-        self.position_run = literal.Fanout()
-        self.global_position_target = literal.Fanout()
-        self.global_position_destination = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_run = literal.Fanout(scheduler)
+        self.global_position_target = literal.Fanout(scheduler)
+        self.global_position_destination = literal.Fanout(scheduler)
 
 
 @final
@@ -51,7 +51,7 @@ class DestroyerExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = DestroyerGuarantees()
+        self.guarantees = DestroyerGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.local_position_local = literal.LocalPosition(
             "position<local>",
@@ -89,7 +89,6 @@ class DestroyerExecution:
             )
         )
         self.guarantees.position_run.run(
-            self.scheduler,
             self.move_global_position_target_to_position_local,
         )
 
@@ -98,7 +97,6 @@ class DestroyerExecution:
             local.my_domain_com.my_lib.target.Target
         ).move_particle_to(self.local_position_local)
         self.guarantees.global_position_target.run(
-            self.scheduler,
             self.move_position_local__global_position_known_empty_to_global_position_destination,
             self.create_position_local__global_position_known_occupied,
         )
@@ -114,7 +112,6 @@ class DestroyerExecution:
             )
         )
         self.guarantees.global_position_destination.run(
-            self.scheduler,
             self.destroy_position_local,
         )
 

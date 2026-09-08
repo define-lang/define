@@ -17,9 +17,9 @@ class Destruct(literal.Action):
 
 @final
 class DestructGuarantees:
-    def __init__(self):
-        self.global_position_marker_a = literal.Fanout()
-        self.global_position_marker_b = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_marker_a = literal.Fanout(scheduler)
+        self.global_position_marker_b = literal.Fanout(scheduler)
 
 
 @final
@@ -37,7 +37,7 @@ class DestructExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = DestructGuarantees()
+        self.guarantees = DestructGuarantees(self.scheduler)
         self.local_position_holder_a = literal.LocalPosition(
             "position<holder_a>",
             scheduler=self.scheduler,
@@ -85,7 +85,6 @@ class DestructExecution:
             1,
         )
         self.guarantees.global_position_marker_a.run(
-            self.scheduler,
         )
 
     def move_global_position_marker_b_to_position_holder_b(self):
@@ -112,5 +111,4 @@ class DestructExecution:
             1,
         )
         self.guarantees.global_position_marker_b.run(
-            self.scheduler,
         )

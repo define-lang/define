@@ -25,9 +25,9 @@ class Test(literal.EntryPoint):
 
 @final
 class TestGuarantees:
-    def __init__(self):
-        self.global_position_box = literal.Fanout()
-        self.global_position_box__global_position_destination = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_box = literal.Fanout(scheduler)
+        self.global_position_box__global_position_destination = literal.Fanout(scheduler)
 
 
 @final
@@ -39,7 +39,7 @@ class TestExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = TestGuarantees()
+        self.guarantees = TestGuarantees(self.scheduler)
         self.execution_global_position_box__action_producer: local.my_domain_com.my_lib.producer.ProducerExecution
 
     def accept_when_empty_global_position_box(self):
@@ -63,7 +63,6 @@ class TestExecution:
             self.move_global_position_box__action_producer__position_result_to_global_position_box__global_position_destination
         )
         self.guarantees.global_position_box.run(
-            self.scheduler,
             self.create_global_position_box__action_producer__position_input,
         )
 
@@ -92,5 +91,4 @@ class TestExecution:
             )
         )
         self.guarantees.global_position_box__global_position_destination.run(
-            self.scheduler,
         )

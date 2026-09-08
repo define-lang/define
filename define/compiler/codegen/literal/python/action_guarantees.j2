@@ -4,9 +4,9 @@
 
 @final
 class {{ guarantees.class_name }}:
-    def __init__(self):
+    def __init__(self, scheduler: literal.Scheduler):
         {% for guarantee_name in guarantees.guarantee_names %}
-        self.{{ guarantee_name }} = literal.Fanout()
+        self.{{ guarantee_name }} = literal.Fanout(scheduler)
         {% endfor %}
     {% endif %}
 {% endmacro %}

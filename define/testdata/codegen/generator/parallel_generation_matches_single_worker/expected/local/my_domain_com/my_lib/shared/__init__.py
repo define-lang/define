@@ -21,8 +21,8 @@ class Shared(literal.Action):
 
 @final
 class SharedGuarantees:
-    def __init__(self):
-        self.position_trigger = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_trigger = literal.Fanout(scheduler)
 
 
 @final
@@ -36,7 +36,7 @@ class SharedExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = SharedGuarantees()
+        self.guarantees = SharedGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.join_for_destroy_position_trigger: literal.Join
         self.join_for_empty_rule_position_trigger: literal.Join
@@ -56,5 +56,4 @@ class SharedExecution:
             "position<trigger>"
         ).destroy_particle()
         self.guarantees.position_trigger.run(
-            self.scheduler,
         )

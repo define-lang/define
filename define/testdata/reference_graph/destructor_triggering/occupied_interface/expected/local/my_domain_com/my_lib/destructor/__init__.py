@@ -21,8 +21,8 @@ class Destructor(literal.Action):
 
 @final
 class DestructorGuarantees:
-    def __init__(self):
-        self.position_item = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_item = literal.Fanout(scheduler)
 
 
 @final
@@ -34,7 +34,7 @@ class DestructorExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = DestructorGuarantees()
+        self.guarantees = DestructorGuarantees(self.scheduler)
         self.local_position__holder = literal.LocalPosition(
             "position<_holder>",
             scheduler=self.scheduler,
@@ -59,5 +59,4 @@ class DestructorExecution:
             )
         )
         self.guarantees.position_item.run(
-            self.scheduler,
         )

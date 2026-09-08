@@ -15,8 +15,8 @@ class KnownDestructor(literal.Action):
 
 @final
 class KnownDestructorGuarantees:
-    def __init__(self):
-        self.global_position_marker = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_marker = literal.Fanout(scheduler)
 
 
 @final
@@ -34,7 +34,7 @@ class KnownDestructorExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = KnownDestructorGuarantees()
+        self.guarantees = KnownDestructorGuarantees(self.scheduler)
         self.local_position_retained_marker = literal.LocalPosition(
             "position<retained_marker>",
             scheduler=self.scheduler,
@@ -71,5 +71,4 @@ class KnownDestructorExecution:
             1,
         )
         self.guarantees.global_position_marker.run(
-            self.scheduler,
         )

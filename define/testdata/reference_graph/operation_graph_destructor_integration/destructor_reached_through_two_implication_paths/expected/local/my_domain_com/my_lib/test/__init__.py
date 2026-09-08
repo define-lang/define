@@ -32,9 +32,9 @@ class Test(literal.EntryPoint):
 
 @final
 class TestGuarantees:
-    def __init__(self):
-        self.global_position_left = literal.Fanout()
-        self.global_position_right = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_left = literal.Fanout(scheduler)
+        self.global_position_right = literal.Fanout(scheduler)
 
 
 @final
@@ -46,7 +46,7 @@ class TestExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = TestGuarantees()
+        self.guarantees = TestGuarantees(self.scheduler)
         self.execution_action_destroyer: local.my_domain_com.my_lib.destroyer.DestroyerExecution
         self.destruction_connection_action_destroyer: literal.DestructionConnection
         self.execution_action_destroyer__position_target__action_destructor: local.my_domain_com.my_lib.destructor.DestructorExecution
@@ -103,7 +103,6 @@ class TestExecution:
             )
         )
         self.guarantees.global_position_left.run(
-            self.scheduler,
             self.move_global_position_right_to_action_destroyer__position_target,
         )
 
@@ -133,7 +132,6 @@ class TestExecution:
             self.destroy_action_destroyer__position_target__global_position_marker
         )
         self.guarantees.global_position_right.run(
-            self.scheduler,
             self.execution_action_destroyer.accept_for_empty_rule_position_target,
             self.execution_action_destroyer__position_target__action_destructor.accept_for_empty_rule_global_position_marker,
         )

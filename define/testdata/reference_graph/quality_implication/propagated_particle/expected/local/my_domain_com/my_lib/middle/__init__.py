@@ -39,10 +39,10 @@ class Middle(literal.Action):
 
 @final
 class MiddleGuarantees:
-    def __init__(self):
-        self.position_box = literal.Fanout()
-        self.position_final = literal.Fanout()
-        self.position_run = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_box = literal.Fanout(scheduler)
+        self.position_final = literal.Fanout(scheduler)
+        self.position_run = literal.Fanout(scheduler)
 
 
 @final
@@ -56,7 +56,7 @@ class MiddleExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = MiddleGuarantees()
+        self.guarantees = MiddleGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.local_position_inner_holder = literal.LocalPosition(
             "position<inner_holder>",
@@ -127,7 +127,6 @@ class MiddleExecution:
             )
         )
         self.guarantees.position_box.run(
-            self.scheduler,
             self.execution_position_inner_holder__action_inner.accept_for_empty_rule_position_input,
         )
 
@@ -174,7 +173,6 @@ class MiddleExecution:
             "position<final>"
         ).destroy_particle()
         self.guarantees.position_final.run(
-            self.scheduler,
         )
 
     def destroy_position_run(self):
@@ -187,7 +185,6 @@ class MiddleExecution:
             "position<run>"
         ).destroy_particle()
         self.guarantees.position_run.run(
-            self.scheduler,
         )
 
     def destroy_position_inner_holder(self):

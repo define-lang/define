@@ -26,9 +26,9 @@ class Implied(literal.Action):
 
 @final
 class ImpliedGuarantees:
-    def __init__(self):
-        self.global_position_transitive_implied = literal.Fanout()
-        self.position_run = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_transitive_implied = literal.Fanout(scheduler)
+        self.position_run = literal.Fanout(scheduler)
 
 
 @final
@@ -42,7 +42,7 @@ class ImpliedExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = ImpliedGuarantees()
+        self.guarantees = ImpliedGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.join_for_destroy_position_run: literal.Join
         self.join_for_empty_rule_position_run: literal.Join
@@ -60,7 +60,6 @@ class ImpliedExecution:
             local.my_domain_com.my_lib.transitive_implied.TransitiveImplied
         ).create_particle()
         self.guarantees.global_position_transitive_implied.run(
-            self.scheduler,
         )
 
     def destroy_position_run(self):
@@ -73,5 +72,4 @@ class ImpliedExecution:
             "position<run>"
         ).destroy_particle()
         self.guarantees.position_run.run(
-            self.scheduler,
         )

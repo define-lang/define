@@ -21,8 +21,8 @@ class B(literal.Action):
 
 @final
 class BGuarantees:
-    def __init__(self):
-        self.position_t = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_t = literal.Fanout(scheduler)
 
 
 @final
@@ -36,7 +36,7 @@ class BExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = BGuarantees()
+        self.guarantees = BGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.local_position_r = literal.LocalPosition(
             "position<r>",
@@ -67,5 +67,4 @@ class BExecution:
             "position<t>"
         ).destroy_particle()
         self.guarantees.position_t.run(
-            self.scheduler,
         )

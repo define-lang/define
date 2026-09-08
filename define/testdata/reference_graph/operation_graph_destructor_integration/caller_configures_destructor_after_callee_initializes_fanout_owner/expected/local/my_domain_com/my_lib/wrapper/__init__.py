@@ -28,8 +28,8 @@ class Wrapper(literal.Action):
 
 @final
 class WrapperGuarantees:
-    def __init__(self):
-        self.position_run = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_run = literal.Fanout(scheduler)
 
 
 @final
@@ -43,7 +43,7 @@ class WrapperExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = WrapperGuarantees()
+        self.guarantees = WrapperGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.execution_position_run__action_outer: local.my_domain_com.my_lib.outer.OuterExecution
         self.join_for_move_position_run__global_position_carrier_to_position_run__action_outer__position_run: literal.Join
@@ -109,5 +109,4 @@ class WrapperExecution:
             "position<run>"
         ).destroy_particle()
         self.guarantees.position_run.run(
-            self.scheduler,
         )

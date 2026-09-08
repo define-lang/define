@@ -30,8 +30,8 @@ class Inner(literal.Action):
 
 @final
 class InnerGuarantees:
-    def __init__(self):
-        self.position_input__global_position_result_value = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_input__global_position_result_value = literal.Fanout(scheduler)
 
 
 @final
@@ -49,7 +49,7 @@ class InnerExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = InnerGuarantees()
+        self.guarantees = InnerGuarantees(self.scheduler)
 
     def accept_when_empty_position_input__global_position_result_value(self):
         self.create_position_input__global_position_result_value()
@@ -66,5 +66,4 @@ class InnerExecution:
             1,
         )
         self.guarantees.position_input__global_position_result_value.run(
-            self.scheduler,
         )

@@ -19,9 +19,9 @@ class ExtraDestructor(literal.Action):
 
 @final
 class ExtraDestructorGuarantees:
-    def __init__(self):
-        self.global_position_destinations__global_position_second = literal.Fanout()
-        self.global_position_destinations__global_position_third__move__global_position_marker = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_destinations__global_position_second = literal.Fanout(scheduler)
+        self.global_position_destinations__global_position_third__move__global_position_marker = literal.Fanout(scheduler)
 
 
 @final
@@ -39,7 +39,7 @@ class ExtraDestructorExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = ExtraDestructorGuarantees()
+        self.guarantees = ExtraDestructorGuarantees(self.scheduler)
         self.join_for_move_global_position_marker_to_global_position_destinations__global_position_second: literal.Join
         self.join_for_move_global_position_destinations__global_position_second_to_global_position_destinations__global_position_third: literal.Join
         self.join_for_empty_rule_global_position_marker: literal.Join
@@ -96,7 +96,6 @@ class ExtraDestructorExecution:
             1,
         )
         self.guarantees.global_position_destinations__global_position_second.run(
-            self.scheduler,
             self.move_global_position_destinations__global_position_third_to_global_position_marker,
         )
 
@@ -117,5 +116,4 @@ class ExtraDestructorExecution:
             1,
         )
         self.guarantees.global_position_destinations__global_position_third__move__global_position_marker.run(
-            self.scheduler,
         )

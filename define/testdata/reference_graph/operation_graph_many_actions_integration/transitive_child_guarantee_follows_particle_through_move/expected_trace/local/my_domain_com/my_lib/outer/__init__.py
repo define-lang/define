@@ -38,10 +38,10 @@ class Outer(literal.Action):
 
 @final
 class OuterGuarantees:
-    def __init__(self):
-        self.position_source = literal.Fanout()
-        self.position_destination = literal.Fanout()
-        self.position_destination__global_position_result_value = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_source = literal.Fanout(scheduler)
+        self.position_destination = literal.Fanout(scheduler)
+        self.position_destination__global_position_result_value = literal.Fanout(scheduler)
 
 
 @final
@@ -59,7 +59,7 @@ class OuterExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = OuterGuarantees()
+        self.guarantees = OuterGuarantees(self.scheduler)
         self.local_position_middle_holder = literal.LocalPosition(
             "position<middle_holder>",
             constraints=(
@@ -135,7 +135,6 @@ class OuterExecution:
             1,
         )
         self.guarantees.position_source.run(
-            self.scheduler,
             self.execution_position_middle_holder__action_middle.accept_for_empty_rule_position_inner_parent,
         )
 
@@ -193,7 +192,6 @@ class OuterExecution:
             1,
         )
         self.guarantees.position_destination.run(
-            self.scheduler,
             self.move_position_result_holder_to_position_destination__global_position_result_value,
             self.destroy_position_middle_holder,
         )
@@ -213,7 +211,6 @@ class OuterExecution:
             1,
         )
         self.guarantees.position_destination__global_position_result_value.run(
-            self.scheduler,
         )
 
     def destroy_position_middle_holder(self):

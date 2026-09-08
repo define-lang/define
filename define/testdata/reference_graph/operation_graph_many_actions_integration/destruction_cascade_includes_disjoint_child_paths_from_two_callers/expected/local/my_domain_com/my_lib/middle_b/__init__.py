@@ -24,8 +24,8 @@ class MiddleB(literal.Action):
 
 @final
 class MiddleBGuarantees:
-    def __init__(self):
-        self.position_run = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_run = literal.Fanout(scheduler)
 
 
 @final
@@ -39,7 +39,7 @@ class MiddleBExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = MiddleBGuarantees()
+        self.guarantees = MiddleBGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.local_position_box = literal.LocalPosition(
             "position<box>",
@@ -139,5 +139,4 @@ class MiddleBExecution:
             "position<run>"
         ).destroy_particle()
         self.guarantees.position_run.run(
-            self.scheduler,
         )

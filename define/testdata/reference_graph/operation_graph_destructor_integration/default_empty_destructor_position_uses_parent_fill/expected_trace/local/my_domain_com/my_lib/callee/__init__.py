@@ -30,8 +30,8 @@ class Callee(literal.Action):
 
 @final
 class CalleeGuarantees:
-    def __init__(self):
-        self.position_src = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_src = literal.Fanout(scheduler)
 
 
 @final
@@ -51,7 +51,7 @@ class CalleeExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = CalleeGuarantees()
+        self.guarantees = CalleeGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.execution_position_src__action_destructor: local.my_domain_com.my_lib.destructor.DestructorExecution
         self.join_for_destroy_position_src: literal.Join
@@ -95,5 +95,4 @@ class CalleeExecution:
             1,
         )
         self.guarantees.position_src.run(
-            self.scheduler,
         )

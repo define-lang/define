@@ -27,8 +27,8 @@ class Test(literal.EntryPoint):
 
 @final
 class TestGuarantees:
-    def __init__(self):
-        self.global_position_bundle = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_bundle = literal.Fanout(scheduler)
 
 
 @final
@@ -40,7 +40,7 @@ class TestExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = TestGuarantees()
+        self.guarantees = TestGuarantees(self.scheduler)
         self.local_position_direct = literal.LocalPosition(
             "position<direct>",
             constraints=(
@@ -88,7 +88,6 @@ class TestExecution:
             local.my_domain_com.my_lib.bundle.Bundle
         ).move_particle_to(self.local_position_direct)
         self.guarantees.global_position_bundle.run(
-            self.scheduler,
             self.move_position_direct_to_action_destroyer__position_target,
         )
 

@@ -25,8 +25,8 @@ class Maker(literal.Action):
 
 @final
 class MakerGuarantees:
-    def __init__(self):
-        self.position_result = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_result = literal.Fanout(scheduler)
 
 
 @final
@@ -38,7 +38,7 @@ class MakerExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = MakerGuarantees()
+        self.guarantees = MakerGuarantees(self.scheduler)
 
     def accept_when_empty_position_result(self):
         self.create_position_result()
@@ -51,5 +51,4 @@ class MakerExecution:
             "position<result>"
         ).destroy_particle()
         self.guarantees.position_result.run(
-            self.scheduler,
         )

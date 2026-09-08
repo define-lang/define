@@ -29,9 +29,9 @@ class Filler(literal.Action):
 
 @final
 class FillerGuarantees:
-    def __init__(self):
-        self.global_position_parent__global_position_child_a__global_position_gc = literal.Fanout()
-        self.global_position_parent__global_position_child_b__global_position_gc = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_parent__global_position_child_a__global_position_gc = literal.Fanout(scheduler)
+        self.global_position_parent__global_position_child_b__global_position_gc = literal.Fanout(scheduler)
 
 
 @final
@@ -43,7 +43,7 @@ class FillerExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = FillerGuarantees()
+        self.guarantees = FillerGuarantees(self.scheduler)
 
     def accept_when_empty_global_position_parent__global_position_child_a__global_position_gc(self):
         self.create_global_position_parent__global_position_child_a__global_position_gc()
@@ -60,7 +60,6 @@ class FillerExecution:
             local.my_domain_com.my_lib.gc.Gc
         ).create_particle()
         self.guarantees.global_position_parent__global_position_child_a__global_position_gc.run(
-            self.scheduler,
         )
 
     def create_global_position_parent__global_position_child_b__global_position_gc(self):
@@ -72,5 +71,4 @@ class FillerExecution:
             local.my_domain_com.my_lib.gc.Gc
         ).create_particle()
         self.guarantees.global_position_parent__global_position_child_b__global_position_gc.run(
-            self.scheduler,
         )

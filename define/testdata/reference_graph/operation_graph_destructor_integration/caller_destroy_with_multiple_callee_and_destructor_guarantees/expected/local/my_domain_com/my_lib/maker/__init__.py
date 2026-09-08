@@ -29,9 +29,9 @@ class Maker(literal.Action):
 
 @final
 class MakerGuarantees:
-    def __init__(self):
-        self.position_first = literal.Fanout()
-        self.position_second = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_first = literal.Fanout(scheduler)
+        self.position_second = literal.Fanout(scheduler)
 
 
 @final
@@ -43,7 +43,7 @@ class MakerExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = MakerGuarantees()
+        self.guarantees = MakerGuarantees(self.scheduler)
 
     def accept_when_empty_position_first(self):
         self.create_position_first()
@@ -59,7 +59,6 @@ class MakerExecution:
             "position<first>"
         ).destroy_particle()
         self.guarantees.position_first.run(
-            self.scheduler,
         )
 
     def create_position_second(self):
@@ -70,5 +69,4 @@ class MakerExecution:
             "position<second>"
         ).destroy_particle()
         self.guarantees.position_second.run(
-            self.scheduler,
         )

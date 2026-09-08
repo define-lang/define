@@ -29,10 +29,10 @@ class Test(literal.EntryPoint):
 
 @final
 class TestGuarantees:
-    def __init__(self):
-        self.global_position_parent = literal.Fanout()
-        self.global_position_parent__global_position_a = literal.Fanout()
-        self.global_position_parent__global_position_b = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_parent = literal.Fanout(scheduler)
+        self.global_position_parent__global_position_a = literal.Fanout(scheduler)
+        self.global_position_parent__global_position_b = literal.Fanout(scheduler)
 
 
 @final
@@ -44,7 +44,7 @@ class TestExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = TestGuarantees()
+        self.guarantees = TestGuarantees(self.scheduler)
         self.execution_action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
         self.destruction_connection_action_middle: literal.DestructionConnection
         self.destruction_position_global_position_parent__global_position_b: literal.Position
@@ -85,7 +85,6 @@ class TestExecution:
             local.my_domain_com.my_lib.parent.Parent
         ).create_particle()
         self.guarantees.global_position_parent.run(
-            self.scheduler,
             self.create_global_position_parent__global_position_a,
             self.create_global_position_parent__global_position_b,
         )
@@ -97,7 +96,6 @@ class TestExecution:
             local.my_domain_com.my_lib.a.A
         ).create_particle()
         self.guarantees.global_position_parent__global_position_a.run(
-            self.scheduler,
             self.action_middle__for_empty_rule_global_position_parent,
         )
 
@@ -108,7 +106,6 @@ class TestExecution:
             local.my_domain_com.my_lib.b.B
         ).create_particle()
         self.guarantees.global_position_parent__global_position_b.run(
-            self.scheduler,
             self.action_middle__for_empty_rule_global_position_parent,
         )
 

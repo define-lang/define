@@ -30,8 +30,8 @@ class Inner(literal.Action):
 
 @final
 class InnerGuarantees:
-    def __init__(self):
-        self.position_holder__global_position_a = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_holder__global_position_a = literal.Fanout(scheduler)
 
 
 @final
@@ -43,7 +43,7 @@ class InnerExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = InnerGuarantees()
+        self.guarantees = InnerGuarantees(self.scheduler)
 
     def accept_when_empty_position_holder__global_position_a(self):
         self.create_position_holder__global_position_a()
@@ -55,5 +55,4 @@ class InnerExecution:
             local.my_domain_com.my_lib.a.A
         ).create_particle()
         self.guarantees.position_holder__global_position_a.run(
-            self.scheduler,
         )

@@ -41,8 +41,8 @@ class Test(literal.EntryPoint):
 
 @final
 class TestGuarantees:
-    def __init__(self):
-        self.global_position_holder = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_holder = literal.Fanout(scheduler)
 
 
 @final
@@ -54,7 +54,7 @@ class TestExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = TestGuarantees()
+        self.guarantees = TestGuarantees(self.scheduler)
         self.execution_action_other: local.my_domain_com.my_lib.other.OtherExecution
         self.destruction_position_action_other__position_trigger_pos: literal.Position
         self.join_for_move_global_position_input__global_position_a_to_global_position_holder: literal.Join
@@ -130,7 +130,6 @@ class TestExecution:
             )
         )
         self.guarantees.global_position_holder.run(
-            self.scheduler,
             self.execution_action_other.accept_for_empty_rule_global_position_intermediate,
         )
 

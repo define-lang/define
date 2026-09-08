@@ -30,8 +30,8 @@ class Outer(literal.Action):
 
 @final
 class OuterGuarantees:
-    def __init__(self):
-        self.position_run = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_run = literal.Fanout(scheduler)
 
 
 @final
@@ -51,7 +51,7 @@ class OuterExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = OuterGuarantees()
+        self.guarantees = OuterGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.execution_action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
         self.join_for_move_position_run_to_action_middle__position_run: literal.Join
@@ -101,6 +101,5 @@ class OuterExecution:
             1,
         )
         self.guarantees.position_run.run(
-            self.scheduler,
             self.execution_action_middle.accept_for_empty_rule_position_run,
         )

@@ -37,10 +37,10 @@ class Caller(literal.Action):
 
 @final
 class CallerGuarantees:
-    def __init__(self):
-        self.position_first_gateway = literal.Fanout()
-        self.position_second_gateway = literal.Fanout()
-        self.position_run = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_first_gateway = literal.Fanout(scheduler)
+        self.position_second_gateway = literal.Fanout(scheduler)
+        self.position_run = literal.Fanout(scheduler)
 
 
 @final
@@ -54,7 +54,7 @@ class CallerExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = CallerGuarantees()
+        self.guarantees = CallerGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.execution_position_first_gateway__action_worker: local.my_domain_com.my_lib.worker.WorkerExecution
         self.execution_position_second_gateway__action_worker: local.my_domain_com.my_lib.worker.WorkerExecution
@@ -211,7 +211,6 @@ class CallerExecution:
             "position<first_gateway>"
         ).destroy_particle()
         self.guarantees.position_first_gateway.run(
-            self.scheduler,
         )
 
     def destroy_position_second_gateway(self):
@@ -221,7 +220,6 @@ class CallerExecution:
             "position<second_gateway>"
         ).destroy_particle()
         self.guarantees.position_second_gateway.run(
-            self.scheduler,
         )
 
     def destroy_position_run(self):
@@ -234,5 +232,4 @@ class CallerExecution:
             "position<run>"
         ).destroy_particle()
         self.guarantees.position_run.run(
-            self.scheduler,
         )

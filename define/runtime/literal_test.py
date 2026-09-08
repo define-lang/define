@@ -25,7 +25,7 @@ def _local_position(
 
 class TestFanout:
     def test_run_without_consumers(self):
-        literal.Fanout().run(literal.Scheduler())
+        literal.Fanout(literal.Scheduler()).run()
 
     def test_init_replaces_a_consumer_before_it_can_run(self):
         scheduler = literal.Scheduler(max_threads=1)
@@ -34,20 +34,21 @@ class TestFanout:
         def original():
             released.append("original")
 
-        guarantee = literal.Fanout(consumers=[original])
+        guarantee = literal.Fanout(scheduler, consumers=[original])
 
         def configure():
             guarantee.consumers.remove(original)
             guarantee.consumers.append(lambda: released.append("replacement"))
 
         guarantee.inits.append(configure)
-        guarantee.run(scheduler)
+        guarantee.run()
 
         assert released == ["replacement"]
 
     def test_lists_are_distinct_between_guarantees(self):
-        first = literal.Fanout()
-        second = literal.Fanout()
+        scheduler = literal.Scheduler()
+        first = literal.Fanout(scheduler)
+        second = literal.Fanout(scheduler)
 
         first.inits.append(lambda: None)
         first.consumers.append(lambda: None)
@@ -59,7 +60,7 @@ class TestFanout:
         scheduler = literal.Scheduler(max_threads=1)
         init_order: list[str] = []
         released: list[str] = []
-        guarantee = literal.Fanout()
+        guarantee = literal.Fanout(scheduler)
 
         def release(name: str):
             assert init_order == ["first", "second"]
@@ -80,7 +81,7 @@ class TestFanout:
         class Entry(literal.EntryPoint):
             @override
             def execute(self, _scheduler: literal.Scheduler):
-                guarantee.run(scheduler)
+                guarantee.run()
 
         scheduler.start(Entry)
 
@@ -89,14 +90,13 @@ class TestFanout:
     def test_run_releases_callee_and_caller_consumers(self):
         scheduler = literal.Scheduler(max_threads=1)
         released: list[str] = []
-        guarantee = literal.Fanout()
+        guarantee = literal.Fanout(scheduler)
         guarantee.consumers.append(lambda: released.append("caller"))
 
         class Entry(literal.EntryPoint):
             @override
             def execute(self, _scheduler: literal.Scheduler):
                 guarantee.run(
-                    scheduler,
                     lambda: released.append("callee"),
                 )
 
@@ -109,7 +109,7 @@ class TestFanout:
         publishing_thread = threading.current_thread()
         consumer_threads: dict[str, threading.Thread] = {}
         consumers_started = threading.Barrier(3)
-        guarantee = literal.Fanout()
+        guarantee = literal.Fanout(scheduler)
 
         def consume(name: str):
             consumer_threads[name] = threading.current_thread()
@@ -121,7 +121,6 @@ class TestFanout:
             @override
             def execute(self, _scheduler: literal.Scheduler):
                 guarantee.run(
-                    scheduler,
                     lambda: consume("first callee"),
                     lambda: consume("second callee"),
                 )

@@ -17,8 +17,8 @@ class ExtraDestructor(literal.Action):
 
 @final
 class ExtraDestructorGuarantees:
-    def __init__(self):
-        self.global_position_destination__move__global_position_shared = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_destination__move__global_position_shared = literal.Fanout(scheduler)
 
 
 @final
@@ -30,7 +30,7 @@ class ExtraDestructorExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = ExtraDestructorGuarantees()
+        self.guarantees = ExtraDestructorGuarantees(self.scheduler)
         self.join_for_move_global_position_shared_to_global_position_destination: literal.Join
         self.join_for_empty_rule_global_position_shared: literal.Join
 
@@ -57,5 +57,4 @@ class ExtraDestructorExecution:
             )
         )
         self.guarantees.global_position_destination__move__global_position_shared.run(
-            self.scheduler,
         )

@@ -21,8 +21,8 @@ class Child(literal.Action):
 
 @final
 class ChildGuarantees:
-    def __init__(self):
-        self.position_trigger_pos = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_trigger_pos = literal.Fanout(scheduler)
 
 
 @final
@@ -36,7 +36,7 @@ class ChildExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = ChildGuarantees()
+        self.guarantees = ChildGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.local_position_scratch = literal.LocalPosition(
             "position<scratch>",
@@ -67,5 +67,4 @@ class ChildExecution:
             "position<trigger_pos>"
         ).destroy_particle()
         self.guarantees.position_trigger_pos.run(
-            self.scheduler,
         )

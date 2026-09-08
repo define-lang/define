@@ -17,9 +17,9 @@ class SecondDestructor(literal.Action):
 
 @final
 class SecondDestructorGuarantees:
-    def __init__(self):
-        self.global_position_second = literal.Fanout()
-        self.global_position_marker = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_second = literal.Fanout(scheduler)
+        self.global_position_marker = literal.Fanout(scheduler)
 
 
 @final
@@ -31,7 +31,7 @@ class SecondDestructorExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = SecondDestructorGuarantees()
+        self.guarantees = SecondDestructorGuarantees(self.scheduler)
         self.local_position_holder = literal.LocalPosition(
             "position<holder>",
             scheduler=self.scheduler,
@@ -59,7 +59,6 @@ class SecondDestructorExecution:
             )
         )
         self.guarantees.global_position_second.run(
-            self.scheduler,
         )
 
     def create_global_position_marker(self):
@@ -70,5 +69,4 @@ class SecondDestructorExecution:
             local.my_domain_com.my_lib.marker.Marker
         ).destroy_particle()
         self.guarantees.global_position_marker.run(
-            self.scheduler,
         )

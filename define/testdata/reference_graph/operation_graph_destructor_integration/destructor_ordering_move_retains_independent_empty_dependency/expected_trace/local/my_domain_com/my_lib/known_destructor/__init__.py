@@ -15,8 +15,8 @@ class KnownDestructor(literal.Action):
 
 @final
 class KnownDestructorGuarantees:
-    def __init__(self):
-        self.global_position_destination = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_destination = literal.Fanout(scheduler)
 
 
 @final
@@ -34,7 +34,7 @@ class KnownDestructorExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = KnownDestructorGuarantees()
+        self.guarantees = KnownDestructorGuarantees(self.scheduler)
 
     def accept_when_empty_global_position_destination(self):
         self.create_global_position_destination()
@@ -57,5 +57,4 @@ class KnownDestructorExecution:
             1,
         )
         self.guarantees.global_position_destination.run(
-            self.scheduler,
         )

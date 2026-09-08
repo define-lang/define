@@ -15,8 +15,8 @@ class EarlierAssignedDestructor(literal.Action):
 
 @final
 class EarlierAssignedDestructorGuarantees:
-    def __init__(self):
-        self.global_position_marker = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_marker = literal.Fanout(scheduler)
 
 
 @final
@@ -34,7 +34,7 @@ class EarlierAssignedDestructorExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = EarlierAssignedDestructorGuarantees()
+        self.guarantees = EarlierAssignedDestructorGuarantees(self.scheduler)
 
     def accept_when_empty_global_position_marker(self):
         self.create_global_position_marker()
@@ -57,5 +57,4 @@ class EarlierAssignedDestructorExecution:
             1,
         )
         self.guarantees.global_position_marker.run(
-            self.scheduler,
         )

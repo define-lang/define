@@ -15,8 +15,8 @@ class ParentDestructor(literal.Action):
 
 @final
 class ParentDestructorGuarantees:
-    def __init__(self):
-        self.global_position_left = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_left = literal.Fanout(scheduler)
 
 
 @final
@@ -28,7 +28,7 @@ class ParentDestructorExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = ParentDestructorGuarantees()
+        self.guarantees = ParentDestructorGuarantees(self.scheduler)
         self.local_position_holder = literal.LocalPosition(
             "position<holder>",
             scheduler=self.scheduler,
@@ -53,5 +53,4 @@ class ParentDestructorExecution:
             )
         )
         self.guarantees.global_position_left.run(
-            self.scheduler,
         )

@@ -36,9 +36,9 @@ class Middle(literal.Action):
 
 @final
 class MiddleGuarantees:
-    def __init__(self):
-        self.position_out = literal.Fanout()
-        self.position_igw = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_out = literal.Fanout(scheduler)
+        self.position_igw = literal.Fanout(scheduler)
 
 
 @final
@@ -52,7 +52,7 @@ class MiddleExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = MiddleGuarantees()
+        self.guarantees = MiddleGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.execution_position_igw__action_inner: local.my_domain_com.my_lib.inner.InnerExecution
         self.destruction_position_position_igw__action_inner__position_trigger_pos: literal.Position
@@ -136,7 +136,6 @@ class MiddleExecution:
             )
         )
         self.guarantees.position_out.run(
-            self.scheduler,
             self.destroy_position_igw,
         )
 
@@ -150,5 +149,4 @@ class MiddleExecution:
             "position<igw>"
         ).destroy_particle()
         self.guarantees.position_igw.run(
-            self.scheduler,
         )

@@ -34,9 +34,9 @@ class Worker(literal.Action):
 
 @final
 class WorkerGuarantees:
-    def __init__(self):
-        self.position_item = literal.Fanout()
-        self.position_trigger_pos = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_item = literal.Fanout(scheduler)
+        self.position_trigger_pos = literal.Fanout(scheduler)
 
 
 @final
@@ -56,7 +56,7 @@ class WorkerExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = WorkerGuarantees()
+        self.guarantees = WorkerGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.local_position_holder = literal.LocalPosition(
             "position<holder>",
@@ -101,7 +101,6 @@ class WorkerExecution:
             1,
         )
         self.guarantees.position_item.run(
-            self.scheduler,
         )
 
     def destroy_position_trigger_pos(self):
@@ -119,5 +118,4 @@ class WorkerExecution:
             1,
         )
         self.guarantees.position_trigger_pos.run(
-            self.scheduler,
         )

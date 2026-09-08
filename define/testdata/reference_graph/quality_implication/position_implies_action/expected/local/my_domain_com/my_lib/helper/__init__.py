@@ -21,8 +21,8 @@ class Helper(literal.Action):
 
 @final
 class HelperGuarantees:
-    def __init__(self):
-        self.position_run = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_run = literal.Fanout(scheduler)
 
 
 @final
@@ -36,7 +36,7 @@ class HelperExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = HelperGuarantees()
+        self.guarantees = HelperGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.local_position_work = literal.LocalPosition(
             "position<work>",
@@ -67,5 +67,4 @@ class HelperExecution:
             "position<run>"
         ).destroy_particle()
         self.guarantees.position_run.run(
-            self.scheduler,
         )

@@ -26,8 +26,8 @@ class Other(literal.Action):
 
 @final
 class OtherGuarantees:
-    def __init__(self):
-        self.global_position_origin = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_origin = literal.Fanout(scheduler)
 
 
 @final
@@ -41,7 +41,7 @@ class OtherExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = OtherGuarantees()
+        self.guarantees = OtherGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.join_for_destroy_global_position_origin: literal.Join
         self.join_for_empty_rule_global_position_origin: literal.Join
@@ -61,5 +61,4 @@ class OtherExecution:
             local.my_domain_com.my_lib.origin.Origin
         ).destroy_particle()
         self.guarantees.global_position_origin.run(
-            self.scheduler,
         )

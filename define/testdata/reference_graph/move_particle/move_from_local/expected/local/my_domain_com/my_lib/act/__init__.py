@@ -37,10 +37,10 @@ class Act(literal.Action):
 
 @final
 class ActGuarantees:
-    def __init__(self):
-        self.position_iface_dest = literal.Fanout()
-        self.position_chain_dest = literal.Fanout()
-        self.position_trigger = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_iface_dest = literal.Fanout(scheduler)
+        self.position_chain_dest = literal.Fanout(scheduler)
+        self.position_trigger = literal.Fanout(scheduler)
 
 
 @final
@@ -54,7 +54,7 @@ class ActExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = ActGuarantees()
+        self.guarantees = ActGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.local_position_src_a = literal.LocalPosition(
             "position<src_a>",
@@ -167,7 +167,6 @@ class ActExecution:
             "position<iface_dest>"
         ).destroy_particle()
         self.guarantees.position_iface_dest.run(
-            self.scheduler,
         )
 
     def move_position_src_c_to_position_chain_dest__global_position_mid_dest__global_position_end_dest(self):
@@ -230,7 +229,6 @@ class ActExecution:
             "position<chain_dest>"
         ).destroy_particle()
         self.guarantees.position_chain_dest.run(
-            self.scheduler,
         )
 
     def destroy_position_chain_dest__global_position_mid_dest(self):
@@ -257,7 +255,6 @@ class ActExecution:
             "position<trigger>"
         ).destroy_particle()
         self.guarantees.position_trigger.run(
-            self.scheduler,
         )
 
     def destroy_position_local_chain_dest(self):

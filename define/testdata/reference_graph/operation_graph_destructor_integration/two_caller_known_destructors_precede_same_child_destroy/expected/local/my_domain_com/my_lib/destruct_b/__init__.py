@@ -15,8 +15,8 @@ class DestructB(literal.Action):
 
 @final
 class DestructBGuarantees:
-    def __init__(self):
-        self.global_position_required = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_required = literal.Fanout(scheduler)
 
 
 @final
@@ -28,7 +28,7 @@ class DestructBExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = DestructBGuarantees()
+        self.guarantees = DestructBGuarantees(self.scheduler)
         self.local_position_held_result = literal.LocalPosition(
             "position<held_result>",
             scheduler=self.scheduler,
@@ -53,5 +53,4 @@ class DestructBExecution:
             )
         )
         self.guarantees.global_position_required.run(
-            self.scheduler,
         )

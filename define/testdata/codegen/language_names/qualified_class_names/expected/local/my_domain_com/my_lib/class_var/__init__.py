@@ -21,8 +21,8 @@ class ClassVar(literal.Action):
 
 @final
 class ClassVarGuarantees:
-    def __init__(self):
-        self.position_trigger_pos = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_trigger_pos = literal.Fanout(scheduler)
 
 
 @final
@@ -36,7 +36,7 @@ class ClassVarExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = ClassVarGuarantees()
+        self.guarantees = ClassVarGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.local_position_self = literal.LocalPosition(
             "position<self>",
@@ -112,5 +112,4 @@ class ClassVarExecution:
             "position<trigger_pos>"
         ).destroy_particle()
         self.guarantees.position_trigger_pos.run(
-            self.scheduler,
         )

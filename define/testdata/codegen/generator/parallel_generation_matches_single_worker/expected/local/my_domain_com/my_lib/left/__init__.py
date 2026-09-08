@@ -26,8 +26,8 @@ class Left(literal.Action):
 
 @final
 class LeftGuarantees:
-    def __init__(self):
-        self.position_trigger = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_trigger = literal.Fanout(scheduler)
 
 
 @final
@@ -41,7 +41,7 @@ class LeftExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = LeftGuarantees()
+        self.guarantees = LeftGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.execution_action_shared: local.my_domain_com.my_lib.shared.SharedExecution
         self.join_for_destroy_position_trigger: literal.Join
@@ -81,5 +81,4 @@ class LeftExecution:
             "position<trigger>"
         ).destroy_particle()
         self.guarantees.position_trigger.run(
-            self.scheduler,
         )

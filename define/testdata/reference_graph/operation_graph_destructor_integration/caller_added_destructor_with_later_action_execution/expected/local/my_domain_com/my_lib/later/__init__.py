@@ -25,8 +25,8 @@ class Later(literal.Action):
 
 @final
 class LaterGuarantees:
-    def __init__(self):
-        self.position_target = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_target = literal.Fanout(scheduler)
 
 
 @final
@@ -40,7 +40,7 @@ class LaterExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = LaterGuarantees()
+        self.guarantees = LaterGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.join_for_destroy_position_target: literal.Join
         self.join_for_empty_rule_position_target: literal.Join
@@ -60,5 +60,4 @@ class LaterExecution:
             "position<target>"
         ).destroy_particle()
         self.guarantees.position_target.run(
-            self.scheduler,
         )

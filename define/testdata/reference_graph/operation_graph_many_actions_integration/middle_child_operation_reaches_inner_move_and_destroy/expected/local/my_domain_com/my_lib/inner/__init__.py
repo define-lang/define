@@ -37,9 +37,9 @@ class Inner(literal.Action):
 
 @final
 class InnerGuarantees:
-    def __init__(self):
-        self.position_source__move__position_destination = literal.Fanout()
-        self.position_destination__global_position_child = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_source__move__position_destination = literal.Fanout(scheduler)
+        self.position_destination__global_position_child = literal.Fanout(scheduler)
 
 
 @final
@@ -53,7 +53,7 @@ class InnerExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = InnerGuarantees()
+        self.guarantees = InnerGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.destruction_position_position_destination__global_position_child: literal.Position
         self.join_for_move_position_source_to_position_destination: literal.Join
@@ -80,7 +80,6 @@ class InnerExecution:
             local.my_domain_com.my_lib.child.Child
         )
         self.guarantees.position_source__move__position_destination.run(
-            self.scheduler,
             self.destroy_position_destination__global_position_child,
         )
 
@@ -90,5 +89,4 @@ class InnerExecution:
     def continue_destroy_position_destination__global_position_child(self):
         self.destruction_position_position_destination__global_position_child.destroy_particle()
         self.guarantees.position_destination__global_position_child.run(
-            self.scheduler,
         )

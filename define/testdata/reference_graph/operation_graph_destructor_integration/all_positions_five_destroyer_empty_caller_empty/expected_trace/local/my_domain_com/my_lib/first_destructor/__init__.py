@@ -17,9 +17,9 @@ class FirstDestructor(literal.Action):
 
 @final
 class FirstDestructorGuarantees:
-    def __init__(self):
-        self.global_position_first = literal.Fanout()
-        self.global_position_marker = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_first = literal.Fanout(scheduler)
+        self.global_position_marker = literal.Fanout(scheduler)
 
 
 @final
@@ -37,7 +37,7 @@ class FirstDestructorExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = FirstDestructorGuarantees()
+        self.guarantees = FirstDestructorGuarantees(self.scheduler)
 
     def accept_when_empty_global_position_first(self):
         self.create_global_position_first()
@@ -63,7 +63,6 @@ class FirstDestructorExecution:
             1,
         )
         self.guarantees.global_position_first.run(
-            self.scheduler,
         )
 
     def create_global_position_marker(self):
@@ -84,5 +83,4 @@ class FirstDestructorExecution:
             1,
         )
         self.guarantees.global_position_marker.run(
-            self.scheduler,
         )

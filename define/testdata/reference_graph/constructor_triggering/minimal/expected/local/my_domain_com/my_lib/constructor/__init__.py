@@ -21,8 +21,8 @@ class Constructor(literal.Action):
 
 @final
 class ConstructorGuarantees:
-    def __init__(self):
-        self.position_output = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_output = literal.Fanout(scheduler)
 
 
 @final
@@ -34,7 +34,7 @@ class ConstructorExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = ConstructorGuarantees()
+        self.guarantees = ConstructorGuarantees(self.scheduler)
 
     def accept_when_empty_position_output(self):
         self.create_position_output()
@@ -44,5 +44,4 @@ class ConstructorExecution:
             "position<output>"
         ).create_particle()
         self.guarantees.position_output.run(
-            self.scheduler,
         )

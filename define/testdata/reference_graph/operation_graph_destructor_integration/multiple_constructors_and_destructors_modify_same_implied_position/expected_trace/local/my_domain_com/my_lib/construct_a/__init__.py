@@ -15,8 +15,8 @@ class ConstructA(literal.Action):
 
 @final
 class ConstructAGuarantees:
-    def __init__(self):
-        self.global_position_marker = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_marker = literal.Fanout(scheduler)
 
 
 @final
@@ -34,7 +34,7 @@ class ConstructAExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = ConstructAGuarantees()
+        self.guarantees = ConstructAGuarantees(self.scheduler)
 
     def accept_when_empty_global_position_marker(self):
         self.create_global_position_marker()
@@ -49,5 +49,4 @@ class ConstructAExecution:
             1,
         )
         self.guarantees.global_position_marker.run(
-            self.scheduler,
         )

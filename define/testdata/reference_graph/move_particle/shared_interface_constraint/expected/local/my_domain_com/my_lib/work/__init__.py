@@ -37,10 +37,10 @@ class Work(literal.Action):
 
 @final
 class WorkGuarantees:
-    def __init__(self):
-        self.position_source = literal.Fanout()
-        self.position_dest = literal.Fanout()
-        self.position_run = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_source = literal.Fanout(scheduler)
+        self.position_dest = literal.Fanout(scheduler)
+        self.position_run = literal.Fanout(scheduler)
 
 
 @final
@@ -54,7 +54,7 @@ class WorkExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = WorkGuarantees()
+        self.guarantees = WorkGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.destruction_position_position_dest__global_position_shared: literal.Position
         self.join_for_move_position_source_to_position_dest: literal.Join
@@ -102,7 +102,6 @@ class WorkExecution:
             local.my_domain_com.my_lib.shared.Shared
         )
         self.guarantees.position_source.run(
-            self.scheduler,
             self.destroy_position_dest__global_position_shared,
         )
 
@@ -112,7 +111,6 @@ class WorkExecution:
             "position<dest>"
         ).destroy_particle()
         self.guarantees.position_dest.run(
-            self.scheduler,
         )
 
     def destroy_position_run(self):
@@ -125,5 +123,4 @@ class WorkExecution:
             "position<run>"
         ).destroy_particle()
         self.guarantees.position_run.run(
-            self.scheduler,
         )

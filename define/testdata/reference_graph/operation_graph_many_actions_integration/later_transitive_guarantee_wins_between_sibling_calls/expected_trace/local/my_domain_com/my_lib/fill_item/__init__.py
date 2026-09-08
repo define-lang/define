@@ -26,8 +26,8 @@ class FillItem(literal.Action):
 
 @final
 class FillItemGuarantees:
-    def __init__(self):
-        self.global_position_item = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_item = literal.Fanout(scheduler)
 
 
 @final
@@ -45,7 +45,7 @@ class FillItemExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = FillItemGuarantees()
+        self.guarantees = FillItemGuarantees(self.scheduler)
 
     def accept_when_empty_global_position_item(self):
         self.create_global_position_item()
@@ -60,5 +60,4 @@ class FillItemExecution:
             1,
         )
         self.guarantees.global_position_item.run(
-            self.scheduler,
         )

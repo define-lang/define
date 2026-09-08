@@ -25,8 +25,8 @@ class Triggered(literal.Action):
 
 @final
 class TriggeredGuarantees:
-    def __init__(self):
-        self.position_run__move__position_dest = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_run__move__position_dest = literal.Fanout(scheduler)
 
 
 @final
@@ -38,7 +38,7 @@ class TriggeredExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = TriggeredGuarantees()
+        self.guarantees = TriggeredGuarantees(self.scheduler)
         self.join_for_move_position_run_to_position_dest: literal.Join
         self.join_for_empty_rule_position_run: literal.Join
 
@@ -58,5 +58,4 @@ class TriggeredExecution:
             )
         )
         self.guarantees.position_run__move__position_dest.run(
-            self.scheduler,
         )

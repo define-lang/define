@@ -29,10 +29,10 @@ class Process(literal.Action):
 
 @final
 class ProcessGuarantees:
-    def __init__(self):
-        self.position_input = literal.Fanout()
-        self.position_config = literal.Fanout()
-        self.position_trigger = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_input = literal.Fanout(scheduler)
+        self.position_config = literal.Fanout(scheduler)
+        self.position_trigger = literal.Fanout(scheduler)
 
 
 @final
@@ -46,7 +46,7 @@ class ProcessExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = ProcessGuarantees()
+        self.guarantees = ProcessGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.local_position_result = literal.LocalPosition(
             "position<result>",
@@ -87,7 +87,6 @@ class ProcessExecution:
             "position<input>"
         ).destroy_particle()
         self.guarantees.position_input.run(
-            self.scheduler,
         )
 
     def create_position_config(self):
@@ -98,7 +97,6 @@ class ProcessExecution:
             "position<config>"
         ).destroy_particle()
         self.guarantees.position_config.run(
-            self.scheduler,
         )
 
     def destroy_position_trigger(self):
@@ -111,5 +109,4 @@ class ProcessExecution:
             "position<trigger>"
         ).destroy_particle()
         self.guarantees.position_trigger.run(
-            self.scheduler,
         )

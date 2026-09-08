@@ -28,8 +28,8 @@ class Consumer(literal.Action):
 
 @final
 class ConsumerGuarantees:
-    def __init__(self):
-        self.global_position_box__global_position_item__move__global_position_box__global_position_destination = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_box__global_position_item__move__global_position_box__global_position_destination = literal.Fanout(scheduler)
 
 
 @final
@@ -41,7 +41,7 @@ class ConsumerExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = ConsumerGuarantees()
+        self.guarantees = ConsumerGuarantees(self.scheduler)
         self.join_for_move_global_position_box__global_position_item_to_global_position_box__global_position_destination: literal.Join
         self.join_when_empty_global_position_box__global_position_destination: literal.Join
 
@@ -76,5 +76,4 @@ class ConsumerExecution:
             )
         )
         self.guarantees.global_position_box__global_position_item__move__global_position_box__global_position_destination.run(
-            self.scheduler,
         )

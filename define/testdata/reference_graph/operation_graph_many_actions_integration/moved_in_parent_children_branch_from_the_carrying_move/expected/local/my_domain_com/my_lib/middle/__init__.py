@@ -33,8 +33,8 @@ class Middle(literal.Action):
 
 @final
 class MiddleGuarantees:
-    def __init__(self):
-        self.position_iface = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_iface = literal.Fanout(scheduler)
 
 
 @final
@@ -48,7 +48,7 @@ class MiddleExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = MiddleGuarantees()
+        self.guarantees = MiddleGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.local_position_gw = literal.LocalPosition(
             "position<gw>",
@@ -131,7 +131,6 @@ class MiddleExecution:
             )
         )
         self.guarantees.position_iface.run(
-            self.scheduler,
             self.execution_position_gw__action_inner.accept_when_empty_position_input__global_position_parent__global_position_a,
             self.execution_position_gw__action_inner.accept_when_empty_position_input__global_position_parent__global_position_b,
         )

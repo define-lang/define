@@ -25,8 +25,8 @@ class Move(literal.Action):
 
 @final
 class MoveGuarantees:
-    def __init__(self):
-        self.position_input__move__position_output = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_input__move__position_output = literal.Fanout(scheduler)
 
 
 @final
@@ -38,7 +38,7 @@ class MoveExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = MoveGuarantees()
+        self.guarantees = MoveGuarantees(self.scheduler)
         self.join_for_move_position_input_to_position_output: literal.Join
         self.join_for_empty_rule_position_input: literal.Join
 
@@ -58,5 +58,4 @@ class MoveExecution:
             )
         )
         self.guarantees.position_input__move__position_output.run(
-            self.scheduler,
         )

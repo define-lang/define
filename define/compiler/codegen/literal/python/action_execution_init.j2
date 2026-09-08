@@ -28,7 +28,7 @@
         )
     {% endif %}
     {% if execution.needs_guarantees %}
-        self.guarantees = {{ execution.guarantees.class_name }}()
+        self.guarantees = {{ execution.guarantees.class_name }}(self.scheduler)
     {% endif %}
     {% if execution.accepts_destruction_connections %}
         self.destruction_connections = destruction_connections

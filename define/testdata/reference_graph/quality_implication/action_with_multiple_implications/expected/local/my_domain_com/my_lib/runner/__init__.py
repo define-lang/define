@@ -28,10 +28,10 @@ class Runner(literal.Action):
 
 @final
 class RunnerGuarantees:
-    def __init__(self):
-        self.global_position_marker_a = literal.Fanout()
-        self.global_position_marker_b = literal.Fanout()
-        self.position_run = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_marker_a = literal.Fanout(scheduler)
+        self.global_position_marker_b = literal.Fanout(scheduler)
+        self.position_run = literal.Fanout(scheduler)
 
 
 @final
@@ -45,7 +45,7 @@ class RunnerExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = RunnerGuarantees()
+        self.guarantees = RunnerGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.join_for_destroy_position_run: literal.Join
         self.join_for_empty_rule_position_run: literal.Join
@@ -66,7 +66,6 @@ class RunnerExecution:
             local.my_domain_com.my_lib.marker_a.MarkerA
         ).create_particle()
         self.guarantees.global_position_marker_a.run(
-            self.scheduler,
         )
 
     def create_global_position_marker_b(self):
@@ -74,7 +73,6 @@ class RunnerExecution:
             local.my_domain_com.my_lib.marker_b.MarkerB
         ).create_particle()
         self.guarantees.global_position_marker_b.run(
-            self.scheduler,
         )
 
     def destroy_position_run(self):
@@ -87,5 +85,4 @@ class RunnerExecution:
             "position<run>"
         ).destroy_particle()
         self.guarantees.position_run.run(
-            self.scheduler,
         )

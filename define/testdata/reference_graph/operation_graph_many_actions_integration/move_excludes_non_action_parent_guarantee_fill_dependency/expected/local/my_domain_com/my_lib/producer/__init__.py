@@ -28,8 +28,8 @@ class Producer(literal.Action):
 
 @final
 class ProducerGuarantees:
-    def __init__(self):
-        self.global_position_input__move__global_position_box = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_input__move__global_position_box = literal.Fanout(scheduler)
 
 
 @final
@@ -41,7 +41,7 @@ class ProducerExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = ProducerGuarantees()
+        self.guarantees = ProducerGuarantees(self.scheduler)
         self.join_for_move_global_position_input_to_global_position_box: literal.Join
         self.join_for_empty_rule_global_position_input: literal.Join
 
@@ -61,5 +61,4 @@ class ProducerExecution:
             )
         )
         self.guarantees.global_position_input__move__global_position_box.run(
-            self.scheduler,
         )

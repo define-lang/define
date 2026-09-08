@@ -21,8 +21,8 @@ class ReactB(literal.Action):
 
 @final
 class ReactBGuarantees:
-    def __init__(self):
-        self.position_trigger = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_trigger = literal.Fanout(scheduler)
 
 
 @final
@@ -36,7 +36,7 @@ class ReactBExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = ReactBGuarantees()
+        self.guarantees = ReactBGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.local_position_local_result = literal.LocalPosition(
             "position<local_result>",
@@ -67,5 +67,4 @@ class ReactBExecution:
             "position<trigger>"
         ).destroy_particle()
         self.guarantees.position_trigger.run(
-            self.scheduler,
         )

@@ -15,8 +15,8 @@ class DestructSibling(literal.Action):
 
 @final
 class DestructSiblingGuarantees:
-    def __init__(self):
-        self.global_position_sibling = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_sibling = literal.Fanout(scheduler)
 
 
 @final
@@ -34,7 +34,7 @@ class DestructSiblingExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = DestructSiblingGuarantees()
+        self.guarantees = DestructSiblingGuarantees(self.scheduler)
         self.local_position_held_sibling = literal.LocalPosition(
             "position<held_sibling>",
             scheduler=self.scheduler,
@@ -71,5 +71,4 @@ class DestructSiblingExecution:
             1,
         )
         self.guarantees.global_position_sibling.run(
-            self.scheduler,
         )

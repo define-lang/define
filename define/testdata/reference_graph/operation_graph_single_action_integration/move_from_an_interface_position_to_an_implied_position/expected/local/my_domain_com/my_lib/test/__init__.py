@@ -26,8 +26,8 @@ class Test(literal.EntryPoint):
 
 @final
 class TestGuarantees:
-    def __init__(self):
-        self.global_position_implied = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_implied = literal.Fanout(scheduler)
 
 
 @final
@@ -39,7 +39,7 @@ class TestExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = TestGuarantees()
+        self.guarantees = TestGuarantees(self.scheduler)
         self.local_position_source = literal.LocalPosition(
             "position<source>",
             scheduler=self.scheduler,
@@ -68,5 +68,4 @@ class TestExecution:
             )
         )
         self.guarantees.global_position_implied.run(
-            self.scheduler,
         )

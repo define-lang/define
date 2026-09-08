@@ -16,8 +16,8 @@ class Destruct(literal.Action):
 
 @final
 class DestructGuarantees:
-    def __init__(self):
-        self.global_position_required__global_position_work = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.global_position_required__global_position_work = literal.Fanout(scheduler)
 
 
 @final
@@ -35,7 +35,7 @@ class DestructExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = DestructGuarantees()
+        self.guarantees = DestructGuarantees(self.scheduler)
         self.destruction_position_global_position_required__global_position_work: literal.Position
 
     def accept_when_empty_global_position_required__global_position_work(self):
@@ -64,5 +64,4 @@ class DestructExecution:
             1,
         )
         self.guarantees.global_position_required__global_position_work.run(
-            self.scheduler,
         )

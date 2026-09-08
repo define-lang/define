@@ -25,8 +25,8 @@ class Worker(literal.Action):
 
 @final
 class WorkerGuarantees:
-    def __init__(self):
-        self.position_result = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_result = literal.Fanout(scheduler)
 
 
 @final
@@ -38,7 +38,7 @@ class WorkerExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = WorkerGuarantees()
+        self.guarantees = WorkerGuarantees(self.scheduler)
 
     def accept_when_empty_position_result(self):
         self.create_position_result()
@@ -48,5 +48,4 @@ class WorkerExecution:
             "position<result>"
         ).create_particle()
         self.guarantees.position_result.run(
-            self.scheduler,
         )

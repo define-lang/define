@@ -32,8 +32,8 @@ class Destroyer(literal.Action):
 
 @final
 class DestroyerGuarantees:
-    def __init__(self):
-        self.position_parent = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_parent = literal.Fanout(scheduler)
 
 
 @final
@@ -53,7 +53,7 @@ class DestroyerExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = DestroyerGuarantees()
+        self.guarantees = DestroyerGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.local_position_held_required = literal.LocalPosition(
             "position<held_required>",
@@ -176,7 +176,6 @@ class DestroyerExecution:
             1,
         )
         self.guarantees.position_parent.run(
-            self.scheduler,
         )
 
     def destroy_position_parent__global_position_required(self):

@@ -38,9 +38,9 @@ class Outer(literal.Action):
 
 @final
 class OuterGuarantees:
-    def __init__(self):
-        self.position_middle_holder = literal.Fanout()
-        self.position_input = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_middle_holder = literal.Fanout(scheduler)
+        self.position_input = literal.Fanout(scheduler)
 
 
 @final
@@ -54,7 +54,7 @@ class OuterExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = OuterGuarantees()
+        self.guarantees = OuterGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.execution_position_middle_holder__action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
         self.destruction_position_position_middle_holder__action_middle__position_run: literal.Position
@@ -85,7 +85,6 @@ class OuterExecution:
         self.execution_position_middle_holder__action_middle.join_for_empty_rule_position_input = literal.NO_JOIN
         self.execution_position_middle_holder__action_middle.join_for_move_position_input_to_position_inner_holder__action_inner__position_input = self.scheduler.create_join(2)
         self.guarantees.position_middle_holder.run(
-            self.scheduler,
             self.move_position_input_to_position_middle_holder__action_middle__position_input,
             self.create_position_middle_holder__action_middle__position_run,
             self.execution_position_middle_holder__action_middle.on_action_parent_occupied,
@@ -106,7 +105,6 @@ class OuterExecution:
             )
         )
         self.guarantees.position_input.run(
-            self.scheduler,
             self.execution_position_middle_holder__action_middle.accept_for_empty_rule_position_input,
         )
 

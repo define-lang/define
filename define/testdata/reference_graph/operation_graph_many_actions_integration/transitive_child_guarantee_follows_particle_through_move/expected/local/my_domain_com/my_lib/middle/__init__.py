@@ -31,9 +31,9 @@ class Middle(literal.Action):
 
 @final
 class MiddleGuarantees:
-    def __init__(self):
-        self.position_inner_parent = literal.Fanout()
-        self.position_inner_parent__global_position_result_value = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_inner_parent = literal.Fanout(scheduler)
+        self.position_inner_parent__global_position_result_value = literal.Fanout(scheduler)
 
 
 @final
@@ -45,7 +45,7 @@ class MiddleExecution:
     ):
         self.action = action
         self.scheduler = scheduler
-        self.guarantees = MiddleGuarantees()
+        self.guarantees = MiddleGuarantees(self.scheduler)
         self.local_position_inner_holder = literal.LocalPosition(
             "position<inner_holder>",
             constraints=(
@@ -131,7 +131,6 @@ class MiddleExecution:
             )
         )
         self.guarantees.position_inner_parent.run(
-            self.scheduler,
             self.move_position_result_holder_to_position_inner_parent__global_position_result_value,
             self.destroy_position_inner_holder,
         )
@@ -145,7 +144,6 @@ class MiddleExecution:
             )
         )
         self.guarantees.position_inner_parent__global_position_result_value.run(
-            self.scheduler,
         )
 
     def destroy_position_inner_holder(self):

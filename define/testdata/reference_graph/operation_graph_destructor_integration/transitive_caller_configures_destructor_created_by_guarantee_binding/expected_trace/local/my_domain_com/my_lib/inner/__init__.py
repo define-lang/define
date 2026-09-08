@@ -32,8 +32,8 @@ class Inner(literal.Action):
 
 @final
 class InnerGuarantees:
-    def __init__(self):
-        self.position_run = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_run = literal.Fanout(scheduler)
 
 
 @final
@@ -53,7 +53,7 @@ class InnerExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = InnerGuarantees()
+        self.guarantees = InnerGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.execution_action_filler: local.my_domain_com.my_lib.filler.FillerExecution
         self.execution_action_destroyer: local.my_domain_com.my_lib.destroyer.DestroyerExecution
@@ -120,7 +120,6 @@ class InnerExecution:
             1,
         )
         self.guarantees.position_run.run(
-            self.scheduler,
             self.execution_action_filler.accept_for_empty_rule_position_run,
         )
 

@@ -26,8 +26,8 @@ class Forwarder(literal.Action):
 
 @final
 class ForwarderGuarantees:
-    def __init__(self):
-        self.position_trigger_pos = literal.Fanout()
+    def __init__(self, scheduler: literal.Scheduler):
+        self.position_trigger_pos = literal.Fanout(scheduler)
 
 
 @final
@@ -47,7 +47,7 @@ class ForwarderExecution:
             caller_execution,
             action_name,
         )
-        self.guarantees = ForwarderGuarantees()
+        self.guarantees = ForwarderGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.execution_action_filler: local.my_domain_com.my_lib.filler.FillerExecution
         self.join_for_destroy_position_trigger_pos: literal.Join
@@ -105,5 +105,4 @@ class ForwarderExecution:
             1,
         )
         self.guarantees.position_trigger_pos.run(
-            self.scheduler,
         )
