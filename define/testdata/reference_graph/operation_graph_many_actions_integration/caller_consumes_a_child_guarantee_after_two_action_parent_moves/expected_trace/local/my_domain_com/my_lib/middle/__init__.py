@@ -154,7 +154,7 @@ class MiddleExecution:
             "intermediate",
             1,
         )
-        self.guarantees.position_source.publish(
+        self.guarantees.position_source.run(
             self.scheduler,
             self.move_position_intermediate_to_position_holder,
         )
@@ -182,7 +182,7 @@ class MiddleExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         )
-        self.guarantees.position_intermediate__move__position_holder.publish(
+        self.guarantees.position_intermediate__move__position_holder.run(
             self.scheduler,
             self.destroy_position_holder__action_child__position_trigger_pos,
         )

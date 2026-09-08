@@ -60,6 +60,6 @@ class ProducerExecution:
                 local.my_domain_com.my_lib.box.Box
             )
         )
-        self.guarantees.global_position_input__move__global_position_box.publish(
+        self.guarantees.global_position_input__move__global_position_box.run(
             self.scheduler,
         )

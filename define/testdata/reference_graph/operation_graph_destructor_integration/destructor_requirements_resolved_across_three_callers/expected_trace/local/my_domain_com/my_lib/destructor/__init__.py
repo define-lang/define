@@ -90,7 +90,7 @@ class DestructorExecution:
             "/callee_known",
             1,
         )
-        self.guarantees.global_position_callee_known.publish(
+        self.guarantees.global_position_callee_known.run(
             self.scheduler,
         )
 
@@ -111,7 +111,7 @@ class DestructorExecution:
             "/middle_known",
             1,
         )
-        self.guarantees.global_position_middle_known.publish(
+        self.guarantees.global_position_middle_known.run(
             self.scheduler,
         )
 
@@ -138,6 +138,6 @@ class DestructorExecution:
             "/creator_known",
             1,
         )
-        self.guarantees.global_position_creator_known.publish(
+        self.guarantees.global_position_creator_known.run(
             self.scheduler,
         )

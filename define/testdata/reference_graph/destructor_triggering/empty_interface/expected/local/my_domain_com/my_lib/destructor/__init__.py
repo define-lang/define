@@ -46,6 +46,6 @@ class DestructorExecution:
         self.action.get_interface_position(
             "position<item>"
         ).destroy_particle()
-        self.guarantees.position_item.publish(
+        self.guarantees.position_item.run(
             self.scheduler,
         )

@@ -58,7 +58,7 @@ class MakerExecution:
         self.action.get_interface_position(
             "position<first>"
         ).destroy_particle()
-        self.guarantees.position_first.publish(
+        self.guarantees.position_first.run(
             self.scheduler,
         )
 
@@ -69,6 +69,6 @@ class MakerExecution:
         self.action.get_interface_position(
             "position<second>"
         ).destroy_particle()
-        self.guarantees.position_second.publish(
+        self.guarantees.position_second.run(
             self.scheduler,
         )

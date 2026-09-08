@@ -89,7 +89,7 @@ class CarrierExecution:
                 "position<result>"
             )
         )
-        self.guarantees.position_source__move__position_result.publish(
+        self.guarantees.position_source__move__position_result.run(
             self.scheduler,
         )
 
@@ -102,6 +102,6 @@ class CarrierExecution:
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.guarantees.position_run.publish(
+        self.guarantees.position_run.run(
             self.scheduler,
         )

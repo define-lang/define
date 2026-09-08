@@ -78,7 +78,7 @@ class DestructorExecution:
                 local.my_domain_com.my_lib.occupied_first.OccupiedFirst
             )
         )
-        self.guarantees.global_position_occupied_first.publish(
+        self.guarantees.global_position_occupied_first.run(
             self.scheduler,
             self.move_global_position_occupied_first__global_position_transitive_to_position_transitive_holder,
         )
@@ -96,7 +96,7 @@ class DestructorExecution:
                 local.my_domain_com.my_lib.transitive.Transitive
             )
         )
-        self.guarantees.global_position_occupied_first__global_position_transitive.publish(
+        self.guarantees.global_position_occupied_first__global_position_transitive.run(
             self.scheduler,
         )
 
@@ -107,7 +107,7 @@ class DestructorExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.empty.Empty
         ).destroy_particle()
-        self.guarantees.global_position_empty.publish(
+        self.guarantees.global_position_empty.run(
             self.scheduler,
         )
 
@@ -122,6 +122,6 @@ class DestructorExecution:
                 local.my_domain_com.my_lib.occupied_last.OccupiedLast
             )
         )
-        self.guarantees.global_position_occupied_last.publish(
+        self.guarantees.global_position_occupied_last.run(
             self.scheduler,
         )

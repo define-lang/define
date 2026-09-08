@@ -46,7 +46,7 @@ class SecondDestructorExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.second.Second
         ).destroy_particle()
-        self.guarantees.global_position_second.publish(
+        self.guarantees.global_position_second.run(
             self.scheduler,
         )
 
@@ -57,6 +57,6 @@ class SecondDestructorExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         ).destroy_particle()
-        self.guarantees.global_position_marker.publish(
+        self.guarantees.global_position_marker.run(
             self.scheduler,
         )

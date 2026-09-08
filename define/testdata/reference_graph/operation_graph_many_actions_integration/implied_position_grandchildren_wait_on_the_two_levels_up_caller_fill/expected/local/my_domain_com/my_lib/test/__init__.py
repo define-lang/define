@@ -62,7 +62,7 @@ class TestExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.parent.Parent
         ).create_particle()
-        self.guarantees.global_position_parent.publish(
+        self.guarantees.global_position_parent.run(
             self.scheduler,
             self.create_global_position_parent__global_position_child,
         )
@@ -73,7 +73,7 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.child.Child
         ).create_particle()
-        self.guarantees.global_position_parent__global_position_child.publish(
+        self.guarantees.global_position_parent__global_position_child.run(
             self.scheduler,
             self.execution_action_middle.accept_when_empty_global_position_parent__global_position_child__global_position_grandchild1,
             self.execution_action_middle.accept_when_empty_global_position_parent__global_position_child__global_position_grandchild2,

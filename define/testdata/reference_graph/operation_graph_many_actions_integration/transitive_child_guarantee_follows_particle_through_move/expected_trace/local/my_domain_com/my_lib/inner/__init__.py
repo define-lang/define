@@ -65,6 +65,6 @@ class InnerExecution:
             "input::/result_value",
             1,
         )
-        self.guarantees.position_input__global_position_result_value.publish(
+        self.guarantees.position_input__global_position_result_value.run(
             self.scheduler,
         )

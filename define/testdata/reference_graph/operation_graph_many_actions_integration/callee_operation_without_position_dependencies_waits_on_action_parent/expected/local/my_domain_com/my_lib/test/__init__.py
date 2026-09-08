@@ -63,7 +63,7 @@ class TestExecution:
         self.execution_global_position_box__action_worker.guarantees.position_result.consumers.append(
             self.destroy_global_position_box__action_worker__position_result
         )
-        self.guarantees.global_position_box.publish(
+        self.guarantees.global_position_box.run(
             self.scheduler,
             self.create_global_position_box__action_worker__position_trigger_pos,
             self.execution_global_position_box__action_worker.accept_when_empty_position_result,

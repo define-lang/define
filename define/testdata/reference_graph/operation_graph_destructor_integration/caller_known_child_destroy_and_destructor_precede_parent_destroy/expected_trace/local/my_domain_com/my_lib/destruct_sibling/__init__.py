@@ -70,6 +70,6 @@ class DestructSiblingExecution:
             "/sibling",
             1,
         )
-        self.guarantees.global_position_sibling.publish(
+        self.guarantees.global_position_sibling.run(
             self.scheduler,
         )

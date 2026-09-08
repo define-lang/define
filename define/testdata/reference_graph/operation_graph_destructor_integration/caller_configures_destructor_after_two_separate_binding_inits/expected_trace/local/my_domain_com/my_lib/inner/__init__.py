@@ -96,7 +96,7 @@ class InnerExecution:
             1,
         )
         self.execution_action_destroyer.init_position_target__action_known_destructor()
-        self.guarantees.position_run.publish(
+        self.guarantees.position_run.run(
             self.scheduler,
             self.execution_action_destroyer.accept_when_empty_position_target__global_position_marker,
         )

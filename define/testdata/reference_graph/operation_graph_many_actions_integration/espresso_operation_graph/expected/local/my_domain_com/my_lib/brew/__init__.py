@@ -74,7 +74,7 @@ class BrewExecution:
         self.action.get_interface_position(
             "position<cup>"
         ).create_particle()
-        self.guarantees.position_cup.publish(
+        self.guarantees.position_cup.run(
             self.scheduler,
         )
 
@@ -87,7 +87,7 @@ class BrewExecution:
         self.action.get_interface_position(
             "position<water>"
         ).destroy_particle()
-        self.guarantees.position_water.publish(
+        self.guarantees.position_water.run(
             self.scheduler,
         )
 
@@ -101,6 +101,6 @@ class BrewExecution:
                 "position<spent_puck>"
             )
         )
-        self.guarantees.position_grounds__move__position_spent_puck.publish(
+        self.guarantees.position_grounds__move__position_spent_puck.run(
             self.scheduler,
         )

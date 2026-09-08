@@ -128,7 +128,7 @@ class MiddleExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         )
-        self.guarantees.position_source.publish(
+        self.guarantees.position_source.run(
             self.scheduler,
             self.destroy_position_holder__global_position_marker,
         )
@@ -147,6 +147,6 @@ class MiddleExecution:
         self.action.get_interface_position(
             "position<holder>"
         ).destroy_particle()
-        self.guarantees.position_holder.publish(
+        self.guarantees.position_holder.run(
             self.scheduler,
         )

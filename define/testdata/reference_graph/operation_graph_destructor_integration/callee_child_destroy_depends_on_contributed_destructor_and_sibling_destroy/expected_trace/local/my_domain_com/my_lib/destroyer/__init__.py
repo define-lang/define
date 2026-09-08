@@ -175,7 +175,7 @@ class DestroyerExecution:
             "parent",
             1,
         )
-        self.guarantees.position_parent.publish(
+        self.guarantees.position_parent.run(
             self.scheduler,
         )
 

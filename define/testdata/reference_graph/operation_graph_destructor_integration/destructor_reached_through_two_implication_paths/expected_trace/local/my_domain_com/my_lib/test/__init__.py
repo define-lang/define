@@ -129,7 +129,7 @@ class TestExecution:
             "/right",
             1,
         )
-        self.guarantees.global_position_left.publish(
+        self.guarantees.global_position_left.run(
             self.scheduler,
             self.move_global_position_right_to_action_destroyer__position_target,
         )
@@ -170,7 +170,7 @@ class TestExecution:
         self.execution_action_destroyer__position_target__action_destructor.guarantees.global_position_marker.consumers.append(
             self.destroy_action_destroyer__position_target__global_position_marker
         )
-        self.guarantees.global_position_right.publish(
+        self.guarantees.global_position_right.run(
             self.scheduler,
             self.execution_action_destroyer.accept_for_empty_rule_position_target,
             self.execution_action_destroyer__position_target__action_destructor.accept_for_empty_rule_global_position_marker,

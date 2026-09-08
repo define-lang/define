@@ -58,7 +58,7 @@ class DestructorExecution:
                 local.my_domain_com.my_lib.occupied.Occupied
             )
         )
-        self.guarantees.global_position_occupied.publish(
+        self.guarantees.global_position_occupied.run(
             self.scheduler,
         )
 
@@ -69,6 +69,6 @@ class DestructorExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.empty.Empty
         ).destroy_particle()
-        self.guarantees.global_position_empty.publish(
+        self.guarantees.global_position_empty.run(
             self.scheduler,
         )

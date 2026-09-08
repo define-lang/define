@@ -71,6 +71,6 @@ class MakerExecution:
                 local.my_domain_com.my_lib.child.Child
             )
         )
-        self.guarantees.global_position_child.publish(
+        self.guarantees.global_position_child.run(
             self.scheduler,
         )

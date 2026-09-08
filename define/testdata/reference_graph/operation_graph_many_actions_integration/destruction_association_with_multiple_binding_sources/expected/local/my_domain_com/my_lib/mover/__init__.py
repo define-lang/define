@@ -127,7 +127,7 @@ class MoverExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.child_b.ChildB
         )
-        self.guarantees.global_position_guaranteed_parent.publish(
+        self.guarantees.global_position_guaranteed_parent.run(
             self.scheduler,
             self.destroy_position_guaranteed_destination__global_position_child_a,
             self.destroy_position_guaranteed_destination__global_position_child_b,
@@ -153,7 +153,7 @@ class MoverExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.child_b.ChildB
         )
-        self.guarantees.global_position_caller_parent.publish(
+        self.guarantees.global_position_caller_parent.run(
             self.scheduler,
             self.destroy_position_caller_destination__global_position_child_a,
             self.destroy_position_caller_destination__global_position_child_b,
@@ -168,7 +168,7 @@ class MoverExecution:
         self.action.get_interface_position(
             "position<discard>"
         ).destroy_particle()
-        self.guarantees.position_discard.publish(
+        self.guarantees.position_discard.run(
             self.scheduler,
         )
 
@@ -195,7 +195,7 @@ class MoverExecution:
         self.action.get_interface_position(
             "position<guaranteed_destination>"
         ).destroy_particle()
-        self.guarantees.position_guaranteed_destination.publish(
+        self.guarantees.position_guaranteed_destination.run(
             self.scheduler,
         )
 
@@ -222,7 +222,7 @@ class MoverExecution:
         self.action.get_interface_position(
             "position<caller_destination>"
         ).destroy_particle()
-        self.guarantees.position_caller_destination.publish(
+        self.guarantees.position_caller_destination.run(
             self.scheduler,
         )
 
@@ -235,6 +235,6 @@ class MoverExecution:
         self.action.get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
-        self.guarantees.position_trigger_pos.publish(
+        self.guarantees.position_trigger_pos.run(
             self.scheduler,
         )

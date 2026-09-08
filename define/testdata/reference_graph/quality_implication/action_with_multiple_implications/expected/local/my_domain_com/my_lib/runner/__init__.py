@@ -65,7 +65,7 @@ class RunnerExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.marker_a.MarkerA
         ).create_particle()
-        self.guarantees.global_position_marker_a.publish(
+        self.guarantees.global_position_marker_a.run(
             self.scheduler,
         )
 
@@ -73,7 +73,7 @@ class RunnerExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.marker_b.MarkerB
         ).create_particle()
-        self.guarantees.global_position_marker_b.publish(
+        self.guarantees.global_position_marker_b.run(
             self.scheduler,
         )
 
@@ -86,6 +86,6 @@ class RunnerExecution:
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.guarantees.position_run.publish(
+        self.guarantees.position_run.run(
             self.scheduler,
         )

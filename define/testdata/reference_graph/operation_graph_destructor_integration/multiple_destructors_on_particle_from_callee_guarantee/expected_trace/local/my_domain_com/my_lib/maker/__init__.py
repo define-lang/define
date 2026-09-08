@@ -65,6 +65,6 @@ class MakerExecution:
             "result",
             1,
         )
-        self.guarantees.position_result.publish(
+        self.guarantees.position_result.run(
             self.scheduler,
         )

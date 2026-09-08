@@ -86,7 +86,7 @@ class ProcessExecution:
         self.action.get_interface_position(
             "position<input>"
         ).destroy_particle()
-        self.guarantees.position_input.publish(
+        self.guarantees.position_input.run(
             self.scheduler,
         )
 
@@ -97,7 +97,7 @@ class ProcessExecution:
         self.action.get_interface_position(
             "position<config>"
         ).destroy_particle()
-        self.guarantees.position_config.publish(
+        self.guarantees.position_config.run(
             self.scheduler,
         )
 
@@ -110,6 +110,6 @@ class ProcessExecution:
         self.action.get_interface_position(
             "position<trigger>"
         ).destroy_particle()
-        self.guarantees.position_trigger.publish(
+        self.guarantees.position_trigger.run(
             self.scheduler,
         )

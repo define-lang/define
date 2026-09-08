@@ -59,6 +59,6 @@ class ChildExecution:
             "/result",
             1,
         )
-        self.guarantees.global_position_result.publish(
+        self.guarantees.global_position_result.run(
             self.scheduler,
         )

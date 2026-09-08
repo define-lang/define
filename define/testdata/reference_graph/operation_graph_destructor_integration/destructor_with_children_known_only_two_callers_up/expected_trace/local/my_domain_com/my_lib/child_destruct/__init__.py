@@ -84,7 +84,7 @@ class ChildDestructExecution:
             "/marker_a",
             1,
         )
-        self.guarantees.global_position_marker_a.publish(
+        self.guarantees.global_position_marker_a.run(
             self.scheduler,
         )
 
@@ -111,6 +111,6 @@ class ChildDestructExecution:
             "/marker_b",
             1,
         )
-        self.guarantees.global_position_marker_b.publish(
+        self.guarantees.global_position_marker_b.run(
             self.scheduler,
         )

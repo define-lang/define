@@ -87,7 +87,7 @@ class TestExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.bundle.Bundle
         ).move_particle_to(self.local_position_direct)
-        self.guarantees.global_position_bundle.publish(
+        self.guarantees.global_position_bundle.run(
             self.scheduler,
             self.move_position_direct_to_action_destroyer__position_target,
         )

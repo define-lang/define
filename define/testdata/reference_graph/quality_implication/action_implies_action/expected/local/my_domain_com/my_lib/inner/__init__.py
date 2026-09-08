@@ -66,6 +66,6 @@ class InnerExecution:
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.guarantees.position_run.publish(
+        self.guarantees.position_run.run(
             self.scheduler,
         )

@@ -58,6 +58,6 @@ class TriggeredExecution:
                 local.my_domain_com.my_lib.implied.Implied
             )
         )
-        self.guarantees.position_run__move__global_position_implied.publish(
+        self.guarantees.position_run__move__global_position_implied.run(
             self.scheduler,
         )

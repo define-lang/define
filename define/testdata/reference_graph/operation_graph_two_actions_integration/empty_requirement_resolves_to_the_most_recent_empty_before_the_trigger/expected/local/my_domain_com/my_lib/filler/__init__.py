@@ -58,7 +58,7 @@ class FillerExecution:
         self.action.get_interface_position(
             "position<slot>"
         ).create_particle()
-        self.guarantees.position_slot.publish(
+        self.guarantees.position_slot.run(
             self.scheduler,
         )
 
@@ -71,6 +71,6 @@ class FillerExecution:
         self.action.get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
-        self.guarantees.position_trigger_pos.publish(
+        self.guarantees.position_trigger_pos.run(
             self.scheduler,
         )

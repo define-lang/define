@@ -86,7 +86,7 @@ class OtherExecution:
                 "position<destination>"
             )
         )
-        self.guarantees.position_destination.publish(
+        self.guarantees.position_destination.run(
             self.scheduler,
             self.destroy_position_box,
         )
@@ -100,6 +100,6 @@ class OtherExecution:
         self.action.get_interface_position(
             "position<box>"
         ).destroy_particle()
-        self.guarantees.position_box.publish(
+        self.guarantees.position_box.run(
             self.scheduler,
         )

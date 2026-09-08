@@ -59,7 +59,7 @@ class FillerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.gc.Gc
         ).create_particle()
-        self.guarantees.global_position_parent__global_position_child_a__global_position_gc.publish(
+        self.guarantees.global_position_parent__global_position_child_a__global_position_gc.run(
             self.scheduler,
         )
 
@@ -71,6 +71,6 @@ class FillerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.gc.Gc
         ).create_particle()
-        self.guarantees.global_position_parent__global_position_child_b__global_position_gc.publish(
+        self.guarantees.global_position_parent__global_position_child_b__global_position_gc.run(
             self.scheduler,
         )

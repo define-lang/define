@@ -57,6 +57,6 @@ class HeatExecution:
                 "position<hot_water>"
             )
         )
-        self.guarantees.position_cold_water__move__position_hot_water.publish(
+        self.guarantees.position_cold_water__move__position_hot_water.run(
             self.scheduler,
         )

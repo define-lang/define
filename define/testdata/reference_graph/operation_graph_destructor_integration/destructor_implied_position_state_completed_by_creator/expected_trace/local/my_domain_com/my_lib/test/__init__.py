@@ -141,7 +141,7 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.occupied_first.OccupiedFirst
         )
-        self.guarantees.global_position_bundle.publish(
+        self.guarantees.global_position_bundle.run(
             self.scheduler,
             self.execution_action_middle.accept_when_empty_position_target__global_position_occupied_last,
         )

@@ -137,7 +137,7 @@ class MiddleExecution:
         self.execution_action_destroyer__position_target__action_destructor.guarantees.global_position_occupied.consumers.append(
             self.destruction_connection_action_destroyer_2.complete
         )
-        self.guarantees.position_target.publish(
+        self.guarantees.position_target.run(
             self.scheduler,
             self.execution_action_destroyer.accept_when_empty_position_target__global_position_occupied,
             self.execution_action_destroyer.accept_when_empty_position_target__global_position_empty,
@@ -160,7 +160,7 @@ class MiddleExecution:
         self.action.get_interface_position(
             "position<trigger>"
         ).destroy_particle()
-        self.guarantees.position_trigger.publish(
+        self.guarantees.position_trigger.run(
             self.scheduler,
         )
 

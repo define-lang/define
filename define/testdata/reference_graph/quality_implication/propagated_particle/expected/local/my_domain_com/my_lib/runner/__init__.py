@@ -169,7 +169,7 @@ class RunnerExecution:
         self.action.get_interface_position(
             "position<wrapper>"
         ).destroy_particle()
-        self.guarantees.position_wrapper.publish(
+        self.guarantees.position_wrapper.run(
             self.scheduler,
         )
 
@@ -182,7 +182,7 @@ class RunnerExecution:
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.guarantees.position_run.publish(
+        self.guarantees.position_run.run(
             self.scheduler,
         )
 

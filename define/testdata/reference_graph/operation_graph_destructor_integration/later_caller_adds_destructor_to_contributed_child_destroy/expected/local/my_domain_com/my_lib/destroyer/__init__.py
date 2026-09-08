@@ -56,7 +56,7 @@ class DestroyerExecution:
         self.action.get_interface_position(
             "position<target>"
         ).move_particle_to(self.local_position_holder)
-        self.guarantees.position_target.publish(
+        self.guarantees.position_target.run(
             self.scheduler,
             self.destroy_position_holder,
         )

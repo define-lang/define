@@ -177,7 +177,7 @@ class MiddleExecution:
             "/destroyer::run",
             1,
         )
-        self.guarantees.position_run.publish(
+        self.guarantees.position_run.run(
             self.scheduler,
             self.execution_action_destroyer.accept_for_empty_rule_position_run__global_position_marker_a,
             self.execution_action_destroyer.accept_for_empty_rule_position_run__global_position_marker_b,

@@ -51,6 +51,6 @@ class FillAExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.child_a.ChildA
         ).create_particle()
-        self.guarantees.global_position_guaranteed_parent__global_position_child_a.publish(
+        self.guarantees.global_position_guaranteed_parent__global_position_child_a.run(
             self.scheduler,
         )

@@ -62,6 +62,6 @@ class FillerExecution:
                 local.my_domain_com.my_lib.target.Target
             )
         )
-        self.guarantees.position_run__move__global_position_target.publish(
+        self.guarantees.position_run__move__global_position_target.run(
             self.scheduler,
         )

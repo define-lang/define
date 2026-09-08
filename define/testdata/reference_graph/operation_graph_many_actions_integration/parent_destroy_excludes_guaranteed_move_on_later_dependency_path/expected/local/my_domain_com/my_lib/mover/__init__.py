@@ -80,7 +80,7 @@ class MoverExecution:
         self.action.get_interface_position(
             "position<source>"
         ).move_particle_to(self.local_position_intermediate)
-        self.guarantees.position_source.publish(
+        self.guarantees.position_source.run(
             self.scheduler,
             self.move_position_intermediate_to_position_destination,
         )
@@ -93,7 +93,7 @@ class MoverExecution:
                 "position<destination>"
             )
         )
-        self.guarantees.position_destination.publish(
+        self.guarantees.position_destination.run(
             self.scheduler,
         )
 
@@ -106,6 +106,6 @@ class MoverExecution:
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.guarantees.position_run.publish(
+        self.guarantees.position_run.run(
             self.scheduler,
         )

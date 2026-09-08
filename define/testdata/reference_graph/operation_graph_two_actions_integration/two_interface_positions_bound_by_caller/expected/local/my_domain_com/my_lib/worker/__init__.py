@@ -71,7 +71,7 @@ class WorkerExecution:
         self.action.get_interface_position(
             "position<second>"
         ).destroy_particle()
-        self.guarantees.position_second.publish(
+        self.guarantees.position_second.run(
             self.scheduler,
         )
 
@@ -84,6 +84,6 @@ class WorkerExecution:
         self.action.get_interface_position(
             "position<third>"
         ).destroy_particle()
-        self.guarantees.position_third.publish(
+        self.guarantees.position_third.run(
             self.scheduler,
         )

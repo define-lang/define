@@ -76,7 +76,7 @@ class FirstDestructorExecution:
             "/first",
             1,
         )
-        self.guarantees.global_position_first.publish(
+        self.guarantees.global_position_first.run(
             self.scheduler,
         )
 
@@ -97,6 +97,6 @@ class FirstDestructorExecution:
             "/marker",
             1,
         )
-        self.guarantees.global_position_marker.publish(
+        self.guarantees.global_position_marker.run(
             self.scheduler,
         )

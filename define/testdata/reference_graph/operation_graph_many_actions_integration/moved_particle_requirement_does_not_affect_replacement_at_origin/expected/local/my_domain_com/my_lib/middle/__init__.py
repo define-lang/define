@@ -108,7 +108,7 @@ class MiddleExecution:
         self.action.get_interface_position(
             "position<source>"
         ).destroy_particle()
-        self.guarantees.position_source.publish(
+        self.guarantees.position_source.run(
             self.scheduler,
         )
 
@@ -147,7 +147,7 @@ class MiddleExecution:
                 "position<input>"
             )
         )
-        self.guarantees.position_holder.publish(
+        self.guarantees.position_holder.run(
             self.scheduler,
             self.execution_position_inner_holder__action_inner.accept_for_empty_rule_position_input__global_position_item,
         )

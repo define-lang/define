@@ -71,6 +71,6 @@ class EmptyItemExecution:
             "/item",
             1,
         )
-        self.guarantees.global_position_item.publish(
+        self.guarantees.global_position_item.run(
             self.scheduler,
         )

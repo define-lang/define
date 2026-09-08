@@ -57,6 +57,6 @@ class TriggeredExecution:
                 "position<dest>"
             )
         )
-        self.guarantees.position_run__move__position_dest.publish(
+        self.guarantees.position_run__move__position_dest.run(
             self.scheduler,
         )

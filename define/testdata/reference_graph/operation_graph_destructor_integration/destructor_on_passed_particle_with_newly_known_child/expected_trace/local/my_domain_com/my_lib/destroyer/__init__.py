@@ -68,7 +68,7 @@ class DestroyerExecution:
             "local",
             1,
         )
-        self.guarantees.position_run.publish(
+        self.guarantees.position_run.run(
             self.scheduler,
             self.destroy_position_local,
         )

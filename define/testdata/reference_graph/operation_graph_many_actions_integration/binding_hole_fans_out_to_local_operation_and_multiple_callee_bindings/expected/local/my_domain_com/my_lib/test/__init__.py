@@ -60,7 +60,7 @@ class TestExecution:
             local.my_domain_com.my_lib.shared.Shared
         ).create_particle()
         self.execution_action_middle.init_when_occupied_global_position_shared()
-        self.guarantees.global_position_shared.publish(
+        self.guarantees.global_position_shared.run(
             self.scheduler,
             self.execution_action_middle.accept_when_empty_global_position_shared__global_position_marker,
             self.execution_action_middle.continue_when_occupied_global_position_shared,

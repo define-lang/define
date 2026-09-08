@@ -107,7 +107,7 @@ class OuterExecution:
         self.action.get_interface_position(
             "position<run>"
         ).move_particle_to(self.local_position_receiver)
-        self.guarantees.position_run.publish(
+        self.guarantees.position_run.run(
             self.scheduler,
             self.move_position_receiver_to_global_position_result,
         )
@@ -160,6 +160,6 @@ class OuterExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.result.Result
         ).destroy_particle()
-        self.guarantees.global_position_result.publish(
+        self.guarantees.global_position_result.run(
             self.scheduler,
         )

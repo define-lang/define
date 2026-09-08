@@ -37,6 +37,6 @@ class ConstructCExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.marker_c.MarkerC
         ).create_particle()
-        self.guarantees.global_position_marker_c.publish(
+        self.guarantees.global_position_marker_c.run(
             self.scheduler,
         )

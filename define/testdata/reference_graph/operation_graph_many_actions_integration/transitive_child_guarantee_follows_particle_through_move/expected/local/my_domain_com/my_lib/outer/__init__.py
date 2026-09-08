@@ -115,7 +115,7 @@ class OuterExecution:
                 "position<inner_parent>"
             )
         )
-        self.guarantees.position_source.publish(
+        self.guarantees.position_source.run(
             self.scheduler,
             self.execution_position_middle_holder__action_middle.accept_for_empty_rule_position_inner_parent,
         )
@@ -156,7 +156,7 @@ class OuterExecution:
                 "position<destination>"
             )
         )
-        self.guarantees.position_destination.publish(
+        self.guarantees.position_destination.run(
             self.scheduler,
             self.move_position_result_holder_to_position_destination__global_position_result_value,
             self.destroy_position_middle_holder,
@@ -170,7 +170,7 @@ class OuterExecution:
                 local.my_domain_com.my_lib.result_value.ResultValue
             )
         )
-        self.guarantees.position_destination__global_position_result_value.publish(
+        self.guarantees.position_destination__global_position_result_value.run(
             self.scheduler,
         )
 

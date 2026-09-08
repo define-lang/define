@@ -73,7 +73,7 @@ class MiddleExecution:
                 "position<inner_run>"
             )
         )
-        self.guarantees.position_run.publish(
+        self.guarantees.position_run.run(
             self.scheduler,
             self.execution_action_inner.accept_for_empty_rule_position_inner_run,
         )

@@ -58,7 +58,7 @@ class FifthDestructorExecution:
                 local.my_domain_com.my_lib.fifth.Fifth
             )
         )
-        self.guarantees.global_position_fifth.publish(
+        self.guarantees.global_position_fifth.run(
             self.scheduler,
         )
 
@@ -69,6 +69,6 @@ class FifthDestructorExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         ).destroy_particle()
-        self.guarantees.global_position_marker.publish(
+        self.guarantees.global_position_marker.run(
             self.scheduler,
         )

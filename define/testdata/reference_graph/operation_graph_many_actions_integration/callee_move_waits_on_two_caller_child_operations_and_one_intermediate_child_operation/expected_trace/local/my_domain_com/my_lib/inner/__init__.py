@@ -73,7 +73,7 @@ class InnerExecution:
             "holder",
             1,
         )
-        self.guarantees.global_position_input.publish(
+        self.guarantees.global_position_input.run(
             self.scheduler,
             self.destroy_position_holder,
         )

@@ -98,7 +98,7 @@ class TestExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.parent.Parent
         ).create_particle()
-        self.guarantees.global_position_parent.publish(
+        self.guarantees.global_position_parent.run(
             self.scheduler,
             self.create_global_position_parent__global_position_child,
         )

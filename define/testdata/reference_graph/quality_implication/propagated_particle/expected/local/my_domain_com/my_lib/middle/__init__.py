@@ -126,7 +126,7 @@ class MiddleExecution:
                 "position<input>"
             )
         )
-        self.guarantees.position_box.publish(
+        self.guarantees.position_box.run(
             self.scheduler,
             self.execution_position_inner_holder__action_inner.accept_for_empty_rule_position_input,
         )
@@ -173,7 +173,7 @@ class MiddleExecution:
         self.action.get_interface_position(
             "position<final>"
         ).destroy_particle()
-        self.guarantees.position_final.publish(
+        self.guarantees.position_final.run(
             self.scheduler,
         )
 
@@ -186,7 +186,7 @@ class MiddleExecution:
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.guarantees.position_run.publish(
+        self.guarantees.position_run.run(
             self.scheduler,
         )
 

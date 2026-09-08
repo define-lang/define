@@ -59,6 +59,6 @@ class InnerExecution:
             "/inner_result",
             1,
         )
-        self.guarantees.global_position_inner_result.publish(
+        self.guarantees.global_position_inner_result.run(
             self.scheduler,
         )

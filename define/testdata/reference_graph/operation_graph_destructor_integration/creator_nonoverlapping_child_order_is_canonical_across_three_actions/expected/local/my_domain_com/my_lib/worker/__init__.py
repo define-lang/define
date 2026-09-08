@@ -43,7 +43,7 @@ class WorkerExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.first_interface.FirstInterface
         ).create_particle()
-        self.guarantees.global_position_first_interface.publish(
+        self.guarantees.global_position_first_interface.run(
             self.scheduler,
         )
 
@@ -51,6 +51,6 @@ class WorkerExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.second_interface.SecondInterface
         ).create_particle()
-        self.guarantees.global_position_second_interface.publish(
+        self.guarantees.global_position_second_interface.run(
             self.scheduler,
         )

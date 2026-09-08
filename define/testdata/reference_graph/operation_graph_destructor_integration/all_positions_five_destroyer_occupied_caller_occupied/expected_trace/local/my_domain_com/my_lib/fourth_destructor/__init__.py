@@ -76,7 +76,7 @@ class FourthDestructorExecution:
             "/fourth",
             1,
         )
-        self.guarantees.global_position_fourth.publish(
+        self.guarantees.global_position_fourth.run(
             self.scheduler,
         )
 
@@ -97,6 +97,6 @@ class FourthDestructorExecution:
             "/marker",
             1,
         )
-        self.guarantees.global_position_marker.publish(
+        self.guarantees.global_position_marker.run(
             self.scheduler,
         )

@@ -66,6 +66,6 @@ class StartExecution:
         self.action.get_interface_position(
             "position<pp>"
         ).destroy_particle()
-        self.guarantees.position_pp.publish(
+        self.guarantees.position_pp.run(
             self.scheduler,
         )

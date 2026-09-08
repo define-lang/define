@@ -85,7 +85,7 @@ class DestroyerExecution:
             "incoming",
             1,
         )
-        self.guarantees.position_run.publish(
+        self.guarantees.position_run.run(
             self.scheduler,
             self.move_position_incoming_to_position_parent,
         )

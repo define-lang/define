@@ -59,6 +59,6 @@ class OtherExecution:
         self.action.get_interface_position(
             "position<input>"
         ).destroy_particle()
-        self.guarantees.position_input.publish(
+        self.guarantees.position_input.run(
             self.scheduler,
         )

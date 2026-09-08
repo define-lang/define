@@ -130,7 +130,7 @@ class MiddleExecution:
                 "position<inner_parent>"
             )
         )
-        self.guarantees.position_inner_parent.publish(
+        self.guarantees.position_inner_parent.run(
             self.scheduler,
             self.move_position_result_holder_to_position_inner_parent__global_position_result_value,
             self.destroy_position_inner_holder,
@@ -144,7 +144,7 @@ class MiddleExecution:
                 local.my_domain_com.my_lib.result_value.ResultValue
             )
         )
-        self.guarantees.position_inner_parent__global_position_result_value.publish(
+        self.guarantees.position_inner_parent__global_position_result_value.run(
             self.scheduler,
         )
 

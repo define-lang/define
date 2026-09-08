@@ -184,7 +184,7 @@ class MiddleExecution:
             self.destruction_connection_action_destroyer.complete
         )
         self.execution_action_destroyer.init_when_occupied_position_target()
-        self.guarantees.position_target.publish(
+        self.guarantees.position_target.run(
             self.scheduler,
             self.execution_action_destroyer.accept_for_empty_rule_position_target__global_position_second,
             self.execution_action_destroyer.accept_when_empty_position_target__global_position_fourth,

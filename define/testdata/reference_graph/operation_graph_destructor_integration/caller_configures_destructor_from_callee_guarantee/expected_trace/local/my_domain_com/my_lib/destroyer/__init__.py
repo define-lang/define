@@ -91,6 +91,6 @@ class DestroyerExecution:
             "/target",
             1,
         )
-        self.guarantees.global_position_target.publish(
+        self.guarantees.global_position_target.run(
             self.scheduler,
         )

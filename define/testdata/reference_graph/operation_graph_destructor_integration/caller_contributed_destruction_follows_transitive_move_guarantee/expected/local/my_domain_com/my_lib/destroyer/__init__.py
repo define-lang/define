@@ -84,7 +84,7 @@ class DestroyerExecution:
                 "position<run>"
             )
         )
-        self.guarantees.position_run.publish(
+        self.guarantees.position_run.run(
             self.scheduler,
             self.execution_action_mover.accept_for_empty_rule_position_run,
         )

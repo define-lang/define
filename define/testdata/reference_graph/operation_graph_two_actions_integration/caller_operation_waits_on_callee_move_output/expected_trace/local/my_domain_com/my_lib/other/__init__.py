@@ -69,6 +69,6 @@ class OtherExecution:
             "output",
             1,
         )
-        self.guarantees.position_trigger_pos__move__position_output.publish(
+        self.guarantees.position_trigger_pos__move__position_output.run(
             self.scheduler,
         )

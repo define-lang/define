@@ -76,7 +76,7 @@ class KnownDestructorExecution:
             "/marker",
             1,
         )
-        self.guarantees.global_position_marker.publish(
+        self.guarantees.global_position_marker.run(
             self.scheduler,
         )
 
@@ -97,6 +97,6 @@ class KnownDestructorExecution:
             "/empty_marker",
             1,
         )
-        self.guarantees.global_position_empty_marker.publish(
+        self.guarantees.global_position_empty_marker.run(
             self.scheduler,
         )

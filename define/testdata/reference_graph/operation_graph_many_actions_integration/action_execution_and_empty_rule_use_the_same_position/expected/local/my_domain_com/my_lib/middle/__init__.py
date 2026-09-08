@@ -113,6 +113,6 @@ class MiddleExecution:
                 "position<holder>"
             )
         )
-        self.guarantees.position_source__move__position_holder.publish(
+        self.guarantees.position_source__move__position_holder.run(
             self.scheduler,
         )

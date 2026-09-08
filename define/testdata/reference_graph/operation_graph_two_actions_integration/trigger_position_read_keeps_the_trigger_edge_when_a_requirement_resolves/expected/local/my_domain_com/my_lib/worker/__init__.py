@@ -57,6 +57,6 @@ class WorkerExecution:
                 "position<out>"
             )
         )
-        self.guarantees.position_in__move__position_out.publish(
+        self.guarantees.position_in__move__position_out.run(
             self.scheduler,
         )

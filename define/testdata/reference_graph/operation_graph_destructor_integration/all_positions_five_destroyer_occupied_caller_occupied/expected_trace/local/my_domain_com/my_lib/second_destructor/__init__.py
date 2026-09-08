@@ -76,7 +76,7 @@ class SecondDestructorExecution:
             "/second",
             1,
         )
-        self.guarantees.global_position_second.publish(
+        self.guarantees.global_position_second.run(
             self.scheduler,
         )
 
@@ -97,6 +97,6 @@ class SecondDestructorExecution:
             "/marker",
             1,
         )
-        self.guarantees.global_position_marker.publish(
+        self.guarantees.global_position_marker.run(
             self.scheduler,
         )

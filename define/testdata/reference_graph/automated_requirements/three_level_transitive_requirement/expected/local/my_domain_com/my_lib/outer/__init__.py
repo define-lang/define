@@ -111,7 +111,7 @@ class OuterExecution:
                 "position<input>"
             )
         )
-        self.guarantees.position_input.publish(
+        self.guarantees.position_input.run(
             self.scheduler,
             self.execution_position_middle_holder__action_middle.accept_for_empty_rule_position_input,
         )
@@ -133,7 +133,7 @@ class OuterExecution:
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.guarantees.position_run.publish(
+        self.guarantees.position_run.run(
             self.scheduler,
         )
 

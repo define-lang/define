@@ -66,7 +66,7 @@ class TriggeredExecution:
                 local.my_domain_com.my_lib.target.Target
             )
         )
-        self.guarantees.position_run.publish(
+        self.guarantees.position_run.run(
             self.scheduler,
             self.move_global_position_target_to_position_local,
         )
@@ -75,7 +75,7 @@ class TriggeredExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.target.Target
         ).move_particle_to(self.local_position_local)
-        self.guarantees.global_position_target.publish(
+        self.guarantees.global_position_target.run(
             self.scheduler,
             self.destroy_position_local,
         )

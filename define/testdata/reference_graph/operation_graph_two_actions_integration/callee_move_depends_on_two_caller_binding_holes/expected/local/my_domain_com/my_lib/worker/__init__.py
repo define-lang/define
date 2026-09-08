@@ -62,7 +62,7 @@ class WorkerExecution:
                 local.my_domain_com.my_lib.destination.Destination
             )
         )
-        self.guarantees.position_source.publish(
+        self.guarantees.position_source.run(
             self.scheduler,
             self.destroy_global_position_destination,
         )
@@ -74,6 +74,6 @@ class WorkerExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.destination.Destination
         ).destroy_particle()
-        self.guarantees.global_position_destination.publish(
+        self.guarantees.global_position_destination.run(
             self.scheduler,
         )

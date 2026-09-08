@@ -186,7 +186,7 @@ class MiddleExecution:
             "final",
             1,
         )
-        self.guarantees.position_final.publish(
+        self.guarantees.position_final.run(
             self.scheduler,
             self.destroy_position_box,
         )
@@ -205,7 +205,7 @@ class MiddleExecution:
             "box",
             1,
         )
-        self.guarantees.position_box.publish(
+        self.guarantees.position_box.run(
             self.scheduler,
         )
 
@@ -223,6 +223,6 @@ class MiddleExecution:
             "run",
             1,
         )
-        self.guarantees.position_run.publish(
+        self.guarantees.position_run.run(
             self.scheduler,
         )

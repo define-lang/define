@@ -174,7 +174,7 @@ class MiddleExecution:
         self.action.get_interface_position(
             "position<gateway>"
         ).destroy_particle()
-        self.guarantees.position_gateway.publish(
+        self.guarantees.position_gateway.run(
             self.scheduler,
         )
 

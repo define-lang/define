@@ -101,7 +101,7 @@ class WorkExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.shared.Shared
         )
-        self.guarantees.position_source.publish(
+        self.guarantees.position_source.run(
             self.scheduler,
             self.destroy_position_dest__global_position_shared,
         )
@@ -111,7 +111,7 @@ class WorkExecution:
         self.action.get_interface_position(
             "position<dest>"
         ).destroy_particle()
-        self.guarantees.position_dest.publish(
+        self.guarantees.position_dest.run(
             self.scheduler,
         )
 
@@ -124,6 +124,6 @@ class WorkExecution:
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.guarantees.position_run.publish(
+        self.guarantees.position_run.run(
             self.scheduler,
         )

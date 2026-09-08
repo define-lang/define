@@ -66,7 +66,7 @@ class MakerExecution:
             "result",
             1,
         )
-        self.guarantees.position_result.publish(
+        self.guarantees.position_result.run(
             self.scheduler,
             self.create_position_result__global_position_marker,
         )
@@ -82,6 +82,6 @@ class MakerExecution:
             "result::/marker",
             1,
         )
-        self.guarantees.position_result__global_position_marker.publish(
+        self.guarantees.position_result__global_position_marker.run(
             self.scheduler,
         )

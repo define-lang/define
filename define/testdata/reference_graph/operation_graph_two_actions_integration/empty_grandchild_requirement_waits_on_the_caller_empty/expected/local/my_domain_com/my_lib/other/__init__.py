@@ -68,7 +68,7 @@ class OtherExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.grandchild.Grandchild
         ).create_particle()
-        self.guarantees.position_box__global_position_child__global_position_grandchild.publish(
+        self.guarantees.position_box__global_position_child__global_position_grandchild.run(
             self.scheduler,
         )
 
@@ -81,6 +81,6 @@ class OtherExecution:
         self.action.get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
-        self.guarantees.position_trigger_pos.publish(
+        self.guarantees.position_trigger_pos.run(
             self.scheduler,
         )

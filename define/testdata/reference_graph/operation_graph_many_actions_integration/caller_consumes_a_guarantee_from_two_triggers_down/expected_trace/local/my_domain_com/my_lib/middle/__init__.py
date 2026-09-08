@@ -161,7 +161,7 @@ class MiddleExecution:
             "out",
             1,
         )
-        self.guarantees.position_out.publish(
+        self.guarantees.position_out.run(
             self.scheduler,
             self.destroy_position_igw,
         )
@@ -180,6 +180,6 @@ class MiddleExecution:
             "igw",
             1,
         )
-        self.guarantees.position_igw.publish(
+        self.guarantees.position_igw.run(
             self.scheduler,
         )

@@ -102,6 +102,6 @@ class InnerExecution:
             "input",
             1,
         )
-        self.guarantees.position_input.publish(
+        self.guarantees.position_input.run(
             self.scheduler,
         )

@@ -60,6 +60,6 @@ class HelperExecution:
                 local.my_domain_com.my_lib.out.Out
             )
         )
-        self.guarantees.global_position_slot__move__global_position_out.publish(
+        self.guarantees.global_position_slot__move__global_position_out.run(
             self.scheduler,
         )

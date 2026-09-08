@@ -56,6 +56,6 @@ class KnownDestructorExecution:
             "/destination",
             1,
         )
-        self.guarantees.global_position_destination.publish(
+        self.guarantees.global_position_destination.run(
             self.scheduler,
         )

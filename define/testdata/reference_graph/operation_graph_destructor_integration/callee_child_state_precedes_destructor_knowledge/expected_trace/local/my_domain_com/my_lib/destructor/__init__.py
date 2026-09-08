@@ -76,7 +76,7 @@ class DestructorExecution:
             "/occupied",
             1,
         )
-        self.guarantees.global_position_occupied.publish(
+        self.guarantees.global_position_occupied.run(
             self.scheduler,
         )
 
@@ -97,6 +97,6 @@ class DestructorExecution:
             "/empty",
             1,
         )
-        self.guarantees.global_position_empty.publish(
+        self.guarantees.global_position_empty.run(
             self.scheduler,
         )

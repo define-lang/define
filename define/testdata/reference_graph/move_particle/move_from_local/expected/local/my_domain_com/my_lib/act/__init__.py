@@ -166,7 +166,7 @@ class ActExecution:
         self.action.get_interface_position(
             "position<iface_dest>"
         ).destroy_particle()
-        self.guarantees.position_iface_dest.publish(
+        self.guarantees.position_iface_dest.run(
             self.scheduler,
         )
 
@@ -229,7 +229,7 @@ class ActExecution:
         self.action.get_interface_position(
             "position<chain_dest>"
         ).destroy_particle()
-        self.guarantees.position_chain_dest.publish(
+        self.guarantees.position_chain_dest.run(
             self.scheduler,
         )
 
@@ -256,7 +256,7 @@ class ActExecution:
         self.action.get_interface_position(
             "position<trigger>"
         ).destroy_particle()
-        self.guarantees.position_trigger.publish(
+        self.guarantees.position_trigger.run(
             self.scheduler,
         )
 

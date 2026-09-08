@@ -118,7 +118,7 @@ class DestroyerExecution:
         self.action.get_interface_position(
             "position<parent>"
         ).destroy_particle()
-        self.guarantees.position_parent.publish(
+        self.guarantees.position_parent.run(
             self.scheduler,
         )
 

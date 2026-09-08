@@ -48,6 +48,6 @@ class ChildExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.result.Result
         ).create_particle()
-        self.guarantees.global_position_result.publish(
+        self.guarantees.global_position_result.run(
             self.scheduler,
         )

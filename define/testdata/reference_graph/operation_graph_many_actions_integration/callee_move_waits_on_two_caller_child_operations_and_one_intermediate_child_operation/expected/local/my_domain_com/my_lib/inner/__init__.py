@@ -61,7 +61,7 @@ class InnerExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.input.Input
         ).move_particle_to(self.local_position_holder)
-        self.guarantees.global_position_input.publish(
+        self.guarantees.global_position_input.run(
             self.scheduler,
             self.destroy_position_holder,
         )

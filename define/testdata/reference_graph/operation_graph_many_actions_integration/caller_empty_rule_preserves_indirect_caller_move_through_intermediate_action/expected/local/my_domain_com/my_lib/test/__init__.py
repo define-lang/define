@@ -130,7 +130,7 @@ class TestExecution:
                 local.my_domain_com.my_lib.intermediate.Intermediate
             )
         )
-        self.guarantees.global_position_holder.publish(
+        self.guarantees.global_position_holder.run(
             self.scheduler,
             self.execution_action_middle_action.accept_for_empty_rule_global_position_intermediate,
         )

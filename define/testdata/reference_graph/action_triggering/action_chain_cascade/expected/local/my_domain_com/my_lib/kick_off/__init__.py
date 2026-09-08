@@ -125,7 +125,7 @@ class KickOffExecution:
         self.action.get_interface_position(
             "position<output>"
         ).destroy_particle()
-        self.guarantees.position_output.publish(
+        self.guarantees.position_output.run(
             self.scheduler,
         )
 
@@ -138,6 +138,6 @@ class KickOffExecution:
         self.action.get_interface_position(
             "position<trigger>"
         ).destroy_particle()
-        self.guarantees.position_trigger.publish(
+        self.guarantees.position_trigger.run(
             self.scheduler,
         )

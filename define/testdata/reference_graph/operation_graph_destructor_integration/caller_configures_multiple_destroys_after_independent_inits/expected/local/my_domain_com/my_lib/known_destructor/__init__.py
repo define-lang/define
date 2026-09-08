@@ -58,7 +58,7 @@ class KnownDestructorExecution:
                 local.my_domain_com.my_lib.marker.Marker
             )
         )
-        self.guarantees.global_position_marker.publish(
+        self.guarantees.global_position_marker.run(
             self.scheduler,
         )
 
@@ -69,6 +69,6 @@ class KnownDestructorExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.empty_marker.EmptyMarker
         ).destroy_particle()
-        self.guarantees.global_position_empty_marker.publish(
+        self.guarantees.global_position_empty_marker.run(
             self.scheduler,
         )

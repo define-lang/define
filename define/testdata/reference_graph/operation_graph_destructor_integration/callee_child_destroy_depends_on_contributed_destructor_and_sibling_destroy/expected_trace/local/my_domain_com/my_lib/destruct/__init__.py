@@ -63,6 +63,6 @@ class DestructExecution:
             "/required::/work",
             1,
         )
-        self.guarantees.global_position_required__global_position_work.publish(
+        self.guarantees.global_position_required__global_position_work.run(
             self.scheduler,
         )

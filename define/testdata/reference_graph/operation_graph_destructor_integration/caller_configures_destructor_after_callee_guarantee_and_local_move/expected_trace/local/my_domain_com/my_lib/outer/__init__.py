@@ -131,7 +131,7 @@ class OuterExecution:
             "receiver",
             1,
         )
-        self.guarantees.position_run.publish(
+        self.guarantees.position_run.run(
             self.scheduler,
             self.move_position_receiver_to_global_position_result,
         )
@@ -203,6 +203,6 @@ class OuterExecution:
             "/result",
             1,
         )
-        self.guarantees.global_position_result.publish(
+        self.guarantees.global_position_result.run(
             self.scheduler,
         )

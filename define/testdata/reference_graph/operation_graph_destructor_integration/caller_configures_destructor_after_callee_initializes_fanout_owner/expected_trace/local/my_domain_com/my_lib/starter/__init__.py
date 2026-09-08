@@ -96,7 +96,7 @@ class StarterExecution:
         self.execution_position_gateway__action_wrapper.guarantees.position_run.consumers.append(
             self.destroy_position_gateway
         )
-        self.guarantees.position_run.publish(
+        self.guarantees.position_run.run(
             self.scheduler,
             self.move_position_gateway__global_position_crate_to_position_gateway__action_wrapper__position_run,
         )

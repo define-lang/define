@@ -54,7 +54,7 @@ class WorkerExecution:
             "/first_interface",
             1,
         )
-        self.guarantees.global_position_first_interface.publish(
+        self.guarantees.global_position_first_interface.run(
             self.scheduler,
         )
 
@@ -67,6 +67,6 @@ class WorkerExecution:
             "/second_interface",
             1,
         )
-        self.guarantees.global_position_second_interface.publish(
+        self.guarantees.global_position_second_interface.run(
             self.scheduler,
         )

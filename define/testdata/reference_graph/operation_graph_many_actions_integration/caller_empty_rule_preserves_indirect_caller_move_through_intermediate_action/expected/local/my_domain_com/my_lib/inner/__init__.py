@@ -92,7 +92,7 @@ class InnerExecution:
                 local.my_domain_com.my_lib.intermediate.Intermediate
             )
         )
-        self.guarantees.global_position_intermediate.publish(
+        self.guarantees.global_position_intermediate.run(
             self.scheduler,
             self.destroy_global_position_input,
         )
@@ -106,6 +106,6 @@ class InnerExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.input.Input
         ).destroy_particle()
-        self.guarantees.global_position_input.publish(
+        self.guarantees.global_position_input.run(
             self.scheduler,
         )

@@ -62,7 +62,7 @@ class ThirdDestructorExecution:
             "/third",
             1,
         )
-        self.guarantees.global_position_third.publish(
+        self.guarantees.global_position_third.run(
             self.scheduler,
         )
 
@@ -83,6 +83,6 @@ class ThirdDestructorExecution:
             "/marker",
             1,
         )
-        self.guarantees.global_position_marker.publish(
+        self.guarantees.global_position_marker.run(
             self.scheduler,
         )

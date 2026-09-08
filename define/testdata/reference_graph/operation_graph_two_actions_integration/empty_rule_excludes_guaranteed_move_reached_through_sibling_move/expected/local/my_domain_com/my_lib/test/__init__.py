@@ -121,7 +121,7 @@ class TestExecution:
                 local.my_domain_com.my_lib.intermediate.Intermediate
             )
         )
-        self.guarantees.global_position_holder.publish(
+        self.guarantees.global_position_holder.run(
             self.scheduler,
             self.move_global_position_intermediate_to_global_position_input__global_position_b,
         )
@@ -141,7 +141,7 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.b.B
         )
-        self.guarantees.global_position_intermediate.publish(
+        self.guarantees.global_position_intermediate.run(
             self.scheduler,
             self.destroy_global_position_input,
             self.destroy_global_position_input__global_position_b,
@@ -151,7 +151,7 @@ class TestExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.input.Input
         ).destroy_particle()
-        self.guarantees.global_position_input.publish(
+        self.guarantees.global_position_input.run(
             self.scheduler,
         )
 

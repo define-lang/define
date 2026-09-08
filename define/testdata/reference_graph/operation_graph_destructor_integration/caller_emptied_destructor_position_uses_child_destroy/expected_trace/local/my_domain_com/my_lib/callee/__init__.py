@@ -94,6 +94,6 @@ class CalleeExecution:
             "src",
             1,
         )
-        self.guarantees.position_src.publish(
+        self.guarantees.position_src.run(
             self.scheduler,
         )

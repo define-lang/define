@@ -84,7 +84,7 @@ class WorkerExecution:
             "output",
             1,
         )
-        self.guarantees.position_input__move__position_output.publish(
+        self.guarantees.position_input__move__position_output.run(
             self.scheduler,
         )
 
@@ -102,6 +102,6 @@ class WorkerExecution:
             "run",
             1,
         )
-        self.guarantees.position_run.publish(
+        self.guarantees.position_run.run(
             self.scheduler,
         )

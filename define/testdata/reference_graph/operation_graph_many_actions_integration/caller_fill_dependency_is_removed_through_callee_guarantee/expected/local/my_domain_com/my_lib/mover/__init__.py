@@ -95,6 +95,6 @@ class MoverExecution:
                 local.my_domain_com.my_lib.destination.Destination
             )
         )
-        self.guarantees.global_position_out__move__global_position_destination.publish(
+        self.guarantees.global_position_out__move__global_position_destination.run(
             self.scheduler,
         )

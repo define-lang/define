@@ -130,7 +130,7 @@ class DestroyerExecution:
             "parent",
             1,
         )
-        self.guarantees.position_parent.publish(
+        self.guarantees.position_parent.run(
             self.scheduler,
         )
 
@@ -159,6 +159,6 @@ class DestroyerExecution:
             "trigger_pos",
             1,
         )
-        self.guarantees.position_trigger_pos.publish(
+        self.guarantees.position_trigger_pos.run(
             self.scheduler,
         )

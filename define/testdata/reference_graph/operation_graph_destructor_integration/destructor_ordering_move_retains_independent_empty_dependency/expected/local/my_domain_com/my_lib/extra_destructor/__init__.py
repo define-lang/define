@@ -56,6 +56,6 @@ class ExtraDestructorExecution:
                 local.my_domain_com.my_lib.origin.Origin
             )
         )
-        self.guarantees.global_position_destination__move__global_position_origin.publish(
+        self.guarantees.global_position_destination__move__global_position_origin.run(
             self.scheduler,
         )

@@ -92,7 +92,7 @@ class MoverExecution:
             "intermediate",
             1,
         )
-        self.guarantees.position_source.publish(
+        self.guarantees.position_source.run(
             self.scheduler,
             self.move_position_intermediate_to_position_destination,
         )
@@ -111,7 +111,7 @@ class MoverExecution:
             "destination",
             1,
         )
-        self.guarantees.position_destination.publish(
+        self.guarantees.position_destination.run(
             self.scheduler,
         )
 
@@ -129,6 +129,6 @@ class MoverExecution:
             "run",
             1,
         )
-        self.guarantees.position_run.publish(
+        self.guarantees.position_run.run(
             self.scheduler,
         )

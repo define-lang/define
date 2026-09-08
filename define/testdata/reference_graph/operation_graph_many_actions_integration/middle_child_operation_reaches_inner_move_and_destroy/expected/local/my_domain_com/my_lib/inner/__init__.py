@@ -79,7 +79,7 @@ class InnerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.child.Child
         )
-        self.guarantees.position_source__move__position_destination.publish(
+        self.guarantees.position_source__move__position_destination.run(
             self.scheduler,
             self.destroy_position_destination__global_position_child,
         )
@@ -89,6 +89,6 @@ class InnerExecution:
 
     def continue_destroy_position_destination__global_position_child(self):
         self.destruction_position_position_destination__global_position_child.destroy_particle()
-        self.guarantees.position_destination__global_position_child.publish(
+        self.guarantees.position_destination__global_position_child.run(
             self.scheduler,
         )

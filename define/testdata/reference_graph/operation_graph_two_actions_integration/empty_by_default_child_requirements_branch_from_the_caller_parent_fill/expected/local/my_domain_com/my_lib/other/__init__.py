@@ -60,7 +60,7 @@ class OtherExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.a.A
         ).create_particle()
-        self.guarantees.position_box__global_position_a.publish(
+        self.guarantees.position_box__global_position_a.run(
             self.scheduler,
         )
 
@@ -70,6 +70,6 @@ class OtherExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.b.B
         ).create_particle()
-        self.guarantees.position_box__global_position_b.publish(
+        self.guarantees.position_box__global_position_b.run(
             self.scheduler,
         )

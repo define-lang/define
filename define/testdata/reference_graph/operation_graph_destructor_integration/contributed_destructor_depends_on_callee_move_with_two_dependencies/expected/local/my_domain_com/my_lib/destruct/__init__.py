@@ -47,6 +47,6 @@ class DestructExecution:
             local.my_domain_com.my_lib.work.Work
         )
         self.destruction_position_global_position_required__global_position_work.destroy_particle()
-        self.guarantees.global_position_required__global_position_work.publish(
+        self.guarantees.global_position_required__global_position_work.run(
             self.scheduler,
         )

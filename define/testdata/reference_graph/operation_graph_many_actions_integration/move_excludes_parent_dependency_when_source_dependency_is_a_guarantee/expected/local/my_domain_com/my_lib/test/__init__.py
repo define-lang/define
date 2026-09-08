@@ -62,7 +62,7 @@ class TestExecution:
         self.execution_global_position_box__action_producer.guarantees.position_input__move__position_result.consumers.append(
             self.move_global_position_box__action_producer__position_result_to_global_position_box__global_position_destination
         )
-        self.guarantees.global_position_box.publish(
+        self.guarantees.global_position_box.run(
             self.scheduler,
             self.create_global_position_box__action_producer__position_input,
         )
@@ -91,6 +91,6 @@ class TestExecution:
                 local.my_domain_com.my_lib.destination.Destination
             )
         )
-        self.guarantees.global_position_box__global_position_destination.publish(
+        self.guarantees.global_position_box__global_position_destination.run(
             self.scheduler,
         )

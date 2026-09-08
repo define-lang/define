@@ -96,7 +96,7 @@ class DestructorExecution:
             "/occupied_first",
             1,
         )
-        self.guarantees.global_position_occupied_first.publish(
+        self.guarantees.global_position_occupied_first.run(
             self.scheduler,
             self.move_global_position_occupied_first__global_position_transitive_to_position_transitive_holder,
         )
@@ -126,7 +126,7 @@ class DestructorExecution:
             "/occupied_first::/transitive",
             1,
         )
-        self.guarantees.global_position_occupied_first__global_position_transitive.publish(
+        self.guarantees.global_position_occupied_first__global_position_transitive.run(
             self.scheduler,
         )
 
@@ -147,7 +147,7 @@ class DestructorExecution:
             "/empty",
             1,
         )
-        self.guarantees.global_position_empty.publish(
+        self.guarantees.global_position_empty.run(
             self.scheduler,
         )
 
@@ -174,6 +174,6 @@ class DestructorExecution:
             "/occupied_last",
             1,
         )
-        self.guarantees.global_position_occupied_last.publish(
+        self.guarantees.global_position_occupied_last.run(
             self.scheduler,
         )

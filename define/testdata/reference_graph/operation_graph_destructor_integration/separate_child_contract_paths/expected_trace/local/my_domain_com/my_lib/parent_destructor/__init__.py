@@ -70,6 +70,6 @@ class ParentDestructorExecution:
             "/left",
             1,
         )
-        self.guarantees.global_position_left.publish(
+        self.guarantees.global_position_left.run(
             self.scheduler,
         )

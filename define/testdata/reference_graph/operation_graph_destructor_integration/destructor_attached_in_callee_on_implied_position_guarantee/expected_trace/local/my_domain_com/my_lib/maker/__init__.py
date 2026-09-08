@@ -88,6 +88,6 @@ class MakerExecution:
             "/child",
             1,
         )
-        self.guarantees.global_position_child.publish(
+        self.guarantees.global_position_child.run(
             self.scheduler,
         )

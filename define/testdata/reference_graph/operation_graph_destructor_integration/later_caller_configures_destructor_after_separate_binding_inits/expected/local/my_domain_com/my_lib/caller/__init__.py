@@ -112,7 +112,7 @@ class CallerExecution:
                 local.my_domain_com.my_lib.payload.Payload
             )
         )
-        self.guarantees.position_run.publish(
+        self.guarantees.position_run.run(
             self.scheduler,
             self.move_position_carrier_source_to_position_source__global_position_carrier,
         )

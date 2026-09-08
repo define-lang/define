@@ -24,8 +24,8 @@ def _local_position(
 
 
 class TestFanout:
-    def test_publish_without_consumers(self):
-        literal.Fanout().publish(literal.Scheduler())
+    def test_run_without_consumers(self):
+        literal.Fanout().run(literal.Scheduler())
 
     def test_init_replaces_a_consumer_before_it_can_run(self):
         scheduler = literal.Scheduler(max_threads=1)
@@ -41,7 +41,7 @@ class TestFanout:
             guarantee.consumers.append(lambda: released.append("replacement"))
 
         guarantee.inits.append(configure)
-        guarantee.publish(scheduler)
+        guarantee.run(scheduler)
 
         assert released == ["replacement"]
 
@@ -55,7 +55,7 @@ class TestFanout:
         assert second.inits == []
         assert second.consumers == []
 
-    def test_publish_inits_every_destructor_before_releasing_consumers(self):
+    def test_run_inits_every_destructor_before_releasing_consumers(self):
         scheduler = literal.Scheduler(max_threads=1)
         init_order: list[str] = []
         released: list[str] = []
@@ -80,13 +80,13 @@ class TestFanout:
         class Entry(literal.EntryPoint):
             @override
             def execute(self, _scheduler: literal.Scheduler):
-                guarantee.publish(scheduler)
+                guarantee.run(scheduler)
 
         scheduler.start(Entry)
 
         assert sorted(released) == ["destroy", "first", "second"]
 
-    def test_publish_releases_callee_and_caller_consumers(self):
+    def test_run_releases_callee_and_caller_consumers(self):
         scheduler = literal.Scheduler(max_threads=1)
         released: list[str] = []
         guarantee = literal.Fanout()
@@ -95,7 +95,7 @@ class TestFanout:
         class Entry(literal.EntryPoint):
             @override
             def execute(self, _scheduler: literal.Scheduler):
-                guarantee.publish(
+                guarantee.run(
                     scheduler,
                     lambda: released.append("callee"),
                 )
@@ -104,7 +104,7 @@ class TestFanout:
 
         assert sorted(released) == ["callee", "caller"]
 
-    def test_publish_keeps_one_consumer_on_the_publishing_thread(self):
+    def test_run_keeps_one_consumer_on_the_publishing_thread(self):
         scheduler = literal.Scheduler(max_threads=3)
         publishing_thread = threading.current_thread()
         consumer_threads: dict[str, threading.Thread] = {}
@@ -120,7 +120,7 @@ class TestFanout:
         class Entry(literal.EntryPoint):
             @override
             def execute(self, _scheduler: literal.Scheduler):
-                guarantee.publish(
+                guarantee.run(
                     scheduler,
                     lambda: consume("first callee"),
                     lambda: consume("second callee"),

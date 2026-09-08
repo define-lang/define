@@ -210,7 +210,7 @@ class CallerExecution:
         self.action.get_interface_position(
             "position<first_gateway>"
         ).destroy_particle()
-        self.guarantees.position_first_gateway.publish(
+        self.guarantees.position_first_gateway.run(
             self.scheduler,
         )
 
@@ -220,7 +220,7 @@ class CallerExecution:
         self.action.get_interface_position(
             "position<second_gateway>"
         ).destroy_particle()
-        self.guarantees.position_second_gateway.publish(
+        self.guarantees.position_second_gateway.run(
             self.scheduler,
         )
 
@@ -233,6 +233,6 @@ class CallerExecution:
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.guarantees.position_run.publish(
+        self.guarantees.position_run.run(
             self.scheduler,
         )

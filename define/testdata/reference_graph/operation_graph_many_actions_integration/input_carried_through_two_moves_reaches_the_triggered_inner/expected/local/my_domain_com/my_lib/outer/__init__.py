@@ -84,7 +84,7 @@ class OuterExecution:
         )
         self.execution_position_middle_holder__action_middle.join_for_empty_rule_position_input = literal.NO_JOIN
         self.execution_position_middle_holder__action_middle.join_for_move_position_input_to_position_inner_holder__action_inner__position_input = self.scheduler.create_join(2)
-        self.guarantees.position_middle_holder.publish(
+        self.guarantees.position_middle_holder.run(
             self.scheduler,
             self.move_position_input_to_position_middle_holder__action_middle__position_input,
             self.create_position_middle_holder__action_middle__position_run,
@@ -105,7 +105,7 @@ class OuterExecution:
                 "position<input>"
             )
         )
-        self.guarantees.position_input.publish(
+        self.guarantees.position_input.run(
             self.scheduler,
             self.execution_position_middle_holder__action_middle.accept_for_empty_rule_position_input,
         )

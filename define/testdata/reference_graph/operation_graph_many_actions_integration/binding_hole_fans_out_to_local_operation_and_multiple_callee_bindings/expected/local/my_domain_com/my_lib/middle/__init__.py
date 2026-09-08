@@ -81,7 +81,7 @@ class MiddleExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         ).create_particle()
-        self.guarantees.global_position_shared__global_position_marker.publish(
+        self.guarantees.global_position_shared__global_position_marker.run(
             self.scheduler,
         )
 

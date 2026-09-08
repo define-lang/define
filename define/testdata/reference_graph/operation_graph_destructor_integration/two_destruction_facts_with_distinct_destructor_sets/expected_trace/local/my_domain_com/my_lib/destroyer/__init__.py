@@ -107,7 +107,7 @@ class DestroyerExecution:
             "first",
             1,
         )
-        self.guarantees.position_first.publish(
+        self.guarantees.position_first.run(
             self.scheduler,
         )
 
@@ -125,6 +125,6 @@ class DestroyerExecution:
             "second",
             1,
         )
-        self.guarantees.position_second.publish(
+        self.guarantees.position_second.run(
             self.scheduler,
         )

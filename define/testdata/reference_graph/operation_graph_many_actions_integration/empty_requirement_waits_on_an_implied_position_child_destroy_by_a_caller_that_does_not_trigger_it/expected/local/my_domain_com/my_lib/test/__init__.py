@@ -63,7 +63,7 @@ class TestExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.holder.Holder
         ).create_particle()
-        self.guarantees.global_position_holder.publish(
+        self.guarantees.global_position_holder.run(
             self.scheduler,
             self.create_global_position_holder__global_position_a,
         )

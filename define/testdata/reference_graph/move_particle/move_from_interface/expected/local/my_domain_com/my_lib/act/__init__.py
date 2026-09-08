@@ -127,7 +127,7 @@ class ActExecution:
         self.action.get_interface_position(
             "position<src_a>"
         ).move_particle_to(self.local_position_local_dest)
-        self.guarantees.position_src_a.publish(
+        self.guarantees.position_src_a.run(
             self.scheduler,
             self.destroy_position_local_dest,
         )
@@ -154,7 +154,7 @@ class ActExecution:
                 "position<iface_dest>"
             )
         )
-        self.guarantees.position_src_b.publish(
+        self.guarantees.position_src_b.run(
             self.scheduler,
             self.destroy_position_iface_dest,
         )
@@ -185,7 +185,7 @@ class ActExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.end_dest.EndDest
         )
-        self.guarantees.position_src_c.publish(
+        self.guarantees.position_src_c.run(
             self.scheduler,
             self.destroy_position_chain_dest,
             self.destroy_position_chain_dest__global_position_mid_dest,
@@ -196,7 +196,7 @@ class ActExecution:
         self.action.get_interface_position(
             "position<iface_dest>"
         ).destroy_particle()
-        self.guarantees.position_iface_dest.publish(
+        self.guarantees.position_iface_dest.run(
             self.scheduler,
         )
 
@@ -209,7 +209,7 @@ class ActExecution:
         self.action.get_interface_position(
             "position<chain_dest>"
         ).destroy_particle()
-        self.guarantees.position_chain_dest.publish(
+        self.guarantees.position_chain_dest.run(
             self.scheduler,
         )
 
@@ -236,7 +236,7 @@ class ActExecution:
         self.action.get_interface_position(
             "position<trigger>"
         ).destroy_particle()
-        self.guarantees.position_trigger.publish(
+        self.guarantees.position_trigger.run(
             self.scheduler,
         )
 

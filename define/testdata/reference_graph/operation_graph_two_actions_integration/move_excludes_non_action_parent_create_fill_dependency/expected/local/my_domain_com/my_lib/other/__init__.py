@@ -79,6 +79,6 @@ class OtherExecution:
                 local.my_domain_com.my_lib.destination.Destination
             )
         )
-        self.guarantees.position_box__global_position_item__move__position_box__global_position_destination.publish(
+        self.guarantees.position_box__global_position_item__move__position_box__global_position_destination.run(
             self.scheduler,
         )

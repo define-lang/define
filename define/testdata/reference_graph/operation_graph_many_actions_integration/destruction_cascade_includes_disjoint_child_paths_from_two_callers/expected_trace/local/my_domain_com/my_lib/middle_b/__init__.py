@@ -183,6 +183,6 @@ class MiddleBExecution:
             "run",
             1,
         )
-        self.guarantees.position_run.publish(
+        self.guarantees.position_run.run(
             self.scheduler,
         )

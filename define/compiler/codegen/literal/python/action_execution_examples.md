@@ -305,7 +305,7 @@ class MiddleExecution:
         ).move_particle_to(
             self.action.get_interface_position("position<final>")
         )
-        self.guarantees.position_final.publish(
+        self.guarantees.position_final.run(
             self.scheduler,
             self.destroy_position_box,
         )
@@ -317,7 +317,7 @@ class MiddleExecution:
 
     def continue_destroy_position_box(self):
         self.action.get_interface_position("position<box>").destroy_particle()
-        self.guarantees.position_box.publish(self.scheduler)
+        self.guarantees.position_box.run(self.scheduler)
 ```
 
 Source for `worker/__init__.py` (`worker.dfn`):
@@ -362,7 +362,7 @@ class WorkerExecution:
         ).move_particle_to(
             self.action.get_interface_position("position<output>")
         )
-        self.guarantees.position_input__move__position_output.publish(
+        self.guarantees.position_input__move__position_output.run(
             self.scheduler
         )
 ```
@@ -552,7 +552,7 @@ class RunnerExecution:
         ).move_particle_to(
             self.action.get_interface_position("position<first_result>")
         )
-        self.guarantees.position_first__move__position_first_result.publish(
+        self.guarantees.position_first__move__position_first_result.run(
             self.scheduler
         )
 
@@ -564,7 +564,7 @@ class RunnerExecution:
         ).move_particle_to(
             self.action.get_interface_position("position<second_result>")
         )
-        self.guarantees.position_second__move__position_second_result.publish(
+        self.guarantees.position_second__move__position_second_result.run(
             self.scheduler
         )
 ```
@@ -746,7 +746,7 @@ class MakerExecution:
         self.action.get_interface_position(
             "position<result>"
         ).create_particle()
-        self.guarantees.position_result.publish(
+        self.guarantees.position_result.run(
             self.scheduler,
             self.create_position_result__global_position_marker,
         )
@@ -757,7 +757,7 @@ class MakerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         ).create_particle()
-        self.guarantees.position_result__global_position_marker.publish(
+        self.guarantees.position_result__global_position_marker.run(
             self.scheduler
         )
 ```
@@ -819,7 +819,7 @@ class DestructorExecution:
                 local.my_domain_com.my_lib.marker.Marker
             )
         )
-        self.guarantees.global_position_marker.publish(
+        self.guarantees.global_position_marker.run(
             self.scheduler
         )
 ```
@@ -1245,7 +1245,7 @@ class MakerExecution:
         self.action.get_interface_position(
             "position<result>"
         ).create_particle()
-        self.guarantees.position_result.publish(
+        self.guarantees.position_result.run(
             self.scheduler
         )
 ```
@@ -1529,7 +1529,7 @@ class CarrierExecution:
                 "position<result>"
             )
         )
-        self.guarantees.position_source__move__position_result.publish(
+        self.guarantees.position_source__move__position_result.run(
             self.scheduler
         )
 
@@ -1540,7 +1540,7 @@ class CarrierExecution:
 
     def continue_destroy_position_run(self):
         self.action.get_interface_position("position<run>").destroy_particle()
-        self.guarantees.position_run.publish(self.scheduler)
+        self.guarantees.position_run.run(self.scheduler)
 ```
 
 Source (`worker.dfn`):
@@ -1587,7 +1587,7 @@ class WorkerExecution:
 
     def continue_destroy_position_run(self):
         self.action.get_interface_position("position<run>").destroy_particle()
-        self.guarantees.position_run.publish(self.scheduler)
+        self.guarantees.position_run.run(self.scheduler)
 ```
 
 ## Caller work before a callee Binding Hole
@@ -1770,7 +1770,7 @@ class TriggeredExecution:
                 local.my_domain_com.my_lib.target.Target
             )
         )
-        self.guarantees.position_run.publish(
+        self.guarantees.position_run.run(
             self.scheduler,
             self.destroy_global_position_target,
         )
@@ -1784,7 +1784,7 @@ class TriggeredExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.target.Target
         ).destroy_particle()
-        self.guarantees.global_position_target.publish(self.scheduler)
+        self.guarantees.global_position_target.run(self.scheduler)
 ```
 
 ## Destruction Connection created with an Action Execution on a local-position particle
@@ -2096,7 +2096,7 @@ class MakerExecution:
         )
         self.execution_position_result__action_worker.join_for_empty_rule_position_run = literal.NO_JOIN
         self.execution_position_result__action_worker.join_for_destroy_position_run = literal.NO_JOIN
-        self.guarantees.position_result.publish(
+        self.guarantees.position_result.run(
             self.scheduler,
             self.create_position_result__action_worker__position_run,
             self.execution_position_result__action_worker.on_action_parent_occupied,
@@ -2170,7 +2170,7 @@ class WorkerExecution:
 
     def continue_destroy_position_run(self):
         self.action.get_interface_position("position<run>").destroy_particle()
-        self.guarantees.position_run.publish(self.scheduler)
+        self.guarantees.position_run.run(self.scheduler)
 ```
 
 ## A caller resolves a callee Move to two independent predecessors
@@ -2262,7 +2262,7 @@ class TestExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.dest.Dest
         ).destroy_particle()
-        self.guarantees.global_position_dest.publish(self.scheduler)
+        self.guarantees.global_position_dest.run(self.scheduler)
 ```
 
 Source (`other.dfn`):
@@ -2323,7 +2323,7 @@ class OtherExecution:
                 local.my_domain_com.my_lib.dest.Dest
             )
         )
-        self.guarantees.global_position_dest.publish(self.scheduler)
+        self.guarantees.global_position_dest.run(self.scheduler)
 ```
 
 ## Repeated Action Executions have execution-scoped Guarantees
@@ -2528,7 +2528,7 @@ class WorkerExecution:
         self.local_position_holder.move_particle_to(
             self.action.get_interface_position("position<item>")
         )
-        self.guarantees.position_item.publish(
+        self.guarantees.position_item.run(
             self.scheduler
         )
 
@@ -2541,7 +2541,7 @@ class WorkerExecution:
         self.action.get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
-        self.guarantees.position_trigger_pos.publish(
+        self.guarantees.position_trigger_pos.run(
             self.scheduler
         )
 ```
@@ -2775,7 +2775,7 @@ class OtherExecution:
         )
         self.execution_position_dest__action_worker.join_for_empty_rule_position_run = literal.NO_JOIN
         self.execution_position_dest__action_worker.join_for_destroy_position_run = literal.NO_JOIN
-        self.guarantees.position_src__move__position_dest.publish(
+        self.guarantees.position_src__move__position_dest.run(
             self.scheduler,
             self.create_position_dest__action_worker__position_run,
             self.execution_position_dest__action_worker.on_action_parent_occupied,
@@ -2800,7 +2800,7 @@ class OtherExecution:
         self.action.get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
-        self.guarantees.position_trigger_pos.publish(self.scheduler)
+        self.guarantees.position_trigger_pos.run(self.scheduler)
 ```
 
 Source (`worker.dfn`):
@@ -2861,7 +2861,7 @@ class WorkerExecution:
 
     def continue_destroy_position_run(self):
         self.action.get_interface_position("position<run>").destroy_particle()
-        self.guarantees.position_run.publish(self.scheduler)
+        self.guarantees.position_run.run(self.scheduler)
 ```
 
 ## A Destructor Binding Hole fans out without serializing its Destroy
@@ -3370,7 +3370,7 @@ class InnerExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.input.Input
         ).move_particle_to(self.local_position_holder)
-        self.guarantees.global_position_input.publish(
+        self.guarantees.global_position_input.run(
             self.scheduler,
             self.destroy_position_holder,
         )

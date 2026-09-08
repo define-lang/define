@@ -135,7 +135,7 @@ class MiddleExecution:
                 "position<out>"
             )
         )
-        self.guarantees.position_out.publish(
+        self.guarantees.position_out.run(
             self.scheduler,
             self.destroy_position_gw,
         )
@@ -149,6 +149,6 @@ class MiddleExecution:
         self.action.get_interface_position(
             "position<gw>"
         ).destroy_particle()
-        self.guarantees.position_gw.publish(
+        self.guarantees.position_gw.run(
             self.scheduler,
         )

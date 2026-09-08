@@ -123,7 +123,7 @@ class MiddleExecution:
                 "position<result>"
             )
         )
-        self.guarantees.position_result.publish(
+        self.guarantees.position_result.run(
             self.scheduler,
             self.move_position_held_marker_to_position_result__global_position_marker,
             self.destroy_position_box,
@@ -137,7 +137,7 @@ class MiddleExecution:
                 local.my_domain_com.my_lib.marker.Marker
             )
         )
-        self.guarantees.position_result__global_position_marker.publish(
+        self.guarantees.position_result__global_position_marker.run(
             self.scheduler,
         )
 

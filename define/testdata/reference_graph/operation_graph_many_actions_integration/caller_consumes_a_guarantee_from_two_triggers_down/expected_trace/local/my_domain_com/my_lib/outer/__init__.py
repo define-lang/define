@@ -192,7 +192,7 @@ class OuterExecution:
             "out",
             1,
         )
-        self.guarantees.position_out.publish(
+        self.guarantees.position_out.run(
             self.scheduler,
             self.destroy_position_gw,
         )
@@ -211,6 +211,6 @@ class OuterExecution:
             "gw",
             1,
         )
-        self.guarantees.position_gw.publish(
+        self.guarantees.position_gw.run(
             self.scheduler,
         )

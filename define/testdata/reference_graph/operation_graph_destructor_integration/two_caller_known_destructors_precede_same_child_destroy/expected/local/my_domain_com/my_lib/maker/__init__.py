@@ -58,7 +58,7 @@ class MakerExecution:
         self.action.get_interface_position(
             "position<result>"
         ).create_particle()
-        self.guarantees.position_result.publish(
+        self.guarantees.position_result.run(
             self.scheduler,
         )
 
@@ -71,6 +71,6 @@ class MakerExecution:
         self.action.get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
-        self.guarantees.position_trigger_pos.publish(
+        self.guarantees.position_trigger_pos.run(
             self.scheduler,
         )

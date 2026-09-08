@@ -1450,7 +1450,7 @@ class _InitPlanner:
                     )
                 )
                 if post_init_consumption is None:
-                    # Guarantee.publish completes all inits before reading its
+                    # Fanout.run completes all inits before reading its
                     # consumers, so the new execution can register its bound methods
                     # in time for that same publication to invoke them.
                     post_init_consumption = GuaranteeConsumptionPlan(

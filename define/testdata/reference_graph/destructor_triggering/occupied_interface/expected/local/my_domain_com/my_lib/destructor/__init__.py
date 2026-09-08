@@ -58,6 +58,6 @@ class DestructorExecution:
                 "position<item>"
             )
         )
-        self.guarantees.position_item.publish(
+        self.guarantees.position_item.run(
             self.scheduler,
         )

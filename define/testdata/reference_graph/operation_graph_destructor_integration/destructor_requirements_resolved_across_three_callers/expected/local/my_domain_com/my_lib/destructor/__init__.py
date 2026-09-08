@@ -72,7 +72,7 @@ class DestructorExecution:
                 local.my_domain_com.my_lib.callee_known.CalleeKnown
             )
         )
-        self.guarantees.global_position_callee_known.publish(
+        self.guarantees.global_position_callee_known.run(
             self.scheduler,
         )
 
@@ -83,7 +83,7 @@ class DestructorExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.middle_known.MiddleKnown
         ).destroy_particle()
-        self.guarantees.global_position_middle_known.publish(
+        self.guarantees.global_position_middle_known.run(
             self.scheduler,
         )
 
@@ -98,6 +98,6 @@ class DestructorExecution:
                 local.my_domain_com.my_lib.creator_known.CreatorKnown
             )
         )
-        self.guarantees.global_position_creator_known.publish(
+        self.guarantees.global_position_creator_known.run(
             self.scheduler,
         )

@@ -66,7 +66,7 @@ class DestructExecution:
                 local.my_domain_com.my_lib.required.Required
             )
         )
-        self.guarantees.global_position_required.publish(
+        self.guarantees.global_position_required.run(
             self.scheduler,
         )
 
@@ -81,6 +81,6 @@ class DestructExecution:
                 local.my_domain_com.my_lib.sibling.Sibling
             )
         )
-        self.guarantees.global_position_sibling.publish(
+        self.guarantees.global_position_sibling.run(
             self.scheduler,
         )

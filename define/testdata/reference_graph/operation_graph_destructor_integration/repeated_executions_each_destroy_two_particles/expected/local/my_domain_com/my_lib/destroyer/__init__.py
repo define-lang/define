@@ -80,7 +80,7 @@ class DestroyerExecution:
         self.action.get_interface_position(
             "position<run>"
         ).move_particle_to(self.local_position_used_run)
-        self.guarantees.position_run.publish(
+        self.guarantees.position_run.run(
             self.scheduler,
             self.destroy_position_used_run,
         )
@@ -94,7 +94,7 @@ class DestroyerExecution:
         self.action.get_interface_position(
             "position<first>"
         ).destroy_particle()
-        self.guarantees.position_first.publish(
+        self.guarantees.position_first.run(
             self.scheduler,
         )
 
@@ -107,7 +107,7 @@ class DestroyerExecution:
         self.action.get_interface_position(
             "position<second>"
         ).destroy_particle()
-        self.guarantees.position_second.publish(
+        self.guarantees.position_second.run(
             self.scheduler,
         )
 

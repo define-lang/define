@@ -37,6 +37,6 @@ class ImplierExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.implied.Implied
         ).create_particle()
-        self.guarantees.global_position_implied.publish(
+        self.guarantees.global_position_implied.run(
             self.scheduler,
         )

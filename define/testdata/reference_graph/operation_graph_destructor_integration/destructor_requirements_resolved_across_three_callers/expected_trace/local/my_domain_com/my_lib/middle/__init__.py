@@ -126,7 +126,7 @@ class MiddleExecution:
             "/destroyer::target",
             1,
         )
-        self.guarantees.position_target.publish(
+        self.guarantees.position_target.run(
             self.scheduler,
             self.execution_action_destroyer.accept_when_empty_position_target__global_position_callee_known,
         )

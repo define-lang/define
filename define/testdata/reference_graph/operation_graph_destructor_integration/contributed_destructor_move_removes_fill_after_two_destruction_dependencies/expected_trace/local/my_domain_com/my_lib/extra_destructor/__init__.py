@@ -95,7 +95,7 @@ class ExtraDestructorExecution:
             "/destinations::/third",
             1,
         )
-        self.guarantees.global_position_destinations__global_position_second.publish(
+        self.guarantees.global_position_destinations__global_position_second.run(
             self.scheduler,
             self.move_global_position_destinations__global_position_third_to_global_position_marker,
         )
@@ -116,6 +116,6 @@ class ExtraDestructorExecution:
             "/marker",
             1,
         )
-        self.guarantees.global_position_destinations__global_position_third__move__global_position_marker.publish(
+        self.guarantees.global_position_destinations__global_position_third__move__global_position_marker.run(
             self.scheduler,
         )

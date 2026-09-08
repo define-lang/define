@@ -86,7 +86,7 @@ class OtherExecution:
                 local.my_domain_com.my_lib.b.B
             )
         )
-        self.guarantees.global_position_intermediate.publish(
+        self.guarantees.global_position_intermediate.run(
             self.scheduler,
             self.move_global_position_input__global_position_b_to_position_sink,
         )
@@ -115,7 +115,7 @@ class OtherExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.input.Input
         ).destroy_particle()
-        self.guarantees.global_position_input.publish(
+        self.guarantees.global_position_input.run(
             self.scheduler,
         )
 
@@ -126,6 +126,6 @@ class OtherExecution:
         self.action.get_interface_position(
             "position<sink>"
         ).destroy_particle()
-        self.guarantees.position_sink.publish(
+        self.guarantees.position_sink.run(
             self.scheduler,
         )

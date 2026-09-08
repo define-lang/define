@@ -70,6 +70,6 @@ class KnownDestructorExecution:
             "/shared",
             1,
         )
-        self.guarantees.global_position_shared.publish(
+        self.guarantees.global_position_shared.run(
             self.scheduler,
         )

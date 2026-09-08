@@ -14,7 +14,7 @@
 {{ callee_binding_plan_body(callee_binding_plan) -}}
     {% endfor %}
     {% if fragment.guarantee_name is not none %}
-        self.guarantees.{{ fragment.guarantee_name }}.publish(
+        self.guarantees.{{ fragment.guarantee_name }}.run(
             self.scheduler,
         {% for method_name in fragment.fanout_continuation_method_names %}
             self.{{ method_name }},

@@ -152,7 +152,7 @@ class MiddleExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.child.Child
         )
-        self.guarantees.position_target.publish(
+        self.guarantees.position_target.run(
             self.scheduler,
             self.execution_action_destroyer.accept_for_empty_rule_position_target,
         )

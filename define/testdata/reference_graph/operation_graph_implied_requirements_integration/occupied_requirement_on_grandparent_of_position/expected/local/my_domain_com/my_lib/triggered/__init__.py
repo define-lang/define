@@ -79,7 +79,7 @@ class TriggeredExecution:
 
     def continue_destroy_position_input__global_position_child__global_position_grandchild(self):
         self.destruction_position_position_input__global_position_child__global_position_grandchild.destroy_particle()
-        self.guarantees.position_input__global_position_child__global_position_grandchild.publish(
+        self.guarantees.position_input__global_position_child__global_position_grandchild.run(
             self.scheduler,
         )
 
@@ -92,6 +92,6 @@ class TriggeredExecution:
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.guarantees.position_run.publish(
+        self.guarantees.position_run.run(
             self.scheduler,
         )

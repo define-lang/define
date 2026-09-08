@@ -76,7 +76,7 @@ class FifthDestructorExecution:
             "/fifth",
             1,
         )
-        self.guarantees.global_position_fifth.publish(
+        self.guarantees.global_position_fifth.run(
             self.scheduler,
         )
 
@@ -97,6 +97,6 @@ class FifthDestructorExecution:
             "/marker",
             1,
         )
-        self.guarantees.global_position_marker.publish(
+        self.guarantees.global_position_marker.run(
             self.scheduler,
         )

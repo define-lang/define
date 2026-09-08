@@ -66,7 +66,7 @@ class DestructExecution:
                 local.my_domain_com.my_lib.marker_a.MarkerA
             )
         )
-        self.guarantees.global_position_marker_a.publish(
+        self.guarantees.global_position_marker_a.run(
             self.scheduler,
         )
 
@@ -81,6 +81,6 @@ class DestructExecution:
                 local.my_domain_com.my_lib.marker_b.MarkerB
             )
         )
-        self.guarantees.global_position_marker_b.publish(
+        self.guarantees.global_position_marker_b.run(
             self.scheduler,
         )

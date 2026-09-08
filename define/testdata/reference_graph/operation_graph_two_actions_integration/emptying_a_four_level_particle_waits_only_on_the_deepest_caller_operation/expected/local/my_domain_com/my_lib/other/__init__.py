@@ -62,6 +62,6 @@ class OtherExecution:
                 "position<out>"
             )
         )
-        self.guarantees.global_position_parent__move__position_out.publish(
+        self.guarantees.global_position_parent__move__position_out.run(
             self.scheduler,
         )

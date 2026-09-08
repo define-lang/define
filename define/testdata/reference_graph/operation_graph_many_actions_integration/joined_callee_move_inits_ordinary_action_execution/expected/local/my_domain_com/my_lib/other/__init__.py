@@ -123,7 +123,7 @@ class OtherExecution:
         )
         self.execution_position_destination__action_worker.join_for_empty_rule_position_run = literal.NO_JOIN
         self.execution_position_destination__action_worker.join_for_destroy_position_run = literal.NO_JOIN
-        self.guarantees.position_source__move__position_destination.publish(
+        self.guarantees.position_source__move__position_destination.run(
             self.scheduler,
             self.create_position_destination__action_worker__position_run,
         )
@@ -147,6 +147,6 @@ class OtherExecution:
         self.action.get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
-        self.guarantees.position_trigger_pos.publish(
+        self.guarantees.position_trigger_pos.run(
             self.scheduler,
         )

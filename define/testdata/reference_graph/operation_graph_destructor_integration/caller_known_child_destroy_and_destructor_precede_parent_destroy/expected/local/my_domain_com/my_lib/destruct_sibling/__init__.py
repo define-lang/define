@@ -52,6 +52,6 @@ class DestructSiblingExecution:
                 local.my_domain_com.my_lib.sibling.Sibling
             )
         )
-        self.guarantees.global_position_sibling.publish(
+        self.guarantees.global_position_sibling.run(
             self.scheduler,
         )

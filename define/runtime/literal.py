@@ -33,7 +33,7 @@ class Fanout:
     inits: list[Task] = dataclasses.field(default_factory=list)
     consumers: list[Task] = dataclasses.field(default_factory=list)
 
-    def publish(
+    def run(
         self,
         scheduler: Scheduler,
         *publication_consumers: Task,

@@ -76,7 +76,7 @@ class OtherExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.item.Item
         )
-        self.guarantees.global_position_input.publish(
+        self.guarantees.global_position_input.run(
             self.scheduler,
             self.destroy_position_output__global_position_item,
         )
@@ -95,6 +95,6 @@ class OtherExecution:
         self.action.get_interface_position(
             "position<output>"
         ).destroy_particle()
-        self.guarantees.position_output.publish(
+        self.guarantees.position_output.run(
             self.scheduler,
         )

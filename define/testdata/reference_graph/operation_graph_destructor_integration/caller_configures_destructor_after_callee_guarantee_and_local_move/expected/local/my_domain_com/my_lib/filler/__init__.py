@@ -69,7 +69,7 @@ class FillerExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.result.Result
         ).move_particle_to(self.local_position_scratch)
-        self.guarantees.global_position_result.publish(
+        self.guarantees.global_position_result.run(
             self.scheduler,
             self.destroy_position_scratch,
         )

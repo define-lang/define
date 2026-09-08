@@ -68,6 +68,6 @@ class InnerExecution:
 
     def continue_destroy_position_input__global_position_item(self):
         self.destruction_position_position_input__global_position_item.destroy_particle()
-        self.guarantees.position_input__global_position_item.publish(
+        self.guarantees.position_input__global_position_item.run(
             self.scheduler,
         )

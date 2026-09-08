@@ -73,7 +73,7 @@ class TriggeredExecution:
                 "position<dest>"
             )
         )
-        self.guarantees.global_position_implied__move__position_dest.publish(
+        self.guarantees.global_position_implied__move__position_dest.run(
             self.scheduler,
         )
 
@@ -86,6 +86,6 @@ class TriggeredExecution:
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.guarantees.position_run.publish(
+        self.guarantees.position_run.run(
             self.scheduler,
         )

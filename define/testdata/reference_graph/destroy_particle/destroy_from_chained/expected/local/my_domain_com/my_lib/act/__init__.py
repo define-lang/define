@@ -111,7 +111,7 @@ class ActExecution:
         self.action.get_interface_position(
             "position<chain_src>"
         ).destroy_particle()
-        self.guarantees.position_chain_src.publish(
+        self.guarantees.position_chain_src.run(
             self.scheduler,
         )
 
@@ -132,6 +132,6 @@ class ActExecution:
         self.action.get_interface_position(
             "position<trigger>"
         ).destroy_particle()
-        self.guarantees.position_trigger.publish(
+        self.guarantees.position_trigger.run(
             self.scheduler,
         )

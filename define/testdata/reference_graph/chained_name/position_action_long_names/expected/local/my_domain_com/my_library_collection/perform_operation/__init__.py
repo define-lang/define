@@ -66,6 +66,6 @@ class PerformOperationExecution:
         self.action.get_interface_position(
             "position<operation_trigger>"
         ).destroy_particle()
-        self.guarantees.position_operation_trigger.publish(
+        self.guarantees.position_operation_trigger.run(
             self.scheduler,
         )

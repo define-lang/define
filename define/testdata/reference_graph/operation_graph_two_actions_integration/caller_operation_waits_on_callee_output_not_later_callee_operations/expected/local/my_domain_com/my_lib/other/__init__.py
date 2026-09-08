@@ -55,7 +55,7 @@ class OtherExecution:
         self.action.get_interface_position(
             "position<output>"
         ).create_particle()
-        self.guarantees.position_output.publish(
+        self.guarantees.position_output.run(
             self.scheduler,
         )
 
@@ -66,6 +66,6 @@ class OtherExecution:
         self.action.get_interface_position(
             "position<late>"
         ).destroy_particle()
-        self.guarantees.position_late.publish(
+        self.guarantees.position_late.run(
             self.scheduler,
         )

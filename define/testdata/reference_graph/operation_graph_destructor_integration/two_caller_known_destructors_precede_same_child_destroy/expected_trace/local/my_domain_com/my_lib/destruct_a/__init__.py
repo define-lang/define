@@ -70,6 +70,6 @@ class DestructAExecution:
             "/required",
             1,
         )
-        self.guarantees.global_position_required.publish(
+        self.guarantees.global_position_required.run(
             self.scheduler,
         )

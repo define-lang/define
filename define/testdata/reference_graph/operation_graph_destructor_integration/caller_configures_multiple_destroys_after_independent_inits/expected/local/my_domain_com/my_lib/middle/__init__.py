@@ -122,7 +122,7 @@ class MiddleExecution:
             )
         )
         self.execution_global_position_parent__action_destroyer.init_position_target__action_known_destructor()
-        self.guarantees.position_run.publish(
+        self.guarantees.position_run.run(
             self.scheduler,
             self.execution_global_position_parent__action_destroyer.accept_for_empty_rule_position_target__global_position_marker,
             self.execution_global_position_parent__action_destroyer.accept_when_empty_position_target__global_position_empty_marker,
@@ -155,6 +155,6 @@ class MiddleExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.parent.Parent
         ).destroy_particle()
-        self.guarantees.global_position_parent.publish(
+        self.guarantees.global_position_parent.run(
             self.scheduler,
         )

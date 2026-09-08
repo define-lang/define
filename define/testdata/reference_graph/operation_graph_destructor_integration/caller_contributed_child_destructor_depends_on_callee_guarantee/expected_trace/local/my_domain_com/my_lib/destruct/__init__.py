@@ -84,7 +84,7 @@ class DestructExecution:
             "/required",
             1,
         )
-        self.guarantees.global_position_required.publish(
+        self.guarantees.global_position_required.run(
             self.scheduler,
         )
 
@@ -111,6 +111,6 @@ class DestructExecution:
             "/sibling",
             1,
         )
-        self.guarantees.global_position_sibling.publish(
+        self.guarantees.global_position_sibling.run(
             self.scheduler,
         )

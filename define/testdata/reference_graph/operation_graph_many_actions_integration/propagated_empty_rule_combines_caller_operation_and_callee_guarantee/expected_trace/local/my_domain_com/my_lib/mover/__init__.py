@@ -80,6 +80,6 @@ class MoverExecution:
             "destination",
             1,
         )
-        self.guarantees.global_position_parent__move__position_destination.publish(
+        self.guarantees.global_position_parent__move__position_destination.run(
             self.scheduler,
         )

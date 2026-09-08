@@ -64,6 +64,6 @@ class WorkerExecution:
                 local.my_domain_com.my_lib.y.Y
             )
         )
-        self.guarantees.position_in__move__position_box__global_position_y.publish(
+        self.guarantees.position_in__move__position_box__global_position_y.run(
             self.scheduler,
         )

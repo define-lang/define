@@ -66,6 +66,6 @@ class BExecution:
         self.action.get_interface_position(
             "position<t>"
         ).destroy_particle()
-        self.guarantees.position_t.publish(
+        self.guarantees.position_t.run(
             self.scheduler,
         )

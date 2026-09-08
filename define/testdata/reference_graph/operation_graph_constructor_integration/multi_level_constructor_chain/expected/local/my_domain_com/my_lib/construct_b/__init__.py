@@ -47,7 +47,7 @@ class ConstructBExecution:
             ),
             self.scheduler,
         )
-        self.guarantees.global_position_inner.publish(
+        self.guarantees.global_position_inner.run(
             self.scheduler,
             self.execution_global_position_inner__action_construct_c.accept_when_empty_global_position_leaf,
         )

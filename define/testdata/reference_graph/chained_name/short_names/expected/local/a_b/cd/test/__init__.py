@@ -57,7 +57,7 @@ class TestExecution:
         )
         self.execution_global_position_a__action_b.join_for_empty_rule_position_t = literal.NO_JOIN
         self.execution_global_position_a__action_b.join_for_destroy_position_t = literal.NO_JOIN
-        self.guarantees.global_position_a.publish(
+        self.guarantees.global_position_a.run(
             self.scheduler,
             self.create_global_position_a__action_b__position_t,
             self.execution_global_position_a__action_b.on_action_parent_occupied,

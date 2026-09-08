@@ -58,7 +58,7 @@ class ThirdDestructorExecution:
                 local.my_domain_com.my_lib.third.Third
             )
         )
-        self.guarantees.global_position_third.publish(
+        self.guarantees.global_position_third.run(
             self.scheduler,
         )
 
@@ -69,6 +69,6 @@ class ThirdDestructorExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         ).destroy_particle()
-        self.guarantees.global_position_marker.publish(
+        self.guarantees.global_position_marker.run(
             self.scheduler,
         )

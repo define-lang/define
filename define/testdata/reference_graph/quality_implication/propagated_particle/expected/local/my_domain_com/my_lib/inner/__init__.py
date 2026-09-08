@@ -80,7 +80,7 @@ class InnerExecution:
                 "position<output>"
             )
         )
-        self.guarantees.position_input__move__position_output.publish(
+        self.guarantees.position_input__move__position_output.run(
             self.scheduler,
         )
 
@@ -93,6 +93,6 @@ class InnerExecution:
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.guarantees.position_run.publish(
+        self.guarantees.position_run.run(
             self.scheduler,
         )

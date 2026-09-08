@@ -130,7 +130,7 @@ class MiddleExecution:
                 "position<input>"
             )
         )
-        self.guarantees.position_iface.publish(
+        self.guarantees.position_iface.run(
             self.scheduler,
             self.execution_position_gw__action_inner.accept_when_empty_position_input__global_position_parent__global_position_a,
             self.execution_position_gw__action_inner.accept_when_empty_position_input__global_position_parent__global_position_b,

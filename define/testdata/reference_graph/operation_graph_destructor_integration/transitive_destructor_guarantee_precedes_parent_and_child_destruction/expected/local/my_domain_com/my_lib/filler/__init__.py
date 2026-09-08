@@ -74,7 +74,7 @@ class FillerExecution:
                 local.my_domain_com.my_lib.marker.Marker
             )
         )
-        self.guarantees.global_position_marker.publish(
+        self.guarantees.global_position_marker.run(
             self.scheduler,
         )
 
@@ -87,6 +87,6 @@ class FillerExecution:
         self.action.get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
-        self.guarantees.position_trigger_pos.publish(
+        self.guarantees.position_trigger_pos.run(
             self.scheduler,
         )

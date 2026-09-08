@@ -56,7 +56,7 @@ class InnerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.child1.Child1
         ).create_particle()
-        self.guarantees.global_position_parent__global_position_child1.publish(
+        self.guarantees.global_position_parent__global_position_child1.run(
             self.scheduler,
         )
 
@@ -66,6 +66,6 @@ class InnerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.child2.Child2
         ).create_particle()
-        self.guarantees.global_position_parent__global_position_child2.publish(
+        self.guarantees.global_position_parent__global_position_child2.run(
             self.scheduler,
         )
