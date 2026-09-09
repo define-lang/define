@@ -1,3 +1,4 @@
+import comparison
 import definitions
 
 set_option warningAsError true
@@ -98,5 +99,44 @@ theorem extended_minimal {base : Operation → Operation → Prop}
       | vanish second_edge =>
           exact selected _ _ _ first_edge second_edge
             (fun equal => distinct (congrArg Sum.inl equal)) (path_cases path)
+
+theorem compared_extended_minimal {base : Operation → Operation → Prop}
+    (acyclic : Acyclic base) (original : DirectDependenciesAreAntichains base)
+    (candidates : Particle → List Operation)
+    (ordered : ∀ particle, (candidates particle).Pairwise
+      (fun first second => ¬Reaches base second first)) :
+    TransitivelyMinimal (Extended base
+      (fun particle operation => operation ∈ Comparison.scan (Reaches base) (candidates particle) [])) := by
+  apply extended_minimal original
+  intro particle first second first_member second_member _ path
+  have first_kept := (Comparison.scan_iff_maximal acyclic _ (ordered particle) first).mp first_member
+  have second_kept := (Comparison.scan_iff_maximal acyclic _ (ordered particle) second).mp second_member
+  exact second_kept.2 first first_kept.1 path
+
+theorem compared_vanish_reachability_iff {base : Operation → Operation → Prop}
+    (acyclic : Acyclic base) (candidates : Particle → List Operation)
+    (ordered : ∀ particle, (candidates particle).Pairwise
+      (fun first second => ¬Reaches base second first))
+    (particle : Particle) (operation : Operation) :
+    Reaches (Extended base
+      (fun selected candidate => candidate ∈ Comparison.scan (Reaches base) (candidates selected) []))
+      (.inr particle) (.inl operation) ↔
+      ∃ candidate ∈ candidates particle, candidate = operation ∨ Reaches base candidate operation := by
+  obtain ⟨subset, _, coverage⟩ := Comparison.scan_invariants (Reaches base) acyclic
+    (fun first second => first.trans second) (candidates particle) [] (ordered particle)
+    (by simp) (by simp [Comparison.Antichain])
+  simp only [List.append_nil] at coverage
+  rw [vanish_reachability_iff]
+  constructor
+  · rintro ⟨candidate, member, path⟩
+    exact ⟨candidate, (subset candidate member).resolve_right (by simp), path⟩
+  · rintro ⟨candidate, member, path⟩
+    obtain ⟨previous, previous_member, equal | earlier_path⟩ := coverage candidate member
+    · subst previous
+      exact ⟨candidate, previous_member, path⟩
+    · refine ⟨previous, previous_member, Or.inr ?_⟩
+      rcases path with equal | path
+      · exact equal ▸ earlier_path
+      · exact earlier_path.trans path
 
 end Define.OperationGraph.VanishmentGraph

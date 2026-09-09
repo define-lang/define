@@ -80,7 +80,7 @@ The [reference-shape argument](reference-shape-proof.md) addresses distinct
 endpoints and the prohibition against moving into a position the particle
 defines for ordinary Moves. These conditions cannot be dropped on the assumption
 that an arbitrary occupancy map must imply them. Destination qualities also
-remain requirements of the same selected source particle.
+remain requirements of the same directly moved particle.
 
 The [ordinary correspondence proof](ordinary-requirements-proof.md) derives
 enabledness in both directions, independent exchanges, and conflicting adjacent
@@ -269,6 +269,25 @@ that enumeration changes neither candidate sets nor their reduction.
 
 ### Correspondence with already-calculated dependencies
 
+First check the actual ordered scan in Comparison. Its candidate order places
+every dependent before its dependencies. Maintain two invariants while scanning:
+the retained candidates are pairwise unrelated by reachability, and every
+examined candidate is retained or reached from a retained candidate. A skipped
+candidate satisfies the latter invariant by the skip condition. For an added
+candidate, no retained candidate reaches it by that condition, and it cannot
+reach an earlier retained candidate by the chosen topological order. Thus both
+invariants are preserved. Starting with the empty set establishes them without
+assuming completeness or minimality.
+
+At the end, every candidate reached by another candidate must have been skipped:
+that other candidate was examined earlier and was either retained or itself
+covered by a retained candidate. Conversely, a candidate not reached by any
+other candidate cannot be skipped. The scan therefore retains exactly the
+reachability-maximal candidates. This establishes the equivalence to the
+mathematical criterion below; it does not replace the scan by a generic
+minimization algorithm. The same argument applies when Completing Vanishes or
+optionally pruning their recorded candidates.
+
 The specification uses already-calculated dependencies during Comparison, not
 the entire unreduced candidate graph. To represent that calculation explicitly,
 let `G₀` have no edges. Having calculated `Gₙ`, calculate the candidates for
@@ -290,8 +309,10 @@ dependencies. Thus the full incremental calculation equals the reduced graph;
 the graph and scheduling theorems apply to the actual calculation, not just to
 an alternative definition with the same intended result.
 
-In `effect_graph.lean`, `CalculatedPrefix` is this incremental calculation and
-`calculatedPrefix_iff` proves the prefix equality. The resulting
+In `comparison.lean`, `scan_invariants` and `scan_iff_maximal` check the ordered
+scan and its characterization above. In `effect_graph.lean`,
+`scan_iff_calculated` identifies its result with `CalculatedPrefix`'s next row,
+and `calculatedPrefix_iff` proves the prefix equality. The resulting
 `calculated_transitively_minimal` theorem establishes minimality of the rules'
 result. Its underlying minimality argument uses Comparison's exclusions
 directly, independently of source safety or completeness. The
@@ -356,10 +377,10 @@ distinguishes that case from a written destination-based reference.
    effect, and checks that each cover ordering has an invalid adjacent reversal.
    The exact-effect lemmas apply only where their fixed requirements represent
    these semantics exactly.
-5. The same proof applies the actual-interaction correspondence needed by the
-   completion argument above, including retained originals and the varying
-   transitive effects of Moves. The completion argument itself adds no ordering
-   between Particle Operations.
+5. The [Vanish proof](vanishment-proof.md) applies the actual-interaction
+   correspondence to completion, including retained originals and the varying
+   transitive effects of Moves. Completing Vanishes adds no ordering between
+   Creates, Moves, or Vacates.
 
 The Lean modules `effect_collection.lean` and `effect_graph.lean` check
 collection completeness, the local reduction's equality with the cover graph,

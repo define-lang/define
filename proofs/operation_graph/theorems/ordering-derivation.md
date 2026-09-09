@@ -24,13 +24,14 @@ destructor state, with their semantic correspondence developed in the
    occupied. Its new particle is not interchangeable with an earlier particle in
    that position. The proof must preserve the particles selected by source
    operations, not merely the final set of occupied names.
-2. A Move requires its source particle and an empty destination. It changes the
-   spatial positions of its defined positions and their particles transitively,
-   including empty positions. It is not a deferred destruction or a change of
-   spelling. An operation cannot assume the post-Move spatial relationships
-   before that Move, or the preceding relationships after it. A later Move may
-   restore a relationship; necessity must be proved for the proposed ordering,
-   not assumed for every pair that ever affects the same particle.
+2. A Move requires a particle at its source and an empty destination. It changes
+   the spatial positions of its defined positions and their particles
+   transitively, including empty positions. It is not a deferred destruction or
+   a change of spelling. An operation cannot assume the post-Move spatial
+   relationships before that Move, or the preceding relationships after it. A
+   later Move may restore a relationship; necessity must be proved for the
+   proposed ordering, not assumed for every pair that ever affects the same
+   particle.
 3. A Vacate denotes vacancy. Its former particle can remain available to
    destructors after that vacancy. Reuse of the vacated position does not access
    the retained original particle. The vacancy must still follow ordinary
@@ -82,7 +83,7 @@ Aout, Bout, Aback, Bback
 ```
 
 After `Aout`, the particle is in `A.held` and `/marker` is empty, so `Bout` has
-no source particle. Keeping the particle alive does not enable the Move.
+no particle at its source. Keeping the particle alive does not enable the Move.
 
 ### No precedence graph can admit both valid orders and exclude the bad order
 

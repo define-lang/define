@@ -42,10 +42,11 @@ indivisible Particle Operation.
 
 A Create requires its actual reference and an empty final position, and changes
 that occupancy to its fresh particle. A Move requires both actual references,
-its selected source particle, and an empty destination. It changes only its two
-final occupancy components. It preserves the particle's qualities and all
-relative occupancies of its defined positions, whose spatial locations change
-transitively with it. Moving a particle does not silently assign qualities.
+the particle selected at its source, and an empty destination. It changes only
+its two final occupancy components. It preserves the particle's qualities and
+all relative occupancies of its defined positions, whose spatial locations
+change transitively with it. Moving a particle does not silently assign
+qualities.
 
 ## Enabledness in both directions
 

@@ -60,6 +60,25 @@ lean_library(
     deps = [":operation_effects"],
 )
 
+lean_axiom_test(
+    name = "particle_requirements_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["particle_requirements"],
+    theorems = [
+        "Define.OperationGraph.ParticleRequirements.reference_parent_particles_iff",
+        "Define.OperationGraph.ParticleRequirements.reference_enabled_iff_agrees",
+        "Define.OperationGraph.ParticleRequirements.operation_enabled_iff_effect_enabled",
+        "Define.OperationGraph.ParticleRequirements.operation_effect_valid",
+        "Define.OperationGraph.ParticleRequirements.effect_apply_eq_execute",
+    ],
+    deps = [":particle_requirements"],
+)
+
 lean_library(
     name = "retained_requirements",
     srcs = ["retained_requirements.lean"],

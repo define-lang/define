@@ -1,3 +1,4 @@
+import comparison
 import cover_graph
 import effect_collection
 import effect_scheduling
@@ -123,6 +124,22 @@ theorem calculatedPrefix_iff {effects : Nat → Effect Key Value}
 
 def Calculated (effects : Nat → Effect Key Value) (later earlier : Nat) : Prop :=
   CalculatedPrefix effects (later + 1) later earlier
+
+theorem calculatedPrefix_acyclic (effects : Nat → Effect Key Value) (count : Nat) :
+    Acyclic (CalculatedPrefix effects count) :=
+  acyclic_of_pointsBackward (operationOrder := fun operation => operation)
+    (fun source target edge => ((calculatedPrefix_iff count source target).mp edge).2.1.1)
+
+theorem scan_iff_calculated {effects : Nat → Effect Key Value} (later : Nat)
+    (candidates : List Nat)
+    (members : ∀ earlier, earlier ∈ candidates ↔ Collected effects later earlier)
+    (ordered : candidates.Pairwise
+      (fun first second => ¬Reaches (CalculatedPrefix effects later) second first))
+    (earlier : Nat) :
+    earlier ∈ Comparison.scan (Reaches (CalculatedPrefix effects later)) candidates [] ↔
+      Calculated effects later earlier := by
+  rw [Comparison.scan_iff_maximal (calculatedPrefix_acyclic effects later) candidates ordered]
+  simp [Calculated, CalculatedPrefix, members]
 
 theorem calculated_iff_reduced {effects : Nat → Effect Key Value} {later earlier : Nat} :
     Calculated effects later earlier ↔ Reduced effects later earlier := by

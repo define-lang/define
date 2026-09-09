@@ -106,18 +106,18 @@ dependency on the Action Parent Rule.
 
 Suppose the auxiliary associations are acyclic before a Move. Moving the source
 particle changes its one incoming occupancy association. The only way this
-change could create a cycle would be to place the source particle at a position
-reached from that same particle in the preceding associations.
+change could create a cycle would be to place the directly moved particle at a
+position reached from that same particle in the preceding associations.
 
 Both Move references start from the same execution's available declarations. In
 an acyclic structure with unique incoming associations, there is at most one
 path from that starting particle to either final position. If the destination
-were reached through the source particle, the path to the source position would
-therefore be an initial part of the path to the destination. Since both paths
-are legitimate references of this execution, no intervening private declaration
-can be bypassed by the destination reference. The source reference would be a
-prefix of the destination reference. The specified Move restriction rejects
-exactly that case, including identical references.
+were reached through the directly moved particle, the path to the source
+position would therefore be an initial part of the path to the destination.
+Since both paths are legitimate references of this execution, no intervening
+private declaration can be bypassed by the destination reference. The source
+reference would be a prefix of the destination reference. The specified Move
+restriction rejects exactly that case, including identical references.
 
 Thus the Move preserves acyclicity. This induction also excludes the generic map
 counterexample described above: a particle in its own execution's private local
@@ -150,7 +150,7 @@ likewise remain satisfied. Applying the argument again shows that it too is
 legal. The two orders perform disjoint changes to relative occupancy and give
 the same resulting associations. The induced physical locations, including
 positions and particles moving transitively, agree afterward. Each operation
-used the same source particle and the positions described by its actual
+used the same directly moved particle and the positions described by its actual
 references, even when the transitive particles moved vary between the orders.
 
 This supplies the geometric part of the ordinary Move exchange. It does not

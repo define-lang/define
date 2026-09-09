@@ -22,6 +22,10 @@ shared-state components in
 their execution correspondence in
 [`particle_scheduling.lean`](theorems/particle_scheduling.lean).
 
+[`comparison.lean`](theorems/comparison.lean) checks the spec's ordered scan,
+including optional candidate pruning. Its result is connected to the incremental
+occupancy calculation and to the completed Vanish dependencies.
+
 The [Vanish extension](theorems/vanishment-proof.md) derives lifetime candidates
 from actual references and directly moved particles, with no new ordering among
 Creates, Moves, or Vacates. Its lifetime components are checked in
@@ -38,6 +42,10 @@ mean that one graph admits every possible safe serial ordering of destructors.
 
 ## Reading order
 
+The [source-correspondence theorem](theorems/source-correspondence.md) connects
+the spec's individual phases to the results below and states their combined
+scope.
+
 1. [Conceptual definitions](definitions/definitions.md#conceptual-meaning-of-particles-positions-and-operations)
    and [operation requirements](definitions/operation-requirements.md): what
    particles, positions, references, and operations mean.
@@ -52,8 +60,8 @@ mean that one graph admits every possible safe serial ordering of destructors.
 5. [Scheduling proof](theorems/requirement-scheduling-proof.md): safety, edge
    necessity, and unbounded execution.
 6. [Vanish extension](theorems/vanishment-proof.md): lifetime collection, source
-   correspondence, graph safety and necessity, and concurrency-preserving
-   fusion.
+   correspondence, and graph safety and necessity. Its separate discussion of
+   optional implementation fusion is not part of the specified construction.
 
 [Ordering derivation](theorems/ordering-derivation.md) explains why a serial
 destructor-order choice is needed, and why a direct implied reference can allow

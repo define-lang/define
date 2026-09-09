@@ -52,6 +52,20 @@ def Reference.keys : Reference → List Key
   | .childInterface parent particle _ _ =>
       .occupancy parent.position :: .existence particle :: parent.keys
 
+/- The spec records parents of named positions and actions, not spatial ancestors. -/
+def Reference.parentParticles : Reference → List Nat
+  | .viewPoint => []
+  | .local _ _ => []
+  | .implied particle _ => [particle]
+  | .interface particle _ _ => [particle]
+  | .child parent particle _ => particle :: parent.parentParticles
+  | .childInterface parent particle _ _ => particle :: parent.parentParticles
+
+theorem reference_parent_particles_iff (reference : Reference) (particle : Nat) :
+    particle ∈ reference.parentParticles ↔ .existence particle ∈ reference.keys := by
+  induction reference <;>
+    simp_all [Reference.parentParticles, Reference.keys]
+
 def Reference.Enabled (qualities : Nat → Nat → Prop) (state : State) : Reference → Prop
   | .viewPoint => True
   | .local _ _ => True

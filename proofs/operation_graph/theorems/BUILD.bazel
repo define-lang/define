@@ -5,6 +5,7 @@ package(default_visibility = ["//proofs/operation_graph:__subpackages__"])
 filegroup(
     name = "all_proofs",
     srcs = [
+        ":comparison",
         ":cover_graph",
         ":cover_order",
         ":effect_collection",
@@ -16,6 +17,29 @@ filegroup(
         ":unbounded_schedule_order",
         ":vanishment_graph",
     ],
+)
+
+lean_library(
+    name = "comparison",
+    srcs = ["comparison.lean"],
+    deps = ["//proofs/operation_graph/definitions"],
+)
+
+lean_axiom_test(
+    name = "comparison_axioms_test",
+    size = "small",
+    allowed_axioms = [
+        "propext",
+        "Classical.choice",
+        "Quot.sound",
+    ],
+    imports = ["comparison"],
+    theorems = [
+        "Define.OperationGraph.Comparison.scan_invariants",
+        "Define.OperationGraph.Comparison.scan_iff_maximal",
+        "Define.OperationGraph.Comparison.maximal_iff_of_cover",
+    ],
+    deps = [":comparison"],
 )
 
 lean_library(
@@ -103,6 +127,7 @@ lean_library(
     name = "effect_graph",
     srcs = ["effect_graph.lean"],
     deps = [
+        ":comparison",
         ":cover_graph",
         ":effect_collection",
         ":effect_scheduling",
@@ -119,6 +144,8 @@ lean_axiom_test(
     ],
     imports = ["effect_graph"],
     theorems = [
+        "Define.OperationGraph.ExactEffects.calculatedPrefix_acyclic",
+        "Define.OperationGraph.ExactEffects.scan_iff_calculated",
         "Define.OperationGraph.ExactEffects.incomparable_reduced_independent",
         "Define.OperationGraph.ExactEffects.reduced_acyclic",
         "Define.OperationGraph.ExactEffects.reduced_edge_has_unsafe_reversal",
@@ -251,7 +278,10 @@ lean_axiom_test(
 lean_library(
     name = "vanishment_graph",
     srcs = ["vanishment_graph.lean"],
-    deps = ["//proofs/operation_graph/definitions"],
+    deps = [
+        ":comparison",
+        "//proofs/operation_graph/definitions",
+    ],
 )
 
 lean_axiom_test(
@@ -270,6 +300,8 @@ lean_axiom_test(
         "Define.OperationGraph.VanishmentGraph.vanish_reachability_iff",
         "Define.OperationGraph.VanishmentGraph.extended_acyclic",
         "Define.OperationGraph.VanishmentGraph.extended_minimal",
+        "Define.OperationGraph.VanishmentGraph.compared_extended_minimal",
+        "Define.OperationGraph.VanishmentGraph.compared_vanish_reachability_iff",
     ],
     deps = [":vanishment_graph"],
 )

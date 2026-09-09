@@ -32,11 +32,11 @@ locations. If a particle at `p` defines the position quality `/c`, and a
 replacement particle at `p` defines that same quality, its `p::/c` is the same
 spatial position. However, the specification's Simultaneous Transitive
 Destruction rules distinguish the original particles from replacements. Once the
-original parent's individual destruction empties `p`, its old child no longer
-occupies the replacement's `p::/c`. Unfinished destruction work continues to act
-on the original particles and positions, not on replacements. A model must
-therefore distinguish occupancy available to subsequent operations from
-particles and positions retained for unfinished destruction work.
+original parent's Vacate empties `p`, its old child no longer occupies the
+replacement's `p::/c`. Unfinished destruction work continues to act on the
+original particles and positions, not on replacements. A model must therefore
+distinguish occupancy available to subsequent operations from particles and
+positions retained for unfinished destruction work.
 
 The Particle Operations have these conceptual effects:
 

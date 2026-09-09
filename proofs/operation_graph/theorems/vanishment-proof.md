@@ -10,21 +10,24 @@ constructors, destructors, and transitively triggered actions.
 
 ## Vanish construction
 
-First construct the existing Create, Move, and Vacate graph without
-modification. Resolve each operation's actual Position References using the same
-serial execution and original particle identities as that construction.
+Process Creates, Moves, and Vacates as specified, recording lifetime information
+after each operation's dependencies have been calculated. Resolve its actual
+Position References using the same serial execution and original particle
+identities as the occupancy calculation. This does not require a separate
+whole-program reference-resolution pass.
 
 For each particle selected for destruction, collect:
 
 - Its own Vacate.
-- Every Move whose source particle is that particle.
-- Every operation whose actual Position References use a quality assigned to
-  that particle, including the qualities used through intermediate positions.
+- Its most recent direct Move, if any.
+- Every operation naming a position or action whose parent particle is that
+  particle in its actual Position References.
 
-Combine the candidates and apply the existing Comparison rule to them. The kept
-candidates are the Vanish's dependencies. Calculate these dependencies against
-the unchanged Create, Move, and Vacate graph. A Vanish does not become a
-position setter or reader and does not supply a candidate for another operation.
+After processing all Creates, Moves, and Vacates, combine these candidates and
+apply the existing Comparison rule to them. The kept candidates are the Vanish's
+dependencies. Calculate these dependencies against the unchanged Create, Move,
+and Vacate graph. A Vanish does not become a position setter or reader and does
+not supply a candidate for another operation.
 
 An implicit child Vacate retains its selected position; it does not introduce a
 new reference requiring the defining parent to remain alive. A written Vacate
@@ -110,7 +113,7 @@ Under the stated correspondence, the extension is safe and every remaining edge
 is necessary. It introduces no whole-destructor barrier, parent-child Vanish
 order, or ordering between independent Vacates.
 
-## Source correspondence for the refined Vanish rule
+## Source correspondence for the specified Vanish rule
 
 ### The required particle identities are schedule-independent
 
@@ -119,12 +122,14 @@ particle supplies the quality used by the next part of the reference. The
 existing graph preserves these selected particles, not merely whether those
 positions are occupied. A direct implied reference obtains its quality from the
 same assigned particle without traversing the caller's earlier reference.
-Interface references likewise retain their actual quality setters.
+Interface references likewise retain the particles supplying their action and
+position declarations.
 
 A Move's source occupancy determines the particle it moves directly. The graph
 preserves that identity through ordinary and shared destructor-state changes.
 The list of particles moved transitively may change with operation order, but
-neither the source identity nor the reference's required quality setters does.
+neither the directly moved identity nor the reference's required parent
+particles does.
 
 Thus every collected operation requires the same selected particle in every
 execution permitted by the existing graph. This follows from the reference and
@@ -133,6 +138,64 @@ The checked reference lemma in `particle_requirements.lean` records exactly the
 existence observations made by the different reference forms. Direct movement
 additionally requires the moved particle to exist, even if a retained occupancy
 record still identifies it.
+
+### Reference recording is exactly the specified parent-particle rule
+
+Induct on a Position Reference. A first local position has no parent particle
+and contributes no existence observation. A first implied position contributes
+the particle assigned that position quality. An interface position contributes
+the particle assigned its action; naming the action and its interface position
+can contribute that same particle, but candidates form a set. Extending the
+reference through an intermediate occupied position contributes the selected
+particle supplying the next position or action, as well as the observations of
+the preceding reference. No step contributes a particle merely because it is a
+spatial ancestor not named by this reference.
+
+These cases exhaust Position References. The collected parent particles are
+therefore exactly the existence observations in the structured-reference lemma,
+not an approximation based on whether the action is a destructor. The same
+induction applies to a reference resolved in shared pre-Vacation state: its
+intermediate occupancy observation changes to the appropriate shared state, but
+the selected particle supplying the next quality is still required. The spec's
+broad recording rule needs no first-name exception or destructor-specific
+omission. `reference_parent_particles_iff` in `particle_requirements.lean`
+checks this equality for every structured reference, including interfaces.
+
+### Keeping only the most recent direct Move is sufficient
+
+List the direct Moves of one particle in the serial reference execution. Between
+two consecutive such Moves, no other operation can replace the particle's
+occupancy by that same particle elsewhere: Create introduces a fresh identity,
+and moving a parent changes spatial location without changing this relative
+occupancy. The earlier direct Move fills the position from which the next Move
+takes that particle. The next Move therefore follows that setter, either
+directly or through the position's readers.
+
+If destruction occurs between those Moves, the shared state used by the later
+Move inherits that setter and those readers. Vacation does not reset them. There
+is consequently a path from each later direct Move to the preceding one even
+when they lie on different sides of Vacation. Induction gives a path from the
+most recent direct Move to every earlier direct Move of this particle.
+
+Let `L(P)` contain the Vacate, all reference uses proved above, and all direct
+Moves of `P`. This is the complete lifetime requirement set used by the semantic
+argument. The spec records only the most recent direct Move, but the preceding
+chain proves that its candidates have exactly the same dependency closure as
+`L(P)`. No ordering of equal-recency Vacates is used to obtain this chain.
+
+Optional Comparison of recorded reference candidates preserves that closure too:
+each removed candidate is reached from a retained one. Adding further
+candidates, the Vacate, or the most recent direct Move preserves this fact.
+Already calculated dependencies do not change, so a path used for an earlier
+pruning remains valid at completion. Applying final Comparison thus yields the
+same dependencies whether or not recording was pruned. This is not a second
+graph construction or a whole-graph transitive reduction.
+
+`maximal_iff_of_cover` in `comparison.lean` checks the mathematical step: a
+subset covering every original candidate has exactly the same
+reachability-maximal candidates. This applies both to recorded-use pruning and
+to replacing all direct Moves by their last member once the chain above has been
+derived from the spec.
 
 ### These are all the existence requirements
 
@@ -145,7 +208,7 @@ have their actual existence requirements represented by the collection above.
 The selected particle's own Vacate supplies its requirement to precede Vanish.
 
 Moving an ancestor can change the spatial position of particles still present,
-but it does not fill or empty their positions. Under the refined Vanish rule,
+but it does not fill or empty their positions. Under the specified Vanish rule,
 the absence of an already-vacated particle that no remaining operation needs
 does not invalidate that Move. A reference that actually needs the original
 particle is different and has already contributed a candidate.
@@ -158,7 +221,7 @@ and retained-state interpretation.
 
 ### Safety after inserting Vanishes
 
-For each particle `P`, let `L(P)` be the candidates specified above. Fix an
+For each particle `P`, use the full requirement set `L(P)` defined above. Fix an
 execution of the existing graph and insert Vanishes only after their collected
 candidates. Induct over the resulting execution.
 
@@ -187,13 +250,13 @@ was inserted.
 
 If the particle's Vacate has not occurred, Vanish violates its stipulated order
 after Vacation. If a collected Move has not occurred, it still needs that same
-source particle. If a collected reference use has not occurred, it still needs
-the selected particle's assigned quality. Vanishing first makes that pending
-operation invalid; changing its selected particle or replacing its quality
-setter would not execute the same resolved operation.
+directly moved particle. If a collected reference use has not occurred, it still
+needs the selected particle's assigned quality. Vanishing first makes that
+pending operation invalid; changing its selected particle or replacing its
+quality supplier would not execute the same resolved operation.
 
 These cases prove necessity without using the safety or minimality theorem. They
-establish exactly the fixed-prerequisite correspondence above for the refined
+establish exactly the fixed-prerequisite correspondence above for the specified
 Vanish rule. Comparison can omit candidates already implied by others;
 collecting them does not require retaining them all as direct dependencies.
 
@@ -230,7 +293,13 @@ finish an infinite collection or add an infinitely distant occurrence to a
 natural-number-indexed schedule. The finite construction establishes no compiler
 termination bound for an infinitely expanded action execution.
 
-## Combining Vacate and Vanish without losing concurrency
+## Optional implementation fusion, outside the specified construction
+
+The specification constructs separate Vacates and Vanishes. The following result
+concerns representing two logical operations together in an implementation; it
+is not a phase of the specified graph construction and is not used in its
+safety, completeness, or minimality proof. In particular, it does not claim that
+fusion produces the same vertex set as the specified graph.
 
 The optimization is applied to the resolved graph and must preserve its
 concurrency. Merely finding one schedule with consecutive Vacate and Vanish
@@ -245,10 +314,10 @@ also depend on the vacancy.
 Every interaction required by `V` then already precedes `A`, directly or
 indirectly. Whenever `A` is enabled, no interaction remains to prevent that
 particle's Vanish. The combined operation can empty the position and end the
-particle's existence together, as permitted by Particle Operations. It inherits
-`A`'s dependencies, and every operation depending on `A` instead depends on the
-combined operation. No additional prerequisite is introduced for vacancy or for
-an operation that reuses the position.
+particle's existence together. It inherits `A`'s dependencies, and every
+operation depending on `A` instead depends on the combined operation. No
+additional prerequisite is introduced for vacancy or for an operation that
+reuses the position.
 
 To check reachability among all other occurrences, a path through the combined
 operation expands to a path through `A` in the original graph. Conversely, every
@@ -284,7 +353,7 @@ candidates and keeps `A`. For necessity, Comparison preserves reachability to
 every candidate. If its only kept candidate is `A`, each different candidate
 must be reached from `A`. The preceding combination argument therefore applies
 without first allocating a Vanish vertex. This is an equivalent test for the
-existing Combining Vacate and Vanish rule, not an extra ordering rule.
+optional representation change just proved, not a rule in the specification.
 
 A sufficient certificate that avoids dependency searches is:
 
@@ -376,10 +445,11 @@ by that state equality.
 
 These components supplement the existing position effects. A Move combines its
 source, target, and reference effects with lifetime uses for the directly moved
-particle and quality setters. It remains one operation. Vanish changes only its
-particle's existence component; it neither fills nor empties a position. The
-source correspondence above explains this translation; the component definition
-is not evidence for which source operations need it.
+particle and the particles supplying referenced qualities. It remains one
+operation. Vanish changes only its particle's existence component; it neither
+fills nor empties a position. The source correspondence above explains this
+translation; the component definition is not evidence for which source
+operations need it.
 
 The existing `ExactEffects` theorems apply to these valid components and their
 products. In particular, `independent_enabled_exchange` and
@@ -394,9 +464,12 @@ edge is exactly a kept candidate. It proves that existing reachability is
 unchanged, characterizes every path from a Vanish, excludes dependencies on
 Vanishes, and proves acyclicity and transitive minimality. Both antichain
 premises of the minimality theorem come from Comparison: one for the existing
-operations and one for Vanish. They are mathematical results about that
-calculation, not assumptions that lifetime candidates are semantically
-necessary.
+operations and one for Vanish. `compared_extended_minimal` explicitly runs the
+specified scan for each Vanish and derives its antichain property rather than
+assuming it. `compared_vanish_reachability_iff` proves that the scan gives
+exactly the original candidates' dependency closure. These are mathematical
+results about the calculation, not assumptions that lifetime candidates are
+semantically necessary.
 
 The source correspondence remains an English argument, as do the corresponding
 source arguments for the existing occupancy construction. The formal graph

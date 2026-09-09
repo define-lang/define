@@ -176,8 +176,8 @@ merely because those relationships occur in the serial reference execution.
 
 This conclusion supplies neither an order between Vacates nor an exemption from
 an actual interaction. A destructor that accesses contracted positions can still
-impose the lifetime constraints specified by Destruction Ordering During
-Destructors.
+impose the lifetime constraints specified by Destructors and Destruction
+Ordering.
 
 ## General exchanges and graph construction
 
