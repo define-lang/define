@@ -1431,9 +1431,6 @@ with from the destructor's contracted positions is available to that destructor
 in its pre-Vacation state. Such a particle does not vanish until the destructor
 and its transitively triggered action no longer need to interact with it.
 
-Note that moving a particle counts as an interaction with all of that particle's
-transitive child particles.
-
 This imposes a partial order on Vanishment, but not Vacation.
 
 When multiple destructors are triggered by the same simultaneous destruction,
@@ -1604,14 +1601,11 @@ The following "Particle Operations" exist in Define:
   another. This empties the Move's "source" position and fills its "target"
   position.
 - **Vacate**: A Destroy Particle Statement or auto-destruction causes a particle
-  to vacate its position, leaving that position empty. Each particle
-  transitively destroyed gets its own Vacate operation.
-- **Vanish**: After a particle vacates its position and is no longer needed by
-  any destructor code, it vanishes.
-
-When a Vanish operation for a particle immediately follows the Vacate operation
-of that same particle, the Vacate operation may be skipped and replaced with
-only a Vanish operation.
+  to vacate its position from the perspective of the action executing the
+  destruction, leaving that position empty. Each particle transitively destroyed
+  gets its own Vacate operation.
+- **Vanish**: A particle ceases to exist. No later operation ever depends on a
+  Vanish.
 
 ### Particle Operation Position References
 
@@ -1624,13 +1618,15 @@ Each Particle Operation has its own specific Position References.
 Create, Move and Vacate have the Position References written directly in their
 statements.
 
-Transitive child Vacate operations have no Position References. Any step that
-says to collect or analyze Position References for an operation can be skipped
-for these operations.
+Transitive child Vacate operations and Vanish operations have no Position
+References. Any step that says to collect or analyze Position References for an
+operation can be skipped for these operations.
 
 Vacate operations that are caused via a Destruction Contract are evaluated as
 though they were Destroy Particle Statements within the action performing the
 destroy (just as Destruction Contracts are normally evaluated).
+
+Vanish operations are tied to the particle that was Vacated, not a position.
 
 ### Particle Operation Recency
 
@@ -1661,13 +1657,14 @@ section.
 #### Constructing the Graph
 
 Process Creates, Moves, and Vacates in Particle Operation Recency order. For
-each operation, use the position information defined below to perform three
-phases:
+each operation, perform these phases:
 
 1. **Collection:** collect candidates for the operation's dependencies.
 2. **Comparison:** compare those candidates to choose its dependencies.
 3. **Recording the Operation's Effects:** update the position information for
    subsequent operations.
+4. **Recording Vanish Information:** Record the information needed to place
+   Vanish operations in the graph.
 
 #### Position Setters and Readers
 
@@ -1684,15 +1681,15 @@ no readers.
 
 #### Collection
 
-Collect candidates for the current Particle Operation's dependencies:
+Collect candidates for the operation's dependencies:
 
 - For a Create's or Move's target position, collect its setter, when one exists.
 - For each intermediate position in the operation's Position References, collect
   its setter.
 - For a Move's source or the position emptied by a Vacate, collect its readers.
   If there are none, collect its setter instead.
-- For each parent particle of a position or action in the operation's Position
-  References, collect that particle's Create.
+- For every position or action named in the operation's Position References,
+  collect its parent particle's Create, if it has a parent particle.
 
 Combine all candidates. (Note that an operation collected for several reasons is
 still one candidate.)
@@ -1719,7 +1716,7 @@ or indirectly, skip it. Otherwise, add the candidate to the set.
 
 #### Recording the Operation's Effects
 
-After calculating a Particle Operation's dependencies:
+After calculating a Create's, Move's, or Vacate's dependencies:
 
 - Record it as a reader of each intermediate position for which it collected
   candidates.
@@ -1731,6 +1728,34 @@ position depends on it, directly or indirectly. In particular, when recording an
 operation as a reader, we may remove any other reader of that position collected
 as a candidate for the operation's dependencies. This applies even if Comparison
 skipped that candidate.
+
+#### Recording Vanish Information
+
+After calculating a Create's, Move's, or Vacate's dependencies:
+
+- For a Move, record it as the most recent Move that directly moves that
+  specific particle (do not count Moves of parent particles that cause a
+  particle to move as a child).
+- For a Vacate, record it as the selected particle's Vacate.
+- For every position or action named in the operation’s Position References, if
+  it has a parent particle, record the operation as a candidate for that parent
+  particle's Vanish. These operations are added to a cumulative set of
+  dependencies for the Vanish, called its "recorded candidates."
+
+The recorded candidates may be pruned at this point by applying Comparison to
+them as a separate set from the Create's, Move's, or Vacate's dependencies. If
+done, this is done purely as an optimization (it is not required for correctness
+due to the later comparison that happens during Completing Vanishes).
+
+#### Completing Vanishes
+
+After processing all Creates, Moves, and Vacates in a full Particle Operation
+Dependency Graph, apply Comparison to each Vanish's recorded candidates, its
+Vacate, and its most recent direct Move, if any. The result is the Vanish's
+dependencies.
+
+A Vanish does not change any position's setter or readers and does not become a
+dependency of another Particle Operation.
 
 #### Processing Destructor Operations
 

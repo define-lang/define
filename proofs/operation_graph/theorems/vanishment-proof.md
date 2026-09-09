@@ -272,6 +272,62 @@ that prerequisite would postpone vacancy in executions where `A` was enabled
 before `M` finished. This fails the stated condition. Finishing `M` early in one
 chosen schedule does not remove this distinction in the resolved graph.
 
+### Certifying combination before constructing Vanish
+
+Write `U ≤ A` when `U = A` or `A` depends directly or indirectly on `U` in the
+Create, Move, and Vacate graph. Let `L(P)` be the full collection for the
+particle `P`, including its Vacate `A`. Then Comparison keeps exactly `{A}` if
+and only if every `U` in `L(P)` satisfies `U ≤ A`.
+
+For sufficiency, `A` covers every other candidate, so Comparison omits those
+candidates and keeps `A`. For necessity, Comparison preserves reachability to
+every candidate. If its only kept candidate is `A`, each different candidate
+must be reached from `A`. The preceding combination argument therefore applies
+without first allocating a Vanish vertex. This is an equivalent test for the
+existing Combining Vacate and Vanish rule, not an extra ordering rule.
+
+A sufficient certificate that avoids dependency searches is:
+
+1. Every operation using a quality assigned to `P` also requires `P` as an
+   intermediate occupant through ordinary occupancy, not retained destructor
+   occupancy.
+2. No operation directly moves `P` through retained destruction state after its
+   selected Vacation.
+
+To derive the first condition's consequence, take such a use `U` of `P` in
+position `Q`. It is a reader of `Q`. The next operation emptying `Q` depends on
+`U`, or on a later reader that already depends on `U`; reader pruning preserves
+that dependency. If this emptying is `A`, then `U ≤ A`. Otherwise it is a direct
+Move of `P`. Successive direct Moves before Vacation form a dependency chain:
+each reads the occupancy supplied by the preceding Move, possibly through
+intervening readers. The Vacate at the end of that chain follows its last Move.
+Thus `U ≤ A` in this case too. Moving a parent does not change occupancy in its
+child positions and does not interrupt this argument.
+
+The second condition makes that same ordinary-occupancy chain cover every direct
+Move of `P`. Destruction of an ancestor selects `P` for simultaneous Vacation
+too; a subsequent direct Move through the retained state is excluded by this
+condition. Its position in an arbitrary enumeration of simultaneous Vacates
+supplies no ordering. The remaining candidate is `A` itself. Every member of
+`L(P)` therefore satisfies the exact condition proved above.
+
+The first condition does not hold merely because a reference is written rather
+than implied: a written reference through retained destructor occupancy does not
+require the ordinary occupancy released by `A`. Direct interface or implied
+access in any transitively triggered action can likewise require `P` without
+requiring its ordinary occupancy. Conversely, such access does not necessarily
+prevent combination: another requirement of the same operation, or an
+independent dependency chain, may already order that use before `A`. Absence of
+these reference forms is consequently not the exact criterion.
+
+An early certificate must cover all actual uses and direct Moves, including
+future triggered actions, not merely operations processed so far. A complete
+resolved-input scan can establish it conservatively without graph queries. An
+implementation may instead obtain an equivalent summary during source analysis,
+but absence of a use in a partial scan is not such a summary. Failure of the
+sufficient certificate requires the ordinary Vanish calculation; that
+calculation can still find that `{A}` is its entire direct dependency set.
+
 ### Replacement must not acquire a destructor dependency
 
 For example, create a particle in `position<item>`, destroy it, then create its
