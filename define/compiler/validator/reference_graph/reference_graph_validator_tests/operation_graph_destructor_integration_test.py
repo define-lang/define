@@ -83,7 +83,7 @@ def test_contributed_destructor_move_removes_fill_after_two_destruction_dependen
 @pytest.mark.xfail(
     strict=True,
     raises=AssertionError,
-    reason="S2/S5: discover contributed Destructor callees and resolve their destruction dependencies",
+    reason="S5: retain contributed Destructor operations and resolve their destruction dependencies",
 )
 def test_contributed_destructor_calls_action_with_child_destruction(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
@@ -2712,6 +2712,91 @@ def test_caller_added_destructor_fires_in_callee(
         "callee.destroy(target)": ["test.move(carrier, box::/callee::target)"],
         "destructor.create(_noop)": ["test.move(carrier, box::/callee::target)"],
         "destructor.destroy(_noop)": ["destructor.create(_noop)"],
+        "test.destroy(box::/callee::run)": ["test.create(box::/callee::run)"],
+        "test.destroy(box)": [
+            "test.create(box::/callee::run)",
+            "callee.destroy(target)",
+        ],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+def test_caller_added_destructor_discovers_callees_and_their_destructors(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(box)": [],
+        "test.create(carrier)": [],
+        "test.move(carrier, box::/callee::target)": [
+            "test.create(box)",
+            "test.create(carrier)",
+        ],
+        "test.create(box::/callee::run)": ["test.create(box)"],
+        "callee.destroy(target)": ["test.move(carrier, box::/callee::target)"],
+        "destructor.create(worker)": ["test.move(carrier, box::/callee::target)"],
+        "destructor.create(source)": ["test.move(carrier, box::/callee::target)"],
+        "destructor.move(source, worker::/worker::target)": [
+            "destructor.create(worker)",
+            "destructor.create(source)",
+        ],
+        "worker.create(target::/child)": [
+            "destructor.move(source, worker::/worker::target)"
+        ],
+        "worker:child_destructor.create(work)": ["worker.create(target::/child)"],
+        "worker:child_destructor.destroy(work)": [
+            "worker:child_destructor.create(work)"
+        ],
+        # Local Destructor work does not add dependencies to either Destroy.
+        "worker.destroy(target::/child)": ["worker.create(target::/child)"],
+        "worker.destroy(target)": ["worker.create(target::/child)"],
+        "destructor.create(source)#2": [
+            "destructor.move(source, worker::/worker::target)"
+        ],
+        "destructor.move(source, worker::/worker::target)#2": [
+            "destructor.create(source)#2",
+            "worker.destroy(target)",
+        ],
+        "worker#2.create(target::/child)": [
+            "destructor.move(source, worker::/worker::target)#2"
+        ],
+        "worker#2:child_destructor.create(work)": ["worker#2.create(target::/child)"],
+        "worker#2:child_destructor.destroy(work)": [
+            "worker#2:child_destructor.create(work)"
+        ],
+        "worker#2.destroy(target::/child)": ["worker#2.create(target::/child)"],
+        "worker#2.destroy(target)": ["worker#2.create(target::/child)"],
+        "destructor.create(contributor)": ["test.move(carrier, box::/callee::target)"],
+        "destructor.move(contributor, worker::/nested_worker::target)": [
+            "destructor.create(worker)",
+            "destructor.create(contributor)",
+        ],
+        "nested_worker.destroy(target)": [
+            "destructor.move(contributor, worker::/nested_worker::target)"
+        ],
+        "inner_destructor.create(work)": [
+            "destructor.move(contributor, worker::/nested_worker::target)"
+        ],
+        "inner_destructor.destroy(work)": ["inner_destructor.create(work)"],
+        "destructor.create(contributor)#2": [
+            "destructor.move(contributor, worker::/nested_worker::target)"
+        ],
+        "destructor.move(contributor, worker::/nested_worker::target)#2": [
+            "destructor.create(contributor)#2",
+            "nested_worker.destroy(target)",
+        ],
+        "nested_worker#2.destroy(target)": [
+            "destructor.move(contributor, worker::/nested_worker::target)#2"
+        ],
+        "inner_destructor#2.create(work)": [
+            "destructor.move(contributor, worker::/nested_worker::target)#2"
+        ],
+        "inner_destructor#2.destroy(work)": ["inner_destructor#2.create(work)"],
+        "destructor.destroy(worker)": [
+            "worker#2.destroy(target)",
+            "nested_worker#2.destroy(target)",
+        ],
         "test.destroy(box::/callee::run)": ["test.create(box::/callee::run)"],
         "test.destroy(box)": [
             "test.create(box::/callee::run)",

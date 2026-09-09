@@ -1,0 +1,31 @@
+define the potential action<my.domain.com:my_lib:/destructor> {
+    it happens when {
+        this particle is being destroyed.
+    } and it does {
+        define the position<worker> {
+            it may only contain particles where {
+                it has the action</worker>.
+                it has the action</nested_worker>.
+            }
+        }
+        define the position<source> {
+            it may only contain particles where {
+                it has the position</child>.
+            }
+        }
+        define the position<contributor> {
+            it may only contain particles where {
+                it has the action</inner_destructor>.
+            }
+        }
+        create a particle in position<worker>.
+        create a particle in position<source>.
+        move the particle in position<source> to position<worker>::action</worker>::position<target>.
+        create a particle in position<source>.
+        move the particle in position<source> to position<worker>::action</worker>::position<target>.
+        create a particle in position<contributor>.
+        move the particle in position<contributor> to position<worker>::action</nested_worker>::position<target>.
+        create a particle in position<contributor>.
+        move the particle in position<contributor> to position<worker>::action</nested_worker>::position<target>.
+    }
+}

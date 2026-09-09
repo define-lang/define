@@ -1,0 +1,13 @@
+define the potential action<my.domain.com:my_lib:/worker> {
+    define the position<target> {
+        it may only contain particles where {
+            it has the position</child>.
+        }
+    }
+    it happens when {
+        the position<target> has a particle.
+    } and it does {
+        create a particle in position<target>::position</child>.
+        destroy the particle in position<target>.
+    }
+}

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import abc
+import collections
 import typing
 from dataclasses import dataclass
 
@@ -144,15 +145,41 @@ class ResolvedOperationGraphBuilder:
         self._resolve_all_actions()
         entry_action_execution = EntryActionExecution(self._entry_action)
         operation_keys: list[_ResolvedOperationKey] = []
-        pending_destructors: list[
+        pending_destructors: collections.deque[
             tuple[
                 ActionExecution,
                 operation_graph_model.ResolvedCalleeDestroy,
                 operation_graph_action_resolver.ResolvedActionExecution,
             ]
-        ] = []
+        ] = collections.deque()
         work: list[ActionExecution] = [entry_action_execution]
-        while work:
+        while work or pending_destructors:
+            if not work:
+                (
+                    contributing_execution,
+                    resolved_callee_destroy,
+                    destructor,
+                ) = pending_destructors.popleft()
+                direct_callee_execution = self._callee_execution(
+                    contributing_execution,
+                    resolved_callee_destroy.direct_callee_execution,
+                )
+                callee_destroy = resolved_callee_destroy.callee_destroy
+                destroying_execution = self._execution_for_destruction_action(
+                    direct_callee_execution,
+                    callee_destroy.action,
+                    callee_destroy.operation.destruction_fact,
+                )
+                destructor_execution = ContributedDestructorActionExecution(
+                    caller=destroying_execution,
+                    direct_execution=destructor,
+                    contributing_execution=contributing_execution,
+                    callee_destroy=resolved_callee_destroy,
+                )
+                self._index_callee_execution(destructor_execution)
+                # Contributions need their destroying Action Executions to exist,
+                # but their callees need the same discovery as ordinary callees.
+                work.append(destructor_execution)
             caller_execution = work.pop()
             resolved_action = self._resolved_actions[caller_execution.action]
             for operation in resolved_action.graph.particle_operations:
@@ -175,34 +202,6 @@ class ResolvedOperationGraphBuilder:
                         (caller_execution, resolved_callee_destroy, destructor)
                     )
             work.extend(reversed(callees))
-
-        for (
-            contributing_execution,
-            resolved_callee_destroy,
-            destructor,
-        ) in pending_destructors:
-            direct_callee_execution = self._callee_execution(
-                contributing_execution,
-                resolved_callee_destroy.direct_callee_execution,
-            )
-            callee_destroy = resolved_callee_destroy.callee_destroy
-            destroying_execution = self._execution_for_destruction_action(
-                direct_callee_execution,
-                callee_destroy.action,
-                callee_destroy.operation.destruction_fact,
-            )
-            destructor_execution = ContributedDestructorActionExecution(
-                caller=destroying_execution,
-                direct_execution=destructor,
-                contributing_execution=contributing_execution,
-                callee_destroy=resolved_callee_destroy,
-            )
-            self._index_callee_execution(destructor_execution)
-            resolved_destructor_action = self._resolved_actions[
-                destructor_execution.action
-            ]
-            for operation in resolved_destructor_action.graph.particle_operations:
-                operation_keys.append((destructor_execution, operation))
 
         return ResolvedOperationGraph(
             entry_action_execution,
