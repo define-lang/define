@@ -17,7 +17,6 @@ if we built a whole-program operation graph.
 from __future__ import annotations
 
 import abc
-import enum
 import typing
 from dataclasses import dataclass, field
 
@@ -26,13 +25,7 @@ from define.compiler import ast
 if typing.TYPE_CHECKING:
     from collections.abc import Collection, Iterable, Sequence
 
-
-class PositionOccupancyState(enum.Enum):
-    """The occupancy state of an interface position."""
-
-    EMPTY = enum.auto()
-    OCCUPIED = enum.auto()
-    ERROR = enum.auto()
+    from define.compiler.validator.reference_graph import position_occupancy
 
 
 @dataclass(frozen=True, slots=True)
@@ -40,15 +33,24 @@ class OperationGraphRequirement:
     """A caller-controlled position and the state an action requires."""
 
     requirement_position: tuple[str, ...]
-    required_state: PositionOccupancyState
+    required_state: position_occupancy.PositionOccupancyState
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class SimultaneousDestruction:
+    """The directly destroyed particle and its Simultaneous Transitive Destruction."""
+
+    directly_destroyed_position: ast.PositionReference
+    destroying_action: ast.GlobalTypedName
+    is_automatic: bool
 
 
 @dataclass(frozen=True, slots=True, eq=False)
 class DestructionFact:
-    """Identifies one destruction initiated by its destroying action and propagated through callers."""
+    """Identifies the destruction of one specific particle."""
 
+    destruction: SimultaneousDestruction
     destroyed_position_in_destroyer: ast.PositionReference
-    destroying_action: ast.GlobalTypedName
 
 
 type ConcreteOperationNode = PositionOperationNode | GuaranteeNode
@@ -654,6 +656,7 @@ class ContributedDestructionPosition:
     """One caller-known occupied position contributed to a destruction."""
 
     destruction_contract_position: DestructionContractPosition
+    destruction_fact: DestructionFact
     # Retaining the contributed child positions preserves the Destroys that must
     # precede this position's Destroy without reconstructing name relationships.
     preceding_contributed_positions: tuple[ContributedDestructionPosition, ...]
@@ -700,7 +703,6 @@ class DestructionContractContribution:
 
     destruction_fact: DestructionFact
     destroyed_particle_position: ast.PositionReference
-    destroyed_position_in_destroying_action: ast.PositionReference
     children: Sequence[ContributedDestructionPosition]
     # Retaining the final contributed positions preserves the Destroys that finish
     # their contributions before the callee Destroy without another traversal.
@@ -737,7 +739,7 @@ class ContributedDestructionFragment:
 
 @dataclass(slots=True, eq=False)
 class OperationGraphDestruction:
-    """One Destruction Fact and its relationships in an Operation Graph."""
+    """One Simultaneous Transitive Destruction and its Operation Graph relationships."""
 
     operations_by_position: dict[tuple[str, ...], DestructionFactDestroyNode] = field(
         init=False, default_factory=dict

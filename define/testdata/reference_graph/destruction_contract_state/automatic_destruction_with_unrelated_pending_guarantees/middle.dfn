@@ -1,0 +1,18 @@
+define the potential action<my.domain.com:my_lib:/middle> {
+    define the position<first>.
+    define the position<second>.
+    define the position<unrelated> {
+        it may only contain particles where {
+            it has the action</outer>.
+        }
+    }
+    it happens when {
+        the position<first> has a particle.
+    } and it does {
+        define the position<left>.
+        define the position<right>.
+        move the particle in position<first> to position<left>.
+        move the particle in position<second> to position<right>.
+        create a particle in position<unrelated>::action</outer>::position<run>.
+    }
+}

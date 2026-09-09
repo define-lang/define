@@ -11,8 +11,8 @@ from define.compiler.codegen.literal.python import (
 from define.compiler.data_structures import typed_name_dict
 from define.compiler.validator import test_helpers as validator_test_helpers
 from define.compiler.validator.reference_graph import (
-    action_contract,
     operation_graph_model,
+    position_occupancy,
 )
 
 if typing.TYPE_CHECKING:
@@ -143,7 +143,7 @@ def _create_fragment(position_name: str) -> action_plan.ActionFragment:
 
 def _requirement_binding_hole(
     position_name: str,
-    required_state: action_contract.PositionOccupancyState,
+    required_state: position_occupancy.PositionOccupancyState,
 ) -> operation_graph_model.RequirementNode:
     action_parent_binding_hole = operation_graph_model.ActionParentLastOperationNode(
         node_id=0
@@ -265,10 +265,10 @@ def test_action_parent_binding_hole_method_name():
 
 def test_requirement_binding_hole_method_names_include_required_state():
     empty = _requirement_binding_hole(
-        "empty", action_contract.PositionOccupancyState.EMPTY
+        "empty", position_occupancy.PositionOccupancyState.EMPTY
     )
     occupied = _requirement_binding_hole(
-        "occupied", action_contract.PositionOccupancyState.OCCUPIED
+        "occupied", position_occupancy.PositionOccupancyState.OCCUPIED
     )
 
     assert _binding_hole_method_names(empty, occupied) == {
@@ -280,19 +280,19 @@ def test_requirement_binding_hole_method_names_include_required_state():
 def test_semantic_prefixes_do_not_conflict_with_position_names():
     empty_rule = _empty_rule_binding_hole("source")
     empty_requirement = _requirement_binding_hole(
-        "empty", action_contract.PositionOccupancyState.EMPTY
+        "empty", position_occupancy.PositionOccupancyState.EMPTY
     )
     occupied_requirement = _requirement_binding_hole(
-        "source", action_contract.PositionOccupancyState.OCCUPIED
+        "source", position_occupancy.PositionOccupancyState.OCCUPIED
     )
     named_for_empty_rule = _requirement_binding_hole(
-        "source_for_empty_rule", action_contract.PositionOccupancyState.OCCUPIED
+        "source_for_empty_rule", position_occupancy.PositionOccupancyState.OCCUPIED
     )
     named_when_empty = _requirement_binding_hole(
-        "source_when_empty", action_contract.PositionOccupancyState.OCCUPIED
+        "source_when_empty", position_occupancy.PositionOccupancyState.OCCUPIED
     )
     named_when_occupied = _requirement_binding_hole(
-        "source_when_occupied", action_contract.PositionOccupancyState.OCCUPIED
+        "source_when_occupied", position_occupancy.PositionOccupancyState.OCCUPIED
     )
 
     assert _binding_hole_method_names(
@@ -419,8 +419,10 @@ def test_destruction_connection_names_use_action_execution(
     _, execution, _ = _action_executions(validate_project)
     destroyed_position = _position("/destroyed")
     destruction_fact = operation_graph_model.DestructionFact(
+        operation_graph_model.SimultaneousDestruction(
+            destroyed_position, execution.callee_action_name, is_automatic=False
+        ),
         destroyed_position,
-        execution.callee_action_name,
     )
     first_destroy = operation_graph_model.DestructionFactDestroyNode(
         node_id=1,
@@ -490,8 +492,10 @@ def test_continue_destroy_method_uses_destroy_fragment_name():
     definition = _action_definition()
     destroyed_position = _position("/destroyed")
     destruction_fact = operation_graph_model.DestructionFact(
+        operation_graph_model.SimultaneousDestruction(
+            destroyed_position, definition.typed_name, is_automatic=False
+        ),
         destroyed_position,
-        definition.typed_name,
     )
     destroy = operation_graph_model.DestructionFactDestroyNode(
         node_id=1,

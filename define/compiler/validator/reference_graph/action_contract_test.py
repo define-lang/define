@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from define.compiler import ast
-from define.compiler.validator.reference_graph import action_contract
+from define.compiler.validator.reference_graph import (
+    action_contract,
+    position_occupancy,
+)
 from define.compiler.validator.structural import program_validator
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -49,7 +52,7 @@ def _resolved(req: action_contract.PositionRequirement, fqun: ast.Fqun) -> str:
     return req.position.source_form_in_universe(fqun)
 
 
-_EMPTY = action_contract.PositionOccupancyState.EMPTY
+_EMPTY = position_occupancy.PositionOccupancyState.EMPTY
 
 _OUTER = _parse_action(
     (

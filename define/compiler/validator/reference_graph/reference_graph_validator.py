@@ -12,9 +12,9 @@ from define.compiler.graphs import (
     reference_graph_executor,
 )
 from define.compiler.validator.reference_graph import (
-    action_contract,
     definition_postorder_validator,
     operation_graph,
+    position_occupancy,
     reference_graph_validation_state,
 )
 
@@ -146,7 +146,7 @@ class ReferenceGraphValidator:
             if (
                 requirement.position.starts_with_global
                 and requirement.required_state
-                == action_contract.PositionOccupancyState.OCCUPIED
+                == position_occupancy.PositionOccupancyState.OCCUPIED
             ):
                 definition_result.add_diagnostic(
                     diagnostics.EntryPointOccupiedImpliedPositionRequirementDiagnostic(

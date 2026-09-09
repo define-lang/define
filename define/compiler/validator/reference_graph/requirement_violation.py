@@ -12,13 +12,18 @@ its own small recipe.
 
 from __future__ import annotations
 
+import typing
 from dataclasses import dataclass
 
 from define.compiler import ast, diagnostics
 from define.compiler.validator.reference_graph import (
     action_contract,
     particle_info,
+    position_occupancy,
 )
+
+if typing.TYPE_CHECKING:
+    from collections.abc import Iterable
 
 
 @dataclass(frozen=True, slots=True)
@@ -73,7 +78,7 @@ def trigger_violation(
         location=acting_on_position.location,
         position_name=position_name,
         required_empty=req.required_state
-        == action_contract.PositionOccupancyState.EMPTY,
+        == position_occupancy.PositionOccupancyState.EMPTY,
         action_name=req.enclosing_action.typed_name.source_typed_name,
         steps=steps,
     )
@@ -135,7 +140,7 @@ def direct_destructor(
         location=location,
         position_name=position_name,
         required_empty=req.required_state
-        == action_contract.PositionOccupancyState.EMPTY,
+        == position_occupancy.PositionOccupancyState.EMPTY,
         action_name=destructor_name,
         steps=steps,
     )
@@ -145,10 +150,11 @@ def contract_destructor(
     *,
     propagated_requirement: action_contract.PositionRequirement,
     resolved_position: ast.PositionReference,
-    occupancy: action_contract.ChildOccupancy,
+    occupancy: position_occupancy.ChildOccupancy,
     definition: ast.QualityDefinition,
     destroying_definition: ast.ActionDefinition,
     destruction_contract: action_contract.DestructionContract,
+    propagation_steps: Iterable[action_contract.PropagationStep],
     particle_position: ast.PositionReference,
     particle: particle_info.ParticleInfo,
     trigger_step: action_contract.PropagationStep,
@@ -161,14 +167,14 @@ def contract_destructor(
         position=propagated_requirement.position.in_caller(
             destruction_contract.destruction_fact.destroyed_position_in_destroyer
         ),
-        inferred_at=destruction_contract.destruction_fact.destroyed_position_in_destroyer.location,
+        inferred_at=destruction_contract.destruction_fact.destruction.directly_destroyed_position.location,
         enclosing_action=destroying_definition,
         propagated_from=propagated_requirement,
     )
     position_name = resolved_position.source_form_in_universe(enclosing_fqun)
     required_empty = (
         destruction_requirement.required_state
-        == action_contract.PositionOccupancyState.EMPTY
+        == position_occupancy.PositionOccupancyState.EMPTY
     )
     fill_at = occupancy.filled_at if required_empty else None
     if required_empty and fill_at is None:
@@ -192,14 +198,14 @@ def contract_destructor(
     # happens after every trigger hop and just before the destructor fires (the
     # same placement direct_destructor uses).
     auto_step: list[action_contract.PropagationStep] = []
-    if destruction_contract.is_auto_destruction:
+    if destruction_contract.destruction_fact.destruction.is_automatic:
         auto_step = _auto(
             _AutoDestruction(
-                local_position_name=destruction_contract.destruction_fact.destroyed_position_in_destroyer.source_form_in_universe(
+                local_position_name=destruction_contract.destruction_fact.destruction.directly_destroyed_position.source_form_in_universe(
                     enclosing_fqun
                 ),
-                containing_definition_name=destruction_contract.destruction_fact.destroying_action.source_typed_name,
-                location=destruction_contract.destruction_fact.destroyed_position_in_destroyer.location,
+                containing_definition_name=destruction_contract.destruction_fact.destruction.destroying_action.source_typed_name,
+                location=destruction_contract.destruction_fact.destruction.directly_destroyed_position.location,
             )
         )
     steps = [
@@ -214,7 +220,7 @@ def contract_destructor(
         ),
         trigger_step,
         *_fill(position_name, fill_at),
-        *destruction_contract.trigger_chain,
+        *propagation_steps,
         *auto_step,
         *destruction_requirement.propagation_chain(),
     ]

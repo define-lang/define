@@ -10,9 +10,11 @@ from define.compiler import ast
 from define.compiler.data_structures import trie
 from define.compiler.validator.reference_graph import (
     action_contract,
+    child_state,
     operation_graph,
     operation_graph_model,
     particle_info,
+    position_occupancy,
     quality_assignment,
 )
 from define.compiler.validator.reference_graph.dead_code import dead_interface_tracker
@@ -31,13 +33,12 @@ class ParticleDestruction:
     """A destruction target and its occupied transitive child Positions."""
 
     position: ast.PositionReference
-    destruction_fact: operation_graph_model.DestructionFact
-    transitive_children: list[ast.PositionReference]
+    facts: list[operation_graph_model.DestructionFact]
 
     def positions(self) -> Iterator[ast.PositionReference]:
         """Yield the target Position followed by its transitive child Positions."""
-        yield self.position
-        yield from self.transitive_children
+        for fact in self.facts:
+            yield fact.destroyed_position_in_destroyer
 
 
 @dataclass(frozen=True, slots=True)
@@ -56,7 +57,7 @@ class ResolvedRequirementPosition:
 
     local_position: ast.PositionReference
     contracted_position: ast.PositionReference
-    required_state: action_contract.PositionOccupancyState
+    required_state: position_occupancy.PositionOccupancyState
 
 
 @dataclass(frozen=True, slots=True)
@@ -107,6 +108,25 @@ class _ErrorState:
     """
 
     caused_by: ast.PositionReference | None = None
+
+
+def _child_occupancy(node: _NodeState) -> position_occupancy.ChildOccupancy | None:
+    if node.particle_info is not None:
+        return position_occupancy.ChildOccupancy(
+            position_occupancy.PositionOccupancyState.OCCUPIED,
+            filled_at=node.particle_info.last_position.location,
+        )
+    if node.emptied_by is not None:
+        return position_occupancy.EMPTY_OCCUPANCY
+    return None
+
+
+def _child_error_occupancy(
+    error: _ErrorState,
+) -> position_occupancy.ChildOccupancy | None:
+    if error.caused_by is not None:
+        return position_occupancy.ERROR_OCCUPANCY
+    return None
 
 
 # Body statements and a directly-applied contract's own guarantees are both at
@@ -210,8 +230,8 @@ class _PendingNestedGuarantees:
 
     Each nested guarantee is stored by a position prefix.
     ``drain_shortest_first`` yields the ones whose prefix is a parent name of a
-    queried position (shortest prefix first); ``drain_at_or_below`` yields the
-    ones for which the queried position is a parent name. Both remove what they
+    queried position (shortest prefix first); ``drain_at_or_below_for`` yields the
+    ones for which a queried position is a parent name. Both remove what they
     yield and re-query as they go: applying a yielded nested guarantee can add
     ones with additional child names, which the drain then picks up.
     """
@@ -308,14 +328,26 @@ class _PendingNestedGuarantees:
             previous_key = key
             previous_drained_prefix_count = length
 
-    def drain_at_or_below(self, key: tuple[str, ...]) -> Iterator[_PendingGuarantee]:
-        """Yield guarantees whose prefixes equal ``key`` or have it as a parent name."""
-        depth = len(key)
+    def drain_at_or_below_for(
+        self, keys: Sequence[tuple[str, ...]]
+    ) -> Iterator[_PendingGuarantee]:
+        """Yield guarantees at or below any of the equally long keys."""
+        if not self._by_prefix or not keys:
+            return
+        # Automatic Destruction can request thousands of locally defined
+        # Positions. They all have one name; other callers request just one key.
+        # Matching against a set avoids scanning the pending prefixes separately
+        # for every Position being destroyed.
+        length = len(keys[0])
+        requested = set(keys)
         # The reason for this outer while loop is that our caller adds more prefixes
         # as they are running.
-        while matching := [
-            p for p in self._by_prefix if len(p) >= depth and p[:depth] == key
-        ]:
+        while self._by_prefix:
+            matching = [
+                prefix for prefix in self._by_prefix if prefix[:length] in requested
+            ]
+            if not matching:
+                return
             for prefix in matching:
                 yield from self._by_prefix.pop(prefix)
 
@@ -467,6 +499,46 @@ class _ParticleStateStore:
         """Return the particle at this position, or None if it is empty."""
         state = self._state.get(key)
         return state.particle_info if state is not None else None
+
+    def snapshot_child_state(self, key: tuple[str, ...]) -> child_state.ChildState:
+        """Capture known descendant occupancy, with keys relative to key."""
+        result = dict(self._state.selected_subtree_items(key, _child_occupancy))
+        # An error entry wins over a stale state entry, so it is applied last.
+        result.update(self._error.selected_subtree_items(key, _child_error_occupancy))
+        return child_state.FlatChildState(result)
+
+    def add_child_state(
+        self,
+        values: position_occupancy.ChildOccupancyMap,
+        snapshot: child_state.ChildState,
+        key: tuple[str, ...],
+        position_in_child_state: tuple[str, ...],
+        contract_positions: set[tuple[str, ...]],
+    ):
+        """Collect new caller knowledge up to other contract positions."""
+        # Another contract can describe a child particle with an independent
+        # origin after a Move. Its own caller knowledge must determine that
+        # particle's Child State, not the old contents of this caller position.
+        for state_position, node in self._state.pruned_subtree_items(
+            key,
+            key_prefix=position_in_child_state,
+            excluded_keys=contract_positions,
+        ):
+            if snapshot.get(state_position) is not None:
+                continue
+            occupancy = _child_occupancy(node)
+            if occupancy is not None:
+                values[state_position] = occupancy
+        # An error entry wins over a stale state entry, so it is applied last.
+        for state_position, error in self._error.pruned_subtree_items(
+            key,
+            key_prefix=position_in_child_state,
+            excluded_keys=contract_positions,
+        ):
+            if snapshot.get(state_position) is not None:
+                continue
+            if error.caused_by is not None:
+                values[state_position] = position_occupancy.ERROR_OCCUPANCY
 
     def callees_with_occupied_interface_child_position(
         self, position: ast.ChainedNameTuple
@@ -885,7 +957,7 @@ class ParticleTracker:
     def infer_direct_requirements(
         self,
         position: ast.PositionReference,
-        required_state: action_contract.PositionOccupancyState,
+        required_state: position_occupancy.PositionOccupancyState,
         interface_position_names: Collection[str],
     ) -> list[ResolvedRequirementPosition]:
         """Infer direct requirements and record their RequirementNodes when needed."""
@@ -919,7 +991,7 @@ class ParticleTracker:
             requirement_state = (
                 required_state
                 if requirement_position is position
-                else action_contract.PositionOccupancyState.OCCUPIED
+                else position_occupancy.PositionOccupancyState.OCCUPIED
             )
             self._record_requirement_in_operation_graph(
                 contracted_position,
@@ -1044,7 +1116,7 @@ class ParticleTracker:
     def _record_requirement_in_operation_graph(
         self,
         contracted_position: ast.PositionReference,
-        required_state: action_contract.PositionOccupancyState,
+        required_state: position_occupancy.PositionOccupancyState,
         nearest_particle: tuple[tuple[str, ...], particle_info.ParticleInfo] | None,
     ):
         if nearest_particle is not None:
@@ -1067,34 +1139,39 @@ class ParticleTracker:
         self._apply_pending_guarantees_up_to(key)
         return self._store.occupant(key)
 
-    def snapshot_child_state(
-        self, for_position: ast.PositionReference
-    ) -> dict[tuple[str, ...], action_contract.ChildOccupancy]:
-        """Capture the occupancy of every descendant position, keyed relative to for_position.
+    def snapshot_child_states(
+        self, for_positions: Sequence[ast.PositionReference]
+    ) -> list[child_state.ChildState]:
+        """Capture child occupancy for Positions destroyed together, in order.
 
-        The result is plain immutable data, decoupled from later tracker
-        mutation. Each key is the chained-name suffix below the snapshotted
+        An explicit Destroy has one target; Automatic Destruction targets
+        locally defined Positions, each with a single name.
+
+        Each snapshot is decoupled from later tracker mutation. Its keys are
+        chained-name suffixes below the snapshotted
         particle, so a caller's snapshot of the same particle shares the key
         space and merges directly.
         """
-        key = for_position.canonical_chained_name_tuple
+        keys = [position.canonical_chained_name_tuple for position in for_positions]
         # TODO: Not sure we actually need to fully resolve this; I think there's a world
         # in which we use references somehow here just like we do with normal guarantees.
+        self._fully_resolve_pending_guarantees(*keys)
+        return [self._store.snapshot_child_state(key) for key in keys]
+
+    def add_child_state(
+        self,
+        values: position_occupancy.ChildOccupancyMap,
+        snapshot: child_state.ChildState,
+        for_position: ast.PositionReference,
+        position_in_child_state: tuple[str, ...],
+        contract_positions: set[tuple[str, ...]],
+    ):
+        """Collect new caller knowledge up to other contract positions."""
+        key = for_position.canonical_chained_name_tuple
         self._fully_resolve_pending_guarantees(key)
-        result: dict[tuple[str, ...], action_contract.ChildOccupancy] = {}
-        for relative_key, node in self._store.state.subtree_items(key):
-            if node.particle_info is not None:
-                result[relative_key] = action_contract.ChildOccupancy(
-                    action_contract.PositionOccupancyState.OCCUPIED,
-                    filled_at=node.particle_info.last_position.location,
-                )
-            elif node.emptied_by is not None:
-                result[relative_key] = action_contract.EMPTY_OCCUPANCY
-        # An error entry wins over a stale state entry, so it is applied last.
-        for relative_key, error_state in self._store.error.subtree_items(key):
-            if error_state.caused_by is not None:
-                result[relative_key] = action_contract.ERROR_OCCUPANCY
-        return result
+        self._store.add_child_state(
+            values, snapshot, key, position_in_child_state, contract_positions
+        )
 
     def _preceding_child_operations(
         self, key: tuple[str, ...]
@@ -1219,7 +1296,8 @@ class ParticleTracker:
         target_operation_indices: list[int] = []
         for destruction in destructions:
             target_operation_indices.append(len(graph_destructions))
-            for position in destruction.positions():
+            for destruction_fact in destruction.facts:
+                position = destruction_fact.destroyed_position_in_destroyer
                 key = position.canonical_chained_name_tuple
                 particle = self._store.occupant_or_none(key)
                 # An invalid Destructor's ErrorGuarantee can remove this particle
@@ -1229,7 +1307,7 @@ class ParticleTracker:
                     continue
                 graph_destructions.append(
                     operation_graph.DestructionFactDestroyInput(
-                        destruction_fact=destruction.destruction_fact,
+                        destruction_fact=destruction_fact,
                         target=position,
                         preceding_child_operations=self._preceding_child_operations(
                             key
@@ -1258,7 +1336,8 @@ class ParticleTracker:
         """Record state changes for a target and its transitive children."""
         # Pending Guarantees compare writes by Position, so children still
         # need write records even though their state is deleted with the parent.
-        for child in destruction.transitive_children:
+        for fact in itertools.islice(destruction.facts, 1, None):
+            child = fact.destroyed_position_in_destroyer
             self._record_body_write(child.canonical_chained_name_tuple)
         key = destruction.position.canonical_chained_name_tuple
         # Subtree deletion notifies the interface trackers for every removed
@@ -1525,7 +1604,7 @@ class ParticleTracker:
         if (
             requirement is not None
             and requirement.required_state
-            == action_contract.PositionOccupancyState.EMPTY
+            == position_occupancy.PositionOccupancyState.EMPTY
         ):
             # A requirement propagated from a callee doesn't mean the callee
             # operated on that position directly. (It could have been a transitive
@@ -1849,10 +1928,10 @@ class ParticleTracker:
         for pending_guarantee in self._pending.drain_shortest_first_for(keys):
             self._apply_pending_guarantee(pending_guarantee)
 
-    def _fully_resolve_pending_guarantees(self, key: tuple[str, ...]):
-        """Apply guarantees at ``key`` and prefixes for which it is a parent name."""
-        self._apply_pending_guarantees_up_to(key)
-        for pending_guarantee in self._pending.drain_at_or_below(key):
+    def _fully_resolve_pending_guarantees(self, *keys: tuple[str, ...]):
+        """Apply guarantees affecting any of the equally long keys or their children."""
+        self._apply_pending_guarantees_up_to_all(keys)
+        for pending_guarantee in self._pending.drain_at_or_below_for(keys):
             self._apply_pending_guarantee(pending_guarantee)
 
     def _update_store_from_callee_direct_guarantees(

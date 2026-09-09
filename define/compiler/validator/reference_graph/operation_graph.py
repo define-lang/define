@@ -42,6 +42,7 @@ from define.compiler.validator.reference_graph import (
     action_contract,
     operation_graph_model,
     operation_graph_rules,
+    position_occupancy,
 )
 
 if typing.TYPE_CHECKING:
@@ -220,7 +221,7 @@ class OperationGraph:
             tuple[tuple[str, ...], ...],
         ],
         destructions: dict[
-            operation_graph_model.DestructionFact,
+            operation_graph_model.SimultaneousDestruction,
             operation_graph_model.OperationGraphDestruction,
         ],
         contributed_destruction_fragments_by_direct_callee_execution: dict[
@@ -287,15 +288,15 @@ class OperationGraph:
         self, destruction_fact: operation_graph_model.DestructionFact
     ) -> operation_graph_model.OperationGraphDestruction:
         """Return the destruction recorded for one Destruction Fact."""
-        return self._destructions[destruction_fact]
+        return self._destructions[destruction_fact.destruction]
 
     @property
     def destroys_for_own_destruction_facts(
         self,
     ) -> Iterable[operation_graph_model.DestructionFactDestroyNode]:
         """Destroy operations for Destruction Facts initiated by this action."""
-        for destruction_fact, destruction in self._destructions.items():
-            if destruction_fact.destroying_action == self.action:
+        for simultaneous_destruction, destruction in self._destructions.items():
+            if simultaneous_destruction.destroying_action == self.action:
                 yield from destruction.operations_by_position.values()
 
     def is_propagated_destruction_operation(
@@ -308,7 +309,9 @@ class OperationGraph:
             operation_graph_model.DestructionFactDestroyNode,
         ):
             return False
-        return self._destructions[operation.destruction_fact].is_propagated_to_caller
+        return self._destructions[
+            operation.destruction_fact.destruction
+        ].is_propagated_to_caller
 
     @property
     def propagates_destruction_facts(self) -> bool:
@@ -357,7 +360,7 @@ class OperationGraphBuilder:
             tuple[tuple[str, ...], ...],
         ] = {}
         self._destructions: dict[
-            operation_graph_model.DestructionFact,
+            operation_graph_model.SimultaneousDestruction,
             operation_graph_model.OperationGraphDestruction,
         ] = {}
         self._contributed_destruction_fragments_by_direct_callee_execution: dict[
@@ -384,7 +387,7 @@ class OperationGraphBuilder:
     def record_requirement(
         self,
         position: ast.PositionReference,
-        required_state: action_contract.PositionOccupancyState,
+        required_state: position_occupancy.PositionOccupancyState,
     ):
         """Record the caller operation represented by a position requirement."""
         key = position.canonical_chained_name_tuple
@@ -602,7 +605,7 @@ class OperationGraphBuilder:
             depends_on=depends_on,
             destruction_position=target_key[
                 len(
-                    destruction_fact.destroyed_position_in_destroyer.canonical_chained_name_tuple
+                    destruction_fact.destruction.directly_destroyed_position.canonical_chained_name_tuple
                 ) :
             ],
             dependencies_before_caller_contribution=(
@@ -631,8 +634,8 @@ class OperationGraphBuilder:
     ):
         """Record the caller-known work from one Destruction Contract."""
         destruction_fact = contribution.destruction_fact
-        fact_key = destruction_fact.destroyed_position_in_destroyer.canonical_chained_name_tuple
-        destroyed_position_key = contribution.destroyed_position_in_destroying_action.canonical_chained_name_tuple
+        fact_key = destruction_fact.destruction.directly_destroyed_position.canonical_chained_name_tuple
+        destroyed_position_key = destruction_fact.destroyed_position_in_destroyer.canonical_chained_name_tuple
         destroyed_position_relative_to_fact = destroyed_position_key[len(fact_key) :]
         destruction = None
         if contribution.is_propagated_to_caller:
@@ -695,7 +698,7 @@ class OperationGraphBuilder:
         # represented across every caller path.
         if (
             execution.callee_action_name.full_typed_name
-            != destruction_fact.destroying_action.full_typed_name
+            != destruction_fact.destruction.destroying_action.full_typed_name
         ):
             return []
         destructors: list[
@@ -1052,19 +1055,11 @@ class OperationGraphBuilder:
             dependencies_after_caller_contribution = ()
         # The resolver needs the same position relative to the original
         # destroying action even when a higher caller discovered this child.
-        suffix = position.typed_names[
-            len(contribution.destroyed_particle_position.typed_names) :
-        ]
-        target_in_destroying_action = (
-            contribution.destroyed_position_in_destroying_action.with_position_suffix(
-                *suffix
-            )
-        )
         operation = operation_graph_model.DestructionFragmentDestroyNode(
             node_id=len(self._nodes),
             target=position,
             depends_on=dependencies,
-            destruction_fact=contribution.destruction_fact,
+            destruction_fact=contributed_position.destruction_fact,
             destruction_position=(
                 *destroyed_position_relative_to_fact,
                 *destruction_contract_position.position_relative_to_destroyed_particle,
@@ -1072,7 +1067,7 @@ class OperationGraphBuilder:
             dependencies_before_caller_contribution=dependencies_before_caller_contribution,
             dependencies_after_caller_contribution=dependencies_after_caller_contribution,
             direct_callee_execution=execution,
-            target_in_destroying_action=target_in_destroying_action,
+            target_in_destroying_action=contributed_position.destruction_fact.destroyed_position_in_destroyer,
         )
         self._nodes.append(operation)
         # When a parent-position Destroy depends on a child-position Destroy,
@@ -1167,10 +1162,10 @@ class OperationGraphBuilder:
         self,
         destruction_fact: operation_graph_model.DestructionFact,
     ) -> operation_graph_model.OperationGraphDestruction:
-        destruction = self._destructions.get(destruction_fact)
+        destruction = self._destructions.get(destruction_fact.destruction)
         if destruction is None:
             destruction = operation_graph_model.OperationGraphDestruction()
-            self._destructions[destruction_fact] = destruction
+            self._destructions[destruction_fact.destruction] = destruction
         return destruction
 
     def _operation_satisfying_requirement(

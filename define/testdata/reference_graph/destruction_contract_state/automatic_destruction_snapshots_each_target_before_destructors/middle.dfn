@@ -1,0 +1,28 @@
+define the potential action<my.domain.com:my_lib:/middle> {
+    define the position<first> {
+        it may only contain particles where {
+            it has the position</child>.
+            it has the action</cleanup>.
+        }
+    }
+    define the position<second> {
+        it may only contain particles where {
+            it has the position</child>.
+        }
+    }
+    it happens when {
+        the position<first> has a particle.
+    } and it does {
+        define the position<left>.
+        define the position<right>.
+        define the position<temporary>.
+        define the position<local>.
+        move the particle in position<first>::position</child> to position<temporary>.
+        move the particle in position<temporary> to position<first>::position</child>.
+        create a particle in position<second>::position</child>.
+        destroy the particle in position<second>::position</child>.
+        move the particle in position<first> to position<left>.
+        move the particle in position<second> to position<right>.
+        create a particle in position<local>.
+    }
+}

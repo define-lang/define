@@ -18,6 +18,7 @@ import typing
 
 if typing.TYPE_CHECKING:
     from collections.abc import Callable, ItemsView, Iterable, Iterator
+    from collections.abc import Set as AbstractSet
 
 type TrieKey = tuple[str, ...]
 
@@ -179,20 +180,6 @@ class StrictReparentingTrie[V]:
             for new, value, _ in moved:
                 moved_value_callback(new, value)
 
-    def pop_subtree(self, key: TrieKey) -> StrictReparentingTrie[V]:
-        """Detach the subtree at key and return it as a new trie.
-
-        The returned trie has a single root entry keyed by the last element of
-        key, containing the popped value and all its descendants.
-
-        Raises KeyError if key doesn't exist.
-        """
-        if not key:
-            raise EmptyKeyError("key must not be empty")
-        if key not in self._values:
-            raise KeyError(key)
-        return self._detach_subtree(key)
-
     def pop_subtrees(
         self, keys: Iterable[TrieKey]
     ) -> dict[TrieKey, StrictReparentingTrie[V]]:
@@ -293,24 +280,30 @@ class StrictReparentingTrie[V]:
         for child in sorted(self._children.get(key, ())):
             yield child, self._values[child]
 
-    def subtree_items(self, key: TrieKey) -> list[tuple[TrieKey, V]]:
-        """Return (relative_key, value) for every descendant of key.
+    def pruned_subtree_items(
+        self,
+        key: TrieKey,
+        *,
+        key_prefix: TrieKey,
+        excluded_keys: AbstractSet[TrieKey],
+    ) -> Iterator[tuple[TrieKey, V]]:
+        """Yield descendants with prefixed relative keys, in unspecified order.
 
-        relative_key is the descendant's path below key; key itself is excluded.
-        Relative keys are built during the walk so callers can index without
-        re-slicing the shared prefix off every result.
+        Each returned key is key_prefix followed by its path relative to key.
+        Exclusions use those returned keys and omit both the matching node and
+        its descendants. The starting key itself is never yielded or excluded.
         """
         if not key:
             raise EmptyKeyError("key must not be empty")
-        result: list[tuple[TrieKey, V]] = []
-        stack: list[tuple[TrieKey, TrieKey]] = [(key, ())]
-        while stack:
-            full_node, relative_node = stack.pop()
+        pending = [(key, key_prefix)]
+        while pending:
+            full_node, result_node = pending.pop()
             for full_child in self._children.get(full_node, ()):
-                relative_child = (*relative_node, full_child[-1])
-                result.append((relative_child, self._values[full_child]))
-                stack.append((full_child, relative_child))
-        return result
+                result_child = (*result_node, full_child[-1])
+                if result_child in excluded_keys:
+                    continue
+                yield result_child, self._values[full_child]
+                pending.append((full_child, result_child))
 
     def selected_subtree_items[Selected](
         self, key: TrieKey, select: Callable[[V], Selected | None]

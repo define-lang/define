@@ -79,9 +79,9 @@ py_library(
         "//define/compiler:ast",
         "//define/compiler/codegen:action_plan",
         "//define/compiler/data_structures:typed_name_dict",
-        "//define/compiler/validator/reference_graph:action_contract",
         "//define/compiler/validator/reference_graph:operation_graph_action_resolver",
         "//define/compiler/validator/reference_graph:operation_graph_model",
+        "//define/compiler/validator/reference_graph:position_occupancy",
     ],
 )
 
@@ -98,9 +98,9 @@ py_test(
         "//define/compiler/codegen:action_plan",
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:action_contract",
         "//define/compiler/validator/reference_graph:operation_graph_action_resolver",
         "//define/compiler/validator/reference_graph:operation_graph_model",
+        "//define/compiler/validator/reference_graph:position_occupancy",
     ],
 )
 

@@ -1,0 +1,16 @@
+# A caller's knowledge is shared while each destroyed particle retains its own fact.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</middle>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<item> {
+            it may only contain particles where {
+                it has the position</child>.
+            }
+        }
+        create a particle in position<item>.
+        create a particle in position<item>::position</child>.
+        move the particle in position<item> to action</middle>::position<run>.
+    }
+}

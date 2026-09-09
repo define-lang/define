@@ -1,0 +1,20 @@
+# Automatic Destruction must keep separate child state for two incoming particles.
+# The snapshots must precede the Destructor's Moves, and a locally created particle
+# needs no destruction contract.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</middle>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in action</middle>::position<second>.
+        define the position<first> {
+            it may only contain particles where {
+                it has the position</child>.
+                it has the action</cleanup>.
+            }
+        }
+        create a particle in position<first>.
+        create a particle in position<first>::position</child>.
+        move the particle in position<first> to action</middle>::position<first>.
+    }
+}

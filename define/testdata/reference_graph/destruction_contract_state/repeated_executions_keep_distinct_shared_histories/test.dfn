@@ -1,0 +1,14 @@
+# Repeated calls share occupancy knowledge without conflating their destruction histories.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</outer>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<first>.
+        define the position<second>.
+        create a particle in position<first>.
+        create a particle in position<second>.
+        move the particle in position<second> to action</outer>::position<second>.
+        move the particle in position<first> to action</outer>::position<run>.
+    }
+}

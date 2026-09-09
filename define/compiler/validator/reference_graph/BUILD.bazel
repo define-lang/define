@@ -3,12 +3,26 @@ load("//tools/bzl:format.bzl", "format_test")
 load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
+py_library(
+    name = "action_contract",
+    srcs = ["action_contract.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        ":child_state",
+        ":operation_graph_model",
+        ":position_occupancy",
+        ":quality_assignment",
+        "//define/compiler:ast",
+    ],
+)
+
 py_test(
     name = "action_contract_test",
     size = "small",
     srcs = ["action_contract_test.py"],
     deps = [
         ":action_contract",
+        ":position_occupancy",
         "//define/compiler:ast",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/structural:program_validator",
@@ -16,12 +30,21 @@ py_test(
 )
 
 py_library(
-    name = "action_contract",
-    srcs = ["action_contract.py"],
-    visibility = ["//define/compiler:__subpackages__"],
+    name = "child_state",
+    srcs = ["child_state.py"],
+    visibility = ["//define/compiler/validator/reference_graph:__subpackages__"],
     deps = [
-        ":operation_graph_model",
-        ":quality_assignment",
+        ":position_occupancy",
+    ],
+)
+
+py_test(
+    name = "child_state_test",
+    size = "small",
+    srcs = ["child_state_test.py"],
+    deps = [
+        ":child_state",
+        ":position_occupancy",
         "//define/compiler:ast",
     ],
 )
@@ -32,11 +55,13 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         ":action_contract",
+        ":child_state",
         ":operation_graph",
         ":operation_graph_model",
         ":particle_info",
         ":particle_operation_validator",
         ":particle_tracker",
+        ":position_occupancy",
         ":quality_assignment",
         ":reference_graph_validation_state",
         ":requirement_violation",
@@ -58,6 +83,7 @@ py_library(
         ":action_contract",
         ":operation_graph_model",
         ":operation_graph_rules",
+        ":position_occupancy",
         "//define/compiler:ast",
         "//define/compiler/data_structures:typed_name_dict",
     ],
@@ -105,7 +131,10 @@ py_library(
     name = "operation_graph_model",
     srcs = ["operation_graph_model.py"],
     visibility = ["//define/compiler:__subpackages__"],
-    deps = ["//define/compiler:ast"],
+    deps = [
+        ":position_occupancy",
+        "//define/compiler:ast",
+    ],
 )
 
 py_library(
@@ -211,14 +240,23 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         ":action_contract",
+        ":child_state",
         ":operation_graph",
         ":operation_graph_model",
         ":particle_info",
+        ":position_occupancy",
         ":quality_assignment",
         "//define/compiler:ast",
         "//define/compiler/data_structures:trie",
         "//define/compiler/validator/reference_graph/dead_code:dead_interface_tracker",
     ],
+)
+
+py_library(
+    name = "position_occupancy",
+    srcs = ["position_occupancy.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = ["//define/compiler:ast"],
 )
 
 py_library(
@@ -248,6 +286,7 @@ py_library(
 py_library(
     name = "reference_graph_validation_state",
     srcs = ["reference_graph_validation_state.py"],
+    visibility = ["//define/compiler/validator/reference_graph/reference_graph_validator_tests:__pkg__"],
     deps = [
         ":action_contract",
         ":quality_assignment",
@@ -275,9 +314,9 @@ py_library(
         "//tools:__subpackages__",
     ],
     deps = [
-        ":action_contract",
         ":definition_postorder_validator",
         ":operation_graph",
+        ":position_occupancy",
         ":reference_graph_validation_state",
         "//define/compiler:ast",
         "//define/compiler:diagnostics",
@@ -310,6 +349,7 @@ py_library(
     deps = [
         ":action_contract",
         ":particle_info",
+        ":position_occupancy",
         "//define/compiler:ast",
         "//define/compiler:diagnostics",
     ],
@@ -330,6 +370,8 @@ pyright_test(
     deps = [
         ":action_contract",
         ":action_contract_test",
+        ":child_state",
+        ":child_state_test",
         ":definition_postorder_validator",
         ":operation_graph",
         ":operation_graph_action_resolver",
@@ -346,6 +388,7 @@ pyright_test(
         ":particle_info",
         ":particle_operation_validator",
         ":particle_tracker",
+        ":position_occupancy",
         ":quality_assignment",
         ":quality_assignment_test",
         ":reference_graph",

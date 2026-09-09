@@ -597,6 +597,23 @@ py_test(
 )
 
 py_test(
+    name = "destruction_contract_state_test",
+    size = "small",
+    srcs = ["destruction_contract_state_test.py"],
+    data = ["//define/testdata/reference_graph/destruction_contract_state"],
+    deps = [
+        "//define/compiler:ast",
+        "//define/compiler:conftest",
+        "//define/compiler/validator:test_helpers",
+        "//define/compiler/validator/reference_graph:action_contract",
+        "//define/compiler/validator/reference_graph:child_state",
+        "//define/compiler/validator/reference_graph:position_occupancy",
+        "//define/compiler/validator/reference_graph:reference_graph_validation_state",
+        "@pypi//pytest",
+    ],
+)
+
+py_test(
     name = "destructor_auto_test",
     size = "small",
     srcs = ["destructor_auto_test.py"],
@@ -996,6 +1013,7 @@ pyright_test(
         ":destruction_contract_caller_verification_test",
         ":destruction_contract_propagation_test",
         ":destruction_contract_recording_test",
+        ":destruction_contract_state_test",
         ":destruction_contract_test",
         ":destructor_auto_test",
         ":destructor_cascade_test",

@@ -202,32 +202,54 @@ class TestIteration:
         assert result == [(("a",), 1), (("a", "c"), 3), (("b",), 2)]
 
 
-class TestSubtreeItems:
-    def test_returns_relative_keys_excluding_root_and_unrelated_branches(self):
-        t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
-        t[("a",)] = 1
-        t[("a", "b")] = 2
-        t[("a", "b", "c")] = 3
-        t[("z",)] = 9
-        assert sorted(t.subtree_items(("a",))) == [
-            (("b",), 2),
-            (("b", "c"), 3),
-        ]
+class TestPrunedSubtreeItems:
+    def test_prefixed_keys_exclude_entire_subtrees_but_not_starting_key(self):
+        values: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
+        values[("a",)] = 0
+        values[("a", "b")] = 1
+        values[("a", "b", "c")] = 2
+        values[("a", "d")] = 3
+        values[("a", "d", "e")] = 4
+        values[("a", "d", "f")] = 5
+        values[("z",)] = 6
+        excluded = {("p", "q"), ("p", "q", "b"), ("p", "q", "d", "e")}
+        assert dict(
+            values.pruned_subtree_items(
+                ("a",), key_prefix=("p", "q"), excluded_keys=excluded
+            )
+        ) == {("p", "q", "d"): 3, ("p", "q", "d", "f"): 5}
 
-    def test_empty_for_leaf(self):
-        t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
-        t[("a",)] = 1
-        assert t.subtree_items(("a",)) == []
+    def test_empty_prefix_and_no_exclusions(self):
+        values: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
+        values[("a",)] = 0
+        values[("a", "b")] = 1
+        values[("a", "b", "c")] = 2
+        assert dict(
+            values.pruned_subtree_items(("a",), key_prefix=(), excluded_keys=set())
+        ) == {("b",): 1, ("b", "c"): 2}
 
-    def test_missing_key_returns_empty(self):
-        t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
-        t[("a",)] = 1
-        assert t.subtree_items(("missing",)) == []
+    def test_leaf_and_missing_key_yield_nothing(self):
+        values: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
+        values[("a",)] = 0
+        assert (
+            list(
+                values.pruned_subtree_items(("a",), key_prefix=(), excluded_keys=set())
+            )
+            == []
+        )
+        assert (
+            list(
+                values.pruned_subtree_items(
+                    ("missing",), key_prefix=(), excluded_keys=set()
+                )
+            )
+            == []
+        )
 
-    def test_empty_key_raises(self):
-        t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
+    def test_empty_key_raises_when_iterated(self):
+        values: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
         with pytest.raises(trie.EmptyKeyError):
-            t.subtree_items(())
+            list(values.pruned_subtree_items((), key_prefix=(), excluded_keys=set()))
 
 
 class TestSelectedSubtreeItems:
@@ -283,13 +305,13 @@ class TestSubtreeKeys:
             t.subtree_keys(())
 
 
-class TestPopSubtree:
+class TestPopSubtrees:
     def test_returns_standalone_trie(self):
         t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
         t[("a",)] = 1
         t[("a", "x")] = 2
         t[("a", "y")] = 3
-        popped = t.pop_subtree(("a",))
+        popped = t.pop_subtrees([("a",)])[("a",)]
         assert popped[("a",)] == 1
         assert popped[("a", "x")] == 2
         assert popped[("a", "y")] == 3
@@ -298,17 +320,10 @@ class TestPopSubtree:
         t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
         t[("a",)] = 1
         t[("a", "x")] = 2
-        t.pop_subtree(("a",))
+        t.pop_subtrees([("a",)])
         assert ("a",) not in t
         assert ("a", "x") not in t
 
-    def test_missing_raises(self):
-        t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
-        with pytest.raises(KeyError):
-            t.pop_subtree(("a",))
-
-
-class TestPopSubtrees:
     def test_pops_each_key_and_skips_missing(self):
         t: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
         t[("a",)] = 1
@@ -336,7 +351,7 @@ class TestRestoreSubtree:
         source[("a", "x")] = 2
         source[("a", "x", "deep")] = 3
         source[("a", "y")] = 4
-        subtree = source.pop_subtree(("a",))
+        subtree = source.pop_subtrees([("a",)])[("a",)]
         target: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
         target[("b",)] = 99
         target.restore_subtree(("b", "restored"), subtree, 10)
@@ -349,7 +364,7 @@ class TestRestoreSubtree:
         source: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
         source[("a",)] = 1
         source[("a", "x")] = 2
-        subtree = source.pop_subtree(("a",))
+        subtree = source.pop_subtrees([("a",)])[("a",)]
         target: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
         target[("b",)] = 99
         target.restore_subtree(("b", "restored"), subtree, 10)
@@ -360,7 +375,7 @@ class TestRestoreSubtree:
     def test_existing_target_raises(self):
         source: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
         source[("a",)] = 1
-        subtree = source.pop_subtree(("a",))
+        subtree = source.pop_subtrees([("a",)])[("a",)]
         target: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
         target[("b",)] = 99
         with pytest.raises(trie.TargetExistsError):
@@ -369,7 +384,7 @@ class TestRestoreSubtree:
     def test_missing_parent_raises(self):
         source: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
         source[("a",)] = 1
-        subtree = source.pop_subtree(("a",))
+        subtree = source.pop_subtrees([("a",)])[("a",)]
         target: trie.StrictReparentingTrie[int] = trie.StrictReparentingTrie()
         with pytest.raises(KeyError):
             target.restore_subtree(("b", "restored"), subtree, 10)
@@ -621,7 +636,7 @@ class TestLenientPopAndRestore:
     def test_restore_auto_creates_intermediates(self):
         source = _make_lenient()
         source[("child",)] = 2
-        subtree = source.pop_subtree(("child",))
+        subtree = source.pop_subtrees([("child",)])[("child",)]
         target = _make_lenient()
         target.restore_subtree(("x", "y"), subtree, 99)
         assert target[("x",)] == 0

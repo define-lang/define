@@ -340,7 +340,7 @@ class ResolvedOperationGraphBuilder:
             caller_execution,
             operation.direct_callee_execution,
         )
-        destroying_action = operation.destruction_fact.destroying_action
+        destroying_action = operation.destruction_fact.destruction.destroying_action
         while (
             current_execution.action.full_typed_name
             != destroying_action.full_typed_name

@@ -13,9 +13,9 @@ from define.compiler.codegen.literal.python import (
     naming,
 )
 from define.compiler.validator.reference_graph import (
-    action_contract,
     operation_graph_action_resolver,
     operation_graph_model,
+    position_occupancy,
 )
 
 if typing.TYPE_CHECKING:
@@ -41,8 +41,8 @@ _LOCAL_POSITION_PREFIX = "local_position_"
 _MOVE_FRAGMENT_PREFIX = "move_"
 _ON_PREFIX = "on_"
 _REQUIREMENT_BINDING_HOLE_BASE_PREFIXES = {
-    action_contract.PositionOccupancyState.EMPTY: "when_empty_",
-    action_contract.PositionOccupancyState.OCCUPIED: "when_occupied_",
+    position_occupancy.PositionOccupancyState.EMPTY: "when_empty_",
+    position_occupancy.PositionOccupancyState.OCCUPIED: "when_occupied_",
 }
 _REGISTER_GUARANTEE_PREFIX = "register_guarantee_"
 

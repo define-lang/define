@@ -6,30 +6,19 @@ import enum
 import typing
 from dataclasses import dataclass, field
 
-from define.compiler.validator.reference_graph import operation_graph_model
+from define.compiler.validator.reference_graph import (
+    operation_graph_model,
+    position_occupancy,
+)
 
 if typing.TYPE_CHECKING:
+    from collections.abc import Iterator
+
     from define.compiler import ast
-    from define.compiler.validator.reference_graph import quality_assignment
-
-PositionOccupancyState = operation_graph_model.PositionOccupancyState
-
-
-@dataclass(frozen=True, slots=True)
-class ChildOccupancy:
-    """A child position's occupancy, plus where its particle was filled when occupied."""
-
-    state: PositionOccupancyState
-    # Where the occupying particle was last placed, so a caller that resolves an
-    # empty-requirement violation from this record (rather than from its own
-    # tracker) can still report the fill site. Only set when state is OCCUPIED.
-    filled_at: ast.SourceLocation | None = None
-
-
-# The empty and error states carry no fill site, so a single shared instance
-# serves every position. OCCUPIED must be constructed with its own filled_at.
-EMPTY_OCCUPANCY = ChildOccupancy(PositionOccupancyState.EMPTY)
-ERROR_OCCUPANCY = ChildOccupancy(PositionOccupancyState.ERROR)
+    from define.compiler.validator.reference_graph import (
+        child_state,
+        quality_assignment,
+    )
 
 
 class PropagationKind(enum.Enum):
@@ -73,6 +62,21 @@ class PropagationStep:
     triggered_quality_name: str | None
 
 
+@dataclass(frozen=True, slots=True, eq=False)
+class PropagationHistory:
+    """A shared sequence of Destruction Contract propagation steps."""
+
+    step: PropagationStep
+    previous: PropagationHistory | None
+
+    def __iter__(self) -> Iterator[PropagationStep]:
+        """Iterate from the immediate callee to the destroying action."""
+        current: PropagationHistory | None = self
+        while current is not None:
+            yield current.step
+            current = current.previous
+
+
 @dataclass(frozen=True)
 class ActionAssignment:
     """An action's assignment to a particle at a position."""
@@ -98,7 +102,7 @@ class PositionRequirement:
     position, an implied quality, or a child of an implied quality.
     """
 
-    required_state: PositionOccupancyState
+    required_state: position_occupancy.PositionOccupancyState
     # The position this requirement is on. Contains the full chained name
     # that this requirement is on, starting from the contracted position.
     position: ast.PositionReference
@@ -252,7 +256,7 @@ type NestedGuaranteesByActionChain = tuple[
 ]
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class DestructionContract:
     """Records that an action destroyed a caller-passed particle in a contracted position (DLP 41).
 
@@ -264,31 +268,42 @@ class DestructionContract:
     # origin), as a chained name within the action providing this DestructionContract.
     destroyed_position_contracted: ast.PositionReference
     destruction_fact: operation_graph_model.DestructionFact
-    # The destroyed contracted position from the destroying action's perspective.
-    destroyed_position_in_destroying_action: ast.PositionReference
-    # The occupancy of every transitive child position immediately before
-    # destruction, keyed by canonical chained-name tuple relative to the
-    # destroyed particle (the suffix that you would put after the particle's
-    # position).
-    child_state: dict[tuple[str, ...], ChildOccupancy]
+    # The position in the shared snapshot stays fixed when a caller expresses
+    # the particle's contracted origin from its own perspective.
+    position_in_child_state: tuple[str, ...]
     # Verification belongs to a particle, not just a quality: different child
-    # particles can have the same Destructor assigned to them. Initially, the
-    # only key is (), identifying the Destruction Contract's destroyed particle.
-    # Callers add nonempty relative child-position keys when they verify child
-    # Destructors; propagation preserves those keys.
-    verified_destructors: dict[tuple[str, ...], quality_assignment.QualityAssignments]
-    # True when the destruction fact's local position was auto-destroyed at block
-    # end rather than by an explicit Destroy statement.
-    is_auto_destruction: bool
+    # particles can have the same Destructor assigned to them.
+    verified_destructors: quality_assignment.QualityAssignments
+
+
+@dataclass(frozen=True, slots=True)
+class DestructionContracts:
+    """Contracts for particles sharing destruction-time state and propagation history."""
+
+    particles: list[DestructionContract] = field(default_factory=list, init=False)
+    # Callers repeatedly need membership checks while verifying child positions.
+    positions: set[tuple[str, ...]] = field(default_factory=set, init=False)
+    # Particles destroyed together share their destruction-time occupancy.
+    child_state: child_state.ChildState
     # The trigger hops, in execution order, from the verifying definition's
-    # immediate callee down to the destroying action. One step is prepended each
-    # time the contract is re-recorded through a pass-through action that did not
-    # itself verify the destructor, so a destructor verified many hops above its
-    # destruction can render every hop in between.
-    trigger_chain: tuple[PropagationStep, ...] = ()
+    # immediate callee down to the destroying action must remain available for
+    # diagnostics without copying every earlier hop during propagation.
+    propagation: PropagationHistory | None = None
+
+    def append(self, contract: DestructionContract):
+        """Add a particle's Destruction Contract to this collection."""
+        self.particles.append(contract)
+        self.positions.add(contract.position_in_child_state)
+
+    def child_occupancy(
+        self, contract: DestructionContract, position: tuple[str, ...]
+    ) -> position_occupancy.ChildOccupancy | None:
+        """Look up occupancy relative to this contract's destroyed particle."""
+        return self.child_state.get((*contract.position_in_child_state, *position))
 
     def occupied_child_state_position_or_nearest_occupied_parent(
         self,
+        contract: DestructionContract,
         position: tuple[str, ...],
     ) -> tuple[str, ...] | None:
         """Return the position or its nearest occupied parent in the Child State."""
@@ -297,13 +312,19 @@ class DestructionContract:
         # caching or indexing them without an excessive memory cost.
         for depth in range(len(position), 0, -1):
             candidate_position = position[:depth]
-            occupancy = self.child_state.get(candidate_position)
+            occupancy = self.child_occupancy(contract, candidate_position)
             if (
                 occupancy is not None
-                and occupancy.state == PositionOccupancyState.OCCUPIED
+                and occupancy.state
+                == position_occupancy.PositionOccupancyState.OCCUPIED
             ):
                 return candidate_position
         return None
+
+    def propagation_steps(self) -> Iterator[PropagationStep]:
+        """Iterate from the immediate callee to the destroying action."""
+        if self.propagation is not None:
+            yield from self.propagation
 
 
 @dataclass(frozen=True, slots=True)
@@ -328,7 +349,7 @@ class ActionContract:
 
     requirements: dict[tuple[str, ...], PositionRequirement]
     guarantees: Guarantees
-    destruction_contracts: list[DestructionContract]
+    destruction_contracts: list[DestructionContracts]
     # TODO: Support triggering on chained names?
     trigger_position_name: str
 

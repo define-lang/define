@@ -1,0 +1,23 @@
+# Each moved particle's origin determines its child occupancy despite sharing destruction-time state.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</middle>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<parent> {
+            it may only contain particles where {
+                it has the position</child>.
+            }
+        }
+        define the position<incoming> {
+            it may only contain particles where {
+                it has the position</resource>.
+            }
+        }
+        create a particle in position<parent>.
+        create a particle in position<incoming>.
+        create a particle in position<incoming>::position</resource>.
+        move the particle in position<incoming> to action</middle>::position<incoming>.
+        move the particle in position<parent> to action</middle>::position<run>.
+    }
+}
