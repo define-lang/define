@@ -66,7 +66,7 @@ class _ResolvedRequirement:
 
 def _verified_destructor_guarantees(
     action_chain: ast.ActionReference,
-    guarantees: Sequence[action_contract.GuaranteePair],
+    guarantees: Sequence[action_contract.ContractGuarantee],
     requirements: Sequence[
         operation_graph_model.VerifiedDestructionContractRequirement
     ],
@@ -84,7 +84,8 @@ def _verified_destructor_guarantees(
         operation_graph_model.VerifiedDestructionContractDestructorGuarantee
     ] = []
     action_chain_key = action_chain.canonical_chained_name_tuple
-    for guaranteed_position, guarantee in guarantees:
+    for guarantee in guarantees:
+        guaranteed_position = guarantee.position
         caller_position = ast.chain_in_caller(action_chain_key, guaranteed_position)
         # A requirement's Destroy precedes the Destroy for a requirement on one
         # of its parent positions. Searching from the guaranteed position toward
@@ -567,7 +568,7 @@ class ActionPostorderValidator:
         )
         occupied_interface_child_position_violations = self._tracker.trigger_action(
             action_chain,
-            contract.guarantees,
+            contract,
             destructor.position,
             requirements_in_caller,
             is_destructor=True,
@@ -665,7 +666,7 @@ class ActionPostorderValidator:
         )
         occupied_interface_child_position_violations = self._tracker.trigger_action(
             action_chain,
-            contract.guarantees,
+            contract,
             acting_on_position,
             requirements_in_caller,
             is_destructor=False,
@@ -1219,7 +1220,7 @@ class ActionPostorderValidator:
             requirements=verified_requirements,
             guarantees=_verified_destructor_guarantees(
                 action_chain,
-                destructor_contract.guarantees.own,
+                destructor_contract.guarantees,
                 verified_requirements,
             ),
         )
@@ -1837,13 +1838,14 @@ class ActionPostorderValidator:
 
     def _mark_own_contract_guarantees_alive(
         self,
-        own_guarantees: list[action_contract.GuaranteePair],
+        own_guarantees: list[action_contract.ContractGuarantee],
         scope: scope_tracker.ScopeTracker,
     ):
         """Keep origin position constraints alive through this action's final guarantees."""
         if not self._dead_constraint_tracker.has_constraint_candidates():
             return
-        for _, guarantee in own_guarantees:
+        for contract_guarantee in own_guarantees:
+            guarantee = contract_guarantee.guarantee
             final_position = guarantee.caused_by
             origin_position = self._particle_origin_position(final_position)
             if origin_position is None:
@@ -1868,7 +1870,7 @@ class ActionPostorderValidator:
         contract = self._analyze_action_definition(action_def)
         operation_graph_builder = self._tracker.operation_graph_builder
         operation_graph_builder.record_guaranteed_positions(
-            position for position, _ in contract.guarantees.own
+            contract_guarantee.position for contract_guarantee in contract.guarantees
         )
         return PostorderValidationResult(
             diagnostics=self._diagnostics,
@@ -1943,7 +1945,7 @@ class ActionPostorderValidator:
         self._check_unconsumed_action_interfaces()
 
         contract = self._generate_contract()
-        self._mark_own_contract_guarantees_alive(contract.guarantees.own, scope)
+        self._mark_own_contract_guarantees_alive(contract.guarantees, scope)
         self._check_dead_constraints()
         return contract
 
@@ -1964,24 +1966,24 @@ class ActionPostorderValidator:
         """Generate the action contract from inferred requirements and final tracker state."""
         if self._action_definition.is_destructor:
             guarantees = self._check_destructor_guarantees()
+            callees: list[action_contract.CalleeContract] = []
         else:
             own_guarantees = self._tracker.generate_own_guarantees(
                 self._action_definition.interface_position_names,
                 self._implied_quality_list,
                 self._inferred_requirements,
             )
-            guarantees = action_contract.Guarantees(
-                own=own_guarantees,
-                nested=self._tracker.nested_guarantees(),
-            )
+            guarantees = own_guarantees
+            callees = self._tracker.nested_guarantees()
         return action_contract.ActionContract(
             requirements=self._inferred_requirements,
             guarantees=guarantees,
+            callees=callees,
             destruction_contracts=self._destruction_contracts,
             trigger_position_name=self._trigger_position_name or "",
         )
 
-    def _check_destructor_guarantees(self) -> action_contract.Guarantees:
+    def _check_destructor_guarantees(self) -> list[action_contract.ContractGuarantee]:
         """Emit a diagnostic for each guarantee a destructor produces and return a contract that masks them.
 
         A destructor may not change any contracted position's state (DLP 41), so
@@ -1996,14 +1998,15 @@ class ActionPostorderValidator:
             self._implied_quality_list,
             self._inferred_requirements,
         )
-        rewritten: list[action_contract.GuaranteePair] = []
-        for key, guarantee in produced:
+        rewritten: list[action_contract.ContractGuarantee] = []
+        for contract_guarantee in produced:
+            guarantee = contract_guarantee.guarantee
             # TODO: caused_by names the position as it was written in the action
             # where the guarantee originated, so a guarantee surfaced from a
             # deeply-nested triggered action gets that callee's short chained name
             # (e.g. "position<out>") instead of its full chained name relative to
             # the destructor (e.g.
-            # "action</a>::position<box>::action</b>::position<out>"). ``key`` holds
+            # "action</a>::position<box>::action</b>::position<out>"). The contract holds
             # that full chained name, but only as canonical names, not a source form.
             position_name = guarantee.caused_by.source_form_in_universe(
                 self._enclosing_fqun
@@ -2034,25 +2037,25 @@ class ActionPostorderValidator:
                         )
                     )
                 case action_contract.ErrorGuarantee():
-                    rewritten.append((key, guarantee))
+                    rewritten.append(contract_guarantee)
                     continue
                 case action_contract.UnchangedGuarantee():
-                    rewritten.append((key, guarantee))
+                    rewritten.append(contract_guarantee)
                     continue
                 case _:
                     raise TypeError(
                         f"unexpected guarantee type {type(guarantee).__name__}"
                     )
             rewritten.append(
-                (
-                    key,
+                action_contract.ContractGuarantee(
+                    contract_guarantee.position,
                     action_contract.ErrorGuarantee(
                         caused_by=guarantee.caused_by,
-                        operation_positions=guarantee.operation_positions,
                     ),
+                    contract_guarantee.operation_positions,
                 )
             )
-        return action_contract.Guarantees(own=rewritten, nested=())
+        return rewritten
 
     def _local_definition_cache_key(
         self,

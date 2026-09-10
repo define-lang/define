@@ -27,6 +27,9 @@ the
 
 ### Operation Graph and action resolution
 
+- Do not give an Operation Graph or its builder access to another Operation
+  Graph. Resolve relationships between graphs separately from graph
+  construction.
 - Represent Action Execution identity, Action Parent availability, Particle
   Operations, Guarantees, and dependency relationships as separate concepts.
 - Each per-action Operation Graph must contain every minimal dependency it can

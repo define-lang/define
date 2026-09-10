@@ -76,8 +76,9 @@ class _NodeState:
     emptied_by: ast.PositionReference | None = None
     # Keeping the exact-position operation with the state makes it follow moves,
     # so child-operation snapshots only need to be built when an operation uses one.
-    # TODO: Reconsider the boundary between particle tracking and operation-graph
-    # construction; this is operation-graph metadata stored here for reparenting.
+    # TODO: Should particle tracking and operation-graph construction consume
+    # shared positional and execution information, rather than graph construction
+    # depending on the occupancy tracker's guarantee-application process?
     operation_node: operation_graph_model.ConcreteOperationNode | None = None
 
 
@@ -164,15 +165,11 @@ class _WriteRecord:
 
 @dataclass(frozen=True, slots=True)
 class _PendingGuarantee:
-    """A callee's guarantees, recorded at an absolute position for lazy application.
-
-    The callee's own guarantees are applied into the base tries when this nested
-    guarantee is applied; its own nested guarantees gain one child name in their prefix.
-    """
+    """A callee's guarantees and the execution path where they apply."""
 
     # The triggered action's chain.
     action_chain: tuple[str, ...]
-    guarantees: action_contract.Guarantees
+    contract: action_contract.ActionContract
     # The body operation number of the Action Execution that produced this nested
     # guarantee.
     # All of a triggered contract's guarantees (own and nested) carry it, so a
@@ -352,6 +349,14 @@ class _PendingNestedGuarantees:
                 yield from self._by_prefix.pop(prefix)
 
 
+@dataclass(frozen=True, slots=True)
+class _ExecutedCallee:
+    """An Action Execution and its callee's contract."""
+
+    execution: operation_graph_model.ActionExecution
+    contract: action_contract.ActionContract
+
+
 class _CurrentActionNestedGuarantees:
     """Nested guarantees keyed by the action chain where they currently apply.
 
@@ -360,20 +365,21 @@ class _CurrentActionNestedGuarantees:
     """
 
     def __init__(self):
-        self._by_action_chain: trie.LenientReparentingTrie[
-            list[action_contract.NestedGuarantees]
-        ] = trie.LenientReparentingTrie(default_factory=list)
+        self._by_action_chain: trie.LenientReparentingTrie[list[_ExecutedCallee]] = (
+            trie.LenientReparentingTrie(default_factory=list)
+        )
 
     def add(
         self,
         action_chain: tuple[str, ...],
-        nested_guarantees: action_contract.NestedGuarantees,
+        execution: operation_graph_model.ActionExecution,
+        contract: action_contract.ActionContract,
     ):
         at_action_chain = self._by_action_chain.get(action_chain)
         if at_action_chain is None:
             at_action_chain = []
             self._by_action_chain[action_chain] = at_action_chain
-        at_action_chain.append(nested_guarantees)
+        at_action_chain.append(_ExecutedCallee(execution, contract))
 
     def move(self, source: tuple[str, ...], target: tuple[str, ...]):
         """Move nested guarantees beneath a moved particle."""
@@ -390,7 +396,7 @@ class _CurrentActionNestedGuarantees:
         self, positions: Iterable[tuple[str, ...]]
     ) -> dict[
         tuple[str, ...],
-        trie.StrictReparentingTrie[list[action_contract.NestedGuarantees]],
+        trie.StrictReparentingTrie[list[_ExecutedCallee]],
     ]:
         """Detach nested guarantees belonging to particles that may move."""
         return self._by_action_chain.pop_subtrees(positions)
@@ -399,9 +405,7 @@ class _CurrentActionNestedGuarantees:
         self,
         source: tuple[str, ...],
         target: tuple[str, ...],
-        saved_subtree: trie.StrictReparentingTrie[
-            list[action_contract.NestedGuarantees]
-        ],
+        saved_subtree: trie.StrictReparentingTrie[list[_ExecutedCallee]],
     ):
         """Restore a saved particle's nested guarantees at its destination."""
         self._by_action_chain.restore_subtree(
@@ -411,23 +415,28 @@ class _CurrentActionNestedGuarantees:
     def items(
         self,
         executions: Sequence[operation_graph_model.ActionExecution],
-    ) -> action_contract.NestedGuaranteesByActionChain:
+    ) -> list[action_contract.CalleeContract]:
         """Return nested guarantees in triggering order."""
         by_execution: dict[
             operation_graph_model.ActionExecution,
-            tuple[tuple[str, ...], action_contract.NestedGuarantees],
+            action_contract.CalleeContract,
         ] = {}
+        # The trie alone tracks current action chains during Moves, so moving
+        # one particle does not rewrite every repeated execution of its actions.
         for action_chain, guarantees in self._by_action_chain.items():
             for nested_guarantees in guarantees:
                 by_execution[nested_guarantees.execution] = (
-                    action_chain,
-                    nested_guarantees,
+                    action_contract.CalleeContract(
+                        action_chain,
+                        nested_guarantees.execution,
+                        nested_guarantees.contract,
+                    )
                 )
-        return tuple(
+        return [
             by_execution[execution]
             for execution in executions
             if execution in by_execution
-        )
+        ]
 
     def action_chains_with_most_recent_trigger(
         self,
@@ -453,7 +462,7 @@ class _ParticleStateStore:
     Each position that gets touched during an Action Statements Block also
     carries a _WriteRecord that tells us about the order in which the operation
     was performed and whether this particle came from a guarantee or was performed
-    directly. (This is necessary to generate ```action_contract.Guarantees``` for
+    directly. (This is necessary to generate ```action_contract.ActionContract``` for
     the action.)
 
     Because guarantees are applied lazily (we check if any guarantees were put onto
@@ -1436,7 +1445,7 @@ class ParticleTracker:
         interface_names: tuple[ast.TypedName, ...],
         implied_quality_names: tuple[ast.GlobalTypedNameReference, ...],
         requirements: dict[tuple[str, ...], action_contract.PositionRequirement],
-    ) -> list[action_contract.GuaranteePair]:
+    ) -> list[action_contract.ContractGuarantee]:
         """Generate this block's own guarantees, excluding the callee-derived keys carried via nested guarantees.
 
         The own guarantees come from keys whose first element matches an
@@ -1455,7 +1464,7 @@ class ParticleTracker:
         interface_names: tuple[ast.TypedName, ...],
         implied_quality_names: tuple[ast.GlobalTypedNameReference, ...],
         requirements: dict[tuple[str, ...], action_contract.PositionRequirement],
-    ) -> list[action_contract.GuaranteePair]:
+    ) -> list[action_contract.ContractGuarantee]:
         """Produce every guarantee a destructor makes on its contracted positions.
 
         Guarantees about implied positions from triggered actions are expanded
@@ -1476,7 +1485,7 @@ class ParticleTracker:
         requirements: dict[tuple[str, ...], action_contract.PositionRequirement],
         *,
         include_callee_derived: bool,
-    ) -> list[action_contract.GuaranteePair]:
+    ) -> list[action_contract.ContractGuarantee]:
         """Collect and sort the guarantees for every contracted key, excluding the ones _guarantee_for_key reports as no-ops."""
         include_names = {
             name.full_typed_name for name in (*interface_names, *implied_quality_names)
@@ -1488,7 +1497,7 @@ class ParticleTracker:
             include_callee_derived=include_callee_derived
         )
 
-        guarantees: list[action_contract.GuaranteePair] = []
+        guarantees: list[action_contract.ContractGuarantee] = []
         for key in all_keys:
             # A callee's interface guarantees must be consumed in this Action
             # Statements Block, so they cannot become guarantees of this action.
@@ -1501,10 +1510,22 @@ class ParticleTracker:
                 key
             ):
                 continue
-            guarantee = self._guarantee_for_key(key, requirements)
+            state = self._store.state.get(key)
+            guarantee = self._guarantee_for_key(key, state, requirements)
             if guarantee is None:
                 continue
-            guarantees.append((key, guarantee))
+            operation_positions: tuple[ast.ChainedNameTuple, ...] = ()
+            if not isinstance(guarantee, action_contract.ErrorGuarantee):
+                # A non-error guarantee can only be produced from existing state.
+                state = typing.cast("_NodeState", state)
+                # A callee can move a particle whose known child positions have
+                # no operation nodes: applying its guarantee moves their state,
+                # but only explicitly guaranteed positions receive nodes.
+                if state.operation_node is not None:
+                    operation_positions = state.operation_node.operated_positions
+            guarantees.append(
+                action_contract.ContractGuarantee(key, guarantee, operation_positions)
+            )
 
         # Parent-before-child ordering: Our first sort is by the key length
         # (the number of names in a chain). To understand why this is necessary,
@@ -1540,9 +1561,9 @@ class ParticleTracker:
         # the particle in position</child> incorrectly.
         guarantees.sort(
             key=lambda item: (
-                len(item[0]),
-                item[1].caused_by.location.line,
-                item[1].caused_by.location.column,
+                len(item.position),
+                item.guarantee.caused_by.location.line,
+                item.guarantee.caused_by.location.column,
             ),
         )
         return guarantees
@@ -1550,6 +1571,7 @@ class ParticleTracker:
     def _guarantee_for_key(
         self,
         key: tuple[str, ...],
+        state: _NodeState | None,
         requirements: dict[tuple[str, ...], action_contract.PositionRequirement],
     ) -> action_contract.PositionGuarantee | None:
         """Build a guarantee describing the current tracker state, or None for no-ops.
@@ -1563,13 +1585,8 @@ class ParticleTracker:
         if error_state is not None and error_state.caused_by is not None:
             return action_contract.ErrorGuarantee(
                 caused_by=error_state.caused_by,
-                operation_positions=(),
             )
 
-        state = self._store.state.get(key)
-        operation_positions: tuple[tuple[str, ...], ...] = ()
-        if state is not None and state.operation_node is not None:
-            operation_positions = state.operation_node.operated_positions
         if state is not None and state.particle_info is not None:
             info = state.particle_info
             if not info.from_caller:
@@ -1577,19 +1594,16 @@ class ParticleTracker:
                     qualities=info.qualities,
                     origin_position=info.origin_position,
                     caused_by=info.last_position,
-                    operation_positions=operation_positions,
                 )
             if key != info.origin_position.canonical_chained_name_tuple:
                 return action_contract.OccupiedByExistingGuarantee(
                     origin_position=info.origin_position,
                     caused_by=info.last_position,
-                    operation_positions=operation_positions,
                 )
             # The caller's particle is right where it started.
             if self._position_was_touched(key):
                 return action_contract.UnchangedGuarantee(
                     caused_by=info.last_position,
-                    operation_positions=operation_positions,
                 )
             # A trigger position was never touched by the action.
             #
@@ -1612,12 +1626,10 @@ class ParticleTracker:
             if self._position_was_touched(key):
                 return action_contract.UnchangedGuarantee(
                     caused_by=caused_by,
-                    operation_positions=operation_positions,
                 )
             return None
         return action_contract.EmptyGuarantee(
             caused_by=caused_by,
-            operation_positions=operation_positions,
         )
 
     def _position_was_touched(self, key: tuple[str, ...]) -> bool:
@@ -1629,7 +1641,7 @@ class ParticleTracker:
     def trigger_action(
         self,
         action_chain: ast.ActionReference,
-        guarantees: action_contract.Guarantees,
+        contract: action_contract.ActionContract,
         acting_on_position: ast.PositionReference,
         requirements_in_caller: Sequence[action_contract.PositionRequirementInCaller],
         *,
@@ -1713,24 +1725,18 @@ class ParticleTracker:
             )
         callee_guarantees = _PendingGuarantee(
             action_chain_key,
-            guarantees,
+            contract,
             self._body_operation_number,
             execution,
             operation_graph_action_chain=action_chain_key,
         )
-        self._nested_guarantees.add(
-            action_chain_key,
-            action_contract.NestedGuarantees(
-                guarantees=guarantees,
-                execution=execution,
-            ),
-        )
+        self._nested_guarantees.add(action_chain_key, execution, contract)
         self._apply_pending_guarantee(callee_guarantees)
         return occupied_interface_child_position_violations
 
     def nested_guarantees(
         self,
-    ) -> action_contract.NestedGuaranteesByActionChain:
+    ) -> list[action_contract.CalleeContract]:
         """Return the guarantees of actions this action triggered."""
         return self._nested_guarantees.items(self._operation_graph_builder.executions)
 
@@ -1744,18 +1750,14 @@ class ParticleTracker:
             pending_guarantee.transitive_executions,
             operation_graph_guarantees,
             guarantee_action_chain=pending_guarantee.action_chain,
-            operation_graph_action_chain=(
-                pending_guarantee.operation_graph_action_chain
-            ),
+            operation_graph_action_chain=pending_guarantee.operation_graph_action_chain,
         )
         for key, node in guarantee_nodes.items():
             state = self._store.state.get(key)
             if state is not None:
                 state.operation_node = node
-        for (
-            child_action_chain_in_guarantee,
-            child,
-        ) in pending_guarantee.guarantees.nested:
+        for child in pending_guarantee.contract.callees:
+            child_action_chain_in_guarantee = child.action_chain
             child_action_chain_in_caller = pending_guarantee.key_for(
                 child_action_chain_in_guarantee
             )
@@ -1909,7 +1911,7 @@ class ParticleTracker:
                 operation_graph_action_chain = child_action_chain_in_caller
             child_nested_guarantee = _PendingGuarantee(
                 child_action_chain_in_caller,
-                child.guarantees,
+                child.contract,
                 pending_guarantee.body_operation_number,
                 pending_guarantee.execution,
                 transitive_executions=transitive_executions,
@@ -1939,7 +1941,7 @@ class ParticleTracker:
         pending_guarantee: _PendingGuarantee,
     ) -> list[operation_graph_model.OperationGraphGuarantee]:
         """Apply a callee's own guarantees; return what it wrote, in order."""
-        guarantees = pending_guarantee.guarantees.own
+        guarantees = pending_guarantee.contract.guarantees
         operation_graph_guarantees: list[
             operation_graph_model.OperationGraphGuarantee
         ] = []
@@ -1948,7 +1950,8 @@ class ParticleTracker:
         # Make a list of only the origin_positions for OccupiedByExistingGuarantee.
         # We need this list later to know what to "save" before we apply guarantees.
         origin_keys: set[tuple[str, ...]] = set()
-        for _name, guarantee in guarantees:
+        for contract_guarantee in guarantees:
+            guarantee = contract_guarantee.guarantee
             if isinstance(guarantee, action_contract.OccupiedByExistingGuarantee):
                 origin_tuple = guarantee.origin_position.canonical_chained_name_tuple
                 origin_keys.add(pending_guarantee.key_for(origin_tuple))
@@ -1958,7 +1961,7 @@ class ParticleTracker:
         saved_error: dict[tuple[str, ...], trie.StrictReparentingTrie[_ErrorState]] = {}
         saved_nested_guarantees: dict[
             tuple[str, ...],
-            trie.StrictReparentingTrie[list[action_contract.NestedGuarantees]],
+            trie.StrictReparentingTrie[list[_ExecutedCallee]],
         ] = {}
 
         # Every write below shares this callee's operation number and depth, and a
@@ -1979,8 +1982,9 @@ class ParticleTracker:
             ever_set_by_callee=True,
         )
 
-        for name, guarantee in guarantees:
-            key = pending_guarantee.key_for(name)
+        for contract_guarantee in guarantees:
+            guarantee = contract_guarantee.guarantee
+            key = pending_guarantee.key_for(contract_guarantee.position)
 
             # A later-running statement already finalized this key, so this
             # guarantee must not override it.
@@ -2017,7 +2021,7 @@ class ParticleTracker:
             operation_graph_guarantees.append(
                 operation_graph_model.OperationGraphGuarantee(
                     guaranteed_position=key,
-                    operation_positions=guarantee.operation_positions,
+                    operation_positions=contract_guarantee.operation_positions,
                 )
             )
 
@@ -2101,7 +2105,7 @@ class ParticleTracker:
         saved_error: dict[tuple[str, ...], trie.StrictReparentingTrie[_ErrorState]],
         saved_nested_guarantees: dict[
             tuple[str, ...],
-            trie.StrictReparentingTrie[list[action_contract.NestedGuarantees]],
+            trie.StrictReparentingTrie[list[_ExecutedCallee]],
         ],
     ):
         """Detach every origin position at or below ``key`` before ``key``'s subtree is overwritten."""
@@ -2125,7 +2129,7 @@ class ParticleTracker:
         saved_error: dict[tuple[str, ...], trie.StrictReparentingTrie[_ErrorState]],
         saved_nested_guarantees: dict[
             tuple[str, ...],
-            trie.StrictReparentingTrie[list[action_contract.NestedGuarantees]],
+            trie.StrictReparentingTrie[list[_ExecutedCallee]],
         ],
     ):
         """Apply an OccupiedByExisting guarantee at dest_key."""

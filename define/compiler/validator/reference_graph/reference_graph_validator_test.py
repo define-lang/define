@@ -9,6 +9,7 @@ from unittest import mock
 import pytest
 
 from define.compiler.validator.reference_graph import (
+    action_contract,
     definition_postorder_validator,
     reference_graph_validator,
 )
@@ -187,6 +188,47 @@ def test_shared_referenced_definition_is_validated_once():
         _CALLER_NAME: 1,
         _OTHER_CALLER_NAME: 1,
     }
+
+
+def test_callers_share_the_completed_callee_contract():
+    source = _CALLEE_AND_CALLER_SOURCE + _caller_source("other_caller")
+    source = source.replace(
+        "        create a particle in position<gateway>.\n",
+        (
+            "        create a particle in position<gateway>.\n"
+            "        create a particle in position<gateway>::position</gateway>.\n"
+            "        destroy the particle in position<gateway>::position</gateway>::action</callee>::position<made>.\n"
+        ),
+    )
+    structural_result = _structural_result(source)
+    contracts: dict[str, action_contract.ActionContract] = {}
+    original_analyze = definition_postorder_validator.ActionPostorderValidator.analyze
+
+    def collect_contract(
+        validator: definition_postorder_validator.ActionPostorderValidator,
+    ) -> definition_postorder_validator.PostorderValidationResult:
+        result = original_analyze(validator)
+        contracts[result.operation_graph.action.full_typed_name] = result.contract
+        return result
+
+    with mock.patch.object(
+        definition_postorder_validator.ActionPostorderValidator,
+        "analyze",
+        autospec=True,
+        side_effect=collect_contract,
+    ):
+        reference_graph_validator.ReferenceGraphValidator(
+            structural_result.reference_graph,
+            structural_result.definition_results,
+            entry_action=structural_result.entry_action,
+        ).validate(max_workers=1)
+
+    assert_no_errors(structural_result)
+    callee_contract = contracts[_CALLEE_NAME]
+    (first_callee,) = contracts[_CALLER_NAME].callees
+    (second_callee,) = contracts[_OTHER_CALLER_NAME].callees
+    assert first_callee.contract is callee_contract
+    assert second_callee.contract is callee_contract
 
 
 def test_reference_failure_prevents_referencing_action_validation():

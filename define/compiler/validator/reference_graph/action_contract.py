@@ -182,20 +182,6 @@ class PositionGuarantee:
     """An automatically inferred guarantee about an interface position after action completion."""
 
     caused_by: ast.PositionReference
-    # Every position operated on by the Particle Operation that produced this
-    # guarantee. Operation-graph construction needs the full set to apply the
-    # Empty Rule after the guarantee is expressed from a caller's perspective.
-    # Canonical chained-name keys are stored instead of PositionReference objects
-    # because expressing them from each caller's perspective only requires tuple
-    # composition; source locations and written name forms would be unused.
-    # TODO: Consider a more holistic combination of ParticleTracker and
-    # OperationGraph responsibilities so operation-graph information does not
-    # have to travel through validator guarantees. Moving this field alone would
-    # require duplicating the lazy nested-guarantee propagation and its
-    # caller-perspective conversions for parallel operation-graph metadata.
-    operation_positions: tuple[tuple[str, ...], ...] = field(
-        compare=False, kw_only=True
-    )
 
 
 @dataclass(frozen=True)
@@ -228,32 +214,28 @@ class ErrorGuarantee(PositionGuarantee):
     """The position's state could not be determined due to an error."""
 
 
-GuaranteePair = tuple[tuple[str, ...], PositionGuarantee]
+@dataclass(frozen=True, slots=True)
+class ContractGuarantee:
+    """An action contract's guarantee about a position's occupancy and final Particle Operation."""
+
+    position: ast.ChainedNameTuple
+    guarantee: PositionGuarantee
+    # Every position operated on by the Particle Operation that produced this
+    # guarantee. Operation-graph construction needs the full set to apply the
+    # Empty Rule after the guarantee is expressed from a caller's perspective.
+    # Canonical chained-name keys are stored instead of PositionReference objects
+    # because expressing them from each caller's perspective only requires tuple
+    # composition; source locations and written name forms would be unused.
+    operation_positions: tuple[ast.ChainedNameTuple, ...]
 
 
 @dataclass(frozen=True, slots=True)
-class Guarantees:
-    """An action block's own guarantees plus references to its callees' guarantees."""
+class CalleeContract:
+    """A callee's contract at its current action chain."""
 
-    own: list[GuaranteePair]
-    # Nested guarantees are referenced rather than folded in so that we don't
-    # get unbounded memory growth from re-copying guarantees as we walk up a
-    # call stack (and unbounded compute growth from having to iterate through
-    # them and copy them).
-    nested: NestedGuaranteesByActionChain
-
-
-@dataclass(frozen=True, slots=True)
-class NestedGuarantees:
-    """A callee's guarantees."""
-
-    guarantees: Guarantees
+    action_chain: ast.ChainedNameTuple
     execution: operation_graph_model.ActionExecution
-
-
-type NestedGuaranteesByActionChain = tuple[
-    tuple[tuple[str, ...], NestedGuarantees], ...
-]
+    contract: ActionContract
 
 
 @dataclass(frozen=True, slots=True)
@@ -347,8 +329,15 @@ class Destructor:
 class ActionContract:
     """The automatically inferred requirements and guarantees for an action."""
 
+    # TODO: Consider publishing requirements as a sequence. Callers only iterate
+    # them; keyed lookup is needed during analysis, not after publication.
     requirements: dict[tuple[str, ...], PositionRequirement]
-    guarantees: Guarantees
+    guarantees: list[ContractGuarantee]
+    # Callee contracts are referenced rather than folded in so that we don't
+    # get unbounded memory growth from re-copying guarantees as we walk up a
+    # call stack (and unbounded compute growth from having to iterate through
+    # them and copy them).
+    callees: list[CalleeContract]
     destruction_contracts: list[DestructionContracts]
     # TODO: Support triggering on chained names?
     trigger_position_name: str
