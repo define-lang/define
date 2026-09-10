@@ -357,6 +357,83 @@ class _ExecutedCallee:
     contract: action_contract.ActionContract
 
 
+@dataclass(frozen=True, slots=True)
+class _GuaranteeApplicationState:
+    """Shared particle state for applying one callee's guarantees."""
+
+    origin_keys: set[ast.ChainedNameTuple]
+    saved_state: dict[ast.ChainedNameTuple, trie.StrictReparentingTrie[_NodeState]]
+    saved_error: dict[ast.ChainedNameTuple, trie.StrictReparentingTrie[_ErrorState]]
+    saved_nested_guarantees: dict[
+        ast.ChainedNameTuple, trie.StrictReparentingTrie[list[_ExecutedCallee]]
+    ]
+    callee_derived_write: _WriteRecord
+    caller_identity_write: _WriteRecord
+
+    @classmethod
+    def for_callee(cls, pending_guarantee: _PendingGuarantee) -> typing.Self:
+        """Prepare shared state for applying the callee's guarantees."""
+        # Make a list of only the origin_positions for OccupiedByExistingGuarantee.
+        # We need this list later to know what to "save" before we apply guarantees.
+        origin_keys: set[tuple[str, ...]] = set()
+        for contract_guarantee in pending_guarantee.contract.guarantees:
+            guarantee = contract_guarantee.guarantee
+            if isinstance(guarantee, action_contract.OccupiedByExistingGuarantee):
+                origin_tuple = guarantee.origin_position.canonical_chained_name_tuple
+                origin_keys.add(pending_guarantee.key_for(origin_tuple))
+
+        # Saved subtrees for swap safety. Keyed by the origin's full key.
+        saved_state: dict[tuple[str, ...], trie.StrictReparentingTrie[_NodeState]] = {}
+        saved_error: dict[tuple[str, ...], trie.StrictReparentingTrie[_ErrorState]] = {}
+        saved_nested_guarantees: dict[
+            tuple[str, ...],
+            trie.StrictReparentingTrie[list[_ExecutedCallee]],
+        ] = {}
+
+        # Every write in the batch shares this callee's operation number and depth, and a
+        # _WriteRecord is immutable, so the loop reuses these two instead of
+        # building an identical record for every guaranteed position. This loop
+        # applies every guarantee of every action triggered anywhere in the
+        # program, so those constructions dominated guarantee propagation.
+        callee_derived_write = _WriteRecord(
+            pending_guarantee.body_operation_number,
+            pending_guarantee.call_chain_depth,
+            is_from_callee=True,
+            ever_set_by_callee=True,
+        )
+        caller_identity_write = _WriteRecord(
+            pending_guarantee.body_operation_number,
+            pending_guarantee.call_chain_depth,
+            is_from_callee=False,
+            ever_set_by_callee=True,
+        )
+
+        return cls(
+            origin_keys=origin_keys,
+            saved_state=saved_state,
+            saved_error=saved_error,
+            saved_nested_guarantees=saved_nested_guarantees,
+            callee_derived_write=callee_derived_write,
+            caller_identity_write=caller_identity_write,
+        )
+
+    def save_origins_at_or_below(
+        self,
+        key: ast.ChainedNameTuple,
+        store: _ParticleStateStore,
+        nested_guarantees: _CurrentActionNestedGuarantees,
+    ):
+        """Detach every origin position at or below ``key`` before ``key``'s subtree is overwritten."""
+        key_len = len(key)
+        at_or_below: list[tuple[str, ...]] = []
+        for origin_key in self.origin_keys:
+            if len(origin_key) >= key_len and origin_key[:key_len] == key:
+                at_or_below.append(origin_key)
+        self.saved_state.update(store.state.pop_subtrees(at_or_below))
+        self.saved_error.update(store.error.pop_subtrees(at_or_below))
+        self.saved_nested_guarantees.update(nested_guarantees.pop_subtrees(at_or_below))
+
+
 class _CurrentActionNestedGuarantees:
     """Nested guarantees keyed by the action chain where they currently apply.
 
@@ -681,7 +758,7 @@ class _ParticleStateStore:
         self._write_record[key] = record
 
     def try_add_action_parent(self, key: tuple[str, ...]) -> tuple[str, ...] | None:
-        """Create ``key``'s action intermediate when that is the only absent parent name.
+        """Track ``key``'s action name when that is the only absent parent name.
 
         Returns the first absent parent name of ``key``, or None when every
         parent name of ``key`` is present.
@@ -698,10 +775,10 @@ class _ParticleStateStore:
         if not grandparent_key or grandparent_key in self._state:
             # The parent name is the only absent one. A strict trie refuses a
             # write whose own parent name is missing, so this is the only case
-            # where the compiler may add the action intermediate. A parent name
-            # that is anything else is a position the caller never filled.
+            # where the compiler may add a tracker entry for an action name. Any
+            # other absent parent name is a position the caller never filled.
             if parent_key[-1].startswith(_ACTION_KEY_PREFIX):
-                # Repeated _NodeState construction for action-intermediate trie
+                # Repeated _NodeState construction for action-name trie
                 # keys looked costly in the default action-graph full-compiler
                 # benchmark. An August 2026 experiment replaced every fresh value
                 # here and in _ensure_action_parent with one shared _NodeState;
@@ -816,7 +893,7 @@ class ParticleTracker:
         return self._operation_graph_builder
 
     def _ensure_action_parent(self, key: tuple[str, ...]):
-        """Create the action intermediate trie node if needed."""
+        """Ensure the action name preceding the position has tracker state."""
         if len(key) >= 2 and key[-2].startswith(_ACTION_KEY_PREFIX):
             parent_key = key[:-1]
             if parent_key not in self._store.state:
@@ -1742,9 +1819,55 @@ class ParticleTracker:
 
     def _apply_pending_guarantee(self, pending_guarantee: _PendingGuarantee):
         """Apply a callee's guarantees and add one child name to nested guarantee prefixes."""
-        operation_graph_guarantees = self._update_store_from_callee_direct_guarantees(
-            pending_guarantee
-        )
+        operation_graph_guarantees: list[
+            operation_graph_model.OperationGraphGuarantee
+        ] = []
+
+        application = _GuaranteeApplicationState.for_callee(pending_guarantee)
+
+        # A preceding guarantee may create or move a later guarantee's parent,
+        # so acceptance checks must alternate with occupancy updates. Graph
+        # recording must wait until all swap-safety restoration has completed.
+        for contract_guarantee in pending_guarantee.contract.guarantees:
+            guarantee = contract_guarantee.guarantee
+            key = pending_guarantee.key_for(contract_guarantee.position)
+
+            # A later-running statement already finalized this key, so this
+            # guarantee must not override it.
+            if self._store.is_superseded(
+                key,
+                pending_guarantee.body_operation_number,
+                pending_guarantee.call_chain_depth,
+            ):
+                continue
+
+            # An interface-position guarantee needs a tracker entry for the
+            # callee's action name as its immediate parent name. That entry
+            # usually does not exist yet, so creating it here is the common path.
+            # Implied-position guarantees omit that action name.
+            missing_key = self._store.try_add_action_parent(key)
+            if missing_key is not None:
+                # For example, the caller triggers without filling position<a>,
+                # but the callee moves from position<a>::position</c1>. Applying
+                # that child's EmptyGuarantee finds no entry for position<a>.
+                # Requirement checking already reported the missing particle;
+                # mark the parent as error so later operations on it or its
+                # child positions do not produce cascading diagnostics.
+                self._store.error[missing_key] = _ErrorState(
+                    caused_by=guarantee.caused_by
+                )
+                continue
+
+            self._update_store_from_callee_direct_guarantee(
+                pending_guarantee, key, guarantee, application
+            )
+            operation_graph_guarantees.append(
+                operation_graph_model.OperationGraphGuarantee(
+                    guaranteed_position=key,
+                    operation_positions=contract_guarantee.operation_positions,
+                )
+            )
+
         guarantee_nodes = self._operation_graph_builder.record_guarantees(
             pending_guarantee.execution,
             pending_guarantee.transitive_executions,
@@ -1936,201 +2059,95 @@ class ParticleTracker:
         for pending_guarantee in self._pending.drain_at_or_below_for(keys):
             self._apply_pending_guarantee(pending_guarantee)
 
-    def _update_store_from_callee_direct_guarantees(
+    def _update_store_from_callee_direct_guarantee(
         self,
         pending_guarantee: _PendingGuarantee,
-    ) -> list[operation_graph_model.OperationGraphGuarantee]:
-        """Apply a callee's own guarantees; return what it wrote, in order."""
-        guarantees = pending_guarantee.contract.guarantees
-        operation_graph_guarantees: list[
-            operation_graph_model.OperationGraphGuarantee
-        ] = []
-        source_location = pending_guarantee.execution.callee_action_name.location
-
-        # Make a list of only the origin_positions for OccupiedByExistingGuarantee.
-        # We need this list later to know what to "save" before we apply guarantees.
-        origin_keys: set[tuple[str, ...]] = set()
-        for contract_guarantee in guarantees:
-            guarantee = contract_guarantee.guarantee
-            if isinstance(guarantee, action_contract.OccupiedByExistingGuarantee):
-                origin_tuple = guarantee.origin_position.canonical_chained_name_tuple
-                origin_keys.add(pending_guarantee.key_for(origin_tuple))
-
-        # Saved subtrees for swap safety. Keyed by the origin's full key.
-        saved_state: dict[tuple[str, ...], trie.StrictReparentingTrie[_NodeState]] = {}
-        saved_error: dict[tuple[str, ...], trie.StrictReparentingTrie[_ErrorState]] = {}
-        saved_nested_guarantees: dict[
-            tuple[str, ...],
-            trie.StrictReparentingTrie[list[_ExecutedCallee]],
-        ] = {}
-
-        # Every write below shares this callee's operation number and depth, and a
-        # _WriteRecord is immutable, so the loop reuses these two instead of
-        # building an identical record for every guaranteed position. This loop
-        # applies every guarantee of every action triggered anywhere in the
-        # program, so those constructions dominated guarantee propagation.
-        callee_derived_write = _WriteRecord(
-            pending_guarantee.body_operation_number,
-            pending_guarantee.call_chain_depth,
-            is_from_callee=True,
-            ever_set_by_callee=True,
-        )
-        caller_identity_write = _WriteRecord(
-            pending_guarantee.body_operation_number,
-            pending_guarantee.call_chain_depth,
-            is_from_callee=False,
-            ever_set_by_callee=True,
-        )
-
-        for contract_guarantee in guarantees:
-            guarantee = contract_guarantee.guarantee
-            key = pending_guarantee.key_for(contract_guarantee.position)
-
-            # A later-running statement already finalized this key, so this
-            # guarantee must not override it.
-            if self._store.is_superseded(
-                key,
-                pending_guarantee.body_operation_number,
-                pending_guarantee.call_chain_depth,
-            ):
-                continue
-
-            # Almost every guarantee names a child of the callee's own action
-            # intermediate, which no earlier operation has created, so creating
-            # it is the common path here rather than the exceptional one. A key
-            # comes back only when the caller of this action never filled a
-            # position that the guaranteed position is a child name of.
-            missing_key = self._store.try_add_action_parent(key)
-            if missing_key is not None:
-                self._store.error[missing_key] = _ErrorState(
-                    caused_by=guarantee.caused_by
-                )
-                continue
-
-            # OccupiedByExisting depends on caller-passed particle identity, so
-            # it must be resolved here (a distant caller can't reconstruct it)
-            # and emitted as this block's own guarantee. Other guarantee types
-            # are re-derivable in any caller, so they stay behind the nested guarantee.
-            self._store.record_callee_write(
-                key,
-                caller_identity_write
-                if isinstance(guarantee, action_contract.OccupiedByExistingGuarantee)
-                else callee_derived_write,
-            )
-
-            operation_graph_guarantees.append(
-                operation_graph_model.OperationGraphGuarantee(
-                    guaranteed_position=key,
-                    operation_positions=contract_guarantee.operation_positions,
-                )
-            )
-
-            overwrites_subtree = key in origin_keys or (
-                key in self._store.state
-                and not isinstance(guarantee, action_contract.UnchangedGuarantee)
-            )
-            # We are about to overwrite this key's subtree, and a later guarantee still
-            # needs to read a particle from an origin position that may have it as
-            # a parent name.
-            if origin_keys and overwrites_subtree:
-                self._save_origins_at_or_below(
-                    key,
-                    origin_keys,
-                    saved_state,
-                    saved_error,
-                    saved_nested_guarantees,
-                )
-
-            # We are overwriting this key's subtree, and this key is not itself an origin
-            # position that a later guarantee reads from, so its old contents can just be
-            # dropped.
-            if key not in origin_keys and overwrites_subtree:
-                # Subtree cleanup: If an action empties position<item> (EmptyGuarantee)
-                # or creates in position<item> (OccupiedByNewGuarantee), any children
-                # the caller had at child names of position<item> must disappear. We
-                # achieve this by deleting each key's entire subtree before applying
-                # its guarantee.
-                # An UnchangedGuarantee leaves the caller's state as it found it, so
-                # it keeps whatever subtree is there.
-                self._delete_particle_state_subtree(key)
-                if key in self._store.error:
-                    self._store.error.delete_subtree(key)
-                self._nested_guarantees.discard_for_destroyed_particle(key)
-
-            match guarantee:
-                case action_contract.OccupiedByExistingGuarantee():
-                    self._apply_existing_guarantee(
-                        key,
-                        pending_guarantee,
-                        guarantee,
-                        saved_state,
-                        saved_error,
-                        saved_nested_guarantees,
-                    )
-                case action_contract.EmptyGuarantee():
-                    self._store.state[key] = _NodeState(emptied_by=guarantee.caused_by)
-                case action_contract.OccupiedByNewGuarantee():
-                    new_info = particle_info.ParticleInfo(
-                        last_position=guarantee.caused_by,
-                        qualities=guarantee.qualities,
-                        origin_position=guarantee.origin_position,
-                    )
-                    self._store.state[key] = _NodeState(particle_info=new_info)
-                    self._register_occupied_interface_child_position(
-                        key,
-                        new_info,
-                        source_location,
-                    )
-                case action_contract.ErrorGuarantee():
-                    self._store.error[key] = _ErrorState(caused_by=guarantee.caused_by)
-                case action_contract.UnchangedGuarantee():
-                    # The position is unchanged from before the callee triggered,
-                    # which the caller's store already reflects (the cleanup above
-                    # kept any occupant). A later Move of its parent must still
-                    # collect the callee's operations on an otherwise-untracked
-                    # empty child position. The write record above still supersedes
-                    # a conflicting nested guarantee.
-                    if key not in self._store.state:
-                        self._store.state[key] = _NodeState()
-                case _:
-                    raise TypeError(f"Unexpected guarantee type: {type(guarantee)}")
-
-        return operation_graph_guarantees
-
-    def _save_origins_at_or_below(
-        self,
-        key: tuple[str, ...],
-        origin_keys: set[tuple[str, ...]],
-        saved_state: dict[tuple[str, ...], trie.StrictReparentingTrie[_NodeState]],
-        saved_error: dict[tuple[str, ...], trie.StrictReparentingTrie[_ErrorState]],
-        saved_nested_guarantees: dict[
-            tuple[str, ...],
-            trie.StrictReparentingTrie[list[_ExecutedCallee]],
-        ],
+        key: ast.ChainedNameTuple,
+        guarantee: action_contract.PositionGuarantee,
+        application: _GuaranteeApplicationState,
     ):
-        """Detach every origin position at or below ``key`` before ``key``'s subtree is overwritten."""
-        key_len = len(key)
-        at_or_below: list[tuple[str, ...]] = []
-        for origin_key in origin_keys:
-            if len(origin_key) >= key_len and origin_key[:key_len] == key:
-                at_or_below.append(origin_key)
-        saved_state.update(self._store.state.pop_subtrees(at_or_below))
-        saved_error.update(self._store.error.pop_subtrees(at_or_below))
-        saved_nested_guarantees.update(
-            self._nested_guarantees.pop_subtrees(at_or_below)
+        """Update particle state from one applicable callee guarantee."""
+        # OccupiedByExisting depends on caller-passed particle identity, so
+        # it must be resolved here (a distant caller can't reconstruct it)
+        # and emitted as this block's own guarantee. Other guarantee types
+        # are re-derivable in any caller, so they stay behind the nested guarantee.
+        self._store.record_callee_write(
+            key,
+            application.caller_identity_write
+            if isinstance(guarantee, action_contract.OccupiedByExistingGuarantee)
+            else application.callee_derived_write,
         )
+
+        overwrites_subtree = key in application.origin_keys or (
+            key in self._store.state
+            and not isinstance(guarantee, action_contract.UnchangedGuarantee)
+        )
+        # We are about to overwrite this key's subtree, and a later guarantee still
+        # needs to read a particle from an origin position that may have it as
+        # a parent name.
+        if application.origin_keys and overwrites_subtree:
+            application.save_origins_at_or_below(
+                key, self._store, self._nested_guarantees
+            )
+
+        # We are overwriting this key's subtree, and this key is not itself an origin
+        # position that a later guarantee reads from, so its old contents can just be
+        # dropped.
+        if key not in application.origin_keys and overwrites_subtree:
+            # Subtree cleanup: If an action empties position<item> (EmptyGuarantee)
+            # or creates in position<item> (OccupiedByNewGuarantee), any children
+            # the caller had at child names of position<item> must disappear. We
+            # achieve this by deleting each key's entire subtree before applying
+            # its guarantee.
+            # An UnchangedGuarantee leaves the caller's state as it found it, so
+            # it keeps whatever subtree is there.
+            self._delete_particle_state_subtree(key)
+            if key in self._store.error:
+                self._store.error.delete_subtree(key)
+            self._nested_guarantees.discard_for_destroyed_particle(key)
+
+        match guarantee:
+            case action_contract.OccupiedByExistingGuarantee():
+                self._apply_existing_guarantee(
+                    key,
+                    pending_guarantee,
+                    guarantee,
+                    application,
+                )
+            case action_contract.EmptyGuarantee():
+                self._store.state[key] = _NodeState(emptied_by=guarantee.caused_by)
+            case action_contract.OccupiedByNewGuarantee():
+                new_info = particle_info.ParticleInfo(
+                    last_position=guarantee.caused_by,
+                    qualities=guarantee.qualities,
+                    origin_position=guarantee.origin_position,
+                )
+                self._store.state[key] = _NodeState(particle_info=new_info)
+                self._register_occupied_interface_child_position(
+                    key,
+                    new_info,
+                    pending_guarantee.execution.callee_action_name.location,
+                )
+            case action_contract.ErrorGuarantee():
+                self._store.error[key] = _ErrorState(caused_by=guarantee.caused_by)
+            case action_contract.UnchangedGuarantee():
+                # The position is unchanged from before the callee triggered,
+                # which the caller's store already reflects (the cleanup above
+                # kept any occupant). A later Move of its parent must still
+                # collect the callee's operations on an otherwise-untracked
+                # empty child position. The write record above still supersedes
+                # a conflicting nested guarantee.
+                if key not in self._store.state:
+                    self._store.state[key] = _NodeState()
+            case _:
+                raise TypeError(f"Unexpected guarantee type: {type(guarantee)}")
 
     def _apply_existing_guarantee(
         self,
         dest_key: tuple[str, ...],
         pending_guarantee: _PendingGuarantee,
         guarantee: action_contract.OccupiedByExistingGuarantee,
-        saved_state: dict[tuple[str, ...], trie.StrictReparentingTrie[_NodeState]],
-        saved_error: dict[tuple[str, ...], trie.StrictReparentingTrie[_ErrorState]],
-        saved_nested_guarantees: dict[
-            tuple[str, ...],
-            trie.StrictReparentingTrie[list[_ExecutedCallee]],
-        ],
+        application: _GuaranteeApplicationState,
     ):
         """Apply an OccupiedByExisting guarantee at dest_key."""
         origin_tuple = guarantee.origin_position.canonical_chained_name_tuple
@@ -2138,7 +2155,7 @@ class ParticleTracker:
 
         # Get origin's particle_info — from saved copy if already processed,
         # else from the live trie.
-        saved_tree = saved_state.pop(origin_key, None)
+        saved_tree = application.saved_state.pop(origin_key, None)
         if saved_tree is not None:
             origin_state = saved_tree[origin_tuple[-1:]]
         elif origin_key in self._store.state:
@@ -2152,7 +2169,7 @@ class ParticleTracker:
         # The caller never filled the Interface Position. The callee moves the
         # particle to another position. Thus, the origin_state _exists_ but the
         # position got EmptyGuarantee instead of being filled by something (and
-        # there's nothing in saved_state).
+        # there's nothing in application.saved_state).
         if origin_state.particle_info is None:
             self._store.error[dest_key] = _ErrorState(caused_by=guarantee.caused_by)
             return
@@ -2180,7 +2197,9 @@ class ParticleTracker:
                 _NodeState(particle_info=moved_info),
                 restored_value_callback=record_guaranteed_position,
             )
-            saved_nested_subtree = saved_nested_guarantees.pop(origin_key, None)
+            saved_nested_subtree = application.saved_nested_guarantees.pop(
+                origin_key, None
+            )
             if saved_nested_subtree is not None:
                 self._nested_guarantees.restore_moved_particle(
                     origin_key, dest_key, saved_nested_subtree
@@ -2194,7 +2213,7 @@ class ParticleTracker:
             self._store.state[dest_key] = _NodeState(particle_info=moved_info)
             self._nested_guarantees.move(origin_key, dest_key)
 
-        saved_unk = saved_error.pop(origin_key, None)
+        saved_unk = application.saved_error.pop(origin_key, None)
         # Guarantees reset the error state of particles they touch directly.
         # If we guarantee a particle in a position, then we know that it has a
         # particle. However, its _children_ might still be in some error state.

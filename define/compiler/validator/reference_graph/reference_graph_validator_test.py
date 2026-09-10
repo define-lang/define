@@ -1,3 +1,6 @@
+# This module is only for unit testing the mechanics implemented in
+# reference_graph_validator.py itself. Define behavior belongs in data-backed
+# tests under reference_graph_validator_tests/.
 # pyright: reportUnusedCallResult=false
 
 from __future__ import annotations

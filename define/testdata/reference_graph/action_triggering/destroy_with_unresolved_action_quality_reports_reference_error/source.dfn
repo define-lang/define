@@ -1,0 +1,13 @@
+# Destroy must preserve the unresolved action diagnostic without attempting destructor lookup for that action.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<item> {
+        it may only contain particles where {
+            it has the action</missing>.
+        }
+    }
+    it happens when {
+        the position<item> has a particle.
+    } and it does {
+        destroy the particle in position<item>.
+    }
+}

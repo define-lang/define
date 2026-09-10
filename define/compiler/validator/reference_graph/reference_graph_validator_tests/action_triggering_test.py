@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from pathlib import PurePosixPath
 
+import pytest
+
 from define.compiler import conftest, diagnostics
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
     action_graph,
@@ -16,6 +18,42 @@ _ACT_B = "action<my.domain.com:my_lib:/act_b>"
 _ACT_C = "action<my.domain.com:my_lib:/act_c>"
 _P = "action<my.domain.com:my_lib:/p>"
 _SHARED = "action<my.domain.com:my_lib:/shared>"
+
+
+@pytest.mark.xfail(
+    strict=True,
+    raises=KeyError,
+    reason="A self-constructor reference requests its contract before publication",
+)
+def test_self_constructor_reference_reports_circular_reference(
+    validate_testdata_non_filesystem_with_reference_graph: conftest.ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph(max_workers=1)
+    assert result.all_exceptions == []
+    all_diagnostics = result.all_diagnostics
+    assert len(all_diagnostics) == 1
+    assert isinstance(all_diagnostics[0], diagnostics.CircularGlobalReferenceDiagnostic)
+    assert all_diagnostics[0].cycle == [_TEST, _TEST]
+    assert all_diagnostics[0].location.line == 8
+
+
+@pytest.mark.xfail(
+    strict=True,
+    raises=KeyError,
+    reason="Destructor lookup requests the definition of an unresolved action quality",
+)
+def test_destroy_with_unresolved_action_quality_reports_reference_error(
+    validate_testdata_non_filesystem_with_reference_graph: conftest.ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph(max_workers=1)
+    assert result.all_exceptions == []
+    all_diagnostics = result.all_diagnostics
+    assert len(all_diagnostics) == 1
+    assert isinstance(
+        all_diagnostics[0], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
+    )
+    assert all_diagnostics[0].universe == "my.domain.com:my_lib"
+    assert all_diagnostics[0].location.line == 5
 
 
 def test_action_chain_cascade(
