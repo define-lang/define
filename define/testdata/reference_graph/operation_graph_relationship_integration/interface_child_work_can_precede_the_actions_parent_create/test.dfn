@@ -1,0 +1,30 @@
+# The worker's child Create acts on a position defined by source's particle.
+# Its interface identifies that particle but is not the position being changed.
+# Thus the child Create can precede even the creation of gateway, while the
+# worker's Move between interface positions must wait for gateway and delivery.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<source> {
+            it may only contain particles where {
+                it has the position</child>.
+            }
+        }
+        define the position<gateway> {
+            it may only contain particles where {
+                it has the action</worker>.
+            }
+        }
+        define the position<returned> {
+            it may only contain particles where {
+                it has the position</child>.
+            }
+        }
+        create a particle in position<source>.
+        create a particle in position<gateway>.
+        move the particle in position<source> to position<gateway>::action</worker>::position<input>.
+        move the particle in position<gateway>::action</worker>::position<result> to position<returned>.
+        destroy the particle in position<returned>::position</child>.
+    }
+}

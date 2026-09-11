@@ -1,0 +1,44 @@
+# The two possible two-particle cycles and the ordinary position dependencies
+# already exclude the possible three-particle cycle. That larger cycle does
+# not require an additional restriction on the permitted execution orders.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<first> {
+            it may only contain particles where {
+                it has the position</first_left>.
+                it has the position</first_right>.
+            }
+        }
+        define the position<second> {
+            it may only contain particles where {
+                it has the position</second_left>.
+                it has the position</second_right>.
+            }
+        }
+        define the position<third> {
+            it may only contain particles where {
+                it has the position</third_left>.
+            }
+        }
+        define the position<returned_first> {
+            it may only contain particles where {
+                it has the position</first_left>.
+            }
+        }
+        create a particle in position<first>.
+        create a particle in position<second>.
+        create a particle in position<third>.
+        move the particle in position<third> to position<first>::position</first_right>.
+        move the particle in position<first> to position<second>::position</second_right>.
+        move the particle in position<second>::position</second_right>::position</first_right> to position<second>::position</second_left>.
+        move the particle in position<second>::position</second_left> to position<third>.
+        move the particle in position<second> to position<third>::position</third_left>.
+        # Both endpoints belong to the same particle. This Move preserves that
+        # parent relationship, but must wait for /second_left's previous occupant.
+        move the particle in position<third>::position</third_left>::position</second_right> to position<third>::position</third_left>::position</second_left>.
+        move the particle in position<third>::position</third_left>::position</second_left> to position<returned_first>.
+        move the particle in position<third>::position</third_left> to position<returned_first>::position</first_left>.
+    }
+}

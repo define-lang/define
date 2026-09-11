@@ -1,0 +1,53 @@
+# Two pairs of particles can each reverse their visit order. Reversing both
+# before either forward visit ends creates a circular wait through the departure
+# positions, although the two current parent relationships share no particles.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<first> {
+            it may only contain particles where {
+                it has the position</child>.
+            }
+        }
+        define the position<second> {
+            it may only contain particles where {
+                it has the position</child>.
+            }
+        }
+        define the position<third> {
+            it may only contain particles where {
+                it has the position</child>.
+            }
+        }
+        define the position<fourth> {
+            it may only contain particles where {
+                it has the position</child>.
+            }
+        }
+        define the position<handoff_to_fourth>.
+        define the position<handoff_to_second>.
+        create a particle in position<first>.
+        create a particle in position<second>.
+        create a particle in position<third>.
+        create a particle in position<fourth>.
+        move the particle in position<first> to position<second>::position</child>.
+        move the particle in position<second>::position</child> to position<handoff_to_fourth>.
+        move the particle in position<handoff_to_fourth> to position<first>.
+        move the particle in position<third> to position<fourth>::position</child>.
+        move the particle in position<fourth>::position</child> to position<handoff_to_second>.
+        move the particle in position<handoff_to_second> to position<third>.
+        # This visit can run first, provided fourth does not also enter third
+        # before either forward visit has ended.
+        move the particle in position<second> to position<first>::position</child>.
+        move the particle in position<first>::position</child> to position<handoff_to_second>.
+        # This visit can also run first. Granting both early entries would block
+        # the two visits needed to release their departure positions.
+        move the particle in position<fourth> to position<third>::position</child>.
+        move the particle in position<third>::position</child> to position<handoff_to_fourth>.
+        destroy the particle in position<first>.
+        destroy the particle in position<third>.
+        destroy the particle in position<handoff_to_second>.
+        destroy the particle in position<handoff_to_fourth>.
+    }
+}

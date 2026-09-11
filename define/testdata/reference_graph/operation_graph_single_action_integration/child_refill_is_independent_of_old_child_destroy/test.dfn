@@ -1,0 +1,19 @@
+# The old child is not a child of the replacement box. Its unfinished Destroy
+# acts on the original particle, so the new child Create needs only the new box
+# Create. Neither simultaneous destruction requires an order between its Destroys.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the position</child>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<box>::position</child>.
+        destroy the particle in position<box>.
+        create a particle in position<box>.
+        create a particle in position<box>::position</child>.
+    }
+}

@@ -1,3 +1,6 @@
+# Moving the parent also moves its child positions and their particles.
+# Each Destroy at a destination-based position must therefore wait for the Move,
+# but the simultaneous Destroys must not acquire dependencies on one another.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.

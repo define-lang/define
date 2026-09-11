@@ -273,6 +273,42 @@ def test_destroy_reduces_its_own_position_create_edge(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+def test_separately_requested_destroys_at_unchanged_positions(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(box)": [],
+        "test.create(box::/child)": ["test.create(box)"],
+        "test.destroy(box::/child)": ["test.create(box::/child)"],
+        # The separately written child reference needs box occupied, so its
+        # Destroy must precede emptying box.
+        "test.destroy(box)": ["test.destroy(box::/child)"],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
+def test_child_refill_is_independent_of_old_child_destroy(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(box)": [],
+        "test.create(box::/child)": ["test.create(box)"],
+        "test.destroy(box)": ["test.create(box::/child)"],
+        "test.destroy(box::/child)": ["test.create(box::/child)"],
+        "test.create(box)#2": ["test.destroy(box)"],
+        # The replacement defines a different child position; creating there
+        # does not require destruction of the original child to finish.
+        "test.create(box::/child)#2": ["test.create(box)#2"],
+        "test.destroy(box)#2": ["test.create(box::/child)#2"],
+        "test.destroy(box::/child)#2": ["test.create(box::/child)#2"],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
 def test_comparison_excluded_candidate_still_excludes_older_candidate(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):

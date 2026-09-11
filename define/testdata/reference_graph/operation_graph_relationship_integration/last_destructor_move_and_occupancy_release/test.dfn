@@ -1,0 +1,28 @@
+# The destructor temporarily moves /child to a position of /helper's
+# particle. That particle can vacate while its own positions remain usable.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<parent> {
+            it may only contain particles where {
+                it has the position</child>.
+                it has the position</helper>.
+                it has the action</destroy_parent>.
+            }
+        }
+        define the position<detached> {
+            it may only contain particles where {
+                it has the position</return>.
+            }
+        }
+        create a particle in position<parent>.
+        create a particle in position<parent>::position</child>.
+        create a particle in position<parent>::position</child>::position</leaf>.
+        create a particle in position<parent>::position</helper>.
+        move the particle in position<parent>::position</child>::position</leaf> to position<detached>.
+        # This cannot happen while /child and /leaf still connect the parent
+        # particle to the particle that defines /return.
+        move the particle in position<parent> to position<detached>::position</return>.
+    }
+}

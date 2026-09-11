@@ -1,0 +1,18 @@
+# The explicit child position reference requires the box particle to exist.
+# Commutation of the two Destroys' individual occupancy effects is not enough
+# to justify reversing them: doing so would invalidate that reference.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the position</child>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<box>::position</child>.
+        destroy the particle in position<box>::position</child>.
+        destroy the particle in position<box>.
+    }
+}

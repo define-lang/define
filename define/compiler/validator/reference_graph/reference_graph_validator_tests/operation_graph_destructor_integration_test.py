@@ -1751,6 +1751,11 @@ def test_destructor_and_known_children_with_caller_known_occupancy(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    raises=AssertionError,
+    reason="The compiler still makes vacancy wait for destructor work on retained particles",
+)
 def test_destructor_fragments_finish_before_cascade_frees_positions(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -1766,13 +1771,13 @@ def test_destructor_fragments_finish_before_cascade_frees_positions(
         "destruct.move(holder_a, /marker_a)": ["destruct.move(/marker_a, holder_a)"],
         "destruct.move(/marker_b, holder_b)": ["test.create(box::/marker_b)"],
         "destruct.move(holder_b, /marker_b)": ["destruct.move(/marker_b, holder_b)"],
-        "test.destroy(box::/marker_a)": ["destruct.move(holder_a, /marker_a)"],
-        "test.destroy(box::/marker_b)": ["destruct.move(holder_b, /marker_b)"],
-        # The parent Destroy follows the Destructor's final operation on each
-        # child Position, not the simultaneous child Destroys.
+        # Vacation does not wait for the destructor's temporary Moves through
+        # the original positions, whose occupancy is preserved for destruction.
+        "test.destroy(box::/marker_a)": ["test.create(box::/marker_a)"],
+        "test.destroy(box::/marker_b)": ["test.create(box::/marker_b)"],
         "test.destroy(box)": [
-            "destruct.move(holder_a, /marker_a)",
-            "destruct.move(holder_b, /marker_b)",
+            "test.create(box::/marker_a)",
+            "test.create(box::/marker_b)",
         ],
     }
     assert_operation_dependencies(result.operation_graphs, expected)

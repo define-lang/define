@@ -1,0 +1,28 @@
+# Either relationship change is safe first, but both before detachment create a cycle.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<parent> {
+            it may only contain particles where {
+                it has the position</child>.
+            }
+        }
+        define the position<detached_child> {
+            it may only contain particles where {
+                it has the position</inner>.
+            }
+        }
+        define the position<third> {
+            it may only contain particles where {
+                it has the position</end>.
+            }
+        }
+        create a particle in position<parent>.
+        create a particle in position<parent>::position</child>.
+        create a particle in position<third>.
+        move the particle in position<parent>::position</child> to position<detached_child>.
+        move the particle in position<parent> to position<third>::position</end>.
+        move the particle in position<third> to position<detached_child>::position</inner>.
+    }
+}

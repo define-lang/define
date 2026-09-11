@@ -1,0 +1,10 @@
+define the potential action<my.domain.com:my_lib:/destroy_parent> {
+    it also assigns the position</child>.
+    it also assigns the position</helper>.
+    it happens when {
+        this particle is being destroyed.
+    } and it does {
+        move the particle in position</child> to position</helper>::position</hold>.
+        move the particle in position</helper>::position</hold> to position</child>.
+    }
+}
