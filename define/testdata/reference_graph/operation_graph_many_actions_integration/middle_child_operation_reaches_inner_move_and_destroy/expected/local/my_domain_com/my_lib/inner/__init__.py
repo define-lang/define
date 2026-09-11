@@ -88,5 +88,4 @@ class InnerExecution:
 
     def continue_destroy_position_destination__global_position_child(self):
         self.destruction_position_position_destination__global_position_child.destroy_particle()
-        self.guarantees.position_destination__global_position_child.run(
-        )
+        self.guarantees.position_destination__global_position_child.run()

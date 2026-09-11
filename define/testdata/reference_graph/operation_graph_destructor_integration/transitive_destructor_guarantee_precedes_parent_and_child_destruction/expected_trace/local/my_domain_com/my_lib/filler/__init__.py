@@ -92,8 +92,7 @@ class FillerExecution:
             "/marker",
             1,
         )
-        self.guarantees.global_position_marker.run(
-        )
+        self.guarantees.global_position_marker.run()
 
     def destroy_position_trigger_pos(self):
         if not self.join_for_destroy_position_trigger_pos.arrive():
@@ -109,5 +108,4 @@ class FillerExecution:
             "trigger_pos",
             1,
         )
-        self.guarantees.position_trigger_pos.run(
-        )
+        self.guarantees.position_trigger_pos.run()

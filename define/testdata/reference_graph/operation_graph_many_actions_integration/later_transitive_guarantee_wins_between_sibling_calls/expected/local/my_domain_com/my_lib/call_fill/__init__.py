@@ -25,6 +25,12 @@ class CallFill(literal.Action):
 
 
 @final
+class CallFillGuarantees:
+    def __init__(self, scheduler: literal.Scheduler):
+        self.action_fill_item__position_trigger_pos = literal.Fanout(scheduler)
+
+
+@final
 class CallFillExecution:
     def __init__(
         self,
@@ -33,6 +39,7 @@ class CallFillExecution:
     ):
         self.action = action
         self.scheduler = scheduler
+        self.guarantees = CallFillGuarantees(self.scheduler)
         self.execution_action_fill_item: local.my_domain_com.my_lib.fill_item.FillItemExecution
         self.destruction_position_action_fill_item__position_trigger_pos: literal.Position
         self.execution_action_fill_item = local.my_domain_com.my_lib.fill_item.FillItemExecution(
@@ -60,3 +67,4 @@ class CallFillExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_action_fill_item__position_trigger_pos.destroy_particle()
+        self.guarantees.action_fill_item__position_trigger_pos.run()

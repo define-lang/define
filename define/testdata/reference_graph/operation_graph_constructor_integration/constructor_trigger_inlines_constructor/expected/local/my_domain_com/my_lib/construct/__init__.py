@@ -37,5 +37,4 @@ class ConstructExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         ).create_particle()
-        self.guarantees.global_position_marker.run(
-        )
+        self.guarantees.global_position_marker.run()

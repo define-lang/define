@@ -91,5 +91,4 @@ class DestructorExecution:
             "/implied",
             1,
         )
-        self.guarantees.global_position_implied.run(
-        )
+        self.guarantees.global_position_implied.run()

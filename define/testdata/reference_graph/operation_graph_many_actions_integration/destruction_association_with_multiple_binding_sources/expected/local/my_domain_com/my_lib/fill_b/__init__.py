@@ -51,5 +51,4 @@ class FillBExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.child_b.ChildB
         ).create_particle()
-        self.guarantees.global_position_guaranteed_parent__global_position_child_b.run(
-        )
+        self.guarantees.global_position_guaranteed_parent__global_position_child_b.run()

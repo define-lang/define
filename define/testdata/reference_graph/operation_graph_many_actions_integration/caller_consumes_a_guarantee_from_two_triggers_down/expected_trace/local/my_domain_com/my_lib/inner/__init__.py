@@ -59,5 +59,4 @@ class InnerExecution:
             "/inner_result",
             1,
         )
-        self.guarantees.global_position_inner_result.run(
-        )
+        self.guarantees.global_position_inner_result.run()

@@ -59,5 +59,4 @@ class LeftChildExecution:
             "/marker",
             1,
         )
-        self.guarantees.global_position_marker.run(
-        )
+        self.guarantees.global_position_marker.run()

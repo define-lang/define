@@ -67,8 +67,7 @@ class OtherExecution:
         self.action.get_interface_position(
             "position<output>"
         ).destroy_particle()
-        self.guarantees.position_output.run(
-        )
+        self.guarantees.position_output.run()
 
     def destroy_position_trigger_pos(self):
         if not self.join_for_destroy_position_trigger_pos.arrive():
@@ -79,5 +78,4 @@ class OtherExecution:
         self.action.get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
-        self.guarantees.position_trigger_pos.run(
-        )
+        self.guarantees.position_trigger_pos.run()

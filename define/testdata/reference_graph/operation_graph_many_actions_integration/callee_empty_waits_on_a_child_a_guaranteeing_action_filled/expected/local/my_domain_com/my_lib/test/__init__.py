@@ -37,6 +37,9 @@ class Test(literal.EntryPoint):
 class TestGuarantees:
     def __init__(self, scheduler: literal.Scheduler):
         self.global_position_parent = literal.Fanout(scheduler)
+        self.action_filler__position_trigger_pos = literal.Fanout(scheduler)
+        self.action_mover__position_trigger_pos = literal.Fanout(scheduler)
+        self.action_mover__position_dest = literal.Fanout(scheduler)
 
 
 @final
@@ -126,6 +129,7 @@ class TestExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_action_filler__position_trigger_pos.destroy_particle()
+        self.guarantees.action_filler__position_trigger_pos.run()
 
     def create_action_mover__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -139,9 +143,11 @@ class TestExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_action_mover__position_trigger_pos.destroy_particle()
+        self.guarantees.action_mover__position_trigger_pos.run()
 
     def destroy_action_mover__position_dest(self):
         self.destruction_position_action_mover__position_dest.destroy_particle()
+        self.guarantees.action_mover__position_dest.run()
 
     def destroy_action_mover__position_dest__global_position_gc(self):
         self.destruction_position_action_mover__position_dest__global_position_gc.destroy_particle()

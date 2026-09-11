@@ -43,6 +43,7 @@ class TestExecution:
         self.destruction_position_position_outer_holder__action_outer__position_middle_holder: literal.Position
         self.destruction_position_position_outer_holder__action_outer__position_run: literal.Position
         self.join_for_move_position_box_to_position_outer_holder__action_outer__position_input = self.scheduler.create_join(2)
+        self.join_for_destroy_position_outer_holder__action_outer__position_middle_holder = self.scheduler.create_join(2)
         self.join_for_destroy_position_outer_holder = self.scheduler.create_join(2)
 
     def on_action_parent_occupied(self):
@@ -68,6 +69,12 @@ class TestExecution:
         )
         self.execution_position_outer_holder__action_outer.join_for_empty_rule_position_input = literal.NO_JOIN
         self.execution_position_outer_holder__action_outer.join_for_move_position_input_to_position_middle_holder__action_middle__position_input = self.scheduler.create_join(2)
+        self.execution_position_outer_holder__action_outer.guarantees.position_middle_holder__action_middle__position_run.inits.append(
+            self.init_position_outer_holder__action_outer__position_middle_holder__action_middle__position_run
+        )
+        self.execution_position_outer_holder__action_outer.guarantees.position_middle_holder__action_middle__position_run.consumers.append(
+            self.destroy_position_outer_holder__action_outer__position_middle_holder
+        )
         self.execution_position_outer_holder__action_outer.guarantees.position_middle_holder.inits.append(
             self.register_guarantee_position_inner_holder__action_inner__position_input
         )
@@ -104,6 +111,8 @@ class TestExecution:
         self.destroy_position_outer_holder()
 
     def destroy_position_outer_holder__action_outer__position_middle_holder(self):
+        if not self.join_for_destroy_position_outer_holder__action_outer__position_middle_holder.arrive():
+            return
         self.destruction_position_position_outer_holder__action_outer__position_middle_holder.destroy_particle()
         self.destroy_position_outer_holder()
 
@@ -112,7 +121,7 @@ class TestExecution:
             return
         self.local_position_outer_holder.destroy_particle()
 
-    def init_position_outer_holder__action_outer__position_middle_holder__action_middle__position_input(self):
+    def init_position_outer_holder__action_outer__position_middle_holder__action_middle__position_run(self):
         self.destruction_position_position_outer_holder__action_outer__position_middle_holder = self.local_position_outer_holder.particle.get_action(
             local.my_domain_com.my_lib.outer.Outer
         ).get_interface_position(
@@ -120,9 +129,6 @@ class TestExecution:
         )
 
     def register_guarantee_position_inner_holder__action_inner__position_input(self):
-        self.execution_position_outer_holder__action_outer.execution_position_middle_holder__action_middle.guarantees.position_input.inits.append(
-            self.init_position_outer_holder__action_outer__position_middle_holder__action_middle__position_input
-        )
         self.execution_position_outer_holder__action_outer.execution_position_middle_holder__action_middle.guarantees.position_input.consumers.append(
             self.destroy_position_outer_holder__action_outer__position_middle_holder
         )

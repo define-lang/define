@@ -90,8 +90,7 @@ class DestructorExecution:
             "/callee_known",
             1,
         )
-        self.guarantees.global_position_callee_known.run(
-        )
+        self.guarantees.global_position_callee_known.run()
 
     def create_global_position_middle_known(self):
         self.action.on_particle.get_position(
@@ -110,8 +109,7 @@ class DestructorExecution:
             "/middle_known",
             1,
         )
-        self.guarantees.global_position_middle_known.run(
-        )
+        self.guarantees.global_position_middle_known.run()
 
     def move_global_position_creator_known_to_position_creator_holder(self):
         if not self.join_for_move_global_position_creator_known_to_position_creator_holder.arrive():
@@ -136,5 +134,4 @@ class DestructorExecution:
             "/creator_known",
             1,
         )
-        self.guarantees.global_position_creator_known.run(
-        )
+        self.guarantees.global_position_creator_known.run()

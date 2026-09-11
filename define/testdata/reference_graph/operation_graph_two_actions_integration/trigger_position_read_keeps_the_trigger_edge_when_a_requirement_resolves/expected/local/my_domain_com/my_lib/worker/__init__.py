@@ -57,5 +57,4 @@ class WorkerExecution:
                 "position<out>"
             )
         )
-        self.guarantees.position_in__move__position_out.run(
-        )
+        self.guarantees.position_in__move__position_out.run()

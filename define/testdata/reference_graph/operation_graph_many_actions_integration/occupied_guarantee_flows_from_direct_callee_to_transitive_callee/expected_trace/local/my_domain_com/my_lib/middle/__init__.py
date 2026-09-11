@@ -25,6 +25,12 @@ class Middle(literal.Action):
 
 
 @final
+class MiddleGuarantees:
+    def __init__(self, scheduler: literal.Scheduler):
+        self.action_empty_item__position_trigger_pos = literal.Fanout(scheduler)
+
+
+@final
 class MiddleExecution:
     def __init__(
         self,
@@ -41,6 +47,7 @@ class MiddleExecution:
             caller_execution,
             action_name,
         )
+        self.guarantees = MiddleGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.execution_action_empty_item: local.my_domain_com.my_lib.empty_item.EmptyItemExecution
         self.destruction_position_action_empty_item__position_trigger_pos: literal.Position
@@ -85,3 +92,4 @@ class MiddleExecution:
             "/empty_item::trigger_pos",
             1,
         )
+        self.guarantees.action_empty_item__position_trigger_pos.run()

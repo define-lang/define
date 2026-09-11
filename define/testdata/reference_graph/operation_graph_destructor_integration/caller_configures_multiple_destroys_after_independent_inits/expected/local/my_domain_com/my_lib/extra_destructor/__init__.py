@@ -56,5 +56,4 @@ class ExtraDestructorExecution:
                 local.my_domain_com.my_lib.marker.Marker
             )
         )
-        self.guarantees.global_position_empty_marker__move__global_position_marker.run(
-        )
+        self.guarantees.global_position_empty_marker__move__global_position_marker.run()

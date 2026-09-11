@@ -31,6 +31,7 @@ class Mover(literal.Action):
 @final
 class MoverGuarantees:
     def __init__(self, scheduler: literal.Scheduler):
+        self.action_helper__position_trigger_pos = literal.Fanout(scheduler)
         self.global_position_out__move__global_position_destination = literal.Fanout(scheduler)
 
 
@@ -84,6 +85,7 @@ class MoverExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_action_helper__position_trigger_pos.destroy_particle()
+        self.guarantees.action_helper__position_trigger_pos.run()
 
     def move_global_position_out_to_global_position_destination(self):
         if not self.join_for_move_global_position_out_to_global_position_destination.arrive():
@@ -95,5 +97,4 @@ class MoverExecution:
                 local.my_domain_com.my_lib.destination.Destination
             )
         )
-        self.guarantees.global_position_out__move__global_position_destination.run(
-        )
+        self.guarantees.global_position_out__move__global_position_destination.run()

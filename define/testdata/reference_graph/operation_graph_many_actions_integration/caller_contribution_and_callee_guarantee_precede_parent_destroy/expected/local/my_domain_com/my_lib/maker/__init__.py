@@ -50,5 +50,4 @@ class MakerExecution:
         self.action.get_interface_position(
             "position<result>"
         ).destroy_particle()
-        self.guarantees.position_result.run(
-        )
+        self.guarantees.position_result.run()

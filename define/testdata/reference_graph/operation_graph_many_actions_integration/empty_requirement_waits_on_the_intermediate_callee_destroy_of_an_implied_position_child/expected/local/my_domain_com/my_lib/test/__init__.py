@@ -38,6 +38,7 @@ class TestExecution:
         self.destruction_position_position_box__action_middle__position_gw__global_position_holder: literal.Position
         self.destruction_position_position_box__action_middle__position_gw__global_position_holder__global_position_a: literal.Position
         self.destruction_position_position_box__action_middle__position_trigger_pos: literal.Position
+        self.join_for_destroy_position_box__action_middle__position_gw = self.scheduler.create_join(2)
         self.join_for_destroy_position_box = self.scheduler.create_join(2)
 
     def on_action_parent_occupied(self):
@@ -53,6 +54,12 @@ class TestExecution:
         )
         self.execution_position_box__action_middle.join_for_empty_rule_position_gw__global_position_holder__global_position_a = literal.NO_JOIN
         self.execution_position_box__action_middle.join_for_destroy_position_gw__global_position_holder__global_position_a = literal.NO_JOIN
+        self.execution_position_box__action_middle.guarantees.position_gw__action_inner__position_trigger_pos.inits.append(
+            self.init_position_box__action_middle__position_gw__action_inner__position_trigger_pos
+        )
+        self.execution_position_box__action_middle.guarantees.position_gw__action_inner__position_trigger_pos.consumers.append(
+            self.destroy_position_box__action_middle__position_gw
+        )
         self.scheduler.continue_with(
             self.create_position_box__action_middle__position_gw,
             self.create_position_box__action_middle__position_trigger_pos,
@@ -116,6 +123,8 @@ class TestExecution:
         self.destroy_position_box()
 
     def destroy_position_box__action_middle__position_gw(self):
+        if not self.join_for_destroy_position_box__action_middle__position_gw.arrive():
+            return
         self.destruction_position_position_box__action_middle__position_gw.destroy_particle()
         self.destroy_position_box()
 
@@ -130,12 +139,14 @@ class TestExecution:
             return
         self.local_position_box.destroy_particle()
 
-    def init_position_box__action_middle__position_gw__action_inner__global_position_holder__global_position_a(self):
+    def init_position_box__action_middle__position_gw__action_inner__position_trigger_pos(self):
         self.destruction_position_position_box__action_middle__position_gw = self.local_position_box.particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
         ).get_interface_position(
             "position<gw>"
         )
+
+    def init_position_box__action_middle__position_gw__action_inner__global_position_holder__global_position_a(self):
         self.destruction_position_position_box__action_middle__position_gw__global_position_holder = self.local_position_box.particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
         ).get_interface_position(

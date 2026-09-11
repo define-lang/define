@@ -15,11 +15,6 @@ if TYPE_CHECKING:
 _TEST = "action<my.domain.com:my_lib:/test>"
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="S3: retain child-operation dependencies independently of occupancy Guarantees",
-)
 def test_binding_hole_fans_out_to_multiple_fragments_and_multiple_callee_bindings(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -135,11 +130,6 @@ def test_action_execution_and_empty_rule_use_the_same_position(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="S3: retain child-operation dependencies independently of occupancy Guarantees",
-)
 def test_empty_rule_adds_a_caller_child_operation_to_a_move(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -177,11 +167,6 @@ def test_empty_rule_adds_a_caller_child_operation_to_a_move(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="S3: retain child-operation dependencies independently of occupancy Guarantees",
-)
 def test_caller_consumes_a_child_guarantee_after_an_empty_rule_move(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -230,11 +215,6 @@ def test_caller_consumes_a_child_guarantee_after_an_empty_rule_move(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="S3: retain child-operation dependencies independently of occupancy Guarantees",
-)
 def test_moved_particle_requirement_does_not_affect_replacement_at_origin(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -334,11 +314,6 @@ def test_middle_child_operation_reaches_inner_move_and_destroy(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="S3: apply Move Correction through Guarantees and parent Moves",
-)
 def test_caller_consumes_a_child_guarantee_after_two_action_parent_moves(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -390,11 +365,6 @@ def test_caller_consumes_a_child_guarantee_after_two_action_parent_moves(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="S3: apply Move Correction through Guarantees and parent Moves",
-)
 def test_parent_destroy_excludes_guaranteed_move_on_later_dependency_path(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -420,11 +390,6 @@ def test_parent_destroy_excludes_guaranteed_move_on_later_dependency_path(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="S3: retain child-operation dependencies independently of occupancy Guarantees",
-)
 def test_child_guarantee_with_distinct_occupied_action_parent_and_empty_rule_binding_holes(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -715,11 +680,6 @@ def test_empty_requirement_waits_on_the_intermediate_callee_destroy_that_clears_
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="S3: retain child-operation dependencies independently of occupancy Guarantees",
-)
 def test_empty_requirement_waits_on_the_intermediate_callee_destroy_of_an_implied_position_child(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -1071,6 +1031,31 @@ def test_destroy_excludes_callee_operations_superseded_on_child_positions(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
+def test_child_operation_supersedes_transitive_child_operation(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    expected = {
+        "test.create(/outer::trigger_pos)": [],
+        "test.destroy(/outer::trigger_pos)": ["test.create(/outer::trigger_pos)"],
+        "outer.create(/inner::trigger_pos)": [],
+        "inner.create(/storage::trigger_pos)": [],
+        "inner.destroy(/storage::trigger_pos)": ["inner.create(/storage::trigger_pos)"],
+        # Inner and Outer both create a particle in /storage::trigger_pos.
+        # Outer must wait for Inner to destroy its particle before creating
+        # another one there, as required by the Empty Rule.
+        "outer.create(/storage::trigger_pos)": ["inner.destroy(/storage::trigger_pos)"],
+        "outer.destroy(/storage::trigger_pos)": ["outer.create(/storage::trigger_pos)"],
+        "inner:storage.create(local_item)": [],
+        "inner:storage.destroy(local_item)": ["inner:storage.create(local_item)"],
+        "outer:storage.create(local_item)": [],
+        "outer:storage.destroy(local_item)": ["outer:storage.create(local_item)"],
+        "outer.destroy(/inner::trigger_pos)": ["outer.create(/inner::trigger_pos)"],
+    }
+    assert_operation_dependencies(result.operation_graphs, expected)
+
+
 def test_espresso_operation_graph(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -1125,11 +1110,6 @@ def test_implied_position_children_wait_on_the_two_levels_up_caller_fill(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="S3: retain child-operation dependencies independently of occupancy Guarantees",
-)
 def test_implied_action_inherits_the_current_actions_parent_position(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -1275,11 +1255,6 @@ def test_moved_in_parent_children_branch_from_the_carrying_move(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="S3: retain child-operation dependencies independently of occupancy Guarantees",
-)
 def test_input_carried_through_two_moves_reaches_the_triggered_inner(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -1565,11 +1540,6 @@ def test_caller_consumes_a_guarantee_from_two_triggers_down(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="S3: apply Move Correction through Guarantees and parent Moves",
-)
 def test_transitive_child_guarantee_follows_particle_through_move(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -2209,11 +2179,6 @@ def test_same_callee_callers_assign_child_qualities_in_opposite_orders(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="S3: retain child-operation dependencies independently of occupancy Guarantees",
-)
 def test_guarantee_inits_execution_and_satisfies_two_empty_rules(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):

@@ -25,6 +25,12 @@ class Middle(literal.Action):
 
 
 @final
+class MiddleGuarantees:
+    def __init__(self, scheduler: literal.Scheduler):
+        self.action_inner__position_run = literal.Fanout(scheduler)
+
+
+@final
 class MiddleExecution:
     def __init__(
         self,
@@ -39,6 +45,7 @@ class MiddleExecution:
             caller_execution,
             action_name,
         )
+        self.guarantees = MiddleGuarantees(self.scheduler)
         self.execution_action_inner: local.my_domain_com.my_lib.inner.InnerExecution
         self.destruction_position_action_inner__position_run: literal.Position
         self.execution_action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
@@ -78,3 +85,4 @@ class MiddleExecution:
             "/inner::run",
             1,
         )
+        self.guarantees.action_inner__position_run.run()

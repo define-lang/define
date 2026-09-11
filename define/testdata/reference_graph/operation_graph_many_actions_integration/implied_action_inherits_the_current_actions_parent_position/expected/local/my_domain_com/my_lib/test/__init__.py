@@ -35,6 +35,8 @@ class TestExecution:
         self.execution_position_local__global_position_parent__action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
         self.destruction_position_position_local__global_position_parent__action_middle__position_trigger_pos: literal.Position
         self.destruction_position_position_local__global_position_parent: literal.Position
+        self.join_for_destroy_position_local = self.scheduler.create_join(2)
+        self.join_for_destroy_position_local__global_position_parent = self.scheduler.create_join(2)
 
     def on_action_parent_occupied(self):
         self.create_position_local()
@@ -51,6 +53,12 @@ class TestExecution:
                 local.my_domain_com.my_lib.middle.Middle
             ),
             self.scheduler,
+        )
+        self.execution_position_local__global_position_parent__action_middle.guarantees.action_inner__position_trigger_pos.consumers.append(
+            self.destroy_position_local
+        )
+        self.execution_position_local__global_position_parent__action_middle.guarantees.action_inner__position_trigger_pos.consumers.append(
+            self.destroy_position_local__global_position_parent
         )
         self.scheduler.continue_with(
             self.create_position_local__global_position_parent__action_middle__position_trigger_pos,
@@ -82,7 +90,11 @@ class TestExecution:
         )
 
     def destroy_position_local(self):
+        if not self.join_for_destroy_position_local.arrive():
+            return
         self.local_position_local.destroy_particle()
 
     def destroy_position_local__global_position_parent(self):
+        if not self.join_for_destroy_position_local__global_position_parent.arrive():
+            return
         self.destruction_position_position_local__global_position_parent.destroy_particle()

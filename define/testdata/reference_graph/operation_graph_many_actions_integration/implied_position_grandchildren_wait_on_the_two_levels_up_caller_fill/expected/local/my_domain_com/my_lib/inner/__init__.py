@@ -59,8 +59,7 @@ class InnerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.grandchild1.Grandchild1
         ).create_particle()
-        self.guarantees.global_position_parent__global_position_child__global_position_grandchild1.run(
-        )
+        self.guarantees.global_position_parent__global_position_child__global_position_grandchild1.run()
 
     def create_global_position_parent__global_position_child__global_position_grandchild2(self):
         self.action.on_particle.get_position(
@@ -70,5 +69,4 @@ class InnerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.grandchild2.Grandchild2
         ).create_particle()
-        self.guarantees.global_position_parent__global_position_child__global_position_grandchild2.run(
-        )
+        self.guarantees.global_position_parent__global_position_child__global_position_grandchild2.run()

@@ -92,8 +92,7 @@ class MoverExecution:
                 "position<destination>"
             )
         )
-        self.guarantees.position_destination.run(
-        )
+        self.guarantees.position_destination.run()
 
     def destroy_position_run(self):
         if not self.join_for_destroy_position_run.arrive():
@@ -104,5 +103,4 @@ class MoverExecution:
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.guarantees.position_run.run(
-        )
+        self.guarantees.position_run.run()

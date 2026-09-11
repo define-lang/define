@@ -189,8 +189,7 @@ class MiddleExecution:
             "trigger",
             1,
         )
-        self.guarantees.position_trigger.run(
-        )
+        self.guarantees.position_trigger.run()
 
     def action_destroyer__position_target__action_destructor__for_empty_rule_global_position_occupied(self):
         self.execution_action_destroyer__position_target__action_destructor.accept_for_empty_rule_global_position_occupied()

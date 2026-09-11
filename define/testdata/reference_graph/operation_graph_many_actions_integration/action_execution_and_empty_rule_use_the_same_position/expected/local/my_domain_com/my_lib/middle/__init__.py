@@ -115,5 +115,4 @@ class MiddleExecution:
                 "position<holder>"
             )
         )
-        self.guarantees.position_source__move__position_holder.run(
-        )
+        self.guarantees.position_source__move__position_holder.run()

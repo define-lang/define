@@ -105,5 +105,4 @@ class InnerExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.input.Input
         ).destroy_particle()
-        self.guarantees.global_position_input.run(
-        )
+        self.guarantees.global_position_input.run()

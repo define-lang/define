@@ -54,8 +54,7 @@ class WorkerExecution:
             "/first_interface",
             1,
         )
-        self.guarantees.global_position_first_interface.run(
-        )
+        self.guarantees.global_position_first_interface.run()
 
     def create_global_position_second_interface(self):
         self.action.on_particle.get_position(
@@ -66,5 +65,4 @@ class WorkerExecution:
             "/second_interface",
             1,
         )
-        self.guarantees.global_position_second_interface.run(
-        )
+        self.guarantees.global_position_second_interface.run()

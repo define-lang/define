@@ -60,5 +60,4 @@ class OtherExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.origin.Origin
         ).destroy_particle()
-        self.guarantees.global_position_origin.run(
-        )
+        self.guarantees.global_position_origin.run()

@@ -46,7 +46,7 @@ class TestExecution:
         self.execution_position_box__global_position_child__action_destructor: local.my_domain_com.my_lib.destructor.DestructorExecution
         self.destruction_position_position_box__global_position_child: literal.Position
         self.destruction_position_position_box__action_middle__position_run: literal.Position
-        self.join_for_destroy_position_box = self.scheduler.create_join(2)
+        self.join_for_destroy_position_box = self.scheduler.create_join(3)
 
     def on_action_parent_occupied(self):
         self.create_position_box()
@@ -71,6 +71,9 @@ class TestExecution:
         )
         self.execution_position_box__action_middle.execution_action_inner.guarantees.global_position_child.consumers.append(
             self.destroy_position_box__global_position_child
+        )
+        self.execution_position_box__action_middle.guarantees.action_inner__position_run.consumers.append(
+            self.destroy_position_box
         )
         self.scheduler.continue_with(
             self.create_position_box__action_middle__position_run,

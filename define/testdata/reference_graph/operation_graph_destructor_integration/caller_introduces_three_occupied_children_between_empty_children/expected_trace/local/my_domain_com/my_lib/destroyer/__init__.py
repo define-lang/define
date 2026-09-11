@@ -172,8 +172,7 @@ class DestroyerExecution:
             "target",
             1,
         )
-        self.guarantees.position_target.run(
-        )
+        self.guarantees.position_target.run()
 
     def accept_guarantee_position_target__action_third_destructor(self):
         self.execution_position_target__action_third_destructor.accept_when_empty_global_position_marker()

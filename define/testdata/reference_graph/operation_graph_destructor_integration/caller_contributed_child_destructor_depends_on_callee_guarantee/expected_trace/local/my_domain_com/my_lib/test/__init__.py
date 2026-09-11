@@ -29,6 +29,12 @@ class Test(literal.EntryPoint):
 
 
 @final
+class TestGuarantees:
+    def __init__(self, scheduler: literal.Scheduler):
+        self.action_destroyer__position_trigger_pos = literal.Fanout(scheduler)
+
+
+@final
 class TestExecution:
     def __init__(
         self,
@@ -43,6 +49,7 @@ class TestExecution:
             caller_execution,
             action_name,
         )
+        self.guarantees = TestGuarantees(self.scheduler)
         self.local_position_source = literal.LocalPosition(
             "position<source>",
             constraints=(
@@ -177,6 +184,7 @@ class TestExecution:
             "/destroyer::trigger_pos",
             1,
         )
+        self.guarantees.action_destroyer__position_trigger_pos.run()
 
     def destroy_action_destroyer__position_parent__global_position_sibling(self):
         if not self.join_for_destroy_action_destroyer__position_parent__global_position_sibling.arrive():

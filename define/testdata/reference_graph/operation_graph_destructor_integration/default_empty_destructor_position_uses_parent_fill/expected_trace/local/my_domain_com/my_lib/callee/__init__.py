@@ -94,5 +94,4 @@ class CalleeExecution:
             "src",
             1,
         )
-        self.guarantees.position_src.run(
-        )
+        self.guarantees.position_src.run()

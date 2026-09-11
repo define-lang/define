@@ -102,5 +102,4 @@ class InnerExecution:
             "input",
             1,
         )
-        self.guarantees.position_input.run(
-        )
+        self.guarantees.position_input.run()

@@ -81,5 +81,4 @@ class CalleeExecution:
         self.action.get_interface_position(
             "position<src>"
         ).destroy_particle()
-        self.guarantees.position_src.run(
-        )
+        self.guarantees.position_src.run()

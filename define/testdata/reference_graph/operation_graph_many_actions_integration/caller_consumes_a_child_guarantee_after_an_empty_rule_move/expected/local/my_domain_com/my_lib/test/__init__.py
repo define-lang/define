@@ -41,6 +41,7 @@ class TestExecution:
         self.destruction_position_position_gateway__action_middle__position_holder: literal.Position
         self.destruction_position_position_gateway__action_middle__position_holder__global_position_marker: literal.Position
         self.destruction_position_position_gateway__action_middle__position_trigger_pos: literal.Position
+        self.join_for_destroy_position_gateway__action_middle__position_holder = self.scheduler.create_join(2)
         self.join_for_destroy_position_gateway = self.scheduler.create_join(2)
 
     def on_action_parent_occupied(self):
@@ -64,6 +65,9 @@ class TestExecution:
         )
         self.execution_position_gateway__action_middle.guarantees.position_source__move__position_holder.consumers.append(
             self.destroy_position_gateway__action_middle__position_holder__global_position_marker
+        )
+        self.execution_position_gateway__action_middle.guarantees.position_holder__action_child__position_trigger_pos.consumers.append(
+            self.destroy_position_gateway__action_middle__position_holder
         )
         self.scheduler.continue_with(
             self.create_position_gateway__action_middle__position_source,
@@ -126,6 +130,8 @@ class TestExecution:
         )
 
     def destroy_position_gateway__action_middle__position_holder(self):
+        if not self.join_for_destroy_position_gateway__action_middle__position_holder.arrive():
+            return
         self.destruction_position_position_gateway__action_middle__position_holder.destroy_particle()
         self.destroy_position_gateway()
 

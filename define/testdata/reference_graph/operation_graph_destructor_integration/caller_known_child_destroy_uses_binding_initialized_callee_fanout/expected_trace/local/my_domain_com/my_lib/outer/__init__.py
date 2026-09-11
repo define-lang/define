@@ -123,5 +123,4 @@ class OuterExecution:
             "run",
             1,
         )
-        self.guarantees.position_run.run(
-        )
+        self.guarantees.position_run.run()

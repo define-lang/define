@@ -58,8 +58,7 @@ class DestructorExecution:
                 local.my_domain_com.my_lib.occupied.Occupied
             )
         )
-        self.guarantees.global_position_occupied.run(
-        )
+        self.guarantees.global_position_occupied.run()
 
     def create_global_position_empty(self):
         self.action.on_particle.get_position(
@@ -68,5 +67,4 @@ class DestructorExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.empty.Empty
         ).destroy_particle()
-        self.guarantees.global_position_empty.run(
-        )
+        self.guarantees.global_position_empty.run()

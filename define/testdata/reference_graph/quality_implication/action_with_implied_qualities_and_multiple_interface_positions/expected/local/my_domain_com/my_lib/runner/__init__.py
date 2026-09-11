@@ -99,8 +99,7 @@ class RunnerExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         ).create_particle()
-        self.guarantees.global_position_marker.run(
-        )
+        self.guarantees.global_position_marker.run()
 
     def create_position_input_a__global_position_quality_a(self):
         self.action.get_interface_position(
@@ -143,8 +142,7 @@ class RunnerExecution:
         self.action.get_interface_position(
             "position<input_a>"
         ).destroy_particle()
-        self.guarantees.position_input_a.run(
-        )
+        self.guarantees.position_input_a.run()
 
     def destroy_position_input_a__global_position_quality_a(self):
         literal.continue_destruction(self.continue_destroy_position_input_a__global_position_quality_a)
@@ -161,8 +159,7 @@ class RunnerExecution:
         self.action.get_interface_position(
             "position<input_b>"
         ).destroy_particle()
-        self.guarantees.position_input_b.run(
-        )
+        self.guarantees.position_input_b.run()
 
     def destroy_position_input_b__global_position_quality_b(self):
         literal.continue_destruction(self.continue_destroy_position_input_b__global_position_quality_b)
@@ -179,5 +176,4 @@ class RunnerExecution:
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.guarantees.position_run.run(
-        )
+        self.guarantees.position_run.run()

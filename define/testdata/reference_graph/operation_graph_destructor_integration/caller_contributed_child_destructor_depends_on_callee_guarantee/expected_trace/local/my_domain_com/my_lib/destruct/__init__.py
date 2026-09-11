@@ -84,8 +84,7 @@ class DestructExecution:
             "/required",
             1,
         )
-        self.guarantees.global_position_required.run(
-        )
+        self.guarantees.global_position_required.run()
 
     def move_global_position_sibling_to_position_held_sibling(self):
         if not self.join_for_move_global_position_sibling_to_position_held_sibling.arrive():
@@ -110,5 +109,4 @@ class DestructExecution:
             "/sibling",
             1,
         )
-        self.guarantees.global_position_sibling.run(
-        )
+        self.guarantees.global_position_sibling.run()

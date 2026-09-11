@@ -71,5 +71,4 @@ class OtherExecution:
 
     def continue_destroy_position_box__global_position_child__global_position_grandchild(self):
         self.destruction_position_position_box__global_position_child__global_position_grandchild.destroy_particle()
-        self.guarantees.position_box__global_position_child__global_position_grandchild.run(
-        )
+        self.guarantees.position_box__global_position_child__global_position_grandchild.run()

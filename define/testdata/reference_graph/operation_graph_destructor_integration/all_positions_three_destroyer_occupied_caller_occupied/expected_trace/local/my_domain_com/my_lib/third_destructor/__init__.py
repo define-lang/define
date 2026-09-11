@@ -76,8 +76,7 @@ class ThirdDestructorExecution:
             "/third",
             1,
         )
-        self.guarantees.global_position_third.run(
-        )
+        self.guarantees.global_position_third.run()
 
     def create_global_position_marker(self):
         self.action.on_particle.get_position(
@@ -96,5 +95,4 @@ class ThirdDestructorExecution:
             "/marker",
             1,
         )
-        self.guarantees.global_position_marker.run(
-        )
+        self.guarantees.global_position_marker.run()

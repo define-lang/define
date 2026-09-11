@@ -69,5 +69,4 @@ class MoverExecution:
             "result",
             1,
         )
-        self.guarantees.position_run__move__position_result.run(
-        )
+        self.guarantees.position_run__move__position_result.run()

@@ -44,10 +44,10 @@ class TestExecution:
             ),
             self.scheduler,
         )
-        self.scheduler.continue_with(
-            self.destroy_position_box,
-            self.execution_position_box__action_destructor.accept_when_empty_global_position_marker,
+        self.execution_position_box__action_destructor.guarantees.global_position_marker.consumers.append(
+            self.destroy_position_box
         )
+        self.execution_position_box__action_destructor.accept_when_empty_global_position_marker()
 
     def destroy_position_box(self):
         self.local_position_box.destroy_particle()

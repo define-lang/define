@@ -197,8 +197,7 @@ class DestroyerExecution:
         self.action.get_interface_position(
             "position<target>"
         ).destroy_particle()
-        self.guarantees.position_target.run(
-        )
+        self.guarantees.position_target.run()
 
     def accept_guarantee_position_target__action_second_destructor(self):
         self.execution_position_target__action_second_destructor.accept_when_empty_global_position_marker()

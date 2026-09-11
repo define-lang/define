@@ -125,8 +125,7 @@ class DestructorExecution:
             "/occupied_first::/transitive",
             1,
         )
-        self.guarantees.global_position_occupied_first__global_position_transitive.run(
-        )
+        self.guarantees.global_position_occupied_first__global_position_transitive.run()
 
     def create_global_position_empty(self):
         self.action.on_particle.get_position(
@@ -145,8 +144,7 @@ class DestructorExecution:
             "/empty",
             1,
         )
-        self.guarantees.global_position_empty.run(
-        )
+        self.guarantees.global_position_empty.run()
 
     def move_global_position_occupied_last_to_position_last_holder(self):
         if not self.join_for_move_global_position_occupied_last_to_position_last_holder.arrive():
@@ -171,5 +169,4 @@ class DestructorExecution:
             "/occupied_last",
             1,
         )
-        self.guarantees.global_position_occupied_last.run(
-        )
+        self.guarantees.global_position_occupied_last.run()

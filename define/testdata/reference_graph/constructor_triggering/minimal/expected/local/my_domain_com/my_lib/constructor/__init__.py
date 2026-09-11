@@ -43,5 +43,4 @@ class ConstructorExecution:
         self.action.get_interface_position(
             "position<output>"
         ).create_particle()
-        self.guarantees.position_output.run(
-        )
+        self.guarantees.position_output.run()

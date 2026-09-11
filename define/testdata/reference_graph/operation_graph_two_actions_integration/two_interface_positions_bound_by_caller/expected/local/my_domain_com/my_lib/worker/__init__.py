@@ -71,8 +71,7 @@ class WorkerExecution:
         self.action.get_interface_position(
             "position<second>"
         ).destroy_particle()
-        self.guarantees.position_second.run(
-        )
+        self.guarantees.position_second.run()
 
     def destroy_position_third(self):
         if not self.join_for_destroy_position_third.arrive():
@@ -83,5 +82,4 @@ class WorkerExecution:
         self.action.get_interface_position(
             "position<third>"
         ).destroy_particle()
-        self.guarantees.position_third.run(
-        )
+        self.guarantees.position_third.run()

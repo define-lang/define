@@ -60,8 +60,7 @@ class OtherExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.a.A
         ).create_particle()
-        self.guarantees.position_box__global_position_a.run(
-        )
+        self.guarantees.position_box__global_position_a.run()
 
     def create_position_box__global_position_b(self):
         self.action.get_interface_position(
@@ -69,5 +68,4 @@ class OtherExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.b.B
         ).create_particle()
-        self.guarantees.position_box__global_position_b.run(
-        )
+        self.guarantees.position_box__global_position_b.run()

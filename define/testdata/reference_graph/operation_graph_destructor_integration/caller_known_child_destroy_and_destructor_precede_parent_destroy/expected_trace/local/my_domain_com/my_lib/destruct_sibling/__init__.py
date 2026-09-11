@@ -70,5 +70,4 @@ class DestructSiblingExecution:
             "/sibling",
             1,
         )
-        self.guarantees.global_position_sibling.run(
-        )
+        self.guarantees.global_position_sibling.run()

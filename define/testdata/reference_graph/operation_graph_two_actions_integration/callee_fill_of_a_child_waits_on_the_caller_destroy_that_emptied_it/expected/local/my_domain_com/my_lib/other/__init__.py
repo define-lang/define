@@ -65,8 +65,7 @@ class OtherExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.a.A
         ).create_particle()
-        self.guarantees.position_output__global_position_a.run(
-        )
+        self.guarantees.position_output__global_position_a.run()
 
     def destroy_position_trigger_pos(self):
         if not self.join_for_destroy_position_trigger_pos.arrive():
@@ -77,5 +76,4 @@ class OtherExecution:
         self.action.get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
-        self.guarantees.position_trigger_pos.run(
-        )
+        self.guarantees.position_trigger_pos.run()

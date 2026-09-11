@@ -57,5 +57,4 @@ class HelperExecution:
                 "position<out>"
             )
         )
-        self.guarantees.position_slot__move__position_out.run(
-        )
+        self.guarantees.position_slot__move__position_out.run()

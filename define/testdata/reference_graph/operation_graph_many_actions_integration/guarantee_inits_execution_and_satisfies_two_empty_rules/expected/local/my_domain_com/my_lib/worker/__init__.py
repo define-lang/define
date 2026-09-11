@@ -69,8 +69,7 @@ class WorkerExecution:
         self.action.get_interface_position(
             "position<first>"
         ).destroy_particle()
-        self.guarantees.position_first.run(
-        )
+        self.guarantees.position_first.run()
 
     def create_position_second(self):
         self.action.get_interface_position(
@@ -79,8 +78,7 @@ class WorkerExecution:
         self.action.get_interface_position(
             "position<second>"
         ).destroy_particle()
-        self.guarantees.position_second.run(
-        )
+        self.guarantees.position_second.run()
 
     def destroy_position_run(self):
         if not self.join_for_destroy_position_run.arrive():
@@ -91,5 +89,4 @@ class WorkerExecution:
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.guarantees.position_run.run(
-        )
+        self.guarantees.position_run.run()

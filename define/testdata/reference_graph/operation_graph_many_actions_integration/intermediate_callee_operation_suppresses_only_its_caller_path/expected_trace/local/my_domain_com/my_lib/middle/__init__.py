@@ -30,6 +30,12 @@ class Middle(literal.Action):
 
 
 @final
+class MiddleGuarantees:
+    def __init__(self, scheduler: literal.Scheduler):
+        self.action_inner__position_trigger_pos = literal.Fanout(scheduler)
+
+
+@final
 class MiddleExecution:
     def __init__(
         self,
@@ -46,6 +52,7 @@ class MiddleExecution:
             caller_execution,
             action_name,
         )
+        self.guarantees = MiddleGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.execution_action_inner: local.my_domain_com.my_lib.inner.InnerExecution
         self.destruction_connection_action_inner: tracing.DestructionConnection
@@ -135,6 +142,7 @@ class MiddleExecution:
             "/inner::trigger_pos",
             1,
         )
+        self.guarantees.action_inner__position_trigger_pos.run()
 
     def destroy_global_position_parent__global_position_child(self):
         literal.continue_destruction(self.continue_destroy_global_position_parent__global_position_child)

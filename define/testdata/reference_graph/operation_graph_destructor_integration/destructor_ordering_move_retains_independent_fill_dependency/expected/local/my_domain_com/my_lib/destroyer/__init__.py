@@ -137,8 +137,7 @@ class DestroyerExecution:
         self.action.get_interface_position(
             "position<target>"
         ).destroy_particle()
-        self.guarantees.position_target.run(
-        )
+        self.guarantees.position_target.run()
 
     def destroy_position_target__global_position_shared(self):
         literal.continue_destruction(self.continue_destroy_position_target__global_position_shared)

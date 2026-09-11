@@ -1064,11 +1064,6 @@ def test_destructor_independent_chains_and_operation_after_destroy(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="S3: retain child-operation dependencies independently of occupancy Guarantees",
-)
 def test_destructor_uses_callee_unchanged_guarantee_directly(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -1090,11 +1085,6 @@ def test_destructor_uses_callee_unchanged_guarantee_directly(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="S3: retain child-operation dependencies independently of occupancy Guarantees",
-)
 def test_local_destruction_consumes_transitive_destructor_guarantee(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -1123,11 +1113,6 @@ def test_local_destruction_consumes_transitive_destructor_guarantee(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="S3: retain child-operation dependencies independently of occupancy Guarantees",
-)
 def test_transitive_destructor_guarantee_precedes_parent_and_child_destruction(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -2574,11 +2559,6 @@ def test_destructor_on_particle_from_transitive_callee_guarantee(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="S3: retain child-operation dependencies independently of occupancy Guarantees",
-)
 def test_destructor_on_implied_position_from_transitive_callee_guarantee(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):

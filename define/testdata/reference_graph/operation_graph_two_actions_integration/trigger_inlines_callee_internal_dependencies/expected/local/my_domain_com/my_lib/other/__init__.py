@@ -58,12 +58,10 @@ class OtherExecution:
         self.action.get_interface_position(
             "position<scratch>"
         ).destroy_particle()
-        self.guarantees.position_scratch.run(
-        )
+        self.guarantees.position_scratch.run()
 
     def create_position_output(self):
         self.action.get_interface_position(
             "position<output>"
         ).create_particle()
-        self.guarantees.position_output.run(
-        )
+        self.guarantees.position_output.run()

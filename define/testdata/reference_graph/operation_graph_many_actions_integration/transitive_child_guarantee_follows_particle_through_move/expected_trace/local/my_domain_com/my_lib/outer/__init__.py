@@ -214,8 +214,7 @@ class OuterExecution:
             "destination::/result_value",
             1,
         )
-        self.guarantees.position_destination__global_position_result_value.run(
-        )
+        self.guarantees.position_destination__global_position_result_value.run()
 
     def destroy_position_middle_holder(self):
         if not self.join_for_destroy_position_middle_holder.arrive():

@@ -63,5 +63,4 @@ class ProducerExecution:
                 local.my_domain_com.my_lib.holder.Holder
             )
         )
-        self.guarantees.global_position_input__global_position_a__move__global_position_holder.run(
-        )
+        self.guarantees.global_position_input__global_position_a__move__global_position_holder.run()

@@ -108,8 +108,7 @@ class DestroyerExecution:
             "target",
             1,
         )
-        self.guarantees.position_target.run(
-        )
+        self.guarantees.position_target.run()
 
     def destroy_position_target__global_position_callee_known(self):
         literal.continue_destruction(self.continue_destroy_position_target__global_position_callee_known)
@@ -136,5 +135,4 @@ class DestroyerExecution:
             "run",
             1,
         )
-        self.guarantees.position_run.run(
-        )
+        self.guarantees.position_run.run()

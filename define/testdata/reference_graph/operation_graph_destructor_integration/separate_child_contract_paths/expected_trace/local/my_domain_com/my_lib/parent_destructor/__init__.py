@@ -70,5 +70,4 @@ class ParentDestructorExecution:
             "/left",
             1,
         )
-        self.guarantees.global_position_left.run(
-        )
+        self.guarantees.global_position_left.run()

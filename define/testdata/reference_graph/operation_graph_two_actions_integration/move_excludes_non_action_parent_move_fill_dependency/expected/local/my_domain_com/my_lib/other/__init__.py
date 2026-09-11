@@ -99,5 +99,4 @@ class OtherExecution:
         self.action.get_interface_position(
             "position<box>"
         ).destroy_particle()
-        self.guarantees.position_box.run(
-        )
+        self.guarantees.position_box.run()

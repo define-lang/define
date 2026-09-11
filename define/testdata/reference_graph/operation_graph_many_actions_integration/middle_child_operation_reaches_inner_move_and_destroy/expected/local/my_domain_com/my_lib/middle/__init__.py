@@ -174,8 +174,7 @@ class MiddleExecution:
         self.action.get_interface_position(
             "position<gateway>"
         ).destroy_particle()
-        self.guarantees.position_gateway.run(
-        )
+        self.guarantees.position_gateway.run()
 
     def init_position_gateway__action_inner__position_destination__global_position_child(self):
         self.destruction_position_position_gateway__action_inner__position_destination = self.action.get_interface_position(

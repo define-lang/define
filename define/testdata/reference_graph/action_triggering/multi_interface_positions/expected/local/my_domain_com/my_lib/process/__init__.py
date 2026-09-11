@@ -86,8 +86,7 @@ class ProcessExecution:
         self.action.get_interface_position(
             "position<input>"
         ).destroy_particle()
-        self.guarantees.position_input.run(
-        )
+        self.guarantees.position_input.run()
 
     def create_position_config(self):
         self.action.get_interface_position(
@@ -96,8 +95,7 @@ class ProcessExecution:
         self.action.get_interface_position(
             "position<config>"
         ).destroy_particle()
-        self.guarantees.position_config.run(
-        )
+        self.guarantees.position_config.run()
 
     def destroy_position_trigger(self):
         if not self.join_for_destroy_position_trigger.arrive():
@@ -108,5 +106,4 @@ class ProcessExecution:
         self.action.get_interface_position(
             "position<trigger>"
         ).destroy_particle()
-        self.guarantees.position_trigger.run(
-        )
+        self.guarantees.position_trigger.run()

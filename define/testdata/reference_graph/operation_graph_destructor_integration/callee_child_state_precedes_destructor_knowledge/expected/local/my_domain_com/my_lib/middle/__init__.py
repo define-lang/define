@@ -159,8 +159,7 @@ class MiddleExecution:
         self.action.get_interface_position(
             "position<trigger>"
         ).destroy_particle()
-        self.guarantees.position_trigger.run(
-        )
+        self.guarantees.position_trigger.run()
 
     def action_destroyer__position_target__action_destructor__for_empty_rule_global_position_occupied(self):
         self.execution_action_destroyer__position_target__action_destructor.accept_for_empty_rule_global_position_occupied()

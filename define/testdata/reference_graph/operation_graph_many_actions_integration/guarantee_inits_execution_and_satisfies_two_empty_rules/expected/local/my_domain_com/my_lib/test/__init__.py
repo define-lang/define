@@ -35,6 +35,7 @@ class TestExecution:
         self.execution_position_box__action_carrier: local.my_domain_com.my_lib.carrier.CarrierExecution
         self.execution_position_box__action_carrier__position_result__action_worker: local.my_domain_com.my_lib.worker.WorkerExecution
         self.destruction_position_position_box__action_carrier__position_result: literal.Position
+        self.join_for_destroy_position_box__action_carrier__position_result = self.scheduler.create_join(3)
         self.join_for_destroy_position_box = self.scheduler.create_join(2)
 
     def on_action_parent_occupied(self):
@@ -87,6 +88,8 @@ class TestExecution:
         self.execution_position_box__action_carrier__position_result__action_worker.accept_for_empty_rule_position_run()
 
     def destroy_position_box__action_carrier__position_result(self):
+        if not self.join_for_destroy_position_box__action_carrier__position_result.arrive():
+            return
         self.destruction_position_position_box__action_carrier__position_result.destroy_particle()
         self.destroy_position_box()
 
@@ -108,8 +111,14 @@ class TestExecution:
         )
         self.execution_position_box__action_carrier__position_result__action_worker.join_for_empty_rule_position_run = literal.NO_JOIN
         self.execution_position_box__action_carrier__position_result__action_worker.join_for_destroy_position_run = literal.NO_JOIN
-        self.execution_position_box__action_carrier__position_result__action_worker.guarantees.position_run.inits.append(
-            self.init_position_box__action_carrier__position_result__action_worker__position_run
+        self.execution_position_box__action_carrier__position_result__action_worker.guarantees.position_first.inits.append(
+            self.init_position_box__action_carrier__position_result__action_worker__position_first
+        )
+        self.execution_position_box__action_carrier__position_result__action_worker.guarantees.position_first.consumers.append(
+            self.destroy_position_box__action_carrier__position_result
+        )
+        self.execution_position_box__action_carrier__position_result__action_worker.guarantees.position_second.consumers.append(
+            self.destroy_position_box__action_carrier__position_result
         )
         self.execution_position_box__action_carrier__position_result__action_worker.guarantees.position_run.consumers.append(
             self.destroy_position_box__action_carrier__position_result
@@ -121,7 +130,7 @@ class TestExecution:
             self.accept_guarantee_position_box__action_carrier__position_result__action_worker_2
         )
 
-    def init_position_box__action_carrier__position_result__action_worker__position_run(self):
+    def init_position_box__action_carrier__position_result__action_worker__position_first(self):
         self.destruction_position_position_box__action_carrier__position_result = self.local_position_box.particle.get_action(
             local.my_domain_com.my_lib.carrier.Carrier
         ).get_interface_position(

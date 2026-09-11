@@ -214,5 +214,4 @@ class OuterExecution:
             "gw",
             1,
         )
-        self.guarantees.position_gw.run(
-        )
+        self.guarantees.position_gw.run()

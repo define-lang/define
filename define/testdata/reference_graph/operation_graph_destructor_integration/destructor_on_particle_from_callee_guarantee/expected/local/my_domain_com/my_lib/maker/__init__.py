@@ -52,5 +52,4 @@ class MakerExecution:
         self.action.get_interface_position(
             "position<result>"
         ).create_particle()
-        self.guarantees.position_result.run(
-        )
+        self.guarantees.position_result.run()

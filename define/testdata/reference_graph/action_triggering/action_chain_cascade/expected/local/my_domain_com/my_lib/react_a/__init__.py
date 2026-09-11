@@ -96,8 +96,7 @@ class ReactAExecution:
         self.action.get_interface_position(
             "position<result>"
         ).destroy_particle()
-        self.guarantees.position_result.run(
-        )
+        self.guarantees.position_result.run()
 
     def destroy_position_trigger(self):
         if not self.join_for_destroy_position_trigger.arrive():
@@ -108,5 +107,4 @@ class ReactAExecution:
         self.action.get_interface_position(
             "position<trigger>"
         ).destroy_particle()
-        self.guarantees.position_trigger.run(
-        )
+        self.guarantees.position_trigger.run()

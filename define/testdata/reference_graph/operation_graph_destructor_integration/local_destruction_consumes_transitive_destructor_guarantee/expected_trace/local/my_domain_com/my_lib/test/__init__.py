@@ -40,6 +40,7 @@ class TestExecution:
             scheduler=self.scheduler,
         )
         self.execution_position_box__action_destructor: local.my_domain_com.my_lib.destructor.DestructorExecution
+        self.join_for_destroy_position_box = self.scheduler.create_join(3)
 
     def on_action_parent_occupied(self):
         self.create_position_box()
@@ -59,13 +60,23 @@ class TestExecution:
             self.trace_execution,
             "destructor",
         )
+        self.execution_position_box__action_destructor.guarantees.global_position_implied.consumers.append(
+            self.destroy_position_box
+        )
+        self.execution_position_box__action_destructor.execution_action_forwarder.guarantees.position_trigger_pos.consumers.append(
+            self.destroy_position_box
+        )
+        self.execution_position_box__action_destructor.execution_action_forwarder.execution_action_filler.guarantees.position_trigger_pos.consumers.append(
+            self.destroy_position_box
+        )
         self.scheduler.continue_with(
-            self.destroy_position_box,
             self.execution_position_box__action_destructor.on_action_parent_occupied,
             self.execution_position_box__action_destructor.accept_when_empty_global_position_implied,
         )
 
     def destroy_position_box(self):
+        if not self.join_for_destroy_position_box.arrive():
+            return
         self.local_position_box.destroy_particle()
         self.scheduler.destroy_completed(
             self.trace_execution,

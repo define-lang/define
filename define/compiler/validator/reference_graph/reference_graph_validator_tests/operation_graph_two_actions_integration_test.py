@@ -551,11 +551,6 @@ def test_callee_fill_of_a_child_does_not_wait_on_the_caller_fill_of_a_sibling_ch
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="S3: retain child-operation dependencies independently of occupancy Guarantees",
-)
 def test_caller_operation_waits_on_callee_output_not_later_callee_operations(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -1251,11 +1246,6 @@ def test_parallel_callee_local_operation_chains_wait_on_action_parent_operation(
     assert_operation_dependencies(result.operation_graphs, expected)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="S3: retain child-operation dependencies independently of occupancy Guarantees",
-)
 def test_trigger_inlines_callee_internal_dependencies(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):

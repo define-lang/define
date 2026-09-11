@@ -66,8 +66,7 @@ class TestExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.implied.Implied
         ).destroy_particle()
-        self.guarantees.global_position_implied.run(
-        )
+        self.guarantees.global_position_implied.run()
 
     def destroy_global_position_implied__global_position_child(self):
         self.destruction_position_global_position_implied__global_position_child.destroy_particle()

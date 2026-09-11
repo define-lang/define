@@ -25,6 +25,12 @@ class Right(literal.Action):
 
 
 @final
+class RightGuarantees:
+    def __init__(self, scheduler: literal.Scheduler):
+        self.action_right_child__position_trigger_pos = literal.Fanout(scheduler)
+
+
+@final
 class RightExecution:
     def __init__(
         self,
@@ -35,6 +41,7 @@ class RightExecution:
     ):
         self.action = action
         self.scheduler = scheduler
+        self.guarantees = RightGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.execution_action_right_child: local.my_domain_com.my_lib.right_child.RightChildExecution
         self.destruction_position_action_right_child__position_trigger_pos: literal.Position
@@ -70,3 +77,4 @@ class RightExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_action_right_child__position_trigger_pos.destroy_particle()
+        self.guarantees.action_right_child__position_trigger_pos.run()

@@ -74,5 +74,4 @@ class ExtraDestructorExecution:
             "/shared",
             1,
         )
-        self.guarantees.global_position_destination__move__global_position_shared.run(
-        )
+        self.guarantees.global_position_destination__move__global_position_shared.run()

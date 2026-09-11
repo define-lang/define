@@ -91,8 +91,7 @@ class WorkerExecution:
             "item",
             1,
         )
-        self.guarantees.position_item.run(
-        )
+        self.guarantees.position_item.run()
 
     def destroy_position_trigger_pos(self):
         if not self.join_for_destroy_position_trigger_pos.arrive():
@@ -108,5 +107,4 @@ class WorkerExecution:
             "trigger_pos",
             1,
         )
-        self.guarantees.position_trigger_pos.run(
-        )
+        self.guarantees.position_trigger_pos.run()

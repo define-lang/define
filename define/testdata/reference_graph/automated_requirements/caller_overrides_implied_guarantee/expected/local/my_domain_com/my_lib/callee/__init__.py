@@ -59,8 +59,7 @@ class CalleeExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.implied.Implied
         ).create_particle()
-        self.guarantees.global_position_implied.run(
-        )
+        self.guarantees.global_position_implied.run()
 
     def destroy_position_run(self):
         if not self.join_for_destroy_position_run.arrive():
@@ -71,5 +70,4 @@ class CalleeExecution:
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.guarantees.position_run.run(
-        )
+        self.guarantees.position_run.run()

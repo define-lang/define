@@ -67,8 +67,7 @@ class ActExecution:
         self.action.get_interface_position(
             "position<src>"
         ).destroy_particle()
-        self.guarantees.position_src.run(
-        )
+        self.guarantees.position_src.run()
 
     def destroy_position_trigger(self):
         if not self.join_for_destroy_position_trigger.arrive():
@@ -79,5 +78,4 @@ class ActExecution:
         self.action.get_interface_position(
             "position<trigger>"
         ).destroy_particle()
-        self.guarantees.position_trigger.run(
-        )
+        self.guarantees.position_trigger.run()

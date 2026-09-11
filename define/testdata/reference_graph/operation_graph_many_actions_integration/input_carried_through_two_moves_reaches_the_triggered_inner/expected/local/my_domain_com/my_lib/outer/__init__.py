@@ -41,6 +41,7 @@ class OuterGuarantees:
     def __init__(self, scheduler: literal.Scheduler):
         self.position_middle_holder = literal.Fanout(scheduler)
         self.position_input = literal.Fanout(scheduler)
+        self.position_middle_holder__action_middle__position_run = literal.Fanout(scheduler)
 
 
 @final
@@ -124,3 +125,4 @@ class OuterExecution:
             "position<run>"
         )
         self.destruction_position_position_middle_holder__action_middle__position_run.destroy_particle()
+        self.guarantees.position_middle_holder__action_middle__position_run.run()

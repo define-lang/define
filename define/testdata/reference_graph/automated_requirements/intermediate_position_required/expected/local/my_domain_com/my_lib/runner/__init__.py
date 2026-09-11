@@ -113,8 +113,7 @@ class RunnerExecution:
         self.action.get_interface_position(
             "position<wrap>"
         ).destroy_particle()
-        self.guarantees.position_wrap.run(
-        )
+        self.guarantees.position_wrap.run()
 
     def destroy_position_wrap__global_position_mid(self):
         if not self.join_for_destroy_position_wrap__global_position_mid.arrive():
@@ -133,5 +132,4 @@ class RunnerExecution:
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.guarantees.position_run.run(
-        )
+        self.guarantees.position_run.run()

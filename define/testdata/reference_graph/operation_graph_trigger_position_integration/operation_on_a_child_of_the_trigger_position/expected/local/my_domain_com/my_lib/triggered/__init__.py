@@ -64,5 +64,4 @@ class TriggeredExecution:
 
     def continue_destroy_position_run__global_position_child(self):
         self.destruction_position_position_run__global_position_child.destroy_particle()
-        self.guarantees.position_run__global_position_child.run(
-        )
+        self.guarantees.position_run__global_position_child.run()

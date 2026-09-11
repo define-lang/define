@@ -52,5 +52,4 @@ class ParentDestructorExecution:
                 local.my_domain_com.my_lib.left.Left
             )
         )
-        self.guarantees.global_position_left.run(
-        )
+        self.guarantees.global_position_left.run()

@@ -179,5 +179,4 @@ class MiddleExecution:
             "igw",
             1,
         )
-        self.guarantees.position_igw.run(
-        )
+        self.guarantees.position_igw.run()

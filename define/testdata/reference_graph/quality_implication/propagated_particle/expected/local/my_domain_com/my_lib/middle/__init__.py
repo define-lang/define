@@ -176,8 +176,7 @@ class MiddleExecution:
         self.action.get_interface_position(
             "position<final>"
         ).destroy_particle()
-        self.guarantees.position_final.run(
-        )
+        self.guarantees.position_final.run()
 
     def destroy_position_run(self):
         if not self.join_for_destroy_position_run.arrive():
@@ -188,8 +187,7 @@ class MiddleExecution:
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.guarantees.position_run.run(
-        )
+        self.guarantees.position_run.run()
 
     def destroy_position_inner_holder(self):
         if not self.join_for_destroy_position_inner_holder.arrive():

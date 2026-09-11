@@ -58,8 +58,7 @@ class SecondDestructorExecution:
                 local.my_domain_com.my_lib.second.Second
             )
         )
-        self.guarantees.global_position_second.run(
-        )
+        self.guarantees.global_position_second.run()
 
     def create_global_position_marker(self):
         self.action.on_particle.get_position(
@@ -68,5 +67,4 @@ class SecondDestructorExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         ).destroy_particle()
-        self.guarantees.global_position_marker.run(
-        )
+        self.guarantees.global_position_marker.run()

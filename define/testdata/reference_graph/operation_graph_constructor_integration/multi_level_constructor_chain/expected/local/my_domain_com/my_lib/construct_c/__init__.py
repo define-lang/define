@@ -37,5 +37,4 @@ class ConstructCExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.leaf.Leaf
         ).create_particle()
-        self.guarantees.global_position_leaf.run(
-        )
+        self.guarantees.global_position_leaf.run()

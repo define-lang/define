@@ -95,5 +95,4 @@ class DestroyerExecution:
             "target",
             1,
         )
-        self.guarantees.position_target.run(
-        )
+        self.guarantees.position_target.run()

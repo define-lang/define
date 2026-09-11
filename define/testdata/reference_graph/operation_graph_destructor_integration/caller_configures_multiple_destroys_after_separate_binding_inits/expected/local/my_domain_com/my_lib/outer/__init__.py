@@ -56,11 +56,6 @@ class OuterExecution:
             return
         self.move_position_run__global_position_payload_to_position_run__action_middle__position_run()
 
-    def accept_for_empty_rule_position_run(self):
-        if not self.join_for_empty_rule_position_run.arrive():
-            return
-        self.destroy_position_run()
-
     def accept_when_occupied_position_run(self):
         self.execution_position_run__action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
             self.action.get_interface_position(
@@ -73,6 +68,9 @@ class OuterExecution:
         )
         self.execution_position_run__action_middle.join_for_empty_rule_position_run = literal.NO_JOIN
         self.execution_position_run__action_middle.join_for_move_position_run_to_action_inner__position_run = literal.NO_JOIN
+        self.execution_position_run__action_middle.execution_action_inner.guarantees.action_destroyer__position_trigger_pos.consumers.append(
+            self.destroy_position_run
+        )
         self.execution_position_run__action_middle.execution_action_inner.execution_action_destroyer.guarantees.position_target.consumers.append(
             self.destroy_position_run
         )
@@ -91,12 +89,20 @@ class OuterExecution:
         )
         self.execution_position_run__action_middle.join_for_empty_rule_position_run = literal.NO_JOIN
         self.execution_position_run__action_middle.join_for_move_position_run_to_action_inner__position_run = literal.NO_JOIN
+        self.execution_position_run__action_middle.execution_action_inner.guarantees.action_destroyer__position_trigger_pos.consumers.append(
+            self.destroy_position_run
+        )
         self.execution_position_run__action_middle.execution_action_inner.execution_action_destroyer.guarantees.position_target.consumers.append(
             self.destroy_position_run
         )
 
     def continue_when_occupied_position_run(self):
         self.execution_position_run__action_middle.on_action_parent_occupied()
+
+    def accept_for_empty_rule_position_run(self):
+        if not self.join_for_empty_rule_position_run.arrive():
+            return
+        self.destroy_position_run()
 
     def move_position_run__global_position_payload_to_position_run__action_middle__position_run(self):
         if not self.join_for_move_position_run__global_position_payload_to_position_run__action_middle__position_run.arrive():
@@ -125,5 +131,4 @@ class OuterExecution:
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.guarantees.position_run.run(
-        )
+        self.guarantees.position_run.run()

@@ -45,6 +45,7 @@ class Middle(literal.Action):
 class MiddleGuarantees:
     def __init__(self, scheduler: literal.Scheduler):
         self.position_source__move__position_holder = literal.Fanout(scheduler)
+        self.position_holder__action_child__position_trigger_pos = literal.Fanout(scheduler)
 
 
 @final
@@ -137,3 +138,4 @@ class MiddleExecution:
 
     def destroy_position_holder__action_child__position_trigger_pos(self):
         self.destruction_position_position_holder__action_child__position_trigger_pos.destroy_particle()
+        self.guarantees.position_holder__action_child__position_trigger_pos.run()

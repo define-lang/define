@@ -69,5 +69,4 @@ class TestExecution:
                 local.my_domain_com.my_lib.implied.Implied
             )
         )
-        self.guarantees.global_position_implied.run(
-        )
+        self.guarantees.global_position_implied.run()

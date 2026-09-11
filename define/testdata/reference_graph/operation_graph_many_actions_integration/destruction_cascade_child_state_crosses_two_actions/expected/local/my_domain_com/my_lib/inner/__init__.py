@@ -55,5 +55,4 @@ class InnerExecution:
         self.action.get_interface_position(
             "position<inner_run>"
         ).destroy_particle()
-        self.guarantees.position_inner_run.run(
-        )
+        self.guarantees.position_inner_run.run()

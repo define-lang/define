@@ -180,5 +180,4 @@ class MiddleExecution:
             "/parent",
             1,
         )
-        self.guarantees.global_position_parent.run(
-        )
+        self.guarantees.global_position_parent.run()

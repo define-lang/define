@@ -60,5 +60,4 @@ class InnerExecution:
                 local.my_domain_com.my_lib.destination.Destination
             )
         )
-        self.guarantees.global_position_input__move__global_position_destination.run(
-        )
+        self.guarantees.global_position_input__move__global_position_destination.run()

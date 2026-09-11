@@ -54,5 +54,4 @@ class MakerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.c.C
         ).create_particle()
-        self.guarantees.position_held__global_position_c.run(
-        )
+        self.guarantees.position_held__global_position_c.run()

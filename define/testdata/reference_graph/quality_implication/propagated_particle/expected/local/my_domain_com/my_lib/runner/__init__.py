@@ -70,9 +70,6 @@ class RunnerExecution:
         self.execution_position_wrapper__action_middle.join_for_empty_rule_position_run = literal.NO_JOIN
         self.execution_position_wrapper__action_middle.join_for_move_position_box_to_position_inner_holder__action_inner__position_input = self.scheduler.create_join(2)
         self.execution_position_wrapper__action_middle.join_for_destroy_position_run = literal.NO_JOIN
-        self.execution_position_wrapper__action_middle.guarantees.position_box.consumers.append(
-            self.destroy_position_wrapper
-        )
         self.execution_position_wrapper__action_middle.guarantees.position_final.consumers.append(
             self.destroy_position_wrapper
         )
@@ -95,9 +92,6 @@ class RunnerExecution:
         self.execution_position_wrapper__action_middle.join_for_empty_rule_position_run = literal.NO_JOIN
         self.execution_position_wrapper__action_middle.join_for_move_position_box_to_position_inner_holder__action_inner__position_input = self.scheduler.create_join(2)
         self.execution_position_wrapper__action_middle.join_for_destroy_position_run = literal.NO_JOIN
-        self.execution_position_wrapper__action_middle.guarantees.position_box.consumers.append(
-            self.destroy_position_wrapper
-        )
         self.execution_position_wrapper__action_middle.guarantees.position_final.consumers.append(
             self.destroy_position_wrapper
         )
@@ -171,8 +165,7 @@ class RunnerExecution:
         self.action.get_interface_position(
             "position<wrapper>"
         ).destroy_particle()
-        self.guarantees.position_wrapper.run(
-        )
+        self.guarantees.position_wrapper.run()
 
     def destroy_position_run(self):
         if not self.join_for_destroy_position_run.arrive():
@@ -183,8 +176,7 @@ class RunnerExecution:
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.guarantees.position_run.run(
-        )
+        self.guarantees.position_run.run()
 
     def accept_guarantee_position_wrapper__action_middle(self):
         self.execution_position_wrapper__action_middle.accept_for_empty_rule_position_box()

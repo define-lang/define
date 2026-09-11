@@ -27,6 +27,13 @@ class Middle(literal.Action):
 
 
 @final
+class MiddleGuarantees:
+    def __init__(self, scheduler: literal.Scheduler):
+        self.action_child_a__position_trigger_pos = literal.Fanout(scheduler)
+        self.action_child_b__position_trigger_pos = literal.Fanout(scheduler)
+
+
+@final
 class MiddleExecution:
     def __init__(
         self,
@@ -35,6 +42,7 @@ class MiddleExecution:
     ):
         self.action = action
         self.scheduler = scheduler
+        self.guarantees = MiddleGuarantees(self.scheduler)
         self.local_position_first = literal.LocalPosition(
             "position<first>",
             scheduler=self.scheduler,
@@ -84,6 +92,7 @@ class MiddleExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_action_child_a__position_trigger_pos.destroy_particle()
+        self.guarantees.action_child_a__position_trigger_pos.run()
 
     def create_action_child_b__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -97,3 +106,4 @@ class MiddleExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_action_child_b__position_trigger_pos.destroy_particle()
+        self.guarantees.action_child_b__position_trigger_pos.run()

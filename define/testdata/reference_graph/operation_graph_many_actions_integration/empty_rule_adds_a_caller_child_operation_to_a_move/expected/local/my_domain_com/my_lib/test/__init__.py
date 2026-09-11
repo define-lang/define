@@ -49,7 +49,7 @@ class TestExecution:
         )
         self.execution_position_gateway__action_middle.join_for_empty_rule_position_source = literal.NO_JOIN
         self.execution_position_gateway__action_middle.join_for_move_position_source_to_position_holder = self.scheduler.create_join(2)
-        self.execution_position_gateway__action_middle.guarantees.position_source.consumers.append(
+        self.execution_position_gateway__action_middle.guarantees.position_holder.consumers.append(
             self.destroy_position_gateway
         )
         self.scheduler.continue_with(

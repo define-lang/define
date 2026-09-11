@@ -30,6 +30,7 @@ class Test(literal.EntryPoint):
 class TestGuarantees:
     def __init__(self, scheduler: literal.Scheduler):
         self.global_position_shared = literal.Fanout(scheduler)
+        self.action_middle__position_trigger_pos = literal.Fanout(scheduler)
 
 
 @final
@@ -79,3 +80,4 @@ class TestExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_action_middle__position_trigger_pos.destroy_particle()
+        self.guarantees.action_middle__position_trigger_pos.run()

@@ -32,6 +32,13 @@ class Test(literal.EntryPoint):
 
 
 @final
+class TestGuarantees:
+    def __init__(self, scheduler: literal.Scheduler):
+        self.action_producer__position_trigger_pos = literal.Fanout(scheduler)
+        self.action_consumer__position_trigger_pos = literal.Fanout(scheduler)
+
+
+@final
 class TestExecution:
     def __init__(
         self,
@@ -40,6 +47,7 @@ class TestExecution:
     ):
         self.action = action
         self.scheduler = scheduler
+        self.guarantees = TestGuarantees(self.scheduler)
         self.execution_action_producer: local.my_domain_com.my_lib.producer.ProducerExecution
         self.execution_action_consumer: local.my_domain_com.my_lib.consumer.ConsumerExecution
         self.destruction_position_action_producer__position_trigger_pos: literal.Position
@@ -96,6 +104,7 @@ class TestExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_action_producer__position_trigger_pos.destroy_particle()
+        self.guarantees.action_producer__position_trigger_pos.run()
 
     def create_action_consumer__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -109,6 +118,7 @@ class TestExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_action_consumer__position_trigger_pos.destroy_particle()
+        self.guarantees.action_consumer__position_trigger_pos.run()
 
     def accept_guarantee_action_consumer(self):
         self.execution_action_consumer.accept_when_empty_global_position_box__global_position_item()

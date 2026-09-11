@@ -40,7 +40,7 @@ class TestExecution:
         self.execution_action_runner.join_when_empty_position_wrapper__action_middle__position_final = literal.NO_JOIN
         self.execution_action_runner.join_for_empty_rule_position_wrapper = literal.NO_JOIN
         self.execution_action_runner.join_for_empty_rule_position_run = literal.NO_JOIN
-        self.execution_action_runner.join_for_destroy_position_wrapper = self.scheduler.create_join(3)
+        self.execution_action_runner.join_for_destroy_position_wrapper = self.scheduler.create_join(2)
         self.execution_action_runner.join_for_destroy_position_run = literal.NO_JOIN
 
     def on_action_parent_occupied(self):

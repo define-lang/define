@@ -76,8 +76,7 @@ class DestructorExecution:
             "/occupied",
             1,
         )
-        self.guarantees.global_position_occupied.run(
-        )
+        self.guarantees.global_position_occupied.run()
 
     def create_global_position_empty(self):
         self.action.on_particle.get_position(
@@ -96,5 +95,4 @@ class DestructorExecution:
             "/empty",
             1,
         )
-        self.guarantees.global_position_empty.run(
-        )
+        self.guarantees.global_position_empty.run()

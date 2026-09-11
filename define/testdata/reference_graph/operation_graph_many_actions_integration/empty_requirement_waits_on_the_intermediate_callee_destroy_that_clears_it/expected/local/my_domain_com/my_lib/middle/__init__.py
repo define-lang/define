@@ -184,8 +184,7 @@ class MiddleExecution:
         self.action.get_interface_position(
             "position<gw>"
         ).destroy_particle()
-        self.guarantees.position_gw.run(
-        )
+        self.guarantees.position_gw.run()
 
     def init_position_gw__action_inner__position_slot(self):
         self.destruction_position_position_gw__action_inner__position_slot = self.action.get_interface_position(

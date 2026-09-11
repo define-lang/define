@@ -28,6 +28,12 @@ class Test(literal.EntryPoint):
 
 
 @final
+class TestGuarantees:
+    def __init__(self, scheduler: literal.Scheduler):
+        self.action_destroyer__position_trigger_pos = literal.Fanout(scheduler)
+
+
+@final
 class TestExecution:
     def __init__(
         self,
@@ -42,6 +48,7 @@ class TestExecution:
             caller_execution,
             action_name,
         )
+        self.guarantees = TestGuarantees(self.scheduler)
         self.local_position_source = literal.LocalPosition(
             "position<source>",
             constraints=(
@@ -152,6 +159,7 @@ class TestExecution:
             "/destroyer::trigger_pos",
             1,
         )
+        self.guarantees.action_destroyer__position_trigger_pos.run()
 
     def action_destroyer__position_parent__action_destruct__for_empty_rule_global_position_required(self):
         self.execution_action_destroyer__position_parent__action_destruct.accept_for_empty_rule_global_position_required()

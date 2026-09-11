@@ -75,5 +75,4 @@ class ConsumerExecution:
                 local.my_domain_com.my_lib.destination.Destination
             )
         )
-        self.guarantees.global_position_box__global_position_item__move__global_position_box__global_position_destination.run(
-        )
+        self.guarantees.global_position_box__global_position_item__move__global_position_box__global_position_destination.run()

@@ -1,0 +1,16 @@
+# Triggering Worker in the caller does not satisfy Other's obligation to trigger
+# Worker. Validation must still apply Other's operation-only contract after
+# Worker's Empty Guarantee has determined item occupancy in the caller.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</worker>.
+    it also assigns the action</other>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in action</worker>::position<item>.
+        create a particle in action</worker>::position<trigger_pos>.
+        destroy the particle in action</worker>::position<trigger_pos>.
+        create a particle in action</other>::position<trigger_pos>.
+        destroy the particle in action</other>::position<trigger_pos>.
+    }
+}

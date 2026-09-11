@@ -76,8 +76,7 @@ class FourthDestructorExecution:
             "/fourth",
             1,
         )
-        self.guarantees.global_position_fourth.run(
-        )
+        self.guarantees.global_position_fourth.run()
 
     def create_global_position_marker(self):
         self.action.on_particle.get_position(
@@ -96,5 +95,4 @@ class FourthDestructorExecution:
             "/marker",
             1,
         )
-        self.guarantees.global_position_marker.run(
-        )
+        self.guarantees.global_position_marker.run()

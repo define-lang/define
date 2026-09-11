@@ -74,5 +74,4 @@ class ExtraDestructorExecution:
             "/origin",
             1,
         )
-        self.guarantees.global_position_destination__move__global_position_origin.run(
-        )
+        self.guarantees.global_position_destination__move__global_position_origin.run()

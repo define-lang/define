@@ -101,5 +101,4 @@ class ForwarderExecution:
             "trigger_pos",
             1,
         )
-        self.guarantees.position_trigger_pos.run(
-        )
+        self.guarantees.position_trigger_pos.run()

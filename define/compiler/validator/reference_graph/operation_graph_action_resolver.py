@@ -77,6 +77,9 @@ type _ActionDependsOnTarget = (
 type _OperationDependsOnTarget = (
     _ActionDependsOnTarget | operation_graph_model.DestructionContributionNode
 )
+type _GuaranteeExecutionPaths = dict[
+    operation_graph_model.ActionExecution, _GuaranteeExecutionPaths
+]
 
 
 def binding_hole_binds_one_caller_operation(
@@ -1040,6 +1043,44 @@ class _ActionBindingHolesBuilder:
         self._graph = graph
         self._operation_graphs = operation_graphs
         self._resolved_callees = resolved_callees
+        self._guarantees_by_operation: dict[
+            operation_graph.ResolvedGuarantee, operation_graph_model.GuaranteeNode
+        ] = {}
+        guarantee_counts_by_direct_execution: dict[
+            operation_graph_model.ActionExecution, int
+        ] = {}
+        for node in graph.nodes:
+            if not isinstance(node, operation_graph_model.GuaranteeNode):
+                continue
+            guarantee = operation_graphs.resolve_guarantee(node)
+            if guarantee in self._guarantees_by_operation:
+                continue
+            # Guarantees for both positions of one Move name the same
+            # Particle Operation; either represents its dependency paths.
+            self._guarantees_by_operation[guarantee] = (
+                node.canonical_node_for_particle_operation
+            )
+            direct_execution = guarantee.executions[0]
+            guarantee_counts_by_direct_execution[direct_execution] = (
+                guarantee_counts_by_direct_execution.get(direct_execution, 0) + 1
+            )
+        # Shared path prefixes avoid retaining a separate tuple for every depth
+        # of every transitive Guarantee. Single-Guarantee calls need no search.
+        self._guarantee_execution_paths: _GuaranteeExecutionPaths = {}
+        for guarantee in self._guarantees_by_operation:
+            if guarantee_counts_by_direct_execution[guarantee.executions[0]] == 1:
+                continue
+            paths = self._guarantee_execution_paths
+            for execution in guarantee.executions:
+                child_paths = paths.get(execution)
+                if child_paths is None:
+                    child_paths = {}
+                    paths[execution] = child_paths
+                paths = child_paths
+        self._preceding_guarantees_by_operation: dict[
+            operation_graph.ResolvedGuarantee,
+            tuple[operation_graph_model.GuaranteeNode, ...],
+        ] = {}
 
     def replacement_depends_on_targets_for_guarantee(
         self,
@@ -1052,6 +1093,9 @@ class _ActionBindingHolesBuilder:
     ) -> Sequence[_ActionDependsOnTarget]:
         """Return the Guarantee Node's relationships from the caller's perspective."""
         guarantee_path = self._operation_graphs.resolve_guarantee(guarantee)
+        preceding_guarantees = self._preceding_guarantees(
+            guarantee_path, resolved_execution
+        )
         # Only the action that publishes the Action Guarantee records its Binding
         # Holes. Having every caller also record them would materialize every
         # possible Action Execution chain.
@@ -1061,8 +1105,6 @@ class _ActionBindingHolesBuilder:
         callee_binding_holes = terminal_action.binding_holes.binding_holes_depended_on_by_guaranteed_operation(
             guarantee_path.operation
         )
-        if not callee_binding_holes:
-            return ()
         # A Binding Hole can be translated only from a direct callee's perspective
         # to its direct caller's perspective, so resolution must proceed backward
         # from the publishing action.
@@ -1093,7 +1135,7 @@ class _ActionBindingHolesBuilder:
                 # The Guarantee Node needs the concrete relationships and remaining
                 # Binding Holes from this action's perspective. Reducing them again
                 # would discard relationships its consumers need.
-                return replacement_depends_on_targets
+                return [*replacement_depends_on_targets, *preceding_guarantees]
             # The next Action Execution can bind only Binding Holes in its direct
             # callee. Reduce intermediate concrete relationships to that interface
             # without retaining the result after this Guarantee Node is resolved.
@@ -1108,6 +1150,134 @@ class _ActionBindingHolesBuilder:
                 replacement_depends_on_targets_by_node=caller_replacements,
             )
         raise ValueError("a Guarantee Path must contain an Action Execution")
+
+    def _preceding_guarantees(
+        self,
+        guarantee: operation_graph.ResolvedGuarantee,
+        direct_execution: ResolvedActionExecution,
+    ) -> tuple[operation_graph_model.GuaranteeNode, ...]:
+        if guarantee.executions[0] not in self._guarantee_execution_paths:
+            return ()
+        pending: list[
+            tuple[
+                operation_graph.ResolvedGuarantee,
+                list[operation_graph.ResolvedGuarantee] | None,
+            ]
+        ] = [(guarantee, None)]
+        while pending:
+            current, dependencies = pending.pop()
+            if current in self._preceding_guarantees_by_operation:
+                continue
+            if dependencies is not None:
+                # Different dependency paths can reach the same caller-known
+                # Guarantee, which represents one Particle Operation dependency.
+                preceding: dict[operation_graph_model.GuaranteeNode, None] = {}
+                for dependency in dependencies:
+                    represented = self._guarantees_by_operation.get(dependency)
+                    if represented is not None:
+                        preceding[represented] = None
+                    else:
+                        for predecessor in self._preceding_guarantees_by_operation[
+                            dependency
+                        ]:
+                            preceding[predecessor] = None
+                self._preceding_guarantees_by_operation[current] = tuple(preceding)
+                continue
+            dependencies = self._guarantee_operation_dependencies(
+                current, direct_execution
+            )
+            pending.append((current, dependencies))
+            for dependency in dependencies:
+                # A caller-known Guarantee's own replacement relationships
+                # already describe its predecessors; do not copy their closure.
+                if dependency not in self._guarantees_by_operation:
+                    pending.append((dependency, None))
+        return self._preceding_guarantees_by_operation[guarantee]
+
+    def _is_guarantee_execution_path(
+        self, executions: tuple[operation_graph_model.ActionExecution, ...]
+    ) -> bool:
+        paths = self._guarantee_execution_paths
+        for execution in executions:
+            child_paths = paths.get(execution)
+            if child_paths is None:
+                return False
+            paths = child_paths
+        return True
+
+    def _guarantee_operation_dependencies(
+        self,
+        guarantee: operation_graph.ResolvedGuarantee,
+        direct_execution: ResolvedActionExecution,
+    ) -> list[operation_graph.ResolvedGuarantee]:
+        executions = guarantee.executions
+        if not executions:
+            return []
+        action = self._resolved_callees[executions[-1].callee_action_name]
+        dependencies: list[operation_graph.ResolvedGuarantee] = []
+        if self._is_guarantee_execution_path(executions):
+            for operation in action.local_operations_depended_on_by(
+                guarantee.operation
+            ):
+                dependencies.append(
+                    operation_graph.ResolvedGuarantee(executions, operation)
+                )
+            for dependency in action.guarantee_dependencies_for(guarantee.operation):
+                dependencies.append(
+                    operation_graph.ResolvedGuarantee(
+                        (*executions, *dependency.executions), dependency.operation
+                    )
+                )
+            binding_holes = action.binding_holes_depended_on_by(guarantee.operation)
+        else:
+            # No caller-known Guarantee can be reached by descending farther
+            # along this path. Use the callee's summarized interface instead of
+            # expanding unrelated transitive Action Executions.
+            binding_holes = (
+                action.binding_holes.binding_holes_depended_on_by_guaranteed_operation(
+                    guarantee.operation
+                )
+            )
+        if len(executions) == 1:
+            caller_execution = direct_execution
+        else:
+            caller_execution = self._resolved_callees[
+                executions[-2].callee_action_name
+            ].resolved_execution_by_execution[executions[-1]]
+        pending_bindings: list[
+            tuple[
+                tuple[operation_graph_model.ActionExecution, ...],
+                ResolvedActionExecution,
+                operation_graph_model.BindingHole,
+            ]
+        ] = []
+        for binding_hole in binding_holes:
+            pending_bindings.append((executions, caller_execution, binding_hole))
+        while pending_bindings:
+            binding_executions, execution, binding_hole = pending_bindings.pop()
+            binding = execution.callee_bindings[binding_hole]
+            caller_path = binding_executions[:-1]
+            for operation in binding.caller_dependencies.local_operations:
+                dependencies.append(
+                    operation_graph.ResolvedGuarantee(caller_path, operation)
+                )
+            for dependency in binding.caller_dependencies.guarantee_dependencies:
+                dependencies.append(
+                    operation_graph.ResolvedGuarantee(
+                        (*caller_path, *dependency.executions), dependency.operation
+                    )
+                )
+            if binding.caller_binding_hole is not None and caller_path:
+                if len(caller_path) == 1:
+                    caller_execution = direct_execution
+                else:
+                    caller_execution = self._resolved_callees[
+                        caller_path[-2].callee_action_name
+                    ].resolved_execution_by_execution[caller_path[-1]]
+                pending_bindings.append(
+                    (caller_path, caller_execution, binding.caller_binding_hole)
+                )
+        return dependencies
 
     def _replacement_depends_on_targets_from_direct_callee(
         self,

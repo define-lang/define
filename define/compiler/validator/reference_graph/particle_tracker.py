@@ -92,14 +92,6 @@ def _operation_node(
     return state.operation_node
 
 
-def _operation_node_for_known_state(
-    state: _NodeState,
-) -> operation_graph_model.ConcreteOperationNode | None:
-    if state.particle_info is None and state.emptied_by is None:
-        return None
-    return state.operation_node
-
-
 @dataclass
 class _ErrorState:
     """Wrapper for error-state trie values.
@@ -146,9 +138,8 @@ class _WriteRecord:
 
     body_operation_number: int
     depth: int
-    # Whether the current occupant came from a nested guarantee (a callee's guarantee),
-    # and thus generate_own_guarantees can exclude it from this block's own guarantees.
-    is_from_callee: bool
+    # Results left in a callee's contract need not be published again by this action.
+    include_in_own_guarantees: bool
     # Whether a callee's contract ever set this key, even after the body
     # overwrote it. Once set, it never clears. This is necessary because of a
     # situation like this:
@@ -367,8 +358,6 @@ class _GuaranteeApplicationState:
     saved_nested_guarantees: dict[
         ast.ChainedNameTuple, trie.StrictReparentingTrie[list[_ExecutedCallee]]
     ]
-    callee_derived_write: _WriteRecord
-    caller_identity_write: _WriteRecord
 
     @classmethod
     def for_callee(cls, pending_guarantee: _PendingGuarantee) -> typing.Self:
@@ -376,8 +365,7 @@ class _GuaranteeApplicationState:
         # Make a list of only the origin_positions for OccupiedByExistingGuarantee.
         # We need this list later to know what to "save" before we apply guarantees.
         origin_keys: set[tuple[str, ...]] = set()
-        for contract_guarantee in pending_guarantee.contract.guarantees:
-            guarantee = contract_guarantee.guarantee
+        for guarantee in pending_guarantee.contract.guarantees.values():
             if isinstance(guarantee, action_contract.OccupiedByExistingGuarantee):
                 origin_tuple = guarantee.origin_position.canonical_chained_name_tuple
                 origin_keys.add(pending_guarantee.key_for(origin_tuple))
@@ -390,31 +378,11 @@ class _GuaranteeApplicationState:
             trie.StrictReparentingTrie[list[_ExecutedCallee]],
         ] = {}
 
-        # Every write in the batch shares this callee's operation number and depth, and a
-        # _WriteRecord is immutable, so the loop reuses these two instead of
-        # building an identical record for every guaranteed position. This loop
-        # applies every guarantee of every action triggered anywhere in the
-        # program, so those constructions dominated guarantee propagation.
-        callee_derived_write = _WriteRecord(
-            pending_guarantee.body_operation_number,
-            pending_guarantee.call_chain_depth,
-            is_from_callee=True,
-            ever_set_by_callee=True,
-        )
-        caller_identity_write = _WriteRecord(
-            pending_guarantee.body_operation_number,
-            pending_guarantee.call_chain_depth,
-            is_from_callee=False,
-            ever_set_by_callee=True,
-        )
-
         return cls(
             origin_keys=origin_keys,
             saved_state=saved_state,
             saved_error=saved_error,
             saved_nested_guarantees=saved_nested_guarantees,
-            callee_derived_write=callee_derived_write,
-            caller_identity_write=caller_identity_write,
         )
 
     def save_origins_at_or_below(
@@ -702,12 +670,12 @@ class _ParticleStateStore:
         keys: set[tuple[str, ...]] = set()
         for key, state in self._state.items():
             if (state.particle_info is not None or state.emptied_by is not None) and (
-                include_callee_derived or not self._is_from_callee(key)
+                include_callee_derived or self._include_in_own_guarantees(key)
             ):
                 keys.add(key)
         for key, error_state in self._error.items():
             if error_state.caused_by is not None and (
-                include_callee_derived or not self._is_from_callee(key)
+                include_callee_derived or self._include_in_own_guarantees(key)
             ):
                 keys.add(key)
         return keys
@@ -729,10 +697,10 @@ class _ParticleStateStore:
             and existing.depth < depth
         )
 
-    def _is_from_callee(self, key: tuple[str, ...]) -> bool:
-        """Return whether this position's current occupant came from a callee's contract."""
+    def _include_in_own_guarantees(self, key: tuple[str, ...]) -> bool:
+        """Whether to include this position when collecting this action's own Guarantees."""
         record = self._write_record.get(key)
-        return record is not None and record.is_from_callee
+        return record is None or record.include_in_own_guarantees
 
     def ever_set_by_callee(self, key: tuple[str, ...]) -> bool:
         """Return whether a callee's contract ever set this position."""
@@ -742,20 +710,34 @@ class _ParticleStateStore:
     def record_body_write(self, key: tuple[str, ...], body_operation_number: int):
         """Record that this Action Statement Block's own body made this change to ``key`` at ``body_operation_number``.
 
-        The occupant is no longer callee-derived, but a key a callee previously
-        decided keeps ``ever_set_by_callee`` set.
+        A later body operation overrides earlier callee Guarantees, even if it
+        leaves the position in its initial state.
         """
         existing = self._write_record.get(key)
         self._write_record[key] = _WriteRecord(
             body_operation_number,
             _BODY_DEPTH,
-            is_from_callee=False,
+            include_in_own_guarantees=True,
             ever_set_by_callee=existing is not None and existing.ever_set_by_callee,
         )
 
     def record_callee_write(self, key: tuple[str, ...], record: _WriteRecord):
         """Record that a callee's contract authored ``key``."""
         self._write_record[key] = record
+
+    def record_operation_write(
+        self, key: ast.ChainedNameTuple, pending_guarantee: _PendingGuarantee
+    ):
+        """Update operation ordering without changing Guarantee publication or callee history."""
+        existing = self._write_record.get(key)
+        self._write_record[key] = _WriteRecord(
+            pending_guarantee.body_operation_number,
+            pending_guarantee.call_chain_depth,
+            include_in_own_guarantees=(
+                existing is None or existing.include_in_own_guarantees
+            ),
+            ever_set_by_callee=existing is not None and existing.ever_set_by_callee,
+        )
 
     def try_add_action_parent(self, key: tuple[str, ...]) -> tuple[str, ...] | None:
         """Track ``key``'s action name when that is the only absent parent name.
@@ -1262,11 +1244,9 @@ class ParticleTracker:
     def _preceding_child_operations(
         self, key: tuple[str, ...]
     ) -> Iterator[tuple[tuple[str, ...], operation_graph_model.ConcreteOperationNode]]:
-        # A Move must also collect operations from guarantees for positions that
-        # remain empty; other snapshots only collect operations with known state.
-        return self._store.state.selected_subtree_items(
-            key, _operation_node_for_known_state
-        )
+        # Empty Rule Collection includes operations on positions that ended empty,
+        # even when their Guarantees did not need to change the tracked occupancy.
+        return self._store.state.selected_subtree_items(key, _operation_node)
 
     def _preceding_child_operations_for_contributed_destructor_requirement(
         self,
@@ -1522,7 +1502,7 @@ class ParticleTracker:
         interface_names: tuple[ast.TypedName, ...],
         implied_quality_names: tuple[ast.GlobalTypedNameReference, ...],
         requirements: dict[tuple[str, ...], action_contract.PositionRequirement],
-    ) -> list[action_contract.ContractGuarantee]:
+    ) -> dict[ast.ChainedNameTuple, action_contract.PositionGuarantee]:
         """Generate this block's own guarantees, excluding the callee-derived keys carried via nested guarantees.
 
         The own guarantees come from keys whose first element matches an
@@ -1541,7 +1521,7 @@ class ParticleTracker:
         interface_names: tuple[ast.TypedName, ...],
         implied_quality_names: tuple[ast.GlobalTypedNameReference, ...],
         requirements: dict[tuple[str, ...], action_contract.PositionRequirement],
-    ) -> list[action_contract.ContractGuarantee]:
+    ) -> dict[ast.ChainedNameTuple, action_contract.PositionGuarantee]:
         """Produce every guarantee a destructor makes on its contracted positions.
 
         Guarantees about implied positions from triggered actions are expanded
@@ -1562,7 +1542,7 @@ class ParticleTracker:
         requirements: dict[tuple[str, ...], action_contract.PositionRequirement],
         *,
         include_callee_derived: bool,
-    ) -> list[action_contract.ContractGuarantee]:
+    ) -> dict[ast.ChainedNameTuple, action_contract.PositionGuarantee]:
         """Collect and sort the guarantees for every contracted key, excluding the ones _guarantee_for_key reports as no-ops."""
         include_names = {
             name.full_typed_name for name in (*interface_names, *implied_quality_names)
@@ -1574,7 +1554,9 @@ class ParticleTracker:
             include_callee_derived=include_callee_derived
         )
 
-        guarantees: list[action_contract.ContractGuarantee] = []
+        guarantees: list[
+            tuple[ast.ChainedNameTuple, action_contract.PositionGuarantee]
+        ] = []
         for key in all_keys:
             # A callee's interface guarantees must be consumed in this Action
             # Statements Block, so they cannot become guarantees of this action.
@@ -1591,18 +1573,7 @@ class ParticleTracker:
             guarantee = self._guarantee_for_key(key, state, requirements)
             if guarantee is None:
                 continue
-            operation_positions: tuple[ast.ChainedNameTuple, ...] = ()
-            if not isinstance(guarantee, action_contract.ErrorGuarantee):
-                # A non-error guarantee can only be produced from existing state.
-                state = typing.cast("_NodeState", state)
-                # A callee can move a particle whose known child positions have
-                # no operation nodes: applying its guarantee moves their state,
-                # but only explicitly guaranteed positions receive nodes.
-                if state.operation_node is not None:
-                    operation_positions = state.operation_node.operated_positions
-            guarantees.append(
-                action_contract.ContractGuarantee(key, guarantee, operation_positions)
-            )
+            guarantees.append((key, guarantee))
 
         # Parent-before-child ordering: Our first sort is by the key length
         # (the number of names in a chain). To understand why this is necessary,
@@ -1638,12 +1609,56 @@ class ParticleTracker:
         # the particle in position</child> incorrectly.
         guarantees.sort(
             key=lambda item: (
-                len(item.position),
-                item.guarantee.caused_by.location.line,
-                item.guarantee.caused_by.location.column,
+                len(item[0]),
+                item[1].caused_by.location.line,
+                item[1].caused_by.location.column,
             ),
         )
-        return guarantees
+        return dict(guarantees)
+
+    def final_operations(
+        self,
+        guarantees: dict[ast.ChainedNameTuple, action_contract.PositionGuarantee],
+        *,
+        include_callee_derived: bool,
+    ) -> list[action_contract.FinalPositionOperation]:
+        """Collect final Particle Operations for the action contract."""
+        final_operations: list[action_contract.FinalPositionOperation] = []
+        for key, guarantee in guarantees.items():
+            operation_positions: tuple[ast.ChainedNameTuple, ...] = ()
+            if not isinstance(guarantee, action_contract.ErrorGuarantee):
+                # A non-error guarantee can only be produced from existing state.
+                state = self._store.state[key]
+                # A callee can move a particle whose known child positions have
+                # no operation nodes: applying its guarantee moves their state,
+                # but only explicitly guaranteed positions receive nodes.
+                if state.operation_node is not None:
+                    operation_positions = state.operation_node.operated_positions
+            final_operations.append(
+                action_contract.FinalPositionOperation(key, operation_positions)
+            )
+        # Callers need these positions' final Particle Operations when calculating
+        # dependencies, even though their occupancy Guarantees do not propagate.
+        # Apply them after occupancy Guarantees, which can create or move their
+        # parent positions.
+        for key, state in self._store.state.items():
+            operation = state.operation_node
+            if operation is None:
+                continue
+            if not include_callee_derived and isinstance(
+                operation, operation_graph_model.GuaranteeNode
+            ):
+                continue
+            if not any(name.startswith(_ACTION_KEY_PREFIX) for name in key):
+                continue
+            # Automatic destruction has removed child state for positions
+            # defined in the Action Statements Block.
+            final_operations.append(
+                action_contract.FinalPositionOperation(
+                    key, operation.operated_positions
+                )
+            )
+        return final_operations
 
     def _guarantee_for_key(
         self,
@@ -1824,13 +1839,13 @@ class ParticleTracker:
         ] = []
 
         application = _GuaranteeApplicationState.for_callee(pending_guarantee)
+        applied_guarantee_keys: dict[ast.ChainedNameTuple, ast.ChainedNameTuple] = {}
 
         # A preceding guarantee may create or move a later guarantee's parent,
         # so acceptance checks must alternate with occupancy updates. Graph
         # recording must wait until all swap-safety restoration has completed.
-        for contract_guarantee in pending_guarantee.contract.guarantees:
-            guarantee = contract_guarantee.guarantee
-            key = pending_guarantee.key_for(contract_guarantee.position)
+        for position, guarantee in pending_guarantee.contract.guarantees.items():
+            key = pending_guarantee.key_for(position)
 
             # A later-running statement already finalized this key, so this
             # guarantee must not override it.
@@ -1861,10 +1876,31 @@ class ParticleTracker:
             self._update_store_from_callee_direct_guarantee(
                 pending_guarantee, key, guarantee, application
             )
+            applied_guarantee_keys[position] = key
+
+        for final_operation in pending_guarantee.contract.final_operations:
+            key = applied_guarantee_keys.get(final_operation.position)
+            if key is None:
+                # A rejected occupancy Guarantee must not replace the operation
+                # belonging to the newer state either.
+                if final_operation.position in pending_guarantee.contract.guarantees:
+                    continue
+                key = pending_guarantee.key_for(final_operation.position)
+                if self._store.is_superseded(
+                    key,
+                    pending_guarantee.body_operation_number,
+                    pending_guarantee.call_chain_depth,
+                ):
+                    continue
+                if self._store.try_add_action_parent(key) is not None:
+                    continue
+                self._store.record_operation_write(key, pending_guarantee)
+                if key not in self._store.state:
+                    self._store.state[key] = _NodeState()
             operation_graph_guarantees.append(
                 operation_graph_model.OperationGraphGuarantee(
                     guaranteed_position=key,
-                    operation_positions=contract_guarantee.operation_positions,
+                    operation_positions=final_operation.operation_positions,
                 )
             )
 
@@ -2073,9 +2109,14 @@ class ParticleTracker:
         # are re-derivable in any caller, so they stay behind the nested guarantee.
         self._store.record_callee_write(
             key,
-            application.caller_identity_write
-            if isinstance(guarantee, action_contract.OccupiedByExistingGuarantee)
-            else application.callee_derived_write,
+            _WriteRecord(
+                pending_guarantee.body_operation_number,
+                pending_guarantee.call_chain_depth,
+                include_in_own_guarantees=isinstance(
+                    guarantee, action_contract.OccupiedByExistingGuarantee
+                ),
+                ever_set_by_callee=True,
+            ),
         )
 
         overwrites_subtree = key in application.origin_keys or (

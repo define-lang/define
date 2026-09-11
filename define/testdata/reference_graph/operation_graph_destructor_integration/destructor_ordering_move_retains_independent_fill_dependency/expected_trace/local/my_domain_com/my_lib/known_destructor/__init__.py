@@ -70,5 +70,4 @@ class KnownDestructorExecution:
             "/shared",
             1,
         )
-        self.guarantees.global_position_shared.run(
-        )
+        self.guarantees.global_position_shared.run()

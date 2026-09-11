@@ -215,14 +215,12 @@ class ErrorGuarantee(PositionGuarantee):
 
 
 @dataclass(frozen=True, slots=True)
-class ContractGuarantee:
-    """An action contract's guarantee about a position's occupancy and final Particle Operation."""
+class FinalPositionOperation:
+    """The positions operated on by a position's final Particle Operation."""
 
     position: ast.ChainedNameTuple
-    guarantee: PositionGuarantee
-    # Every position operated on by the Particle Operation that produced this
-    # guarantee. Operation-graph construction needs the full set to apply the
-    # Empty Rule after the guarantee is expressed from a caller's perspective.
+    # Operation-graph construction needs every operated position to apply the
+    # Empty Rule from the caller's perspective, including both positions of a Move.
     # Canonical chained-name keys are stored instead of PositionReference objects
     # because expressing them from each caller's perspective only requires tuple
     # composition; source locations and written name forms would be unused.
@@ -332,7 +330,8 @@ class ActionContract:
     # TODO: Consider publishing requirements as a sequence. Callers only iterate
     # them; keyed lookup is needed during analysis, not after publication.
     requirements: dict[tuple[str, ...], PositionRequirement]
-    guarantees: list[ContractGuarantee]
+    guarantees: dict[ast.ChainedNameTuple, PositionGuarantee]
+    final_operations: list[FinalPositionOperation]
     # Callee contracts are referenced rather than folded in so that we don't
     # get unbounded memory growth from re-copying guarantees as we walk up a
     # call stack (and unbounded compute growth from having to iterate through

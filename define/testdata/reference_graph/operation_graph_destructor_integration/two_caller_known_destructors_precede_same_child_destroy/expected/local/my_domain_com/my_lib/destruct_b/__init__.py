@@ -52,5 +52,4 @@ class DestructBExecution:
                 local.my_domain_com.my_lib.required.Required
             )
         )
-        self.guarantees.global_position_required.run(
-        )
+        self.guarantees.global_position_required.run()

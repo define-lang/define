@@ -58,8 +58,7 @@ class KnownDestructorExecution:
                 local.my_domain_com.my_lib.marker.Marker
             )
         )
-        self.guarantees.global_position_marker.run(
-        )
+        self.guarantees.global_position_marker.run()
 
     def create_global_position_empty_marker(self):
         self.action.on_particle.get_position(
@@ -68,5 +67,4 @@ class KnownDestructorExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.empty_marker.EmptyMarker
         ).destroy_particle()
-        self.guarantees.global_position_empty_marker.run(
-        )
+        self.guarantees.global_position_empty_marker.run()

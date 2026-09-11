@@ -18,6 +18,12 @@ class ExtraDestructor(literal.Action):
 
 
 @final
+class ExtraDestructorGuarantees:
+    def __init__(self, scheduler: literal.Scheduler):
+        self.action_cleaner__position_trigger_pos = literal.Fanout(scheduler)
+
+
+@final
 class ExtraDestructorExecution:
     def __init__(
         self,
@@ -26,6 +32,7 @@ class ExtraDestructorExecution:
     ):
         self.action = action
         self.scheduler = scheduler
+        self.guarantees = ExtraDestructorGuarantees(self.scheduler)
         self.local_position_source = literal.LocalPosition(
             "position<source>",
             constraints=(
@@ -118,6 +125,7 @@ class ExtraDestructorExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_action_cleaner__position_trigger_pos.destroy_particle()
+        self.guarantees.action_cleaner__position_trigger_pos.run()
 
     def destroy_global_position_marker__global_position_child(self):
         self.destruction_position_global_position_marker__global_position_child.destroy_particle()

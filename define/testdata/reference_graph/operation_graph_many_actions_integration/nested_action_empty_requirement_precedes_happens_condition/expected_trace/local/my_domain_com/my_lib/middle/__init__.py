@@ -206,8 +206,7 @@ class MiddleExecution:
             "box",
             1,
         )
-        self.guarantees.position_box.run(
-        )
+        self.guarantees.position_box.run()
 
     def destroy_position_run(self):
         if not self.join_for_destroy_position_run.arrive():
@@ -223,5 +222,4 @@ class MiddleExecution:
             "run",
             1,
         )
-        self.guarantees.position_run.run(
-        )
+        self.guarantees.position_run.run()

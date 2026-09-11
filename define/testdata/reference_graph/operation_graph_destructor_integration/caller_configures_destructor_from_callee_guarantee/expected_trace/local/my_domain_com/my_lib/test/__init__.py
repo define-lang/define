@@ -35,6 +35,13 @@ class Test(literal.EntryPoint):
 
 
 @final
+class TestGuarantees:
+    def __init__(self, scheduler: literal.Scheduler):
+        self.action_maker__position_run = literal.Fanout(scheduler)
+        self.action_destroyer__position_trigger_pos = literal.Fanout(scheduler)
+
+
+@final
 class TestExecution:
     def __init__(
         self,
@@ -49,6 +56,7 @@ class TestExecution:
             caller_execution,
             action_name,
         )
+        self.guarantees = TestGuarantees(self.scheduler)
         self.execution_action_maker: local.my_domain_com.my_lib.maker.MakerExecution
         self.execution_action_destroyer: local.my_domain_com.my_lib.destroyer.DestroyerExecution
         self.destruction_connection_action_destroyer: tracing.DestructionConnection
@@ -125,6 +133,7 @@ class TestExecution:
             "/maker::run",
             1,
         )
+        self.guarantees.action_maker__position_run.run()
 
     def create_action_destroyer__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -148,6 +157,7 @@ class TestExecution:
             "/destroyer::trigger_pos",
             1,
         )
+        self.guarantees.action_destroyer__position_trigger_pos.run()
 
     def init_action_maker__global_position_target(self):
         self.execution_global_position_target__action_extra_destructor = local.my_domain_com.my_lib.extra_destructor.ExtraDestructorExecution(

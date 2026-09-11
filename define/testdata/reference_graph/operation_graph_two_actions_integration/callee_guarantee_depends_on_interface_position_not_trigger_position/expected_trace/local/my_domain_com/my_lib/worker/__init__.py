@@ -73,5 +73,4 @@ class WorkerExecution:
             "output",
             1,
         )
-        self.guarantees.position_input__move__position_output.run(
-        )
+        self.guarantees.position_input__move__position_output.run()

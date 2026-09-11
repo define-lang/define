@@ -70,5 +70,4 @@ class DestructBExecution:
             "/required",
             1,
         )
-        self.guarantees.global_position_required.run(
-        )
+        self.guarantees.global_position_required.run()

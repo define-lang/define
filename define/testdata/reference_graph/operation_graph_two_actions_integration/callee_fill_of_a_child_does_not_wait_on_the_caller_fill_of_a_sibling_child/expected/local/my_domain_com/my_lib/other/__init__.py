@@ -68,8 +68,7 @@ class OtherExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.b.B
         ).create_particle()
-        self.guarantees.position_box__global_position_b.run(
-        )
+        self.guarantees.position_box__global_position_b.run()
 
     def move_position_box__global_position_a_to_position_keeper(self):
         if not self.join_for_move_position_box__global_position_a_to_position_keeper.arrive():
@@ -83,5 +82,4 @@ class OtherExecution:
                 "position<keeper>"
             )
         )
-        self.guarantees.position_box__global_position_a__move__position_keeper.run(
-        )
+        self.guarantees.position_box__global_position_a__move__position_keeper.run()

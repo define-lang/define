@@ -722,6 +722,24 @@
           "caller": {
             "caller": {
               "caller": {
+                "caller": null,
+                "action_name": "test"
+              },
+              "action_name": "outer"
+            },
+            "action_name": "middle"
+          },
+          "action_name": "inner"
+        },
+        "operation_name": "destroy",
+        "target": "/destroyer::trigger_pos",
+        "occurrence": 1
+      },
+      {
+        "execution": {
+          "caller": {
+            "caller": {
+              "caller": {
                 "caller": {
                   "caller": null,
                   "action_name": "test"

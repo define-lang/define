@@ -110,8 +110,7 @@ class DestroyerExecution:
             "first",
             1,
         )
-        self.guarantees.position_first.run(
-        )
+        self.guarantees.position_first.run()
 
     def destroy_position_second(self):
         if not self.join_for_destroy_position_second.arrive():
@@ -127,8 +126,7 @@ class DestroyerExecution:
             "second",
             1,
         )
-        self.guarantees.position_second.run(
-        )
+        self.guarantees.position_second.run()
 
     def destroy_position_used_run(self):
         literal.continue_destruction(self.continue_destroy_position_used_run)

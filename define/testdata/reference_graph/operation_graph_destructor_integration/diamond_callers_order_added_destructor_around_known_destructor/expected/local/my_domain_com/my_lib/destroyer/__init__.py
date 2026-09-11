@@ -80,5 +80,4 @@ class DestroyerExecution:
         self.action.get_interface_position(
             "position<target>"
         ).destroy_particle()
-        self.guarantees.position_target.run(
-        )
+        self.guarantees.position_target.run()

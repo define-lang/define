@@ -35,6 +35,7 @@ class Outer(literal.Action):
 @final
 class OuterGuarantees:
     def __init__(self, scheduler: literal.Scheduler):
+        self.action_filler__position_run = literal.Fanout(scheduler)
         self.position_run = literal.Fanout(scheduler)
         self.global_position_result = literal.Fanout(scheduler)
 
@@ -61,6 +62,7 @@ class OuterExecution:
         self.destruction_position_action_filler__position_run: literal.Position
         self.join_for_move_position_run_to_position_receiver: literal.Join
         self.join_for_move_position_receiver_to_global_position_result = self.scheduler.create_join(2)
+        self.join_for_destroy_global_position_result = self.scheduler.create_join(2)
         self.join_for_empty_rule_position_run: literal.Join
         self.join_for_empty_rule_global_position_result: literal.Join
         self.execution_action_filler = local.my_domain_com.my_lib.filler.FillerExecution(
@@ -102,6 +104,7 @@ class OuterExecution:
             "position<run>"
         )
         self.destruction_position_action_filler__position_run.destroy_particle()
+        self.guarantees.action_filler__position_run.run()
 
     def move_position_run_to_position_receiver(self):
         if not self.join_for_move_position_run_to_position_receiver.arrive():
@@ -132,6 +135,9 @@ class OuterExecution:
         )
         self.execution_global_position_result__action_middle.join_for_empty_rule_position_run = literal.NO_JOIN
         self.execution_global_position_result__action_middle.join_for_move_position_run_to_action_inner__position_run = literal.NO_JOIN
+        self.execution_global_position_result__action_middle.execution_action_inner.guarantees.action_destroyer__position_trigger_pos.consumers.append(
+            self.destroy_global_position_result
+        )
         self.execution_global_position_result__action_middle.execution_action_inner.execution_action_destroyer.guarantees.position_target.consumers.append(
             self.destroy_global_position_result
         )
@@ -157,11 +163,12 @@ class OuterExecution:
         self.execution_global_position_result__action_middle.accept_for_empty_rule_position_run()
 
     def destroy_global_position_result(self):
+        if not self.join_for_destroy_global_position_result.arrive():
+            return
         literal.continue_destruction(self.continue_destroy_global_position_result)
 
     def continue_destroy_global_position_result(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.result.Result
         ).destroy_particle()
-        self.guarantees.global_position_result.run(
-        )
+        self.guarantees.global_position_result.run()

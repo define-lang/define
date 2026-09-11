@@ -65,5 +65,4 @@ class MakerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         ).create_particle()
-        self.guarantees.position_result__global_position_marker.run(
-        )
+        self.guarantees.position_result__global_position_marker.run()

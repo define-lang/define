@@ -39,7 +39,7 @@ class TestExecution:
         self.execution_position_gateway__action_outer: local.my_domain_com.my_lib.outer.OuterExecution
         self.destruction_position_position_gateway__action_outer__position_destination: literal.Position
         self.destruction_position_position_gateway__action_outer__position_trigger_pos: literal.Position
-        self.join_for_destroy_position_gateway = self.scheduler.create_join(3)
+        self.join_for_destroy_position_gateway = self.scheduler.create_join(2)
 
     def on_action_parent_occupied(self):
         self.create_position_gateway()
@@ -58,9 +58,6 @@ class TestExecution:
         self.execution_position_gateway__action_outer.join_for_move_position_middle_holder__action_middle__position_inner_parent_to_position_destination = literal.NO_JOIN
         self.execution_position_gateway__action_outer.guarantees.position_destination__global_position_result_value.consumers.append(
             self.move_position_gateway__action_outer__position_destination__global_position_result_value_to_position_result
-        )
-        self.execution_position_gateway__action_outer.guarantees.position_source.consumers.append(
-            self.destroy_position_gateway
         )
         self.scheduler.continue_with(
             self.create_position_gateway__action_outer__position_source,

@@ -28,6 +28,7 @@ class Destroyer(literal.Action):
 class DestroyerGuarantees:
     def __init__(self, scheduler: literal.Scheduler):
         self.position_run = literal.Fanout(scheduler)
+        self.action_mover__position_result = literal.Fanout(scheduler)
 
 
 @final
@@ -112,6 +113,7 @@ class DestroyerExecution:
             "/mover::result",
             1,
         )
+        self.guarantees.action_mover__position_result.run()
 
     def init_action_mover__position_run__move__position_result(self):
         self.destruction_position_action_mover__position_result = self.action.on_particle.get_action(

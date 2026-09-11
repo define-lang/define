@@ -73,8 +73,7 @@ class RunnerExecution:
         self.action.get_interface_position(
             "position<slot>"
         ).destroy_particle()
-        self.guarantees.position_slot.run(
-        )
+        self.guarantees.position_slot.run()
 
     def destroy_position_run(self):
         if not self.join_for_destroy_position_run.arrive():
@@ -85,5 +84,4 @@ class RunnerExecution:
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.guarantees.position_run.run(
-        )
+        self.guarantees.position_run.run()

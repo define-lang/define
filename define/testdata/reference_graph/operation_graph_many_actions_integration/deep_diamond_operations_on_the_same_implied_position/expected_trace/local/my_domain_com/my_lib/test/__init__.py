@@ -29,6 +29,13 @@ class Test(literal.EntryPoint):
 
 
 @final
+class TestGuarantees:
+    def __init__(self, scheduler: literal.Scheduler):
+        self.action_left__position_trigger_pos = literal.Fanout(scheduler)
+        self.action_right__position_trigger_pos = literal.Fanout(scheduler)
+
+
+@final
 class TestExecution:
     def __init__(
         self,
@@ -43,6 +50,7 @@ class TestExecution:
             caller_execution,
             action_name,
         )
+        self.guarantees = TestGuarantees(self.scheduler)
         self.execution_action_left: local.my_domain_com.my_lib.left.LeftExecution
         self.execution_action_right: local.my_domain_com.my_lib.right.RightExecution
         self.destruction_position_action_left__position_trigger_pos: literal.Position
@@ -103,6 +111,7 @@ class TestExecution:
             "/left::trigger_pos",
             1,
         )
+        self.guarantees.action_left__position_trigger_pos.run()
 
     def create_action_right__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -126,6 +135,7 @@ class TestExecution:
             "/right::trigger_pos",
             1,
         )
+        self.guarantees.action_right__position_trigger_pos.run()
 
     def accept_guarantee_action_right(self):
         self.execution_action_right.accept_for_empty_rule_global_position_marker()

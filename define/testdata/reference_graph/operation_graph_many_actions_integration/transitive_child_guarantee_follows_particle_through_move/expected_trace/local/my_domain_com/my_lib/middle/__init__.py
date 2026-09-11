@@ -189,8 +189,7 @@ class MiddleExecution:
             "inner_parent::/result_value",
             1,
         )
-        self.guarantees.position_inner_parent__global_position_result_value.run(
-        )
+        self.guarantees.position_inner_parent__global_position_result_value.run()
 
     def destroy_position_inner_holder(self):
         if not self.join_for_destroy_position_inner_holder.arrive():

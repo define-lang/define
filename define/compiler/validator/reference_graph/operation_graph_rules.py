@@ -550,6 +550,15 @@ def _determine_emptying_dependencies(
     # being emptied, directly or by operating on one of its parent names.
     else:
         collected_nodes.add(emptied_ancestor)
+        if isinstance(
+            emptied_ancestor,
+            (operation_graph_model.MoveNode, operation_graph_model.MoveGuaranteeNode),
+        ):
+            # A Move operates on every child position, including children whose
+            # earlier operations used names from before several parent Moves.
+            child_operations = child_operations.without_operations_preceding(
+                emptied_ancestor
+            )
     collected_nodes.update(
         child_operation.operation for child_operation in child_operations.operations
     )

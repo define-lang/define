@@ -27,6 +27,13 @@ class Test(literal.EntryPoint):
 
 
 @final
+class TestGuarantees:
+    def __init__(self, scheduler: literal.Scheduler):
+        self.action_fill_item__position_trigger_pos = literal.Fanout(scheduler)
+        self.action_outer__position_trigger_pos = literal.Fanout(scheduler)
+
+
+@final
 class TestExecution:
     def __init__(
         self,
@@ -35,6 +42,7 @@ class TestExecution:
     ):
         self.action = action
         self.scheduler = scheduler
+        self.guarantees = TestGuarantees(self.scheduler)
         self.execution_action_fill_item: local.my_domain_com.my_lib.fill_item.FillItemExecution
         self.execution_action_outer: local.my_domain_com.my_lib.outer.OuterExecution
         self.destruction_position_action_fill_item__position_trigger_pos: literal.Position
@@ -81,6 +89,7 @@ class TestExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_action_fill_item__position_trigger_pos.destroy_particle()
+        self.guarantees.action_fill_item__position_trigger_pos.run()
 
     def create_action_outer__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -94,6 +103,7 @@ class TestExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_action_outer__position_trigger_pos.destroy_particle()
+        self.guarantees.action_outer__position_trigger_pos.run()
 
     def accept_guarantee_action_outer(self):
         self.execution_action_outer.accept_for_empty_rule_global_position_item()

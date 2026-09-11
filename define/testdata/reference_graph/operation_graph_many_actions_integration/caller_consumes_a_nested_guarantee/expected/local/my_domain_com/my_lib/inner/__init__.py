@@ -47,5 +47,4 @@ class InnerExecution:
         self.action.get_interface_position(
             "position<out>"
         ).create_particle()
-        self.guarantees.position_out.run(
-        )
+        self.guarantees.position_out.run()

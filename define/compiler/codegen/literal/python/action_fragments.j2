@@ -14,11 +14,15 @@
 {{ callee_binding_plan_body(callee_binding_plan) -}}
     {% endfor %}
     {% if fragment.guarantee_name is not none %}
+        {% if fragment.fanout_continuation_method_names %}
         self.guarantees.{{ fragment.guarantee_name }}.run(
-        {% for method_name in fragment.fanout_continuation_method_names %}
+            {% for method_name in fragment.fanout_continuation_method_names %}
             self.{{ method_name }},
-        {% endfor %}
+            {% endfor %}
         )
+        {% else %}
+        self.guarantees.{{ fragment.guarantee_name }}.run()
+        {% endif %}
     {% else %}
 {{ run_fanout(fragment.fanout_continuation_method_names, "self", "self.scheduler") -}}
     {% endif %}

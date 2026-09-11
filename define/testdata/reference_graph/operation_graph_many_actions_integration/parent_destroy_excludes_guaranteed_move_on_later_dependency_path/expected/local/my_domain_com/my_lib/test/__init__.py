@@ -33,7 +33,7 @@ class TestExecution:
         )
         self.execution_position_parent__action_mover: local.my_domain_com.my_lib.mover.MoverExecution
         self.destruction_position_position_parent__action_mover__position_destination: literal.Position
-        self.join_for_destroy_position_parent = self.scheduler.create_join(3)
+        self.join_for_destroy_position_parent = self.scheduler.create_join(2)
 
     def on_action_parent_occupied(self):
         self.create_position_parent()
@@ -57,9 +57,6 @@ class TestExecution:
         )
         self.execution_position_parent__action_mover.guarantees.position_destination.consumers.append(
             self.destroy_position_parent__action_mover__position_destination
-        )
-        self.execution_position_parent__action_mover.guarantees.position_source.consumers.append(
-            self.destroy_position_parent
         )
         self.execution_position_parent__action_mover.guarantees.position_run.consumers.append(
             self.destroy_position_parent

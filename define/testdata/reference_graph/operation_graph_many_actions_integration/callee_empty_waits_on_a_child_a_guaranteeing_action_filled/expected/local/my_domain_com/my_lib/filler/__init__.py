@@ -54,5 +54,4 @@ class FillerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.gc.Gc
         ).create_particle()
-        self.guarantees.global_position_parent__global_position_child__global_position_gc.run(
-        )
+        self.guarantees.global_position_parent__global_position_child__global_position_gc.run()

@@ -71,7 +71,7 @@ class TestExecution:
         self.execution_action_outer.join_for_empty_rule_position_run__global_position_payload = literal.NO_JOIN
         self.execution_action_outer.join_for_empty_rule_position_run = literal.NO_JOIN
         self.execution_action_outer.join_for_move_position_run__global_position_payload_to_position_run__action_middle__position_run = literal.NO_JOIN
-        self.execution_action_outer.join_for_destroy_position_run = literal.NO_JOIN
+        self.execution_action_outer.join_for_destroy_position_run = self.scheduler.create_join(2)
 
     def on_action_parent_occupied(self):
         self.scheduler.continue_with(

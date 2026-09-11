@@ -74,5 +74,4 @@ class FillerExecution:
             "/target",
             1,
         )
-        self.guarantees.position_run__move__global_position_target.run(
-        )
+        self.guarantees.position_run__move__global_position_target.run()

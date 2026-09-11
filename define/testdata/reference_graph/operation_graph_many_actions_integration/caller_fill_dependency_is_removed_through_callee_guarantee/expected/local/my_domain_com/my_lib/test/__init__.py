@@ -35,6 +35,12 @@ class Test(literal.EntryPoint):
 
 
 @final
+class TestGuarantees:
+    def __init__(self, scheduler: literal.Scheduler):
+        self.action_mover__position_trigger_pos = literal.Fanout(scheduler)
+
+
+@final
 class TestExecution:
     def __init__(
         self,
@@ -43,6 +49,7 @@ class TestExecution:
     ):
         self.action = action
         self.scheduler = scheduler
+        self.guarantees = TestGuarantees(self.scheduler)
         self.local_position_temp = literal.LocalPosition(
             "position<temp>",
             scheduler=self.scheduler,
@@ -113,3 +120,4 @@ class TestExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_action_mover__position_trigger_pos.destroy_particle()
+        self.guarantees.action_mover__position_trigger_pos.run()

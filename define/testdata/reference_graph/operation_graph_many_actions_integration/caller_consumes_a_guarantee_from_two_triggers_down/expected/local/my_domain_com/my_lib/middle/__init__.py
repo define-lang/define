@@ -148,5 +148,4 @@ class MiddleExecution:
         self.action.get_interface_position(
             "position<igw>"
         ).destroy_particle()
-        self.guarantees.position_igw.run(
-        )
+        self.guarantees.position_igw.run()

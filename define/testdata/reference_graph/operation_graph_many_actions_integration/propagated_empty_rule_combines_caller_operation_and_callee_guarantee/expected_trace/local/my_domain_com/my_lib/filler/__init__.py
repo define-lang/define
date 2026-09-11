@@ -62,5 +62,4 @@ class FillerExecution:
             "/parent::/guaranteed_child",
             1,
         )
-        self.guarantees.global_position_parent__global_position_guaranteed_child.run(
-        )
+        self.guarantees.global_position_parent__global_position_guaranteed_child.run()

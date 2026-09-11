@@ -74,8 +74,7 @@ class BrewExecution:
         self.action.get_interface_position(
             "position<cup>"
         ).create_particle()
-        self.guarantees.position_cup.run(
-        )
+        self.guarantees.position_cup.run()
 
     def destroy_position_water(self):
         if not self.join_for_destroy_position_water.arrive():
@@ -86,8 +85,7 @@ class BrewExecution:
         self.action.get_interface_position(
             "position<water>"
         ).destroy_particle()
-        self.guarantees.position_water.run(
-        )
+        self.guarantees.position_water.run()
 
     def move_position_grounds_to_position_spent_puck(self):
         if not self.join_for_move_position_grounds_to_position_spent_puck.arrive():
@@ -99,5 +97,4 @@ class BrewExecution:
                 "position<spent_puck>"
             )
         )
-        self.guarantees.position_grounds__move__position_spent_puck.run(
-        )
+        self.guarantees.position_grounds__move__position_spent_puck.run()

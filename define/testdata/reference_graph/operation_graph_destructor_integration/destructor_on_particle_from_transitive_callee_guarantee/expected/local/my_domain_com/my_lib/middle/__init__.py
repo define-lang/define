@@ -138,8 +138,7 @@ class MiddleExecution:
                 local.my_domain_com.my_lib.marker.Marker
             )
         )
-        self.guarantees.position_result__global_position_marker.run(
-        )
+        self.guarantees.position_result__global_position_marker.run()
 
     def destroy_position_box(self):
         if not self.join_for_destroy_position_box.arrive():

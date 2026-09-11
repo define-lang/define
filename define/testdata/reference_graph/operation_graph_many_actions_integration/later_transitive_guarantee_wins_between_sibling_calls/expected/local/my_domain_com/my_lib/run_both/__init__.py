@@ -27,6 +27,13 @@ class RunBoth(literal.Action):
 
 
 @final
+class RunBothGuarantees:
+    def __init__(self, scheduler: literal.Scheduler):
+        self.action_call_fill__position_trigger_pos = literal.Fanout(scheduler)
+        self.action_call_empty__position_trigger_pos = literal.Fanout(scheduler)
+
+
+@final
 class RunBothExecution:
     def __init__(
         self,
@@ -35,6 +42,7 @@ class RunBothExecution:
     ):
         self.action = action
         self.scheduler = scheduler
+        self.guarantees = RunBothGuarantees(self.scheduler)
         self.execution_action_call_fill: local.my_domain_com.my_lib.call_fill.CallFillExecution
         self.execution_action_call_empty: local.my_domain_com.my_lib.call_empty.CallEmptyExecution
         self.destruction_position_action_call_fill__position_trigger_pos: literal.Position
@@ -81,6 +89,7 @@ class RunBothExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_action_call_fill__position_trigger_pos.destroy_particle()
+        self.guarantees.action_call_fill__position_trigger_pos.run()
 
     def create_action_call_empty__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -94,6 +103,7 @@ class RunBothExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_action_call_empty__position_trigger_pos.destroy_particle()
+        self.guarantees.action_call_empty__position_trigger_pos.run()
 
     def accept_guarantee_action_call_empty(self):
         self.execution_action_call_empty.accept_for_empty_rule_global_position_item()

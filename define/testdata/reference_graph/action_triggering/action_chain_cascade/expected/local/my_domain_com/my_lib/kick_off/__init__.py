@@ -52,7 +52,7 @@ class KickOffExecution:
         self.destruction_connections = destruction_connections
         self.execution_position_output__action_react_a: local.my_domain_com.my_lib.react_a.ReactAExecution
         self.execution_position_output__action_react_b: local.my_domain_com.my_lib.react_b.ReactBExecution
-        self.join_for_destroy_position_output = self.scheduler.create_join(2)
+        self.join_for_destroy_position_output = self.scheduler.create_join(3)
         self.join_for_destroy_position_trigger: literal.Join
         self.join_for_empty_rule_position_trigger: literal.Join
 
@@ -78,6 +78,9 @@ class KickOffExecution:
         )
         self.execution_position_output__action_react_a.join_for_empty_rule_position_trigger = literal.NO_JOIN
         self.execution_position_output__action_react_a.join_for_destroy_position_trigger = literal.NO_JOIN
+        self.execution_position_output__action_react_a.guarantees.position_result.consumers.append(
+            self.destroy_position_output
+        )
         self.execution_position_output__action_react_a.guarantees.position_trigger.consumers.append(
             self.destroy_position_output
         )
@@ -127,8 +130,7 @@ class KickOffExecution:
         self.action.get_interface_position(
             "position<output>"
         ).destroy_particle()
-        self.guarantees.position_output.run(
-        )
+        self.guarantees.position_output.run()
 
     def destroy_position_trigger(self):
         if not self.join_for_destroy_position_trigger.arrive():
@@ -139,5 +141,4 @@ class KickOffExecution:
         self.action.get_interface_position(
             "position<trigger>"
         ).destroy_particle()
-        self.guarantees.position_trigger.run(
-        )
+        self.guarantees.position_trigger.run()

@@ -26,6 +26,8 @@ class Test(literal.EntryPoint):
 class TestGuarantees:
     def __init__(self, scheduler: literal.Scheduler):
         self.global_position_box = literal.Fanout(scheduler)
+        self.global_position_box__action_worker__position_trigger_pos = literal.Fanout(scheduler)
+        self.global_position_box__action_worker__position_result = literal.Fanout(scheduler)
 
 
 @final
@@ -84,9 +86,11 @@ class TestExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_global_position_box__action_worker__position_trigger_pos.destroy_particle()
+        self.guarantees.global_position_box__action_worker__position_trigger_pos.run()
 
     def destroy_global_position_box__action_worker__position_result(self):
         self.destruction_position_global_position_box__action_worker__position_result.destroy_particle()
+        self.guarantees.global_position_box__action_worker__position_result.run()
 
     def init_global_position_box__action_worker__position_result(self):
         self.destruction_position_global_position_box__action_worker__position_result = self.action.on_particle.get_position(

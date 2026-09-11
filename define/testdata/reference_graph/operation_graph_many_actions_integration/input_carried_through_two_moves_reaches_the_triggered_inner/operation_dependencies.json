@@ -402,6 +402,18 @@
       {
         "execution": {
           "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "outer"
+        },
+        "operation_name": "destroy",
+        "target": "middle_holder::/middle::run",
+        "occurrence": 1
+      },
+      {
+        "execution": {
+          "caller": {
             "caller": {
               "caller": null,
               "action_name": "test"

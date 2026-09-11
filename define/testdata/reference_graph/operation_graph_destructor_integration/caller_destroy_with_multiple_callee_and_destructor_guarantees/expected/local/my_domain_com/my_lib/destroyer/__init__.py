@@ -137,8 +137,7 @@ class DestroyerExecution:
         self.action.get_interface_position(
             "position<parent>"
         ).destroy_particle()
-        self.guarantees.position_parent.run(
-        )
+        self.guarantees.position_parent.run()
 
     def destroy_position_parent__action_maker__position_trigger_pos(self):
         literal.continue_destruction(self.continue_destroy_position_parent__action_maker__position_trigger_pos)
@@ -155,5 +154,4 @@ class DestroyerExecution:
         self.action.get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
-        self.guarantees.position_trigger_pos.run(
-        )
+        self.guarantees.position_trigger_pos.run()

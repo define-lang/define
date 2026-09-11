@@ -92,8 +92,7 @@ class DestroyerExecution:
         self.action.get_interface_position(
             "position<first>"
         ).destroy_particle()
-        self.guarantees.position_first.run(
-        )
+        self.guarantees.position_first.run()
 
     def destroy_position_second(self):
         if not self.join_for_destroy_position_second.arrive():
@@ -104,5 +103,4 @@ class DestroyerExecution:
         self.action.get_interface_position(
             "position<second>"
         ).destroy_particle()
-        self.guarantees.position_second.run(
-        )
+        self.guarantees.position_second.run()

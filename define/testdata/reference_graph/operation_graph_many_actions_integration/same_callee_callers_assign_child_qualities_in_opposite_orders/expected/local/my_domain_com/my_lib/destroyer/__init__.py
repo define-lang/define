@@ -97,8 +97,7 @@ class DestroyerExecution:
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.guarantees.position_run.run(
-        )
+        self.guarantees.position_run.run()
 
     def destroy_position_run__global_position_child(self):
         literal.continue_destruction(self.continue_destroy_position_run__global_position_child)

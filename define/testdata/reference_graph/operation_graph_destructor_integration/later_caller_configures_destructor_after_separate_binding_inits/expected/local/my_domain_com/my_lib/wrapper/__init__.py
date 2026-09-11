@@ -74,7 +74,7 @@ class WrapperExecution:
         self.execution_position_run__action_outer.join_for_empty_rule_position_run__global_position_payload = literal.NO_JOIN
         self.execution_position_run__action_outer.join_for_empty_rule_position_run = literal.NO_JOIN
         self.execution_position_run__action_outer.join_for_move_position_run__global_position_payload_to_position_run__action_middle__position_run = literal.NO_JOIN
-        self.execution_position_run__action_outer.join_for_destroy_position_run = literal.NO_JOIN
+        self.execution_position_run__action_outer.join_for_destroy_position_run = self.scheduler.create_join(2)
         self.execution_position_run__action_outer.guarantees.position_run.consumers.append(
             self.destroy_position_run
         )
@@ -110,5 +110,4 @@ class WrapperExecution:
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.guarantees.position_run.run(
-        )
+        self.guarantees.position_run.run()

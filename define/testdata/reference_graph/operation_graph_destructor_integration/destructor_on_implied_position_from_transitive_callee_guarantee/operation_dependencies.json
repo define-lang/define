@@ -236,6 +236,18 @@
     "dependencies": [
       {
         "execution": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "middle"
+        },
+        "operation_name": "destroy",
+        "target": "/inner::run",
+        "occurrence": 1
+      },
+      {
+        "execution": {
           "caller": null,
           "action_name": "test"
         },

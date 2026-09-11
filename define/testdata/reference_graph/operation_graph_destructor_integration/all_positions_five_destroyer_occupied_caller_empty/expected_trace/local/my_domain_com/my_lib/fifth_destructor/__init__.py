@@ -62,8 +62,7 @@ class FifthDestructorExecution:
             "/fifth",
             1,
         )
-        self.guarantees.global_position_fifth.run(
-        )
+        self.guarantees.global_position_fifth.run()
 
     def create_global_position_marker(self):
         self.action.on_particle.get_position(
@@ -82,5 +81,4 @@ class FifthDestructorExecution:
             "/marker",
             1,
         )
-        self.guarantees.global_position_marker.run(
-        )
+        self.guarantees.global_position_marker.run()

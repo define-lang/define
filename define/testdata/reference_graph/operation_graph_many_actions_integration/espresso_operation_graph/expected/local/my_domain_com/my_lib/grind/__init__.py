@@ -57,5 +57,4 @@ class GrindExecution:
                 "position<grounds>"
             )
         )
-        self.guarantees.position_beans__move__position_grounds.run(
-        )
+        self.guarantees.position_beans__move__position_grounds.run()

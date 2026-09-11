@@ -34,7 +34,7 @@ class TestExecution:
         self.execution_position_gateway__action_other: local.my_domain_com.my_lib.other.OtherExecution
         self.destruction_position_position_gateway__action_other__position_output: literal.Position
         self.destruction_position_position_gateway__action_other__position_trigger_pos: literal.Position
-        self.join_for_destroy_position_gateway = self.scheduler.create_join(2)
+        self.join_for_destroy_position_gateway = self.scheduler.create_join(3)
 
     def on_action_parent_occupied(self):
         self.create_position_gateway()
@@ -52,6 +52,9 @@ class TestExecution:
         )
         self.execution_position_gateway__action_other.guarantees.position_output.consumers.append(
             self.destroy_position_gateway__action_other__position_output
+        )
+        self.execution_position_gateway__action_other.guarantees.position_scratch.consumers.append(
+            self.destroy_position_gateway
         )
         self.scheduler.continue_with(
             self.create_position_gateway__action_other__position_trigger_pos,

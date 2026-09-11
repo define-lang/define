@@ -166,8 +166,7 @@ class MoverExecution:
         self.action.get_interface_position(
             "position<discard>"
         ).destroy_particle()
-        self.guarantees.position_discard.run(
-        )
+        self.guarantees.position_discard.run()
 
     def destroy_position_guaranteed_destination__global_position_child_a(self):
         literal.continue_destruction(self.continue_destroy_position_guaranteed_destination__global_position_child_a)
@@ -192,8 +191,7 @@ class MoverExecution:
         self.action.get_interface_position(
             "position<guaranteed_destination>"
         ).destroy_particle()
-        self.guarantees.position_guaranteed_destination.run(
-        )
+        self.guarantees.position_guaranteed_destination.run()
 
     def destroy_position_caller_destination__global_position_child_a(self):
         literal.continue_destruction(self.continue_destroy_position_caller_destination__global_position_child_a)
@@ -218,8 +216,7 @@ class MoverExecution:
         self.action.get_interface_position(
             "position<caller_destination>"
         ).destroy_particle()
-        self.guarantees.position_caller_destination.run(
-        )
+        self.guarantees.position_caller_destination.run()
 
     def destroy_position_trigger_pos(self):
         if not self.join_for_destroy_position_trigger_pos.arrive():
@@ -230,5 +227,4 @@ class MoverExecution:
         self.action.get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
-        self.guarantees.position_trigger_pos.run(
-        )
+        self.guarantees.position_trigger_pos.run()

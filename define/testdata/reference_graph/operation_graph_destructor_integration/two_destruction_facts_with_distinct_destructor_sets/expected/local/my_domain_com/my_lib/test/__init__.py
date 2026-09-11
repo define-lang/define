@@ -25,6 +25,12 @@ class Test(literal.EntryPoint):
 
 
 @final
+class TestGuarantees:
+    def __init__(self, scheduler: literal.Scheduler):
+        self.action_destroyer__position_run = literal.Fanout(scheduler)
+
+
+@final
 class TestExecution:
     def __init__(
         self,
@@ -33,6 +39,7 @@ class TestExecution:
     ):
         self.action = action
         self.scheduler = scheduler
+        self.guarantees = TestGuarantees(self.scheduler)
         self.local_position_first_source = literal.LocalPosition(
             "position<first_source>",
             constraints=(
@@ -126,6 +133,7 @@ class TestExecution:
             "position<run>"
         )
         self.destruction_position_action_destroyer__position_run.destroy_particle()
+        self.guarantees.action_destroyer__position_run.run()
 
     def run_action_destroyer__position_first__action_extra_destructor(self):
         execution = local.my_domain_com.my_lib.extra_destructor.ExtraDestructorExecution(

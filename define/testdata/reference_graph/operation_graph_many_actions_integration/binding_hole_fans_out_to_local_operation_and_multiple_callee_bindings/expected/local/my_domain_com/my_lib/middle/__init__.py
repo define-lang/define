@@ -31,6 +31,8 @@ class Middle(literal.Action):
 class MiddleGuarantees:
     def __init__(self, scheduler: literal.Scheduler):
         self.global_position_shared__global_position_marker = literal.Fanout(scheduler)
+        self.global_position_shared__action_child_a__position_trigger_pos = literal.Fanout(scheduler)
+        self.global_position_shared__action_child_b__position_trigger_pos = literal.Fanout(scheduler)
 
 
 @final
@@ -83,8 +85,7 @@ class MiddleExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         ).create_particle()
-        self.guarantees.global_position_shared__global_position_marker.run(
-        )
+        self.guarantees.global_position_shared__global_position_marker.run()
 
     def create_global_position_shared__action_child_a__position_trigger_pos(self):
         self.action.on_particle.get_position(
@@ -102,6 +103,7 @@ class MiddleExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_global_position_shared__action_child_a__position_trigger_pos.destroy_particle()
+        self.guarantees.global_position_shared__action_child_a__position_trigger_pos.run()
 
     def create_global_position_shared__action_child_b__position_trigger_pos(self):
         self.action.on_particle.get_position(
@@ -119,3 +121,4 @@ class MiddleExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_global_position_shared__action_child_b__position_trigger_pos.destroy_particle()
+        self.guarantees.global_position_shared__action_child_b__position_trigger_pos.run()

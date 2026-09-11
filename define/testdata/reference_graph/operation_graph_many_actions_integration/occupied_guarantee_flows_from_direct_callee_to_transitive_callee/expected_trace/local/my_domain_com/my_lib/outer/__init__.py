@@ -25,6 +25,12 @@ class Outer(literal.Action):
 
 
 @final
+class OuterGuarantees:
+    def __init__(self, scheduler: literal.Scheduler):
+        self.action_middle__position_trigger_pos = literal.Fanout(scheduler)
+
+
+@final
 class OuterExecution:
     def __init__(
         self,
@@ -41,6 +47,7 @@ class OuterExecution:
             caller_execution,
             action_name,
         )
+        self.guarantees = OuterGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.execution_action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
         self.destruction_position_action_middle__position_trigger_pos: literal.Position
@@ -88,3 +95,4 @@ class OuterExecution:
             "/middle::trigger_pos",
             1,
         )
+        self.guarantees.action_middle__position_trigger_pos.run()

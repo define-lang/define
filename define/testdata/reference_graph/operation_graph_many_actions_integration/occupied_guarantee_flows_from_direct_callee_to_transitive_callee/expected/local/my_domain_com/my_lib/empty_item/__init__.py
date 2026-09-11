@@ -60,5 +60,4 @@ class EmptyItemExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.item.Item
         ).destroy_particle()
-        self.guarantees.global_position_item.run(
-        )
+        self.guarantees.global_position_item.run()

@@ -29,6 +29,55 @@ _CLOSE_FILE = "action<my.domain.com:my_lib:/close_file>"
 _PARENT = "action<my.domain.com:my_lib:/parent>"
 
 
+def test_child_operation_with_unfilled_required_parent(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 2
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
+    assert (
+        all_diags[0].position_name == "position<box>::action</other>::position<parent>"
+    )
+    assert (
+        all_diags[1].position_name
+        == "position<box>::action</other>::position<parent>::position</holder>"
+    )
+    assert all_diags[0].required_empty is False
+    assert all_diags[1].required_empty is False
+    for diagnostic in all_diags:
+        assert isinstance(
+            diagnostic, diagnostics.InferredRequirementViolationDiagnostic
+        )
+        assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+        assert diagnostic.location.line == 13
+        assert diagnostic.location.column == 30
+        assert diagnostic.location.end_line == 13
+        assert diagnostic.location.end_column == 82
+        assert diagnostic.action_name == _OTHER
+        assert_propagation_chain(
+            diagnostic,
+            {
+                "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+                "enclosing_quality_name": _TEST,
+                "triggered_quality_name": _OTHER,
+                "line": 13,
+                "column": 30,
+                "file_path": "test.dfn",
+            },
+            {
+                "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+                "enclosing_quality_name": _OTHER,
+                "triggered_quality_name": None,
+                "line": 11,
+                "column": 30,
+                "file_path": "other.dfn",
+            },
+        )
+
+
 def test_caller_overrides_implied_guarantee(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):

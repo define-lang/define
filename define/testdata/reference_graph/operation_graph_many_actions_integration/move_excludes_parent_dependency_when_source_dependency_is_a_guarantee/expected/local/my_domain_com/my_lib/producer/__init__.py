@@ -57,5 +57,4 @@ class ProducerExecution:
                 "position<result>"
             )
         )
-        self.guarantees.position_input__move__position_result.run(
-        )
+        self.guarantees.position_input__move__position_result.run()

@@ -35,6 +35,7 @@ class TestExecution:
         )
         self.execution_position_box__action_destructor: local.my_domain_com.my_lib.destructor.DestructorExecution
         self.destruction_position_position_box__global_position_marker: literal.Position
+        self.join_for_destroy_position_box = self.scheduler.create_join(3)
 
     def on_action_parent_occupied(self):
         self.create_position_box()
@@ -60,6 +61,12 @@ class TestExecution:
         self.execution_position_box__action_destructor.execution_action_forwarder.execution_action_filler.guarantees.global_position_marker.consumers.append(
             self.destroy_position_box__global_position_marker
         )
+        self.execution_position_box__action_destructor.execution_action_forwarder.guarantees.position_trigger_pos.consumers.append(
+            self.destroy_position_box
+        )
+        self.execution_position_box__action_destructor.execution_action_forwarder.execution_action_filler.guarantees.position_trigger_pos.consumers.append(
+            self.destroy_position_box
+        )
         self.scheduler.continue_with(
             self.create_position_box__global_position_marker,
             self.execution_position_box__action_destructor.on_action_parent_occupied,
@@ -72,6 +79,8 @@ class TestExecution:
         self.execution_position_box__action_destructor.accept_for_empty_rule_global_position_marker()
 
     def destroy_position_box(self):
+        if not self.join_for_destroy_position_box.arrive():
+            return
         self.local_position_box.destroy_particle()
 
     def destroy_position_box__global_position_marker(self):

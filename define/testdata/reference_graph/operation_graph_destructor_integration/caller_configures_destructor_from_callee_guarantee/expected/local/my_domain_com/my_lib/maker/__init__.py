@@ -73,5 +73,4 @@ class MakerExecution:
                 local.my_domain_com.my_lib.target.Target
             )
         )
-        self.guarantees.global_position_target.run(
-        )
+        self.guarantees.global_position_target.run()

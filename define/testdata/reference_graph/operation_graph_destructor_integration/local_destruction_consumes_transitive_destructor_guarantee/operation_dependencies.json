@@ -147,28 +147,6 @@
   {
     "operation": {
       "execution": {
-        "caller": null,
-        "action_name": "test"
-      },
-      "operation_name": "destroy",
-      "target": "box",
-      "occurrence": 1
-    },
-    "dependencies": [
-      {
-        "execution": {
-          "caller": null,
-          "action_name": "test"
-        },
-        "operation_name": "create",
-        "target": "box",
-        "occurrence": 1
-      }
-    ]
-  },
-  {
-    "operation": {
-      "execution": {
         "caller": {
           "caller": {
             "caller": null,
@@ -283,6 +261,64 @@
         },
         "operation_name": "create",
         "target": "/forwarder::trigger_pos",
+        "occurrence": 1
+      }
+    ]
+  },
+  {
+    "operation": {
+      "execution": {
+        "caller": null,
+        "action_name": "test"
+      },
+      "operation_name": "destroy",
+      "target": "box",
+      "occurrence": 1
+    },
+    "dependencies": [
+      {
+        "execution": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "destructor"
+        },
+        "operation_name": "destroy",
+        "target": "/implied",
+        "occurrence": 1
+      },
+      {
+        "execution": {
+          "caller": {
+            "caller": {
+              "caller": {
+                "caller": null,
+                "action_name": "test"
+              },
+              "action_name": "destructor"
+            },
+            "action_name": "forwarder"
+          },
+          "action_name": "filler"
+        },
+        "operation_name": "destroy",
+        "target": "trigger_pos",
+        "occurrence": 1
+      },
+      {
+        "execution": {
+          "caller": {
+            "caller": {
+              "caller": null,
+              "action_name": "test"
+            },
+            "action_name": "destructor"
+          },
+          "action_name": "forwarder"
+        },
+        "operation_name": "destroy",
+        "target": "trigger_pos",
         "occurrence": 1
       }
     ]

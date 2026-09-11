@@ -40,5 +40,4 @@ class ChildDestructorExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.child_marker.ChildMarker
         ).destroy_particle()
-        self.guarantees.global_position_child_marker.run(
-        )
+        self.guarantees.global_position_child_marker.run()

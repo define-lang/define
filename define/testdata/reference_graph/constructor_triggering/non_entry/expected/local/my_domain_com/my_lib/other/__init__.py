@@ -37,5 +37,4 @@ class OtherExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.filled.Filled
         ).create_particle()
-        self.guarantees.global_position_filled.run(
-        )
+        self.guarantees.global_position_filled.run()

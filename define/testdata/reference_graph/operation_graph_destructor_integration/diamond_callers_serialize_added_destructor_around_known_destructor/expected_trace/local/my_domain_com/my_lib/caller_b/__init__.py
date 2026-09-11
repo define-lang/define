@@ -238,8 +238,7 @@ class CallerBExecution:
             "trigger_pos",
             1,
         )
-        self.guarantees.position_trigger_pos.run(
-        )
+        self.guarantees.position_trigger_pos.run()
 
     def destroy_position_destroyer_particle(self):
         if not self.join_for_destroy_position_destroyer_particle.arrive():

@@ -37,6 +37,13 @@ class Test(literal.EntryPoint):
 
 
 @final
+class TestGuarantees:
+    def __init__(self, scheduler: literal.Scheduler):
+        self.action_filler__position_trigger_pos = literal.Fanout(scheduler)
+        self.action_middle__position_trigger_pos = literal.Fanout(scheduler)
+
+
+@final
 class TestExecution:
     def __init__(
         self,
@@ -51,6 +58,7 @@ class TestExecution:
             caller_execution,
             action_name,
         )
+        self.guarantees = TestGuarantees(self.scheduler)
         self.execution_action_filler: local.my_domain_com.my_lib.filler.FillerExecution
         self.execution_action_middle: local.my_domain_com.my_lib.middle.MiddleExecution
         self.destruction_connection_action_middle: tracing.DestructionConnection
@@ -158,6 +166,7 @@ class TestExecution:
             "/filler::trigger_pos",
             1,
         )
+        self.guarantees.action_filler__position_trigger_pos.run()
 
     def create_action_middle__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -181,6 +190,7 @@ class TestExecution:
             "/middle::trigger_pos",
             1,
         )
+        self.guarantees.action_middle__position_trigger_pos.run()
 
     def destroy_global_position_parent__global_position_guaranteed_child(self):
         self.destruction_position_global_position_parent__global_position_guaranteed_child.destroy_particle()

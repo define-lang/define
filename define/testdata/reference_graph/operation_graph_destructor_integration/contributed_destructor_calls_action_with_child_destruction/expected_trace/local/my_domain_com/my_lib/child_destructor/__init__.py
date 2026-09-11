@@ -56,5 +56,4 @@ class ChildDestructorExecution:
             "/child_marker",
             1,
         )
-        self.guarantees.global_position_child_marker.run(
-        )
+        self.guarantees.global_position_child_marker.run()

@@ -88,5 +88,4 @@ class MakerExecution:
             "/child",
             1,
         )
-        self.guarantees.global_position_child.run(
-        )
+        self.guarantees.global_position_child.run()

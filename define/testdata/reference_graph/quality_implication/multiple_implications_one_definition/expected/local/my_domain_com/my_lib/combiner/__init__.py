@@ -43,12 +43,10 @@ class CombinerExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.first_marker.FirstMarker
         ).create_particle()
-        self.guarantees.global_position_first_marker.run(
-        )
+        self.guarantees.global_position_first_marker.run()
 
     def create_global_position_second_marker(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.second_marker.SecondMarker
         ).create_particle()
-        self.guarantees.global_position_second_marker.run(
-        )
+        self.guarantees.global_position_second_marker.run()

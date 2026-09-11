@@ -69,5 +69,4 @@ class MoverExecution:
                 "position<dest>"
             )
         )
-        self.guarantees.global_position_parent__global_position_child__move__position_dest.run(
-        )
+        self.guarantees.global_position_parent__global_position_child__move__position_dest.run()

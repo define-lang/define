@@ -71,5 +71,4 @@ class MakerExecution:
                 "position<result>"
             )
         )
-        self.guarantees.position_result.run(
-        )
+        self.guarantees.position_result.run()

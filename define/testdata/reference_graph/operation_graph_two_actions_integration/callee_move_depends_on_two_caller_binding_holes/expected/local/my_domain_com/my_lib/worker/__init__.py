@@ -73,5 +73,4 @@ class WorkerExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.destination.Destination
         ).destroy_particle()
-        self.guarantees.global_position_destination.run(
-        )
+        self.guarantees.global_position_destination.run()

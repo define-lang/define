@@ -66,7 +66,7 @@ class _ResolvedRequirement:
 
 def _verified_destructor_guarantees(
     action_chain: ast.ActionReference,
-    guarantees: Sequence[action_contract.ContractGuarantee],
+    contract: action_contract.ActionContract,
     requirements: Sequence[
         operation_graph_model.VerifiedDestructionContractRequirement
     ],
@@ -84,8 +84,12 @@ def _verified_destructor_guarantees(
         operation_graph_model.VerifiedDestructionContractDestructorGuarantee
     ] = []
     action_chain_key = action_chain.canonical_chained_name_tuple
-    for guarantee in guarantees:
-        guaranteed_position = guarantee.position
+    for final_operation in contract.final_operations:
+        # Operations on a callee's interface positions do not guarantee the
+        # state of a position required by this Destructor.
+        if final_operation.position not in contract.guarantees:
+            continue
+        guaranteed_position = final_operation.position
         caller_position = ast.chain_in_caller(action_chain_key, guaranteed_position)
         # A requirement's Destroy precedes the Destroy for a requirement on one
         # of its parent positions. Searching from the guaranteed position toward
@@ -102,7 +106,7 @@ def _verified_destructor_guarantees(
             operation_graph_model.VerifiedDestructionContractDestructorGuarantee(
                 guarantee=operation_graph_model.OperationGraphGuarantee(
                     guaranteed_position=guaranteed_position,
-                    operation_positions=guarantee.operation_positions,
+                    operation_positions=final_operation.operation_positions,
                 ),
                 requirement=related_requirement,
             )
@@ -1220,7 +1224,7 @@ class ActionPostorderValidator:
             requirements=verified_requirements,
             guarantees=_verified_destructor_guarantees(
                 action_chain,
-                destructor_contract.guarantees,
+                destructor_contract,
                 verified_requirements,
             ),
         )
@@ -1838,14 +1842,13 @@ class ActionPostorderValidator:
 
     def _mark_own_contract_guarantees_alive(
         self,
-        own_guarantees: list[action_contract.ContractGuarantee],
+        own_guarantees: dict[ast.ChainedNameTuple, action_contract.PositionGuarantee],
         scope: scope_tracker.ScopeTracker,
     ):
         """Keep origin position constraints alive through this action's final guarantees."""
         if not self._dead_constraint_tracker.has_constraint_candidates():
             return
-        for contract_guarantee in own_guarantees:
-            guarantee = contract_guarantee.guarantee
+        for guarantee in own_guarantees.values():
             final_position = guarantee.caused_by
             origin_position = self._particle_origin_position(final_position)
             if origin_position is None:
@@ -1870,7 +1873,7 @@ class ActionPostorderValidator:
         contract = self._analyze_action_definition(action_def)
         operation_graph_builder = self._tracker.operation_graph_builder
         operation_graph_builder.record_guaranteed_positions(
-            contract_guarantee.position for contract_guarantee in contract.guarantees
+            final_operation.position for final_operation in contract.final_operations
         )
         return PostorderValidationResult(
             diagnostics=self._diagnostics,
@@ -1965,42 +1968,48 @@ class ActionPostorderValidator:
     def _generate_contract(self) -> action_contract.ActionContract:
         """Generate the action contract from inferred requirements and final tracker state."""
         if self._action_definition.is_destructor:
-            guarantees = self._check_destructor_guarantees()
-            callees: list[action_contract.CalleeContract] = []
-        else:
-            own_guarantees = self._tracker.generate_own_guarantees(
+            guarantees = self._tracker.generate_destructor_guarantees(
                 self._action_definition.interface_position_names,
                 self._implied_quality_list,
                 self._inferred_requirements,
             )
-            guarantees = own_guarantees
+            callees: list[action_contract.CalleeContract] = []
+        else:
+            guarantees = self._tracker.generate_own_guarantees(
+                self._action_definition.interface_position_names,
+                self._implied_quality_list,
+                self._inferred_requirements,
+            )
             callees = self._tracker.nested_guarantees()
+        final_operations = self._tracker.final_operations(
+            guarantees,
+            include_callee_derived=self._action_definition.is_destructor,
+        )
+        if self._action_definition.is_destructor:
+            self._check_destructor_guarantees(guarantees)
         return action_contract.ActionContract(
             requirements=self._inferred_requirements,
             guarantees=guarantees,
+            final_operations=final_operations,
             callees=callees,
             destruction_contracts=self._destruction_contracts,
             trigger_position_name=self._trigger_position_name or "",
         )
 
-    def _check_destructor_guarantees(self) -> list[action_contract.ContractGuarantee]:
-        """Emit a diagnostic for each guarantee a destructor produces and return a contract that masks them.
+    def _check_destructor_guarantees(
+        self,
+        guarantees: dict[ast.ChainedNameTuple, action_contract.PositionGuarantee],
+    ):
+        """Report forbidden Destructor Guarantees and replace them with Error Guarantees.
 
         A destructor may not change any contracted position's state (DLP 41), so
-        each guarantee it produces is a violation. The returned contract may not
+        each guarantee it produces is a violation. The contract may not
         advertise such a guarantee, so each is replaced with an ErrorGuarantee
         that leaves the position's post-destructor state undetermined for any
-        consumer of the contract. The destructor's guarantees are fully expanded
-        (no nested references), so the returned contract has no nested guarantees.
+        consumer of the contract. Guarantees from actions triggered by the
+        Destructor must also be checked, even when they are applied lazily.
         """
-        produced = self._tracker.generate_destructor_guarantees(
-            self._action_definition.interface_position_names,
-            self._implied_quality_list,
-            self._inferred_requirements,
-        )
-        rewritten: list[action_contract.ContractGuarantee] = []
-        for contract_guarantee in produced:
-            guarantee = contract_guarantee.guarantee
+        for position, guarantee in guarantees.items():
             # TODO: caused_by names the position as it was written in the action
             # where the guarantee originated, so a guarantee surfaced from a
             # deeply-nested triggered action gets that callee's short chained name
@@ -2037,25 +2046,16 @@ class ActionPostorderValidator:
                         )
                     )
                 case action_contract.ErrorGuarantee():
-                    rewritten.append(contract_guarantee)
                     continue
                 case action_contract.UnchangedGuarantee():
-                    rewritten.append(contract_guarantee)
                     continue
                 case _:
                     raise TypeError(
                         f"unexpected guarantee type {type(guarantee).__name__}"
                     )
-            rewritten.append(
-                action_contract.ContractGuarantee(
-                    contract_guarantee.position,
-                    action_contract.ErrorGuarantee(
-                        caused_by=guarantee.caused_by,
-                    ),
-                    contract_guarantee.operation_positions,
-                )
+            guarantees[position] = action_contract.ErrorGuarantee(
+                caused_by=guarantee.caused_by,
             )
-        return rewritten
 
     def _local_definition_cache_key(
         self,

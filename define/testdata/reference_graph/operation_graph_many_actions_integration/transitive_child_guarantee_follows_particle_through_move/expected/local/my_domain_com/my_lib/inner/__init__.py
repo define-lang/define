@@ -54,5 +54,4 @@ class InnerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.result_value.ResultValue
         ).create_particle()
-        self.guarantees.position_input__global_position_result_value.run(
-        )
+        self.guarantees.position_input__global_position_result_value.run()

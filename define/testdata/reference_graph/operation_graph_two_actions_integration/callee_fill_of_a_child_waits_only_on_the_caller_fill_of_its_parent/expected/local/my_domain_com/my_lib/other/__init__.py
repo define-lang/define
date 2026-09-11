@@ -54,5 +54,4 @@ class OtherExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.a.A
         ).create_particle()
-        self.guarantees.position_output__global_position_a.run(
-        )
+        self.guarantees.position_output__global_position_a.run()

@@ -28,6 +28,7 @@ class Inner(literal.Action):
 class InnerGuarantees:
     def __init__(self, scheduler: literal.Scheduler):
         self.position_run = literal.Fanout(scheduler)
+        self.action_destroyer__position_trigger_pos = literal.Fanout(scheduler)
 
 
 @final
@@ -84,8 +85,7 @@ class InnerExecution:
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.guarantees.position_run.run(
-        )
+        self.guarantees.position_run.run()
 
     def create_action_destroyer__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -99,3 +99,4 @@ class InnerExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_action_destroyer__position_trigger_pos.destroy_particle()
+        self.guarantees.action_destroyer__position_trigger_pos.run()

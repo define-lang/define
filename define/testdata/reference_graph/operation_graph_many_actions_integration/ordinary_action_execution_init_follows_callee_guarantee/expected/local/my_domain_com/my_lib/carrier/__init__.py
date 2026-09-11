@@ -89,8 +89,7 @@ class CarrierExecution:
                 "position<result>"
             )
         )
-        self.guarantees.position_source__move__position_result.run(
-        )
+        self.guarantees.position_source__move__position_result.run()
 
     def destroy_position_run(self):
         if not self.join_for_destroy_position_run.arrive():
@@ -101,5 +100,4 @@ class CarrierExecution:
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.guarantees.position_run.run(
-        )
+        self.guarantees.position_run.run()

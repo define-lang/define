@@ -316,6 +316,19 @@
       {
         "execution": {
           "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "outer"
+        },
+        "operation_name": "move",
+        "source": "source",
+        "target": "middle_holder::/middle::inner_parent",
+        "occurrence": 1
+      },
+      {
+        "execution": {
+          "caller": {
             "caller": {
               "caller": null,
               "action_name": "test"
@@ -326,19 +339,6 @@
         },
         "operation_name": "create",
         "target": "inner_holder",
-        "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": {
-            "caller": null,
-            "action_name": "test"
-          },
-          "action_name": "outer"
-        },
-        "operation_name": "move",
-        "source": "source",
-        "target": "middle_holder::/middle::inner_parent",
         "occurrence": 1
       }
     ]
@@ -483,8 +483,9 @@
           },
           "action_name": "middle"
         },
-        "operation_name": "create",
-        "target": "inner_holder::/inner::trigger_pos",
+        "operation_name": "move",
+        "source": "inner_holder::/inner::input",
+        "target": "inner_parent",
         "occurrence": 1
       },
       {
@@ -498,9 +499,8 @@
           },
           "action_name": "middle"
         },
-        "operation_name": "move",
-        "source": "inner_holder::/inner::input",
-        "target": "inner_parent",
+        "operation_name": "create",
+        "target": "inner_holder::/inner::trigger_pos",
         "occurrence": 1
       }
     ]
@@ -766,19 +766,6 @@
         },
         "operation_name": "destroy",
         "target": "gateway::/outer::trigger_pos",
-        "occurrence": 1
-      },
-      {
-        "execution": {
-          "caller": {
-            "caller": null,
-            "action_name": "test"
-          },
-          "action_name": "outer"
-        },
-        "operation_name": "move",
-        "source": "source",
-        "target": "middle_holder::/middle::inner_parent",
         "occurrence": 1
       },
       {

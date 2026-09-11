@@ -385,6 +385,18 @@
     "dependencies": [
       {
         "execution": {
+          "caller": {
+            "caller": null,
+            "action_name": "test"
+          },
+          "action_name": "middle"
+        },
+        "operation_name": "destroy",
+        "target": "holder::/child::trigger_pos",
+        "occurrence": 1
+      },
+      {
+        "execution": {
           "caller": null,
           "action_name": "test"
         },

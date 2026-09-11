@@ -177,8 +177,7 @@ class OtherExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.input.Input
         ).destroy_particle()
-        self.guarantees.global_position_input.run(
-        )
+        self.guarantees.global_position_input.run()
 
     def destroy_position_holder_c(self):
         literal.continue_destruction(self.continue_destroy_position_holder_c)
@@ -187,5 +186,4 @@ class OtherExecution:
         self.action.get_interface_position(
             "position<holder_c>"
         ).destroy_particle()
-        self.guarantees.position_holder_c.run(
-        )
+        self.guarantees.position_holder_c.run()

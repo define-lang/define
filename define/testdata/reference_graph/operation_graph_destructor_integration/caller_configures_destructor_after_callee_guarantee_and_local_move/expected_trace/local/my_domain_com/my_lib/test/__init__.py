@@ -33,6 +33,12 @@ class Test(literal.EntryPoint):
 
 
 @final
+class TestGuarantees:
+    def __init__(self, scheduler: literal.Scheduler):
+        self.action_seeder__position_run = literal.Fanout(scheduler)
+
+
+@final
 class TestExecution:
     def __init__(
         self,
@@ -47,6 +53,7 @@ class TestExecution:
             caller_execution,
             action_name,
         )
+        self.guarantees = TestGuarantees(self.scheduler)
         self.local_position_source = literal.LocalPosition(
             "position<source>",
             constraints=(
@@ -134,6 +141,7 @@ class TestExecution:
             "/seeder::run",
             1,
         )
+        self.guarantees.action_seeder__position_run.run()
 
     def create_position_payload_source(self):
         self.local_position_payload_source.create_particle()

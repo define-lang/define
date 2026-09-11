@@ -73,5 +73,4 @@ class DestroyerExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.target.Target
         ).destroy_particle()
-        self.guarantees.global_position_target.run(
-        )
+        self.guarantees.global_position_target.run()

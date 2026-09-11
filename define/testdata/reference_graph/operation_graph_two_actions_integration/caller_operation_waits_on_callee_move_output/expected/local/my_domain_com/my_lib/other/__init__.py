@@ -57,5 +57,4 @@ class OtherExecution:
                 "position<output>"
             )
         )
-        self.guarantees.position_trigger_pos__move__position_output.run(
-        )
+        self.guarantees.position_trigger_pos__move__position_output.run()

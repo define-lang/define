@@ -179,8 +179,7 @@ class MiddleExecution:
             "result::/marker",
             1,
         )
-        self.guarantees.position_result__global_position_marker.run(
-        )
+        self.guarantees.position_result__global_position_marker.run()
 
     def destroy_position_box(self):
         if not self.join_for_destroy_position_box.arrive():

@@ -43,6 +43,13 @@ class Test(literal.EntryPoint):
 
 
 @final
+class TestGuarantees:
+    def __init__(self, scheduler: literal.Scheduler):
+        self.action_fill_a__position_trigger_pos = literal.Fanout(scheduler)
+        self.action_fill_b__position_trigger_pos = literal.Fanout(scheduler)
+
+
+@final
 class TestExecution:
     def __init__(
         self,
@@ -51,6 +58,7 @@ class TestExecution:
     ):
         self.action = action
         self.scheduler = scheduler
+        self.guarantees = TestGuarantees(self.scheduler)
         self.local_position_trash = literal.LocalPosition(
             "position<trash>",
             constraints=(
@@ -201,6 +209,7 @@ class TestExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_action_fill_a__position_trigger_pos.destroy_particle()
+        self.guarantees.action_fill_a__position_trigger_pos.run()
 
     def create_action_fill_b__position_trigger_pos(self):
         self.action.on_particle.get_action(
@@ -214,6 +223,7 @@ class TestExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_action_fill_b__position_trigger_pos.destroy_particle()
+        self.guarantees.action_fill_b__position_trigger_pos.run()
 
     def create_action_mover__position_trigger_pos(self):
         self.action.on_particle.get_action(

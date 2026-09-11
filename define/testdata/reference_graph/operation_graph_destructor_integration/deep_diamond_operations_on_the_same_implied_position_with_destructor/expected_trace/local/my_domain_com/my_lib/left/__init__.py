@@ -25,6 +25,12 @@ class Left(literal.Action):
 
 
 @final
+class LeftGuarantees:
+    def __init__(self, scheduler: literal.Scheduler):
+        self.action_left_child__position_trigger_pos = literal.Fanout(scheduler)
+
+
+@final
 class LeftExecution:
     def __init__(
         self,
@@ -39,6 +45,7 @@ class LeftExecution:
             caller_execution,
             action_name,
         )
+        self.guarantees = LeftGuarantees(self.scheduler)
         self.execution_action_left_child: local.my_domain_com.my_lib.left_child.LeftChildExecution
         self.destruction_position_action_left_child__position_trigger_pos: literal.Position
         self.execution_action_left_child = local.my_domain_com.my_lib.left_child.LeftChildExecution(
@@ -78,3 +85,4 @@ class LeftExecution:
             "/left_child::trigger_pos",
             1,
         )
+        self.guarantees.action_left_child__position_trigger_pos.run()

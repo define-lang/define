@@ -214,8 +214,7 @@ class CallerExecution:
         self.action.get_interface_position(
             "position<first_gateway>"
         ).destroy_particle()
-        self.guarantees.position_first_gateway.run(
-        )
+        self.guarantees.position_first_gateway.run()
 
     def destroy_position_second_gateway(self):
         if not self.join_for_destroy_position_second_gateway.arrive():
@@ -223,8 +222,7 @@ class CallerExecution:
         self.action.get_interface_position(
             "position<second_gateway>"
         ).destroy_particle()
-        self.guarantees.position_second_gateway.run(
-        )
+        self.guarantees.position_second_gateway.run()
 
     def destroy_position_run(self):
         if not self.join_for_destroy_position_run.arrive():
@@ -235,5 +233,4 @@ class CallerExecution:
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.guarantees.position_run.run(
-        )
+        self.guarantees.position_run.run()

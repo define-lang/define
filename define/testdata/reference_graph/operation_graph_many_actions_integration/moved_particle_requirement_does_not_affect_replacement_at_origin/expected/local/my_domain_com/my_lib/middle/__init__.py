@@ -110,8 +110,7 @@ class MiddleExecution:
         self.action.get_interface_position(
             "position<source>"
         ).destroy_particle()
-        self.guarantees.position_source.run(
-        )
+        self.guarantees.position_source.run()
 
     def create_position_inner_holder(self):
         self.local_position_inner_holder.create_particle()

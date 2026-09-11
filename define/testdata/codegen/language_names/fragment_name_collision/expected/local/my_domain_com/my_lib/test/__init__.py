@@ -68,26 +68,22 @@ class TestExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.item.name.ItemName
         ).create_particle()
-        self.guarantees.global_position_item_name.run(
-        )
+        self.guarantees.global_position_item_name.run()
 
     def create_global_position_item_name_2(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.item.name_2.ItemName2
         ).create_particle()
-        self.guarantees.global_position_item_name_2.run(
-        )
+        self.guarantees.global_position_item_name_2.run()
 
     def create_global_position_item_name_3(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.item.name_3.ItemName3
         ).create_particle()
-        self.guarantees.global_position_item_name_3.run(
-        )
+        self.guarantees.global_position_item_name_3.run()
 
     def create_global_position_item_name_4(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.item_name.ItemName
         ).create_particle()
-        self.guarantees.global_position_item_name_4.run(
-        )
+        self.guarantees.global_position_item_name_4.run()

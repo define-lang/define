@@ -27,7 +27,7 @@ class Test(literal.EntryPoint):
 class TestGuarantees:
     def __init__(self, scheduler: literal.Scheduler):
         self.global_position_box = literal.Fanout(scheduler)
-        self.global_position_box__global_position_destination = literal.Fanout(scheduler)
+        self.global_position_box__action_producer__position_result__move__global_position_box__global_position_destination = literal.Fanout(scheduler)
 
 
 @final
@@ -90,5 +90,4 @@ class TestExecution:
                 local.my_domain_com.my_lib.destination.Destination
             )
         )
-        self.guarantees.global_position_box__global_position_destination.run(
-        )
+        self.guarantees.global_position_box__action_producer__position_result__move__global_position_box__global_position_destination.run()

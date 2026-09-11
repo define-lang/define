@@ -69,8 +69,7 @@ class TestExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.parent.Parent
         ).destroy_particle()
-        self.guarantees.global_position_parent.run(
-        )
+        self.guarantees.global_position_parent.run()
 
     def destroy_position_destination(self):
         self.local_position_destination.destroy_particle()

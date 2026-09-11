@@ -171,8 +171,7 @@ class DestroyerExecution:
             "run",
             1,
         )
-        self.guarantees.position_run.run(
-        )
+        self.guarantees.position_run.run()
 
     def destroy_position_run__global_position_marker_a(self):
         literal.continue_destruction(self.continue_destroy_position_run__global_position_marker_a)

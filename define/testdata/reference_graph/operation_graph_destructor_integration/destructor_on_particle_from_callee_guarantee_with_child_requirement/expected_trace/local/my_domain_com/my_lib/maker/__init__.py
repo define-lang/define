@@ -81,5 +81,4 @@ class MakerExecution:
             "result::/marker",
             1,
         )
-        self.guarantees.position_result__global_position_marker.run(
-        )
+        self.guarantees.position_result__global_position_marker.run()

@@ -25,6 +25,12 @@ class CallEmpty(literal.Action):
 
 
 @final
+class CallEmptyGuarantees:
+    def __init__(self, scheduler: literal.Scheduler):
+        self.action_empty_item__position_trigger_pos = literal.Fanout(scheduler)
+
+
+@final
 class CallEmptyExecution:
     def __init__(
         self,
@@ -41,6 +47,7 @@ class CallEmptyExecution:
             caller_execution,
             action_name,
         )
+        self.guarantees = CallEmptyGuarantees(self.scheduler)
         self.destruction_connections = destruction_connections
         self.execution_action_empty_item: local.my_domain_com.my_lib.empty_item.EmptyItemExecution
         self.destruction_position_action_empty_item__position_trigger_pos: literal.Position
@@ -85,3 +92,4 @@ class CallEmptyExecution:
             "/empty_item::trigger_pos",
             1,
         )
+        self.guarantees.action_empty_item__position_trigger_pos.run()

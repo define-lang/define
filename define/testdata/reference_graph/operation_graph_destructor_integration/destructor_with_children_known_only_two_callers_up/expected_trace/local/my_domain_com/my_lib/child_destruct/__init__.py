@@ -84,8 +84,7 @@ class ChildDestructExecution:
             "/marker_a",
             1,
         )
-        self.guarantees.global_position_marker_a.run(
-        )
+        self.guarantees.global_position_marker_a.run()
 
     def move_global_position_marker_b_to_position_holder_b(self):
         if not self.join_for_move_global_position_marker_b_to_position_holder_b.arrive():
@@ -110,5 +109,4 @@ class ChildDestructExecution:
             "/marker_b",
             1,
         )
-        self.guarantees.global_position_marker_b.run(
-        )
+        self.guarantees.global_position_marker_b.run()

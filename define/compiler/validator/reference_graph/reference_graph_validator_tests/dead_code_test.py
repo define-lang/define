@@ -752,6 +752,30 @@ def test_grandchild_action_interface_arrival_does_not_require_ancestors_to_trigg
     ]
 
 
+def test_implied_action_must_trigger_in_callee_even_after_caller_triggered_it(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 2
+    assert isinstance(all_diags[0], diagnostics.UntriggeredImpliedActionDiagnostic)
+    assert all_diags[0].implied_action_name == "action</worker>"
+    assert all_diags[0].location.line == 2
+    assert all_diags[0].location.column == 25
+    assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
+    assert isinstance(all_diags[1], diagnostics.UntriggeredActionInterfaceDiagnostic)
+    assert all_diags[1].action_name == "action</worker>"
+    assert all_diags[1].position_name == "action</worker>::position<item>"
+    assert all_diags[1].location.line == 7
+    assert all_diags[1].location.column == 30
+    assert all_diags[1].location.file_path == PurePosixPath("other.dfn")
+    assert action_graph(result.operation_graphs) == [
+        (_TEST, _WORKER),
+        (_TEST, "action<my.domain.com:my_lib:/other>"),
+    ]
+
+
 def test_implied_action_referenced_but_never_triggered_is_dead(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):

@@ -168,8 +168,7 @@ class ActExecution:
         self.action.get_interface_position(
             "position<iface_dest>"
         ).destroy_particle()
-        self.guarantees.position_iface_dest.run(
-        )
+        self.guarantees.position_iface_dest.run()
 
     def move_position_src_c_to_position_chain_dest__global_position_mid_dest__global_position_end_dest(self):
         if not self.join_for_move_position_src_c_to_position_chain_dest__global_position_mid_dest__global_position_end_dest.arrive():
@@ -234,8 +233,7 @@ class ActExecution:
         self.action.get_interface_position(
             "position<chain_dest>"
         ).destroy_particle()
-        self.guarantees.position_chain_dest.run(
-        )
+        self.guarantees.position_chain_dest.run()
 
     def destroy_position_chain_dest__global_position_mid_dest(self):
         if not self.join_for_destroy_position_chain_dest__global_position_mid_dest.arrive():
@@ -260,8 +258,7 @@ class ActExecution:
         self.action.get_interface_position(
             "position<trigger>"
         ).destroy_particle()
-        self.guarantees.position_trigger.run(
-        )
+        self.guarantees.position_trigger.run()
 
     def destroy_position_local_chain_dest(self):
         self.local_position_local_chain_dest.destroy_particle()

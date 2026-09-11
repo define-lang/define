@@ -31,6 +31,7 @@ class Test(literal.EntryPoint):
 @final
 class TestGuarantees:
     def __init__(self, scheduler: literal.Scheduler):
+        self.action_run_both__position_trigger_pos = literal.Fanout(scheduler)
         self.global_position_item = literal.Fanout(scheduler)
 
 
@@ -95,6 +96,7 @@ class TestExecution:
             "/run_both::trigger_pos",
             1,
         )
+        self.guarantees.action_run_both__position_trigger_pos.run()
 
     def create_global_position_item(self):
         self.action.on_particle.get_position(
@@ -105,5 +107,4 @@ class TestExecution:
             "/item",
             1,
         )
-        self.guarantees.global_position_item.run(
-        )
+        self.guarantees.global_position_item.run()

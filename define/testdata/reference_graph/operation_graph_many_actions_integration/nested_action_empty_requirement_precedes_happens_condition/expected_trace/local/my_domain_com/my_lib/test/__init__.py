@@ -24,6 +24,12 @@ class Test(literal.EntryPoint):
 
 
 @final
+class TestGuarantees:
+    def __init__(self, scheduler: literal.Scheduler):
+        self.action_runner__position_run = literal.Fanout(scheduler)
+
+
+@final
 class TestExecution:
     def __init__(
         self,
@@ -38,6 +44,7 @@ class TestExecution:
             caller_execution,
             action_name,
         )
+        self.guarantees = TestGuarantees(self.scheduler)
         self.execution_action_runner: local.my_domain_com.my_lib.runner.RunnerExecution
         self.destruction_position_action_runner__position_run: literal.Position
         self.execution_action_runner = local.my_domain_com.my_lib.runner.RunnerExecution(
@@ -74,3 +81,4 @@ class TestExecution:
             "/runner::run",
             1,
         )
+        self.guarantees.action_runner__position_run.run()

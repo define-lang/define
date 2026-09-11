@@ -55,8 +55,7 @@ class OtherExecution:
         self.action.get_interface_position(
             "position<output>"
         ).create_particle()
-        self.guarantees.position_output.run(
-        )
+        self.guarantees.position_output.run()
 
     def create_position_late(self):
         self.action.get_interface_position(
@@ -65,5 +64,4 @@ class OtherExecution:
         self.action.get_interface_position(
             "position<late>"
         ).destroy_particle()
-        self.guarantees.position_late.run(
-        )
+        self.guarantees.position_late.run()
