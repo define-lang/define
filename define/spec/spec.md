@@ -1651,9 +1651,6 @@ Note that the compiler is not bound to literally implement the rules below
 exactly as written if there is a more efficient implementation that produces the
 same DAG.
 
-We have extensive [proofs](../../proofs/operation_graph/) for the logic in this
-section.
-
 #### Constructing the Graph
 
 Process Creates, Moves, and Vacates in Particle Operation Recency order. For

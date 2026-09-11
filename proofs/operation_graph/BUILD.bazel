@@ -1,8 +1,0 @@
-filegroup(
-    name = "all_proofs",
-    srcs = [
-        "//proofs/operation_graph/definitions:all_proofs",
-        "//proofs/operation_graph/theorems:all_proofs",
-        "//proofs/operation_graph/witnesses:all_proofs",
-    ],
-)
