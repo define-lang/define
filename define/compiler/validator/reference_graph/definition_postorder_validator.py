@@ -800,7 +800,11 @@ class ActionPostorderValidator:
         for quality in qualities.assignments:
             if quality.name_type != ast.NameType.ACTION:
                 continue
-            definition_result = self._definition_results[quality]
+            definition_result = self._definition_results.get(quality)
+            # Reference validation has already reported unresolved qualities;
+            # their absence must not prevent checking the remaining Destructors.
+            if definition_result is None:
+                continue
             definition = typing.cast(
                 "ast.ActionDefinition", definition_result.definition
             )

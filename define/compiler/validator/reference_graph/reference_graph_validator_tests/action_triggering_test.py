@@ -37,11 +37,6 @@ def test_self_constructor_reference_reports_circular_reference(
     assert all_diagnostics[0].location.line == 8
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=KeyError,
-    reason="Destructor lookup requests the definition of an unresolved action quality",
-)
 def test_destroy_with_unresolved_action_quality_reports_reference_error(
     validate_testdata_non_filesystem_with_reference_graph: conftest.ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
