@@ -1,1 +1,1 @@
-../../reference_graph/operation_graph_destructor_integration/caller_contributed_destruction_follows_transitive_move_guarantee
+../../codegen/particle_operations_destructor/caller_contributed_destruction_follows_transitive_move_guarantee

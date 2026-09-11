@@ -1,1 +1,1 @@
-../../reference_graph/operation_graph_destructor_integration/local_destruction_consumes_transitive_destructor_guarantee
+../../codegen/particle_operations_destructor/local_destruction_consumes_transitive_destructor_guarantee

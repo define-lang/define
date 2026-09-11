@@ -1,1 +1,1 @@
-../../reference_graph/operation_graph_destructor_integration/caller_known_destructor_precedes_destroyer_known_child_destroy
+../../codegen/particle_operations_destructor/caller_known_destructor_precedes_destroyer_known_child_destroy

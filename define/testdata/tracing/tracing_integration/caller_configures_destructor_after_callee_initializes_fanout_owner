@@ -1,1 +1,1 @@
-../../reference_graph/operation_graph_destructor_integration/caller_configures_destructor_after_callee_initializes_fanout_owner
+../../codegen/particle_operations_destructor/caller_configures_destructor_after_callee_initializes_fanout_owner

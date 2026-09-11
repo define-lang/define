@@ -1,0 +1,16 @@
+load("//tools/bzl:pyright.bzl", "pyright_test")
+
+filegroup(
+    name = "codegen_testdata",
+    testonly = True,
+    srcs = glob(["**"]),
+    visibility = ["//define/testdata/codegen:__pkg__"],
+)
+
+# --- Type-checking ---
+
+pyright_test(
+    name = "pyright_test",
+    srcs = glob(["**/*.py"]),
+    deps = ["//define/runtime:literal"],
+)

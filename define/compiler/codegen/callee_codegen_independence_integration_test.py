@@ -13,7 +13,7 @@ from define.compiler import driver
 from define.compiler.codegen import generated_program_runner, test_helpers
 from define.compiler.validator.test_helpers import assert_no_errors
 
-_TESTDATA_ROOT = Path("define/testdata/reference_graph")
+_TESTDATA_ROOT = Path("define/testdata/codegen")
 _ADDITIONAL_CALLER_ROOT = Path(
     "define/compiler/codegen/testdata/callee_codegen_independence"
 )
@@ -47,19 +47,19 @@ _CASES = (
     _Case(
         "known_and_unknown_siblings",
         _TESTDATA_ROOT
-        / "operation_graph_two_actions_integration"
+        / "particle_operations_two_actions"
         / "callee_known_child_and_caller_unknown_sibling_are_disjoint",
     ),
     _Case(
         "local_cascade",
         _TESTDATA_ROOT
-        / "operation_graph_two_actions_integration"
+        / "particle_operations_two_actions"
         / "local_cascade_uses_caller_fragment_for_occupied_child",
     ),
     _Case(
         "transitive_disjoint",
         _TESTDATA_ROOT
-        / "operation_graph_many_actions_integration"
+        / "particle_operations_many_actions"
         / "destruction_cascade_includes_disjoint_child_paths_from_two_callers",
     ),
 )
@@ -69,7 +69,7 @@ _DESTRUCTOR_CONTRIBUTION_CASES = (
         name="requirement_free",
         baseline=(
             _TESTDATA_ROOT
-            / "operation_graph_destructor_integration"
+            / "particle_operations_destructor"
             / "caller_added_destructor_fires_in_callee"
         ),
         callee_module=Path("local/my_domain_com/my_lib/callee/__init__.py"),
@@ -79,7 +79,7 @@ _DESTRUCTOR_CONTRIBUTION_CASES = (
         name="contracted_position_requirements",
         baseline=(
             _TESTDATA_ROOT
-            / "operation_graph_destructor_integration"
+            / "particle_operations_destructor"
             / "caller_contributed_child_destructor_depends_on_callee_guarantee"
         ),
         callee_module=Path("local/my_domain_com/my_lib/destroyer/__init__.py"),
@@ -165,7 +165,7 @@ def test_later_init_configuration_does_not_change_generated_callees(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ):
-    case = _TESTDATA_ROOT / "operation_graph_destructor_integration" / case_name
+    case = _TESTDATA_ROOT / "particle_operations_destructor" / case_name
     expected = (case / "expected").resolve()
     project = tmp_path / "project"
     generated = tmp_path / "generated"

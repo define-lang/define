@@ -1,1 +1,1 @@
-../../reference_graph/operation_graph_destructor_integration/caller_interleaves_destructors_with_destroyer_known_destructors
+../../codegen/particle_operations_destructor/caller_interleaves_destructors_with_destroyer_known_destructors

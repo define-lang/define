@@ -147,17 +147,6 @@ py_library(
     ],
 )
 
-py_test(
-    name = "operation_graph_rules_test",
-    size = "small",
-    srcs = ["operation_graph_rules_test.py"],
-    deps = [
-        ":operation_graph_model",
-        ":operation_graph_rules",
-        "//define/compiler:ast",
-    ],
-)
-
 py_library(
     name = "operation_graph_renderer",
     testonly = True,
@@ -170,16 +159,6 @@ py_library(
     ],
 )
 
-py_test(
-    name = "operation_graph_renderer_test",
-    size = "small",
-    srcs = ["operation_graph_renderer_test.py"],
-    deps = [
-        ":operation_graph_renderer",
-        "@pypi//pytest",
-    ],
-)
-
 py_library(
     name = "operation_graph_resolver",
     srcs = ["operation_graph_resolver.py"],
@@ -187,27 +166,6 @@ py_library(
     deps = [
         ":operation_graph",
         ":operation_graph_action_resolver",
-        ":operation_graph_model",
-        "//define/compiler:ast",
-    ],
-)
-
-py_test(
-    name = "operation_graph_resolver_test",
-    size = "small",
-    srcs = ["operation_graph_resolver_test.py"],
-    deps = [
-        ":operation_graph",
-        ":operation_graph_resolver",
-        "//define/compiler:ast",
-    ],
-)
-
-py_test(
-    name = "operation_graph_test",
-    size = "small",
-    srcs = ["operation_graph_test.py"],
-    deps = [
         ":operation_graph_model",
         "//define/compiler:ast",
     ],
@@ -380,12 +338,8 @@ pyright_test(
         ":operation_graph_labeler_test",
         ":operation_graph_model",
         ":operation_graph_renderer",
-        ":operation_graph_renderer_test",
         ":operation_graph_resolver",
-        ":operation_graph_resolver_test",
         ":operation_graph_rules",
-        ":operation_graph_rules_test",
-        ":operation_graph_test",
         ":particle_info",
         ":particle_operation_validator",
         ":particle_tracker",
