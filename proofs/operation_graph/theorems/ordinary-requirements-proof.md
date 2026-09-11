@@ -2,185 +2,129 @@
 
 ## Scope
 
-This argument derives source correspondence for the ordinary part of the
-[requirement construction](requirement-construction.md), before introducing
-destruction. The [reference-shape proof](reference-shape-proof.md) supplies the
-geometric invariant used below.
+Fix ordinary operation occurrences obtained from a valid serial interpretation,
+with their particular particles, positions, and Action Executions resolved as
+specified by Identifying Particles and Positions. Destruction's preserved
+occupancy is handled separately.
 
-Fix the occurrences contributed by a valid serial reference execution. Preserve
-their Action Executions, written references, and selected particles. This does
-not impose serial runtime execution, require an action's assigned particle to
-stay at the caller's position, or impose a dependency on every operation of that
-action.
+The result establishes correspondence of Create and Move effects and their
+occupancy and lifetime requirements. Geometric legality additionally uses the
+[relationship conditions](relationship-ordering.md).
 
-## State and requirements
+## Resolution from source
 
-Starting Define Programs supplies the initially empty view point position and
-creates the view point there. Represent that position separately from an Action
-Execution's private declarations. Its logical startup Create has no preceding
-chained reference; subsequent access to qualities of the view point follows that
-creation in the same way as access to qualities of any other particle.
+Resolve a local position by its declaration and Action Execution. Resolve an
+implied quality from the action's parent particle. Resolve an interface position
+from its action and declaration. For a further name in a chain, the serial
+occupant of the preceding position supplies the explicitly required quality.
 
-Identify quality-defined positions by their defining particle and declaration,
-distinguishing different actions' interface declarations. Identify private local
-positions by their Action Execution and declaration. An occupancy component is
-empty or gives its occupying particle's identity. Separately record the
-existence of created particles with their assigned qualities.
+Induction over the chain identifies its final position. The source validation
+rules supply the first declaration, occupied intermediates, and explicit
+constraints at each step. Moving a particle does not replace its qualities, so
+the position identified through it retains the same defining particle through
+subsequent Moves. A replacement supplies different identities.
 
-A component alone does not make its position accessible to source code. Resolve
-each actual reference from the declaration available to its Action Execution.
-Require the exact particle at each intermediate position and the qualities
-needed to continue the chain. An implied first position instead directly needs
-its defining particle and quality, without a caller-position lookup.
+This induction is performed in the serial interpretation. It does not assert
+that the intermediates remain occupied during reordered execution. The
+specification explicitly makes execution act on the position already identified.
 
-A local declaration supplies its own initially empty position, without an
-invented Particle Operation vertex. A Create supplies its new particle and the
-qualities assigned by creation. Its defined positions are initially empty;
-constructor occurrences contribute their own effects. Assignment and constructor
-rules determine these occurrences, but do not make a whole constructor one
-indivisible Particle Operation.
+## State representation
 
-A Create requires its actual reference and an empty final position, and changes
-that occupancy to its fresh particle. A Move requires both actual references,
-the particle selected at its source, and an empty destination. It changes only
-its two final occupancy components. It preserves the particle's qualities and
-all relative occupancies of its defined positions, whose spatial locations
-change transitively with it. Moving a particle does not silently assign
-qualities.
+Record the occupant or vacancy of each actual position and the existence of each
+particle. Positions retain their defining particles, including positions defined
+by actions. A fresh identity is assigned to each Create occurrence; distinct
+Action Executions do not reuse that identity.
 
-## Enabledness in both directions
+Starting Define Programs supplies the view point position and its Create.
+Declaring a local position supplies an empty position for that Action Execution,
+not a separate Particle Operation. Its operations still require its defining
+particle to exist. Atomic creation supplies all required qualities before
+operations use them; constructor Particle Operations have their own effects.
 
-For the reference part of this correspondence, retain the reference's structure,
-not merely its final position. A local reference records its Action Execution
-and declaration. A direct implied reference records the assigned particle and
-quality declaration. Each further child records its preceding reference, the
-particle selected there in the serial execution, and the child declaration. At
-execution it must still observe that selected particle at the preceding
-position; recording the identity does not grant independent access to it.
+## Enabledness and effects
 
-An interface position additionally identifies its action declaration, so two
-actions' equally spelled local interface names are not identified. Direct access
-from that action, or through a directly implied action, requires the assigned
-particle and action quality. Access through a caller's occupied position also
-checks that preceding reference and its selected particle. Private positions
-defined in an Action Statements Block are distinguished by Action Execution
-instead and are not exposed as interface positions.
+A Create's resolved target must exist and be empty, and its particle must not
+yet exist. These are exactly the specified requirements. It makes the particle
+exist and fills that target. The occupied and empty values differ, and the
+particle is fresh, so these changes are genuine.
 
-The observations of a local reference are empty. A direct implied reference
-observes existence of its assigned particle. A further child additionally
-observes its preceding position's occupant and that occupant's existence.
-Required qualities are fixed by the same particle's atomic assignments and the
-source's explicit-constraint restrictions, not by the runtime schedule.
+A Move's resolved source must hold its selected particle and its resolved target
+must exist and be empty. Its selected particle and both positions' defining
+particles must exist. These requirements preserve the specified source and
+destination, rather than accepting whichever occupant happens to be present. The
+endpoints differ because they have different occupancy.
 
-Induction on this reference structure proves that its requirements hold in a new
-state exactly when that state agrees with a valid serial reference state on all
-these observations. In the local case there is no observation. In the implied
-case the only changing observation is existence. In the child case the induction
-hypothesis preserves the preceding reference, and the new occupancy observation
-selects the same particle and hence the same child declaration. Both directions
-are required: an extra observation could conceal an unnecessary dependency, and
-a missing observation could permit a reference to select the wrong particle.
-This lemma concerns reference access; it does not by itself prove the geometric
-legality of Moves or the preservation of retained state.
+Destination quality constraints hold for the selected particle from source
+validation and identity preservation; executing a Move does not change those
+qualities. The Move empties its source and fills the target with that same
+particle. It does not change occupancy of its own child positions.
 
-If the source occurrence can execute on its specified positions and particles,
-its model requirements hold by Position References, Creating Particles, and
-Moving Particles. Each change is genuine: a fresh particle differs from every
-existing particle; an occupied source differs from empty; an empty destination
-differs from its arriving particle.
+Thus the source operation and the model effect have identical endpoint and
+existence enabledness in both directions. To conclude full Move legality, also
+require absence of a circular relationship in its resulting arrangement. That
+additional requirement is not hidden in the occupancy model.
 
-Conversely, suppose the model requirements hold in a source-reachable state.
-Induction along the written reference shows it selects the same final position:
-each intermediate supplies the required particle and explicit qualities. A
-direct implied reference uses its assigned particle without looking it up in the
-caller's position. The final occupancy satisfies the statement's condition. A
-Move's selected particle retains the required destination qualities. Its
-syntactic prefix restriction is unchanged, and the reference-shape invariant
-excludes a cycle or an unrepresented alias between its endpoints. Thus the same
-source occurrence can execute.
+## Ordered position effects
 
-Both executions give the same relative occupancies and particle identities.
-These determine the same spatial relationships, including empty positions
-defined by moved particles. This does not freeze a Move's transitive child
-particles to the list in the reference execution: an independent Create can fill
-a moving position before or after that Move.
+For each actual position, project the serial interpretation to the Creates and
+Moves filling or emptying it. Its setters form a chain in that order. Collection
+includes the preceding setter, and Comparison preserves the reachability of
+these candidate pairs.
 
-To obtain an exact effect, combine the reference observations with the final
-occupancy requirements. For Create include nonexistence of its new particle; for
-Move include both references and both final positions. At each observed
-component require its value in the valid serial state. At every other component
-make no requirement. This preserves exactly the source requirements by the
-reference lemma and the final-position conditions, even when two references
-observe the same component. No arbitrary choice between inconsistent
-observations is needed: the valid serial state supplies their common value.
+Every execution respecting that reachability has the same projection at the
+position. Induction along the projection gives the same required occupant or
+vacancy before each effect. In particular, the proof preserves source-ordered
+visits to a position even if two whole visits could otherwise exchange without
+changing the final vacancy.
 
-Create changes its target from empty to its fresh particle and changes that
-particle's existence from absent to present. Move changes its occupied source to
-empty and its empty destination to the selected particle. The endpoints of an
-enabled Move differ, because one is occupied and the other is empty. Thus every
-changed component was required and genuinely changes value. All other components
-are unchanged. These facts derive exact-effect validity and equality of the
-occupancy transitions; validity is not an additional premise imposed on Define
-programs.
+The initialized setters also supply all required creations. Prove this by
+induction over collection. A position's first setter is its defining particle's
+Create. Each subsequent setter follows that initial setter through the
+position's preceding setters. An occupied source's setter filled it with the
+selected particle: a Create supplies that particle directly, while a Move
+inherits its particle's Create through its own source setter. Thus a Move or
+Vacate also follows the selected particle's Create. Initially supplied positions
+have their stipulated existence instead. No separate collection of these Creates
+is needed.
 
-There is also a state invariant independent of reference accessibility: an
-occupied position's particle exists, and a particle occupies at most one
-position. It holds initially for empty positions. Create preserves it because
-its selected fresh identity does not yet exist, hence cannot already occupy
-another position. Move preserves it by emptying the selected particle's unique
-source while filling the empty destination, without changing existence. This
-does not prove the stronger geometric acyclicity invariant, but supplies the
-single-occupancy premise that the reference-shape argument uses.
+This proof does not use the Vanish calculation or the relationship conditions.
+Those later restrictions cannot invalidate its precedence paths. The same
+induction applies to a destructor's inherited original setter.
 
-## Exchange and graph consequences
+Apply this argument independently to each position. A Move participates in two
+projections but is one occurrence: its source and target changes are its one
+specified effect. No reference chain is added to either projection. The
+preceding induction supplies every required particle Create, so the required
+defining particles also exist in this ordinary scope without Vanishes.
 
-For two consecutive enabled occurrences, suppose neither changes a requirement
-of the other. Both preserve the other's actual references, final occupancy, and
-needed particle existence. The second is therefore enabled first, and the first
-remains enabled afterward. Their disjoint relative changes give the same final
-state. This proves Create/Create, Create/Move, and Move/Move exchange; the
-reference-shape invariant supplies geometric validity at each step.
+Consequently a respecting execution has the correct endpoint requirements and
+the same final occupancies and particle identities as the serial interpretation.
+This componentwise argument does not require its permitted orders to be
+connected by adjacent legal exchanges.
 
-For a conflicting adjacent pair, reversal fails an actual requirement. An
-unperformed Create has not supplied the needed particle or quality-defined
-position. An unperformed occupancy change has not supplied the selected source
-or intermediate particle, or has not emptied the destination. A Move executed
-before an earlier use leaves that use's required position empty. These are
-source failures by the two-direction correspondence, not merely changes in
-compiler bookkeeping.
+## Spatial correspondence
 
-Orient conflicts by the reference execution. Last setters and intervening uses
-have exactly that conflict reachability, by the
-[exact-effect collection argument](../definitions/operation-effects.md#collecting-conflicts-without-comparing-every-pair).
-Particle-existence requirements follow the unique creator; this scope has no
-subsequent removal of existence. The respecting-permutation argument therefore
-proves safety. Separately, the adjacent-cover argument proves necessity of each
-cover edge. Combined with the independent reduction argument, this establishes
-inclusion-minimal safety for this construction and chosen orientation within the
-stated scope.
+The fixed defining-particle associations and the current occupancies determine
+the relative spatial relationships. Moving a defining particle moves its child
+positions, including empty ones, without changing these associations. An
+independent child Create can occur before or after the parent Move; only the
+former order moves the newly created child with it. Both orders have the same
+resulting relative arrangement.
 
-In particular, a directly implied Create can exchange with a Move of its
-defining particle. A Create whose written reference goes through that Move's
-destination cannot. Flattening both references to the same spatial name would
-lose the correspondence proved here. Saved selections and retained destructor
-state are handled by the [retained-state proof](retained-state-proof.md); they
-cannot be added to this result just by calling their records occupancy
-components.
+The relationship-period characterization checks circularity throughout the
+execution, not merely at its end. Combining that result with ordered position
+effects gives ordinary Create/Move safety without requiring intermediate
+occupancy or an ancestor-wide lifetime.
 
-## Formalized correspondence
+## Mathematical and formalization boundary
 
-`particle_requirements.lean` checks the structured-reference observation lemma,
-both directions of operation enabledness, genuine effect changes, equality of
-the occupancy transitions, and preservation of existence and single occupancy.
-It also represents a selected vacancy separately from a written Vacate target:
-the former has no invented reference chain, while the latter retains its
-reference requirements. Neither removes particle existence as its vacancy
-effect. Those distinctions use the separate destruction argument, not an
-extension of ordinary Move geometry by assumption.
+The generic exact-effect collection and Comparison lemmas apply to these
+occupancy and existence components. Their graph minimality results concern
+ordinary precedence. They do not prove necessity of edges in the presence of
+alternative relationship conditions, or minimality of the representation of
+those conditions.
 
-`particle_scheduling.lean` checks execution correspondence by induction over
-schedules and applies the incremental calculation's scheduling and
-edge-necessity theorems to these operations. It does not take exact-effect
-validity as a source-specific premise. Valid source reference permissions and
-geometric accessibility are derived by the English arguments above; they are not
-checked by parsing or validating Define source in these Lean modules.
+A structured-reference model that rechecks written intermediates at execution
+time does not represent this construction. Formal source correspondence must use
+serial resolution followed by these identified effects, and separately verify
+the relationship conditions.

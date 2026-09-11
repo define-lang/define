@@ -5,25 +5,23 @@
 This derives ordering requirements from the specification, with Vacate and
 Vanish treated separately.
 
-The goal is to derive ordering from the semantics before choosing a graph
-construction. A candidate construction must prove safety and necessity before
-its transitive reduction can be called a maximum-concurrency graph. Graph
-minimality alone proves neither property.
+Safety and maximum concurrency concern the execution orders a construction
+permits. Transitive minimality of its ordinary graph alone proves neither
+property, especially when relationship conditions also constrain those orders.
 
-The [operation requirements](../definitions/operation-requirements.md) now
-separate direct implied access, explicit reference occupancy, particle
-existence, and vacancy. The
-[requirement construction](requirement-construction.md) applies those
-distinctions to ordinary operations, simultaneous selection, and retained
+The [operation requirements](../definitions/operation-requirements.md) separate
+serial reference resolution, endpoint occupancy, particle existence, and
+vacancy. The [requirement construction](requirement-construction.md) applies
+those distinctions to ordinary operations, simultaneous selection, and retained
 destructor state, with their semantic correspondence developed in the
 [scheduling proof](requirement-scheduling-proof.md).
 
 ## Consequences that do not depend on a construction
 
-1. A Create requires its target empty and each intermediate position reference
-   occupied. Its new particle is not interchangeable with an earlier particle in
-   that position. The proof must preserve the particles selected by source
-   operations, not merely the final set of occupied names.
+1. A Create requires its identified target to exist and be empty. Written
+   intermediate positions identify that target in the serial interpretation;
+   they need not retain that occupancy during execution. Its new particle is not
+   interchangeable with an earlier particle at the same position.
 2. A Move requires a particle at its source and an empty destination. It changes
    the spatial positions of its defined positions and their particles
    transitively, including empty positions. It is not a deferred destruction or
@@ -36,18 +34,19 @@ destructor state, with their semantic correspondence developed in the
    destructors after that vacancy. Reuse of the vacated position does not access
    the retained original particle. The vacancy must still follow ordinary
    operations whose required occupancy it would invalidate.
-4. Actual references and directly moved particles determine lifetime
-   requirements. Transitive movement alone does not prolong lifetime after
-   Vacation. Calls made by a destructor are ordinary actions and contribute
-   their own requirements.
+4. Identified endpoints and selected particles determine lifetime requirements.
+   Neither a written intermediate nor transitive movement alone prolongs
+   lifetime. Actions triggered by a destructor contribute their own endpoint and
+   particle requirements.
 5. Original particles are shared between destructors. Availability after vacancy
    does not make two conflicting Moves independent. A model that gives each
    destructor a separate copy of its required particle changes Define's
    semantics even if both copies are later discarded.
 
-These statements follow from Position References, Moving Particles, Simultaneous
-Transitive Destruction, and Destructors and Destruction Ordering. None uses the
-current graph's reachability as evidence that an ordering is necessary.
+These statements follow from Identifying Particles and Positions, Moving
+Particles, Simultaneous Transitive Destruction, and Processing Destructor
+Operations. None uses graph reachability as evidence that an ordering is
+necessary.
 
 ## An ordering choice remains even when every particle survives
 
@@ -95,10 +94,11 @@ but the invalid interleaving respects both requirements. The ordinary Creates
 and vacancies can be placed in a common prefix of all three schedules. Edges
 involving that prefix cannot distinguish their subsequent interleavings.
 
-Thus the graph must choose one of the two safe orientations. Either resulting
-four-operation chain is transitively minimal and cannot be weakened while
-preserving safety: reversing either destructor's adjacent Moves attempts to
-return a particle from an empty local position, and reversing the adjacent
+Thus a pure precedence graph must choose one of the two safe orientations. A
+representation with alternative conditions need not make that choice. Either
+resulting four-operation chain is transitively minimal and cannot be weakened
+while preserving safety: reversing either destructor's adjacent Moves attempts
+to return a particle from an empty local position, and reversing the adjacent
 return and next departure attempts to depart from an empty `/marker`. Removing
 any chain edge admits the corresponding adjacent reversal. Neither contains all
 the safe executions admitted by the other. This is a limitation of precedence

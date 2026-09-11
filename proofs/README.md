@@ -15,6 +15,10 @@ situations. The proofs are also helpful to discover counter-examples.
 
 Rigorous analysis and verification by more experienced humans would be welcome.
 
+The Operation Graph work is currently an incomplete research checkpoint; see its
+[work status](operation_graph/README.md#work-status--september-11-2026) for the
+unfinished correspondence, formalization, and runtime-semantics questions.
+
 The language specification is authoritative for Define terminology. Mathematical
 objects use standard mathematical terms where applicable.
 

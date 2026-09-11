@@ -1,82 +1,109 @@
 # Operation Graph Proofs
 
-These proofs investigate whether Define's
-[Particle Operation Dependency Graph](../../define/spec/spec.md#the-particle-operation-dependency-graph)
-preserves particle-operation requirements and provides a transitively minimal
-graph for safe concurrency.
+This directory contains graph proofs and unfinished investigations of ordinary
+occupancy dependencies, particle lifetime, and changing parent relationships.
 
-## Current proof
+## Work status — September 11, 2026
 
-The English argument derives position and particle requirements from the
-specification, distinguishes vacancy from retained destructor state, and proves
-schedule safety and necessity of the remaining dependencies. It does not impose
-whole-action barriers or keep every ancestor alive for a descendant operation.
+This is an incomplete research checkpoint, not a completed proof of the current
+[Particle Operation Dependency Graph](../../define/spec/spec.md#the-particle-operation-dependency-graph).
 
-Lean checks the exact-effect collection, incremental Comparison calculation, and
-graph and scheduling results used by that argument. The rules themselves produce
-transitive minimality; no later minimization algorithm is applied. Lean also
-checks the structured-reference and occupancy transitions in
-[`particle_requirements.lean`](definitions/particle_requirements.lean), the
-shared-state components in
-[`retained_requirements.lean`](definitions/retained_requirements.lean), and
-their execution correspondence in
-[`particle_scheduling.lean`](theorems/particle_scheduling.lean).
+- The English arguments were being revised for execution using resolved particle
+  and position identities, including child operations independent of parent
+  Moves and alternative orders for changing parent relationships. The proposed
+  spec edits were subsequently reverted. Several arguments and correspondence
+  tables still call those proposed rules "the specification" or name sections
+  that are not in the current spec. Those claims have not been reconciled and
+  must not be treated as established current-spec correspondence.
+- The Lean formalizations have not been updated to match that English redesign.
+  Their checked mathematical results do not establish the revised source
+  correspondence, relationship constraints, or complete scheduling claims.
+- The finite relationship-completion search is a research characterization and
+  small-case oracle, not an accepted compiler or runtime algorithm. An efficient
+  incremental construction without general ordering search remains unfinished.
+  Minimality of the combined occupancy, lifetime, and relationship constraints
+  also remains unproved.
+- The action-boundary argument describes composition over a finite resolved
+  expansion. It does not establish a compact independently compiled interface
+  preserving all the information needed by callers and caller-known destructors.
+- Work most recently shifted to whether runtime particle rearrangement is needed
+  at all when symbolic reads and writes address already-resolved particles.
+  Research-repo experiments support symbolic-access and lifetime dependencies
+  without whole-action barriers under explicit assumptions. That conditional
+  result is not formalized here and does not yet prove erasure correct for the
+  whole language. Symbolic effects during destruction, including temporary
+  changes restored before a destructor finishes, still need semantic decisions
+  and verification.
 
-[`comparison.lean`](theorems/comparison.lean) checks the spec's ordered scan,
-including optional candidate pruning. Its result is connected to the incremental
-occupancy calculation and to the completed Vanish dependencies.
-
-The [Vanish extension](theorems/vanishment-proof.md) derives lifetime candidates
-from actual references and directly moved particles, with no new ordering among
-Creates, Moves, or Vacates. Its lifetime components are checked in
-`vanishment_requirements.lean`. `vanishment_graph.lean` checks that adding the
-Vanishes preserves existing reachability, acyclicity, and transitive minimality.
-
-The derivation of those representations from valid source, geometric
-accessibility, and completion of destruction is an English argument. This is not
-a Lean-checked compiler or a fully formalized source-language semantics.
-
-Maximum safe concurrency here means that removing a remaining dependency would
-admit an invalid execution within the chosen dependency orientation. It does not
-mean that one graph admits every possible safe serial ordering of destructors.
+Before resuming the scheduling redesign, determine which runtime semantics need
+to be proved: observable particle rearrangements, symbolic execution with those
+rearrangements erased, or both. Then reconcile the English arguments with the
+chosen authoritative rules before completing the Lean correspondence. No change
+to the spec is implied by this checkpoint.
 
 ## Reading order
 
-The [source-correspondence theorem](theorems/source-correspondence.md) connects
-the spec's individual phases to the results below and states their combined
-scope.
+Start with [source correspondence](theorems/source-correspondence.md), which
+connects the specification's phases to the arguments and states their scope.
 
 1. [Conceptual definitions](definitions/definitions.md#conceptual-meaning-of-particles-positions-and-operations)
-   and [operation requirements](definitions/operation-requirements.md): what
-   particles, positions, references, and operations mean.
-2. [Reference shape](theorems/reference-shape-proof.md) and
-   [ordinary correspondence](theorems/ordinary-requirements-proof.md): how
-   actual references and relative occupancy preserve Create and Move semantics.
-3. [Vacancy and retained state](theorems/retained-state-proof.md): how
-   simultaneous selection, replacements, and shared destructor operations
-   interact without imposing a destruction-group barrier.
-4. [Graph construction](theorems/requirement-construction.md): collection, local
-   removal of redundant candidates, and completion of destruction.
-5. [Scheduling proof](theorems/requirement-scheduling-proof.md): safety, edge
-   necessity, and unbounded execution.
-6. [Vanish extension](theorems/vanishment-proof.md): lifetime collection, source
-   correspondence, and graph safety and necessity. Its separate discussion of
-   optional implementation fusion is not part of the specified construction.
+   and [operation requirements](definitions/operation-requirements.md)
+   distinguish particles, relative positions, serial name resolution, and
+   runtime effects.
+2. [Ordinary correspondence](theorems/ordinary-requirements-proof.md) explains
+   endpoint occupancy and why a child-position operation need not wait for a
+   parent Move. [Reference shape](theorems/reference-shape-proof.md) separates
+   these requirements from circular parent relationships.
+3. [Vacancy and retained state](theorems/retained-state-proof.md) covers
+   simultaneous selection, shared destructor operations, replacement, and the
+   end of occupancy preservation.
+4. [Action boundaries](theorems/action-boundary-correspondence.md) distinguishes
+   supplied particle identities from interface occupancy and identifies what
+   composition must preserve.
+5. [Graph construction](theorems/requirement-construction.md) proves the setter
+   and Comparison invariants, ordinary reachability, and ordinary transitive
+   minimality.
+6. [Particle lifetime](theorems/vanishment-proof.md) derives Vanish candidates
+   and proves independent insertion of Vanishes.
+7. [Relationship conditions](theorems/relationship-ordering.md) characterizes
+   legal arrangements using intervals and gives an exact finite completion
+   search, including safe ways to divide that search into independent parts.
+8. [Scheduling](theorems/requirement-scheduling-proof.md) combines occupancy,
+   lifetime, and relationship legality without assuming that every safe order
+   can be reached from another by legal adjacent exchanges.
 
-[Ordering derivation](theorems/ordering-derivation.md) explains why a serial
-destructor-order choice is needed, and why a direct implied reference can allow
-more concurrency than a written reference through the caller's position.
-[Exact effects](definitions/operation-effects.md) presents the mathematical
-exchange and graph results reused in the scheduling proof.
-[Established mathematical results](theorems/external-results.md) gives the exact
-correspondences, external citations, and limits of the library results reused
-here.
+[Ordering derivation](theorems/ordering-derivation.md) explains the permitted
+destructor-order choice and why an ordinary precedence graph cannot represent
+every alternative ordering. [Exact effects](definitions/operation-effects.md)
+gives the generic component exchange lemmas.
+[Established mathematical results](theorems/external-results.md) records exact
+library correspondences and their hypotheses.
+
+## Distinctions between the results
+
+Ordinary dependency acyclicity and acyclicity of particle relationships are
+different properties. Likewise, ordinary transitive minimality does not prove
+that an edge or condition is necessary in the combined representation.
+Relationship conditions can jointly imply additional precedence.
+
+Maximum concurrency concerns all permitted complete orders of the same
+identified occurrences, after fixing the destructor ordering allowed by the
+specification. It is not merely the inability to remove an edge from one DAG.
+The finite completion theorem does not imply termination of unbounded execution
+or a runtime fairness guarantee.
+
+The generic Lean Comparison and graph theorems verify their mathematical
+calculations. Their application to source requires the stated correspondence. In
+particular, a structured-reference model that checks written intermediate
+occupancy at execution time has different requirements from the specification's
+identified-endpoint execution. Verification of that model cannot substitute for
+formalizing the latter and its relationship conditions.
 
 ## Directory guide
 
 - `definitions/` contains conceptual definitions and mathematical models.
 - `theorems/` contains English arguments and Lean proofs.
 - `witnesses/` contains the checked destructor-order counterexample. Examples
-  support the general arguments; they do not replace them.
+  support the arguments; they do not replace them.
 
 See [Building proofs](../README.md#building-proofs) for the Lean build command.

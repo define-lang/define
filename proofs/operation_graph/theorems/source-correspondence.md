@@ -1,153 +1,138 @@
-# Source Correspondence of the Specified Graph
+# Source Correspondence of Particle Operation Scheduling
 
 ## Statement and scope
 
-Fix a finite valid serial execution as used by Particle Operation Recency,
-including a permitted ordering of destructors. Keep its individual Particle
-Operation occurrences, Action Executions, assigned qualities, and original
-particles selected by destruction. Apply the current Particle Operation
-Dependency Graph rules, excluding the Action Parent Rule.
+Fix a finite valid serial interpretation, including a permitted order of sharing
+destructor operations. Retain its particular particles, positions, Action
+Executions, and operation occurrences. Exclude the Action Parent Rule.
 
-The resulting graph is acyclic and transitively minimal. Every schedule
-respecting it, starting from the reference execution's initial state, executes
-those same Particle Operations with valid references, occupancy, and particle
-existence. Removing any edge admits an execution that violates one of those
-requirements. Thus the construction provides maximum safe concurrency within its
-chosen dependency orientation, not all safe orientations of destructor
-operations in one graph.
+Ordinary dependencies preserve the ordered effects on those positions and supply
+required Creates. Vanish dependencies preserve required particle existence.
+Relationship conditions exclude exactly the circular arrangements among orders
+respecting those dependencies. The completion search accepts exactly prefixes
+extensible to such a complete order.
 
-This is a statement about Particle Operations contributed by valid source, not a
-proof of a parser, compiler implementation, value semantics, or external-call
-semantics. The correspondence to source is proved below in English. The linked
-Lean results check the mathematical representations and calculations; they do
-not encode the whole source language.
+These claims concern the specified Particle Operations, not unspecified values
+or external calls. They do not assert that ordinary edges and relationship
+conditions together form an irredundant representation. Ordinary transitive
+minimality is a separate graph-theoretic result.
 
-## From source to the state observations
+## From source names to identified operations
 
-The [ordinary correspondence](ordinary-requirements-proof.md) derives the
-observations of each written reference by induction on its chain. Local
-positions are identified by declaration and Action Execution. Positions defined
-by qualities are identified by their defining particle and declaration;
-interface positions additionally distinguish the action declaration. These are
-relative positions, not fixed spatial names. Each written intermediate requires
-its actual selected particle. Direct implied and interface access requires the
-particle supplying the declaration, without a lookup through the caller's
-earlier reference. Assignment Semantics and Atomic Creation supply the fixed
-qualities of those particles.
+The [ordinary correspondence](ordinary-requirements-proof.md) resolves each
+Position Reference in the serial interpretation. Induction along the chain uses
+its validated occupied intermediate positions and the selected particles'
+assigned qualities to identify the final position.
 
-Create additionally requires an empty target and introduces a fresh identity.
-Move requires its selected particle at its source and an empty target, and
-changes those two relative occupancies together. Its transitive spatial effect
-is obtained from the unchanged relationships of particles and positions it
-defines. The [reference-shape proof](reference-shape-proof.md) derives geometric
-validity from the source naming restrictions and the prohibition on moving a
-particle into a position it defines; it is not a hypothesis on arbitrary
-occupancy maps. This includes private local work occurring before the creation
-of the particle assigned its action, without using the Action Parent Rule.
+Positions retain their defining particles through Moves. Replacements supply
+different positions. Interface positions belong to the assigned action and
+persist across executions; positions declared in an Action Statements Block
+distinguish those executions. Both require the action's parent particle to
+exist.
 
-For destruction, [shared retained state](retained-state-proof.md) distinguishes
-the selected ordinary vacancy from the original state still available to
-destructors. The same original positions and particles are shared by all
-destructors, including their subsequent changes. Each implicit child Vacate
-keeps its selected particle and position without evaluating a new ancestor
-reference. A written target retains its actual reference requirements.
-Replacements do not identify their positions' occupancy with retained original
-occupancy. Further destruction of temporary particles applies the same argument
-to those new particles, not a second independent copy of an existing original.
+The [action-boundary correspondence](action-boundary-correspondence.md) applies
+these bindings to contracted chains. A position defined by a particle supplied
+through an interface requires that supplied particle, not the interface's
+defining particle merely because the serial reference passed through it.
 
-Consequently an enabled source occurrence has the stated observations and
-changes. Conversely, when those observations hold in a reachable represented
-state, induction along the actual reference selects the required position and
-particle, the endpoint requirements enable the operation, and the geometric
-invariant makes its Move legal. Both executions give the same relevant relative
-occupancy and spatial relationships. For saved vacancies, the observation is the
-saved selection, not an invented present-day lookup. This is the two-direction
-correspondence used by scheduling, rather than only a mapping from source
-executions into a potentially more permissive model.
+The specification makes execution act on these identified endpoints. It does not
+repeat reference traversal in a reordered arrangement. Thus the chain induction
+establishes identity, not a runtime requirement that every written intermediate
+retain its serial occupancy.
 
-## From the spec's phases to the graph calculation
+A Create fills its identified empty position with a fresh particle. A Move
+empties its identified source and fills its identified target with the same
+selected particle. Its qualities and its own defined positions do not change.
+Atomic Creation supplies those qualities; constructor operations remain separate
+effects. Destination constraints concern the selected particle and therefore
+remain satisfied when its operations are reordered.
 
-The correspondence for each phase is as follows. These facts are proved without
-assuming safety or minimality of the resulting graph.
+For destruction, the [retained-state argument](retained-state-proof.md) keeps
+the original selection distinct from current shared occupancy. Every Vacate has
+its own selected particle and position. Sharing destructors use the same
+changing originals, not copies or replacements. Nested destruction applies the
+same rules to its selected particles, including temporary particles.
 
-| Spec phase                        | Correspondence                                                                                                                                                                                                                                                                |
-| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Position Setters and Readers      | A setter supplies the current occupancy. Readers are precisely the actual intermediate-position requirements since that setter. A child position's initial setter is its defining particle's Create; an initially empty local position has no such requirement.               |
-| Collection                        | Target setters provide empty occupancy; intermediate setters provide the selected occupied state; source and Vacate readers protect uses of occupancy being ended. If readers exist, their paths already include the setter. Parent Creates provide the referenced qualities. |
-| Collection omissions              | A collected reader covers its setter. A different setter or reader of a child position covers its defining particle's Create. Following any chain of omissions terminates at an unremoved candidate because every link follows reachability in the preceding acyclic graph.   |
-| Comparison                        | The ordered scan retains an antichain covering every candidate. Its result is exactly the candidates not reached from another candidate, using only already calculated dependencies.                                                                                          |
-| Recording the Operation's Effects | Setters and readers advance with the actual fills, emptyings, and intermediate uses. Optional reader removal retains a path to every removed reader, including readers that were collected but not kept as direct dependencies.                                               |
-| Processing Destructor Operations  | Shared original state keeps the preceding setters and readers when the selected Vacates are processed. Actual destructor operations update that state using the same rules, without a Vacate barrier or independent copies per destructor.                                    |
-| Recording Vanish Information      | Named positions and actions contribute exactly their parent particles as lifetime requirements. The direct-Move chain lets the most recent direct Move cover all earlier ones. Optional pruning preserves candidate closure.                                                  |
-| Completing Vanishes               | Comparison covers the recorded candidates, selected Vacate, and most recent direct Move. Vanishes add no setter, reader, or prerequisite for another operation.                                                                                                               |
+## Correspondence of the specified phases
 
-The [construction proof](requirement-construction.md) establishes the first six
-rows, including the invariants needed by the omissions and by retained state.
-The [Vanish proof](vanishment-proof.md) establishes the final two. Equal-recency
-Vacates have distinct target positions and do not introduce references to one
-another's selected positions, so processing one cannot change another's
-candidates. Their enumeration supplies no dependency.
+| Spec calculation                  | Mathematical correspondence                                                                                                    |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Position Setters                  | The last operation affecting each actual position, initialized with its defining particle's Create when present.               |
+| Collection                        | Precedence between consecutive effects on each endpoint position.                                                              |
+| Comparison                        | The maximal candidates under already-calculated prerequisite reachability.                                                     |
+| Recording the Operation's Effects | Advance exactly the affected endpoint setters.                                                                                 |
+| Processing Destructor Operations  | Inherit original setters and update shared destruction state, without a selected-Vacate barrier.                               |
+| Recording Vanish Information      | Record every actual defining-particle or selected-particle requirement, not particles used only in serial name resolution.     |
+| Completing Vanishes               | Keep exactly the lifetime candidates that can be last in a permitted non-Vanish order.                                         |
+| Collecting Parent Relationships   | Merge successive direct associations with the same parent; end preservation after Vacate and the last direct destruction Move. |
+| Relationship Conditions           | Exclude simultaneous presence of all relationships of any simple directed cycle.                                               |
+| Choosing Among Permitted Orders   | Search jointly compatible alternatives, including any already executed prefix.                                                 |
 
-The complete occupancy candidates have exactly the oriented conflict
-reachability of the corresponding effects: each collected edge protects a
-genuine observation, and every earlier conflict is reached through successive
-setters and readers. Initial child-position availability is represented by
-particle existence, not by a fictitious empty-to-empty occupancy change at
-Create. Collection omissions and Comparison preserve that reachability. The
-proof characterizes the graph's result; it never applies a generic transitive
-reduction algorithm to construct it.
+The [construction proof](requirement-construction.md) proves the setter,
+candidate, and Comparison invariants without assuming schedule safety.
+Equal-recency Vacates affect distinct selected positions and cannot collect one
+another through a reference traversal. Their enumeration adds no precedence.
 
-## Discharging the scheduling hypotheses
+The [Vanish proof](vanishment-proof.md) derives lifetime completeness and
+independent insertion. The [relationship proof](relationship-ordering.md)
+derives cycle exclusion from operation effects, including the occupied result of
+a final destructor Move before preservation ends.
 
-The [scheduling proof](requirement-scheduling-proof.md) constructs the reference
-effect execution from these source observations. Every changed component has its
-required preceding value and genuinely changes: Create supplies a fresh
-particle, Move exchanges occupied and empty endpoints, and Vacate makes its
-selected ordinary occupancy empty. Shared-state components inherit those same
-changes and preceding uses, rather than introducing an artificial readiness
-condition. These facts discharge exact-effect validity and enabledness; they are
-not extra assumptions about Define.
+## Safety and equality of logical results
 
-Conflict reachability is oriented by the serial execution. Therefore the serial
-schedule respects it, and incomparable operations have independent effects.
-Adjacent exchanges preserve the actual source requirements and spatial
-relationships by the two-direction correspondence. Connectivity of finite linear
-extensions then proves safety for every respecting schedule. This proof does not
-assume that any graph edge is necessary.
+For each position, ordinary dependencies preserve its sequence of occupancy
+visits. Induction over that sequence supplies each operation's required endpoint
+values. Initial setters and successive occupied-source setters supply every
+required Create. Vanish cannot precede an operation requiring its particle or a
+position defined by that particle.
 
-Separately, Comparison produces transitive minimality: an alternative path for a
-kept edge would begin with another kept candidate reaching its target, which
-Comparison excludes. This argument does not assume source completeness or
-safety.
+Each particle's direct Moves also retain their order. It therefore has at most
+one current position. A destruction selection does not add another incoming
+association, and ending occupancy preservation removes the current association
+rather than restoring the selected position.
 
-For semantic necessity, make the endpoints of a cover edge adjacent in a
-respecting schedule and reverse them. The genuine changed value no longer
-supplies the subsequent reference or occupancy requirement, or the earlier use
-loses the occupancy it needed. The scheduling proof checks these obstructions
-for ordinary and shared destruction state, so the failure is a source failure,
-not just disagreement with mathematical bookkeeping. This supplies the necessity
-hypothesis independently of graph minimality.
+These facts establish endpoint and existence enabledness in both directions: the
+identified operation is enabled exactly when its specified endpoint values and
+required particles are available, subject also to relationship legality. The
+relationship-period theorem supplies that additional condition at every
+operation effect. It does not infer geometric legality from source spelling or
+from ordinary dependency acyclicity.
 
-## Inserting Vanishes
+The final projection at every position equals the serial projection; particle
+identities and assigned qualities also agree. Ending preservation removes the
+same selected incoming occupancies once their uses finish. The resulting
+relative arrangement is therefore the same. This is a componentwise argument,
+not an assumption that all permitted schedules are connected by legal adjacent
+swaps.
 
-The Vanish correspondence derives the complete set of required particles from
-actual references, directly moved particles, and selected Vacates. These
-identities are preserved by the occupancy proof. Moving a parent does not add an
-existence requirement for an otherwise unneeded child. Inserting one Vanish
-therefore cannot erase another operation's reference requirement to justify
-itself. Several Vanishes can be inserted independently after their required
-operations.
+## Exactness of the permitted orders
 
-The spec's recorded set has the same dependency closure as that complete set,
-including after optional pruning and replacement of earlier direct Moves by the
-most recent one. Final Comparison preserves that closure. An existing edge
-cannot acquire an alternative path through a Vanish, and the retained Vanish
-candidates are an antichain. The extended graph is consequently acyclic and
-transitively minimal. Every new edge is necessary: removing it permits Vanish
-before a required operation or before its Vacate. Removing an old edge still
-permits the original invalid execution with Vanishes delayed.
+Conversely, an execution of these same identified occurrences that preserves the
+specified occupancy visits, existence requirements, and acyclic arrangements
+respects every setter precedence and lifetime requirement. Comparison preserves
+their reachability. Its acyclic arrangements satisfy every relationship
+condition by the interval characterization.
 
-This completes the stated source theorem. No combination of Vacate and Vanish is
-part of this construction. For unbounded executions, the finite-prefix argument
-in the scheduling proof proves safety of each finite execution prefix; it does
-not promise termination or finish an infinite candidate collection.
+Thus the construction admits exactly those complete orders. A prefix belongs to
+one of them precisely when the finite alternative search succeeds. This
+equivalence permits alternative safe orientations rather than choosing one
+during compilation.
+
+This conclusion does not establish semantic necessity of each separately drawn
+edge or each collected condition. Multiple relationship conditions can jointly
+imply another condition or an ordinary precedence. The action-boundary theorem
+establishes finite composition when each contribution preserves the specified
+construction-state transformation. It does not justify substituting smaller
+summaries that discard part of that transformation, or extending the finite
+search to an unbounded future.
+
+## Formalization boundary
+
+The generic Lean Comparison and terminal-extension theorems apply to the
+ordinary graph calculation when its candidates have the correspondence proved
+above. A formal model that rechecks written intermediate occupancy instead has
+different requirements and cannot discharge this source theorem.
+
+Full formal correspondence requires serial identity resolution, identified
+effects, shared destruction state, and relationship conditions in the same
+model. Graph-theoretic verification alone does not prove those source facts.

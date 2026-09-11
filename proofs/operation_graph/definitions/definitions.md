@@ -4,7 +4,7 @@
 
 The conceptual definitions apply throughout the operation graph proofs. The
 [requirement construction](../theorems/requirement-construction.md) preserves
-actual references, relative occupancy, and particle existence.
+identified positions, relative occupancy, and particle existence.
 
 The relevant specification sections are:
 
@@ -17,8 +17,8 @@ The relevant specification sections are:
 ## Conceptual meaning of particles, positions, and operations
 
 The mathematical representations below must preserve the following conceptual
-meaning. This is the interpretation of the specification used by these proofs,
-not an additional set of dependency rules.
+meaning, as specified by Identifying Particles and Positions and the Particle
+Operation effects. It is not an additional set of dependency rules.
 
 A particle is a concrete thing that exists in the program's universe. It has
 qualities, which can include defining positions and actions.
@@ -27,16 +27,12 @@ A position is a location in space that may be empty or occupied by one particle.
 A particle can define other positions relative to itself, and those positions
 may be occupied by other particles.
 
-Replacing a particle does not by itself make its positions different spatial
-locations. If a particle at `p` defines the position quality `/c`, and a
-replacement particle at `p` defines that same quality, its `p::/c` is the same
-spatial position. However, the specification's Simultaneous Transitive
-Destruction rules distinguish the original particles from replacements. Once the
-original parent's Vacate empties `p`, its old child no longer occupies the
-replacement's `p::/c`. Unfinished destruction work continues to act on the
-original particles and positions, not on replacements. A model must therefore
-distinguish occupancy available to subsequent operations from particles and
-positions retained for unfinished destruction work.
+A position's identity includes the particle defining it. A replacement particle
+has its own defined positions, even when references to them have the same
+spelling and spatial location as references to the originals. Unfinished
+destruction work continues to act on the original particles and positions, not
+on replacements. A model must distinguish occupancy available to subsequent
+operations from occupancy preserved for unfinished destruction work.
 
 The Particle Operations have these conceptual effects:
 
@@ -54,9 +50,10 @@ The Particle Operations have these conceptual effects:
   later-executing Vacate does not select a replacement particle. The original
   particles remain available to destructors as though in their positions
   immediately before destruction, including movements performed by those
-  destructors. Actual destruction must respect the last interactions specified
-  by Destructors and Destruction Ordering; it is not another interpretation of
-  the vacancy vertex.
+  destructors. Occupancy preservation ends after both the Vacate and the last
+  direct Move requiring that occupancy. This is distinct from Vanishment:
+  operations on the particle's own defined positions can require its existence
+  after its incoming occupancy ends.
 - **Vanish:** end the selected particle's existence after its Vacate and after
   the interactions that still require it. Vanish is separate from making its
   former position available for reuse. Its dependencies are not supplied by the
@@ -65,21 +62,21 @@ The Particle Operations have these conceptual effects:
 Position names and references describe these spatial relationships; they are not
 the relationships themselves. When a particle moves from `a` to `b`, the change
 from a child reference `a::c` to `b::c` represents movement, not merely a
-different spelling for an unchanged location. Preserving a particle's identity
-does not make it independently addressable at any position. In particular, a
-written Destroy Particle Statement at `b::c` cannot execute while `b` is empty.
-An additional child Vacate selected by simultaneous destruction has no newly
-written `b::c` reference: it selects the original position defined by its parent
-particle, which can itself move. These two kinds of occurrence must not be
-identified merely because a displayed graph gives them the same full name.
+different spelling for an unchanged location. The serial interpretation resolves
+each written reference to the particular position on which the operation acts.
+Execution does not retraverse the written names. Consequently an operation
+written at `b::c` can act on the identified child position before its defining
+particle moves to `b`, provided the operation's actual requirements and the
+relationship conditions hold. This applies to written operations as well as
+implicit transitive Vacates; the latter have no written reference to resolve.
 
 ### Correspondence required of every proof model
 
 The [operation-requirement derivation](operation-requirements.md) distinguishes
-the requirements of actual position references from particle identity and
-existence requirements. In particular, preserving a direct implied-position
-reference does not require preserving the defining particle's spatial location
-in the serial reference execution.
+serial reference resolution from runtime occupancy and existence requirements.
+Using an identified position does not require preserving its defining particle's
+spatial location in the serial interpretation, whether the written reference was
+local, implied, interface, or chained.
 
 These checks apply to existing English arguments and Lean formalizations as well
 as new ones:
@@ -92,21 +89,19 @@ as new ones:
   that records only occupied positions may omit empty positions only where that
   omission does not affect the property being proved.
 - A reordered execution must execute the same Particle Operations with their
-  required positions and occupancy. Do not silently retarget an operation or add
-  an independent binding to a particle's identity to make a schedule work. For
-  pending destruction work, use the specification's explicit preservation of the
-  original particles and positions; do not look up replacements through their
-  reused names. This exception does not waive a written reference's requirements
-  at a Move destination. An implicit child selection, like a direct implied
-  reference, does not acquire that written reference from its displayed name.
+  identified positions and required occupancy. Derive the identities from the
+  serial interpretation and Action Contracts; do not retarget an operation to
+  whichever particle or position happens to be reachable at execution time. For
+  pending destruction work, preserve the originals and their shared changes; do
+  not look up replacements through their reused names.
 - Distinguish a completed simultaneous destruction from each individual
   destruction. A result about permuting only the selected Vacates does not
   establish that those Vacates may also be reordered across Creates or Moves.
 - Distinguish a Vacate's vacancy from the end of the original particle's
-  existence. A destructor's last-use requirement constrains the latter; it does
-  not by itself impose an edge to or from the vacancy vertex. Destructors that
-  interact with the same original particle share its changing state, not
-  independent copies of the state before destruction.
+  existence. Distinguish a last use of incoming occupancy from a last use of the
+  particle's defined positions. Destructors that interact with the same original
+  particle share its changing state, not independent copies of the state before
+  destruction.
 - Separate graph facts from execution facts. Acyclicity, transitive minimality,
   and reachability characterization do not by themselves establish that the
   allowed executions preserve these concepts or provide maximum safe
@@ -129,9 +124,10 @@ natural-number rank for induction; it adds no dependency between them. The
 [construction proof](../theorems/requirement-construction.md) shows why
 processing one such Vacate cannot change another's candidates.
 
-A Position Reference preserves the particle supplying each quality it accesses.
-Local positions are distinguished by their declaration and Action Execution;
-positions defined by a particle are distinguished by that particle and quality.
+A Position Reference identifies its final position using the serial state.
+Positions declared in an Action Statements Block distinguish their declaration
+and Action Execution; interface positions instead persist on the assigned
+action. Positions defined by a particle distinguish that particle and quality.
 These mathematical identifiers describe positions, not a naming mechanism that
 replaces spatial movement.
 
@@ -148,10 +144,13 @@ by reachability. A cover pair in a strict partial order has no intermediate
 element. The proofs use these standard mathematical meanings, independently of
 any claim that the relation captures all Define requirements.
 
-A schedule is a linear extension of the required precedence relation. The
-finite-schedule lemmas represent it as a list of distinct occurrences and use
-adjacent exchanges of incomparable elements. Unbounded execution is checked
-through finite prefixes; no theorem asserts termination or fairness.
+A schedule lists distinct occurrences in execution order. It must extend the
+ordinary precedence relation and satisfy the relationship conditions. Different
+permitted schedules need not be connected by adjacent exchanges through
+permitted schedules. The finite linear-extension lemmas apply to the ordinary
+precedence relation, not by themselves to the additional relationship
+conditions. Unbounded execution is checked through finite prefixes; no theorem
+asserts termination or fairness.
 
 The state models are products of occupancy and existence observations. An effect
 is a partial state transformation: its requirements determine when it is

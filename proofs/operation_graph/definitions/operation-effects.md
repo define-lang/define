@@ -2,10 +2,10 @@
 
 ## Scope
 
-This mathematical model is an interface between Define's semantics and a graph
-construction. The exchange and noncommutation results below are proved for the
-model. They are not themselves source-to-graph theorems: the final section lists
-the correspondence obligations addressed by the English source arguments.
+This mathematical model supplies generic occupancy and graph lemmas. Its
+exchange and noncommutation results do not include Define's relationship
+conditions: componentwise enabledness alone cannot exclude a circular particle
+arrangement. The final section states the scope of its source correspondence.
 
 Fix a set of state components `K` and a value type `V`. A state assigns a value
 to every component. An effect specifies a partial assignment `requires` and a
@@ -53,12 +53,12 @@ Thus the reversed pair cannot be enabled. The proof depends on genuine changes
 and exact requirements. It cannot be applied to a made-up bookkeeping change or
 to a redundant requirement added solely to force a desired ordering.
 
-## Use after choosing destructor order
+## Scheduling exact effects
 
-Fix one valid serial reference execution using a permitted destructor ordering.
-Orient every conflicting pair according to that execution and take transitive
-closure. Adjacent incomparable occurrences are independent, so the exchange
-lemma is the semantic ingredient for schedule safety. Apply the
+Fix one valid serial execution of these mathematical effects. Orient every
+conflicting pair according to that execution and take transitive closure.
+Adjacent incomparable occurrences are independent, so the exchange lemma is the
+semantic ingredient for schedule safety. Apply the
 [finite linear-extension correspondence](../theorems/external-results.md#finite-schedules-and-adjacent-exchanges):
 conflict reachability is a strict partial order, and the two duplicate-free
 schedules list the same finite occurrence set. The cited connectivity result
@@ -149,8 +149,10 @@ The componentwise collection is formalized by `Collected` in
 `collected_reachability_iff` theorem proves equality with oriented conflict
 reachability, and `incomparable_collected_independent` derives independence
 instead of taking it as an additional scheduling premise. These are generic
-effect results; their source correspondence is developed in the
-[candidate scheduling argument](../theorems/requirement-scheduling-proof.md).
+effect results. The
+[scheduling argument](../theorems/requirement-scheduling-proof.md) separately
+checks relationship conditions for Define; it does not infer geometric legality
+from independence in this component model.
 
 The union of these edges is not necessarily transitively minimal. For example,
 start with `x = y = 0`. Let `A` change `x` to `1`; let `B` require `x = 1` and
@@ -167,14 +169,13 @@ calculation using already-calculated dependencies and proves that it preserves
 exactly the collected reachability. The cover-graph characterization describes
 the result; it adds no construction step or generic minimization algorithm.
 
-## Source correspondence obligations
+## Source correspondence and geometric scope
 
-Applying the model to Define requires all of the following:
+Applying these component lemmas to Define's occupancy calculation requires:
 
 - State components describe actual semantic distinctions: particle identity,
-  occupancy, spatial relationships, and the distinction between vacancy and
-  retained destructor access. Reused position names alone do not identify all
-  these components.
+  occupancy and the distinction between vacancy and retained destructor access.
+  Reused position names alone do not identify all these components.
 - The required values are exactly what the source operation needs. In
   particular, an implied-position access by a destructor must not acquire an
   invented requirement that its assigned particle still occupies its former
@@ -182,10 +183,10 @@ Applying the model to Define requires all of the following:
 - A Move's representation preserves its transitive spatial effects, including
   empty defined positions. It must not require a fixed list of transitively
   moved particles: the
-  [implied-position exchange](operation-requirements.md#an-exchange-proved-from-these-requirements)
+  [ordinary correspondence](../theorems/ordinary-requirements-proof.md#spatial-correspondence)
   permits a moving defined position to be filled before or after the Move. A
-  representation using relative occupancy must nevertheless preserve the
-  requirements of explicit chained references.
+  representation using relative occupancy must preserve the identities selected
+  by explicit chained references, without retraversing them during execution.
 - Simultaneous vacancy uses the common selected particles. Changes in the
   representation must not clear the original state still used by destructors.
   Distinct destructors using the same original particle must access the same
@@ -193,16 +194,19 @@ Applying the model to Define requires all of the following:
 - Every changed component genuinely changes, and every required component is
   necessary for the claimed observation. Artificial requirements would prove
   minimality only for an unnecessarily restrictive model.
-- Define execution and enabled model execution correspond in both directions,
-  preserving the chosen particles and their positions. Proving only that source
-  executions map into the model would not exclude extra invalid model
-  executions.
+- Endpoint enabledness corresponds in both directions, preserving the chosen
+  particles and positions. Full Define enabledness additionally requires the
+  relationship conditions; an enabled component transformation can otherwise
+  form a transitive cycle.
 
 The [ordinary correspondence](../theorems/ordinary-requirements-proof.md),
 [retained-state argument](../theorems/retained-state-proof.md), and
 [scheduling proof](../theorems/requirement-scheduling-proof.md) address these
 obligations in English. The generic Lean effect theorems do not themselves
-formalize that source correspondence.
+formalize that source correspondence. Their adjacent-exchange results cannot
+show that all legal Define schedules are connected by legal exchanges, or that
+an ordinary cover edge is necessary when relationship conditions already imply
+its ordering.
 
 The model does not prescribe storing one record per affected transitive child
 position in the compiler. The collection bound above is not a bound on the
