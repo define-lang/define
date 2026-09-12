@@ -1,54 +1,31 @@
-"""Generate a Define source file whose bodies stress the operation graph.
+"""Generate Move, destruction, and Action Guarantee workloads.
 
-Emits a single ``.dfn`` that compiles to zero diagnostics through the
-non-filesystem validator, shaped so that the dominant validation work is
-building each action's operation dependency graph (the spec's
-"Deterministic Automatic Concurrency" rules) rather than parsing or the
-reference-graph traversal.
+The other profiling generators contain few Move Particle Statements. This
+source repeats several statement families to exercise different particle state
+and Guarantee relationships:
 
-The other profiling generators leave most of those rules cold: the
-single-large-action source is create/destroy dominated with only a
-handful of trivial moves, and the dense action call graph source
-contains no move statements at all. This source is built from repeating
-statement families, each aimed at a specific dependency rule:
+  * One particle moves through ``move_chain_length`` local Positions.
+  * A deep child Position chain is filled at ``tree_src`` and moved to
+    ``tree_dst``. Alternate repetitions destroy its particles child by child
+    or through one Simultaneous Transitive Destruction.
+  * A particle with ``wide_children`` occupied child Positions moves before
+    its destruction, exercising preservation of wide child state.
+  * A particle moves between child Positions of the same parent particle,
+    exercising shared parent state rather than independent local Positions.
+  * Independent Move pairs follow a shared long Move chain, and each pair
+    has a separate Destroy Particle Statement.
+  * A contracted Position is first referenced through a chained Create,
+    inferring an occupied Requirement. Its particle is later destroyed after
+    operations at two child-name paths, exercising caller contributions.
+  * Pod Positions trigger ``worker`` and ``sink`` actions. The caller moves
+    the worker's guaranteed particle to a local Position and executes each
+    pod's actions ``retriggers`` times before destroying the pod particle.
 
-  * A move ladder: one particle moved through ``move_chain_length``
-    positions, so every move's dependencies come from the previous move.
-  * A deep position chain filled under ``tree_src`` and then moved to
-    ``tree_dst`` in one move, so the move must reduce its dependencies to
-    the deepest operated-on child position. Alternate repetitions destroy
-    the moved-to chain child-by-child (each destroy finding the move as
-    the most recent operation on its parent names) or in one cascade.
-  * A wide particle with ``wide_children`` child positions all operated
-    on before the whole particle moves, so the move's child-operation
-    snapshot has to filter many independent child operations.
-  * A sibling move ladder that shuffles one particle across the child
-    positions of a single parent particle, hitting the rule that drops a
-    move's target-side dependency when its source-side dependencies
-    already reach it.
-  * Many pairs of independent Move Particle Statements, all preceded by
-    the same long Move chain. Each pair remains required by a separate
-    Destroy Particle Statement, so dependency comparison must repeatedly
-    distinguish a common dependency path from reachability between the
-    pair.
-  * A per-repetition contracted position that is first referenced through
-    a chained create (inferring an occupied Action Requirement) and then
-    destroyed while child positions on two separate paths were operated
-    on, so emptying it needs the caller-contribution bookkeeping for a
-    required particle's children.
-  * Pod positions that trigger a ``worker`` action (which moves its
-    ``input`` to ``out``) and a ``sink`` action (which destroys its
-    ``input``'s child and then ``input``). The body then moves the
-    worker's guaranteed ``out`` to a local position, so caller operations
-    depend on Action Guarantees, and re-triggers each pod
-    ``retriggers`` times before destroying it.
-
-Definitions are emitted before their referents so every reference is a
-back-reference; in non-filesystem mode a forward reference to a
-same-source name raises before any diagnostic.
+Definitions precede their referents because non-filesystem validation requires
+references to same-source names to refer to earlier definitions.
 
 Run via:
-    bazelisk run --noshow_progress --ui_event_filters=-info //tools/generators:generate_operation_graph_source -- --output /tmp/og.dfn
+    bazelisk run --noshow_progress --ui_event_filters=-info //tools/generators:generate_particle_operations_source -- --output /tmp/particle_operations.dfn
 """
 
 from __future__ import annotations
@@ -62,7 +39,7 @@ from tools.generators import generator_cli, generator_io
 if TYPE_CHECKING:
     from pathlib import Path
 
-DEFAULT_FQUN_PREFIX = "mv:define-lang.org:operation_graph"
+DEFAULT_FQUN_PREFIX = "mv:define-lang.org:particle_operations"
 DEFAULT_REPETITIONS = 700
 DEFAULT_MOVE_CHAIN_LENGTH = 24
 DEFAULT_TREE_DEPTH = 32
@@ -107,7 +84,7 @@ def _qualified(prefix: str, path: str) -> str:
 
 def _emit_header() -> list[str]:
     return [
-        "# Generated Define source. Stresses operation graph construction.",
+        "# Generated Define source. Stresses Particle Operation validation.",
         "",
     ]
 
@@ -294,10 +271,8 @@ def _block_sibling_ladder(wide_children: int) -> list[str]:
         _create("position<side>"),
         _create(f"position<side>::position<{_child_path(0)}>"),
     ]
-    # Every move after the first gets its target-side dependency from an
-    # operation on the shared parent particle that its source-side
-    # dependencies already reach, exercising the dependency-deduplication
-    # rule for moves.
+    # Moves between child Positions of the same parent exercise shared
+    # parent state, unlike the independent Move chains.
     for i in range(wide_children - 1):
         lines.append(
             _move(
@@ -677,14 +652,14 @@ def write_to_path(
     type=generator_cli.NONNEGATIVE_INTEGER,
     default=DEFAULT_INDEPENDENT_MOVE_BRANCHES,
     show_default=True,
-    help="Independent Move dependency pairs sharing one Move chain; zero omits them.",
+    help="Independent Move pairs sharing one preceding Move chain; zero omits them.",
 )
 @click.option(
     "--independent-move-chain-length",
     type=click.IntRange(min=_MIN_INDEPENDENT_MOVE_CHAIN_LENGTH),
     default=DEFAULT_INDEPENDENT_MOVE_CHAIN_LENGTH,
     show_default=True,
-    help="Moves in the chain preceding every independent dependency pair.",
+    help="Moves in the chain preceding every independent Move pair.",
 )
 @click.option(
     "--fqun-prefix",
@@ -704,22 +679,11 @@ def main(
     independent_move_chain_length: int,
     fqun_prefix: str,
 ):
-    """Generate a Define source file whose bodies stress the operation graph.
+    """Generate Move, destruction, and Action Guarantee workloads.
 
-    Emits one .dfn whose action body repeats statement families, each aimed at a
-    specific operation dependency rule: a move ladder, a deep position chain moved
-    at once and destroyed child by child, a wide particle whose operated-on child
-    positions must be filtered into a move's child-operation snapshot, a sibling
-    move ladder under one parent particle, independent Move pairs with the same
-    preceding Move chain, and worker pods whose Action Guarantees the body consumes.
-    The other profiling sources contain few or no move statements, so this is the
-    shape that warms operation-graph construction.
-
-    Scale it with --repetitions for body length; --tree-depth makes the
-    ancestor-chain walk quadratically more expensive. Scale
-    --independent-move-branches and --independent-move-chain-length together to
-    increase the repeated dependency-comparison work. The generated source validates
-    to zero diagnostics.
+    Scale body length with --repetitions, child-name depth with --tree-depth,
+    and independent Move chains with --independent-move-branches and
+    --independent-move-chain-length. The source validates without diagnostics.
     """
     written = generator_cli.invoke(
         lambda: write_to_path(

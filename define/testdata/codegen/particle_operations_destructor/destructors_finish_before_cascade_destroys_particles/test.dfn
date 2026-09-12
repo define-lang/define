@@ -1,6 +1,5 @@
-# The Destroy vertices represent vacancy, not the end of particle existence.
-# The original implied-position particles remain available through the two
-# independent destructor chains; their vacancies need not wait for those Moves.
+# The original implied-position particles must remain available through both
+# Destructor execution chains before the cascade destroys them.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.

@@ -10,8 +10,8 @@ declared in `.define/project/config.defcl`.
 
 `guarantee_expansion.dfn` is a dense layered action graph. Its possible Action
 Execution paths grow exponentially with the number of layers, exercising lazy
-resolution of nested Action Guarantee Binding Holes along with Position
-Requirements, Destruction Contracts, and destructor verification.
+resolution of nested Action Guarantees along with Position Requirements,
+Destruction Contracts, and destructor verification.
 
 ```sh
 bazelisk run --noshow_progress --ui_event_filters=-info \
@@ -39,16 +39,16 @@ bazelisk run --noshow_progress --ui_event_filters=-info \
   --fqun-prefix mv:define-lang.org:compiler_memory
 ```
 
-## Destruction fragments
+## Destruction Contracts
 
-`destruction_fragments.dfn` propagates modular Destruction Contracts through
+`destruction_contracts.dfn` propagates modular Destruction Contracts through
 many callers, with repeated executions and shared child paths. It guards the
 sparse lookup and merging of destruction contributions and occupied children.
 
 ```sh
 bazelisk run --noshow_progress --ui_event_filters=-info \
-  //tools/generators:generate_destruction_fragments_source -- \
-  --output define/testdata/compiler_memory/destruction_fragments.dfn \
+  //tools/generators:generate_destruction_contracts_source -- \
+  --output define/testdata/compiler_memory/destruction_contracts.dfn \
   --callers 4 \
   --call-depth 20 \
   --pass-through-actions 1 \
@@ -72,17 +72,17 @@ bazelisk run --noshow_progress --ui_event_filters=-info \
   --fqun mv:define-lang.org:compiler_memory:/test
 ```
 
-## Operation dependencies
+## Particle Operations
 
-`operation_dependencies.dfn` combines Move chains, deep and wide position
-shapes, independent Move branches, repeated action executions, and operations on
-guaranteed positions. It guards against dense per-operation relationship tables
-and copies of child-operation state.
+`particle_operations.dfn` combines Move chains, deep and wide position shapes,
+independent Move branches, repeated action executions, and operations on
+guaranteed positions. It exercises particle state tracking through Moves and
+Destruction Contracts.
 
 ```sh
 bazelisk run --noshow_progress --ui_event_filters=-info \
-  //tools/generators:generate_operation_graph_source -- \
-  --output define/testdata/compiler_memory/operation_dependencies.dfn \
+  //tools/generators:generate_particle_operations_source -- \
+  --output define/testdata/compiler_memory/particle_operations.dfn \
   --repetitions 12 \
   --move-chain-length 20 \
   --tree-depth 20 \
@@ -97,12 +97,12 @@ bazelisk run --noshow_progress --ui_event_filters=-info \
 ## Many substantial actions
 
 `many_substantial_actions.dfn` distributes nontrivial Particle Operation chains
-across many actions. It exercises per-definition Operation Graphs, Action Plans,
-parallel scheduling state, and generated-code contexts.
+across many actions. It exercises per-definition validation and generated-code
+contexts.
 
 ```sh
 bazelisk run --noshow_progress --ui_event_filters=-info \
-  //tools/generators:generate_action_plan_source -- \
+  //tools/generators:generate_action_codegen_source -- \
   --output define/testdata/compiler_memory/many_substantial_actions.dfn \
   --actions 650 \
   --chains-per-action 4 \
@@ -111,16 +111,16 @@ bazelisk run --noshow_progress --ui_event_filters=-info \
   --fqun-prefix mv:define-lang.org:compiler_memory
 ```
 
-## Action Fragment fan-out and joins
+## Wide destruction
 
-`fragment_fanout_joins.dfn` repeatedly creates a parent particle, creates many
-child particles that can run after it, and then destroys the parent after all of
-them. This produces wide Action Fragment fan-out followed by a wide join.
+`wide_destruction.dfn` repeatedly creates a parent particle, creates many child
+particles, and then destroys the parent. This exercises Simultaneous Transitive
+Destruction across many child Positions.
 
 ```sh
 bazelisk run --noshow_progress --ui_event_filters=-info \
-  //tools/generators:generate_action_plan_source -- \
-  --output define/testdata/compiler_memory/fragment_fanout_joins.dfn \
+  //tools/generators:generate_action_codegen_source -- \
+  --output define/testdata/compiler_memory/wide_destruction.dfn \
   --actions 0 \
   --chains-per-action 1 \
   --topology-groups 80 \

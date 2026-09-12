@@ -1,5 +1,5 @@
 # The caller's Destructor follows the callee-known Destructor's /marker Destroy,
-# even though a Binding Hole inits that execution several callees away.
+# with the caller's contribution forwarded through several callees.
 define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the action</outer>.
     it happens when {

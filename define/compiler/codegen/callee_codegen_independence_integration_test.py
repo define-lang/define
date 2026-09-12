@@ -54,7 +54,7 @@ _CASES = (
         "local_cascade",
         _TESTDATA_ROOT
         / "particle_operations_two_actions"
-        / "local_cascade_uses_caller_fragment_for_occupied_child",
+        / "local_cascade_uses_caller_contribution_for_occupied_child",
     ),
     _Case(
         "transitive_disjoint",
@@ -117,7 +117,7 @@ _LATER_INIT_CONFIGURATION_CASES = [
         ("test",),
     ),
     pytest.param(
-        "caller_configures_destructor_after_callee_initializes_fanout_owner",
+        "caller_contributes_destructor_through_multiple_moves",
         "extra_destructor",
         ("test",),
     ),

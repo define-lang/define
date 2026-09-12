@@ -7,7 +7,7 @@ import click.testing
 import pytest
 
 from define.compiler import ast, driver, parser
-from tools.generators import generate_operation_graph_source as gen
+from tools.generators import generate_particle_operations_source as gen
 
 
 def _parse_and_transform(source: str) -> ast.Program:
@@ -61,7 +61,7 @@ class TestGenerateSourceLines:
         ):
             gen.generate_source_lines(independent_move_chain_length=2)
 
-    def test_output_exercises_operation_graph_syntax(self):
+    def test_output_exercises_particle_operations(self):
         source = "\n".join(
             gen.generate_source_lines(
                 repetitions=2,

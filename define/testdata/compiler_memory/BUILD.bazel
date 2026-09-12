@@ -3,14 +3,14 @@ filegroup(
     testonly = True,
     srcs = [
         ":deep_requirements",
-        ":destruction_fragments",
-        ":fragment_fanout_joins",
+        ":destruction_contracts",
         ":guarantee_expansion",
         ":large_operation_volume",
         ":many_substantial_actions",
-        ":operation_dependencies",
+        ":particle_operations",
         ":project_config",
         ":reference_graph_project",
+        ":wide_destruction",
     ],
     visibility = [
         "//define/compiler:__pkg__",
@@ -26,16 +26,9 @@ filegroup(
 )
 
 filegroup(
-    name = "destruction_fragments",
+    name = "destruction_contracts",
     testonly = True,
-    srcs = ["destruction_fragments.dfn"],
-    visibility = ["//define/compiler:__pkg__"],
-)
-
-filegroup(
-    name = "fragment_fanout_joins",
-    testonly = True,
-    srcs = ["fragment_fanout_joins.dfn"],
+    srcs = ["destruction_contracts.dfn"],
     visibility = ["//define/compiler:__pkg__"],
 )
 
@@ -61,9 +54,9 @@ filegroup(
 )
 
 filegroup(
-    name = "operation_dependencies",
+    name = "particle_operations",
     testonly = True,
-    srcs = ["operation_dependencies.dfn"],
+    srcs = ["particle_operations.dfn"],
     visibility = ["//define/compiler:__pkg__"],
 )
 
@@ -86,5 +79,12 @@ filegroup(
     name = "reference_graph_project_entry",
     testonly = True,
     srcs = ["reference_graph_project/test.dfn"],
+    visibility = ["//define/compiler:__pkg__"],
+)
+
+filegroup(
+    name = "wide_destruction",
+    testonly = True,
+    srcs = ["wide_destruction.dfn"],
     visibility = ["//define/compiler:__pkg__"],
 )

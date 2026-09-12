@@ -90,7 +90,7 @@ The `profile-compiler` workflow requires:
 - source filenames, line numbers, and function names;
 - imports and startup, parse and lexing, AST transformation, reference-graph
   validation, requirement inference and destruction contracts, guarantee
-  propagation, operation-graph construction, and code generation;
+  propagation, Particle Operation validation, and code generation;
 - focused workloads from every generator under `tools/generators/`; and
 - retained machine-readable evidence that can answer later questions without
   rerunning a workload.

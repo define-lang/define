@@ -1,7 +1,5 @@
-# Child's local operation depends on the occupied Action Parent, while Middle's
-# move needs the Empty Rule dependencies for that same <source> position. Child
-# also guarantees implied position </result>, which Middle waits for before
-# moving the parent and which Test consumes through the parent's new name.
+# Child guarantees implied position </result>. Middle then moves the parent
+# particle, and Test consumes the Guarantee through the parent's new name.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.

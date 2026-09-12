@@ -1,5 +1,5 @@
-# Registration must wait for the callee to construct the Action Execution
-# whose later Particle Operation makes the next configuration possible.
+# The caller's Destructor contribution must follow the particle through
+# several callees' Moves before its destruction.
 define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the action</starter>.
     it happens when {

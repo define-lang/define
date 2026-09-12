@@ -1,4 +1,4 @@
-"""Generate Define source that stresses modular destruction fragments."""
+"""Generate Define source that stresses Destruction Contracts."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from tools.generators import generator_cli, generator_io
 if TYPE_CHECKING:
     from pathlib import Path
 
-DEFAULT_FQUN_PREFIX = "mv:define-lang.org:destruction_fragments"
+DEFAULT_FQUN_PREFIX = "mv:define-lang.org:destruction_contracts"
 # PRF-025: Failure threshold. Enough independent validation chains keep one
 # discarded observation below the 0.1% limit on the default stress workload.
 DEFAULT_CALLERS = 48
@@ -294,7 +294,7 @@ def generate_source_lines(
     shared_child_paths: bool = False,
     fqun_prefix: str = DEFAULT_FQUN_PREFIX,
 ) -> list[str]:
-    """Return a real Define workload for destruction-fragment compilation."""
+    """Return a real Define workload for Destruction Contract compilation."""
     positive_parameters = {
         "callers": callers,
         "call_depth": call_depth,
@@ -309,7 +309,7 @@ def generate_source_lines(
             f"pass_through_actions must be at least 0, got {pass_through_actions}"
         )
 
-    lines = ["# Generated Define source. Modular destruction-fragment workload.", ""]
+    lines = ["# Generated Define source. Destruction Contract workload.", ""]
     lines.extend(
         _emit_child_positions(
             fqun_prefix,
@@ -447,7 +447,7 @@ def main(
     shared_child_paths: bool,
     fqun_prefix: str,
 ):
-    """Generate a real Define workload for modular destruction fragments.
+    """Generate a real Define workload for Destruction Contracts.
 
     Each caller chain adds occupied child paths at every contributing action,
     interleaves optional actions that add no executable work, and converges on one

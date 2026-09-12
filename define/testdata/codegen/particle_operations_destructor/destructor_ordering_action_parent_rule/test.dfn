@@ -1,6 +1,5 @@
-# /marker has no previous operation of its own. The first Destructor's Create
-# therefore reaches the parent operation through its Action Parent Binding Hole;
-# the second Destructor instead follows the first Destructor's final Destroy.
+# /marker starts empty. The first Destructor creates and destroys its particle,
+# leaving it empty for the second Destructor to use.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.

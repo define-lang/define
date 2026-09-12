@@ -1,5 +1,5 @@
 # action</callee>'s Destroy fires the caller-added Destructor on the particle it
-# destroys, including the Destructor's operations in the Operation Graph.
+# destroys, so its Destructor must execute in the callee.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.

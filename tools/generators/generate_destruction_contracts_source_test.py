@@ -7,7 +7,7 @@ import click.testing
 import pytest
 
 from define.compiler import driver
-from tools.generators import generate_destruction_fragments_source as gen
+from tools.generators import generate_destruction_contracts_source as gen
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -45,7 +45,7 @@ class TestGenerateSourceLines:
             )
         )
 
-        assert "action<mv:define-lang.org:destruction_fragments:/destroyer>" in source
+        assert "action<mv:define-lang.org:destruction_contracts:/destroyer>" in source
         assert "action</caller_1/pass_1_0>" in source
         assert "action</caller_1/pass_1_1>" in source
         assert "position</fragment_child_caller_0_0_0>" in source
@@ -69,7 +69,7 @@ class TestGenerateSourceLines:
 
 class TestWriteToPath:
     def test_writes_file_with_expected_line_count(self, tmp_path: Path):
-        output = tmp_path / "destruction_fragments.dfn"
+        output = tmp_path / "destruction_contracts.dfn"
         written = gen.write_to_path(
             output,
             callers=1,
@@ -84,7 +84,7 @@ class TestWriteToPath:
 
 class TestMain:
     def test_writes_source_from_command_line_arguments(self, tmp_path: Path):
-        output = tmp_path / "destruction_fragments.dfn"
+        output = tmp_path / "destruction_contracts.dfn"
         result = click.testing.CliRunner().invoke(
             gen.main,
             [

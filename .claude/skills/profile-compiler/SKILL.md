@@ -22,10 +22,11 @@ Use fresh inputs from `tools/generators/`:
 | --------------------------------------- | ----------------------------- |
 | `generate_large_define_source`          | parsing                       |
 | `generate_action_graph_source`          | reference-graph validation    |
-| `generate_operation_graph_source`       | operation-graph construction  |
+| `generate_action_codegen_source`        | action code generation        |
+| `generate_particle_operations_source`   | Particle Operation validation |
 | `generate_reference_graph_project`      | cross-file references         |
 | `generate_deep_pipeline_source`         | requirement propagation       |
-| `generate_destruction_fragments_source` | modular destruction fragments |
+| `generate_destruction_contracts_source` | Destruction Contracts         |
 
 Invoke each generator from the workspace root through its Bazel binary:
 

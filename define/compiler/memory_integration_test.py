@@ -42,9 +42,9 @@ def _runner_path() -> Path:
             id="large_operation_volume",
         ),
         pytest.param(
-            "MEMORY_TEST_DESTRUCTION_FRAGMENTS",
+            "MEMORY_TEST_DESTRUCTION_CONTRACTS",
             "stdin",
-            id="destruction_fragments",
+            id="destruction_contracts",
         ),
         pytest.param(
             "MEMORY_TEST_MANY_SUBSTANTIAL_ACTIONS",
@@ -52,9 +52,9 @@ def _runner_path() -> Path:
             id="many_substantial_actions",
         ),
         pytest.param(
-            "MEMORY_TEST_FRAGMENT_FANOUT_JOINS",
+            "MEMORY_TEST_WIDE_DESTRUCTION",
             "stdin",
-            id="fragment_fanout_joins",
+            id="wide_destruction",
         ),
         pytest.param(
             "MEMORY_TEST_REFERENCE_GRAPH_PROJECT",
@@ -62,9 +62,9 @@ def _runner_path() -> Path:
             id="reference_graph_project",
         ),
         pytest.param(
-            "MEMORY_TEST_OPERATION_DEPENDENCIES",
+            "MEMORY_TEST_PARTICLE_OPERATIONS",
             "stdin",
-            id="operation_dependencies",
+            id="particle_operations",
         ),
         pytest.param(
             "MEMORY_TEST_GUARANTEE_EXPANSION",

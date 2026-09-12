@@ -1,5 +1,5 @@
 # The transitive callee's Move precedes both the caller-known child Destroy
-# and the Action Parent's Destroy, without ordering those Destroys.
+# and the parent particle's Destroy.
 define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the action</outer>.
     it happens when {

@@ -1,5 +1,5 @@
-# /mover's Empty Rule receives /test's direct child Create and /filler's
-# independent Guarantee after the Binding Hole passes through /middle.
+# /mover receives a particle with children filled by /test directly and by
+# /filler's Guarantee, after the particle passes through /middle.
 define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the position</parent>.
     it also assigns the action</filler>.

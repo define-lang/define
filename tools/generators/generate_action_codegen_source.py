@@ -1,4 +1,4 @@
-"""Generate Define source that stresses per-action code-generation planning."""
+"""Generate Define source that stresses per-action code generation."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
-DEFAULT_FQUN_PREFIX = "mv:define-lang.org:action_plan"
+DEFAULT_FQUN_PREFIX = "mv:define-lang.org:action_codegen"
 DEFAULT_ACTIONS = 1000
 DEFAULT_CHAINS_PER_ACTION = 16
 DEFAULT_TOPOLOGY_GROUPS = 100
@@ -107,8 +107,8 @@ def generate_source_lines(
     topology_width: int = DEFAULT_TOPOLOGY_WIDTH,
     fqun_prefix: str = DEFAULT_FQUN_PREFIX,
 ) -> list[str]:
-    """Return source lines for independently scalable Action Plan shapes."""
-    lines = ["# Generated Define source. Stresses Action Plan construction.", ""]
+    """Return source lines for independently scalable action bodies."""
+    lines = ["# Generated Define source. Stresses action code generation.", ""]
     if topology_groups > 0:
         lines.extend(_emit_leaf_positions(fqun_prefix, topology_width))
     for action_index in range(actions):
@@ -179,7 +179,7 @@ def main(
     topology_width: int,
     fqun_prefix: str,
 ):
-    """Generate many substantial actions and Action Fragment fan-out/joins."""
+    """Generate many substantial actions and wide particle destructions."""
     written = generator_cli.invoke(
         lambda: write_to_path(
             output,
