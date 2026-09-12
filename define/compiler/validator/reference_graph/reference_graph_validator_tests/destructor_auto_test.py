@@ -10,6 +10,7 @@ from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
 )
+from define.compiler.validator.reference_graph.test_helpers import action_graph
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -31,7 +32,7 @@ def test_local_position_left_occupied_fires_destructor(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _DESTRUCTOR)]
 
 
 def test_local_position_in_constructor_left_occupied_fires_destructor(
@@ -39,7 +40,7 @@ def test_local_position_in_constructor_left_occupied_fires_destructor(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _DESTRUCTOR)]
 
 
 def test_auto_destruction_fires_all_local_particle_destructors(
@@ -47,7 +48,7 @@ def test_auto_destruction_fires_all_local_particle_destructors(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.edges() == [
+    assert action_graph(result.reference_graph_result) == [
         (_TEST, _DESTRUCTOR_A),
         (_TEST, _DESTRUCTOR_B),
     ]
@@ -65,7 +66,7 @@ def test_empty_local_position_does_not_fire_destructor(
     assert all_diags[0].location.line == 6
     assert all_diags[0].location.column == 29
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert result.action_call_graph.edges() == []
+    assert action_graph(result.reference_graph_result) == []
 
 
 def test_explicit_destroy_before_block_end_does_not_double_fire(
@@ -73,7 +74,7 @@ def test_explicit_destroy_before_block_end_does_not_double_fire(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    edges = result.action_call_graph.edges()
+    edges = action_graph(result.reference_graph_result)
     assert edges == [(_TEST, _DESTRUCTOR)]
 
 
@@ -82,7 +83,7 @@ def test_auto_destruction_cascades_into_child_particle_destructors(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.edges() == [(_TEST, _CHILD_DESTRUCTOR)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _CHILD_DESTRUCTOR)]
 
 
 def test_move_from_interface_position_to_local_then_auto_destroy(
@@ -92,7 +93,7 @@ def test_move_from_interface_position_to_local_then_auto_destroy(
         allow_entry_action_interface_positions=True
     )
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _DESTRUCTOR)]
 
 
 def test_move_from_implied_position_to_local_then_auto_destroy(
@@ -102,7 +103,7 @@ def test_move_from_implied_position_to_local_then_auto_destroy(
         allow_entry_action_occupied_implied_position_requirements=True
     )
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _DESTRUCTOR)]
 
 
 def test_auto_destruction_failing_empty_requirement(

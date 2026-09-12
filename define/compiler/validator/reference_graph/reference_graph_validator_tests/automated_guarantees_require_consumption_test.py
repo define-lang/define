@@ -6,7 +6,7 @@ from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler import diagnostics
-from define.compiler.validator.reference_graph.operation_graph_renderer import (
+from define.compiler.validator.reference_graph.test_helpers import (
     action_graph,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
@@ -41,7 +41,7 @@ def test_triggered_action_interface_particle_must_depart_before_caller_ends(
     assert diagnostic.location.line == 11
     assert diagnostic.location.column == 45
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == [(_TEST, _WORKER)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _WORKER)]
 
 
 def test_same_action_on_two_particles_requires_both_interfaces_consumed(
@@ -75,7 +75,7 @@ def test_same_action_on_two_particles_requires_both_interfaces_consumed(
     assert second_diagnostic.location.line == 18
     assert second_diagnostic.location.column == 47
     assert second_diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_TEST, _WORKER),
         (_TEST, _WORKER),
     ]
@@ -99,7 +99,7 @@ def test_consuming_one_of_two_instances_of_same_action_leaves_other_unconsumed(
     assert diagnostic.location.line == 18
     assert diagnostic.location.column == 47
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_TEST, _WORKER),
         (_TEST, _WORKER),
     ]
@@ -123,7 +123,7 @@ def test_destroyed_action_parent_does_not_duplicate_replacement_diagnostic(
     assert diagnostic.location.line == 14
     assert diagnostic.location.column == 45
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_TEST, _WORKER),
         (_TEST, _WORKER),
     ]
@@ -134,7 +134,7 @@ def test_retriggered_action_interface_particle_may_depart_before_caller_ends(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_TEST, _WORKER),
         (_TEST, _WORKER),
     ]
@@ -156,7 +156,7 @@ def test_retriggered_action_interface_particle_must_depart_before_caller_ends(
     assert diagnostic.location.line == 13
     assert diagnostic.location.column == 45
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_TEST, _WORKER),
         (_TEST, _WORKER),
     ]
@@ -180,7 +180,7 @@ def test_caller_move_between_callee_interfaces_does_not_consume_particle(
     assert diagnostic.location.line == 14
     assert diagnostic.location.column == 45
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_TEST, _WORKER),
         (_TEST, _WORKER),
     ]
@@ -204,7 +204,7 @@ def test_callee_move_between_its_interfaces_requires_caller_consumption(
     assert diagnostic.location.line == 11
     assert diagnostic.location.column == 45
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == [(_TEST, _WORKER)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _WORKER)]
 
 
 def test_constructor_interface_particle_must_depart_before_caller_ends(
@@ -226,7 +226,7 @@ def test_constructor_interface_particle_must_depart_before_caller_ends(
     assert diagnostic.location.line == 4
     assert diagnostic.location.column == 24
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == [(_TEST, _CONSTRUCT)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _CONSTRUCT)]
 
 
 def test_local_parent_auto_destruction_consumes_action_interface_particle(
@@ -234,7 +234,7 @@ def test_local_parent_auto_destruction_consumes_action_interface_particle(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [(_TEST, _WORKER)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _WORKER)]
 
 
 def test_deeper_action_implied_position_can_leave_with_interface_particle(
@@ -244,7 +244,7 @@ def test_deeper_action_implied_position_can_leave_with_interface_particle(
         allow_entry_action_interface_positions=True
     )
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_TEST, _PARENT),
         (_TEST, _CHILD),
     ]
@@ -270,7 +270,7 @@ def test_child_guarantee_must_be_consumed_before_parent_triggers(
     assert diagnostic.location.line == 13
     assert diagnostic.location.column == 79
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_PARENT, _CHILD),
         (_TEST, _CHILD),
         (_TEST, _PARENT),
@@ -297,7 +297,7 @@ def test_particle_with_child_guarantee_must_be_clean_before_moving_to_parent_int
     assert diagnostic.location.line == 19
     assert diagnostic.location.column == 50
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_PARENT, _CHILD),
         (_TEST, _CHILD),
         (_TEST, _PARENT),
@@ -337,7 +337,7 @@ def test_one_move_of_multiple_occupied_child_action_interfaces_reports_each_posi
     assert second_diagnostic.location.line == 20
     assert second_diagnostic.location.column == 50
     assert second_diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_PARENT, _CHILD),
         (_TEST, _CHILD),
         (_TEST, _PARENT),
@@ -378,7 +378,7 @@ def test_child_guarantee_after_parent_move_is_diagnostic_source(
     assert requirement_diagnostic.location.line == 20
     assert requirement_diagnostic.location.column == 30
     assert requirement_diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_PARENT, _CHILD),
         (_TEST, _CHILD),
         (_TEST, _PARENT),
@@ -405,7 +405,7 @@ def test_action_on_position_child_must_be_clean_before_parent_triggers(
     assert diagnostic.location.line == 14
     assert diagnostic.location.column == 98
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_PARENT, _CHILD),
         (_TEST, _CHILD),
         (_TEST, _PARENT),
@@ -434,7 +434,7 @@ def test_child_guarantee_on_callers_interface_particle_must_be_consumed_before_p
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 79
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_PARENT, _CHILD),
         (_TEST, _CHILD),
         (_TEST, _PARENT),
@@ -461,7 +461,7 @@ def test_existing_particle_guarantee_must_be_consumed_before_parent_triggers(
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 30
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_PARENT, _CHILD),
         (_TEST, _CHILD),
         (_TEST, _PARENT),
@@ -488,7 +488,7 @@ def test_unchanged_guarantee_preserves_caller_move_as_diagnostic_source(
     assert diagnostic.location.line == 14
     assert diagnostic.location.column == 50
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_PARENT, _CHILD),
         (_TEST, _CHILD),
         (_TEST, _PARENT),
@@ -514,7 +514,7 @@ def test_error_on_action_interface_suppresses_unconsumed_diagnostic(
     assert diagnostic.occupied_at.line == 7
     assert diagnostic.occupied_at.column == 30
     assert diagnostic.occupied_at.file_path == PurePosixPath("worker.dfn")
-    assert action_graph(result.operation_graphs) == [(_TEST, _WORKER)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _WORKER)]
 
 
 def test_error_on_action_parent_suppresses_unconsumed_diagnostic(
@@ -534,7 +534,7 @@ def test_error_on_action_parent_suppresses_unconsumed_diagnostic(
     assert diagnostic.occupied_at.line == 12
     assert diagnostic.occupied_at.column == 30
     assert diagnostic.occupied_at.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == [(_TEST, _WORKER)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _WORKER)]
 
 
 def test_error_on_occupied_child_action_interface_suppresses_parent_trigger_diagnostic(
@@ -557,7 +557,7 @@ def test_error_on_occupied_child_action_interface_suppresses_parent_trigger_diag
     assert diagnostic.occupied_at.line == 7
     assert diagnostic.occupied_at.column == 30
     assert diagnostic.occupied_at.file_path == PurePosixPath("child.dfn")
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_PARENT, _CHILD),
         (_TEST, _CHILD),
         (_TEST, _PARENT),
@@ -584,7 +584,7 @@ def test_implied_parent_action_must_receive_clean_interface_particle(
     assert diagnostic.location.line == 8
     assert diagnostic.location.column == 64
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_PARENT, _CHILD),
         (_TEST, _CHILD),
         (_TEST, _PARENT),
@@ -611,7 +611,7 @@ def test_action_on_deeper_position_descendant_must_be_clean_before_parent_trigge
     assert diagnostic.location.line == 15
     assert diagnostic.location.column == 115
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_PARENT, _CHILD),
         (_TEST, _CHILD),
         (_TEST, _PARENT),
@@ -651,7 +651,7 @@ def test_each_parent_instance_receiving_dirty_particle_is_diagnosed(
     assert second_diagnostic.location.line == 23
     assert second_diagnostic.location.column == 81
     assert second_diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_PARENT, _CHILD),
         (_TEST, _CHILD),
         (_TEST, _PARENT),
@@ -680,7 +680,7 @@ def test_action_interface_entry_rule_is_checked_at_each_parent_trigger(
     assert diagnostic.location.line == 13
     assert diagnostic.location.column == 79
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_TEST, _PARENT),
         (_TEST, _CHILD),
         (_TEST, _PARENT),
@@ -720,7 +720,7 @@ def test_each_invalid_trigger_of_same_parent_instance_is_diagnosed(
     assert second_diagnostic.location.line == 14
     assert second_diagnostic.location.column == 79
     assert second_diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_TEST, _CHILD),
         (_TEST, _PARENT),
         (_TEST, _CHILD),
@@ -748,7 +748,7 @@ def test_one_child_interface_create_before_two_parent_triggers_is_diagnosed_once
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 30
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_TEST, _PARENT),
         (_TEST, _PARENT),
         (_TEST, _CHILD),
@@ -788,7 +788,7 @@ def test_each_occupied_child_action_interface_position_is_diagnosed(
     assert second_diagnostic.location.line == 14
     assert second_diagnostic.location.column == 79
     assert second_diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_PARENT, _CHILD),
         (_TEST, _CHILD),
         (_TEST, _PARENT),
@@ -800,7 +800,7 @@ def test_consumed_child_guarantee_allows_parent_to_trigger(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_PARENT, _CHILD),
         (_TEST, _CHILD),
         (_TEST, _PARENT),
@@ -812,7 +812,7 @@ def test_child_guarantee_moved_out_of_interface_allows_parent_to_trigger(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_PARENT, _CHILD),
         (_TEST, _CHILD),
         (_TEST, _PARENT),
@@ -824,7 +824,7 @@ def test_consumed_action_interface_on_position_child_allows_parent_to_trigger(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_PARENT, _CHILD),
         (_TEST, _CHILD),
         (_TEST, _PARENT),

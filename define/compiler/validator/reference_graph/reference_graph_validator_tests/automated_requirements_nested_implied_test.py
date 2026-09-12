@@ -7,11 +7,11 @@ from typing import TYPE_CHECKING
 
 from define.compiler import diagnostics
 from define.compiler.validator.reference_graph import action_contract
-from define.compiler.validator.reference_graph.operation_graph_renderer import (
-    action_graph_set,
-)
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
+)
+from define.compiler.validator.reference_graph.test_helpers import (
+    action_graph,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -107,10 +107,10 @@ def test_empty_guarantee_creates_occupied_requirement_in_caller_and_test_satisfi
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.operation_graphs) == {
-        (_TEST, _MIDDLE),
+    assert action_graph(result.reference_graph_result) == [
         (_MIDDLE, _INNER),
-    }
+        (_TEST, _MIDDLE),
+    ]
 
 
 def test_empty_guarantee_creates_occupied_requirement_in_caller_and_test_violates(
@@ -154,10 +154,10 @@ def test_empty_guarantee_creates_occupied_requirement_in_caller_and_test_violate
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {
-        (_TEST, _MIDDLE),
+    assert action_graph(result.reference_graph_result) == [
         (_MIDDLE, _INNER),
-    }
+        (_TEST, _MIDDLE),
+    ]
 
 
 def test_occupied_guarantee_creates_empty_requirement_in_caller_and_test_satisfies(
@@ -165,10 +165,10 @@ def test_occupied_guarantee_creates_empty_requirement_in_caller_and_test_satisfi
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.operation_graphs) == {
-        (_TEST, _MIDDLE),
+    assert action_graph(result.reference_graph_result) == [
         (_MIDDLE, _INNER),
-    }
+        (_TEST, _MIDDLE),
+    ]
 
 
 def test_occupied_guarantee_creates_empty_requirement_in_caller_and_test_violates(
@@ -220,10 +220,10 @@ def test_occupied_guarantee_creates_empty_requirement_in_caller_and_test_violate
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {
-        (_TEST, _MIDDLE),
+    assert action_graph(result.reference_graph_result) == [
         (_MIDDLE, _INNER),
-    }
+        (_TEST, _MIDDLE),
+    ]
 
 
 _X_HAS_INNER = (
@@ -292,10 +292,10 @@ def test_caller_filled_implied_position_propagates_inner_action_requirement(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {
-        (_TEST, _MIDDLE),
+    assert action_graph(result.reference_graph_result) == [
         (_MIDDLE, _INNER),
-    }
+        (_TEST, _MIDDLE),
+    ]
 
 
 def test_inner_action_requirement_does_not_propagate_past_local_filler_of_implied_position(
@@ -331,10 +331,10 @@ def test_inner_action_requirement_does_not_propagate_past_local_filler_of_implie
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {
-        (_TEST, _MIDDLE),
+    assert action_graph(result.reference_graph_result) == [
         (_MIDDLE, _INNER),
-    }
+        (_TEST, _MIDDLE),
+    ]
 
 
 def test_grandchild_requirement_below_locally_created_particle_does_not_propagate(
@@ -374,10 +374,10 @@ def test_grandchild_requirement_below_locally_created_particle_does_not_propagat
             "file_path": "inspect_grandchild.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {
+    assert action_graph(result.reference_graph_result) == [
         (_CREATE_PARENT, _INSPECT_GRANDCHILD),
         (_TEST, _CREATE_PARENT),
-    }
+    ]
 
 
 def test_doubly_nested_implied_action_chain_propagates(
@@ -430,8 +430,8 @@ def test_doubly_nested_implied_action_chain_propagates(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {
-        (_TEST, _OUTER),
-        (_OUTER, _MIDDLE),
+    assert action_graph(result.reference_graph_result) == [
         (_MIDDLE, _INNER),
-    }
+        (_OUTER, _MIDDLE),
+        (_TEST, _OUTER),
+    ]

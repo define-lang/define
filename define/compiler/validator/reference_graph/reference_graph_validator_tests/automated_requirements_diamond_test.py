@@ -10,11 +10,11 @@ from typing import TYPE_CHECKING
 
 from define.compiler import diagnostics
 from define.compiler.validator.reference_graph import action_contract
-from define.compiler.validator.reference_graph.operation_graph_renderer import (
-    action_graph_set,
-)
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
+)
+from define.compiler.validator.reference_graph.test_helpers import (
+    action_graph_set,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -91,7 +91,7 @@ def test_diamond_both_paths_satisfy_empty_requirement(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.operation_graphs) == {
+    assert action_graph_set(result.reference_graph_result) == {
         (_TEST, _ACT_B),
         (_TEST, _ACT_C),
         (_ACT_B, _SHARED),
@@ -114,7 +114,7 @@ def test_diamond_one_path_violates_empty_requirement(
         == "position<box_b>::action</act_b>::position<gateway>::position</value>"
     )
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert action_graph_set(result.operation_graphs) == {
+    assert action_graph_set(result.reference_graph_result) == {
         (_TEST, _ACT_B),
         (_TEST, _ACT_C),
         (_ACT_B, _SHARED),
@@ -137,7 +137,7 @@ def test_diamond_other_path_violates_empty_requirement(
         == "position<box_c>::action</act_c>::position<gateway>::position</value>"
     )
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert action_graph_set(result.operation_graphs) == {
+    assert action_graph_set(result.reference_graph_result) == {
         (_TEST, _ACT_B),
         (_TEST, _ACT_C),
         (_ACT_B, _SHARED),
@@ -189,7 +189,7 @@ def test_diamond_occupied_requirement_independent_per_path(
             "file_path": "shared.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {
+    assert action_graph_set(result.reference_graph_result) == {
         (_TEST, _ACT_B),
         (_TEST, _ACT_C),
         (_ACT_B, _SHARED),
@@ -202,7 +202,7 @@ def test_diamond_top_caller_satisfies_occupied_requirement(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.operation_graphs) == {
+    assert action_graph_set(result.reference_graph_result) == {
         (_TEST, _ACT_B),
         (_TEST, _ACT_C),
         (_ACT_B, _SHARED),
@@ -254,7 +254,7 @@ def test_diamond_one_path_violates_occupied_requirement(
             "file_path": "shared.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {
+    assert action_graph_set(result.reference_graph_result) == {
         (_TEST, _ACT_B),
         (_TEST, _ACT_C),
         (_ACT_B, _SHARED),
@@ -343,7 +343,7 @@ def test_diamond_neither_path_satisfies_occupied_requirement(
             "file_path": "shared.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {
+    assert action_graph_set(result.reference_graph_result) == {
         (_TEST, _ACT_B),
         (_TEST, _ACT_C),
         (_ACT_B, _SHARED),

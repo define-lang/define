@@ -10,11 +10,11 @@ from typing import TYPE_CHECKING
 
 from define.compiler import diagnostics
 from define.compiler.validator.reference_graph import action_contract
-from define.compiler.validator.reference_graph.operation_graph_renderer import (
-    action_graph_set,
-)
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
+)
+from define.compiler.validator.reference_graph.test_helpers import (
+    action_graph,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -82,10 +82,10 @@ def test_cross_fqun_inner_requirement_renders_correctly(
             "file_path": "lib/inner.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {
-        (f"action<{_MAIN_FQUN}:/test>", f"action<{_MAIN_FQUN}:/outer>"),
+    assert action_graph(result.reference_graph_result) == [
         (f"action<{_MAIN_FQUN}:/outer>", f"action<{_DEP_FQUN}:/inner>"),
-    }
+        (f"action<{_MAIN_FQUN}:/test>", f"action<{_MAIN_FQUN}:/outer>"),
+    ]
 
 
 def test_cross_fqun_occupied_requirement_propagates(
@@ -93,10 +93,10 @@ def test_cross_fqun_occupied_requirement_propagates(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.operation_graphs) == {
-        (f"action<{_MAIN_FQUN}:/test>", f"action<{_MAIN_FQUN}:/outer>"),
+    assert action_graph(result.reference_graph_result) == [
         (f"action<{_MAIN_FQUN}:/outer>", f"action<{_DEP_FQUN}:/inner>"),
-    }
+        (f"action<{_MAIN_FQUN}:/test>", f"action<{_MAIN_FQUN}:/outer>"),
+    ]
 
 
 def test_cross_fqun_occupied_requirement_violated(
@@ -143,10 +143,10 @@ def test_cross_fqun_occupied_requirement_violated(
             "file_path": "lib/inner.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {
-        (f"action<{_MAIN_FQUN}:/test>", f"action<{_MAIN_FQUN}:/outer>"),
+    assert action_graph(result.reference_graph_result) == [
         (f"action<{_MAIN_FQUN}:/outer>", f"action<{_DEP_FQUN}:/inner>"),
-    }
+        (f"action<{_MAIN_FQUN}:/test>", f"action<{_MAIN_FQUN}:/outer>"),
+    ]
 
 
 def test_complex_chain_same_fqun_position_name(
@@ -209,11 +209,11 @@ def test_complex_chain_same_fqun_position_name(
             "file_path": "bar.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {
+    assert action_graph(result.reference_graph_result) == [
+        (_MIDDLE, "action<my.domain.com:my_lib:/bar>"),
         ("action<my.domain.com:my_lib:/foo>", _MIDDLE),
         (_TEST, "action<my.domain.com:my_lib:/foo>"),
-        (_MIDDLE, "action<my.domain.com:my_lib:/bar>"),
-    }
+    ]
 
 
 def test_complex_chain_cross_fqun_position_name(
@@ -277,8 +277,8 @@ def test_complex_chain_cross_fqun_position_name(
             "file_path": "lib/bar.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {
-        (f"action<{_MAIN_FQUN}:/test>", f"action<{_MAIN_FQUN}:/foo>"),
-        (f"action<{_MAIN_FQUN}:/foo>", f"action<{_MAIN_FQUN}:/middle>"),
+    assert action_graph(result.reference_graph_result) == [
         (f"action<{_MAIN_FQUN}:/middle>", f"action<{_DEP_FQUN}:/bar>"),
-    }
+        (f"action<{_MAIN_FQUN}:/foo>", f"action<{_MAIN_FQUN}:/middle>"),
+        (f"action<{_MAIN_FQUN}:/test>", f"action<{_MAIN_FQUN}:/foo>"),
+    ]

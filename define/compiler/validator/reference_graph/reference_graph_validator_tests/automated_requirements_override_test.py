@@ -7,11 +7,11 @@ from typing import TYPE_CHECKING
 
 from define.compiler import diagnostics
 from define.compiler.validator.reference_graph import action_contract
-from define.compiler.validator.reference_graph.operation_graph_renderer import (
-    action_graph_set,
-)
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
+)
+from define.compiler.validator.reference_graph.test_helpers import (
+    action_graph,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -56,10 +56,10 @@ def test_inner_chained_action_occupied_requirement_fulfilled_by_intermediate_act
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.operation_graphs) == {
-        ("action<my.domain.com:my_lib:/test>", "action<my.domain.com:my_lib:/outer>"),
+    assert action_graph(result.reference_graph_result) == [
         ("action<my.domain.com:my_lib:/outer>", "action<my.domain.com:my_lib:/inner>"),
-    }
+        ("action<my.domain.com:my_lib:/test>", "action<my.domain.com:my_lib:/outer>"),
+    ]
 
 
 def test_doubly_nested_both_outer_and_caller_fill(
@@ -151,8 +151,8 @@ def test_doubly_nested_both_outer_and_caller_fill(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {
-        ("action<my.domain.com:my_lib:/test>", "action<my.domain.com:my_lib:/outer>"),
-        ("action<my.domain.com:my_lib:/outer>", "action<my.domain.com:my_lib:/middle>"),
+    assert action_graph(result.reference_graph_result) == [
         ("action<my.domain.com:my_lib:/middle>", "action<my.domain.com:my_lib:/inner>"),
-    }
+        ("action<my.domain.com:my_lib:/outer>", "action<my.domain.com:my_lib:/middle>"),
+        ("action<my.domain.com:my_lib:/test>", "action<my.domain.com:my_lib:/outer>"),
+    ]

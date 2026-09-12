@@ -7,11 +7,11 @@ from typing import TYPE_CHECKING
 
 from define.compiler import diagnostics
 from define.compiler.validator.reference_graph import action_contract
-from define.compiler.validator.reference_graph.operation_graph_renderer import (
-    action_graph_set,
-)
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
+)
+from define.compiler.validator.reference_graph.test_helpers import (
+    action_graph,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -66,7 +66,9 @@ def test_caller_violates_empty_via_create_in_implied_position(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _INNER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _INNER),
+    ]
 
 
 def test_caller_violates_occupied_via_move_from_implied_position(
@@ -102,7 +104,9 @@ def test_caller_violates_occupied_via_move_from_implied_position(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _INNER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _INNER),
+    ]
 
 
 def test_caller_violates_occupied_via_destroy_in_implied_position(
@@ -138,7 +142,9 @@ def test_caller_violates_occupied_via_destroy_in_implied_position(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _INNER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _INNER),
+    ]
 
 
 def test_caller_satisfies_empty_in_implied_position(
@@ -146,7 +152,9 @@ def test_caller_satisfies_empty_in_implied_position(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _INNER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _INNER),
+    ]
 
 
 def test_caller_satisfies_occupied_in_implied_position(
@@ -154,7 +162,9 @@ def test_caller_satisfies_occupied_in_implied_position(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _INNER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _INNER),
+    ]
 
 
 def test_caller_violates_empty_via_create_in_child_of_implied_position(
@@ -201,7 +211,9 @@ def test_caller_violates_empty_via_create_in_child_of_implied_position(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _INNER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _INNER),
+    ]
 
 
 def test_caller_violates_occupied_via_move_from_child_of_implied_position(
@@ -240,7 +252,9 @@ def test_caller_violates_occupied_via_move_from_child_of_implied_position(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _INNER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _INNER),
+    ]
 
 
 def test_caller_violates_occupied_via_destroy_in_child_of_implied_position(
@@ -279,7 +293,9 @@ def test_caller_violates_occupied_via_destroy_in_child_of_implied_position(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _INNER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _INNER),
+    ]
 
 
 def test_caller_satisfies_empty_in_child_of_implied_position(
@@ -287,7 +303,9 @@ def test_caller_satisfies_empty_in_child_of_implied_position(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _INNER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _INNER),
+    ]
 
 
 def test_caller_satisfies_occupied_in_child_of_implied_position(
@@ -295,7 +313,9 @@ def test_caller_satisfies_occupied_in_child_of_implied_position(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _INNER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _INNER),
+    ]
 
 
 def test_caller_violates_empty_via_create_in_iface_of_implied_action(
@@ -350,10 +370,10 @@ def test_caller_violates_empty_via_create_in_iface_of_implied_action(
             "file_path": "sub.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {
+    assert action_graph(result.reference_graph_result) == [
         (_INNER, _SUB),
         (_TEST, _INNER),
-    }
+    ]
 
 
 def test_caller_violates_occupied_via_move_from_iface_of_implied_action(
@@ -400,10 +420,10 @@ def test_caller_violates_occupied_via_move_from_iface_of_implied_action(
             "file_path": "sub.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {
+    assert action_graph(result.reference_graph_result) == [
         (_INNER, _SUB),
         (_TEST, _INNER),
-    }
+    ]
 
 
 def test_caller_violates_occupied_via_destroy_in_iface_of_implied_action(
@@ -450,10 +470,10 @@ def test_caller_violates_occupied_via_destroy_in_iface_of_implied_action(
             "file_path": "sub.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {
+    assert action_graph(result.reference_graph_result) == [
         (_INNER, _SUB),
         (_TEST, _INNER),
-    }
+    ]
 
 
 def test_caller_violates_empty_via_create_in_child_of_iface_of_implied_action(
@@ -508,10 +528,10 @@ def test_caller_violates_empty_via_create_in_child_of_iface_of_implied_action(
             "file_path": "sub.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {
+    assert action_graph(result.reference_graph_result) == [
         (_INNER, _SUB),
         (_TEST, _INNER),
-    }
+    ]
 
 
 def test_caller_violates_occupied_via_move_from_child_of_iface_of_implied_action(
@@ -558,10 +578,10 @@ def test_caller_violates_occupied_via_move_from_child_of_iface_of_implied_action
             "file_path": "sub.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {
+    assert action_graph(result.reference_graph_result) == [
         (_INNER, _SUB),
         (_TEST, _INNER),
-    }
+    ]
 
 
 def test_caller_violates_occupied_via_destroy_in_child_of_iface_of_implied_action(
@@ -608,7 +628,7 @@ def test_caller_violates_occupied_via_destroy_in_child_of_iface_of_implied_actio
             "file_path": "sub.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {
+    assert action_graph(result.reference_graph_result) == [
         (_INNER, _SUB),
         (_TEST, _INNER),
-    }
+    ]

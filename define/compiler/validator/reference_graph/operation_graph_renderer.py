@@ -122,29 +122,3 @@ def _has_dependency_path(
 
 # TODO: Return only edges reachable from a starting action, defaulting to /test
 # unless the caller specifies a different action.
-# TODO: Build action graph assertions from TriggeredActions instead of operation graphs.
-def action_graph(
-    operation_graphs: operation_graph.OperationGraphs,
-) -> list[tuple[str, str]]:
-    """Return each action's directly-triggered actions as (source, target) name pairs.
-
-    An action that triggers the same action twice yields two edges. Actions appear
-    in reference-graph post-order and their Action Executions in the order they perform
-    them, so the result is deterministic. A reference-graph diamond can still make
-    two sibling actions' relative order nondeterministic; assertions spanning such
-    actions should compare ``action_graph_set``.
-    """
-    edges: list[tuple[str, str]] = []
-    for action, graph in operation_graphs.items():
-        for execution in graph.executions:
-            edges.append(
-                (action.source_typed_name, execution.callee_action_name.full_typed_name)
-            )
-    return edges
-
-
-def action_graph_set(
-    operation_graphs: operation_graph.OperationGraphs,
-) -> set[tuple[str, str]]:
-    """Return ``action_graph`` as a set, for assertions whose edge order is nondeterministic."""
-    return set(action_graph(operation_graphs))

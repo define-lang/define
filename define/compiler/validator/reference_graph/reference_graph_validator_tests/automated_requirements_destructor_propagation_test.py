@@ -9,6 +9,7 @@ from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
 )
+from define.compiler.validator.reference_graph.test_helpers import action_graph
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -130,7 +131,7 @@ def test_interface_occupied_requirement_propagates_and_is_violated_at_caller(
             "file_path": "destructor.dfn",
         },
     )
-    assert result.action_call_graph.edges() == [
+    assert action_graph(result.reference_graph_result) == [
         (_MID, _DESTRUCTOR),
         (_TEST, _MID),
     ]
@@ -198,7 +199,7 @@ def test_interface_empty_requirement_propagates_and_is_violated_at_caller(
             "file_path": "destructor.dfn",
         },
     )
-    assert result.action_call_graph.edges() == [
+    assert action_graph(result.reference_graph_result) == [
         (_MID, _DESTRUCTOR),
         (_TEST, _MID),
     ]
@@ -258,7 +259,7 @@ def test_implied_requirement_propagates_and_is_violated_at_caller(
             "file_path": "destructor.dfn",
         },
     )
-    assert result.action_call_graph.edges() == [
+    assert action_graph(result.reference_graph_result) == [
         (_MID, _DESTRUCTOR),
         (_TEST, _MID),
     ]
@@ -318,7 +319,7 @@ def test_child_requirement_propagates_and_is_violated_at_caller(
             "file_path": "destructor.dfn",
         },
     )
-    assert result.action_call_graph.edges() == [
+    assert action_graph(result.reference_graph_result) == [
         (_MID, _DESTRUCTOR),
         (_TEST, _MID),
     ]
@@ -378,7 +379,7 @@ def test_requirement_follows_moved_in_particle_to_contracted_origin(
             "file_path": "destructor.dfn",
         },
     )
-    assert result.action_call_graph.edges() == [
+    assert action_graph(result.reference_graph_result) == [
         (_MID, _DESTRUCTOR),
         (_TEST, _MID),
     ]
@@ -389,7 +390,7 @@ def test_propagated_requirement_satisfied_at_caller_produces_no_error(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.edges() == [
+    assert action_graph(result.reference_graph_result) == [
         (_MID, _DESTRUCTOR),
         (_TEST, _MID),
     ]

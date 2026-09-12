@@ -6,7 +6,7 @@ from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler import diagnostics
-from define.compiler.validator.reference_graph.operation_graph_renderer import (
+from define.compiler.validator.reference_graph.test_helpers import (
     action_graph,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
@@ -82,7 +82,7 @@ def test_constructor_create_implied_child_succeeds(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [(_TEST, _CONSTRUCT)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _CONSTRUCT)]
 
 
 def test_constructor_create_in_child_of_unoccupied_local_position(
@@ -98,7 +98,7 @@ def test_constructor_create_in_child_of_unoccupied_local_position(
     assert all_diags[0].location.file_path == PurePosixPath("construct.dfn")
     assert all_diags[0].position_name == "position<child>::position</x>"
     assert all_diags[0].parent_position_name == "position<child>"
-    assert action_graph(result.operation_graphs) == [(_TEST, _CONSTRUCT)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _CONSTRUCT)]
 
 
 def test_error_parent_suppresses_diagnostic(

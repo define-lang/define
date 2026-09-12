@@ -10,11 +10,11 @@ from typing import TYPE_CHECKING
 
 from define.compiler import diagnostics
 from define.compiler.validator.reference_graph import action_contract
-from define.compiler.validator.reference_graph.operation_graph_renderer import (
-    action_graph_set,
-)
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
+)
+from define.compiler.validator.reference_graph.test_helpers import (
+    action_graph,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -107,7 +107,9 @@ def test_occupied_requirement_is_not_inferred_after_action_in_chain(
     assert isinstance(diagnostic, diagnostics.MoveFromEmptyPositionDiagnostic)
     assert diagnostic.position_name == "action</parent>::position<input>"
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _PARENT)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _PARENT),
+    ]
 
 
 def test_occupied_requirement_is_not_inferred_after_action_on_local_position(
@@ -123,7 +125,9 @@ def test_occupied_requirement_is_not_inferred_after_action_on_local_position(
     assert isinstance(diagnostic, diagnostics.MoveFromEmptyPositionDiagnostic)
     assert diagnostic.position_name == "position<box>::action</parent>::position<input>"
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _PARENT)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _PARENT),
+    ]
 
 
 def test_occupied_requirement_is_not_inferred_after_action_on_interface_position(
@@ -139,7 +143,9 @@ def test_occupied_requirement_is_not_inferred_after_action_on_interface_position
     assert isinstance(diagnostic, diagnostics.MoveFromEmptyPositionDiagnostic)
     assert diagnostic.position_name == "position<box>::action</parent>::position<input>"
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _PARENT)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _PARENT),
+    ]
 
 
 def test_requirement_inference_stops_at_first_empty_interface_in_long_chain(
@@ -161,7 +167,9 @@ def test_requirement_inference_stops_at_first_empty_interface_in_long_chain(
         == "position<box>::action</parent>::position<input>"
     )
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _PARENT)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _PARENT),
+    ]
 
 
 def test_three_level_transitive_requirement(
@@ -175,7 +183,9 @@ def test_satisfy_requirements_then_trigger(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+    ]
 
 
 def test_violate_occupied_requirement(
@@ -211,7 +221,9 @@ def test_violate_occupied_requirement(
             "file_path": "other.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+    ]
 
 
 def test_caller_violates_occupied_requirement(
@@ -249,7 +261,9 @@ def test_caller_violates_occupied_requirement(
             "file_path": "other.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+    ]
 
 
 def test_caller_satisfies_empty_requirement(
@@ -257,7 +271,9 @@ def test_caller_satisfies_empty_requirement(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+    ]
 
 
 def test_caller_violates_empty_requirement(
@@ -303,7 +319,9 @@ def test_caller_violates_empty_requirement(
             "file_path": "other.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+    ]
 
 
 def test_empty_requirement_with_error_state_is_silent(
@@ -319,7 +337,9 @@ def test_empty_requirement_with_error_state_is_silent(
     assert all_diags[0].inferred_at is None
     assert isinstance(all_diags[1], diagnostics.MoveToOccupiedPositionDiagnostic)
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+    ]
 
 
 def test_occupied_requirement_with_error_state_is_silent(
@@ -335,7 +355,9 @@ def test_occupied_requirement_with_error_state_is_silent(
     assert all_diags[0].inferred_at is None
     assert isinstance(all_diags[1], diagnostics.MoveToOccupiedPositionDiagnostic)
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+    ]
 
 
 def test_error_requirement_does_not_skip_later_unsatisfied_requirement(
@@ -395,9 +417,9 @@ def test_error_requirement_does_not_skip_later_unsatisfied_requirement(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {
-        (_TEST, "action<my.domain.com:my_lib:/inner>")
-    }
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, "action<my.domain.com:my_lib:/inner>"),
+    ]
 
 
 def test_error_at_child_name_does_not_hide_parent_requirement(
@@ -450,7 +472,9 @@ def test_multiple_requirements_one_empty_one_occupied(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+    ]
 
 
 def test_caller_satisfies_occupied_requirement(
@@ -458,7 +482,9 @@ def test_caller_satisfies_occupied_requirement(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+    ]
 
 
 _OTHER_WITH_OCCUPIED_REQUIREMENT = (
@@ -520,7 +546,9 @@ def test_constructor_violates_occupied_requirement(
             "file_path": "other.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+    ]
 
 
 def test_constructor_violates_empty_requirement(
@@ -564,7 +592,9 @@ def test_constructor_violates_empty_requirement(
             "file_path": "other.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+    ]
 
 
 def test_constructor_satisfies_requirements(
@@ -572,7 +602,9 @@ def test_constructor_satisfies_requirements(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+    ]
 
 
 def test_locally_created_parent_does_not_infer_child_requirement(
@@ -616,7 +648,9 @@ def test_trigger_chain_occupied_requirement_satisfied(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+    ]
 
 
 def test_trigger_chain_occupied_requirement_violated(
@@ -681,7 +715,9 @@ def test_trigger_chain_occupied_requirement_violated(
             "file_path": "other.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+    ]
 
 
 def test_trigger_chain_empty_requirement_satisfied(
@@ -689,7 +725,9 @@ def test_trigger_chain_empty_requirement_satisfied(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+    ]
 
 
 def test_trigger_chain_empty_requirement_violated(
@@ -736,7 +774,9 @@ def test_trigger_chain_empty_requirement_violated(
             "file_path": "other.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+    ]
 
 
 def test_trigger_chain_parent_requirement_violated(
@@ -774,7 +814,9 @@ def test_trigger_chain_parent_requirement_violated(
             "file_path": "other.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+    ]
 
 
 def test_destroy_infers_occupied_requirement(
@@ -810,7 +852,9 @@ def test_destroy_infers_occupied_requirement(
             "file_path": "other.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+    ]
 
 
 def test_inner_action_local_failure_does_not_propagate_to_caller(
@@ -825,4 +869,6 @@ def test_inner_action_local_failure_does_not_propagate_to_caller(
     assert all_diags[0].location.column == 33
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].position_name == "position<body_local>"
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+    ]

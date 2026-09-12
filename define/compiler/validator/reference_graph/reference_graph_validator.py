@@ -7,7 +7,6 @@ from dataclasses import dataclass
 
 from define.compiler import ast, diagnostics
 from define.compiler.graphs import (
-    action_call_graph,
     reference_graph,
     reference_graph_executor,
 )
@@ -32,7 +31,6 @@ class ReferenceGraphValidationResult:
     """What reference graph validation produces, beyond the diagnostics it reports."""
 
     definition_order: reference_graph_executor.ReferenceGraphOrder
-    action_call_graph: action_call_graph.ActionCallGraph
     # The DLP 44 operation dependency graph of every action.
     operation_graphs: operation_graph.OperationGraphs
     destructions: dict[ast.SourceLocation, list[ast.PositionReference]]
@@ -96,7 +94,6 @@ class ReferenceGraphValidator:
             max_workers=max_workers,
         )
 
-        call_graph = action_call_graph.ActionCallGraph()
         operation_graphs = operation_graph.OperationGraphs()
         destructions: dict[ast.SourceLocation, list[ast.PositionReference]] = {}
         triggered_actions: action_contract.TriggeredActions = {}
@@ -108,8 +105,6 @@ class ReferenceGraphValidator:
             definition_result = self._definition_results[definition.typed_name]
             for d in result.diagnostics:
                 definition_result.add_diagnostic(d)
-            for edge in result.edges:
-                call_graph.add_edge(edge.source, edge.target)
             operation_graphs[definition.typed_name] = result.operation_graph
             destructions.update(result.destructions)
             triggered_actions.update(result.triggered_actions)
@@ -120,7 +115,6 @@ class ReferenceGraphValidator:
             self._validate_entry_action_requirements(self._entry_action)
         return ReferenceGraphValidationResult(
             definition_order=definition_order,
-            action_call_graph=call_graph,
             operation_graphs=operation_graphs,
             destructions=destructions,
             triggered_actions=triggered_actions,

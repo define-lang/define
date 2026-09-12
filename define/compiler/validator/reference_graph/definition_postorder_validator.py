@@ -7,7 +7,6 @@ from dataclasses import dataclass
 from functools import cached_property
 
 from define.compiler import ast, diagnostics
-from define.compiler.graphs import action_call_graph
 from define.compiler.validator import scope_tracker
 from define.compiler.validator.reference_graph import (
     action_contract,
@@ -41,7 +40,6 @@ class PostorderValidationResult:
     """Result of validating a single definition during the DFS post-order walk."""
 
     diagnostics: list[diagnostics.Diagnostic]
-    edges: list[action_call_graph.ActionGraphEdge]
     contract: action_contract.ActionContract
     operation_graph: operation_graph.OperationGraph
     destructions: dict[ast.SourceLocation, list[ast.PositionReference]]
@@ -153,7 +151,6 @@ class ActionPostorderValidator:
     ]
     _validation_state: reference_graph_validation_state.ReferenceGraphValidationState
     _diagnostics: list[diagnostics.Diagnostic]
-    _action_edges: list[action_call_graph.ActionGraphEdge]
     _inferred_requirements: dict[tuple[str, ...], action_contract.PositionRequirement]
     _destruction_contracts: list[action_contract.DestructionContracts]
     _dead_constraint_tracker: dead_constraint_tracker.DeadConstraintTracker
@@ -171,7 +168,6 @@ class ActionPostorderValidator:
         self._definition_results = definition_results
         self._validation_state = validation_state
         self._diagnostics = []
-        self._action_edges = []
         self._inferred_requirements = {}
         self._destruction_contracts = []
         self._triggered_actions: action_contract.TriggeredActions = {}
@@ -606,12 +602,6 @@ class ActionPostorderValidator:
             destructor_name,
             occupied_interface_child_position_violations,
         )
-        self._action_edges.append(
-            action_call_graph.ActionGraphEdge(
-                source=self._definition.typed_name.source_typed_name,
-                target=destructor_name.full_typed_name,
-            )
-        )
 
     def _process_action_position_arrival(
         self,
@@ -710,12 +700,6 @@ class ActionPostorderValidator:
         self._record_occupied_interface_child_position_violations(
             action,
             occupied_interface_child_position_violations,
-        )
-        self._action_edges.append(
-            action_call_graph.ActionGraphEdge(
-                source=self._definition.typed_name.source_typed_name,
-                target=action.full_typed_name,
-            )
         )
 
     def _record_occupied_interface_child_position_violations(
@@ -1208,16 +1192,6 @@ class ActionPostorderValidator:
             if resolution is None:
                 return None
             resolved_requirements.append(resolution)
-        # Every required state is known here, so this is where the destructor is
-        # actually verified; record the firing edge once, from the true destroyer.
-        self._action_edges.append(
-            action_call_graph.ActionGraphEdge(
-                source=(
-                    destruction_contract.destruction_fact.destruction.destroying_action.full_typed_name
-                ),
-                target=destructor_quality.full_typed_name,
-            )
-        )
         for resolved_requirement in resolved_requirements:
             occupancy = resolved_requirement.occupancy
             required_state = resolved_requirement.requirement.required_state
@@ -1913,7 +1887,6 @@ class ActionPostorderValidator:
         )
         return PostorderValidationResult(
             diagnostics=self._diagnostics,
-            edges=self._action_edges,
             contract=contract,
             operation_graph=operation_graph_builder.finish(),
             destructions=self._destructions,

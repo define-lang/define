@@ -12,6 +12,7 @@ from define.compiler.validator.reference_graph import (
     position_occupancy,
     reference_graph_validation_state,
 )
+from define.compiler.validator.reference_graph.test_helpers import action_graph
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if typing.TYPE_CHECKING:
@@ -143,7 +144,7 @@ def test_automatic_destruction_with_unrelated_pending_guarantees(
     marker = ("position<my.domain.com:my_lib:/marker>",)
     assert first.child_state.get(marker) is None
     assert second.child_state.get(marker) is None
-    assert result.action_call_graph.edges() == [
+    assert action_graph(result.reference_graph_result) == [
         (
             "action<my.domain.com:my_lib:/outer>",
             "action<my.domain.com:my_lib:/filler>",
@@ -335,7 +336,7 @@ def test_shared_state_uses_each_moved_particles_own_origin(
         contracts.child_occupancy(child, ("position<my.domain.com:my_lib:/resource>",))
         is None
     )
-    assert result.action_call_graph.edges() == [
+    assert action_graph(result.reference_graph_result) == [
         (
             "action<my.domain.com:my_lib:/middle>",
             "action<my.domain.com:my_lib:/destroyer>",

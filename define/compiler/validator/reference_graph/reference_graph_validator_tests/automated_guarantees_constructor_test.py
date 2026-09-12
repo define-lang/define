@@ -6,7 +6,7 @@ from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler import diagnostics
-from define.compiler.validator.reference_graph.operation_graph_renderer import (
+from define.compiler.validator.reference_graph.test_helpers import (
     action_graph,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
@@ -23,7 +23,7 @@ def test_constructor_implied_position_guarantee_visible_to_caller(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [(_TEST, _CONSTRUCT)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _CONSTRUCT)]
 
 
 def test_constructor_occupied_guarantee_conflicts_with_caller_create(
@@ -40,4 +40,4 @@ def test_constructor_occupied_guarantee_conflicts_with_caller_create(
     assert all_diags[0].position_name == "position<box>::position</color>"
     assert all_diags[0].populated_at.line == 6
     assert all_diags[0].populated_at.file_path == PurePosixPath("construct.dfn")
-    assert action_graph(result.operation_graphs) == [(_TEST, _CONSTRUCT)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _CONSTRUCT)]

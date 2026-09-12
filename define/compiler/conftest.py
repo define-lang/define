@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
-from typing import TYPE_CHECKING, Protocol, cast
+from typing import Protocol, cast
 
 import pytest
 
@@ -19,9 +19,6 @@ from define.compiler.validator.reference_graph import (
 from define.compiler.validator.structural import program_validator
 from define.testdata import path_resolver
 
-if TYPE_CHECKING:
-    from define.compiler.graphs import action_call_graph
-
 _PARSER = parser.Parser()
 
 
@@ -31,11 +28,6 @@ class FullValidationResult:
 
     program_result: validation_result.ProgramValidationResult
     reference_graph_result: reference_graph_validator.ReferenceGraphValidationResult
-
-    @property
-    def action_call_graph(self) -> action_call_graph.ActionCallGraph:
-        """The actions this program's actions trigger."""
-        return self.reference_graph_result.action_call_graph
 
     @property
     def operation_graphs(

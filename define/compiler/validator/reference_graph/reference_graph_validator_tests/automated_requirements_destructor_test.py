@@ -10,6 +10,7 @@ from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
 )
+from define.compiler.validator.reference_graph.test_helpers import action_graph
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -60,7 +61,7 @@ def test_occupied_interface_requirement_satisfied(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _DESTRUCTOR)]
 
 
 def test_occupied_interface_requirement_violated(
@@ -115,7 +116,7 @@ def test_occupied_interface_requirement_violated(
             "file_path": "destructor.dfn",
         },
     )
-    assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _DESTRUCTOR)]
 
 
 def test_empty_interface_requirement_satisfied(
@@ -123,7 +124,7 @@ def test_empty_interface_requirement_satisfied(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR_EMPTY)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _DESTRUCTOR_EMPTY)]
 
 
 def test_empty_interface_requirement_violated(
@@ -186,7 +187,7 @@ def test_empty_interface_requirement_violated(
             "file_path": "destructor_empty.dfn",
         },
     )
-    assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR_EMPTY)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _DESTRUCTOR_EMPTY)]
 
 
 def test_intermediate_position_requirement_violated(
@@ -241,7 +242,7 @@ def test_intermediate_position_requirement_violated(
             "file_path": "nested_destructor.dfn",
         },
     )
-    assert result.action_call_graph.edges() == [(_TEST, _NESTED_DESTRUCTOR)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _NESTED_DESTRUCTOR)]
 
 
 def test_locally_created_interface_particle_fires_destructor_locally(
@@ -298,7 +299,7 @@ def test_locally_created_interface_particle_fires_destructor_locally(
             "file_path": "destructor.dfn",
         },
     )
-    assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _DESTRUCTOR)]
 
 
 def test_locally_created_destructor_parent_propagates_requirement_from_moved_child(
@@ -353,7 +354,7 @@ def test_locally_created_destructor_parent_propagates_requirement_from_moved_chi
             "file_path": "destructor.dfn",
         },
     )
-    assert result.action_call_graph.edges() == [
+    assert action_graph(result.reference_graph_result) == [
         (_DESTROY_CARRIER, _DESTRUCTOR),
         (_TEST, _DESTROY_CARRIER),
     ]
@@ -411,7 +412,7 @@ def test_destructor_in_constructor_checks_interface_requirement_locally(
             "file_path": "destructor.dfn",
         },
     )
-    assert result.action_call_graph.edges() == [
+    assert action_graph(result.reference_graph_result) == [
         (_P, _DESTRUCTOR),
         (_TEST, _P),
     ]
@@ -469,7 +470,7 @@ def test_callee_attached_destructor_requirement_verified_at_owning_caller(
             "file_path": "destructor.dfn",
         },
     )
-    assert result.action_call_graph.edges() == [
+    assert action_graph(result.reference_graph_result) == [
         (_TEST, _MAKE_THING),
         (_TEST, _DESTRUCTOR),
     ]

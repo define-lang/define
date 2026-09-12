@@ -10,12 +10,12 @@ from typing import TYPE_CHECKING
 
 from define.compiler import diagnostics
 from define.compiler.validator.reference_graph import action_contract
-from define.compiler.validator.reference_graph.operation_graph_renderer import (
-    action_graph,
-    action_graph_set,
-)
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
+)
+from define.compiler.validator.reference_graph.test_helpers import (
+    action_graph,
+    action_graph_set,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -69,7 +69,8 @@ def test_later_transitive_guarantee_wins_between_sibling_calls(
     assert all_diags[0].position_name == "position</item>"
     assert all_diags[0].is_action_interface_position is False
     assert all_diags[0].inferred_at is None
-    assert action_graph_set(result.operation_graphs) == {
+    # Both call paths reference /item, making their definition order nondeterministic.
+    assert action_graph_set(result.reference_graph_result) == {
         (_TEST, "action<my.domain.com:my_lib:/run_both>"),
         (
             "action<my.domain.com:my_lib:/run_both>",
@@ -110,7 +111,9 @@ def test_untouched_interface_position_preserved_after_trigger(
     assert all_diags[1].location.line == 3
     assert all_diags[1].location.column == 25
     assert all_diags[1].location.file_path == PurePosixPath("other.dfn")
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+    ]
 
 
 def test_move_from_guarantee_emptied_interface_position(
@@ -133,7 +136,9 @@ def test_move_from_guarantee_emptied_interface_position(
     assert all_diags[0].inferred_at.line == 7
     assert all_diags[0].inferred_at.column == 30
     assert all_diags[0].inferred_at.file_path == PurePosixPath("other.dfn")
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+    ]
 
 
 def test_post_trigger_guaranteed_empty_position_allows_create(
@@ -141,7 +146,9 @@ def test_post_trigger_guaranteed_empty_position_allows_create(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+    ]
 
 
 def test_post_trigger_guaranteed_occupied_position_rejects_create(
@@ -159,7 +166,9 @@ def test_post_trigger_guaranteed_occupied_position_rejects_create(
     assert all_diags[0].populated_at.line == 7
     assert all_diags[0].populated_at.column == 30
     assert all_diags[0].populated_at.file_path == PurePosixPath("other.dfn")
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+    ]
 
 
 def test_post_trigger_trigger_position_stays_occupied(
@@ -180,7 +189,9 @@ def test_post_trigger_trigger_position_stays_occupied(
     assert all_diags[0].populated_at.line == 12
     assert all_diags[0].populated_at.column == 30
     assert all_diags[0].populated_at.file_path == PurePosixPath("test.dfn")
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+    ]
 
 
 def test_post_trigger_untouched_trigger_allows_move_from(
@@ -188,7 +199,7 @@ def test_post_trigger_untouched_trigger_allows_move_from(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [(_TEST, _OTHER)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _OTHER)]
 
 
 def test_second_trigger_cycle_after_guarantee_empties_trigger(
@@ -196,7 +207,10 @@ def test_second_trigger_cycle_after_guarantee_empties_trigger(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+        (_TEST, _OTHER),
+    ]
 
 
 def test_second_trigger_fails_when_guarantee_filled_position(
@@ -240,7 +254,10 @@ def test_second_trigger_fails_when_guarantee_filled_position(
             "file_path": "other.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+        (_TEST, _OTHER),
+    ]
 
 
 def test_second_trigger_fails_when_existing_guarantee_leaves_position_occupied(
@@ -284,7 +301,10 @@ def test_second_trigger_fails_when_existing_guarantee_leaves_position_occupied(
             "file_path": "other.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+        (_TEST, _OTHER),
+    ]
 
 
 def test_second_trigger_fails_occupied_requirement_after_guarantee_empties(
@@ -354,7 +374,10 @@ def test_second_trigger_fails_occupied_requirement_after_guarantee_empties(
             "file_path": "other.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+        (_TEST, _OTHER),
+    ]
 
 
 def test_second_trigger_succeeds_with_proper_state_management(
@@ -362,7 +385,10 @@ def test_second_trigger_succeeds_with_proper_state_management(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+        (_TEST, _OTHER),
+    ]
 
 
 def test_post_trigger_particle_identity_preserved_through_guarantee(
@@ -370,7 +396,9 @@ def test_post_trigger_particle_identity_preserved_through_guarantee(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+    ]
 
 
 def test_post_trigger_guaranteed_empty_position_allows_move_to(
@@ -378,7 +406,9 @@ def test_post_trigger_guaranteed_empty_position_allows_move_to(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+    ]
 
 
 def test_post_trigger_occupied_by_new_allows_move_from(
@@ -386,7 +416,9 @@ def test_post_trigger_occupied_by_new_allows_move_from(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+    ]
 
 
 def test_post_trigger_occupied_by_new_rejects_move_to(
@@ -405,7 +437,9 @@ def test_post_trigger_occupied_by_new_rejects_move_to(
     assert all_diags[0].occupied_at.line == 7
     assert all_diags[0].occupied_at.column == 30
     assert all_diags[0].occupied_at.file_path == PurePosixPath("other.dfn")
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+    ]
 
 
 def test_post_trigger_occupied_by_existing_rejects_create(
@@ -423,7 +457,9 @@ def test_post_trigger_occupied_by_existing_rejects_create(
     assert all_diags[0].populated_at.line == 8
     assert all_diags[0].populated_at.column == 48
     assert all_diags[0].populated_at.file_path == PurePosixPath("other.dfn")
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+    ]
 
 
 def test_post_trigger_occupied_by_existing_rejects_move_to(
@@ -442,7 +478,9 @@ def test_post_trigger_occupied_by_existing_rejects_move_to(
     assert all_diags[0].occupied_at.line == 8
     assert all_diags[0].occupied_at.column == 48
     assert all_diags[0].occupied_at.file_path == PurePosixPath("other.dfn")
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+    ]
 
 
 def test_constructor_trigger_applies_empty_guarantee(
@@ -465,10 +503,10 @@ def test_constructor_trigger_applies_empty_guarantee(
     assert all_diags[0].inferred_at.line == 7
     assert all_diags[0].inferred_at.column == 30
     assert all_diags[0].inferred_at.file_path == PurePosixPath("other.dfn")
-    assert action_graph_set(result.operation_graphs) == {
-        (_TEST, _CONSTRUCT),
+    assert action_graph(result.reference_graph_result) == [
         (_CONSTRUCT, _OTHER),
-    }
+        (_TEST, _CONSTRUCT),
+    ]
 
 
 def test_constructor_trigger_applies_occupied_guarantee(
@@ -488,10 +526,10 @@ def test_constructor_trigger_applies_occupied_guarantee(
     assert all_diags[0].populated_at.line == 7
     assert all_diags[0].populated_at.column == 30
     assert all_diags[0].populated_at.file_path == PurePosixPath("other.dfn")
-    assert action_graph_set(result.operation_graphs) == {
-        (_TEST, _CONSTRUCT),
+    assert action_graph(result.reference_graph_result) == [
         (_CONSTRUCT, _OTHER),
-    }
+        (_TEST, _CONSTRUCT),
+    ]
 
 
 def test_trigger_chain_move_guarantee_empties_position(
@@ -499,7 +537,9 @@ def test_trigger_chain_move_guarantee_empties_position(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+    ]
 
 
 def test_trigger_chain_create_guarantee_fills_position(
@@ -520,7 +560,9 @@ def test_trigger_chain_create_guarantee_fills_position(
     assert all_diags[0].populated_at.line == 10
     assert all_diags[0].populated_at.column == 30
     assert all_diags[0].populated_at.file_path == PurePosixPath("other.dfn")
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+    ]
 
 
 def test_trigger_chain_existing_guarantee_preserves_caller_qualities(
@@ -528,7 +570,9 @@ def test_trigger_chain_existing_guarantee_preserves_caller_qualities(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+    ]
 
 
 def test_post_trigger_existing_guarantee_on_child_position(
@@ -546,7 +590,9 @@ def test_post_trigger_existing_guarantee_on_child_position(
         all_diags[0].position_name
         == "position<box>::action</other>::position<dest>::position</child_q>"
     )
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+    ]
 
 
 def test_post_trigger_empty_guarantee_on_child_position(
@@ -566,7 +612,9 @@ def test_post_trigger_empty_guarantee_on_child_position(
     )
     assert all_diags[0].is_action_interface_position is True
     assert all_diags[0].inferred_at is None
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+    ]
 
 
 def test_post_trigger_new_guarantee_on_child_position(
@@ -584,7 +632,9 @@ def test_post_trigger_new_guarantee_on_child_position(
         all_diags[0].position_name
         == "position<box>::action</other>::position<item>::position</x>"
     )
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+    ]
 
 
 def test_post_trigger_empty_guarantee_deletes_children(
@@ -606,7 +656,9 @@ def test_post_trigger_empty_guarantee_deletes_children(
         all_diags[0].parent_position_name
         == "position<box>::action</other>::position<item>"
     )
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+    ]
 
 
 def test_post_trigger_new_guarantee_deletes_old_children(
@@ -626,7 +678,9 @@ def test_post_trigger_new_guarantee_deletes_old_children(
     )
     assert all_diags[0].is_action_interface_position is True
     assert all_diags[0].inferred_at is None
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+    ]
 
 
 def test_post_trigger_child_removed_before_parent_move(
@@ -634,7 +688,9 @@ def test_post_trigger_child_removed_before_parent_move(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+    ]
 
 
 def test_post_trigger_parent_and_child_both_have_guarantees(
@@ -652,7 +708,9 @@ def test_post_trigger_parent_and_child_both_have_guarantees(
         all_diags[0].position_name
         == "position<box>::action</other>::position<dest>::position</child_q>"
     )
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+    ]
 
 
 def test_post_trigger_child_guarantee_follows_parent_move(
@@ -670,7 +728,9 @@ def test_post_trigger_child_guarantee_follows_parent_move(
         all_diags[0].position_name
         == "position<box>::action</other>::position<dest>::position</child_q>"
     )
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+    ]
 
 
 def test_post_trigger_existing_guarantee_empties_origin_children(
@@ -692,7 +752,9 @@ def test_post_trigger_existing_guarantee_empties_origin_children(
         all_diags[0].parent_position_name
         == "position<box>::action</other>::position<iface>"
     )
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+    ]
 
 
 def test_post_trigger_existing_guarantee_on_child_swap(
@@ -700,7 +762,9 @@ def test_post_trigger_existing_guarantee_on_child_swap(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+    ]
 
 
 def test_long_chain_trigger_fires_and_applies_guarantee(
@@ -769,10 +833,10 @@ def test_long_chain_inner_requirement_enforced_through_nested_trigger(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {
-        (_TEST, _OUTER),
+    assert action_graph(result.reference_graph_result) == [
         (_OUTER, _INNER),
-    }
+        (_TEST, _OUTER),
+    ]
 
 
 def test_destroy_produces_empty_guarantee(
@@ -780,7 +844,10 @@ def test_destroy_produces_empty_guarantee(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+        (_TEST, _OTHER),
+    ]
 
 
 def test_destroy_prunes_children_from_caller(
@@ -802,7 +869,9 @@ def test_destroy_prunes_children_from_caller(
         all_diags[0].parent_position_name
         == "position<box>::action</other>::position<item>"
     )
-    assert action_graph_set(result.operation_graphs) == {(_TEST, _OTHER)}
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _OTHER),
+    ]
 
 
 def test_retriggering_same_action_reapplies_its_guarantee_over_a_later_body_change(

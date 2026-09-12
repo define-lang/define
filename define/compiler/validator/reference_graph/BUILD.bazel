@@ -70,7 +70,6 @@ py_library(
         "//define/compiler:ast",
         "//define/compiler:diagnostics",
         "//define/compiler/data_structures:typed_name_dict",
-        "//define/compiler/graphs:action_call_graph",
         "//define/compiler/validator:scope_tracker",
         "//define/compiler/validator:validation_result",
         "//define/compiler/validator/reference_graph/dead_code:dead_constraint_tracker",
@@ -293,7 +292,6 @@ py_library(
         "//define/compiler:ast",
         "//define/compiler:diagnostics",
         "//define/compiler/data_structures:typed_name_dict",
-        "//define/compiler/graphs:action_call_graph",
         "//define/compiler/graphs:reference_graph",
         "//define/compiler/graphs:reference_graph_executor",
         "//define/compiler/validator:validation_result",
@@ -325,6 +323,17 @@ py_library(
         ":position_occupancy",
         "//define/compiler:ast",
         "//define/compiler:diagnostics",
+    ],
+)
+
+py_library(
+    name = "test_helpers",
+    testonly = True,
+    srcs = ["test_helpers.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        ":reference_graph_validator",
+        "//define/compiler:ast",
     ],
 )
 
@@ -367,5 +376,6 @@ pyright_test(
         ":reference_graph_validator",
         ":reference_graph_validator_test",
         ":requirement_violation",
+        ":test_helpers",
     ],
 )

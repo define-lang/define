@@ -7,11 +7,11 @@ from typing import TYPE_CHECKING
 
 from define.compiler import diagnostics
 from define.compiler.validator.reference_graph import action_contract
-from define.compiler.validator.reference_graph.operation_graph_renderer import (
-    action_graph,
-)
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
+)
+from define.compiler.validator.reference_graph.test_helpers import (
+    action_graph,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -147,7 +147,7 @@ def test_occupied_interface_requirement_always_violated(
             "file_path": "consumer.dfn",
         },
     )
-    assert action_graph(result.operation_graphs) == [(_TEST, _CONSUMER)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _CONSUMER)]
 
 
 def test_empty_interface_requirement_satisfied(
@@ -155,7 +155,7 @@ def test_empty_interface_requirement_satisfied(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [(_TEST, _INITIALIZER)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _INITIALIZER)]
 
 
 def test_empty_interface_requirement_satisfied_when_created_in_interface_position(
@@ -165,7 +165,7 @@ def test_empty_interface_requirement_satisfied_when_created_in_interface_positio
         allow_entry_action_interface_positions=True
     )
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [(_TEST, _INITIALIZER)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _INITIALIZER)]
 
 
 def test_constructor_empty_violation_via_create_in_implied(

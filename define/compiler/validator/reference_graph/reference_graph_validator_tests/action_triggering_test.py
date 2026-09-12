@@ -6,7 +6,7 @@ from pathlib import PurePosixPath
 import pytest
 
 from define.compiler import conftest, diagnostics, parser_exceptions
-from define.compiler.validator.reference_graph.operation_graph_renderer import (
+from define.compiler.validator.reference_graph.test_helpers import (
     action_graph,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
@@ -86,7 +86,7 @@ def test_basic_cross_action_trigger(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [(_TEST, _OTHER)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _OTHER)]
 
 
 def test_create_and_move_trigger_other_action(
@@ -94,7 +94,7 @@ def test_create_and_move_trigger_other_action(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [(_TEST, _OTHER)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _OTHER)]
 
 
 def test_refilling_destroyed_trigger_position_retriggers(
@@ -102,7 +102,7 @@ def test_refilling_destroyed_trigger_position_retriggers(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_TEST, _OTHER),
         (_TEST, _OTHER),
     ]
@@ -113,7 +113,7 @@ def test_moving_between_two_trigger_positions_fires_both(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_TEST, _OTHER),
         (_TEST, _ACT_B),
     ]
@@ -134,7 +134,7 @@ def test_move_from_trigger_position_to_itself_does_not_retrigger(
         all_diags[0].position_name
         == "position<gateway>::action</other>::position<trigger_pos>"
     )
-    assert action_graph(result.operation_graphs) == [(_TEST, _OTHER)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _OTHER)]
 
 
 def test_cross_file_triggering(
@@ -142,7 +142,7 @@ def test_cross_file_triggering(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [(_TEST, _ACT_B)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _ACT_B)]
 
 
 def test_trigger_chain(
@@ -150,7 +150,7 @@ def test_trigger_chain(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_ACT_B, _ACT_C),
         (_TEST, _ACT_B),
     ]
@@ -161,7 +161,7 @@ def test_diamond_trigger_graph_preserves_both_paths(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_ACT_B, _SHARED),
         (_ACT_C, _SHARED),
         (_TEST, _ACT_B),
@@ -174,7 +174,7 @@ def test_same_local_position_name_in_unrelated_action_does_not_trigger_it(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [(_ACT_B, _ACT_A)]
+    assert action_graph(result.reference_graph_result) == [(_ACT_B, _ACT_A)]
 
 
 def test_self_trigger(
@@ -189,7 +189,7 @@ def test_self_trigger(
         result.program_result.all_diagnostics[0],
         diagnostics.ActionSelfTriggerDiagnostic,
     )
-    assert action_graph(result.operation_graphs) == []
+    assert action_graph(result.reference_graph_result) == []
 
 
 def test_duplicate_action_does_not_add_trigger_edges(
@@ -207,7 +207,7 @@ def test_duplicate_action_does_not_add_trigger_edges(
     assert result.program_result.all_diagnostics[0].first_definition_line == 1
     assert result.program_result.all_diagnostics[0].location.line == 9
     assert result.program_result.all_diagnostics[0].location.column == 1
-    assert action_graph(result.operation_graphs) == []
+    assert action_graph(result.reference_graph_result) == []
 
 
 def test_local_prefix_before_action_trigger(
@@ -215,7 +215,7 @@ def test_local_prefix_before_action_trigger(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [(_TEST, _OTHER)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _OTHER)]
 
 
 def test_no_body_effect_when_create_target_has_error_state(
@@ -266,7 +266,7 @@ def test_no_trigger_edge_on_unknown_global_chain_start(
     assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
     assert all_diags[0].source_global_name == "action</other>"
     assert all_diags[0].full_global_name == "action<my.domain.com:my_lib:/other>"
-    assert action_graph(result.operation_graphs) == []
+    assert action_graph(result.reference_graph_result) == []
 
 
 class TestConstructorTriggering:
@@ -276,7 +276,7 @@ class TestConstructorTriggering:
     ):
         result = validate_testdata_project_with_reference_graph()
         assert_no_errors(result.program_result)
-        assert action_graph(result.operation_graphs) == [(_TEST, _OTHER)]
+        assert action_graph(result.reference_graph_result) == [(_TEST, _OTHER)]
 
     def test_constructor_move_triggers_action(
         self,
@@ -284,7 +284,7 @@ class TestConstructorTriggering:
     ):
         result = validate_testdata_project_with_reference_graph()
         assert_no_errors(result.program_result)
-        assert action_graph(result.operation_graphs) == [(_TEST, _OTHER)]
+        assert action_graph(result.reference_graph_result) == [(_TEST, _OTHER)]
 
     def test_constructor_fired_via_constraint_records_edge(
         self,
@@ -292,7 +292,7 @@ class TestConstructorTriggering:
     ):
         result = validate_testdata_project_with_reference_graph()
         assert_no_errors(result.program_result)
-        assert action_graph(result.operation_graphs) == [(_TEST, _P)]
+        assert action_graph(result.reference_graph_result) == [(_TEST, _P)]
 
 
 def test_action_interface_reference_with_circular_contract_reports_circular_references(
@@ -328,7 +328,7 @@ def test_records_statement_triggers_including_constructors(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_TEST, "action<my.domain.com:my_lib:/worker>"),
         (_TEST, "action<my.domain.com:my_lib:/first>"),
         (_TEST, "action<my.domain.com:my_lib:/second>"),

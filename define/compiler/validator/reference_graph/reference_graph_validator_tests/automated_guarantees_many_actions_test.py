@@ -10,12 +10,11 @@ from typing import TYPE_CHECKING
 
 from define.compiler import diagnostics
 from define.compiler.validator.reference_graph import action_contract
-from define.compiler.validator.reference_graph.operation_graph_renderer import (
-    action_graph,
-    action_graph_set,
-)
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
+)
+from define.compiler.validator.reference_graph.test_helpers import (
+    action_graph,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -35,8 +34,7 @@ def test_destroyed_particle_guarantees_do_not_apply_to_replacement_particle(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.operation_graphs) == {
-        (_TEST, _MIDDLE),
+    assert action_graph(result.reference_graph_result) == [
         (
             _MIDDLE,
             "action<my.domain.com:my_lib:/empty_marker>",
@@ -45,7 +43,8 @@ def test_destroyed_particle_guarantees_do_not_apply_to_replacement_particle(
             _MIDDLE,
             "action<my.domain.com:my_lib:/fill_marker>",
         ),
-    }
+        (_TEST, _MIDDLE),
+    ]
 
 
 def test_destroyed_particle_guarantees_do_not_make_replacement_particle_occupied(
@@ -72,8 +71,7 @@ def test_destroyed_particle_guarantees_do_not_make_replacement_particle_occupied
     assert diag.inferred_at.end_line == 7
     assert diag.inferred_at.end_column == 50
     assert diag.inferred_at.file_path == PurePosixPath("empty_marker.dfn")
-    assert action_graph_set(result.operation_graphs) == {
-        (_TEST, _MIDDLE),
+    assert action_graph(result.reference_graph_result) == [
         (
             _TEST,
             "action<my.domain.com:my_lib:/empty_marker>",
@@ -82,7 +80,8 @@ def test_destroyed_particle_guarantees_do_not_make_replacement_particle_occupied
             _TEST,
             "action<my.domain.com:my_lib:/fill_marker>",
         ),
-    }
+        (_TEST, _MIDDLE),
+    ]
 
 
 def test_inner_empty_guarantee_propagates_through_outer(
@@ -90,10 +89,10 @@ def test_inner_empty_guarantee_propagates_through_outer(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.operation_graphs) == {
-        (_TEST, _OUTER),
+    assert action_graph(result.reference_graph_result) == [
         (_OUTER, _INNER),
-    }
+        (_TEST, _OUTER),
+    ]
 
 
 def test_inner_occupied_guarantee_propagates_through_outer(
@@ -101,10 +100,10 @@ def test_inner_occupied_guarantee_propagates_through_outer(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.operation_graphs) == {
-        (_TEST, _OUTER),
+    assert action_graph(result.reference_graph_result) == [
         (_OUTER, _INNER),
-    }
+        (_TEST, _OUTER),
+    ]
 
 
 def test_occupied_guarantee_creates_empty_requirement(
@@ -159,10 +158,10 @@ def test_occupied_guarantee_creates_empty_requirement(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {
-        (_TEST, _OUTER),
+    assert action_graph(result.reference_graph_result) == [
         (_OUTER, _INNER),
-    }
+        (_TEST, _OUTER),
+    ]
 
 
 def test_move_guarantee_creates_occupied_in_distant_caller(
@@ -180,10 +179,10 @@ def test_move_guarantee_creates_occupied_in_distant_caller(
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert action_graph_set(result.operation_graphs) == {
-        (_TEST, _OUTER),
+    assert action_graph(result.reference_graph_result) == [
         (_OUTER, _INNER),
-    }
+        (_TEST, _OUTER),
+    ]
 
 
 def test_transitive_child_guarantee_follows_particle_through_move(
@@ -201,11 +200,11 @@ def test_transitive_child_guarantee_follows_particle_through_move(
         all_diags[0].position_name
         == "position<gateway>::action</outer>::position<destination>::position</result>"
     )
-    assert action_graph_set(result.operation_graphs) == {
-        (_TEST, _OUTER),
-        (_OUTER, _MIDDLE),
+    assert action_graph(result.reference_graph_result) == [
         (_MIDDLE, _INNER),
-    }
+        (_OUTER, _MIDDLE),
+        (_TEST, _OUTER),
+    ]
 
 
 def test_transitive_child_guarantee_at_moved_position_follows_particle(
@@ -231,7 +230,7 @@ def test_transitive_child_guarantee_at_moved_position_follows_particle(
     assert diagnostic.populated_at.end_line == 7
     assert diagnostic.populated_at.end_column == 47
     assert diagnostic.populated_at.file_path == PurePosixPath("inner.dfn")
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_OUTER, _INNER),
         (_MIDDLE, _OUTER),
         (_TEST, _MIDDLE),

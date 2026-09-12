@@ -10,6 +10,7 @@ from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
 )
+from define.compiler.validator.reference_graph.test_helpers import action_graph
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -26,7 +27,7 @@ def test_interface_to_local_occupied_satisfied(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _DESTRUCTOR)]
 
 
 def test_interface_to_local_occupied_violated(
@@ -81,7 +82,7 @@ def test_interface_to_local_occupied_violated(
             "file_path": "destructor.dfn",
         },
     )
-    assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _DESTRUCTOR)]
 
 
 def test_interface_to_local_empty_violated(
@@ -144,7 +145,7 @@ def test_interface_to_local_empty_violated(
             "file_path": "destructor.dfn",
         },
     )
-    assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _DESTRUCTOR)]
 
 
 def test_implied_to_local_occupied_violated(
@@ -199,7 +200,7 @@ def test_implied_to_local_occupied_violated(
             "file_path": "destructor.dfn",
         },
     )
-    assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _DESTRUCTOR)]
 
 
 def test_implied_to_local_empty_violated(
@@ -262,7 +263,7 @@ def test_implied_to_local_empty_violated(
             "file_path": "destructor.dfn",
         },
     )
-    assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _DESTRUCTOR)]
 
 
 def test_interface_to_implied_occupied_violated(
@@ -317,7 +318,7 @@ def test_interface_to_implied_occupied_violated(
             "file_path": "destructor.dfn",
         },
     )
-    assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _DESTRUCTOR)]
 
 
 def test_implied_to_implied_occupied_violated(
@@ -372,4 +373,4 @@ def test_implied_to_implied_occupied_violated(
             "file_path": "destructor.dfn",
         },
     )
-    assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _DESTRUCTOR)]

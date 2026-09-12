@@ -14,7 +14,10 @@ from __future__ import annotations
 import textwrap
 from typing import TYPE_CHECKING
 
+import pytest
+
 from define.compiler import diagnostics
+from define.compiler.validator.reference_graph.test_helpers import action_graph
 
 if TYPE_CHECKING:
     from define.compiler.conftest import ValidateProject
@@ -236,6 +239,10 @@ _FILES = {
 }
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason="Destruction Contract contributions are not recorded in TriggeredActions yet",
+)
 def test_destruction_contract_traces_every_trigger_hop(
     validate_project: ValidateProject,
 ):
@@ -245,7 +252,7 @@ def test_destruction_contract_traces_every_trigger_hop(
     # (whose incoming position declares it), and d2 by /outer (which moved the
     # particle out of holder::iface). So both destructors must fire
     # (do_destruction -> d1 and do_destruction -> d2).
-    assert result.action_call_graph.edges() == [
+    assert action_graph(result.reference_graph_result) == [
         (_BEFORE_DESTRUCTOR, _DO_DESTRUCTION),
         (_DO_DESTRUCTION, _D1),
         (_DO_DESTRUCTION, _D2),

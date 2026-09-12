@@ -86,8 +86,6 @@ flowchart LR
     ParticleTracker --> RequirementViolation
     ScopeTracker["validator/scope_tracker.py"] --> DefinitionPostorderValidator
     ReferenceGraph["graphs/reference_graph.py"] --> ReferenceGraphValidator
-    ActionCallGraph["graphs/action_call_graph.py"] --> ReferenceGraphValidator
-    ActionCallGraph --> DefinitionPostorderValidator
     ValidationResult["validator/validation_result.py"] --> ReferenceGraphValidator
 ```
 

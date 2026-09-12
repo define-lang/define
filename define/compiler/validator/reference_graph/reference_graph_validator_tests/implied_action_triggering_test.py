@@ -5,12 +5,11 @@ from pathlib import PurePosixPath
 
 from define.compiler import conftest, diagnostics
 from define.compiler.validator.reference_graph import action_contract
-from define.compiler.validator.reference_graph.operation_graph_renderer import (
-    action_graph,
-    action_graph_set,
-)
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
+)
+from define.compiler.validator.reference_graph.test_helpers import (
+    action_graph,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -40,7 +39,7 @@ def test_action_triggers_implied_action_directly(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [(_TEST, _IMPLIED)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _IMPLIED)]
 
 
 def test_action_triggers_implied_action_via_move(
@@ -48,7 +47,7 @@ def test_action_triggers_implied_action_via_move(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [(_TEST, _IMPLIED)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _IMPLIED)]
 
 
 def test_constructor_triggers_implied_action(
@@ -56,7 +55,7 @@ def test_constructor_triggers_implied_action(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [(_TEST, _IMPLIED)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _IMPLIED)]
 
 
 def test_implied_action_iface_requirement_propagates_to_caller(
@@ -103,7 +102,7 @@ def test_implied_action_iface_requirement_propagates_to_caller(
             "file_path": "implied_action.dfn",
         },
     )
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_MIDDLE, _IMPLIED),
         (_TEST, _MIDDLE),
     ]
@@ -154,11 +153,11 @@ def test_implied_action_with_iface_routing_to_inner_action_propagates(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {
+    assert action_graph(result.reference_graph_result) == [
         (_MIDDLE, _IMPLIED_OUTER),
         (_MIDDLE, _INNER),
         (_TEST, _MIDDLE),
-    }
+    ]
 
 
 def test_caller_triggers_action_implied_by_constraint(
@@ -166,7 +165,7 @@ def test_caller_triggers_action_implied_by_constraint(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_IMPLIER, _IMPLIED),
         (_TEST, _IMPLIED),
         (_TEST, _IMPLIER),
@@ -178,7 +177,7 @@ def test_implied_action_guarantees_propagate_to_caller(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [(_TEST, _IMPLIED)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _IMPLIED)]
 
 
 def test_transitive_implication_triggers_action(
@@ -186,7 +185,7 @@ def test_transitive_implication_triggers_action(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_FORWARDER, _IMPLIED),
         (_IMPLIER, _FORWARDER),
         (_TEST, _IMPLIED),

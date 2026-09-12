@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 
 from define.compiler import conftest, diagnostics
-from define.compiler.validator.reference_graph.operation_graph_renderer import (
+from define.compiler.validator.reference_graph.test_helpers import (
     action_graph,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
@@ -98,7 +98,7 @@ def test_position_constraint_moved_through_locals_to_contract_is_alive(
         allow_entry_action_interface_positions=True
     )
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == []
+    assert action_graph(result.reference_graph_result) == []
 
 
 def test_position_constraint_moved_through_locals_to_child_contract_is_alive(
@@ -108,7 +108,7 @@ def test_position_constraint_moved_through_locals_to_child_contract_is_alive(
         allow_entry_action_interface_positions=True
     )
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == []
+    assert action_graph(result.reference_graph_result) == []
 
 
 def test_redundant_destination_constraint_on_move_filled_position_is_dead(
@@ -144,7 +144,7 @@ def test_back_and_forth_moves_do_not_make_position_constraints_alive(
     assert all_diags[1].location.line == 12
     assert all_diags[1].location.column == 28
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == []
+    assert action_graph(result.reference_graph_result) == []
 
 
 def test_constraint_on_interface_position_filled_by_create_is_alive(
@@ -391,7 +391,7 @@ def test_action_interface_occupation_requires_trigger_when_constraint_is_alive_v
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 45
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == []
+    assert action_graph(result.reference_graph_result) == []
 
 
 def test_action_interface_occupation_survives_particle_move_out_without_trigger(
@@ -411,7 +411,7 @@ def test_action_interface_occupation_survives_particle_move_out_without_trigger(
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 65
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == []
+    assert action_graph(result.reference_graph_result) == []
 
 
 def test_action_interface_occupation_survives_parent_and_particle_moves_without_trigger(
@@ -431,7 +431,7 @@ def test_action_interface_occupation_survives_parent_and_particle_moves_without_
     assert all_diags[0].location.line == 19
     assert all_diags[0].location.column == 68
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == []
+    assert action_graph(result.reference_graph_result) == []
 
 
 def test_action_trigger_after_interface_particle_replacement_is_alive(
@@ -452,7 +452,7 @@ def test_action_trigger_after_interface_particle_replacement_is_alive(
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 60
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == [(_TEST, _WORKER)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _WORKER)]
 
 
 def test_action_interface_particle_can_depart_after_trigger(
@@ -460,7 +460,7 @@ def test_action_interface_particle_can_depart_after_trigger(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [(_TEST, _WORKER)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _WORKER)]
 
 
 def test_action_interface_particle_arriving_after_trigger_cannot_depart_before_next_trigger(
@@ -481,7 +481,7 @@ def test_action_interface_particle_arriving_after_trigger_cannot_depart_before_n
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 45
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_TEST, _WORKER),
         (_TEST, _WORKER),
     ]
@@ -502,7 +502,7 @@ def test_action_interface_particle_arriving_after_last_trigger_is_dead(
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 45
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == [(_TEST, _WORKER)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _WORKER)]
 
 
 def test_guaranteed_interface_particle_departure_leaves_pending_arrival(
@@ -522,7 +522,7 @@ def test_guaranteed_interface_particle_departure_leaves_pending_arrival(
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 45
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == [(_TEST, _WORKER)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _WORKER)]
 
 
 def test_action_trigger_only_satisfies_arrivals_for_its_parent_particle(
@@ -542,7 +542,7 @@ def test_action_trigger_only_satisfies_arrivals_for_its_parent_particle(
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 45
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == [(_TEST, _WORKER)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _WORKER)]
 
 
 def test_action_interface_child_destroyed_before_trigger_is_dead(
@@ -560,7 +560,7 @@ def test_action_interface_child_destroyed_before_trigger_is_dead(
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 45
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == [(_TEST, _WORKER)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _WORKER)]
 
 
 def test_action_interface_child_destroyed_with_parent_before_trigger_is_dead(
@@ -586,7 +586,7 @@ def test_action_interface_child_destroyed_with_parent_before_trigger_is_dead(
     assert all_diags[1].location.line == 12
     assert all_diags[1].location.column == 45
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == [(_TEST, _WORKER)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _WORKER)]
 
 
 def test_action_interface_child_moved_before_trigger_is_dead(
@@ -604,7 +604,7 @@ def test_action_interface_child_moved_before_trigger_is_dead(
     assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 65
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == [(_TEST, _WORKER)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _WORKER)]
 
 
 def test_action_interface_child_survives_until_trigger(
@@ -612,7 +612,7 @@ def test_action_interface_child_survives_until_trigger(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [(_TEST, _WORKER)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _WORKER)]
 
 
 def test_action_on_occupied_interface_referenced_but_never_triggered_is_dead(
@@ -636,7 +636,7 @@ def test_action_on_occupied_interface_referenced_but_never_triggered_is_dead(
     assert all_diags[1].location.line == 11
     assert all_diags[1].location.column == 45
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == []
+    assert action_graph(result.reference_graph_result) == []
 
 
 def test_move_from_empty_action_interface_does_not_mark_action_alive(
@@ -663,7 +663,7 @@ def test_move_from_empty_action_interface_does_not_mark_action_alive(
     assert all_diags[1].location.line == 11
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == []
+    assert action_graph(result.reference_graph_result) == []
 
 
 def test_transitive_action_interface_occupied_without_trigger_is_dead(
@@ -696,7 +696,7 @@ def test_transitive_action_interface_occupied_without_trigger_is_dead(
     assert all_diags[1].location.line == 12
     assert all_diags[1].location.column == 81
     assert all_diags[1].location.file_path == PurePosixPath("runner.dfn")
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_MIDDLE, _WORKER),
         (_RUNNER, _MIDDLE),
         (_TEST, _RUNNER),
@@ -720,7 +720,7 @@ def test_transitive_action_interface_particle_destroyed_before_trigger_is_dead(
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 81
     assert all_diags[0].location.file_path == PurePosixPath("runner.dfn")
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_MIDDLE, _WORKER),
         (_RUNNER, _MIDDLE),
         (_TEST, _RUNNER),
@@ -732,7 +732,7 @@ def test_child_action_interface_arrival_does_not_require_parent_to_trigger_again
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_RUNNER, _MIDDLE),
         (_RUNNER, _WORKER),
         (_TEST, _RUNNER),
@@ -744,7 +744,7 @@ def test_grandchild_action_interface_arrival_does_not_require_ancestors_to_trigg
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_RUNNER, _MIDDLE),
         (_RUNNER, _WORKER),
         (_RUNNER, _GRANDCHILD),
@@ -770,7 +770,7 @@ def test_implied_action_must_trigger_in_callee_even_after_caller_triggered_it(
     assert all_diags[1].location.line == 7
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == PurePosixPath("other.dfn")
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_TEST, _WORKER),
         (_TEST, "action<my.domain.com:my_lib:/other>"),
     ]
@@ -794,7 +794,7 @@ def test_implied_action_referenced_but_never_triggered_is_dead(
     assert all_diags[1].location.line == 6
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == []
+    assert action_graph(result.reference_graph_result) == []
 
 
 def test_implied_action_interface_child_without_trigger_is_dead(
@@ -823,7 +823,7 @@ def test_implied_action_interface_child_without_trigger_is_dead(
     assert all_diags[2].location.line == 7
     assert all_diags[2].location.column == 30
     assert all_diags[2].location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == []
+    assert action_graph(result.reference_graph_result) == []
 
 
 def test_implied_action_interface_child_then_triggered_is_alive(
@@ -831,7 +831,7 @@ def test_implied_action_interface_child_then_triggered_is_alive(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [(_TEST, _WORKER)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _WORKER)]
 
 
 def test_multiple_implied_actions_referenced_but_never_triggered_are_dead(
@@ -863,7 +863,7 @@ def test_multiple_implied_actions_referenced_but_never_triggered_are_dead(
     assert all_diags[3].location.line == 8
     assert all_diags[3].location.column == 30
     assert all_diags[3].location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == []
+    assert action_graph(result.reference_graph_result) == []
 
 
 def test_destructor_cannot_be_implied(
@@ -884,7 +884,7 @@ def test_destructor_cannot_be_implied(
     assert all_diags[1].location.line == 6
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == []
+    assert action_graph(result.reference_graph_result) == []
 
 
 def test_nested_trigger_marks_only_final_implied_action_alive(
@@ -905,7 +905,7 @@ def test_nested_trigger_marks_only_final_implied_action_alive(
     assert all_diags[1].location.line == 6
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_RUNNER, _WORKER),
         (_TEST, _WORKER),
     ]
@@ -937,7 +937,7 @@ def test_nested_non_trigger_marks_no_implied_action_alive(
     assert all_diags[2].location.line == 7
     assert all_diags[2].location.column == 64
     assert all_diags[2].location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == [(_RUNNER, _WORKER)]
+    assert action_graph(result.reference_graph_result) == [(_RUNNER, _WORKER)]
 
 
 def test_action_required_by_move_destination_is_alive(
@@ -974,7 +974,7 @@ def test_position_constraint_moved_to_untriggered_action_contract_is_dead(
     assert all_diags[2].location.line == 17
     assert all_diags[2].location.column == 68
     assert all_diags[2].location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == []
+    assert action_graph(result.reference_graph_result) == []
 
 
 def test_position_constraint_moved_to_triggered_action_contract_is_alive(
@@ -982,7 +982,7 @@ def test_position_constraint_moved_to_triggered_action_contract_is_alive(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_TEST, "action<my.domain.com:my_lib:/consumer>")
     ]
 
@@ -992,7 +992,7 @@ def test_action_constraint_moved_to_triggered_action_contract_is_alive(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         ("action<my.domain.com:my_lib:/consumer>", _WORKER),
         (_TEST, "action<my.domain.com:my_lib:/consumer>"),
     ]
@@ -1017,7 +1017,7 @@ def test_back_and_forth_moves_do_not_make_action_constraints_alive(
     assert all_diags[1].location.line == 12
     assert all_diags[1].location.column == 28
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == []
+    assert action_graph(result.reference_graph_result) == []
 
 
 def test_implied_action_of_constructor_is_not_dead(

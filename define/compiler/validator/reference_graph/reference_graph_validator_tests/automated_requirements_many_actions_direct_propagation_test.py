@@ -10,12 +10,11 @@ from typing import TYPE_CHECKING
 
 from define.compiler import diagnostics
 from define.compiler.validator.reference_graph import action_contract
-from define.compiler.validator.reference_graph.operation_graph_renderer import (
-    action_graph,
-    action_graph_set,
-)
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
+)
+from define.compiler.validator.reference_graph.test_helpers import (
+    action_graph,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -92,10 +91,10 @@ def test_inner_chained_action_empty_requirement_propagates(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {
-        (_TEST, _OUTER),
+    assert action_graph(result.reference_graph_result) == [
         (_OUTER, _INNER),
-    }
+        (_TEST, _OUTER),
+    ]
 
 
 def test_inner_chained_action_empty_requirement_satisfied(
@@ -103,10 +102,10 @@ def test_inner_chained_action_empty_requirement_satisfied(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.operation_graphs) == {
-        (_TEST, _OUTER),
+    assert action_graph(result.reference_graph_result) == [
         (_OUTER, _INNER),
-    }
+        (_TEST, _OUTER),
+    ]
 
 
 def test_inner_chained_action_occupied_requirement_propagates(
@@ -153,10 +152,10 @@ def test_inner_chained_action_occupied_requirement_propagates(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {
-        (_TEST, _OUTER),
+    assert action_graph(result.reference_graph_result) == [
         (_OUTER, _INNER),
-    }
+        (_TEST, _OUTER),
+    ]
 
 
 def test_inner_chained_action_occupied_requirement_caller_fills(
@@ -164,10 +163,10 @@ def test_inner_chained_action_occupied_requirement_caller_fills(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.operation_graphs) == {
-        (_TEST, _OUTER),
+    assert action_graph(result.reference_graph_result) == [
         (_OUTER, _INNER),
-    }
+        (_TEST, _OUTER),
+    ]
 
 
 def test_pending_transitive_guarantee_satisfies_later_action_requirement(
@@ -175,12 +174,12 @@ def test_pending_transitive_guarantee_satisfies_later_action_requirement(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.operation_graphs) == {
-        (_TEST, _CALL_FILL),
+    assert action_graph(result.reference_graph_result) == [
         (_CALL_FILL, _FILL_ITEM),
-        (_TEST, _CONSUME_ITEM),
         (_CONSUME_ITEM, _CALL_FILL),
-    }
+        (_TEST, _CALL_FILL),
+        (_TEST, _CONSUME_ITEM),
+    ]
 
 
 def test_pending_guarantees_on_one_position_chain_satisfy_later_requirements(
@@ -188,13 +187,13 @@ def test_pending_guarantees_on_one_position_chain_satisfy_later_requirements(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.operation_graphs) == {
-        (_TEST, _CALL_PARENT),
+    assert action_graph(result.reference_graph_result) == [
         (_CALL_PARENT, _FILL_PARENT),
-        (_TEST, _CALL_CHILD),
         (_CALL_CHILD, _FILL_CHILD),
+        (_TEST, _CALL_CHILD),
+        (_TEST, _CALL_PARENT),
         (_TEST, _CONSUME_CHAIN),
-    }
+    ]
 
 
 def test_pending_guarantees_on_separate_position_chains_satisfy_later_requirements(
@@ -202,11 +201,12 @@ def test_pending_guarantees_on_separate_position_chains_satisfy_later_requiremen
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph_set(result.operation_graphs) == {
-        (_TEST, _CALL_FILL),
+    assert action_graph(result.reference_graph_result) == [
         (_CALL_FILL, _FILL_ITEM),
+        (_TEST, _CALL_FILL),
+        (_TEST, _CALL_FILL),
         (_TEST, _CONSUME_BRANCHES),
-    }
+    ]
 
 
 def test_pending_guarantees_on_shared_and_separate_position_chains_satisfy_later_requirements(
@@ -214,7 +214,7 @@ def test_pending_guarantees_on_shared_and_separate_position_chains_satisfy_later
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_CALL_PARENT, _FILL_PARENT),
         (_CALL_CHILD, _FILL_CHILD),
         (_CALL_FILL, _FILL_ITEM),
@@ -380,7 +380,7 @@ def test_pending_guarantees_on_shared_and_separate_position_chains_violate_later
     assert item_diagnostic.propagation_chain[1].location.end_column == 93
     assert item_diagnostic.propagation_chain[2].location.end_line == 18
     assert item_diagnostic.propagation_chain[2].location.end_column == 83
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_CALL_PARENT, _FILL_PARENT),
         (_CALL_CHILD, _FILL_CHILD),
         (_CALL_FILL, _FILL_ITEM),
@@ -452,11 +452,11 @@ def test_three_deep_action_chain_requirement_propagates(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {
+    assert action_graph(result.reference_graph_result) == [
         (_MIDDLE, _INNER),
-        (_TEST, _OUTER),
         (_OUTER, _MIDDLE),
-    }
+        (_TEST, _OUTER),
+    ]
 
 
 def test_four_deep_action_chain_requirement_propagates(
@@ -527,12 +527,12 @@ def test_four_deep_action_chain_requirement_propagates(
             "file_path": "d.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {
+    assert action_graph(result.reference_graph_result) == [
         ("action<my.domain.com:my_lib:/c>", "action<my.domain.com:my_lib:/d>"),
-        (_TEST, "action<my.domain.com:my_lib:/a>"),
-        ("action<my.domain.com:my_lib:/a>", "action<my.domain.com:my_lib:/b>"),
         ("action<my.domain.com:my_lib:/b>", "action<my.domain.com:my_lib:/c>"),
-    }
+        ("action<my.domain.com:my_lib:/a>", "action<my.domain.com:my_lib:/b>"),
+        (_TEST, "action<my.domain.com:my_lib:/a>"),
+    ]
 
 
 def test_both_requirements_propagate_when_inner_has_both(
@@ -586,10 +586,10 @@ def test_both_requirements_propagate_when_inner_has_both(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {
-        (_TEST, _OUTER),
+    assert action_graph(result.reference_graph_result) == [
         (_OUTER, _INNER),
-    }
+        (_TEST, _OUTER),
+    ]
 
 
 def test_trigger_position_child_empty_requirement_propagates(
@@ -645,10 +645,10 @@ def test_trigger_position_child_empty_requirement_propagates(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph_set(result.operation_graphs) == {
-        (_TEST, _OUTER),
+    assert action_graph(result.reference_graph_result) == [
         (_OUTER, _INNER),
-    }
+        (_TEST, _OUTER),
+    ]
 
 
 def test_trigger_position_child_occupied_requirement_propagates(

@@ -6,6 +6,7 @@ from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler import diagnostics
+from define.compiler.validator.reference_graph.test_helpers import action_graph
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -52,7 +53,7 @@ def test_destroy_parent_fires_position_quality_child_destructor(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.edges() == [(_TEST, _CHILD_DESTRUCTOR)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _CHILD_DESTRUCTOR)]
 
 
 def test_destroy_parent_fires_interface_position_child_destructor(
@@ -60,7 +61,10 @@ def test_destroy_parent_fires_interface_position_child_destructor(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.edges() == [(_TEST, _INNER), (_TEST, _DESTRUCTOR)]
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _INNER),
+        (_TEST, _DESTRUCTOR),
+    ]
 
 
 def test_transitive_destruction_fires_interface_position_destructors(
@@ -68,7 +72,7 @@ def test_transitive_destruction_fires_interface_position_destructors(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.edges() == [
+    assert action_graph(result.reference_graph_result) == [
         (_TEST, _INNER),
         (_TEST, _DESTRUCTOR_A),
         (_TEST, _DESTRUCTOR_B),
@@ -81,7 +85,7 @@ def test_transitive_destruction_fires_child_and_grandchild_destructors(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.edges() == [
+    assert action_graph(result.reference_graph_result) == [
         (_TEST, _CHILD_DESTRUCTOR),
         (_TEST, _GRANDCHILD_DESTRUCTOR),
     ]
@@ -92,7 +96,7 @@ def test_transitive_destruction_fires_destructors_on_both_branches(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.edges() == [
+    assert action_graph(result.reference_graph_result) == [
         (_TEST, _A_BRANCH_DESTRUCTOR),
         (_TEST, _A_LEAF_DESTRUCTOR),
         (_TEST, _B_BRANCH_DESTRUCTOR),
@@ -105,7 +109,7 @@ def test_destroy_parent_fires_parent_and_child_destructors(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.edges() == [
+    assert action_graph(result.reference_graph_result) == [
         (_TEST, _PARENT_DESTRUCTOR),
         (_TEST, _CHILD_DESTRUCTOR),
     ]
@@ -127,7 +131,7 @@ def test_cascade_skips_error_position_own_destructor(
         all_diags[0].target_position
         == "position<box>::position</child>::position</noop>"
     )
-    assert result.action_call_graph.edges() == []
+    assert action_graph(result.reference_graph_result) == []
 
 
 def test_cascade_does_not_walk_subtree_of_error_position(
@@ -146,7 +150,7 @@ def test_cascade_does_not_walk_subtree_of_error_position(
         all_diags[0].target_position
         == "position<box>::position</child>::position</grandchild>"
     )
-    assert result.action_call_graph.edges() == []
+    assert action_graph(result.reference_graph_result) == []
 
 
 def test_destroy_parent_does_not_fire_empty_child_destructor(
@@ -162,4 +166,4 @@ def test_destroy_parent_does_not_fire_empty_child_destructor(
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].constraint_name == "position</child>"
     assert all_diags[0].position_name == "position<box>"
-    assert result.action_call_graph.edges() == []
+    assert action_graph(result.reference_graph_result) == []

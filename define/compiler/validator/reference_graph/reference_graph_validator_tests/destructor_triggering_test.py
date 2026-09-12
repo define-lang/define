@@ -6,6 +6,7 @@ from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler import diagnostics
+from define.compiler.validator.reference_graph.test_helpers import action_graph
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -73,7 +74,7 @@ def test_destroy_fires_destructor_via_constraint(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _DESTRUCTOR)]
 
 
 def test_destroy_does_not_fire_non_destructor_action_quality(
@@ -89,7 +90,7 @@ def test_destroy_does_not_fire_non_destructor_action_quality(
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].constraint_name == "action</worker>"
     assert all_diags[0].position_name == "position<box>"
-    assert result.action_call_graph.edges() == []
+    assert action_graph(result.reference_graph_result) == []
 
 
 def test_destroy_fires_multiple_destructors(
@@ -97,7 +98,7 @@ def test_destroy_fires_multiple_destructors(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.edges() == [
+    assert action_graph(result.reference_graph_result) == [
         (_TEST, _DESTRUCTOR_A),
         (_TEST, _DESTRUCTOR_B),
     ]
@@ -108,7 +109,7 @@ def test_destructor_fired_from_constructor(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _DESTRUCTOR)]
 
 
 def test_destroy_empty_position_does_not_fire_destructor(
@@ -123,7 +124,7 @@ def test_destroy_empty_position_does_not_fire_destructor(
     assert all_diags[0].location.column == 33
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].position_name == "position<box>"
-    assert result.action_call_graph.edges() == []
+    assert action_graph(result.reference_graph_result) == []
 
 
 def test_destroy_parent_not_occupied_does_not_fire_destructor(
@@ -145,7 +146,7 @@ def test_destroy_parent_not_occupied_does_not_fire_destructor(
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].position_name == "position<box>::action</inner>::position<slot>"
     assert all_diags[1].parent_position_name == "position<box>"
-    assert result.action_call_graph.edges() == []
+    assert action_graph(result.reference_graph_result) == []
 
 
 def test_missing_destructor_file_is_reported_and_skipped(
@@ -160,7 +161,7 @@ def test_missing_destructor_file_is_reported_and_skipped(
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 35
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert result.action_call_graph.edges() == []
+    assert action_graph(result.reference_graph_result) == []
 
 
 def test_destroy_via_chained_interface_position_fires_destructor(
@@ -168,7 +169,10 @@ def test_destroy_via_chained_interface_position_fires_destructor(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.edges() == [(_TEST, _INNER), (_TEST, _DESTRUCTOR)]
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _INNER),
+        (_TEST, _DESTRUCTOR),
+    ]
 
 
 def test_destroy_after_move_into_unconstrained_position_fires_destructor(
@@ -176,4 +180,4 @@ def test_destroy_after_move_into_unconstrained_position_fires_destructor(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert result.action_call_graph.edges() == [(_TEST, _DESTRUCTOR)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _DESTRUCTOR)]

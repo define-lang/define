@@ -5,7 +5,7 @@ from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler import diagnostics
-from define.compiler.validator.reference_graph.operation_graph_renderer import (
+from define.compiler.validator.reference_graph.test_helpers import (
     action_graph,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
@@ -46,7 +46,7 @@ def test_occupied_guarantee_propagates_through_transitive_implication(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_FORWARDER, _IMPLIED),
         (_IMPLIER, _FORWARDER),
         (_TEST, _IMPLIED),
@@ -59,7 +59,7 @@ def test_empty_guarantee_propagates_through_transitive_implication(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_FORWARDER, _IMPLIED),
         (_IMPLIER, _FORWARDER),
         (_TEST, _IMPLIER),
@@ -88,7 +88,7 @@ def test_occupied_guarantee_blocks_create_through_transitive_implication(
     assert all_diags[0].populated_at.end_line == 7
     assert all_diags[0].populated_at.end_column == 46
     assert all_diags[0].populated_at.file_path == PurePosixPath("implied_action.dfn")
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_FORWARDER, _IMPLIED),
         (_IMPLIER, _FORWARDER),
         (_TEST, _IMPLIED),
@@ -120,7 +120,7 @@ def test_empty_guarantee_blocks_move_through_transitive_implication(
     assert all_diags[0].inferred_at.end_line == 8
     assert all_diags[0].inferred_at.end_column == 45
     assert all_diags[0].inferred_at.file_path == PurePosixPath("implied_action.dfn")
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_FORWARDER, _IMPLIED),
         (_IMPLIER, _FORWARDER),
         (_TEST, _IMPLIED),
@@ -133,7 +133,7 @@ def test_occupied_implied_position_guarantee_propagates_through_transitive_impli
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_FORWARDER, _IMPLIED),
         (_IMPLIER, _FORWARDER),
         (_TEST, _IMPLIED),
@@ -146,7 +146,7 @@ def test_empty_implied_position_guarantee_propagates_through_transitive_implicat
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_FORWARDER, _IMPLIED),
         (_IMPLIER, _FORWARDER),
         (_TEST, _IMPLIED),
@@ -173,7 +173,7 @@ def test_occupied_implied_position_guarantee_blocks_create_through_transitive_im
     assert all_diags[0].populated_at.end_line == 7
     assert all_diags[0].populated_at.end_column == 52
     assert all_diags[0].populated_at.file_path == PurePosixPath("implied_action.dfn")
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_FORWARDER, _IMPLIED),
         (_IMPLIER, _FORWARDER),
         (_TEST, _IMPLIED),
@@ -197,7 +197,7 @@ def test_empty_implied_position_guarantee_blocks_move_through_transitive_implica
     assert all_diags[0].position_name == "position<box>::position</implied_pos>"
     assert all_diags[0].is_action_interface_position is False
     assert all_diags[0].inferred_at is None
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_FORWARDER, _IMPLIED),
         (_IMPLIER, _FORWARDER),
         (_TEST, _IMPLIED),
@@ -224,7 +224,7 @@ def test_occupied_implied_position_guarantee_propagates_through_directly_implied
     assert all_diags[0].populated_at.end_line == 7
     assert all_diags[0].populated_at.end_column == 52
     assert all_diags[0].populated_at.file_path == PurePosixPath("implied_action.dfn")
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (
             "action<my.domain.com:my_lib:/middle>",
             "action<my.domain.com:my_lib:/implied_action>",
@@ -249,7 +249,7 @@ def test_empty_implied_position_guarantee_propagates_through_directly_implied_ac
     assert all_diags[0].position_name == "position</implied_pos>"
     assert all_diags[0].is_action_interface_position is False
     assert all_diags[0].inferred_at is None
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (
             "action<my.domain.com:my_lib:/middle>",
             "action<my.domain.com:my_lib:/implied_action>",
@@ -279,7 +279,7 @@ def test_constructor_transitively_implied_occupancy_conflicts_with_caller_create
     assert all_diags[0].populated_at.end_line == 6
     assert all_diags[0].populated_at.end_column == 46
     assert all_diags[0].populated_at.file_path == PurePosixPath("filler.dfn")
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_IMPLIER, _FILLER),
         (_TEST, _IMPLIER),
     ]
@@ -307,7 +307,7 @@ def test_constructor_transitively_implied_occupancy_conflicts_through_deeper_cha
     assert all_diags[0].populated_at.end_line == 6
     assert all_diags[0].populated_at.end_column == 46
     assert all_diags[0].populated_at.file_path == PurePosixPath("filler.dfn")
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_MIDDLE, _FILLER),
         (_IMPLIER, _MIDDLE),
         (_TEST, _IMPLIER),

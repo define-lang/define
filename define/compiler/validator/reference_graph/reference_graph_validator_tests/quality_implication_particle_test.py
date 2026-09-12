@@ -9,6 +9,7 @@ from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
 )
+from define.compiler.validator.reference_graph.test_helpers import action_graph
 from define.compiler.validator.test_helpers import assert_no_errors
 
 _IMPLIED_DFN = "define the potential position<my.domain.com:my_lib:/implied>.\n"
@@ -72,7 +73,7 @@ def test_duplicate_direct_constraint_triggers_action_once(
             "file_path": "requirer.dfn",
         },
     )
-    assert result.action_call_graph.edges() == [
+    assert action_graph(result.reference_graph_result) == [
         (
             "action<my.domain.com:my_lib:/test>",
             "action<my.domain.com:my_lib:/requirer>",

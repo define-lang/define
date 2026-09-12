@@ -6,7 +6,7 @@ from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler import diagnostics
-from define.compiler.validator.reference_graph.operation_graph_renderer import (
+from define.compiler.validator.reference_graph.test_helpers import (
     action_graph,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
@@ -46,7 +46,7 @@ def test_create_fires_constructor_via_constraint_on_local_position(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [(_TEST, _CONSTRUCT)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _CONSTRUCT)]
 
 
 def test_create_fires_constructor_via_constraint_on_interface_position(
@@ -56,7 +56,7 @@ def test_create_fires_constructor_via_constraint_on_interface_position(
         allow_entry_action_interface_positions=True
     )
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [(_TEST, _CONSTRUCT)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _CONSTRUCT)]
 
 
 def test_create_in_position_child_fires_constructor(
@@ -64,7 +64,7 @@ def test_create_in_position_child_fires_constructor(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [(_TEST, _CONSTRUCT)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _CONSTRUCT)]
 
 
 def test_create_in_action_child_interface_fires_constructor(
@@ -72,7 +72,7 @@ def test_create_in_action_child_interface_fires_constructor(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_INNER, _CONSTRUCT),
         (_TEST, _INNER),
     ]
@@ -83,7 +83,7 @@ def test_create_fires_multiple_constructors(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [
+    assert action_graph(result.reference_graph_result) == [
         (_TEST, _CONSTRUCT_A),
         (_TEST, _CONSTRUCT_B),
     ]
@@ -99,7 +99,7 @@ def test_create_does_not_fire_non_constructor_action_quality(
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
     assert all_diags[0].constraint_name == "action</worker>"
     assert all_diags[0].position_name == "position<box>"
-    assert action_graph(result.operation_graphs) == []
+    assert action_graph(result.reference_graph_result) == []
 
 
 def test_move_into_position_does_not_fire_constructor(
@@ -107,7 +107,7 @@ def test_move_into_position_does_not_fire_constructor(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert action_graph(result.operation_graphs) == [(_TEST, _CONSTRUCT)]
+    assert action_graph(result.reference_graph_result) == [(_TEST, _CONSTRUCT)]
 
 
 def test_missing_constructor_file_is_reported_and_skipped(
@@ -120,7 +120,7 @@ def test_missing_constructor_file_is_reported_and_skipped(
     assert isinstance(all_diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
     assert all_diags[0].file_path == "construct.dfn"
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert action_graph(result.operation_graphs) == []
+    assert action_graph(result.reference_graph_result) == []
 
 
 def test_create_parent_not_occupied_does_not_fire_constructor(
@@ -136,4 +136,4 @@ def test_create_parent_not_occupied_does_not_fire_constructor(
     assert isinstance(all_diags[1], diagnostics.ParentPositionNotOccupiedDiagnostic)
     assert all_diags[1].position_name == "position<box>::action</inner>::position<slot>"
     assert all_diags[1].parent_position_name == "position<box>"
-    assert action_graph(result.operation_graphs) == [(_INNER, _CONSTRUCT)]
+    assert action_graph(result.reference_graph_result) == [(_INNER, _CONSTRUCT)]
