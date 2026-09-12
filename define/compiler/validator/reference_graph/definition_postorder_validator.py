@@ -1535,6 +1535,9 @@ class ActionPostorderValidator:
                 parent_position_name_count is not None
                 and isinstance(typed_name, ast.GlobalTypedNameReference)
                 and typed_name.name_type == ast.NameType.POSITION
+                and self._dead_constraint_tracker.has_position_constraint_candidate(
+                    typed_name
+                )
             ):
                 current_position = chain.position_prefix(parent_position_name_count)
                 self._dead_constraint_tracker.mark_position_alive(

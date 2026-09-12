@@ -70,6 +70,13 @@ def test_child_position_referenced_by_create_is_alive(
     assert_no_errors(result.program_result)
 
 
+def test_same_child_position_on_earlier_and_later_local_positions_is_alive(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+
+
 def test_child_position_referenced_as_move_source_is_alive(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
