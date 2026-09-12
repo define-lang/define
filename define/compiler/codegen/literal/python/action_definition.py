@@ -2,143 +2,75 @@
 
 from __future__ import annotations
 
-import typing
+from typing import TYPE_CHECKING, final
 
 from define.compiler.codegen.literal.python import (
     action_context,
-    action_execution,
+    action_statements,
     naming,
     template_context,
 )
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from define.compiler import ast
-    from define.compiler.codegen import action_plan
-    from define.compiler.data_structures import typed_name_dict
-    from define.compiler.validator.reference_graph import operation_graph_labeler
+    from define.compiler.validator.reference_graph import (
+        action_contract,
+    )
 
 
-@typing.final
+@final
 class ActionDefinitionGenerator:
-    """Generate an action definition and its execution."""
+    """Generate an action's interface and serial run method."""
 
     def __init__(
         self,
         definition: ast.ActionDefinition,
         converter: naming.NameConverter,
-        generated_actions: typed_name_dict.TypedNameDict[
-            ast.GlobalTypedName, action_context.GeneratedActionInterface
-        ],
-        plan: action_plan.ActionPlan,
-        view_point_create_plan: action_plan.ViewPointCreatePlan | None,
-        operation_labels: operation_graph_labeler.OperationGraphLabeler | None,
+        destructions: dict[ast.SourceLocation, list[ast.PositionReference]],
+        triggered_actions: action_contract.TriggeredActions,
         *,
-        is_entry_point: bool,
+        trace_operations: bool,
     ):
-        """Initialize with one action and its already-generated callees.
-
-        ``operation_labels`` is present for traced generation and absent for
-        ordinary generation.
-        """
+        """Initialize from validated definitions and known destructions."""
         self._definition = definition
         self._converter = converter
-        self._is_entry_point = is_entry_point
-        self._generated_actions = generated_actions
-        self._plan = plan
-        self._view_point_create_plan = view_point_create_plan
-        self._operation_labels = operation_labels
+        self._statements = action_statements.ActionStatementsGenerator(
+            definition,
+            converter,
+            destructions,
+            triggered_actions,
+            trace_operations=trace_operations,
+        )
+        self._trace_operations = trace_operations
 
-    def generate(self) -> action_context.GeneratedActionDefinition:
-        """Generate the action definition and its caller-facing interface."""
-        name_content = self._definition.typed_name.name_content
-        class_name = self._converter.class_name(name_content.path.relative_path)
-        module_name = self._converter.module_name(name_content)
-        interface_positions: list[template_context.InterfacePositionContext] = []
-        for local_definition in self._definition.interface_positions:
-            interface_positions.append(
+    def generate(self) -> action_context.ActionDefinitionContext:
+        """Build the template context for this action."""
+        definition = self._definition
+        interfaces: list[template_context.InterfacePositionContext] = []
+        for position in definition.interface_positions:
+            interfaces.append(
                 template_context.InterfacePositionContext(
-                    typed_name=local_definition.typed_name.source_typed_name,
+                    typed_name=position.typed_name.source_typed_name,
                     constraints=self._converter.constraints_to_class_references(
-                        local_definition.constraints,
+                        position.constraints
                     ),
                 )
             )
-        generated_execution = action_execution.ActionExecutionGenerator(
-            self._definition,
-            self._converter,
-            self._generated_actions,
-            self._plan,
-            self._operation_labels,
-        ).generate()
-        (
-            view_point_create_method_names,
-            view_point_create_join_assignments,
-        ) = self._view_point_create_context(generated_execution)
-        context = action_context.ActionDefinitionContext(
-            class_name=class_name,
-            module_name=module_name,
-            execution=generated_execution.context,
-            is_entry_point=self._is_entry_point,
-            interface_positions=interface_positions,
-            view_point_create_method_names=view_point_create_method_names,
-            view_point_create_join_assignments=view_point_create_join_assignments,
-            implied_qualities=(
-                self._converter.implied_qualities_to_class_references(
-                    self._definition.quality_implications,
-                )
-            ),
-            trace_operations=self._operation_labels is not None,
-            trace_action_name=(
-                self._operation_labels.entry_action_execution_name(
-                    self._definition.typed_name
-                )
-                if self._operation_labels is not None
-                else None
-            ),
+        implied_qualities = self._converter.implied_qualities_to_class_references(
+            definition.quality_implications
         )
-        return action_context.GeneratedActionDefinition(
-            context,
-            generated_execution.action_interface,
-        )
-
-    def _view_point_create_context(
-        self,
-        generated_execution: action_context.GeneratedExecution,
-    ) -> tuple[
-        list[str],
-        list[template_context.CalleeJoinAssignmentContext],
-    ]:
-        view_point_create_method_names: list[str] = []
-        view_point_create_join_assignments: list[
-            template_context.CalleeJoinAssignmentContext
-        ] = []
-        if self._view_point_create_plan is None:
-            return (
-                view_point_create_method_names,
-                view_point_create_join_assignments,
-            )
-        for binding_hole in self._view_point_create_plan.binding_holes:
-            view_point_create_method_names.append(
-                generated_execution.action_interface.binding_holes[
-                    binding_hole
-                ].method_name
-            )
-        for assignment in self._view_point_create_plan.join_assignments:
-            execution_member_names: list[str] = []
-            action_interface = generated_execution.action_interface
-            for execution in assignment.execution_path:
-                execution_member_names.append(
-                    action_interface.execution_member_names[execution]
-                )
-                action_interface = self._generated_actions[execution.callee_action_name]
-            view_point_create_join_assignments.append(
-                template_context.CalleeJoinAssignmentContext(
-                    action_interface.join_member_names[assignment.target],
-                    assignment.dependency_count,
-                    execution_member_names,
-                )
-            )
-        return (
-            view_point_create_method_names,
-            view_point_create_join_assignments,
+        statements, imports = self._statements.generate()
+        imports.update(quality.module_name for quality in implied_qualities)
+        for position in interfaces:
+            imports.update(quality.module_name for quality in position.constraints)
+        return action_context.ActionDefinitionContext(
+            class_name=self._converter.class_name(
+                definition.typed_name.name_content.path.relative_path
+            ),
+            module_name=self._converter.module_name(definition.typed_name.name_content),
+            statements=statements,
+            interface_positions=interfaces,
+            implied_qualities=implied_qualities,
+            imports=sorted(imports),
+            trace_operations=self._trace_operations,
         )

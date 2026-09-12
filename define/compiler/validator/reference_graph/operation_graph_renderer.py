@@ -122,6 +122,7 @@ def _has_dependency_path(
 
 # TODO: Return only edges reachable from a starting action, defaulting to /test
 # unless the caller specifies a different action.
+# TODO: Build action graph assertions from TriggeredActions instead of operation graphs.
 def action_graph(
     operation_graphs: operation_graph.OperationGraphs,
 ) -> list[tuple[str, str]]:

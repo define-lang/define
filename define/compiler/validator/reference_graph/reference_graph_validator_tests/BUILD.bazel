@@ -18,6 +18,7 @@ py_test(
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
+        "//define/compiler:parser_exceptions",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/reference_graph:operation_graph_renderer",
         "@pypi//pytest",

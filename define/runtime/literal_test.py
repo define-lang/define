@@ -1,7 +1,6 @@
 # pyright: reportPrivateUsage=false
 from __future__ import annotations
 
-import threading
 from typing import TYPE_CHECKING, ClassVar, override
 
 import pytest
@@ -10,135 +9,6 @@ from define.runtime import literal
 
 if TYPE_CHECKING:
     from pathlib import Path
-
-
-def _local_position(
-    name: str,
-    constraints: tuple[type[literal.Quality], ...] = (),
-    *,
-    scheduler: literal.Scheduler | None = None,
-) -> literal.LocalPosition:
-    if scheduler is None:
-        scheduler = literal.Scheduler()
-    return literal.LocalPosition(name, constraints, scheduler=scheduler)
-
-
-class TestFanout:
-    def test_run_without_consumers(self):
-        literal.Fanout(literal.Scheduler()).run()
-
-    def test_init_replaces_a_consumer_before_it_can_run(self):
-        scheduler = literal.Scheduler(max_threads=1)
-        released: list[str] = []
-
-        def original():
-            released.append("original")
-
-        guarantee = literal.Fanout(scheduler, consumers=[original])
-
-        def configure():
-            guarantee.consumers.remove(original)
-            guarantee.consumers.append(lambda: released.append("replacement"))
-
-        guarantee.inits.append(configure)
-        guarantee.run()
-
-        assert released == ["replacement"]
-
-    def test_lists_are_distinct_between_guarantees(self):
-        scheduler = literal.Scheduler()
-        first = literal.Fanout(scheduler)
-        second = literal.Fanout(scheduler)
-
-        first.inits.append(lambda: None)
-        first.consumers.append(lambda: None)
-
-        assert second.inits == []
-        assert second.consumers == []
-
-    def test_run_inits_every_destructor_before_releasing_consumers(self):
-        scheduler = literal.Scheduler(max_threads=1)
-        init_order: list[str] = []
-        released: list[str] = []
-        guarantee = literal.Fanout(scheduler)
-
-        def release(name: str):
-            assert init_order == ["first", "second"]
-            released.append(name)
-
-        def init_first():
-            init_order.append("first")
-            guarantee.consumers.append(lambda: release("first"))
-
-        def init_second():
-            init_order.append("second")
-            guarantee.consumers.append(lambda: release("second"))
-
-        guarantee.inits.append(init_first)
-        guarantee.inits.append(init_second)
-        guarantee.consumers.append(lambda: release("destroy"))
-
-        class Entry(literal.EntryPoint):
-            @override
-            def execute(self, _scheduler: literal.Scheduler):
-                guarantee.run()
-
-        scheduler.start(Entry)
-
-        assert sorted(released) == ["destroy", "first", "second"]
-
-    def test_run_releases_callee_and_caller_consumers(self):
-        scheduler = literal.Scheduler(max_threads=1)
-        released: list[str] = []
-        guarantee = literal.Fanout(scheduler)
-        guarantee.consumers.append(lambda: released.append("caller"))
-
-        class Entry(literal.EntryPoint):
-            @override
-            def execute(self, _scheduler: literal.Scheduler):
-                guarantee.run(
-                    lambda: released.append("callee"),
-                )
-
-        scheduler.start(Entry)
-
-        assert sorted(released) == ["callee", "caller"]
-
-    def test_run_keeps_one_consumer_on_the_publishing_thread(self):
-        scheduler = literal.Scheduler(max_threads=3)
-        publishing_thread = threading.current_thread()
-        consumer_threads: dict[str, threading.Thread] = {}
-        consumers_started = threading.Barrier(3)
-        guarantee = literal.Fanout(scheduler)
-
-        def consume(name: str):
-            consumer_threads[name] = threading.current_thread()
-            _ = consumers_started.wait(timeout=5)
-
-        guarantee.consumers.append(lambda: consume("caller"))
-
-        class Entry(literal.EntryPoint):
-            @override
-            def execute(self, _scheduler: literal.Scheduler):
-                guarantee.run(
-                    lambda: consume("first callee"),
-                    lambda: consume("second callee"),
-                )
-
-        scheduler.start(Entry)
-
-        consumers_on_publishing_thread = {
-            name
-            for name, consumer_thread in consumer_threads.items()
-            if consumer_thread is publishing_thread
-        }
-        assert len(consumers_on_publishing_thread) == 1
-
-
-class TestNoJoin:
-    def test_every_arrival_continues(self):
-        assert literal.NO_JOIN.arrive()
-        assert literal.NO_JOIN.arrive()
 
 
 class TestParticle:
@@ -241,18 +111,18 @@ class TestGlobalPosition:
 
 class TestLocalPosition:
     def test_name_from_init(self):
-        pos = _local_position("my_pos")
+        pos = literal.LocalPosition("my_pos")
 
         assert pos.name == "my_pos"
 
     def test_create_particle(self):
-        pos = _local_position("test")
+        pos = literal.LocalPosition("test")
         pos.create_particle()
 
         assert pos.has_particle
 
     def test_create_particle_raises_on_duplicate(self):
-        pos = _local_position("test")
+        pos = literal.LocalPosition("test")
         pos.create_particle()
 
         with pytest.raises(literal.ParticleExistsError) as exc_info:
@@ -261,19 +131,19 @@ class TestLocalPosition:
         assert "test" in str(exc_info.value)
 
     def test_has_particle_initially_false(self):
-        pos = _local_position("test")
+        pos = literal.LocalPosition("test")
 
         assert not pos.has_particle
 
     def test_particle_returns_point(self):
-        pos = _local_position("test")
+        pos = literal.LocalPosition("test")
         pos.create_particle()
         particle = pos.particle
 
         assert pos.particle is particle
 
     def test_particle_raises_when_none(self):
-        pos = _local_position("test")
+        pos = literal.LocalPosition("test")
 
         with pytest.raises(literal.NoParticleError) as exc_info:
             pos.particle  # noqa: B018
@@ -283,13 +153,13 @@ class TestLocalPosition:
         class ConstraintPosition(literal.GlobalPosition):
             pass
 
-        pos = _local_position("test", constraints=(ConstraintPosition,))
+        pos = literal.LocalPosition("test", constraints=(ConstraintPosition,))
         pos.create_particle()
 
         assert pos.particle.quality_types == frozenset((ConstraintPosition,))
 
     def test_constraints_defaults_to_empty(self):
-        pos = _local_position("test")
+        pos = literal.LocalPosition("test")
         pos.create_particle()
 
         assert pos.particle.quality_types == frozenset()
@@ -298,7 +168,7 @@ class TestLocalPosition:
         class ConstraintPosition(literal.GlobalPosition):
             pass
 
-        pos = _local_position("test", constraints=(ConstraintPosition,))
+        pos = literal.LocalPosition("test", constraints=(ConstraintPosition,))
         pos.create_particle()
 
         assert isinstance(
@@ -308,8 +178,8 @@ class TestLocalPosition:
 
 class TestMovePosition:
     def test_move_particle_to(self):
-        source = _local_position("source")
-        dest = _local_position("dest")
+        source = literal.LocalPosition("source")
+        dest = literal.LocalPosition("dest")
         source.create_particle()
 
         source.move_particle_to(dest)
@@ -318,16 +188,16 @@ class TestMovePosition:
         assert dest.has_particle
 
     def test_move_from_empty_raises(self):
-        source = _local_position("source")
-        dest = _local_position("dest")
+        source = literal.LocalPosition("source")
+        dest = literal.LocalPosition("dest")
 
         with pytest.raises(literal.NoParticleError) as exc_info:
             source.move_particle_to(dest)
         assert exc_info.value.position_name == "source"
 
     def test_move_to_occupied_raises(self):
-        source = _local_position("source")
-        dest = _local_position("dest")
+        source = literal.LocalPosition("source")
+        dest = literal.LocalPosition("dest")
         source.create_particle()
         dest.create_particle()
 
@@ -339,8 +209,12 @@ class TestMovePosition:
         class ConstraintPosition(literal.GlobalPosition):
             pass
 
-        source = _local_position("position<source>", constraints=(ConstraintPosition,))
-        dest = _local_position("position<dest>", constraints=(ConstraintPosition,))
+        source = literal.LocalPosition(
+            "position<source>", constraints=(ConstraintPosition,)
+        )
+        dest = literal.LocalPosition(
+            "position<dest>", constraints=(ConstraintPosition,)
+        )
         source.create_particle()
 
         source.move_particle_to(dest)
@@ -352,8 +226,10 @@ class TestMovePosition:
         class ConstraintPosition(literal.GlobalPosition):
             pass
 
-        source = _local_position("position<source>")
-        dest = _local_position("position<dest>", constraints=(ConstraintPosition,))
+        source = literal.LocalPosition("position<source>")
+        dest = literal.LocalPosition(
+            "position<dest>", constraints=(ConstraintPosition,)
+        )
         source.create_particle()
 
         with pytest.raises(literal.UnsatisfiedConstraintError) as exc_info:
@@ -369,8 +245,8 @@ class TestMovePosition:
         class ConstraintAction(literal.Action):
             pass
 
-        source = _local_position("position<source>")
-        dest = _local_position("position<dest>", constraints=(ConstraintAction,))
+        source = literal.LocalPosition("position<source>")
+        dest = literal.LocalPosition("position<dest>", constraints=(ConstraintAction,))
         source.create_particle()
 
         with pytest.raises(literal.UnsatisfiedConstraintError) as exc_info:
@@ -382,8 +258,10 @@ class TestMovePosition:
         class ConstraintPosition(literal.GlobalPosition):
             pass
 
-        source = _local_position("position<source>")
-        dest = _local_position("position<dest>", constraints=(ConstraintPosition,))
+        source = literal.LocalPosition("position<source>")
+        dest = literal.LocalPosition(
+            "position<dest>", constraints=(ConstraintPosition,)
+        )
         source.create_particle()
 
         with pytest.raises(literal.UnsatisfiedConstraintError):
@@ -395,7 +273,7 @@ class TestMovePosition:
 
 class TestDestroyParticle:
     def test_destroy_particle(self):
-        pos = _local_position("test")
+        pos = literal.LocalPosition("test")
         pos.create_particle()
 
         pos.destroy_particle()
@@ -403,14 +281,14 @@ class TestDestroyParticle:
         assert not pos.has_particle
 
     def test_destroy_from_empty_raises(self):
-        pos = _local_position("test")
+        pos = literal.LocalPosition("test")
 
         with pytest.raises(literal.NoParticleError) as exc_info:
             pos.destroy_particle()
         assert exc_info.value.position_name == "test"
 
     def test_destroy_then_create_succeeds(self):
-        pos = _local_position("test")
+        pos = literal.LocalPosition("test")
         pos.create_particle()
         pos.destroy_particle()
 
@@ -422,7 +300,7 @@ class TestDestroyParticle:
         class ChildPosition(literal.GlobalPosition):
             pass
 
-        pos = _local_position("test")
+        pos = literal.LocalPosition("test")
         pos.create_particle()
         pos.particle.assign_position(ChildPosition)
         child_position = pos.particle.get_position(ChildPosition)
@@ -438,16 +316,12 @@ class TestDestroyParticle:
                 super().__init__(
                     on_particle,
                     interface_positions=[
-                        _local_position(
-                            "position</iface1>", scheduler=on_particle.scheduler
-                        ),
-                        _local_position(
-                            "position</iface2>", scheduler=on_particle.scheduler
-                        ),
+                        literal.LocalPosition("position</iface1>"),
+                        literal.LocalPosition("position</iface2>"),
                     ],
                 )
 
-        pos = _local_position("test")
+        pos = literal.LocalPosition("test")
         pos.create_particle()
         pos.particle.assign_action(MyAction)
         action = pos.particle.get_action(MyAction)
@@ -466,31 +340,27 @@ class TestStart:
     def test_start_fires_entry_constructor(self):
         fired: list[type[literal.Action]] = []
 
-        class Entry(literal.EntryPoint):
+        class Entry(literal.Action):
             @override
-            def execute(self, _scheduler: literal.Scheduler):
+            def run(self):
                 fired.append(type(self))
 
-        literal.start(Entry, literal.Scheduler())
+        literal.start(Entry)
 
         assert fired == [Entry]
 
     def test_reports_occupied_positions_when_env_var_set(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ):
-        class Entry(literal.EntryPoint):
+        class Entry(literal.Action):
             def __init__(self, on_particle: literal.Particle):
                 super().__init__(
                     on_particle,
-                    interface_positions=[
-                        _local_position(
-                            "position<output>", scheduler=on_particle.scheduler
-                        )
-                    ],
+                    interface_positions=[literal.LocalPosition("position<output>")],
                 )
 
             @override
-            def execute(self, _scheduler: literal.Scheduler):
+            def run(self):
                 self.get_interface_position("position<output>").create_particle()
 
         occupied_positions_file = tmp_path / "occupied_positions.txt"
@@ -507,9 +377,9 @@ class TestStart:
     def test_no_report_when_env_var_unset(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ):
-        class Entry(literal.EntryPoint):
+        class Entry(literal.Action):
             @override
-            def execute(self, _scheduler: literal.Scheduler):
+            def run(self):
                 pass
 
         occupied_positions_file = tmp_path / "occupied_positions.txt"
@@ -564,9 +434,7 @@ class TestOccupiedPositionNames:
                 super().__init__(
                     on_particle,
                     interface_positions=[
-                        _local_position(
-                            "position<trigger_pos>", scheduler=on_particle.scheduler
-                        ),
+                        literal.LocalPosition("position<trigger_pos>"),
                     ],
                 )
 
@@ -586,9 +454,7 @@ class TestOccupiedPositionNames:
                 super().__init__(
                     on_particle,
                     interface_positions=[
-                        _local_position(
-                            "position<trigger_pos>", scheduler=on_particle.scheduler
-                        ),
+                        literal.LocalPosition("position<trigger_pos>"),
                     ],
                 )
 
@@ -626,18 +492,18 @@ class TestAction:
 
         assert not hasattr(action, "execute")
 
-    def test_entry_point_execute_requires_an_implementation(self):
-        class MyEntryPoint(literal.EntryPoint):
+    def test_run_requires_an_implementation(self):
+        class MyEntryPoint(literal.Action):
             pass
 
         entry_point = MyEntryPoint(literal.Particle())
 
         with pytest.raises(NotImplementedError):
-            entry_point.execute(literal.Scheduler())
+            entry_point.run()
 
     def test_get_interface_position(self):
         particle = literal.Particle()
-        pos = _local_position("position</iface>", scheduler=particle.scheduler)
+        pos = literal.LocalPosition("position</iface>")
 
         class MyAction(literal.Action):
             pass
@@ -699,7 +565,7 @@ class TestImpliedQualities:
         class Implying(literal.Action):
             implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (Implied,)
 
-        position = _local_position("test", constraints=(Implying,))
+        position = literal.LocalPosition("test", constraints=(Implying,))
         position.create_particle()
 
         assert [type(quality) for quality in position.particle._assigned_qualities] == [
@@ -720,7 +586,7 @@ class TestImpliedQualities:
                 Second,
             )
 
-        position = _local_position("test", constraints=(Implier,))
+        position = literal.LocalPosition("test", constraints=(Implier,))
         position.create_particle()
 
         assert [type(quality) for quality in position.particle._assigned_qualities] == [
@@ -739,7 +605,7 @@ class TestImpliedQualities:
         class A(literal.Action):
             implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (B,)
 
-        position = _local_position("test", constraints=(A,))
+        position = literal.LocalPosition("test", constraints=(A,))
         position.create_particle()
 
         assert [type(quality) for quality in position.particle._assigned_qualities] == [
@@ -764,7 +630,7 @@ class TestImpliedQualities:
                 Right,
             )
 
-        position = _local_position("test", constraints=(Top,))
+        position = literal.LocalPosition("test", constraints=(Top,))
         position.create_particle()
 
         assert [type(quality) for quality in position.particle._assigned_qualities] == [
@@ -808,7 +674,7 @@ class TestImpliedQualities:
         class Implier(literal.Action):
             implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (Implied,)
 
-        position = _local_position("test", constraints=(Implier, Implied))
+        position = literal.LocalPosition("test", constraints=(Implier, Implied))
         position.create_particle()
 
         quality_types = [
@@ -825,7 +691,7 @@ class TestImpliedQualities:
         class Implier(literal.Action):
             implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (Implied,)
 
-        position = _local_position("test", constraints=(Implied, Implier))
+        position = literal.LocalPosition("test", constraints=(Implied, Implier))
         position.create_particle()
 
         quality_types = [
@@ -841,7 +707,7 @@ class TestImpliedQualities:
             implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (Implied,)
 
         with pytest.raises(literal.DuplicateConstraintError) as exc_info:
-            _ = _local_position("test", constraints=(Implier, Implied, Implied))
+            _ = literal.LocalPosition("test", constraints=(Implier, Implied, Implied))
         assert exc_info.value.position_name == f"position<{__name__}.Implied>"
 
     def test_global_position_with_a_duplicate_constraint_raises(self):
@@ -927,8 +793,8 @@ class TestImpliedQualities:
         class Implying(literal.GlobalPosition):
             implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (Implied,)
 
-        source = _local_position("source", constraints=(Implying,))
-        dest = _local_position("dest", constraints=(Implied,))
+        source = literal.LocalPosition("source", constraints=(Implying,))
+        dest = literal.LocalPosition("dest", constraints=(Implied,))
         source.create_particle()
 
         source.move_particle_to(dest)
@@ -957,3 +823,60 @@ class TestImpliedQualities:
         particle.assign_action(MyAction)
 
         assert MyAction in particle.quality_types
+
+
+class _Worker(literal.Action):
+    @override
+    def run(self):
+        literal.record_operation("worker.create(item)")
+        literal.record_operation("worker.destroy(item)")
+
+
+class _Entry(literal.Action):
+    @override
+    def run(self):
+        literal.record_operation("entry.create(run)")
+        _Worker(self.on_particle).run()
+        _Worker(self.on_particle).run()
+        literal.record_operation("entry.destroy(run)")
+
+
+def test_trace_records_direct_calls_and_repeated_operations(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    trace_file = tmp_path / "trace.txt"
+    monkeypatch.setenv("DEFINE_OPERATION_TRACE_FILE", str(trace_file))
+    literal.start(_Entry, trace_operations=True)
+    expected = "entry.create(run)\nworker.create(item)\nworker.destroy(item)\nworker.create(item)\nworker.destroy(item)\nentry.destroy(run)\n"
+    assert trace_file.read_text() == expected
+    literal.start(_Entry, trace_operations=True)
+    assert trace_file.read_text() == expected
+
+
+def test_disabled_tracing_does_not_write_file(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    trace_file = tmp_path / "trace.txt"
+    monkeypatch.setenv("DEFINE_OPERATION_TRACE_FILE", str(trace_file))
+    literal.start(_Entry)
+    assert not trace_file.exists()
+
+
+def test_tracing_without_file(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.delenv("DEFINE_OPERATION_TRACE_FILE", raising=False)
+    literal.start(_Entry, trace_operations=True)
+
+
+def test_failed_action_clears_tracing(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    class Failing(literal.Action):
+        @override
+        def run(self):
+            literal.record_operation("failing.create(item)")
+            raise ValueError("failed action")
+
+    trace_file = tmp_path / "trace.txt"
+    monkeypatch.setenv("DEFINE_OPERATION_TRACE_FILE", str(trace_file))
+    with pytest.raises(ValueError, match="failed action"):
+        literal.start(Failing, trace_operations=True)
+    literal.start(_Worker, trace_operations=True)
+    assert trace_file.read_text() == "worker.create(item)\nworker.destroy(item)\n"

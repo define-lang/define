@@ -1,20 +1,34 @@
 define the potential action<my.domain.com:my_lib:/class_var> {
+    it also assigns the position</child>.
     define the position<trigger_pos>.
     it happens when {
         the position<trigger_pos> has a particle.
     } and it does {
+        create a particle in position</child>.
+        destroy the particle in position</child>.
         define the position<self>.
         define the position<self_>.
         define the position<literal>.
         define the position<super>.
         define the position<type>.
         define the position<typing>.
+        define the position<class>.
+        define the position<class_2>.
+        define the position<local> {
+            it may only contain particles where {
+                it has the position</child>.
+            }
+        }
         create a particle in position<self>.
         create a particle in position<self_>.
         create a particle in position<literal>.
         create a particle in position<super>.
         create a particle in position<type>.
         create a particle in position<typing>.
+        create a particle in position<class>.
+        create a particle in position<class_2>.
+        create a particle in position<local>.
+        create a particle in position<local>::position</child>.
         destroy the particle in position<trigger_pos>.
     }
 }

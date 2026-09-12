@@ -23,7 +23,6 @@ def run_generated_program(
     entry_script: str = "__main__.py",
     *,
     operation_trace_file: Path | None = None,
-    max_threads: int | None = None,
 ) -> GeneratedProgramResult:
     """Execute a generated program and capture its occupied positions.
 
@@ -33,7 +32,6 @@ def run_generated_program(
             entry point, for a test that needs to start the program differently.
         operation_trace_file: A file to receive the generated program's ordered
             Particle Operation trace.
-        max_threads: The maximum scheduler threads for this execution.
     """
     # Closing the file leaves it in place for the generated program to write,
     # and it is still removed when this block ends.
@@ -48,8 +46,6 @@ def run_generated_program(
             generated_environment["DEFINE_OPERATION_TRACE_FILE"] = str(
                 operation_trace_file
             )
-        if max_threads is not None:
-            generated_environment["DEFINE_MAX_THREADS"] = str(max_threads)
         process = subprocess.run(
             [sys.executable, str(generated_dir / entry_script)],
             env=os.environ | generated_environment,

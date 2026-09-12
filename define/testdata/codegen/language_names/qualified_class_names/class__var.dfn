@@ -1,0 +1,8 @@
+# The generated position class must not shadow ClassVar in its constraint annotation.
+# TODO: Rename this to position</class_var> and move it into class_var.dfn once
+# codegen stops overwriting definitions that share a Python module.
+define the potential position<my.domain.com:my_lib:/class__var> {
+    it may only contain particles where {
+        it has the position</child>.
+    }
+}

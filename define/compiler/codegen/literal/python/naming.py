@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import keyword
 import typing
 from dataclasses import dataclass
 from pathlib import Path
@@ -10,11 +11,14 @@ from pathlib import Path
 from define.compiler import ast, constants
 
 if typing.TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from define.compiler.data_structures import define_path
 
 _AUTHORITY_CHAR_TABLE = str.maketrans(".-~/", "____")
-_EXECUTION_CLASS_SUFFIX = "Execution"
-_GUARANTEES_CLASS_SUFFIX = "Guarantees"
+_RESERVED_NAMES = (*keyword.kwlist, "self", "literal")
+# Class names must not shadow the typing imports used by generated annotations.
+_RESERVED_CLASS_NAMES = {"ClassVar"}
 
 # Filesystems commonly limit each path component to 255 bytes. Python
 # identifiers have no such limit, but a module's dotted name is also written
@@ -60,16 +64,18 @@ def _authority_to_module_segment(name: str) -> str:
 
 
 @typing.final
-class NameAllocator:
-    """Allocate unique names within one generated Python namespace."""
+class LocalNameAllocator:
+    """Allocate unique local names within one generated Python method."""
 
     def __init__(self):
-        """Initialize with no allocated names."""
-        self._used: set[str] = set()
+        """Reserve Python keywords and names used by generated methods."""
+        self._used = set(_RESERVED_NAMES)
         self._next_suffix: dict[str, int] = {}
 
     def allocate(self, candidate: str) -> str:
         """Return the first available name based on ``candidate``."""
+        # TODO: For reserved names, append underscores until available; keep
+        # numeric suffixes for collisions between user-defined names.
         if candidate not in self._used:
             self._used.add(candidate)
             return candidate
@@ -80,6 +86,12 @@ class NameAllocator:
         self._used.add(name)
         self._next_suffix[candidate] = suffix + 1
         return name
+
+    def reserve_module_first_names(self, modules: Iterable[str]):
+        """Reserve the first name of each imported module."""
+        # Assigning a local variable shadows an imported name throughout the
+        # function, including before the assignment.
+        self._used.update(module.split(".", 1)[0] for module in modules)
 
 
 def file_path_for_module(module_name: str) -> Path:
@@ -108,7 +120,6 @@ class NameConverter:
 
     _class_names: dict[define_path.DefinePath, str]
     _class_references: dict[str, ClassReference]
-    _execution_class_names: dict[define_path.DefinePath, str]
     _authority_names: dict[str, str]
     _used_authority_names: set[str]
 
@@ -116,7 +127,6 @@ class NameConverter:
         """Initialize with empty name caches."""
         self._class_names = {}
         self._class_references = {}
-        self._execution_class_names = {}
         self._authority_names = {}
         self._used_authority_names = set()
 
@@ -128,43 +138,10 @@ class NameConverter:
         if path in self._class_names:
             return self._class_names[path]
         name = _path_to_pascal(path)
+        if name in _RESERVED_CLASS_NAMES:
+            name += "_"
         self._class_names[path] = name
         return name
-
-    def execution_class_name(self, path: define_path.DefinePath) -> str:
-        """Return the class name for one action's generated execution state."""
-        existing = self._execution_class_names.get(path)
-        if existing is not None:
-            return existing
-        name = self.class_name(path) + _EXECUTION_CLASS_SUFFIX
-        self._execution_class_names[path] = name
-        return name
-
-    def execution_class_reference(
-        self, typed_global_name: ast.GlobalTypedName
-    ) -> ClassReference:
-        """Build a reference to one generated action execution class."""
-        action_class = self.class_reference(typed_global_name)
-        return ClassReference(
-            class_name=self.execution_class_name(
-                typed_global_name.name_content.path.relative_path
-            ),
-            module_name=action_class.module_name,
-        )
-
-    def _guarantees_class_name(self, path: define_path.DefinePath) -> str:
-        """Return the class name for one action's guarantee continuations."""
-        return self.class_name(path) + _GUARANTEES_CLASS_SUFFIX
-
-    def guarantees_class_reference(
-        self, typed_global_name: ast.GlobalTypedNameInDefinition
-    ) -> ClassReference:
-        """Build a reference to one generated action guarantee class."""
-        name_content = typed_global_name.name_content
-        return ClassReference(
-            class_name=self._guarantees_class_name(name_content.path.relative_path),
-            module_name=self.module_name(name_content),
-        )
 
     def authority_segment(self, authority: str) -> str:
         """Convert an authority string to a unique Python module segment.

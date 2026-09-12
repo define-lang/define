@@ -1,0 +1,19 @@
+# Record actions triggered by Create and Move, including Constructors in their execution order.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</worker>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in action</worker>::position<run>.
+        define the position<item> {
+            it may only contain particles where {
+                it has the action</first>.
+                it has the action</second>.
+            }
+        }
+        create a particle in position<item>.
+        move the particle in position<item> to action</worker>::position<run>.
+        define the position<empty>.
+        create a particle in position<empty>.
+    }
+}

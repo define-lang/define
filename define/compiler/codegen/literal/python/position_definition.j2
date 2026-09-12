@@ -1,5 +1,5 @@
 {% from "file_header.j2" import file_header %}
-{{ file_header(definition, needs_final=false, needs_override=false) }}
+{{ file_header(definition, needs_override=false) }}
 
 class {{ definition.class_name }}(literal.GlobalPosition):
 {% if definition.constraints %}

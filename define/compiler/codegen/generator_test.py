@@ -34,7 +34,8 @@ def _generate(
     assert_no_errors(program_result)
     generator.CodeGenerator().generate(
         reference_graph_result.definition_order,
-        reference_graph_result.operation_graphs,
+        reference_graph_result.destructions,
+        reference_graph_result.triggered_actions,
         entry_action,
         tmp_path,
         max_workers=max_workers,

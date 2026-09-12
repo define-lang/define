@@ -1,59 +1,30 @@
 {% from "position_expression.j2" import position_expression %}
-{% from "destruction_position.j2" import retain_destruction_positions %}
 {% macro action_statements(statements) %}
-    {% for stmt in statements %}
-        {% if stmt.kind == StatementKind.LOCAL_POSITION %}
-            {% if stmt.constraints %}
-        self.{{ stmt.local_position_member_name }} = literal.LocalPosition(
-            "{{ stmt.local_typed_name }}",
+    {% for statement in statements %}
+        {% if statement.kind == StatementKind.LOCAL_POSITION %}
+        {{ statement.local_position_name }} = literal.LocalPosition(
+            "{{ statement.local_typed_name }}",
+            {% if statement.constraints %}
             constraints=(
-                {% for class_reference in stmt.constraints %}
-                {{ class_reference.module_name }}.{{ class_reference.class_name }},
+                {% for constraint in statement.constraints %}
+                {{ constraint.module_name }}.{{ constraint.class_name }},
                 {% endfor %}
             ),
-            scheduler=self.scheduler,
-        )
-            {% else %}
-        self.{{ stmt.local_position_member_name }} = literal.LocalPosition(
-            "{{ stmt.local_typed_name }}",
-            scheduler=self.scheduler,
-        )
             {% endif %}
-        {% elif stmt.kind == StatementKind.CREATE_PARTICLE %}
-        {{ position_expression(stmt.position) }}.create_particle()
-            {% if stmt.operation_label is not none %}
-        self.scheduler.operation_completed(
-            self.trace_execution,
-            "{{ stmt.operation_label }}",
         )
-            {% endif %}
-        {% elif stmt.kind == StatementKind.DESTROY_PARTICLE %}
-        {{ position_expression(stmt.position) }}.destroy_particle()
-            {% if stmt.operation_label is not none %}
-        self.scheduler.operation_completed(
-                {% if stmt.destruction_connection_name is not none %}
-            self.{{ stmt.destruction_connection_name }}.trace_execution,
-                {% else %}
-            self.trace_execution,
-                {% endif %}
-            "{{ stmt.operation_label }}",
+        {% elif statement.kind == StatementKind.CREATE_PARTICLE %}
+        {{ position_expression(statement.position) }}.create_particle()
+        {% elif statement.kind == StatementKind.MOVE_PARTICLE %}
+        {{ position_expression(statement.position) }}.move_particle_to(
+            {{ position_expression(statement.to_position, "    ") }}
         )
-            {% endif %}
-        {% elif stmt.kind == StatementKind.MOVE_PARTICLE %}
-            {% if stmt.to_position.chain_elements %}
-        {{ position_expression(stmt.position) }}.move_particle_to(
-            {{ position_expression(stmt.to_position, "    ") }}
-        )
-            {% else %}
-        {{ position_expression(stmt.position) }}.move_particle_to({{ position_expression(stmt.to_position) }})
-            {% endif %}
-            {% if stmt.operation_label is not none %}
-        self.scheduler.operation_completed(
-            self.trace_execution,
-            "{{ stmt.operation_label }}",
-        )
-            {% endif %}
+        {% elif statement.kind == StatementKind.DESTROY_PARTICLE %}
+        {{ position_expression(statement.position) }}.destroy_particle()
+        {% elif statement.kind == StatementKind.RUN_ACTION %}
+        {{ position_expression(statement.position) }}.run()
         {% endif %}
-{{ retain_destruction_positions(stmt.destruction_positions_to_retain) -}}
+        {% if statement.operation_label is not none %}
+        literal.record_operation("{{ statement.operation_label }}")
+        {% endif %}
     {% endfor %}
-{%- endmacro %}
+{% endmacro %}

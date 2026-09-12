@@ -285,6 +285,7 @@ py_library(
         "//tools:__subpackages__",
     ],
     deps = [
+        ":action_contract",
         ":definition_postorder_validator",
         ":operation_graph",
         ":position_occupancy",

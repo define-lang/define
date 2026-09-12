@@ -38,9 +38,9 @@ def test_class_name_multi_segment():
     assert converter.class_name(define_path.DefinePath("my_action")) == "MyAction"
 
 
-def test_class_name_can_match_imported_name():
+def test_class_name_avoids_imported_name():
     converter = naming.NameConverter()
-    assert converter.class_name(define_path.DefinePath("class_var")) == "ClassVar"
+    assert converter.class_name(define_path.DefinePath("class_var")) == "ClassVar_"
 
 
 def test_class_name_can_match_builtin_name():
@@ -52,31 +52,14 @@ def test_class_name_cached():
     converter = naming.NameConverter()
     first = converter.class_name(define_path.DefinePath("class_var"))
     second = converter.class_name(define_path.DefinePath("class_var"))
-    assert first == second == "ClassVar"
+    assert first == second == "ClassVar_"
 
 
 def test_class_names_in_different_modules_can_match():
     converter = naming.NameConverter()
     first = converter.class_name(define_path.DefinePath("class_var"))
     second = converter.class_name(define_path.DefinePath("class_var_"))
-    assert first == second == "ClassVar"
-
-
-def test_guarantees_class_reference():
-    converter = naming.NameConverter()
-    assert converter.guarantees_class_reference(
-        _action_name("/worker")
-    ) == naming.ClassReference(
-        class_name="WorkerGuarantees",
-        module_name="local.my_domain_com.my_lib.worker",
-    )
-
-
-def test_guarantees_class_name_can_match_definition_in_another_module():
-    converter = naming.NameConverter()
-    definition_class = converter.class_name(define_path.DefinePath("worker_guarantees"))
-    guarantees_class = converter.guarantees_class_reference(_action_name("/worker"))
-    assert definition_class == guarantees_class.class_name == "WorkerGuarantees"
+    assert first == second == "ClassVar_"
 
 
 def test_class_reference_cached():
@@ -130,12 +113,12 @@ def test_file_path_for_module_matches_truncated_import_name():
 
 
 def test_name_allocator_preserves_first_candidate():
-    allocator = naming.NameAllocator()
+    allocator = naming.LocalNameAllocator()
     assert allocator.allocate("name") == "name"
 
 
 def test_name_allocator_numbers_repeated_candidates():
-    allocator = naming.NameAllocator()
+    allocator = naming.LocalNameAllocator()
     assert [allocator.allocate("name") for _ in range(3)] == [
         "name",
         "name_2",
@@ -144,22 +127,22 @@ def test_name_allocator_numbers_repeated_candidates():
 
 
 def test_name_allocator_skips_conflicting_source_suffixes():
-    allocator = naming.NameAllocator()
+    allocator = naming.LocalNameAllocator()
     assert allocator.allocate("name") == "name"
     assert allocator.allocate("name_2") == "name_2"
     assert allocator.allocate("name") == "name_3"
 
 
 def test_name_allocator_skips_conflicting_generated_suffixes():
-    allocator = naming.NameAllocator()
+    allocator = naming.LocalNameAllocator()
     assert allocator.allocate("name") == "name"
     assert allocator.allocate("name") == "name_2"
     assert allocator.allocate("name_2") == "name_2_2"
 
 
 def test_name_allocators_are_independent_namespaces():
-    first = naming.NameAllocator()
-    second = naming.NameAllocator()
+    first = naming.LocalNameAllocator()
+    second = naming.LocalNameAllocator()
     assert first.allocate("name") == "name"
     assert second.allocate("name") == "name"
 

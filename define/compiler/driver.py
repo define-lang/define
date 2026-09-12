@@ -38,6 +38,7 @@ if typing.TYPE_CHECKING:
 
     from define.compiler.graphs import reference_graph_executor
     from define.compiler.validator import validation_result
+    from define.compiler.validator.reference_graph import action_contract
 
 
 class DriverMode(enum.StrEnum):
@@ -97,6 +98,8 @@ class CompilerValidationResult(CompilerResult):
     definition_order: reference_graph_executor.ReferenceGraphOrder
     overall_stats: overall_stats.OverallStats
     operation_graphs: operation_graph.OperationGraphs
+    destructions: dict[ast.SourceLocation, list[ast.PositionReference]]
+    triggered_actions: action_contract.TriggeredActions
 
     @typing.override
     def error_strings(self) -> list[str]:
@@ -234,6 +237,8 @@ class Driver:
                 program_result.config_loading_time_ns,
             ),
             operation_graphs=reference_graph_result.operation_graphs,
+            destructions=reference_graph_result.destructions,
+            triggered_actions=reference_graph_result.triggered_actions,
         )
 
     def compile_program(
@@ -290,7 +295,8 @@ class Driver:
             )
             return CompilationResult.from_validation_result(compiler_validation)
         definition_order = compiler_validation.definition_order
-        operation_graphs = compiler_validation.operation_graphs
+        destructions = compiler_validation.destructions
+        triggered_actions = compiler_validation.triggered_actions
         compilation_result = CompilationResult.from_validation_result(
             compiler_validation
         )
@@ -302,7 +308,8 @@ class Driver:
         codegen = generator.CodeGenerator()
         codegen.generate(
             definition_order,
-            operation_graphs,
+            destructions,
+            triggered_actions,
             entry_action,
             output_dir,
             trace_operations=trace_operations,

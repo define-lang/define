@@ -1,0 +1,15 @@
+# An action requirement for a child position that failed to parse must report errors without crashing.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<item> {
+            it may only contain particles where {
+                it has the action</initialize>.
+                it has the action</cleanup>.
+            }
+        }
+        create a particle in position<item>.
+        destroy the particle in position<item>.
+    }
+}

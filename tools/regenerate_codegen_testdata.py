@@ -52,13 +52,11 @@ def _run_case(
     *,
     testdata_root: Path,
     operation_trace_file: Path | None = None,
-    max_threads: int | None = None,
 ) -> generated_program_runner.GeneratedProgramResult | None:
     case_dir = expected_dir.parent
     runtime_result = generated_program_runner.run_generated_program(
         expected_dir,
         operation_trace_file=operation_trace_file,
-        max_threads=max_threads,
     )
     if runtime_result.process.returncode != 0:
         print(f"  {case_dir.relative_to(testdata_root)}: FAILED")
@@ -110,7 +108,6 @@ def _regenerate_tracing_case(case_dir: Path, *, testdata_root: Path) -> bool:
             expected_dir,
             testdata_root=testdata_root,
             operation_trace_file=operation_trace_file,
-            max_threads=1,
         )
         is not None
     )

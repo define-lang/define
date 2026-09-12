@@ -6,7 +6,6 @@ import typing
 from pathlib import Path
 
 from define.compiler import ast
-from define.compiler.codegen import action_plan
 from define.compiler.codegen.literal.python import (
     action_context,
     action_definition,
@@ -15,15 +14,14 @@ from define.compiler.codegen.literal.python import (
     template_context,
     template_env,
 )
-from define.compiler.data_structures import typed_name_dict
 from define.compiler.graphs import reference_graph_executor
-from define.compiler.validator.reference_graph import (
-    operation_graph,
-    operation_graph_labeler,
-)
 
 if typing.TYPE_CHECKING:
     import jinja2
+
+    from define.compiler.validator.reference_graph import (
+        action_contract,
+    )
 
 _TEMPLATES_DIR = Path(__file__).parent
 _COMPILED_DIR = _TEMPLATES_DIR / "templates.compiled"
@@ -52,34 +50,30 @@ class _DefinitionGenerator:
     def __init__(
         self,
         definition_order: reference_graph_executor.ReferenceGraphOrder,
-        operation_graphs: operation_graph.OperationGraphs,
+        destructions: dict[ast.SourceLocation, list[ast.PositionReference]],
+        triggered_actions: action_contract.TriggeredActions,
         entry_point: ast.ActionDefinition,
         converter: naming.NameConverter,
-        operation_labels: operation_graph_labeler.OperationGraphLabeler | None,
         output_dir: Path,
+        *,
+        trace_operations: bool,
     ):
         """Initialize the shared generation inputs."""
         self._definition_order = definition_order
-        self._operation_graphs = operation_graphs
+        self._destructions = destructions
+        self._triggered_actions = triggered_actions
         self._entry_point = entry_point
         self._converter = converter
-        self._operation_labels = operation_labels
+        self._trace_operations = trace_operations
         self._output_dir = output_dir
-        self._plans = action_plan.ActionPlans(operation_graphs)
-        self._generated_actions = typed_name_dict.TypedNameDict[
-            ast.GlobalTypedName, action_context.GeneratedActionInterface
-        ]()
-        self._entry_definition: action_context.GeneratedActionDefinition
+        self._entry_definition: action_context.ActionDefinitionContext
 
     def generate(
         self,
         *,
         max_workers: int | None,
-    ) -> tuple[action_context.GeneratedActionDefinition, set[Path]]:
+    ) -> tuple[action_context.ActionDefinitionContext, set[Path]]:
         """Generate every definition with bounded worker concurrency."""
-        # TODO: Some referenced definitions may not contribute generated
-        # information used by a definition. Investigate whether codegen can use
-        # narrower prerequisites without duplicating Action Plan dependency logic.
         package_dirs = reference_graph_executor.process_definitions(
             self._definition_order,
             self._generate_definition,
@@ -103,26 +97,16 @@ class _DefinitionGenerator:
         self,
         definition: ast.ActionDefinition,
     ) -> action_context.ActionDefinitionContext:
-        plan = self._plans.plan_for(definition)
-        is_entry_point = definition.typed_name == self._entry_point.typed_name
-        view_point_create_plan = None
-        if is_entry_point:
-            view_point_create_plan = plan.view_point_create_plan()
-        generated_definition = action_definition.ActionDefinitionGenerator(
+        context = action_definition.ActionDefinitionGenerator(
             definition,
             self._converter,
-            self._generated_actions,
-            plan,
-            view_point_create_plan,
-            self._operation_labels,
-            is_entry_point=is_entry_point,
+            self._destructions,
+            self._triggered_actions,
+            trace_operations=self._trace_operations,
         ).generate()
-        self._generated_actions[definition.typed_name] = (
-            generated_definition.action_interface
-        )
-        if is_entry_point:
-            self._entry_definition = generated_definition
-        return generated_definition.context
+        if definition.typed_name == self._entry_point.typed_name:
+            self._entry_definition = context
+        return context
 
     def _write_definition_file(
         self,
@@ -150,7 +134,8 @@ class PythonLiteralCodeGenerator:
     def generate(
         self,
         definition_order: reference_graph_executor.ReferenceGraphOrder,
-        operation_graphs: operation_graph.OperationGraphs,
+        destructions: dict[ast.SourceLocation, list[ast.PositionReference]],
+        triggered_actions: action_contract.TriggeredActions,
         entry_point: ast.ActionDefinition,
         output_dir: Path,
         *,
@@ -158,11 +143,6 @@ class PythonLiteralCodeGenerator:
         max_workers: int | None = None,
     ):
         """Generate Python files for the entry-point constructor and its references."""
-        operation_labels = (
-            operation_graph_labeler.OperationGraphLabeler(operation_graphs)
-            if trace_operations
-            else None
-        )
         converter = naming.NameConverter()
         # Authority-name collisions are assigned by first use, so preserve the
         # existing definition-order choice before workers share the converter.
@@ -170,15 +150,16 @@ class PythonLiteralCodeGenerator:
             _ = converter.module_name(definition.typed_name.name_content)
         entry_definition, package_dirs = _DefinitionGenerator(
             definition_order,
-            operation_graphs,
+            destructions,
+            triggered_actions,
             entry_point,
             converter,
-            operation_labels,
             output_dir,
+            trace_operations=trace_operations,
         ).generate(max_workers=max_workers)
 
         self._write_init_files(package_dirs, output_dir)
-        self._write_entry_point(entry_definition.context, output_dir)
+        self._write_entry_point(entry_definition, output_dir)
 
     def _write_init_files(self, package_dirs: set[Path], output_dir: Path):
         """Write empty __init__.py files for intermediate packages."""

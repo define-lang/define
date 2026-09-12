@@ -21,6 +21,7 @@ from define.compiler.validator.reference_graph import (
 if typing.TYPE_CHECKING:
     from define.compiler.data_structures import typed_name_dict
     from define.compiler.validator import validation_result
+    from define.compiler.validator.reference_graph import action_contract
 
 # Position definitions get no validation and so produce None.
 type _PostorderResult = definition_postorder_validator.PostorderValidationResult | None
@@ -34,6 +35,8 @@ class ReferenceGraphValidationResult:
     action_call_graph: action_call_graph.ActionCallGraph
     # The DLP 44 operation dependency graph of every action.
     operation_graphs: operation_graph.OperationGraphs
+    destructions: dict[ast.SourceLocation, list[ast.PositionReference]]
+    triggered_actions: action_contract.TriggeredActions
 
 
 # TODO: We need a mode that forces a fake caller as the parent of any top-level
@@ -95,6 +98,8 @@ class ReferenceGraphValidator:
 
         call_graph = action_call_graph.ActionCallGraph()
         operation_graphs = operation_graph.OperationGraphs()
+        destructions: dict[ast.SourceLocation, list[ast.PositionReference]] = {}
+        triggered_actions: action_contract.TriggeredActions = {}
         for definition, result in zip(
             definition_order.definitions, results, strict=True
         ):
@@ -106,6 +111,8 @@ class ReferenceGraphValidator:
             for edge in result.edges:
                 call_graph.add_edge(edge.source, edge.target)
             operation_graphs[definition.typed_name] = result.operation_graph
+            destructions.update(result.destructions)
+            triggered_actions.update(result.triggered_actions)
         if (
             self._entry_action is not None
             and not self._allow_entry_action_occupied_implied_position_requirements
@@ -115,6 +122,8 @@ class ReferenceGraphValidator:
             definition_order=definition_order,
             action_call_graph=call_graph,
             operation_graphs=operation_graphs,
+            destructions=destructions,
+            triggered_actions=triggered_actions,
         )
 
     def _validate_definition(

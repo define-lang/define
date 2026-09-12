@@ -1,8 +1,8 @@
 {% macro position_expression(expr, extra_indent="") -%}
-    {%- if expr.local_position_member_name is none -%}
-self.action
+    {%- if expr.local_position_name is none -%}
+self
     {%- else -%}
-self.{{ expr.local_position_member_name }}
+{{ expr.local_position_name }}
     {%- endif -%}
     {%- for element in expr.chain_elements -%}
         {% if element.accessor == ChainAccessor.POSITION_FROM_POSITION -%}

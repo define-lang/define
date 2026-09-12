@@ -11,7 +11,9 @@ if TYPE_CHECKING:
 
     from define.compiler import ast
     from define.compiler.graphs import reference_graph_executor
-    from define.compiler.validator.reference_graph import operation_graph
+    from define.compiler.validator.reference_graph import (
+        action_contract,
+    )
 
 
 class CodeGenerator:
@@ -20,7 +22,8 @@ class CodeGenerator:
     def generate(
         self,
         definition_order: reference_graph_executor.ReferenceGraphOrder,
-        operation_graphs: operation_graph.OperationGraphs,
+        destructions: dict[ast.SourceLocation, list[ast.PositionReference]],
+        triggered_actions: action_contract.TriggeredActions,
         entry_action: ast.ActionDefinition,
         output_dir: Path,
         *,
@@ -36,7 +39,8 @@ class CodeGenerator:
         python_gen = python_generator.PythonLiteralCodeGenerator()
         python_gen.generate(
             definition_order,
-            operation_graphs,
+            destructions,
+            triggered_actions,
             entry_action,
             output_dir,
             trace_operations=trace_operations,

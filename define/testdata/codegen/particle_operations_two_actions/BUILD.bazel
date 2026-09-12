@@ -25,6 +25,5 @@ pyright_test(
     srcs = glob(["**/*.py"]),
     deps = [
         "//define/runtime:literal",
-        "//define/runtime:tracing",
     ],
 )

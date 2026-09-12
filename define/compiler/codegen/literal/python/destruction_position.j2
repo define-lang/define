@@ -1,6 +1,0 @@
-{% from "position_expression.j2" import position_expression %}
-{% macro retain_destruction_positions(positions) %}
-    {% for position in positions %}
-        self.{{ position.member_name }} = {{ position_expression(position.position) }}
-    {% endfor %}
-{% endmacro %}

@@ -11,8 +11,6 @@ py_library(
     deps = [
         ":naming",
         ":template_context",
-        "//define/compiler/codegen:action_plan",
-        "//define/compiler/validator/reference_graph:operation_graph_model",
     ],
 )
 
@@ -22,86 +20,11 @@ py_library(
     visibility = ["//define/compiler/codegen:__subpackages__"],
     deps = [
         ":action_context",
-        ":action_execution",
-        ":naming",
-        ":template_context",
-        "//define/compiler:ast",
-        "//define/compiler/codegen:action_plan",
-        "//define/compiler/data_structures:typed_name_dict",
-        "//define/compiler/validator/reference_graph:operation_graph_labeler",
-    ],
-)
-
-py_library(
-    name = "action_execution",
-    srcs = ["action_execution.py"],
-    visibility = ["//define/compiler/codegen:__subpackages__"],
-    deps = [
-        ":action_context",
-        ":action_guarantees",
-        ":action_names",
         ":action_statements",
         ":naming",
         ":template_context",
-        ":triggered_action_execution",
         "//define/compiler:ast",
-        "//define/compiler/codegen:action_plan",
-        "//define/compiler/data_structures:typed_name_dict",
-        "//define/compiler/validator/reference_graph:operation_graph_labeler",
-        "//define/compiler/validator/reference_graph:operation_graph_model",
-    ],
-)
-
-py_library(
-    name = "action_guarantees",
-    srcs = ["action_guarantees.py"],
-    visibility = ["//define/compiler/codegen:__subpackages__"],
-    deps = [
-        ":action_context",
-        ":action_names",
-        ":naming",
-        ":template_context",
-        "//define/compiler:ast",
-        "//define/compiler/codegen:action_plan",
-        "//define/compiler/data_structures:typed_name_dict",
-        "//define/compiler/validator/reference_graph:operation_graph",
-        "//define/compiler/validator/reference_graph:operation_graph_model",
-    ],
-)
-
-py_library(
-    name = "action_names",
-    srcs = ["action_names.py"],
-    visibility = ["//define/compiler/codegen:__subpackages__"],
-    deps = [
-        ":action_context",
-        ":naming",
-        "//define/compiler:ast",
-        "//define/compiler/codegen:action_plan",
-        "//define/compiler/data_structures:typed_name_dict",
-        "//define/compiler/validator/reference_graph:operation_graph_action_resolver",
-        "//define/compiler/validator/reference_graph:operation_graph_model",
-        "//define/compiler/validator/reference_graph:position_occupancy",
-    ],
-)
-
-py_test(
-    name = "action_names_test",
-    size = "small",
-    srcs = ["action_names_test.py"],
-    deps = [
-        ":action_context",
-        ":action_names",
-        "//define/compiler:ast",
-        "//define/compiler:conftest",
-        "//define/compiler:test_helpers",
-        "//define/compiler/codegen:action_plan",
-        "//define/compiler/data_structures:typed_name_dict",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:destruction_contract",
-        "//define/compiler/validator/reference_graph:operation_graph_action_resolver",
-        "//define/compiler/validator/reference_graph:operation_graph_model",
-        "//define/compiler/validator/reference_graph:position_occupancy",
+        "//define/compiler/validator/reference_graph:action_contract",
     ],
 )
 
@@ -113,9 +36,7 @@ py_library(
         ":naming",
         ":template_context",
         "//define/compiler:ast",
-        "//define/compiler/codegen:action_plan",
-        "//define/compiler/validator/reference_graph:operation_graph_labeler",
-        "//define/compiler/validator/reference_graph:operation_graph_model",
+        "//define/compiler/validator/reference_graph:action_contract",
     ],
 )
 
@@ -132,11 +53,8 @@ py_library(
         ":template_context",
         ":template_env",
         "//define/compiler:ast",
-        "//define/compiler/codegen:action_plan",
-        "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/graphs:reference_graph_executor",
-        "//define/compiler/validator/reference_graph:operation_graph",
-        "//define/compiler/validator/reference_graph:operation_graph_labeler",
+        "//define/compiler/validator/reference_graph:action_contract",
         "@pypi//jinja2",
     ],
 )
@@ -213,25 +131,6 @@ jinja_templates(
     srcs = glob(["*.j2"]),
 )
 
-py_library(
-    name = "triggered_action_execution",
-    srcs = ["triggered_action_execution.py"],
-    visibility = ["//define/compiler/codegen:__subpackages__"],
-    deps = [
-        ":action_context",
-        ":action_guarantees",
-        ":action_names",
-        ":action_statements",
-        ":naming",
-        ":template_context",
-        "//define/compiler:ast",
-        "//define/compiler/codegen:action_plan",
-        "//define/compiler/data_structures:typed_name_dict",
-        "//define/compiler/validator/reference_graph:operation_graph_labeler",
-        "//define/compiler/validator/reference_graph:operation_graph_model",
-    ],
-)
-
 # --- Format checking ---
 
 format_test(
@@ -249,10 +148,6 @@ pyright_test(
     deps = [
         ":action_context",
         ":action_definition",
-        ":action_execution",
-        ":action_guarantees",
-        ":action_names",
-        ":action_names_test",
         ":action_statements",
         ":generator",
         ":naming",
@@ -262,6 +157,5 @@ pyright_test(
         ":template_context",
         ":template_env",
         ":template_env_test",
-        ":triggered_action_execution",
     ],
 )

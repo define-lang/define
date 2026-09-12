@@ -5,7 +5,7 @@ from pathlib import PurePosixPath
 
 import pytest
 
-from define.compiler import conftest, diagnostics
+from define.compiler import conftest, diagnostics, parser_exceptions
 from define.compiler.validator.reference_graph.operation_graph_renderer import (
     action_graph,
 )
@@ -321,3 +321,32 @@ def test_action_interface_reference_with_circular_contract_reports_circular_refe
     assert all_diags[2].location.line == 3
     assert all_diags[2].location.column == 20
     assert all_diags[2].location.file_path == PurePosixPath("pos.dfn")
+
+
+def test_records_statement_triggers_including_constructors(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert action_graph(result.operation_graphs) == [
+        (_TEST, "action<my.domain.com:my_lib:/worker>"),
+        (_TEST, "action<my.domain.com:my_lib:/first>"),
+        (_TEST, "action<my.domain.com:my_lib:/second>"),
+        (_TEST, "action<my.domain.com:my_lib:/worker>"),
+    ]
+
+
+def test_action_requirement_for_unparseable_child_position_reports_errors(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    all_diagnostics = result.program_result.all_diagnostics
+    assert len(all_diagnostics) == 2
+    for diagnostic in all_diagnostics:
+        assert isinstance(
+            diagnostic, diagnostics.ReferencedDefinitionNotFoundDiagnostic
+        )
+        assert diagnostic.file_path == "child.dfn"
+    all_exceptions = result.program_result.all_exceptions
+    assert len(all_exceptions) == 1
+    assert isinstance(all_exceptions[0], parser_exceptions.ExpectedGlobalDefinition)

@@ -54,7 +54,7 @@ py_library(
         "//define/compiler:ast",
         "//define/compiler/codegen/literal/python:generator",
         "//define/compiler/graphs:reference_graph_executor",
-        "//define/compiler/validator/reference_graph:operation_graph",
+        "//define/compiler/validator/reference_graph:action_contract",
     ],
 )
 
@@ -91,6 +91,7 @@ py_test(
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator:validation_result",
         "//define/compiler/validator/reference_graph:reference_graph_validator",
+        "//define/runtime:literal",  # keep
     ],
 )
 
@@ -123,7 +124,6 @@ py_test(
         "//define/compiler:driver",
         "//define/compiler/validator:test_helpers",
         "//define/runtime:literal",  # keep
-        "//define/runtime:tracing",  # keep
         "@pypi//pytest",
     ],
 )

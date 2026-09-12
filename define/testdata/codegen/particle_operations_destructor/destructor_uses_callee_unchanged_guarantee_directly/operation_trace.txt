@@ -1,6 +1,6 @@
 test.create(box)
+destructor.create(/filler::trigger_pos)
 filler.create(/implied)
 filler.destroy(/implied)
-destructor.create(/filler::trigger_pos)
 filler.destroy(trigger_pos)
 test.destroy(box)
