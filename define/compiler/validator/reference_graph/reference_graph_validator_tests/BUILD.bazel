@@ -21,7 +21,6 @@ py_test(
         "//define/compiler:parser_exceptions",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/reference_graph:test_helpers",
-        "@pypi//pytest",
     ],
 )
 

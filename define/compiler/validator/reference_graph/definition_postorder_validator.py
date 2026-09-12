@@ -351,7 +351,15 @@ class ActionPostorderValidator:
             )
             if not definition.is_constructor:
                 continue
-            contract = self._validation_state.get_contract(quality)
+            parent_particle = self._tracker.get_occupant(position)
+            self._dead_constraint_tracker.mark_action_alive(
+                quality, position, parent_particle.origin_position
+            )
+            contract = self._validation_state.get_contract_or_none(quality)
+            # A rejected circular reference can leave this constructor's contract
+            # unpublished while the referencing definition is validated.
+            if contract is None:
+                continue
             # The constructor is a quality of the particle in `position`, so its
             # interface positions hang off position::action</construct> while its
             # implied qualities hang off the position itself.
@@ -361,8 +369,7 @@ class ActionPostorderValidator:
                 action_chain,
                 position,
                 scope,
-                current_position=position,
-                parent_particle=self._tracker.get_occupant(position),
+                parent_particle=parent_particle,
                 action_assignment=action_contract.ActionAssignment(
                     quality=quality,
                     assigned_to_position_name=position.typed_names[-1],
@@ -634,6 +641,11 @@ class ActionPostorderValidator:
         if trigger_element.full_typed_name != contract.trigger_position_name:
             return
 
+        self._dead_constraint_tracker.mark_action_alive(
+            action,
+            parent_position,
+            parent_particle.origin_position if parent_particle is not None else None,
+        )
         self._mark_contract_position_constraints_alive(position, particle, scope)
 
         self._fire_triggered_action(
@@ -641,7 +653,6 @@ class ActionPostorderValidator:
             action_chain,
             particle.last_position,
             scope,
-            current_position=parent_position,
             parent_particle=parent_particle,
         )
 
@@ -652,7 +663,6 @@ class ActionPostorderValidator:
         acting_on_position: ast.PositionReference,
         scope: scope_tracker.ScopeTracker,
         *,
-        current_position: ast.PositionReference | None,
         parent_particle: particle_info.ParticleInfo | None,
         action_assignment: action_contract.ActionAssignment | None = None,
     ):
@@ -681,12 +691,6 @@ class ActionPostorderValidator:
             contract,
             action_chain,
             execution.destruction_connections,
-        )
-        origin_position = (
-            parent_particle.origin_position if parent_particle is not None else None
-        )
-        self._dead_constraint_tracker.mark_action_alive(
-            action, current_position, origin_position
         )
         occupied_interface_child_position_violations = self._tracker.trigger_action(
             action_chain,

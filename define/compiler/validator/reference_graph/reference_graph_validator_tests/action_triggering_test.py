@@ -3,8 +3,6 @@ from __future__ import annotations
 
 from pathlib import PurePosixPath
 
-import pytest
-
 from define.compiler import conftest, diagnostics, parser_exceptions
 from define.compiler.validator.reference_graph.test_helpers import (
     action_graph,
@@ -20,11 +18,6 @@ _P = "action<my.domain.com:my_lib:/p>"
 _SHARED = "action<my.domain.com:my_lib:/shared>"
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=KeyError,
-    reason="A self-constructor reference requests its contract before publication",
-)
 def test_self_constructor_reference_reports_circular_reference(
     validate_testdata_non_filesystem_with_reference_graph: conftest.ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
