@@ -1,0 +1,14 @@
+# Local names must remain distinct when they collide with a reserved Python name
+# and the numbered names that would otherwise resolve that collision.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<self_2>.
+        define the position<self_3>.
+        define the position<self>.
+        create a particle in position<self_2>.
+        create a particle in position<self_3>.
+        create a particle in position<self>.
+    }
+}

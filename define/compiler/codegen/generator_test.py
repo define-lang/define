@@ -90,3 +90,5 @@ def test_parallel_generation_matches_single_worker(
     _generate(program_result, single_worker_dir, max_workers=1)
     _generate(program_result, parallel_dir, max_workers=4)
     test_helpers.assert_generated_directory_matches(single_worker_dir, parallel_dir)
+    _generate(program_result, single_worker_dir, max_workers=1)
+    test_helpers.assert_generated_directory_matches(single_worker_dir, parallel_dir)

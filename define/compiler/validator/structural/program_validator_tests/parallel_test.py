@@ -7,7 +7,6 @@ Follow program validator test authoring rules in program_validator_tests/AGENTS.
 from __future__ import annotations
 
 import threading
-from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 from unittest import mock
 
@@ -71,15 +70,17 @@ def test_reference_edges_resolve_by_file_completion_order(
     # completion callback rather than being available immediately.
     original_validate_file = file_validator.FileStructuralValidator.validate_file
     test_completed = threading.Event()
+    target_started = threading.Event()
 
     def ordered_validate_file(
         self: file_validator.FileStructuralValidator,
         context: file_validator.FileValidationContext,
     ):
-        if context.full_path == PurePosixPath("target.dfn"):
-            test_completed.wait()
+        if context.full_path == define_path.DefinePath("lib/target.dfn"):
+            target_started.set()
+            assert test_completed.wait(timeout=10)
         result = original_validate_file(self, context)
-        if context.full_path == PurePosixPath("test.dfn"):
+        if context.full_path == define_path.DefinePath("test.dfn"):
             test_completed.set()
         return result
 
@@ -91,6 +92,8 @@ def test_reference_edges_resolve_by_file_completion_order(
     ):
         result = validate_testdata_structural(max_workers=2)
 
+    assert target_started.is_set()
+    assert test_completed.is_set()
     assert result.all_exceptions == []
     assert len(result.file_results) == 2
     assert len(result.file_results[0].diagnostics) == 2
