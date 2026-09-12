@@ -3,19 +3,6 @@ load("//tools/bzl:format.bzl", "format_test")
 load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
-py_library(
-    name = "action_plan",
-    srcs = ["action_plan.py"],
-    visibility = ["//define/compiler/codegen:__subpackages__"],
-    deps = [
-        "//define/compiler:ast",
-        "//define/compiler/data_structures:typed_name_dict",
-        "//define/compiler/validator/reference_graph:operation_graph",
-        "//define/compiler/validator/reference_graph:operation_graph_action_resolver",
-        "//define/compiler/validator/reference_graph:operation_graph_model",
-    ],
-)
-
 py_test(
     name = "callee_codegen_independence_integration_test",
     size = "small",
@@ -149,7 +136,6 @@ format_test(
 pyright_test(
     name = "pyright_test",
     deps = [
-        ":action_plan",
         ":callee_codegen_independence_integration_test",
         ":codegen",
         ":generated_program_runner",

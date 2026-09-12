@@ -100,44 +100,6 @@ py_library(
 )
 
 py_library(
-    name = "operation_graph_action_resolver",
-    srcs = ["operation_graph_action_resolver.py"],
-    visibility = ["//define/compiler:__subpackages__"],
-    deps = [
-        ":operation_graph",
-        ":operation_graph_model",
-        ":operation_graph_rules",
-        "//define/compiler:ast",
-        "//define/compiler/data_structures:typed_name_dict",
-    ],
-)
-
-py_library(
-    name = "operation_graph_labeler",
-    srcs = ["operation_graph_labeler.py"],
-    visibility = ["//define/compiler:__subpackages__"],
-    deps = [
-        ":operation_graph",
-        ":operation_graph_model",
-        ":operation_graph_resolver",
-        "//define/compiler:ast",
-        "//define/compiler/data_structures:typed_name_dict",
-    ],
-)
-
-py_test(
-    name = "operation_graph_labeler_test",
-    size = "small",
-    srcs = ["operation_graph_labeler_test.py"],
-    deps = [
-        ":operation_graph_labeler",
-        ":operation_graph_resolver",
-        "//define/compiler:conftest",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_library(
     name = "operation_graph_model",
     srcs = ["operation_graph_model.py"],
     visibility = ["//define/compiler:__subpackages__"],
@@ -153,31 +115,6 @@ py_library(
     srcs = ["operation_graph_rules.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
-        ":operation_graph_model",
-        "//define/compiler:ast",
-    ],
-)
-
-py_library(
-    name = "operation_graph_renderer",
-    testonly = True,
-    srcs = ["operation_graph_renderer.py"],
-    visibility = ["//define/compiler:__subpackages__"],
-    deps = [
-        ":operation_graph",
-        ":operation_graph_labeler",
-        ":operation_graph_resolver",
-    ],
-)
-
-py_library(
-    name = "operation_graph_resolver",
-    srcs = ["operation_graph_resolver.py"],
-    visibility = ["//define/compiler:__subpackages__"],
-    deps = [
-        ":destruction_contract",
-        ":operation_graph",
-        ":operation_graph_action_resolver",
         ":operation_graph_model",
         "//define/compiler:ast",
     ],
@@ -360,12 +297,7 @@ pyright_test(
         ":definition_postorder_validator",
         ":destruction_contract",
         ":operation_graph",
-        ":operation_graph_action_resolver",
-        ":operation_graph_labeler",
-        ":operation_graph_labeler_test",
         ":operation_graph_model",
-        ":operation_graph_renderer",
-        ":operation_graph_resolver",
         ":operation_graph_rules",
         ":particle_info",
         ":particle_operation_validator",
