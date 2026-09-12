@@ -12,7 +12,9 @@ if TYPE_CHECKING:
     from define.compiler.validator.reference_graph import destruction_contract
 
 
-@dataclass(slots=True)
+# Repeated executions of the same action must remain distinct while nested
+# Guarantees move with or disappear with their particles.
+@dataclass(slots=True, eq=False)
 class ActionExecution:
     """An action execution with its caller's destruction connections."""
 

@@ -13,7 +13,6 @@ from define.compiler.graphs import (
 from define.compiler.validator import codegen_input, validation_result
 from define.compiler.validator.reference_graph import (
     definition_postorder_validator,
-    operation_graph,
     position_occupancy,
     reference_graph_validation_state,
 )
@@ -30,8 +29,6 @@ class ReferenceGraphValidationResult:
     """What reference graph validation produces, beyond the diagnostics it reports."""
 
     codegen_input: codegen_input.CodegenInput
-    # The DLP 44 operation dependency graph of every action.
-    operation_graphs: operation_graph.OperationGraphs
 
 
 # TODO: We need a mode that forces a fake caller as the parent of any top-level
@@ -91,7 +88,6 @@ class ReferenceGraphValidator:
             max_workers=max_workers,
         )
 
-        operation_graphs = operation_graph.OperationGraphs()
         actions: dict[str, codegen_input.ActionCodegenInput] = {}
         for definition, result in zip(
             definition_order.definitions, results, strict=True
@@ -101,7 +97,6 @@ class ReferenceGraphValidator:
             definition_result = self._definition_results[definition.typed_name]
             for d in result.diagnostics:
                 definition_result.add_diagnostic(d)
-            operation_graphs[definition.typed_name] = result.operation_graph
             actions[definition.typed_name.full_typed_name] = result.codegen_input
         if (
             self._entry_action is not None
@@ -113,7 +108,6 @@ class ReferenceGraphValidator:
                 definition_order=definition_order,
                 actions=actions,
             ),
-            operation_graphs=operation_graphs,
         )
 
     def _validate_definition(

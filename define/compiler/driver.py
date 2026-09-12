@@ -27,10 +27,7 @@ from define.compiler import (
     parser,
 )
 from define.compiler.codegen import generator
-from define.compiler.validator.reference_graph import (
-    operation_graph,
-    reference_graph_validator,
-)
+from define.compiler.validator.reference_graph import reference_graph_validator
 from define.compiler.validator.structural import program_validator
 
 if typing.TYPE_CHECKING:
@@ -76,7 +73,6 @@ class CompilerResult(abc.ABC):
     """A compiler result that can report errors and validation timings."""
 
     overall_stats: overall_stats.OverallStats
-    operation_graphs: operation_graph.OperationGraphs
 
     @abc.abstractmethod
     def error_strings(self) -> list[str]:
@@ -96,7 +92,6 @@ class CompilerValidationResult(CompilerResult):
     program_validation: validation_result.ProgramValidationResult
     codegen_input: codegen_input_types.CodegenInput
     overall_stats: overall_stats.OverallStats
-    operation_graphs: operation_graph.OperationGraphs
 
     @typing.override
     def error_strings(self) -> list[str]:
@@ -124,7 +119,6 @@ class CompilationResult(CompilerResult):
     _error_strings: list[str]
     file_timings: list[overall_stats.FileTiming]
     overall_stats: overall_stats.OverallStats
-    operation_graphs: operation_graph.OperationGraphs
 
     @classmethod
     def from_validation_result(
@@ -142,7 +136,6 @@ class CompilationResult(CompilerResult):
                 for file_result in program_validation.file_results
             ],
             overall_stats=validation.overall_stats,
-            operation_graphs=validation.operation_graphs,
         )
 
     def has_errors(self) -> bool:
@@ -233,7 +226,6 @@ class Driver:
                 program_result.file_results,
                 program_result.config_loading_time_ns,
             ),
-            operation_graphs=reference_graph_result.operation_graphs,
         )
 
     def compile_program(

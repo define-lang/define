@@ -6,21 +6,17 @@ import enum
 import typing
 from dataclasses import dataclass, field
 
-from define.compiler.validator.reference_graph import (
-    destruction_contract as destruction_contract_types,
-)
-from define.compiler.validator.reference_graph import (
-    operation_graph_model,
-    position_occupancy,
-)
-
 if typing.TYPE_CHECKING:
     from collections.abc import Iterator
 
     from define.compiler import ast
     from define.compiler.validator.reference_graph import (
         child_state,
+        position_occupancy,
         quality_assignment,
+    )
+    from define.compiler.validator.reference_graph import (
+        destruction_contract as destruction_contract_types,
     )
 
 
@@ -218,24 +214,10 @@ class ErrorGuarantee(PositionGuarantee):
 
 
 @dataclass(frozen=True, slots=True)
-class FinalPositionOperation:
-    """The positions operated on by a position's final Particle Operation."""
-
-    position: ast.ChainedNameTuple
-    # Operation-graph construction needs every operated position to apply the
-    # Empty Rule from the caller's perspective, including both positions of a Move.
-    # Canonical chained-name keys are stored instead of PositionReference objects
-    # because expressing them from each caller's perspective only requires tuple
-    # composition; source locations and written name forms would be unused.
-    operation_positions: tuple[ast.ChainedNameTuple, ...]
-
-
-@dataclass(frozen=True, slots=True)
 class CalleeContract:
     """A callee's contract at its current action chain."""
 
     action_chain: ast.ChainedNameTuple
-    execution: operation_graph_model.ActionExecution
     contract: ActionContract
 
 
@@ -281,26 +263,6 @@ class DestructionContracts:
         """Look up occupancy relative to this contract's destroyed particle."""
         return self.child_state.get((*contract.position_in_child_state, *position))
 
-    def occupied_child_state_position_or_nearest_occupied_parent(
-        self,
-        contract: DestructionContract,
-        position: tuple[str, ...],
-    ) -> tuple[str, ...] | None:
-        """Return the position or its nearest occupied parent in the Child State."""
-        # TODO: Investigate whether projects with many contributed Destructor
-        # requirements repeat enough Child State parent-position lookups to justify
-        # caching or indexing them without an excessive memory cost.
-        for depth in range(len(position), 0, -1):
-            candidate_position = position[:depth]
-            occupancy = self.child_occupancy(contract, candidate_position)
-            if (
-                occupancy is not None
-                and occupancy.state
-                == position_occupancy.PositionOccupancyState.OCCUPIED
-            ):
-                return candidate_position
-        return None
-
     def propagation_steps(self) -> Iterator[PropagationStep]:
         """Iterate from the immediate callee to the destroying action."""
         if self.propagation is not None:
@@ -331,7 +293,6 @@ class ActionContract:
     # them; keyed lookup is needed during analysis, not after publication.
     requirements: dict[tuple[str, ...], PositionRequirement]
     guarantees: dict[ast.ChainedNameTuple, PositionGuarantee]
-    final_operations: list[FinalPositionOperation]
     # Callee contracts are referenced rather than folded in so that we don't
     # get unbounded memory growth from re-copying guarantees as we walk up a
     # call stack (and unbounded compute growth from having to iterate through

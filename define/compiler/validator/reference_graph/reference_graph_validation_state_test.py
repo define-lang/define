@@ -38,7 +38,6 @@ def test_contract_access():
     contract = action_contract.ActionContract(
         requirements={},
         guarantees={},
-        final_operations=[],
         callees=[],
         destruction_contracts=[],
         trigger_position_name="position<trigger>",

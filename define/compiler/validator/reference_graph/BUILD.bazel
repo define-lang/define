@@ -10,7 +10,6 @@ py_library(
     deps = [
         ":child_state",
         ":destruction_contract",
-        ":operation_graph_model",
         ":position_occupancy",
         ":quality_assignment",
         "//define/compiler:ast",
@@ -58,8 +57,6 @@ py_library(
         ":action_contract",
         ":child_state",
         ":destruction_contract",
-        ":operation_graph",
-        ":operation_graph_model",
         ":particle_info",
         ":particle_operation_validator",
         ":particle_tracker",
@@ -82,42 +79,6 @@ py_library(
     srcs = ["destruction_contract.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = ["//define/compiler:ast"],
-)
-
-py_library(
-    name = "operation_graph",
-    srcs = ["operation_graph.py"],
-    visibility = ["//define/compiler:__subpackages__"],
-    deps = [
-        ":action_contract",
-        ":destruction_contract",
-        ":operation_graph_model",
-        ":operation_graph_rules",
-        ":position_occupancy",
-        "//define/compiler:ast",
-        "//define/compiler/data_structures:typed_name_dict",
-    ],
-)
-
-py_library(
-    name = "operation_graph_model",
-    srcs = ["operation_graph_model.py"],
-    visibility = ["//define/compiler:__subpackages__"],
-    deps = [
-        ":destruction_contract",
-        ":position_occupancy",
-        "//define/compiler:ast",
-    ],
-)
-
-py_library(
-    name = "operation_graph_rules",
-    srcs = ["operation_graph_rules.py"],
-    visibility = ["//define/compiler:__subpackages__"],
-    deps = [
-        ":operation_graph_model",
-        "//define/compiler:ast",
-    ],
 )
 
 py_library(
@@ -149,13 +110,12 @@ py_library(
         ":action_contract",
         ":child_state",
         ":destruction_contract",
-        ":operation_graph",
-        ":operation_graph_model",
         ":particle_info",
         ":position_occupancy",
         ":quality_assignment",
         "//define/compiler:ast",
         "//define/compiler/data_structures:trie",
+        "//define/compiler/validator:codegen_input",
         "//define/compiler/validator/reference_graph/dead_code:dead_interface_tracker",
     ],
 )
@@ -223,7 +183,6 @@ py_library(
     ],
     deps = [
         ":definition_postorder_validator",
-        ":operation_graph",
         ":position_occupancy",
         ":reference_graph_validation_state",
         "//define/compiler:ast",
@@ -296,9 +255,6 @@ pyright_test(
         ":child_state_test",
         ":definition_postorder_validator",
         ":destruction_contract",
-        ":operation_graph",
-        ":operation_graph_model",
-        ":operation_graph_rules",
         ":particle_info",
         ":particle_operation_validator",
         ":particle_tracker",

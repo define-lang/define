@@ -352,8 +352,7 @@ def source_form_chained_name(
     return "::".join(source_names)
 
 
-# A position's canonical chained name, as stored in tries, contracts, and the
-# operation graph.
+# A position's canonical chained name, as stored in tries and contracts.
 # TODO: Make this a real class with methods (starting with the chain_*
 # functions below) so that code computing with chained names stops having to
 # build ChainedName objects all the time.

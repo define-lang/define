@@ -12,10 +12,7 @@ import pytest
 
 from define.compiler import parser
 from define.compiler.validator import test_helpers, validation_result
-from define.compiler.validator.reference_graph import (
-    operation_graph,
-    reference_graph_validator,
-)
+from define.compiler.validator.reference_graph import reference_graph_validator
 from define.compiler.validator.structural import program_validator
 from define.testdata import path_resolver
 
@@ -28,13 +25,6 @@ class FullValidationResult:
 
     program_result: validation_result.ProgramValidationResult
     reference_graph_result: reference_graph_validator.ReferenceGraphValidationResult
-
-    @property
-    def operation_graphs(
-        self,
-    ) -> operation_graph.OperationGraphs:
-        """Every action's operation dependency graph."""
-        return self.reference_graph_result.operation_graphs
 
 
 class ValidateProject(Protocol):
