@@ -7,6 +7,9 @@ import typing
 from dataclasses import dataclass, field
 
 from define.compiler.validator.reference_graph import (
+    destruction_contract as destruction_contract_types,
+)
+from define.compiler.validator.reference_graph import (
     operation_graph_model,
     position_occupancy,
 )
@@ -247,7 +250,7 @@ class DestructionContract:
     # The contracted position whose particle was destroyed (its contracted
     # origin), as a chained name within the action providing this DestructionContract.
     destroyed_position_contracted: ast.PositionReference
-    destruction_fact: operation_graph_model.DestructionFact
+    destruction_fact: destruction_contract_types.DestructionFact
     # The position in the shared snapshot stays fixed when a caller expresses
     # the particle's contracted origin from its own perspective.
     position_in_child_state: tuple[str, ...]

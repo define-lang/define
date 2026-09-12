@@ -44,6 +44,9 @@ from define.compiler.validator.reference_graph import (
     operation_graph_rules,
     position_occupancy,
 )
+from define.compiler.validator.reference_graph import (
+    destruction_contract as destruction_contract_types,
+)
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterable, Mapping, Sequence
@@ -74,7 +77,7 @@ class _RecordedContributedPosition:
 class DestructionFactDestroyInput:
     """Particle state needed to record one simultaneous Destroy."""
 
-    destruction_fact: operation_graph_model.DestructionFact
+    destruction_fact: destruction_contract_types.DestructionFact
     target: ast.PositionReference
     preceding_child_operations: operation_graph_model.PrecedingChildOperations
     propagate_to_caller: bool
@@ -221,7 +224,7 @@ class OperationGraph:
             tuple[tuple[str, ...], ...],
         ],
         destructions: dict[
-            operation_graph_model.SimultaneousDestruction,
+            destruction_contract_types.SimultaneousDestruction,
             operation_graph_model.OperationGraphDestruction,
         ],
         contributed_destruction_fragments_by_direct_callee_execution: dict[
@@ -285,7 +288,7 @@ class OperationGraph:
                     yield destructor.destructor_execution
 
     def destruction_for_fact(
-        self, destruction_fact: operation_graph_model.DestructionFact
+        self, destruction_fact: destruction_contract_types.DestructionFact
     ) -> operation_graph_model.OperationGraphDestruction:
         """Return the destruction recorded for one Destruction Fact."""
         return self._destructions[destruction_fact.destruction]
@@ -360,7 +363,7 @@ class OperationGraphBuilder:
             tuple[tuple[str, ...], ...],
         ] = {}
         self._destructions: dict[
-            operation_graph_model.SimultaneousDestruction,
+            destruction_contract_types.SimultaneousDestruction,
             operation_graph_model.OperationGraphDestruction,
         ] = {}
         self._contributed_destruction_fragments_by_direct_callee_execution: dict[
@@ -723,7 +726,7 @@ class OperationGraphBuilder:
     def _record_destruction_contract_destructor(
         self,
         execution: operation_graph_model.ActionExecution,
-        destruction_fact: operation_graph_model.DestructionFact,
+        destruction_fact: destruction_contract_types.DestructionFact,
         destroyed_position_relative_to_fact: tuple[str, ...],
         verified_destructor: operation_graph_model.VerifiedDestructionContractDestructor,
         preceding_child_operations: tuple[
@@ -809,7 +812,7 @@ class OperationGraphBuilder:
     def _record_destruction_contract_destructor_guarantees(
         self,
         direct_callee_execution: operation_graph_model.ActionExecution,
-        destruction_fact: operation_graph_model.DestructionFact,
+        destruction_fact: destruction_contract_types.DestructionFact,
         destroyed_position_relative_to_fact: tuple[str, ...],
         destructor_execution: operation_graph_model.ActionExecution,
         verified_guarantees: Sequence[
@@ -1160,7 +1163,7 @@ class OperationGraphBuilder:
 
     def _get_or_create_destruction(
         self,
-        destruction_fact: operation_graph_model.DestructionFact,
+        destruction_fact: destruction_contract_types.DestructionFact,
     ) -> operation_graph_model.OperationGraphDestruction:
         destruction = self._destructions.get(destruction_fact.destruction)
         if destruction is None:

@@ -8,6 +8,9 @@ import typing
 from dataclasses import dataclass
 
 from define.compiler.validator.reference_graph import (
+    destruction_contract as destruction_contract_types,
+)
+from define.compiler.validator.reference_graph import (
     operation_graph,
     operation_graph_action_resolver,
     operation_graph_model,
@@ -688,7 +691,7 @@ class ResolvedOperationGraphBuilder:
         self,
         action_execution: ActionExecution,
         action: ast.GlobalTypedName,
-        destruction_fact: operation_graph_model.DestructionFact,
+        destruction_fact: destruction_contract_types.DestructionFact,
     ) -> ActionExecution:
         """Return one action's execution along a destruction propagation path."""
         current_execution = action_execution

@@ -21,6 +21,9 @@ from define.compiler.validator.reference_graph import (
     reference_graph_validation_state,
     requirement_violation,
 )
+from define.compiler.validator.reference_graph import (
+    destruction_contract as destruction_contract_types,
+)
 from define.compiler.validator.reference_graph.dead_code import (
     dead_constraint_tracker,
 )
@@ -119,7 +122,7 @@ class _DestructionTarget:
     """A particle whose destruction also destroys its occupied children."""
 
     position: ast.PositionReference
-    destruction: operation_graph_model.SimultaneousDestruction
+    destruction: destruction_contract_types.SimultaneousDestruction
     auto_destruction_target: ast.PositionReference | None
 
 
@@ -128,7 +131,7 @@ class _PendingDestructionContract:
     """A Destruction Contract captured before tracked particle state changes."""
 
     particle: particle_info.ParticleInfo
-    destruction_fact: operation_graph_model.DestructionFact
+    destruction_fact: destruction_contract_types.DestructionFact
 
 
 @dataclass(frozen=True, slots=True)
@@ -379,7 +382,7 @@ class ActionPostorderValidator:
         snapshot_positions: list[ast.PositionReference] = []
         pending_contracts_by_target: list[list[_PendingDestructionContract]] = []
         for target in targets:
-            destruction_facts: list[operation_graph_model.DestructionFact] = []
+            destruction_facts: list[destruction_contract_types.DestructionFact] = []
             pending_contracts: list[_PendingDestructionContract] = []
             particle_destructions.append(
                 particle_tracker.ParticleDestruction(target.position, destruction_facts)
@@ -423,14 +426,14 @@ class ActionPostorderValidator:
         position: ast.PositionReference,
         particle: particle_info.ParticleInfo,
         target: _DestructionTarget,
-        destruction_facts: list[operation_graph_model.DestructionFact],
+        destruction_facts: list[destruction_contract_types.DestructionFact],
         destructors: list[
             tuple[action_contract.Destructor, ast.PositionReference | None]
         ],
         pending_contracts: list[_PendingDestructionContract],
     ):
         """Collect one particle and every occupied transitive child."""
-        destruction_fact = operation_graph_model.DestructionFact(
+        destruction_fact = destruction_contract_types.DestructionFact(
             destruction=target.destruction,
             destroyed_position_in_destroyer=position,
         )
@@ -490,7 +493,7 @@ class ActionPostorderValidator:
         self,
         position: ast.PositionReference,
         target: _DestructionTarget,
-        destruction_facts: list[operation_graph_model.DestructionFact],
+        destruction_facts: list[destruction_contract_types.DestructionFact],
         destructors: list[
             tuple[action_contract.Destructor, ast.PositionReference | None]
         ],
@@ -513,7 +516,7 @@ class ActionPostorderValidator:
         self,
         particle: particle_info.ParticleInfo,
         contracts: action_contract.DestructionContracts,
-        destruction_fact: operation_graph_model.DestructionFact,
+        destruction_fact: destruction_contract_types.DestructionFact,
     ):
         """Record the Destruction Contract for one caller-passed particle."""
         contracts.append(
@@ -926,7 +929,7 @@ class ActionPostorderValidator:
 
     def _re_record_destruction_contract(
         self,
-        destruction_fact: operation_graph_model.DestructionFact,
+        destruction_fact: destruction_contract_types.DestructionFact,
         caller_particle: particle_info.ParticleInfo,
         propagated_contracts: action_contract.DestructionContracts,
         position_in_child_state: tuple[str, ...],
@@ -1011,7 +1014,7 @@ class ActionPostorderValidator:
         created_in_this_action = not particle.from_caller
         newly_verified: list[ast.GlobalTypedNameReference] = []
         if relative_key:
-            destruction_fact = operation_graph_model.DestructionFact(
+            destruction_fact = destruction_contract_types.DestructionFact(
                 destruction=destruction_contract.destruction_fact.destruction,
                 # The contracted position can have a different name in the caller,
                 # but its child-name suffix is unchanged. Append only that suffix
@@ -1353,7 +1356,7 @@ class ActionPostorderValidator:
             targets.append(
                 _DestructionTarget(
                     position=position,
-                    destruction=operation_graph_model.SimultaneousDestruction(
+                    destruction=destruction_contract_types.SimultaneousDestruction(
                         directly_destroyed_position=position,
                         destroying_action=self._definition.typed_name,
                         is_automatic=True,
@@ -1410,7 +1413,7 @@ class ActionPostorderValidator:
         if diagnostic is not None:
             self._diagnostics.append(diagnostic)
             return
-        destruction = operation_graph_model.SimultaneousDestruction(
+        destruction = destruction_contract_types.SimultaneousDestruction(
             directly_destroyed_position=stmt.target_position,
             destroying_action=self._definition.typed_name,
             is_automatic=False,

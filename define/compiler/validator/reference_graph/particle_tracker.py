@@ -17,6 +17,9 @@ from define.compiler.validator.reference_graph import (
     position_occupancy,
     quality_assignment,
 )
+from define.compiler.validator.reference_graph import (
+    destruction_contract as destruction_contract_types,
+)
 from define.compiler.validator.reference_graph.dead_code import dead_interface_tracker
 
 if typing.TYPE_CHECKING:
@@ -33,7 +36,7 @@ class ParticleDestruction:
     """A destruction target and its occupied transitive child Positions."""
 
     position: ast.PositionReference
-    facts: list[operation_graph_model.DestructionFact]
+    facts: list[destruction_contract_types.DestructionFact]
 
     def positions(self) -> Iterator[ast.PositionReference]:
         """Yield the target Position followed by its transitive child Positions."""

@@ -11,6 +11,9 @@ from define.compiler.codegen.literal.python import (
 from define.compiler.data_structures import typed_name_dict
 from define.compiler.validator import test_helpers as validator_test_helpers
 from define.compiler.validator.reference_graph import (
+    destruction_contract as destruction_contract_types,
+)
+from define.compiler.validator.reference_graph import (
     operation_graph_model,
     position_occupancy,
 )
@@ -418,8 +421,8 @@ def test_destruction_connection_names_use_action_execution(
 ):
     _, execution, _ = _action_executions(validate_project)
     destroyed_position = _position("/destroyed")
-    destruction_fact = operation_graph_model.DestructionFact(
-        operation_graph_model.SimultaneousDestruction(
+    destruction_fact = destruction_contract_types.DestructionFact(
+        destruction_contract_types.SimultaneousDestruction(
             destroyed_position, execution.callee_action_name, is_automatic=False
         ),
         destroyed_position,
@@ -491,8 +494,8 @@ def test_destruction_connection_names_use_action_execution(
 def test_continue_destroy_method_uses_destroy_fragment_name():
     definition = _action_definition()
     destroyed_position = _position("/destroyed")
-    destruction_fact = operation_graph_model.DestructionFact(
-        operation_graph_model.SimultaneousDestruction(
+    destruction_fact = destruction_contract_types.DestructionFact(
+        destruction_contract_types.SimultaneousDestruction(
             destroyed_position, definition.typed_name, is_automatic=False
         ),
         destroyed_position,

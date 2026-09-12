@@ -25,6 +25,9 @@ from define.compiler import ast
 if typing.TYPE_CHECKING:
     from collections.abc import Collection, Iterable, Sequence
 
+    from define.compiler.validator.reference_graph import (
+        destruction_contract as destruction_contract_types,
+    )
     from define.compiler.validator.reference_graph import position_occupancy
 
 
@@ -34,23 +37,6 @@ class OperationGraphRequirement:
 
     requirement_position: tuple[str, ...]
     required_state: position_occupancy.PositionOccupancyState
-
-
-@dataclass(frozen=True, slots=True, eq=False)
-class SimultaneousDestruction:
-    """The directly destroyed particle and its Simultaneous Transitive Destruction."""
-
-    directly_destroyed_position: ast.PositionReference
-    destroying_action: ast.GlobalTypedName
-    is_automatic: bool
-
-
-@dataclass(frozen=True, slots=True, eq=False)
-class DestructionFact:
-    """Identifies the destruction of one specific particle."""
-
-    destruction: SimultaneousDestruction
-    destroyed_position_in_destroyer: ast.PositionReference
 
 
 type ConcreteOperationNode = PositionOperationNode | GuaranteeNode
@@ -544,7 +530,7 @@ class DestroyNode(PositionOperationNode):
 class DestructionFactDestroyNode(DestroyNode):
     """A Destroy performed as part of one Destruction Fact."""
 
-    destruction_fact: DestructionFact
+    destruction_fact: destruction_contract_types.DestructionFact
     destruction_position: tuple[str, ...]
     dependencies_before_caller_contribution: tuple[EmptyRuleDependencyNode, ...]
     dependencies_after_caller_contribution: tuple[ConcreteOperationNode, ...]
@@ -604,7 +590,7 @@ class CalleeDestroy:
     """A direct callee Destroy identified from its caller's Operation Graph."""
 
     direct_callee_execution: ActionExecution
-    destruction_fact: DestructionFact
+    destruction_fact: destruction_contract_types.DestructionFact
     callee_destroy_position: tuple[str, ...]
 
 
@@ -656,7 +642,7 @@ class ContributedDestructionPosition:
     """One caller-known occupied position contributed to a destruction."""
 
     destruction_contract_position: DestructionContractPosition
-    destruction_fact: DestructionFact
+    destruction_fact: destruction_contract_types.DestructionFact
     # Retaining the contributed child positions preserves the Destroys that must
     # precede this position's Destroy without reconstructing name relationships.
     preceding_contributed_positions: tuple[ContributedDestructionPosition, ...]
@@ -701,7 +687,7 @@ class VerifiedDestructionContractDestructor:
 class DestructionContractContribution:
     """Caller-known work for one Destruction Contract."""
 
-    destruction_fact: DestructionFact
+    destruction_fact: destruction_contract_types.DestructionFact
     destroyed_particle_position: ast.PositionReference
     children: Sequence[ContributedDestructionPosition]
     # Retaining the final contributed positions preserves the Destroys that finish

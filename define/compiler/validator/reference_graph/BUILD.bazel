@@ -9,6 +9,7 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         ":child_state",
+        ":destruction_contract",
         ":operation_graph_model",
         ":position_occupancy",
         ":quality_assignment",
@@ -56,6 +57,7 @@ py_library(
     deps = [
         ":action_contract",
         ":child_state",
+        ":destruction_contract",
         ":operation_graph",
         ":operation_graph_model",
         ":particle_info",
@@ -76,11 +78,19 @@ py_library(
 )
 
 py_library(
+    name = "destruction_contract",
+    srcs = ["destruction_contract.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = ["//define/compiler:ast"],
+)
+
+py_library(
     name = "operation_graph",
     srcs = ["operation_graph.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         ":action_contract",
+        ":destruction_contract",
         ":operation_graph_model",
         ":operation_graph_rules",
         ":position_occupancy",
@@ -132,6 +142,7 @@ py_library(
     srcs = ["operation_graph_model.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
+        ":destruction_contract",
         ":position_occupancy",
         "//define/compiler:ast",
     ],
@@ -164,6 +175,7 @@ py_library(
     srcs = ["operation_graph_resolver.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
+        ":destruction_contract",
         ":operation_graph",
         ":operation_graph_action_resolver",
         ":operation_graph_model",
@@ -199,6 +211,7 @@ py_library(
     deps = [
         ":action_contract",
         ":child_state",
+        ":destruction_contract",
         ":operation_graph",
         ":operation_graph_model",
         ":particle_info",
@@ -332,6 +345,7 @@ pyright_test(
         ":child_state",
         ":child_state_test",
         ":definition_postorder_validator",
+        ":destruction_contract",
         ":operation_graph",
         ":operation_graph_action_resolver",
         ":operation_graph_labeler",
