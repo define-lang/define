@@ -31,6 +31,32 @@ _INNER = "action<my.domain.com:my_lib:/inner>"
 _CONSTRUCT = "action<my.domain.com:my_lib:/construct>"
 
 
+def test_consumed_nested_interface_stays_empty(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(
+        all_diags[0], diagnostics.DestroyInEmptyInterfacePositionDiagnostic
+    )
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].location.line == 15
+    assert all_diags[0].location.column == 33
+    assert all_diags[0].position_name == (
+        "position<box>::action</outer>::position<iface>::action</inner>::position<output>"
+    )
+    assert all_diags[0].inferred_at is None
+
+
+def test_consumed_nested_interface_can_be_filled_again(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+
+
 def test_create_in_interface_position_starts_empty(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):

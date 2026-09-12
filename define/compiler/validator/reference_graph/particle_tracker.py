@@ -1309,7 +1309,6 @@ class ParticleTracker:
             interface_names,
             implied_quality_names,
             requirements,
-            include_callee_derived=False,
         )
 
     def generate_destructor_guarantees(
@@ -1328,7 +1327,7 @@ class ParticleTracker:
             interface_names,
             implied_quality_names,
             requirements,
-            include_callee_derived=True,
+            is_destructor=True,
         )
 
     def _collect_contracted_position_guarantees(
@@ -1337,7 +1336,7 @@ class ParticleTracker:
         implied_quality_names: tuple[ast.GlobalTypedNameReference, ...],
         requirements: dict[tuple[str, ...], action_contract.PositionRequirement],
         *,
-        include_callee_derived: bool,
+        is_destructor: bool = False,
     ) -> dict[ast.ChainedNameTuple, action_contract.PositionGuarantee]:
         """Collect and sort the guarantees for every contracted key, excluding the ones _guarantee_for_key reports as no-ops."""
         include_names = {
@@ -1346,17 +1345,19 @@ class ParticleTracker:
 
         # generate_own_guarantees excludes keys that came only from our caleees.
         # generate_destructor_guarantees includes callee-derived keys.
-        all_keys = self._store.keys_for_guarantees(
-            include_callee_derived=include_callee_derived
-        )
+        all_keys = self._store.keys_for_guarantees(include_callee_derived=is_destructor)
 
         guarantees: list[
             tuple[ast.ChainedNameTuple, action_contract.PositionGuarantee]
         ] = []
         for key in all_keys:
-            # A callee's interface guarantees must be consumed in this Action
-            # Statements Block, so they cannot become guarantees of this action.
-            if any(name.startswith(_ACTION_KEY_PREFIX) for name in key):
+            # Consuming a callee's Interface Position must also override its
+            # nested Guarantee when our caller later applies that Guarantee.
+            # Destructors resolve all nested Guarantees here, and their callees'
+            # Interface Positions are not Positions they must preserve.
+            if is_destructor and any(
+                name.startswith(_ACTION_KEY_PREFIX) for name in key
+            ):
                 continue
             first_element = key[0]
             # Any position that starts with a global is contracted, even if it was updated
