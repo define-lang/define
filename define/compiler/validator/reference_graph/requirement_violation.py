@@ -165,9 +165,9 @@ def contract_destructor(
     destruction_requirement = action_contract.PositionRequirement(
         required_state=propagated_requirement.required_state,
         position=propagated_requirement.position.in_caller(
-            destruction_contract.destruction_fact.destroyed_position_in_destroyer
+            destruction_contract.propagated_destruction.destruction_fact.destroyed_position_in_destroyer
         ),
-        inferred_at=destruction_contract.destruction_fact.destruction.directly_destroyed_position.location,
+        inferred_at=destruction_contract.propagated_destruction.destruction_fact.destruction.directly_destroyed_position.location,
         enclosing_action=destroying_definition,
         propagated_from=propagated_requirement,
     )
@@ -198,14 +198,14 @@ def contract_destructor(
     # happens after every trigger hop and just before the destructor fires (the
     # same placement direct_destructor uses).
     auto_step: list[action_contract.PropagationStep] = []
-    if destruction_contract.destruction_fact.destruction.is_automatic:
+    if destruction_contract.propagated_destruction.destruction_fact.destruction.is_automatic:
         auto_step = _auto(
             _AutoDestruction(
-                local_position_name=destruction_contract.destruction_fact.destruction.directly_destroyed_position.source_form_in_universe(
+                local_position_name=destruction_contract.propagated_destruction.destruction_fact.destruction.directly_destroyed_position.source_form_in_universe(
                     enclosing_fqun
                 ),
-                containing_definition_name=destruction_contract.destruction_fact.destruction.destroying_action.source_typed_name,
-                location=destruction_contract.destruction_fact.destruction.directly_destroyed_position.location,
+                containing_definition_name=destruction_contract.propagated_destruction.destruction_fact.destruction.destroying_action.source_typed_name,
+                location=destruction_contract.propagated_destruction.destruction_fact.destruction.directly_destroyed_position.location,
             )
         )
     steps = [

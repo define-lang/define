@@ -35,5 +35,14 @@ class OuterDestructor(literal.Action):
         )
         inner_destroyer_particle.particle.get_action(
             local.my_domain_com.my_lib.inner_destroyer.InnerDestroyer
-        ).run()
+        ).run(InnerDestroyerDestructionContracts())
         inner_destroyer_particle.destroy_particle()
+
+
+class InnerDestroyerDestructionContracts(local.my_domain_com.my_lib.inner_destroyer.InnerDestroyerDestructionContracts):
+
+    @override
+    def run_destructors_position_target(self, particle: literal.Particle):
+        particle.get_action(
+            local.my_domain_com.my_lib.inner_destructor.InnerDestructor
+        ).run()

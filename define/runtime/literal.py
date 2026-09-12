@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, ClassVar, cast, override
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Callable, Sequence
 
 _REPORT_OCCUPIED_POSITIONS_ENV_VAR = "DEFINE_REPORT_OCCUPIED_POSITIONS"
 # TODO: Make operation tracing thread-safe somehow. Not a high priority.
@@ -283,6 +283,9 @@ class LocalPosition(Position):
     def _get_constraints(self) -> tuple[type[Quality], ...]:
         """Return the constraint types for this position."""
         return self._constraints
+
+
+type DestructionContribution = Callable[[Particle], None]
 
 
 class Action(Quality):

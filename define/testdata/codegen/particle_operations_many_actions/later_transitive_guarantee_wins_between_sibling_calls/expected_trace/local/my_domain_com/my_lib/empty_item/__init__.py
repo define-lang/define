@@ -7,6 +7,17 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.item
 
 
+class EmptyItemDestructionContracts:
+    def run_destructors_global_position_item(self, _particle: literal.Particle):
+        pass
+
+    def destroy_global_position_item(self, _particle: literal.Particle):
+        pass
+
+
+_DEFAULT_DESTRUCTION_CONTRACTS = EmptyItemDestructionContracts()
+
+
 class EmptyItem(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.item.Item,
@@ -21,7 +32,17 @@ class EmptyItem(literal.Action):
         )
 
     @override
-    def run(self):
+    def run(self, destruction_contracts: EmptyItemDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
+        destruction_contracts.run_destructors_global_position_item(
+            self.on_particle.get_position(
+                local.my_domain_com.my_lib.item.Item
+            ).particle
+        )
+        destruction_contracts.destroy_global_position_item(
+            self.on_particle.get_position(
+                local.my_domain_com.my_lib.item.Item
+            ).particle
+        )
         self.on_particle.get_position(
             local.my_domain_com.my_lib.item.Item
         ).destroy_particle()

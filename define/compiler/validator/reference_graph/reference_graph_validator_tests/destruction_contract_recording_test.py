@@ -5,8 +5,6 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
-import pytest
-
 from define.compiler import diagnostics
 from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
@@ -28,10 +26,6 @@ _DESTRUCTOR = "action<my.domain.com:my_lib:/destructor>"
 _DELETE_DESTRUCTOR = "action<my.domain.com:my_lib:/delete_destructor>"
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Destruction Contract contributions are not recorded in TriggeredActions yet",
-)
 def test_contract_keyed_on_contracted_origin_after_move(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -98,10 +92,6 @@ def test_contract_keyed_on_contracted_origin_after_move(
     ]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Destruction Contract contributions are not recorded in TriggeredActions yet",
-)
 def test_moved_in_contracted_origin_requirement_satisfied(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -113,10 +103,6 @@ def test_moved_in_contracted_origin_requirement_satisfied(
     ]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Destruction Contract contributions are not recorded in TriggeredActions yet",
-)
 def test_auto_destruction_records_contract_verified_by_caller(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -191,10 +177,6 @@ def test_auto_destruction_records_contract_verified_by_caller(
     ]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Destruction Contract contributions are not recorded in TriggeredActions yet",
-)
 def test_auto_destruction_contract_requirement_satisfied(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -206,10 +188,6 @@ def test_auto_destruction_contract_requirement_satisfied(
     ]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Destruction Contract contributions are not recorded in TriggeredActions yet",
-)
 def test_destroyer_destroys_implied_position_requirement_satisfied(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -221,10 +199,6 @@ def test_destroyer_destroys_implied_position_requirement_satisfied(
     ]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Destruction Contract contributions are not recorded in TriggeredActions yet",
-)
 def test_destroyer_destroys_implied_position_requirement_violated(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -290,10 +264,6 @@ def test_destroyer_destroys_implied_position_requirement_violated(
     ]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Destruction Contract contributions are not recorded in TriggeredActions yet",
-)
 def test_destruction_contracts_verified_in_execution_order(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -414,10 +384,6 @@ def test_destruction_contracts_verified_in_execution_order(
     ]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Destruction Contract contributions are not recorded in TriggeredActions yet",
-)
 def test_both_destructions_satisfied(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):

@@ -7,6 +7,23 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.known
 
 
+class DestroyerDestructionContracts:
+    def run_destructors_position_run(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_run(self, _particle: literal.Particle):
+        pass
+
+    def run_destructors_position_run__position_known(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_run__position_known(self, _particle: literal.Particle):
+        pass
+
+
+_DEFAULT_DESTRUCTION_CONTRACTS = DestroyerDestructionContracts()
+
+
 class Destroyer(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
@@ -23,7 +40,7 @@ class Destroyer(literal.Action):
         )
 
     @override
-    def run(self):
+    def run(self, destruction_contracts: DestroyerDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         incoming = literal.LocalPosition(
             "position<incoming>",
         )
@@ -53,6 +70,22 @@ class Destroyer(literal.Action):
             parent.particle.get_position(
                 local.my_domain_com.my_lib.known.Known
             )
+        )
+        destruction_contracts.run_destructors_position_run(
+            parent.particle
+        )
+        destruction_contracts.run_destructors_position_run__position_known(
+            parent.particle.get_position(
+                local.my_domain_com.my_lib.known.Known
+            ).particle
+        )
+        destruction_contracts.destroy_position_run(
+            parent.particle
+        )
+        destruction_contracts.destroy_position_run__position_known(
+            parent.particle.get_position(
+                local.my_domain_com.my_lib.known.Known
+            ).particle
         )
         parent.particle.get_position(
             local.my_domain_com.my_lib.known.Known

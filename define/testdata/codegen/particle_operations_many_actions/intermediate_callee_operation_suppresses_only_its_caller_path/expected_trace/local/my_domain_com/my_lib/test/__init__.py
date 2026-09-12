@@ -62,10 +62,27 @@ class Test(literal.Action):
         literal.record_operation("test.create(/middle::trigger_pos)")
         self.on_particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
-        ).run()
+        ).run(MiddleDestructionContracts())
         self.on_particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
         literal.record_operation("test.destroy(/middle::trigger_pos)")
+
+
+class MiddleDestructionContracts(local.my_domain_com.my_lib.middle.MiddleDestructionContracts):
+
+    @override
+    def destroy_global_position_parent__position_child__position_grandchild(self, particle: literal.Particle):
+        particle.get_position(
+            local.my_domain_com.my_lib.greatgrandchild.Greatgrandchild
+        ).destroy_particle()
+        literal.record_operation("middle.destroy(/parent::/child::/grandchild::/greatgrandchild)")
+
+    @override
+    def destroy_global_position_parent(self, particle: literal.Particle):
+        particle.get_position(
+            local.my_domain_com.my_lib.sibling.Sibling
+        ).destroy_particle()
+        literal.record_operation("inner.destroy(/parent::/sibling)")

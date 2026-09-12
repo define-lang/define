@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from collections.abc import Collection
+
     from define.compiler.codegen.literal.python import naming, template_context
 
 
@@ -20,6 +22,9 @@ class ActionDefinitionContext:
     implied_qualities: list[naming.ClassReference]
     trace_operations: bool
     imports: list[str]
+    contract_class_name: str | None
+    contract_methods: Collection[str]
+    contract_definitions: list[template_context.DestructionContractDefinition]
 
     @property
     def needs_classvar(self) -> bool:

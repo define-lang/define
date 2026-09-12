@@ -5,8 +5,6 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
-import pytest
-
 from define.compiler import diagnostics
 from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
@@ -90,10 +88,6 @@ def test_missing_caller_attached_destructor_is_reported_and_skipped(
     assert action_graph(result.reference_graph_result) == [(_TEST, _CLOSE_FILE)]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Destruction Contract contributions are not recorded in TriggeredActions yet",
-)
 def test_caller_known_child_state_requirement_satisfied(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -105,10 +99,6 @@ def test_caller_known_child_state_requirement_satisfied(
     ]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Destruction Contract contributions are not recorded in TriggeredActions yet",
-)
 def test_caller_known_child_state_requirement_violated(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -175,10 +165,6 @@ def test_caller_known_child_state_requirement_violated(
     ]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Destruction Contract contributions are not recorded in TriggeredActions yet",
-)
 def test_caller_known_empty_requirement_satisfied(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -190,10 +176,6 @@ def test_caller_known_empty_requirement_satisfied(
     ]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Destruction Contract contributions are not recorded in TriggeredActions yet",
-)
 def test_caller_known_empty_requirement_violated(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -268,10 +250,6 @@ def test_caller_known_empty_requirement_violated(
     ]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Destruction Contract contributions are not recorded in TriggeredActions yet",
-)
 def test_two_caller_attached_destructors_verified_independently(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -339,10 +317,6 @@ def test_two_caller_attached_destructors_verified_independently(
     ]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Destruction Contract contributions are not recorded in TriggeredActions yet",
-)
 def test_all_caller_attached_destructors_satisfied(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -355,10 +329,6 @@ def test_all_caller_attached_destructors_satisfied(
     ]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Destruction Contract contributions are not recorded in TriggeredActions yet",
-)
 def test_three_destructors_with_two_violated(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -543,10 +513,6 @@ def test_declared_quality_destructor_satisfied(
     ]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Destruction Contract contributions are not recorded in TriggeredActions yet",
-)
 def test_constructor_consumer_caller_known_satisfied(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -558,10 +524,6 @@ def test_constructor_consumer_caller_known_satisfied(
     ]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Destruction Contract contributions are not recorded in TriggeredActions yet",
-)
 def test_constructor_consumer_caller_known_violated(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -628,10 +590,6 @@ def test_constructor_consumer_caller_known_violated(
     ]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Destruction Contract contributions are not recorded in TriggeredActions yet",
-)
 def test_visible_and_caller_attached_destructors_coexist(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):

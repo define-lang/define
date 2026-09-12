@@ -7,6 +7,29 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.required
 
 
+class DestroyerDestructionContracts:
+    def run_destructors_position_parent(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_parent(self, _particle: literal.Particle):
+        pass
+
+    def run_destructors_position_parent__position_required(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_parent__position_required(self, _particle: literal.Particle):
+        pass
+
+    def run_destructors_position_trigger_pos(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_trigger_pos(self, _particle: literal.Particle):
+        pass
+
+
+_DEFAULT_DESTRUCTION_CONTRACTS = DestroyerDestructionContracts()
+
+
 class Destroyer(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
@@ -24,7 +47,7 @@ class Destroyer(literal.Action):
         )
 
     @override
-    def run(self):
+    def run(self, destruction_contracts: DestroyerDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         held_required = literal.LocalPosition(
             "position<held_required>",
         )
@@ -42,6 +65,30 @@ class Destroyer(literal.Action):
                 local.my_domain_com.my_lib.required.Required
             )
         )
+        destruction_contracts.run_destructors_position_parent(
+            self.get_interface_position(
+                "position<parent>"
+            ).particle
+        )
+        destruction_contracts.run_destructors_position_parent__position_required(
+            self.get_interface_position(
+                "position<parent>"
+            ).particle.get_position(
+                local.my_domain_com.my_lib.required.Required
+            ).particle
+        )
+        destruction_contracts.destroy_position_parent(
+            self.get_interface_position(
+                "position<parent>"
+            ).particle
+        )
+        destruction_contracts.destroy_position_parent__position_required(
+            self.get_interface_position(
+                "position<parent>"
+            ).particle.get_position(
+                local.my_domain_com.my_lib.required.Required
+            ).particle
+        )
         self.get_interface_position(
             "position<parent>"
         ).particle.get_position(
@@ -50,6 +97,16 @@ class Destroyer(literal.Action):
         self.get_interface_position(
             "position<parent>"
         ).destroy_particle()
+        destruction_contracts.run_destructors_position_trigger_pos(
+            self.get_interface_position(
+                "position<trigger_pos>"
+            ).particle
+        )
+        destruction_contracts.destroy_position_trigger_pos(
+            self.get_interface_position(
+                "position<trigger_pos>"
+            ).particle
+        )
         self.get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

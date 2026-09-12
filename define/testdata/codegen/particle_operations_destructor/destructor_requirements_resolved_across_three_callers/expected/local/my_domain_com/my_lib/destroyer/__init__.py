@@ -7,6 +7,23 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.callee_known
 
 
+class DestroyerDestructionContracts:
+    def run_destructors_position_target(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_target(self, _particle: literal.Particle):
+        pass
+
+    def run_destructors_position_run(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_run(self, _particle: literal.Particle):
+        pass
+
+
+_DEFAULT_DESTRUCTION_CONTRACTS = DestroyerDestructionContracts()
+
+
 class Destroyer(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
@@ -24,12 +41,22 @@ class Destroyer(literal.Action):
         )
 
     @override
-    def run(self):
+    def run(self, destruction_contracts: DestroyerDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         self.get_interface_position(
             "position<target>"
         ).particle.get_position(
             local.my_domain_com.my_lib.callee_known.CalleeKnown
         ).create_particle()
+        destruction_contracts.run_destructors_position_target(
+            self.get_interface_position(
+                "position<target>"
+            ).particle
+        )
+        destruction_contracts.destroy_position_target(
+            self.get_interface_position(
+                "position<target>"
+            ).particle
+        )
         self.get_interface_position(
             "position<target>"
         ).particle.get_position(
@@ -38,6 +65,16 @@ class Destroyer(literal.Action):
         self.get_interface_position(
             "position<target>"
         ).destroy_particle()
+        destruction_contracts.run_destructors_position_run(
+            self.get_interface_position(
+                "position<run>"
+            ).particle
+        )
+        destruction_contracts.destroy_position_run(
+            self.get_interface_position(
+                "position<run>"
+            ).particle
+        )
         self.get_interface_position(
             "position<run>"
         ).destroy_particle()

@@ -286,6 +286,7 @@ py_library(
     deps = [
         ":action_contract",
         ":definition_postorder_validator",
+        ":destruction_contract",
         ":operation_graph",
         ":position_occupancy",
         ":reference_graph_validation_state",
@@ -332,6 +333,7 @@ py_library(
     srcs = ["test_helpers.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
+        ":destruction_contract",
         ":reference_graph_validator",
         "//define/compiler:ast",
     ],

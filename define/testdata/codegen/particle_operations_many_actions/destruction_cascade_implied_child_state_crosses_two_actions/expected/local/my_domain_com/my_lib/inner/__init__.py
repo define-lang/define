@@ -7,6 +7,23 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.parent
 
 
+class InnerDestructionContracts:
+    def run_destructors_global_position_parent(self, _particle: literal.Particle):
+        pass
+
+    def destroy_global_position_parent(self, _particle: literal.Particle):
+        pass
+
+    def run_destructors_position_trigger_pos(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_trigger_pos(self, _particle: literal.Particle):
+        pass
+
+
+_DEFAULT_DESTRUCTION_CONTRACTS = InnerDestructionContracts()
+
+
 class Inner(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.parent.Parent,
@@ -21,10 +38,30 @@ class Inner(literal.Action):
         )
 
     @override
-    def run(self):
+    def run(self, destruction_contracts: InnerDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
+        destruction_contracts.run_destructors_global_position_parent(
+            self.on_particle.get_position(
+                local.my_domain_com.my_lib.parent.Parent
+            ).particle
+        )
+        destruction_contracts.destroy_global_position_parent(
+            self.on_particle.get_position(
+                local.my_domain_com.my_lib.parent.Parent
+            ).particle
+        )
         self.on_particle.get_position(
             local.my_domain_com.my_lib.parent.Parent
         ).destroy_particle()
+        destruction_contracts.run_destructors_position_trigger_pos(
+            self.get_interface_position(
+                "position<trigger_pos>"
+            ).particle
+        )
+        destruction_contracts.destroy_position_trigger_pos(
+            self.get_interface_position(
+                "position<trigger_pos>"
+            ).particle
+        )
         self.get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

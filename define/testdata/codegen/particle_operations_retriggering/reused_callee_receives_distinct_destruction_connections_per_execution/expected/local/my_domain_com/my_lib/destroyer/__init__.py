@@ -7,6 +7,17 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.target
 
 
+class DestroyerDestructionContracts:
+    def run_destructors_position_run(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_run(self, _particle: literal.Particle):
+        pass
+
+
+_DEFAULT_DESTRUCTION_CONTRACTS = DestroyerDestructionContracts()
+
+
 class Destroyer(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.target.Target,
@@ -21,13 +32,23 @@ class Destroyer(literal.Action):
         )
 
     @override
-    def run(self):
+    def run(self, destruction_contracts: DestroyerDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         self.get_interface_position(
             "position<run>"
         ).move_particle_to(
             self.on_particle.get_position(
                 local.my_domain_com.my_lib.target.Target
             )
+        )
+        destruction_contracts.run_destructors_position_run(
+            self.on_particle.get_position(
+                local.my_domain_com.my_lib.target.Target
+            ).particle
+        )
+        destruction_contracts.destroy_position_run(
+            self.on_particle.get_position(
+                local.my_domain_com.my_lib.target.Target
+            ).particle
         )
         self.on_particle.get_position(
             local.my_domain_com.my_lib.target.Target

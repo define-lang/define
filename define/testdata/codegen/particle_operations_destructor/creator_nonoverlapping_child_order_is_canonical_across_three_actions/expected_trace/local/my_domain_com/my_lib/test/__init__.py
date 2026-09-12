@@ -6,9 +6,11 @@ from define.runtime import literal
 
 import local.my_domain_com.my_lib.fifth_destructor
 import local.my_domain_com.my_lib.first_destructor
+import local.my_domain_com.my_lib.first_interface
 import local.my_domain_com.my_lib.fourth_destructor
 import local.my_domain_com.my_lib.middle
 import local.my_domain_com.my_lib.second_destructor
+import local.my_domain_com.my_lib.second_interface
 import local.my_domain_com.my_lib.third
 import local.my_domain_com.my_lib.third_destructor
 import local.my_domain_com.my_lib.worker
@@ -52,4 +54,28 @@ class Test(literal.Action):
         literal.record_operation("test.move(carrier, /middle::target)")
         self.on_particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
+        ).run(MiddleDestructionContracts())
+
+
+class MiddleDestructionContracts(local.my_domain_com.my_lib.middle.MiddleDestructionContracts):
+
+    @override
+    def run_destructors_position_target(self, particle: literal.Particle):
+        particle.get_action(
+            local.my_domain_com.my_lib.third_destructor.ThirdDestructor
         ).run()
+
+    @override
+    def destroy_position_target(self, particle: literal.Particle):
+        particle.get_position(
+            local.my_domain_com.my_lib.second_interface.SecondInterface
+        ).destroy_particle()
+        literal.record_operation("destroyer.destroy(target::/second_interface)")
+        particle.get_position(
+            local.my_domain_com.my_lib.first_interface.FirstInterface
+        ).destroy_particle()
+        literal.record_operation("destroyer.destroy(target::/first_interface)")
+        particle.get_position(
+            local.my_domain_com.my_lib.third.Third
+        ).destroy_particle()
+        literal.record_operation("destroyer.destroy(target::/third)")

@@ -7,6 +7,17 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.inner
 
 
+class MiddleDestructionContracts:
+    def run_destructors_position_gw(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_gw(self, _particle: literal.Particle):
+        pass
+
+
+_DEFAULT_DESTRUCTION_CONTRACTS = MiddleDestructionContracts()
+
+
 class Middle(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
@@ -25,7 +36,7 @@ class Middle(literal.Action):
         )
 
     @override
-    def run(self):
+    def run(self, destruction_contracts: MiddleDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         self.get_interface_position(
             "position<gw>"
         ).particle.get_action(
@@ -56,6 +67,16 @@ class Middle(literal.Action):
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
+        destruction_contracts.run_destructors_position_gw(
+            self.get_interface_position(
+                "position<gw>"
+            ).particle
+        )
+        destruction_contracts.destroy_position_gw(
+            self.get_interface_position(
+                "position<gw>"
+            ).particle
+        )
         self.get_interface_position(
             "position<gw>"
         ).destroy_particle()

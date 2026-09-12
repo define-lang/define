@@ -250,10 +250,7 @@ class DestructionContract:
     that the destroying action could not see.
     """
 
-    # The contracted position whose particle was destroyed (its contracted
-    # origin), as a chained name within the action providing this DestructionContract.
-    destroyed_position_contracted: ast.PositionReference
-    destruction_fact: destruction_contract_types.DestructionFact
+    propagated_destruction: destruction_contract_types.PropagatedDestruction
     # The position in the shared snapshot stays fixed when a caller expresses
     # the particle's contracted origin from its own perspective.
     position_in_child_state: tuple[str, ...]

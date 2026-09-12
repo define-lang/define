@@ -49,4 +49,13 @@ class Test(literal.Action):
         )
         self.on_particle.get_action(
             local.my_domain_com.my_lib.outer.Outer
-        ).run()
+        ).run(OuterDestructionContracts())
+
+
+class OuterDestructionContracts(local.my_domain_com.my_lib.outer.OuterDestructionContracts):
+
+    @override
+    def destroy_position_run__position_payload(self, particle: literal.Particle):
+        particle.get_position(
+            local.my_domain_com.my_lib.child.Child
+        ).destroy_particle()

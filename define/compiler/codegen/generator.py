@@ -10,10 +10,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from define.compiler import ast
-    from define.compiler.graphs import reference_graph_executor
-    from define.compiler.validator.reference_graph import (
-        action_contract,
-    )
+    from define.compiler.validator import validation_result
 
 
 class CodeGenerator:
@@ -21,9 +18,7 @@ class CodeGenerator:
 
     def generate(
         self,
-        definition_order: reference_graph_executor.ReferenceGraphOrder,
-        destructions: dict[ast.SourceLocation, list[ast.PositionReference]],
-        triggered_actions: action_contract.TriggeredActions,
+        codegen_input: validation_result.CodegenInput,
         entry_action: ast.ActionDefinition,
         output_dir: Path,
         *,
@@ -38,9 +33,7 @@ class CodeGenerator:
         # because no caller triggers the entry point.
         python_gen = python_generator.PythonLiteralCodeGenerator()
         python_gen.generate(
-            definition_order,
-            destructions,
-            triggered_actions,
+            codegen_input,
             entry_action,
             output_dir,
             trace_operations=trace_operations,

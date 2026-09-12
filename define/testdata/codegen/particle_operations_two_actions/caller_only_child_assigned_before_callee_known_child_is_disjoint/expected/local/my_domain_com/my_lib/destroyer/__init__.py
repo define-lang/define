@@ -7,6 +7,23 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.child
 
 
+class DestroyerDestructionContracts:
+    def run_destructors_position_parent(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_parent(self, _particle: literal.Particle):
+        pass
+
+    def run_destructors_position_parent__position_child(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_parent__position_child(self, _particle: literal.Particle):
+        pass
+
+
+_DEFAULT_DESTRUCTION_CONTRACTS = DestroyerDestructionContracts()
+
+
 class Destroyer(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
@@ -24,7 +41,7 @@ class Destroyer(literal.Action):
         )
 
     @override
-    def run(self):
+    def run(self, destruction_contracts: DestroyerDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         keeper = literal.LocalPosition(
             "position<keeper>",
         )
@@ -41,6 +58,30 @@ class Destroyer(literal.Action):
             ).particle.get_position(
                 local.my_domain_com.my_lib.child.Child
             )
+        )
+        destruction_contracts.run_destructors_position_parent(
+            self.get_interface_position(
+                "position<parent>"
+            ).particle
+        )
+        destruction_contracts.run_destructors_position_parent__position_child(
+            self.get_interface_position(
+                "position<parent>"
+            ).particle.get_position(
+                local.my_domain_com.my_lib.child.Child
+            ).particle
+        )
+        destruction_contracts.destroy_position_parent(
+            self.get_interface_position(
+                "position<parent>"
+            ).particle
+        )
+        destruction_contracts.destroy_position_parent__position_child(
+            self.get_interface_position(
+                "position<parent>"
+            ).particle.get_position(
+                local.my_domain_com.my_lib.child.Child
+            ).particle
         )
         self.get_interface_position(
             "position<parent>"

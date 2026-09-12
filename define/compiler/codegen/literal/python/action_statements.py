@@ -2,21 +2,29 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, final
 
 from define.compiler import ast
-from define.compiler.codegen.literal.python import naming, template_context
+from define.compiler.codegen.literal.python import (
+    destruction_contracts,
+    naming,
+    operation_labels,
+    position_expression,
+    template_context,
+)
 
 if TYPE_CHECKING:
-    from define.compiler.validator.reference_graph import (
-        action_contract,
-    )
+    from define.compiler.validator import validation_result
 
-_OPERATION_NAMES = {
-    template_context.StatementKind.CREATE_PARTICLE: "create",
-    template_context.StatementKind.MOVE_PARTICLE: "move",
-    template_context.StatementKind.DESTROY_PARTICLE: "destroy",
-}
+
+@dataclass
+class GeneratedActionStatements:
+    """Generated statements and the imports and contract classes they require."""
+
+    statements: list[template_context.ActionStatementContext]
+    imports: set[str]
+    contract_definitions: list[template_context.DestructionContractDefinition]
 
 
 @final
@@ -27,24 +35,21 @@ class ActionStatementsGenerator:
         self,
         definition: ast.ActionDefinition,
         converter: naming.NameConverter,
-        destructions: dict[ast.SourceLocation, list[ast.PositionReference]],
-        triggered_actions: action_contract.TriggeredActions,
+        codegen_input: validation_result.CodegenInput,
         *,
         trace_operations: bool,
     ):
         """Initialize from validated definitions and known destructions."""
         self._definition = definition
         self._converter = converter
-        self._destructions = destructions
-        self._triggered_actions = triggered_actions
+        self._codegen_input = codegen_input
         self._trace_operations = trace_operations
-        self._local_position_names: dict[str, str] = {}
-        self._interface_position_names = {
-            position.typed_name.source_typed_name
-            for position in definition.interface_positions
-        }
+        self._class_names = naming.LocalNameAllocator()
 
-    def _collect_imports(self) -> set[str]:
+    def _collect_imports(
+        self,
+        contracts: destruction_contracts.DestructionContractsGenerator,
+    ) -> set[str]:
         """Collect modules needed by statements and their triggered actions."""
         modules: set[str] = set()
         locations = [self._definition.action_statements.location]
@@ -54,32 +59,67 @@ class ActionStatementsGenerator:
                 for quality in statement.constraint_typed_names:
                     modules.add(self._converter.class_reference(quality).module_name)
             elif isinstance(statement, ast.CreateParticleStatement):
-                self._add_position_imports(statement.target_position, modules)
+                modules.update(
+                    self._converter.referenced_modules(statement.target_position)
+                )
             elif isinstance(statement, ast.MoveParticleStatement):
-                self._add_position_imports(statement.source_position, modules)
-                self._add_position_imports(statement.target_position, modules)
+                modules.update(
+                    self._converter.referenced_modules(statement.source_position)
+                )
+                modules.update(
+                    self._converter.referenced_modules(statement.target_position)
+                )
         for location in locations:
-            for action in self._triggered_actions.get(location, ()):
-                self._add_position_imports(action, modules)
-            for position in self._destructions.get(location, ()):
-                self._add_position_imports(position, modules)
+            for action in self._codegen_input.triggered_actions.get(location, ()):
+                modules.update(self._converter.referenced_modules(action))
+            for position in self._codegen_input.destructions.get(location, ()):
+                modules.update(self._converter.referenced_modules(position))
+            for connections in self._codegen_input.destruction_connections.get(
+                location, {}
+            ).values():
+                for connection in connections:
+                    modules.update(contracts.referenced_modules(connection))
         return modules
 
-    def _add_position_imports(
-        self,
-        position: ast.PositionReference | ast.ActionReference,
-        modules: set[str],
-    ):
-        for name in position.typed_names:
-            if isinstance(name, ast.GlobalTypedNameReference):
-                modules.add(self._converter.class_reference(name).module_name)
-
-    def generate(
-        self,
-    ) -> tuple[list[template_context.ActionStatementContext], set[str]]:
+    def generate(self) -> GeneratedActionStatements:
         """Generate statements and automatic destruction in execution order."""
+        local_position_names: dict[str, str] = {}
+        positions = position_expression.PositionExpressionBuilder(
+            self._converter,
+            local_position_names,
+            self._definition.interface_positions_by_name.keys(),
+        )
+        propagated_destructions = self._codegen_input.propagated_destructions[
+            self._definition.typed_name.full_typed_name
+        ]
+        contract_names = self._converter.destruction_method_names(
+            propagated_destructions
+        )
+        action_path = self._definition.typed_name.name_content.path.relative_path
+        # Contract classes share the action's Python module, so their names
+        # must not collide with the action class or its own contract class.
+        _ = self._class_names.allocate(self._converter.class_name(action_path))
+        if propagated_destructions:
+            _ = self._class_names.allocate(
+                self._converter.destruction_contract_class_name(action_path)
+            )
+        contracts = destruction_contracts.DestructionContractsGenerator(
+            self._definition,
+            self._converter,
+            self._codegen_input,
+            positions,
+            contract_names,
+            self._class_names,
+            trace_operations=self._trace_operations,
+        )
+        direct_contracts = contracts.direct_contracts()
+        contract_definitions: list[template_context.DestructionContractDefinition] = []
         names = naming.LocalNameAllocator()
-        imports = self._collect_imports()
+        # Collect imports before allocating local names: Python locals shadow
+        # imported module names throughout the method, even before assignment.
+        # Collecting imports as we generate statements would discover conflicts
+        # after earlier local names have already been allocated.
+        imports = self._collect_imports(contracts)
         names.reserve_module_first_names(imports)
         statements: list[template_context.ActionStatementContext] = []
         for statement in self._definition.action_statements.statements:
@@ -87,10 +127,9 @@ class ActionStatementsGenerator:
                 case ast.LocalPositionDefinition():
                     source_name = statement.typed_name.name_content.name
                     name = names.allocate(source_name)
-                    self._local_position_names[source_name] = name
+                    local_position_names[source_name] = name
                     statements.append(
-                        template_context.ActionStatementContext(
-                            kind=template_context.StatementKind.LOCAL_POSITION,
+                        template_context.LocalPositionContext(
                             local_position_name=name,
                             local_typed_name=statement.typed_name.source_typed_name,
                             constraints=self._converter.constraints_to_class_references(
@@ -99,131 +138,143 @@ class ActionStatementsGenerator:
                         )
                     )
                 case ast.DestroyParticleStatement():
-                    statements.extend(self._destruction(statement.location))
+                    statements.extend(
+                        self._destruction(
+                            statement.location, positions, direct_contracts
+                        )
+                    )
                 case ast.CreateParticleStatement():
                     statements.append(
-                        self._operation(
-                            template_context.StatementKind.CREATE_PARTICLE,
-                            statement.target_position,
+                        template_context.CreateParticleContext(
+                            position=positions.build(statement.target_position),
+                            operation_label=self._operation_label(
+                                template_context.StatementKind.CREATE_PARTICLE,
+                                statement.target_position,
+                            ),
                         )
                     )
-                    for action in self._triggered_actions.get(statement.location, ()):
-                        statements.append(self._run(action))
+                    for action in self._codegen_input.triggered_actions.get(
+                        statement.location, ()
+                    ):
+                        invocation, contract = self._run(
+                            action, statement.location, positions, contracts
+                        )
+                        statements.append(invocation)
+                        if contract is not None:
+                            contract_definitions.append(contract)
                 case ast.MoveParticleStatement():
                     statements.append(
-                        self._operation(
-                            template_context.StatementKind.MOVE_PARTICLE,
-                            statement.source_position,
-                            statement.target_position,
+                        template_context.MoveParticleContext(
+                            position=positions.build(statement.source_position),
+                            to_position=positions.build(statement.target_position),
+                            operation_label=self._operation_label(
+                                template_context.StatementKind.MOVE_PARTICLE,
+                                statement.source_position,
+                                statement.target_position,
+                            ),
                         )
                     )
-                    for action in self._triggered_actions.get(statement.location, ()):
-                        statements.append(self._run(action))
+                    if actions := self._codegen_input.triggered_actions.get(
+                        statement.location
+                    ):
+                        (action,) = actions
+                        invocation, contract = self._run(
+                            action, statement.location, positions, contracts
+                        )
+                        statements.append(invocation)
+                        if contract is not None:
+                            contract_definitions.append(contract)
         statements.extend(
-            self._destruction(self._definition.action_statements.location)
+            self._destruction(
+                self._definition.action_statements.location, positions, direct_contracts
+            )
         )
-        return statements, imports
+        return GeneratedActionStatements(
+            statements=statements,
+            imports=imports,
+            contract_definitions=contract_definitions,
+        )
 
     def _destruction(
-        self, location: ast.SourceLocation
+        self,
+        location: ast.SourceLocation,
+        positions: position_expression.PositionExpressionBuilder,
+        direct_contracts: dict[
+            ast.SourceLocation, list[tuple[str, ast.PositionReference]]
+        ],
     ) -> list[template_context.ActionStatementContext]:
-        destruction = self._destructions[location]
-        statements = [
-            self._run(action) for action in self._triggered_actions.get(location, ())
-        ]
+        # TODO: Investigate running each particle's Destructors, completing each
+        # child's destruction, then destroying the particle. This could avoid
+        # keeping independent sibling particles alive until all Destructors finish,
+        # but contracts would need to preserve contributions per particle rather
+        # than flattening them into separate Destructor and destruction lists.
+        destruction = self._codegen_input.destructions[location]
+        statements: list[template_context.ActionStatementContext] = []
+        for action in self._codegen_input.triggered_actions.get(location, ()):
+            # Destructors preserve caller-provided contracted particles, so
+            # their invocations have no incoming destruction contributions.
+            statements.append(
+                template_context.RunActionContext(position=positions.build(action))
+            )
+        for context_type, prefix in (
+            (
+                template_context.RunContractDestructorsContext,
+                naming.RUN_DESTRUCTORS_PREFIX,
+            ),
+            (template_context.DestroyContractChildrenContext, naming.DESTROY_PREFIX),
+        ):
+            for name, position in direct_contracts.get(location, ()):
+                statements.append(
+                    context_type(
+                        position=positions.build(position),
+                        contract_method=prefix + name,
+                    )
+                )
         for position in destruction:
             statements.append(
-                self._operation(
-                    template_context.StatementKind.DESTROY_PARTICLE, position
+                template_context.DestroyParticleContext(
+                    position=positions.build(position),
+                    operation_label=self._operation_label(
+                        template_context.StatementKind.DESTROY_PARTICLE, position
+                    ),
                 )
             )
         return statements
 
     def _run(
-        self, action: ast.ActionReference
-    ) -> template_context.ActionStatementContext:
-        return template_context.ActionStatementContext(
-            kind=template_context.StatementKind.RUN_ACTION,
-            position=self.build_position(action),
+        self,
+        action: ast.ActionReference,
+        location: ast.SourceLocation,
+        positions: position_expression.PositionExpressionBuilder,
+        contracts: destruction_contracts.DestructionContractsGenerator,
+    ) -> tuple[
+        template_context.RunActionContext,
+        template_context.DestructionContractDefinition | None,
+    ]:
+        contract = contracts.generate(location, action)
+        argument = (
+            template_context.DestructionContractArgument(
+                class_name=contract.class_name,
+                forwarded_methods=contract.forwarded_methods,
+            )
+            if contract is not None
+            else None
         )
+        return template_context.RunActionContext(
+            position=positions.build(action), destruction_contract=argument
+        ), contract
 
-    def _operation(
+    def _operation_label(
         self,
         kind: template_context.StatementKind,
         position: ast.PositionReference,
         destination: ast.PositionReference | None = None,
-    ) -> template_context.ActionStatementContext:
-        label = None
+    ) -> str | None:
         if self._trace_operations:
-            position_name = self._position_name(position)
-            if destination is not None:
-                position_name += ", " + self._position_name(destination)
-            operation = _OPERATION_NAMES[kind]
-            action_name = (
-                self._definition.typed_name.name_content.path.name.removeprefix("/")
+            return operation_labels.operation_label(
+                self._definition.typed_name,
+                kind,
+                position,
+                destination,
             )
-            label = f"{action_name}.{operation}({position_name})"
-        return template_context.ActionStatementContext(
-            kind=kind,
-            position=self.build_position(position),
-            to_position=self.build_position(destination)
-            if destination is not None
-            else None,
-            operation_label=label,
-        )
-
-    @staticmethod
-    def _position_name(position: ast.PositionReference) -> str:
-        return "::".join(name.name_content.source_name for name in position.typed_names)
-
-    def build_position(
-        self,
-        position_reference: ast.PositionReference | ast.ActionReference,
-    ) -> template_context.PositionExpr:
-        """Build an expression that accesses a Position or Action Reference."""
-        first = position_reference.typed_names[0]
-        if isinstance(first, ast.LocalTypedNameReference):
-            if first.source_typed_name in self._interface_position_names:
-                local_position_name = None
-                chain_elements: list[template_context.ChainElement] = [
-                    template_context.InterfacePositionChainElement(
-                        previous_name_type=ast.NameType.ACTION,
-                        name_type=first.name_type,
-                        typed_name=first.source_typed_name,
-                    )
-                ]
-            else:
-                local_position_name = self._local_position_names[
-                    first.name_content.name
-                ]
-                chain_elements = []
-        else:
-            local_position_name = None
-            chain_elements = [
-                template_context.GlobalQualityChainElement(
-                    previous_name_type=None,
-                    name_type=first.name_type,
-                    class_reference=self._converter.class_reference(first),
-                )
-            ]
-        for i, elem in enumerate(position_reference.typed_names[1:]):
-            prev = position_reference.typed_names[i]
-            if isinstance(elem, ast.GlobalTypedNameReference):
-                chain_element: template_context.ChainElement = (
-                    template_context.GlobalQualityChainElement(
-                        previous_name_type=prev.name_type,
-                        name_type=elem.name_type,
-                        class_reference=self._converter.class_reference(elem),
-                    )
-                )
-            else:
-                chain_element = template_context.InterfacePositionChainElement(
-                    previous_name_type=prev.name_type,
-                    name_type=elem.name_type,
-                    typed_name=elem.full_typed_name,
-                )
-            chain_elements.append(chain_element)
-        return template_context.PositionExpr(
-            local_position_name=local_position_name,
-            chain_elements=chain_elements,
-        )
+        return None

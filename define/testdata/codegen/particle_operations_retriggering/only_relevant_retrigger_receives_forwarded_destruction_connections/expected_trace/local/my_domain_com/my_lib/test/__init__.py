@@ -37,4 +37,14 @@ class Test(literal.Action):
         literal.record_operation("test.move(source, /middle::run)")
         self.on_particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
-        ).run()
+        ).run(MiddleDestructionContracts())
+
+
+class MiddleDestructionContracts(local.my_domain_com.my_lib.middle.MiddleDestructionContracts):
+
+    @override
+    def destroy_position_run(self, particle: literal.Particle):
+        particle.get_position(
+            local.my_domain_com.my_lib.child.Child
+        ).destroy_particle()
+        literal.record_operation("destroyer.destroy(run::/child)")

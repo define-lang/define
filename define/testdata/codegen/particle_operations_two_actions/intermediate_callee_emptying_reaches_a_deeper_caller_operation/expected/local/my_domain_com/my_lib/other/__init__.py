@@ -8,6 +8,29 @@ import local.my_domain_com.my_lib.child
 import local.my_domain_com.my_lib.grandchild
 
 
+class OtherDestructionContracts:
+    def run_destructors_position_parent__position_child__position_grandchild(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_parent__position_child__position_grandchild(self, _particle: literal.Particle):
+        pass
+
+    def run_destructors_position_parent(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_parent(self, _particle: literal.Particle):
+        pass
+
+    def run_destructors_position_parent__position_child(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_parent__position_child(self, _particle: literal.Particle):
+        pass
+
+
+_DEFAULT_DESTRUCTION_CONTRACTS = OtherDestructionContracts()
+
+
 class Other(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
@@ -25,7 +48,25 @@ class Other(literal.Action):
         )
 
     @override
-    def run(self):
+    def run(self, destruction_contracts: OtherDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
+        destruction_contracts.run_destructors_position_parent__position_child__position_grandchild(
+            self.get_interface_position(
+                "position<parent>"
+            ).particle.get_position(
+                local.my_domain_com.my_lib.child.Child
+            ).particle.get_position(
+                local.my_domain_com.my_lib.grandchild.Grandchild
+            ).particle
+        )
+        destruction_contracts.destroy_position_parent__position_child__position_grandchild(
+            self.get_interface_position(
+                "position<parent>"
+            ).particle.get_position(
+                local.my_domain_com.my_lib.child.Child
+            ).particle.get_position(
+                local.my_domain_com.my_lib.grandchild.Grandchild
+            ).particle
+        )
         self.get_interface_position(
             "position<parent>"
         ).particle.get_position(
@@ -33,6 +74,30 @@ class Other(literal.Action):
         ).particle.get_position(
             local.my_domain_com.my_lib.grandchild.Grandchild
         ).destroy_particle()
+        destruction_contracts.run_destructors_position_parent(
+            self.get_interface_position(
+                "position<parent>"
+            ).particle
+        )
+        destruction_contracts.run_destructors_position_parent__position_child(
+            self.get_interface_position(
+                "position<parent>"
+            ).particle.get_position(
+                local.my_domain_com.my_lib.child.Child
+            ).particle
+        )
+        destruction_contracts.destroy_position_parent(
+            self.get_interface_position(
+                "position<parent>"
+            ).particle
+        )
+        destruction_contracts.destroy_position_parent__position_child(
+            self.get_interface_position(
+                "position<parent>"
+            ).particle.get_position(
+                local.my_domain_com.my_lib.child.Child
+            ).particle
+        )
         self.get_interface_position(
             "position<parent>"
         ).particle.get_position(

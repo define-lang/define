@@ -5,6 +5,7 @@ from typing import ClassVar, override
 from define.runtime import literal
 
 import local.my_domain_com.my_lib.destroyer
+import local.my_domain_com.my_lib.destructor
 import local.my_domain_com.my_lib.left
 import local.my_domain_com.my_lib.marker
 import local.my_domain_com.my_lib.right
@@ -49,4 +50,20 @@ class Test(literal.Action):
         literal.record_operation("test.move(/right, /destroyer::target)")
         self.on_particle.get_action(
             local.my_domain_com.my_lib.destroyer.Destroyer
+        ).run(DestroyerDestructionContracts())
+
+
+class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.DestroyerDestructionContracts):
+
+    @override
+    def run_destructors_position_target(self, particle: literal.Particle):
+        particle.get_action(
+            local.my_domain_com.my_lib.destructor.Destructor
         ).run()
+
+    @override
+    def destroy_position_target(self, particle: literal.Particle):
+        particle.get_position(
+            local.my_domain_com.my_lib.marker.Marker
+        ).destroy_particle()
+        literal.record_operation("destroyer.destroy(target::/marker)")

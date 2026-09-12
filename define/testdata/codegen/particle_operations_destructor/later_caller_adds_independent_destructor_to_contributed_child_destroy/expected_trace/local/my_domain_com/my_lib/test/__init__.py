@@ -48,4 +48,13 @@ class Test(literal.Action):
         literal.record_operation("test.move(source, /middle::target)")
         self.on_particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
+        ).run(MiddleDestructionContracts())
+
+
+class MiddleDestructionContracts(local.my_domain_com.my_lib.middle.MiddleDestructionContracts):
+
+    @override
+    def run_destructors_position_target__position_child(self, particle: literal.Particle):
+        particle.get_action(
+            local.my_domain_com.my_lib.destructor.Destructor
         ).run()

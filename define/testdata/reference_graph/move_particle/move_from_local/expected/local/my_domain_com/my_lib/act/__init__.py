@@ -10,6 +10,29 @@ import local.my_domain_com.my_lib.mid_dest
 import local.my_domain_com.my_lib.mid_local
 
 
+class ActDestructionContracts:
+    def run_destructors_position_chain_dest(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_chain_dest(self, _particle: literal.Particle):
+        pass
+
+    def run_destructors_position_chain_dest__position_mid_dest(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_chain_dest__position_mid_dest(self, _particle: literal.Particle):
+        pass
+
+    def run_destructors_position_trigger(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_trigger(self, _particle: literal.Particle):
+        pass
+
+
+_DEFAULT_DESTRUCTION_CONTRACTS = ActDestructionContracts()
+
+
 class Act(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
@@ -28,7 +51,7 @@ class Act(literal.Action):
         )
 
     @override
-    def run(self):
+    def run(self, destruction_contracts: ActDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         src_a = literal.LocalPosition(
             "position<src_a>",
         )
@@ -85,6 +108,30 @@ class Act(literal.Action):
         self.get_interface_position(
             "position<iface_dest>"
         ).destroy_particle()
+        destruction_contracts.run_destructors_position_chain_dest(
+            self.get_interface_position(
+                "position<chain_dest>"
+            ).particle
+        )
+        destruction_contracts.run_destructors_position_chain_dest__position_mid_dest(
+            self.get_interface_position(
+                "position<chain_dest>"
+            ).particle.get_position(
+                local.my_domain_com.my_lib.mid_dest.MidDest
+            ).particle
+        )
+        destruction_contracts.destroy_position_chain_dest(
+            self.get_interface_position(
+                "position<chain_dest>"
+            ).particle
+        )
+        destruction_contracts.destroy_position_chain_dest__position_mid_dest(
+            self.get_interface_position(
+                "position<chain_dest>"
+            ).particle.get_position(
+                local.my_domain_com.my_lib.mid_dest.MidDest
+            ).particle
+        )
         self.get_interface_position(
             "position<chain_dest>"
         ).particle.get_position(
@@ -100,6 +147,16 @@ class Act(literal.Action):
         self.get_interface_position(
             "position<chain_dest>"
         ).destroy_particle()
+        destruction_contracts.run_destructors_position_trigger(
+            self.get_interface_position(
+                "position<trigger>"
+            ).particle
+        )
+        destruction_contracts.destroy_position_trigger(
+            self.get_interface_position(
+                "position<trigger>"
+            ).particle
+        )
         self.get_interface_position(
             "position<trigger>"
         ).destroy_particle()

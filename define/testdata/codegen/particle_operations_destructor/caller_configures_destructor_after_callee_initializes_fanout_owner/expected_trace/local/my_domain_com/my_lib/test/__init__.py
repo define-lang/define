@@ -86,4 +86,13 @@ class Test(literal.Action):
         literal.record_operation("test.move(source, /starter::run)")
         self.on_particle.get_action(
             local.my_domain_com.my_lib.starter.Starter
+        ).run(StarterDestructionContracts())
+
+
+class StarterDestructionContracts(local.my_domain_com.my_lib.starter.StarterDestructionContracts):
+
+    @override
+    def run_destructors_position_run__position_crate__position_carrier__position_payload(self, particle: literal.Particle):
+        particle.get_action(
+            local.my_domain_com.my_lib.extra_destructor.ExtraDestructor
         ).run()

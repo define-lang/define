@@ -7,6 +7,29 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.inner
 
 
+class ActDestructionContracts:
+    def run_destructors_position_trigger_pos__position_inner(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_trigger_pos__position_inner(self, _particle: literal.Particle):
+        pass
+
+    def run_destructors_position_trigger_pos(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_trigger_pos(self, _particle: literal.Particle):
+        pass
+
+    def run_destructors_position_run(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_run(self, _particle: literal.Particle):
+        pass
+
+
+_DEFAULT_DESTRUCTION_CONTRACTS = ActDestructionContracts()
+
+
 class Act(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
@@ -24,19 +47,53 @@ class Act(literal.Action):
         )
 
     @override
-    def run(self):
+    def run(self, destruction_contracts: ActDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         result = literal.LocalPosition(
             "position<result>",
         )
         result.create_particle()
+        destruction_contracts.run_destructors_position_trigger_pos__position_inner(
+            self.get_interface_position(
+                "position<trigger_pos>"
+            ).particle.get_position(
+                local.my_domain_com.my_lib.inner.Inner
+            ).particle
+        )
+        destruction_contracts.destroy_position_trigger_pos__position_inner(
+            self.get_interface_position(
+                "position<trigger_pos>"
+            ).particle.get_position(
+                local.my_domain_com.my_lib.inner.Inner
+            ).particle
+        )
         self.get_interface_position(
             "position<trigger_pos>"
         ).particle.get_position(
             local.my_domain_com.my_lib.inner.Inner
         ).destroy_particle()
+        destruction_contracts.run_destructors_position_trigger_pos(
+            self.get_interface_position(
+                "position<trigger_pos>"
+            ).particle
+        )
+        destruction_contracts.destroy_position_trigger_pos(
+            self.get_interface_position(
+                "position<trigger_pos>"
+            ).particle
+        )
         self.get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
+        destruction_contracts.run_destructors_position_run(
+            self.get_interface_position(
+                "position<run>"
+            ).particle
+        )
+        destruction_contracts.destroy_position_run(
+            self.get_interface_position(
+                "position<run>"
+            ).particle
+        )
         self.get_interface_position(
             "position<run>"
         ).destroy_particle()

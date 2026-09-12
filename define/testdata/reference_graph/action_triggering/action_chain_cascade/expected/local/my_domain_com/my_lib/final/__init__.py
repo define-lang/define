@@ -5,6 +5,17 @@ from typing import override
 from define.runtime import literal
 
 
+class FinalDestructionContracts:
+    def run_destructors_position_trigger(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_trigger(self, _particle: literal.Particle):
+        pass
+
+
+_DEFAULT_DESTRUCTION_CONTRACTS = FinalDestructionContracts()
+
+
 class Final(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
@@ -16,11 +27,21 @@ class Final(literal.Action):
         )
 
     @override
-    def run(self):
+    def run(self, destruction_contracts: FinalDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         complete = literal.LocalPosition(
             "position<complete>",
         )
         complete.create_particle()
+        destruction_contracts.run_destructors_position_trigger(
+            self.get_interface_position(
+                "position<trigger>"
+            ).particle
+        )
+        destruction_contracts.destroy_position_trigger(
+            self.get_interface_position(
+                "position<trigger>"
+            ).particle
+        )
         self.get_interface_position(
             "position<trigger>"
         ).destroy_particle()

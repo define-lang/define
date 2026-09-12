@@ -8,6 +8,23 @@ import local.my_domain_com.my_lib.child
 import local.my_domain_com.my_lib.grandchild
 
 
+class TriggeredDestructionContracts:
+    def run_destructors_position_input__position_child__position_grandchild(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_input__position_child__position_grandchild(self, _particle: literal.Particle):
+        pass
+
+    def run_destructors_position_run(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_run(self, _particle: literal.Particle):
+        pass
+
+
+_DEFAULT_DESTRUCTION_CONTRACTS = TriggeredDestructionContracts()
+
+
 class Triggered(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
@@ -25,7 +42,25 @@ class Triggered(literal.Action):
         )
 
     @override
-    def run(self):
+    def run(self, destruction_contracts: TriggeredDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
+        destruction_contracts.run_destructors_position_input__position_child__position_grandchild(
+            self.get_interface_position(
+                "position<input>"
+            ).particle.get_position(
+                local.my_domain_com.my_lib.child.Child
+            ).particle.get_position(
+                local.my_domain_com.my_lib.grandchild.Grandchild
+            ).particle
+        )
+        destruction_contracts.destroy_position_input__position_child__position_grandchild(
+            self.get_interface_position(
+                "position<input>"
+            ).particle.get_position(
+                local.my_domain_com.my_lib.child.Child
+            ).particle.get_position(
+                local.my_domain_com.my_lib.grandchild.Grandchild
+            ).particle
+        )
         self.get_interface_position(
             "position<input>"
         ).particle.get_position(
@@ -33,6 +68,16 @@ class Triggered(literal.Action):
         ).particle.get_position(
             local.my_domain_com.my_lib.grandchild.Grandchild
         ).destroy_particle()
+        destruction_contracts.run_destructors_position_run(
+            self.get_interface_position(
+                "position<run>"
+            ).particle
+        )
+        destruction_contracts.destroy_position_run(
+            self.get_interface_position(
+                "position<run>"
+            ).particle
+        )
         self.get_interface_position(
             "position<run>"
         ).destroy_particle()

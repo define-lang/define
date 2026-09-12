@@ -9,6 +9,23 @@ import local.my_domain_com.my_lib.inner
 import local.my_domain_com.my_lib.source_particle
 
 
+class MiddleDestructionContracts:
+    def run_destructors_position_gateway__position_source_particle(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_gateway__position_source_particle(self, _particle: literal.Particle):
+        pass
+
+    def run_destructors_position_gateway(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_gateway(self, _particle: literal.Particle):
+        pass
+
+
+_DEFAULT_DESTRUCTION_CONTRACTS = MiddleDestructionContracts()
+
+
 class Middle(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
@@ -27,7 +44,7 @@ class Middle(literal.Action):
         )
 
     @override
-    def run(self):
+    def run(self, destruction_contracts: MiddleDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         self.get_interface_position(
             "position<gateway>"
         ).particle.get_position(
@@ -62,6 +79,24 @@ class Middle(literal.Action):
         ).particle.get_action(
             local.my_domain_com.my_lib.inner.Inner
         ).run()
+        destruction_contracts.run_destructors_position_gateway__position_source_particle(
+            self.get_interface_position(
+                "position<gateway>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.inner.Inner
+            ).get_interface_position(
+                "position<destination>"
+            ).particle
+        )
+        destruction_contracts.destroy_position_gateway__position_source_particle(
+            self.get_interface_position(
+                "position<gateway>"
+            ).particle.get_action(
+                local.my_domain_com.my_lib.inner.Inner
+            ).get_interface_position(
+                "position<destination>"
+            ).particle
+        )
         self.get_interface_position(
             "position<gateway>"
         ).particle.get_action(
@@ -76,6 +111,16 @@ class Middle(literal.Action):
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
+        destruction_contracts.run_destructors_position_gateway(
+            self.get_interface_position(
+                "position<gateway>"
+            ).particle
+        )
+        destruction_contracts.destroy_position_gateway(
+            self.get_interface_position(
+                "position<gateway>"
+            ).particle
+        )
         self.get_interface_position(
             "position<gateway>"
         ).destroy_particle()

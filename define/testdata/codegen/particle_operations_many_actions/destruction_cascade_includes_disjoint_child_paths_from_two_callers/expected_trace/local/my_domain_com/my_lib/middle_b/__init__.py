@@ -8,6 +8,17 @@ import local.my_domain_com.my_lib.b
 import local.my_domain_com.my_lib.destroyer
 
 
+class MiddleBDestructionContracts:
+    def run_destructors_position_run(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_run(self, _particle: literal.Particle):
+        pass
+
+
+_DEFAULT_DESTRUCTION_CONTRACTS = MiddleBDestructionContracts()
+
+
 class MiddleB(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
@@ -19,7 +30,7 @@ class MiddleB(literal.Action):
         )
 
     @override
-    def run(self):
+    def run(self, destruction_contracts: MiddleBDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         box = literal.LocalPosition(
             "position<box>",
             constraints=(
@@ -50,10 +61,30 @@ class MiddleB(literal.Action):
         literal.record_operation("middle_b.move(box, destroyer_holder::/destroyer::run)")
         destroyer_holder.particle.get_action(
             local.my_domain_com.my_lib.destroyer.Destroyer
-        ).run()
+        ).run(DestroyerDestructionContracts())
         destroyer_holder.destroy_particle()
         literal.record_operation("middle_b.destroy(destroyer_holder)")
+        destruction_contracts.run_destructors_position_run(
+            self.get_interface_position(
+                "position<run>"
+            ).particle
+        )
+        destruction_contracts.destroy_position_run(
+            self.get_interface_position(
+                "position<run>"
+            ).particle
+        )
         self.get_interface_position(
             "position<run>"
         ).destroy_particle()
         literal.record_operation("middle_b.destroy(run)")
+
+
+class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.DestroyerDestructionContracts):
+
+    @override
+    def destroy_position_run(self, particle: literal.Particle):
+        particle.get_position(
+            local.my_domain_com.my_lib.b.B
+        ).destroy_particle()
+        literal.record_operation("destroyer.destroy(run::/b)")

@@ -48,10 +48,19 @@ class Test(literal.Action):
         ).create_particle()
         box.particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
-        ).run()
+        ).run(MiddleDestructionContracts())
         box.particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
         box.destroy_particle()
+
+
+class MiddleDestructionContracts(local.my_domain_com.my_lib.middle.MiddleDestructionContracts):
+
+    @override
+    def destroy_position_gw__position_source_particle(self, particle: literal.Particle):
+        particle.get_position(
+            local.my_domain_com.my_lib.a.A
+        ).destroy_particle()

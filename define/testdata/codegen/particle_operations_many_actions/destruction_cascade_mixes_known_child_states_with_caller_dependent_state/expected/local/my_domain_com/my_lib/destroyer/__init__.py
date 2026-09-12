@@ -10,6 +10,17 @@ import local.my_domain_com.my_lib.known_occupied
 import local.my_domain_com.my_lib.target
 
 
+class DestroyerDestructionContracts:
+    def run_destructors_position_run(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_run(self, _particle: literal.Particle):
+        pass
+
+
+_DEFAULT_DESTRUCTION_CONTRACTS = DestroyerDestructionContracts()
+
+
 class Destroyer(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.destination.Destination,
@@ -31,7 +42,7 @@ class Destroyer(literal.Action):
         )
 
     @override
-    def run(self):
+    def run(self, destruction_contracts: DestroyerDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         local_2 = literal.LocalPosition(
             "position<local>",
             constraints=(
@@ -61,6 +72,12 @@ class Destroyer(literal.Action):
         local_2.particle.get_position(
             local.my_domain_com.my_lib.known_occupied.KnownOccupied
         ).create_particle()
+        destruction_contracts.run_destructors_position_run(
+            local_2.particle
+        )
+        destruction_contracts.destroy_position_run(
+            local_2.particle
+        )
         local_2.particle.get_position(
             local.my_domain_com.my_lib.known_occupied.KnownOccupied
         ).destroy_particle()

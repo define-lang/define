@@ -7,6 +7,23 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.direct_destructor
 
 
+class DestroyerDestructionContracts:
+    def run_destructors_position_first(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_first(self, _particle: literal.Particle):
+        pass
+
+    def run_destructors_position_second(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_second(self, _particle: literal.Particle):
+        pass
+
+
+_DEFAULT_DESTRUCTION_CONTRACTS = DestroyerDestructionContracts()
+
+
 class Destroyer(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
@@ -25,15 +42,35 @@ class Destroyer(literal.Action):
         )
 
     @override
-    def run(self):
+    def run(self, destruction_contracts: DestroyerDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         self.get_interface_position(
             "position<first>"
         ).particle.get_action(
             local.my_domain_com.my_lib.direct_destructor.DirectDestructor
         ).run()
+        destruction_contracts.run_destructors_position_first(
+            self.get_interface_position(
+                "position<first>"
+            ).particle
+        )
+        destruction_contracts.destroy_position_first(
+            self.get_interface_position(
+                "position<first>"
+            ).particle
+        )
         self.get_interface_position(
             "position<first>"
         ).destroy_particle()
+        destruction_contracts.run_destructors_position_second(
+            self.get_interface_position(
+                "position<second>"
+            ).particle
+        )
+        destruction_contracts.destroy_position_second(
+            self.get_interface_position(
+                "position<second>"
+            ).particle
+        )
         self.get_interface_position(
             "position<second>"
         ).destroy_particle()

@@ -54,9 +54,27 @@ class Test(literal.Action):
         ).create_particle()
         self.on_particle.get_action(
             local.my_domain_com.my_lib.destroyer.Destroyer
-        ).run()
+        ).run(DestroyerDestructionContracts())
         self.on_particle.get_action(
             local.my_domain_com.my_lib.destroyer.Destroyer
         ).get_interface_position(
             "position<run>"
         ).destroy_particle()
+
+
+class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.DestroyerDestructionContracts):
+
+    @override
+    def run_destructors_position_first(self, particle: literal.Particle):
+        particle.get_action(
+            local.my_domain_com.my_lib.extra_destructor.ExtraDestructor
+        ).run()
+        particle.get_action(
+            local.my_domain_com.my_lib.shared_destructor.SharedDestructor
+        ).run()
+
+    @override
+    def run_destructors_position_second(self, particle: literal.Particle):
+        particle.get_action(
+            local.my_domain_com.my_lib.shared_destructor.SharedDestructor
+        ).run()

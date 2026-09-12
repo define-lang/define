@@ -8,6 +8,23 @@ import local.my_domain_com.my_lib.child
 import local.my_domain_com.my_lib.marker
 
 
+class MiddleDestructionContracts:
+    def run_destructors_position_source__position_marker(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_source__position_marker(self, _particle: literal.Particle):
+        pass
+
+    def run_destructors_position_source(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_source(self, _particle: literal.Particle):
+        pass
+
+
+_DEFAULT_DESTRUCTION_CONTRACTS = MiddleDestructionContracts()
+
+
 class Middle(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
@@ -32,7 +49,7 @@ class Middle(literal.Action):
         )
 
     @override
-    def run(self):
+    def run(self, destruction_contracts: MiddleDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         self.get_interface_position(
             "position<source>"
         ).particle.get_action(
@@ -52,11 +69,35 @@ class Middle(literal.Action):
                 "position<holder>"
             )
         )
+        destruction_contracts.run_destructors_position_source__position_marker(
+            self.get_interface_position(
+                "position<holder>"
+            ).particle.get_position(
+                local.my_domain_com.my_lib.marker.Marker
+            ).particle
+        )
+        destruction_contracts.destroy_position_source__position_marker(
+            self.get_interface_position(
+                "position<holder>"
+            ).particle.get_position(
+                local.my_domain_com.my_lib.marker.Marker
+            ).particle
+        )
         self.get_interface_position(
             "position<holder>"
         ).particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         ).destroy_particle()
+        destruction_contracts.run_destructors_position_source(
+            self.get_interface_position(
+                "position<holder>"
+            ).particle
+        )
+        destruction_contracts.destroy_position_source(
+            self.get_interface_position(
+                "position<holder>"
+            ).particle
+        )
         self.get_interface_position(
             "position<holder>"
         ).destroy_particle()

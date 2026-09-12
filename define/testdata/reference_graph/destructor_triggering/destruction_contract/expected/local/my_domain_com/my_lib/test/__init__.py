@@ -40,10 +40,19 @@ class Test(literal.Action):
         ).create_particle()
         box.particle.get_action(
             local.my_domain_com.my_lib.close_thing.CloseThing
-        ).run()
+        ).run(CloseThingDestructionContracts())
         box.particle.get_action(
             local.my_domain_com.my_lib.close_thing.CloseThing
         ).get_interface_position(
             "position<run>"
         ).destroy_particle()
         box.destroy_particle()
+
+
+class CloseThingDestructionContracts(local.my_domain_com.my_lib.close_thing.CloseThingDestructionContracts):
+
+    @override
+    def run_destructors_position_target(self, particle: literal.Particle):
+        particle.get_action(
+            local.my_domain_com.my_lib.destructor.Destructor
+        ).run()

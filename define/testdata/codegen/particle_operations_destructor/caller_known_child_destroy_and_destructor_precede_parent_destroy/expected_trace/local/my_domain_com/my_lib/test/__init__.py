@@ -60,4 +60,30 @@ class Test(literal.Action):
         literal.record_operation("test.create(/destroyer::trigger_pos)")
         self.on_particle.get_action(
             local.my_domain_com.my_lib.destroyer.Destroyer
+        ).run(DestroyerDestructionContracts())
+
+
+class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.DestroyerDestructionContracts):
+
+    @override
+    def run_destructors_position_parent(self, particle: literal.Particle):
+        particle.get_action(
+            local.my_domain_com.my_lib.destruct_sibling.DestructSibling
         ).run()
+        particle.get_action(
+            local.my_domain_com.my_lib.destruct_required.DestructRequired
+        ).run()
+
+    @override
+    def destroy_position_parent(self, particle: literal.Particle):
+        particle.get_position(
+            local.my_domain_com.my_lib.sibling.Sibling
+        ).destroy_particle()
+        literal.record_operation("destroyer.destroy(parent::/sibling)")
+
+    @override
+    def destroy_position_parent__position_required(self, particle: literal.Particle):
+        particle.get_position(
+            local.my_domain_com.my_lib.extra.Extra
+        ).destroy_particle()
+        literal.record_operation("destroyer.destroy(parent::/required::/extra)")

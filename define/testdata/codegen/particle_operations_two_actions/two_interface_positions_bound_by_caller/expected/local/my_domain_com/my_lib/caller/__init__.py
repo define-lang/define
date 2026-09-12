@@ -7,6 +7,17 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.worker
 
 
+class CallerDestructionContracts:
+    def run_destructors_position_run(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_run(self, _particle: literal.Particle):
+        pass
+
+
+_DEFAULT_DESTRUCTION_CONTRACTS = CallerDestructionContracts()
+
+
 class Caller(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
@@ -30,7 +41,7 @@ class Caller(literal.Action):
         )
 
     @override
-    def run(self):
+    def run(self, destruction_contracts: CallerDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         self.get_interface_position(
             "position<first_gateway>"
         ).create_particle()
@@ -109,6 +120,16 @@ class Caller(literal.Action):
         self.get_interface_position(
             "position<second_gateway>"
         ).destroy_particle()
+        destruction_contracts.run_destructors_position_run(
+            self.get_interface_position(
+                "position<run>"
+            ).particle
+        )
+        destruction_contracts.destroy_position_run(
+            self.get_interface_position(
+                "position<run>"
+            ).particle
+        )
         self.get_interface_position(
             "position<run>"
         ).destroy_particle()

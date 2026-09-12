@@ -73,7 +73,7 @@ class Destructor(literal.Action):
         literal.record_operation("destructor.move(contributor, worker::/nested_worker::target)")
         worker.particle.get_action(
             local.my_domain_com.my_lib.nested_worker.NestedWorker
-        ).run()
+        ).run(NestedWorkerDestructionContracts())
         contributor.create_particle()
         literal.record_operation("destructor.create(contributor)")
         contributor.move_particle_to(
@@ -86,6 +86,24 @@ class Destructor(literal.Action):
         literal.record_operation("destructor.move(contributor, worker::/nested_worker::target)")
         worker.particle.get_action(
             local.my_domain_com.my_lib.nested_worker.NestedWorker
-        ).run()
+        ).run(NestedWorkerDestructionContracts_2())
         worker.destroy_particle()
         literal.record_operation("destructor.destroy(worker)")
+
+
+class NestedWorkerDestructionContracts(local.my_domain_com.my_lib.nested_worker.NestedWorkerDestructionContracts):
+
+    @override
+    def run_destructors_position_target(self, particle: literal.Particle):
+        particle.get_action(
+            local.my_domain_com.my_lib.inner_destructor.InnerDestructor
+        ).run()
+
+
+class NestedWorkerDestructionContracts_2(local.my_domain_com.my_lib.nested_worker.NestedWorkerDestructionContracts):
+
+    @override
+    def run_destructors_position_target(self, particle: literal.Particle):
+        particle.get_action(
+            local.my_domain_com.my_lib.inner_destructor.InnerDestructor
+        ).run()

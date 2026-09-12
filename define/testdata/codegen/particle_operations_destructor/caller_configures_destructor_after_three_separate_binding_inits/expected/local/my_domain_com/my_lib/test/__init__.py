@@ -63,4 +63,13 @@ class Test(literal.Action):
         )
         self.on_particle.get_action(
             local.my_domain_com.my_lib.wrapper.Wrapper
+        ).run(WrapperDestructionContracts())
+
+
+class WrapperDestructionContracts(local.my_domain_com.my_lib.wrapper.WrapperDestructionContracts):
+
+    @override
+    def run_destructors_position_run__position_carrier__position_payload(self, particle: literal.Particle):
+        particle.get_action(
+            local.my_domain_com.my_lib.extra_destructor.ExtraDestructor
         ).run()

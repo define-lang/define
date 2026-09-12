@@ -4,6 +4,7 @@ from typing import ClassVar, override
 
 from define.runtime import literal
 
+import local.my_domain_com.my_lib.child_destruct
 import local.my_domain_com.my_lib.destruct
 import local.my_domain_com.my_lib.extra
 import local.my_domain_com.my_lib.marker_a
@@ -53,4 +54,34 @@ class Test(literal.Action):
         literal.record_operation("test.move(source, /middle::run)")
         self.on_particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
+        ).run(MiddleDestructionContracts())
+
+
+class MiddleDestructionContracts(local.my_domain_com.my_lib.middle.MiddleDestructionContracts):
+
+    @override
+    def run_destructors_position_run(self, particle: literal.Particle):
+        particle.get_position(
+            local.my_domain_com.my_lib.extra.Extra
+        ).particle.get_action(
+            local.my_domain_com.my_lib.child_destruct.ChildDestruct
         ).run()
+
+    @override
+    def destroy_position_run(self, particle: literal.Particle):
+        particle.get_position(
+            local.my_domain_com.my_lib.extra.Extra
+        ).particle.get_position(
+            local.my_domain_com.my_lib.marker_b.MarkerB
+        ).destroy_particle()
+        literal.record_operation("destroyer.destroy(run::/extra::/marker_b)")
+        particle.get_position(
+            local.my_domain_com.my_lib.extra.Extra
+        ).particle.get_position(
+            local.my_domain_com.my_lib.marker_a.MarkerA
+        ).destroy_particle()
+        literal.record_operation("destroyer.destroy(run::/extra::/marker_a)")
+        particle.get_position(
+            local.my_domain_com.my_lib.extra.Extra
+        ).destroy_particle()
+        literal.record_operation("destroyer.destroy(run::/extra)")

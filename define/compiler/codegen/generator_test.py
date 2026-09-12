@@ -33,9 +33,7 @@ def _generate(
     ).validate()
     assert_no_errors(program_result)
     generator.CodeGenerator().generate(
-        reference_graph_result.definition_order,
-        reference_graph_result.destructions,
-        reference_graph_result.triggered_actions,
+        reference_graph_result.codegen_input(),
         entry_action,
         tmp_path,
         max_workers=max_workers,

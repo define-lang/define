@@ -10,6 +10,7 @@ from define.compiler.graphs import (
     reference_graph,
     reference_graph_executor,
 )
+from define.compiler.validator import validation_result
 from define.compiler.validator.reference_graph import (
     definition_postorder_validator,
     operation_graph,
@@ -19,8 +20,10 @@ from define.compiler.validator.reference_graph import (
 
 if typing.TYPE_CHECKING:
     from define.compiler.data_structures import typed_name_dict
-    from define.compiler.validator import validation_result
-    from define.compiler.validator.reference_graph import action_contract
+    from define.compiler.validator.reference_graph import (
+        action_contract,
+        destruction_contract,
+    )
 
 # Position definitions get no validation and so produce None.
 type _PostorderResult = definition_postorder_validator.PostorderValidationResult | None
@@ -35,6 +38,18 @@ class ReferenceGraphValidationResult:
     operation_graphs: operation_graph.OperationGraphs
     destructions: dict[ast.SourceLocation, list[ast.PositionReference]]
     triggered_actions: action_contract.TriggeredActions
+    destruction_connections: destruction_contract.DestructionConnections
+    propagated_destructions: dict[str, list[destruction_contract.PropagatedDestruction]]
+
+    def codegen_input(self) -> validation_result.CodegenInput:
+        """Collect the validation data needed for code generation."""
+        return validation_result.CodegenInput(
+            definition_order=self.definition_order,
+            destructions=self.destructions,
+            triggered_actions=self.triggered_actions,
+            destruction_connections=self.destruction_connections,
+            propagated_destructions=self.propagated_destructions,
+        )
 
 
 # TODO: We need a mode that forces a fake caller as the parent of any top-level
@@ -97,6 +112,10 @@ class ReferenceGraphValidator:
         operation_graphs = operation_graph.OperationGraphs()
         destructions: dict[ast.SourceLocation, list[ast.PositionReference]] = {}
         triggered_actions: action_contract.TriggeredActions = {}
+        destruction_connections: destruction_contract.DestructionConnections = {}
+        propagated_destructions: dict[
+            str, list[destruction_contract.PropagatedDestruction]
+        ] = {}
         for definition, result in zip(
             definition_order.definitions, results, strict=True
         ):
@@ -108,6 +127,10 @@ class ReferenceGraphValidator:
             operation_graphs[definition.typed_name] = result.operation_graph
             destructions.update(result.destructions)
             triggered_actions.update(result.triggered_actions)
+            destruction_connections.update(result.destruction_connections)
+            propagated_destructions[definition.typed_name.full_typed_name] = (
+                result.propagated_destructions
+            )
         if (
             self._entry_action is not None
             and not self._allow_entry_action_occupied_implied_position_requirements
@@ -118,6 +141,8 @@ class ReferenceGraphValidator:
             operation_graphs=operation_graphs,
             destructions=destructions,
             triggered_actions=triggered_actions,
+            destruction_connections=destruction_connections,
+            propagated_destructions=propagated_destructions,
         )
 
     def _validate_definition(

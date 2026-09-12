@@ -8,6 +8,23 @@ import local.my_domain_com.my_lib.child
 import local.my_domain_com.my_lib.middle
 
 
+class OuterDestructionContracts:
+    def run_destructors_position_input__position_child(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_input__position_child(self, _particle: literal.Particle):
+        pass
+
+    def run_destructors_position_input(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_input(self, _particle: literal.Particle):
+        pass
+
+
+_DEFAULT_DESTRUCTION_CONTRACTS = OuterDestructionContracts()
+
+
 class Outer(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
@@ -31,7 +48,7 @@ class Outer(literal.Action):
         )
 
     @override
-    def run(self):
+    def run(self, destruction_contracts: OuterDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         self.get_interface_position(
             "position<middle_holder>"
         ).create_particle()
@@ -57,7 +74,14 @@ class Outer(literal.Action):
             "position<middle_holder>"
         ).particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
-        ).run()
+        ).run(
+            MiddleDestructionContracts(
+                destruction_contracts.run_destructors_position_input__position_child,
+                destruction_contracts.destroy_position_input__position_child,
+                destruction_contracts.run_destructors_position_input,
+                destruction_contracts.destroy_position_input,
+            ),
+        )
         self.get_interface_position(
             "position<middle_holder>"
         ).particle.get_action(
@@ -65,3 +89,41 @@ class Outer(literal.Action):
         ).get_interface_position(
             "position<run>"
         ).destroy_particle()
+
+
+class MiddleDestructionContracts(local.my_domain_com.my_lib.middle.MiddleDestructionContracts):
+    def __init__(
+        self,
+        run_destructors_position_input__position_child: literal.DestructionContribution,
+        destroy_position_input__position_child: literal.DestructionContribution,
+        run_destructors_position_input: literal.DestructionContribution,
+        destroy_position_input: literal.DestructionContribution,
+    ):
+        self._run_destructors_position_input__position_child: literal.DestructionContribution = run_destructors_position_input__position_child
+        self._destroy_position_input__position_child: literal.DestructionContribution = destroy_position_input__position_child
+        self._run_destructors_position_input: literal.DestructionContribution = run_destructors_position_input
+        self._destroy_position_input: literal.DestructionContribution = destroy_position_input
+
+    @override
+    def run_destructors_position_input__position_child(self, particle: literal.Particle):
+        self._run_destructors_position_input__position_child(
+            particle
+        )
+
+    @override
+    def destroy_position_input__position_child(self, particle: literal.Particle):
+        self._destroy_position_input__position_child(
+            particle
+        )
+
+    @override
+    def run_destructors_position_input(self, particle: literal.Particle):
+        self._run_destructors_position_input(
+            particle
+        )
+
+    @override
+    def destroy_position_input(self, particle: literal.Particle):
+        self._destroy_position_input(
+            particle
+        )

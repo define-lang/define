@@ -8,6 +8,35 @@ import local.my_domain_com.my_lib.carrier
 import local.my_domain_com.my_lib.outer
 
 
+class WrapperDestructionContracts:
+    def run_destructors_position_run__position_carrier__position_payload__position_marker(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_run__position_carrier__position_payload__position_marker(self, _particle: literal.Particle):
+        pass
+
+    def run_destructors_position_run__position_carrier__position_payload(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_run__position_carrier__position_payload(self, _particle: literal.Particle):
+        pass
+
+    def run_destructors_position_run__position_carrier(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_run__position_carrier(self, _particle: literal.Particle):
+        pass
+
+    def run_destructors_position_run(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_run(self, _particle: literal.Particle):
+        pass
+
+
+_DEFAULT_DESTRUCTION_CONTRACTS = WrapperDestructionContracts()
+
+
 class Wrapper(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
@@ -25,7 +54,7 @@ class Wrapper(literal.Action):
         )
 
     @override
-    def run(self):
+    def run(self, destruction_contracts: WrapperDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         self.get_interface_position(
             "position<run>"
         ).particle.get_position(
@@ -44,8 +73,81 @@ class Wrapper(literal.Action):
             "position<run>"
         ).particle.get_action(
             local.my_domain_com.my_lib.outer.Outer
-        ).run()
+        ).run(
+            OuterDestructionContracts(
+                destruction_contracts.run_destructors_position_run__position_carrier__position_payload__position_marker,
+                destruction_contracts.destroy_position_run__position_carrier__position_payload__position_marker,
+                destruction_contracts.run_destructors_position_run__position_carrier__position_payload,
+                destruction_contracts.destroy_position_run__position_carrier__position_payload,
+                destruction_contracts.run_destructors_position_run__position_carrier,
+                destruction_contracts.destroy_position_run__position_carrier,
+            ),
+        )
+        destruction_contracts.run_destructors_position_run(
+            self.get_interface_position(
+                "position<run>"
+            ).particle
+        )
+        destruction_contracts.destroy_position_run(
+            self.get_interface_position(
+                "position<run>"
+            ).particle
+        )
         self.get_interface_position(
             "position<run>"
         ).destroy_particle()
         literal.record_operation("wrapper.destroy(run)")
+
+
+class OuterDestructionContracts(local.my_domain_com.my_lib.outer.OuterDestructionContracts):
+    def __init__(
+        self,
+        run_destructors_position_run__position_carrier__position_payload__position_marker: literal.DestructionContribution,
+        destroy_position_run__position_carrier__position_payload__position_marker: literal.DestructionContribution,
+        run_destructors_position_run__position_carrier__position_payload: literal.DestructionContribution,
+        destroy_position_run__position_carrier__position_payload: literal.DestructionContribution,
+        run_destructors_position_run__position_carrier: literal.DestructionContribution,
+        destroy_position_run__position_carrier: literal.DestructionContribution,
+    ):
+        self._run_destructors_position_run__position_carrier__position_payload__position_marker: literal.DestructionContribution = run_destructors_position_run__position_carrier__position_payload__position_marker
+        self._destroy_position_run__position_carrier__position_payload__position_marker: literal.DestructionContribution = destroy_position_run__position_carrier__position_payload__position_marker
+        self._run_destructors_position_run__position_carrier__position_payload: literal.DestructionContribution = run_destructors_position_run__position_carrier__position_payload
+        self._destroy_position_run__position_carrier__position_payload: literal.DestructionContribution = destroy_position_run__position_carrier__position_payload
+        self._run_destructors_position_run__position_carrier: literal.DestructionContribution = run_destructors_position_run__position_carrier
+        self._destroy_position_run__position_carrier: literal.DestructionContribution = destroy_position_run__position_carrier
+
+    @override
+    def run_destructors_position_run__position_payload__position_marker(self, particle: literal.Particle):
+        self._run_destructors_position_run__position_carrier__position_payload__position_marker(
+            particle
+        )
+
+    @override
+    def destroy_position_run__position_payload__position_marker(self, particle: literal.Particle):
+        self._destroy_position_run__position_carrier__position_payload__position_marker(
+            particle
+        )
+
+    @override
+    def run_destructors_position_run__position_payload(self, particle: literal.Particle):
+        self._run_destructors_position_run__position_carrier__position_payload(
+            particle
+        )
+
+    @override
+    def destroy_position_run__position_payload(self, particle: literal.Particle):
+        self._destroy_position_run__position_carrier__position_payload(
+            particle
+        )
+
+    @override
+    def run_destructors_position_run(self, particle: literal.Particle):
+        self._run_destructors_position_run__position_carrier(
+            particle
+        )
+
+    @override
+    def destroy_position_run(self, particle: literal.Particle):
+        self._destroy_position_run__position_carrier(
+            particle
+        )

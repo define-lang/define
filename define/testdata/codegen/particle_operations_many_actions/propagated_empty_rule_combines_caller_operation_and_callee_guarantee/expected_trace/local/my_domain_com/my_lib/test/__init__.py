@@ -6,6 +6,7 @@ from define.runtime import literal
 
 import local.my_domain_com.my_lib.direct_child
 import local.my_domain_com.my_lib.filler
+import local.my_domain_com.my_lib.guaranteed_child
 import local.my_domain_com.my_lib.middle
 import local.my_domain_com.my_lib.parent
 
@@ -46,7 +47,7 @@ class Test(literal.Action):
         literal.record_operation("test.create(/middle::trigger_pos)")
         self.on_particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
-        ).run()
+        ).run(MiddleDestructionContracts())
         self.on_particle.get_action(
             local.my_domain_com.my_lib.filler.Filler
         ).get_interface_position(
@@ -59,3 +60,17 @@ class Test(literal.Action):
             "position<trigger_pos>"
         ).destroy_particle()
         literal.record_operation("test.destroy(/middle::trigger_pos)")
+
+
+class MiddleDestructionContracts(local.my_domain_com.my_lib.middle.MiddleDestructionContracts):
+
+    @override
+    def destroy_global_position_parent(self, particle: literal.Particle):
+        particle.get_position(
+            local.my_domain_com.my_lib.guaranteed_child.GuaranteedChild
+        ).destroy_particle()
+        literal.record_operation("middle.destroy(/mover::destination::/guaranteed_child)")
+        particle.get_position(
+            local.my_domain_com.my_lib.direct_child.DirectChild
+        ).destroy_particle()
+        literal.record_operation("middle.destroy(/mover::destination::/direct_child)")

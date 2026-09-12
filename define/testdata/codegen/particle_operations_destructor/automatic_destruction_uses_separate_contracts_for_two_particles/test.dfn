@@ -1,0 +1,23 @@
+# Both passed particles need their own contract at the same automatic destruction.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</destroyer>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<left> {
+            it may only contain particles where {
+                it has the action</first_destructor>.
+            }
+        }
+        define the position<right> {
+            it may only contain particles where {
+                it has the action</second_destructor>.
+            }
+        }
+        create a particle in position<left>.
+        create a particle in position<right>.
+        move the particle in position<left> to action</destroyer>::position<left>.
+        move the particle in position<right> to action</destroyer>::position<right>.
+        create a particle in action</destroyer>::position<run>.
+    }
+}

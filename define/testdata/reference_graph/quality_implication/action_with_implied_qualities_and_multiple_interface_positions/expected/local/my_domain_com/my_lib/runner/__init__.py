@@ -9,6 +9,29 @@ import local.my_domain_com.my_lib.quality_a
 import local.my_domain_com.my_lib.quality_b
 
 
+class RunnerDestructionContracts:
+    def run_destructors_position_input_a(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_input_a(self, _particle: literal.Particle):
+        pass
+
+    def run_destructors_position_input_b(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_input_b(self, _particle: literal.Particle):
+        pass
+
+    def run_destructors_position_run(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_run(self, _particle: literal.Particle):
+        pass
+
+
+_DEFAULT_DESTRUCTION_CONTRACTS = RunnerDestructionContracts()
+
+
 class Runner(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.marker.Marker,
@@ -35,7 +58,7 @@ class Runner(literal.Action):
         )
 
     @override
-    def run(self):
+    def run(self, destruction_contracts: RunnerDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         self.on_particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         ).create_particle()
@@ -49,6 +72,16 @@ class Runner(literal.Action):
         ).particle.get_position(
             local.my_domain_com.my_lib.quality_b.QualityB
         ).create_particle()
+        destruction_contracts.run_destructors_position_input_a(
+            self.get_interface_position(
+                "position<input_a>"
+            ).particle
+        )
+        destruction_contracts.destroy_position_input_a(
+            self.get_interface_position(
+                "position<input_a>"
+            ).particle
+        )
         self.get_interface_position(
             "position<input_a>"
         ).particle.get_position(
@@ -57,6 +90,16 @@ class Runner(literal.Action):
         self.get_interface_position(
             "position<input_a>"
         ).destroy_particle()
+        destruction_contracts.run_destructors_position_input_b(
+            self.get_interface_position(
+                "position<input_b>"
+            ).particle
+        )
+        destruction_contracts.destroy_position_input_b(
+            self.get_interface_position(
+                "position<input_b>"
+            ).particle
+        )
         self.get_interface_position(
             "position<input_b>"
         ).particle.get_position(
@@ -65,6 +108,16 @@ class Runner(literal.Action):
         self.get_interface_position(
             "position<input_b>"
         ).destroy_particle()
+        destruction_contracts.run_destructors_position_run(
+            self.get_interface_position(
+                "position<run>"
+            ).particle
+        )
+        destruction_contracts.destroy_position_run(
+            self.get_interface_position(
+                "position<run>"
+            ).particle
+        )
         self.get_interface_position(
             "position<run>"
         ).destroy_particle()

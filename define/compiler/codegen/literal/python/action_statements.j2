@@ -21,9 +21,28 @@
         {% elif statement.kind == StatementKind.DESTROY_PARTICLE %}
         {{ position_expression(statement.position) }}.destroy_particle()
         {% elif statement.kind == StatementKind.RUN_ACTION %}
+            {% if statement.destruction_contract %}
+                {% set contract = statement.destruction_contract %}
+                {% if contract.forwarded_methods %}
+        {{ position_expression(statement.position) }}.run(
+            {{ contract.class_name }}(
+                    {% for method in contract.forwarded_methods %}
+                destruction_contracts.{{ method }},
+                    {% endfor %}
+            ),
+        )
+                {% else %}
+        {{ position_expression(statement.position) }}.run({{ contract.class_name }}())
+                {% endif %}
+            {% else %}
         {{ position_expression(statement.position) }}.run()
+            {% endif %}
+        {% elif statement.kind == StatementKind.RUN_CONTRACT_DESTRUCTORS or statement.kind == StatementKind.DESTROY_CONTRACT_CHILDREN %}
+        destruction_contracts.{{ statement.contract_method }}(
+            {{ position_expression(statement.position, "    ") }}.particle
+        )
         {% endif %}
-        {% if statement.operation_label is not none %}
+        {% if statement.kind in (StatementKind.CREATE_PARTICLE, StatementKind.MOVE_PARTICLE, StatementKind.DESTROY_PARTICLE) and statement.operation_label is not none %}
         literal.record_operation("{{ statement.operation_label }}")
         {% endif %}
     {% endfor %}

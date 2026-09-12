@@ -10,6 +10,23 @@ import local.my_domain_com.my_lib.inner
 import local.my_domain_com.my_lib.parent
 
 
+class MiddleDestructionContracts:
+    def run_destructors_position_iface(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_iface(self, _particle: literal.Particle):
+        pass
+
+    def run_destructors_position_iface__position_parent(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_iface__position_parent(self, _particle: literal.Particle):
+        pass
+
+
+_DEFAULT_DESTRUCTION_CONTRACTS = MiddleDestructionContracts()
+
+
 class Middle(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
@@ -27,7 +44,7 @@ class Middle(literal.Action):
         )
 
     @override
-    def run(self):
+    def run(self, destruction_contracts: MiddleDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         gw = literal.LocalPosition(
             "position<gw>",
             constraints=(
@@ -52,6 +69,38 @@ class Middle(literal.Action):
         gw.particle.get_action(
             local.my_domain_com.my_lib.inner.Inner
         ).run()
+        destruction_contracts.run_destructors_position_iface(
+            gw.particle.get_action(
+                local.my_domain_com.my_lib.inner.Inner
+            ).get_interface_position(
+                "position<input>"
+            ).particle
+        )
+        destruction_contracts.run_destructors_position_iface__position_parent(
+            gw.particle.get_action(
+                local.my_domain_com.my_lib.inner.Inner
+            ).get_interface_position(
+                "position<input>"
+            ).particle.get_position(
+                local.my_domain_com.my_lib.parent.Parent
+            ).particle
+        )
+        destruction_contracts.destroy_position_iface(
+            gw.particle.get_action(
+                local.my_domain_com.my_lib.inner.Inner
+            ).get_interface_position(
+                "position<input>"
+            ).particle
+        )
+        destruction_contracts.destroy_position_iface__position_parent(
+            gw.particle.get_action(
+                local.my_domain_com.my_lib.inner.Inner
+            ).get_interface_position(
+                "position<input>"
+            ).particle.get_position(
+                local.my_domain_com.my_lib.parent.Parent
+            ).particle
+        )
         gw.particle.get_action(
             local.my_domain_com.my_lib.inner.Inner
         ).get_interface_position(

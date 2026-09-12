@@ -34,4 +34,13 @@ class Test(literal.Action):
         )
         self.on_particle.get_action(
             local.my_domain_com.my_lib.triggered.Triggered
-        ).run()
+        ).run(TriggeredDestructionContracts())
+
+
+class TriggeredDestructionContracts(local.my_domain_com.my_lib.triggered.TriggeredDestructionContracts):
+
+    @override
+    def destroy_position_run(self, particle: literal.Particle):
+        particle.get_position(
+            local.my_domain_com.my_lib.a.A
+        ).destroy_particle()

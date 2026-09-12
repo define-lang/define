@@ -8,6 +8,17 @@ import local.my_domain_com.my_lib.middle
 import local.my_domain_com.my_lib.slot
 
 
+class OuterDestructionContracts:
+    def run_destructors_global_position_slot(self, _particle: literal.Particle):
+        pass
+
+    def destroy_global_position_slot(self, _particle: literal.Particle):
+        pass
+
+
+_DEFAULT_DESTRUCTION_CONTRACTS = OuterDestructionContracts()
+
+
 class Outer(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.slot.Slot,
@@ -23,7 +34,17 @@ class Outer(literal.Action):
         )
 
     @override
-    def run(self):
+    def run(self, destruction_contracts: OuterDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
+        destruction_contracts.run_destructors_global_position_slot(
+            self.on_particle.get_position(
+                local.my_domain_com.my_lib.slot.Slot
+            ).particle
+        )
+        destruction_contracts.destroy_global_position_slot(
+            self.on_particle.get_position(
+                local.my_domain_com.my_lib.slot.Slot
+            ).particle
+        )
         self.on_particle.get_position(
             local.my_domain_com.my_lib.slot.Slot
         ).destroy_particle()

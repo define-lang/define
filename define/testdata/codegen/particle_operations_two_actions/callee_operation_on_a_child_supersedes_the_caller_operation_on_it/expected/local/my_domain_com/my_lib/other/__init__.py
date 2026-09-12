@@ -7,6 +7,17 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.a
 
 
+class OtherDestructionContracts:
+    def run_destructors_position_source__position_a(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_source__position_a(self, _particle: literal.Particle):
+        pass
+
+
+_DEFAULT_DESTRUCTION_CONTRACTS = OtherDestructionContracts()
+
+
 class Other(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
@@ -30,7 +41,21 @@ class Other(literal.Action):
         )
 
     @override
-    def run(self):
+    def run(self, destruction_contracts: OtherDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
+        destruction_contracts.run_destructors_position_source__position_a(
+            self.get_interface_position(
+                "position<source>"
+            ).particle.get_position(
+                local.my_domain_com.my_lib.a.A
+            ).particle
+        )
+        destruction_contracts.destroy_position_source__position_a(
+            self.get_interface_position(
+                "position<source>"
+            ).particle.get_position(
+                local.my_domain_com.my_lib.a.A
+            ).particle
+        )
         self.get_interface_position(
             "position<source>"
         ).particle.get_position(

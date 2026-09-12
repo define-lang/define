@@ -8,6 +8,17 @@ import local.my_domain_com.my_lib.react_a
 import local.my_domain_com.my_lib.react_b
 
 
+class KickOffDestructionContracts:
+    def run_destructors_position_trigger(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_trigger(self, _particle: literal.Particle):
+        pass
+
+
+_DEFAULT_DESTRUCTION_CONTRACTS = KickOffDestructionContracts()
+
+
 class KickOff(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
@@ -26,7 +37,7 @@ class KickOff(literal.Action):
         )
 
     @override
-    def run(self):
+    def run(self, destruction_contracts: KickOffDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         self.get_interface_position(
             "position<output>"
         ).create_particle()
@@ -57,6 +68,16 @@ class KickOff(literal.Action):
         self.get_interface_position(
             "position<output>"
         ).destroy_particle()
+        destruction_contracts.run_destructors_position_trigger(
+            self.get_interface_position(
+                "position<trigger>"
+            ).particle
+        )
+        destruction_contracts.destroy_position_trigger(
+            self.get_interface_position(
+                "position<trigger>"
+            ).particle
+        )
         self.get_interface_position(
             "position<trigger>"
         ).destroy_particle()

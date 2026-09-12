@@ -9,6 +9,23 @@ import local.my_domain_com.my_lib.known_destructor
 import local.my_domain_com.my_lib.middle
 
 
+class CallerDestructionContracts:
+    def run_destructors_position_run(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_run(self, _particle: literal.Particle):
+        pass
+
+    def run_destructors_global_position_parent(self, _particle: literal.Particle):
+        pass
+
+    def destroy_global_position_parent(self, _particle: literal.Particle):
+        pass
+
+
+_DEFAULT_DESTRUCTION_CONTRACTS = CallerDestructionContracts()
+
+
 class Caller(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.middle.Middle,
@@ -29,7 +46,7 @@ class Caller(literal.Action):
         )
 
     @override
-    def run(self):
+    def run(self, destruction_contracts: CallerDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         self.get_interface_position(
             "position<run>"
         ).move_particle_to(
@@ -41,4 +58,52 @@ class Caller(literal.Action):
         )
         self.on_particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
+        ).run(
+            MiddleDestructionContracts(
+                destruction_contracts.run_destructors_position_run,
+                destruction_contracts.destroy_position_run,
+                destruction_contracts.run_destructors_global_position_parent,
+                destruction_contracts.destroy_global_position_parent,
+            ),
+        )
+
+
+class MiddleDestructionContracts(local.my_domain_com.my_lib.middle.MiddleDestructionContracts):
+    def __init__(
+        self,
+        run_destructors_position_run: literal.DestructionContribution,
+        destroy_position_run: literal.DestructionContribution,
+        run_destructors_global_position_parent: literal.DestructionContribution,
+        destroy_global_position_parent: literal.DestructionContribution,
+    ):
+        self._run_destructors_position_run: literal.DestructionContribution = run_destructors_position_run
+        self._destroy_position_run: literal.DestructionContribution = destroy_position_run
+        self._run_destructors_global_position_parent: literal.DestructionContribution = run_destructors_global_position_parent
+        self._destroy_global_position_parent: literal.DestructionContribution = destroy_global_position_parent
+
+    @override
+    def run_destructors_position_run(self, particle: literal.Particle):
+        self._run_destructors_position_run(
+            particle
+        )
+        particle.get_action(
+            local.my_domain_com.my_lib.extra_destructor.ExtraDestructor
         ).run()
+
+    @override
+    def destroy_position_run(self, particle: literal.Particle):
+        self._destroy_position_run(
+            particle
+        )
+
+    @override
+    def run_destructors_global_position_parent(self, particle: literal.Particle):
+        self._run_destructors_global_position_parent(
+            particle
+        )
+
+    @override
+    def destroy_global_position_parent(self, particle: literal.Particle):
+        self._destroy_global_position_parent(
+            particle
+        )

@@ -10,6 +10,17 @@ import local.my_domain_com.my_lib.known_destructor
 import local.my_domain_com.my_lib.marker
 
 
+class CallerBDestructionContracts:
+    def run_destructors_position_trigger_pos(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_trigger_pos(self, _particle: literal.Particle):
+        pass
+
+
+_DEFAULT_DESTRUCTION_CONTRACTS = CallerBDestructionContracts()
+
+
 class CallerB(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
@@ -21,7 +32,7 @@ class CallerB(literal.Action):
         )
 
     @override
-    def run(self):
+    def run(self, destruction_contracts: CallerBDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         destroyer_particle = literal.LocalPosition(
             "position<destroyer_particle>",
             constraints=(
@@ -60,7 +71,17 @@ class CallerB(literal.Action):
         literal.record_operation("caller_b.create(destroyer_particle::/destroyer::trigger_pos)")
         destroyer_particle.particle.get_action(
             local.my_domain_com.my_lib.destroyer.Destroyer
-        ).run()
+        ).run(DestroyerDestructionContracts())
+        destruction_contracts.run_destructors_position_trigger_pos(
+            self.get_interface_position(
+                "position<trigger_pos>"
+            ).particle
+        )
+        destruction_contracts.destroy_position_trigger_pos(
+            self.get_interface_position(
+                "position<trigger_pos>"
+            ).particle
+        )
         self.get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
@@ -73,3 +94,19 @@ class CallerB(literal.Action):
         literal.record_operation("caller_b.destroy(destroyer_particle::/destroyer::trigger_pos)")
         destroyer_particle.destroy_particle()
         literal.record_operation("caller_b.destroy(destroyer_particle)")
+
+
+class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.DestroyerDestructionContracts):
+
+    @override
+    def run_destructors_position_target(self, particle: literal.Particle):
+        particle.get_action(
+            local.my_domain_com.my_lib.extra_destructor.ExtraDestructor
+        ).run()
+
+    @override
+    def destroy_position_target(self, particle: literal.Particle):
+        particle.get_position(
+            local.my_domain_com.my_lib.marker.Marker
+        ).destroy_particle()
+        literal.record_operation("destroyer.destroy(target::/marker)")

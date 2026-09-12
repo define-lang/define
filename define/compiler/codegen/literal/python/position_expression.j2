@@ -1,5 +1,7 @@
 {% macro position_expression(expr, extra_indent="") -%}
-    {%- if expr.local_position_name is none -%}
+    {%- if expr.from_contract_particle -%}
+particle
+    {%- elif expr.local_position_name is none -%}
 self
     {%- else -%}
 {{ expr.local_position_name }}
@@ -18,11 +20,17 @@ self
 {{ extra_indent }}            "{{ element.typed_name }}"
 {{ extra_indent }}        )
         {%- elif element.accessor == ChainAccessor.IMPLIED_ACTION -%}
-.on_particle.get_action(
+            {% if not expr.from_contract_particle -%}
+.on_particle
+            {%- endif -%}
+.get_action(
 {{ extra_indent }}            {{ element.class_reference.module_name }}.{{ element.class_reference.class_name }}
 {{ extra_indent }}        )
         {%- elif element.accessor == ChainAccessor.IMPLIED_POSITION -%}
-.on_particle.get_position(
+            {% if not expr.from_contract_particle -%}
+.on_particle
+            {%- endif -%}
+.get_position(
 {{ extra_indent }}            {{ element.class_reference.module_name }}.{{ element.class_reference.class_name }}
 {{ extra_indent }}        )
         {%- endif %}

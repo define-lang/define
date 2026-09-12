@@ -11,14 +11,18 @@ from pathlib import Path
 from define.compiler import ast, constants
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Iterator
 
     from define.compiler.data_structures import define_path
+    from define.compiler.validator.reference_graph import destruction_contract
 
 _AUTHORITY_CHAR_TABLE = str.maketrans(".-~/", "____")
-_RESERVED_NAMES = (*keyword.kwlist, "self", "literal")
+_RESERVED_NAMES = (*keyword.kwlist, "self", "literal", "destruction_contracts")
 # Class names must not shadow the typing imports used by generated annotations.
 _RESERVED_CLASS_NAMES = {"ClassVar"}
+
+RUN_DESTRUCTORS_PREFIX = "run_destructors_"
+DESTROY_PREFIX = "destroy_"
 
 # Filesystems commonly limit each path component to 255 bytes. Python
 # identifiers have no such limit, but a module's dotted name is also written
@@ -118,7 +122,7 @@ class NameConverter:
     class definition).
     """
 
-    _class_names: dict[define_path.DefinePath, str]
+    _class_names: dict[tuple[define_path.DefinePath, str], str]
     _class_references: dict[str, ClassReference]
     _authority_names: dict[str, str]
     _used_authority_names: set[str]
@@ -135,13 +139,30 @@ class NameConverter:
 
         Results are cached so the same path always returns the same name.
         """
-        if path in self._class_names:
-            return self._class_names[path]
-        name = _path_to_pascal(path)
+        return self._class_name(path, "")
+
+    def destruction_contract_class_name(self, path: define_path.DefinePath) -> str:
+        """Convert an action path to its destruction-contract class name."""
+        return self._class_name(path, "DestructionContracts")
+
+    def _class_name(self, path: define_path.DefinePath, suffix: str) -> str:
+        key = (path, suffix)
+        if key in self._class_names:
+            return self._class_names[key]
+        name = _path_to_pascal(path) + suffix
         if name in _RESERVED_CLASS_NAMES:
             name += "_"
-        self._class_names[path] = name
+        self._class_names[key] = name
         return name
+
+    def referenced_modules(
+        self,
+        position: ast.ChainedName,
+    ) -> Iterator[str]:
+        """Yield modules referenced by a position or action."""
+        for name in position.typed_names:
+            if isinstance(name, ast.GlobalTypedNameReference):
+                yield self.class_reference(name).module_name
 
     def authority_segment(self, authority: str) -> str:
         """Convert an authority string to a unique Python module segment.
@@ -215,3 +236,30 @@ class NameConverter:
         class_reference = ClassReference(class_name=cls_name, module_name=module_name)
         self._class_references[canonical_name] = class_reference
         return class_reference
+
+    @staticmethod
+    def destruction_method_names(
+        destructions: Iterable[destruction_contract.PropagatedDestruction],
+    ) -> dict[destruction_contract.PropagatedDestruction, str]:
+        """Allocate contribution names from each particle's contracted origin."""
+        names: dict[destruction_contract.PropagatedDestruction, str] = {}
+        occurrences: dict[str, int] = {}
+        for destruction in destructions:
+            parts: list[str] = []
+            for index, name in enumerate(destruction.contracted_position.typed_names):
+                prefix = name.name_type.value
+                if isinstance(name, ast.GlobalTypedNameReference):
+                    if index == 0 and name.name_type == ast.NameType.POSITION:
+                        prefix = "global_position"
+                    content = "_".join(name.name_content.path.relative_path.parts)
+                else:
+                    content = name.name_content.name
+                parts.append(f"{prefix}_{content}")
+            candidate = "__".join(parts)
+            occurrence = occurrences.get(candidate, 0) + 1
+            occurrences[candidate] = occurrence
+            if occurrence > 1:
+                candidate = f"{occurrence}_{candidate}"
+            # Separate invocations can propagate the same Destruction Fact.
+            names[destruction] = candidate
+        return names

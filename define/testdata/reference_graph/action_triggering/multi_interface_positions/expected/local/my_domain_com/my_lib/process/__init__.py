@@ -5,6 +5,23 @@ from typing import override
 from define.runtime import literal
 
 
+class ProcessDestructionContracts:
+    def run_destructors_position_input(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_input(self, _particle: literal.Particle):
+        pass
+
+    def run_destructors_position_trigger(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_trigger(self, _particle: literal.Particle):
+        pass
+
+
+_DEFAULT_DESTRUCTION_CONTRACTS = ProcessDestructionContracts()
+
+
 class Process(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
@@ -18,11 +35,21 @@ class Process(literal.Action):
         )
 
     @override
-    def run(self):
+    def run(self, destruction_contracts: ProcessDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         result = literal.LocalPosition(
             "position<result>",
         )
         result.create_particle()
+        destruction_contracts.run_destructors_position_input(
+            self.get_interface_position(
+                "position<input>"
+            ).particle
+        )
+        destruction_contracts.destroy_position_input(
+            self.get_interface_position(
+                "position<input>"
+            ).particle
+        )
         self.get_interface_position(
             "position<input>"
         ).destroy_particle()
@@ -32,6 +59,16 @@ class Process(literal.Action):
         self.get_interface_position(
             "position<config>"
         ).destroy_particle()
+        destruction_contracts.run_destructors_position_trigger(
+            self.get_interface_position(
+                "position<trigger>"
+            ).particle
+        )
+        destruction_contracts.destroy_position_trigger(
+            self.get_interface_position(
+                "position<trigger>"
+            ).particle
+        )
         self.get_interface_position(
             "position<trigger>"
         ).destroy_particle()

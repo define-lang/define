@@ -81,7 +81,7 @@ class Test(literal.Action):
         ).create_particle()
         self.on_particle.get_action(
             local.my_domain_com.my_lib.mover.Mover
-        ).run()
+        ).run(MoverDestructionContracts())
         self.on_particle.get_action(
             local.my_domain_com.my_lib.fill_a.FillA
         ).get_interface_position(
@@ -91,4 +91,13 @@ class Test(literal.Action):
             local.my_domain_com.my_lib.fill_b.FillB
         ).get_interface_position(
             "position<trigger_pos>"
+        ).destroy_particle()
+
+
+class MoverDestructionContracts(local.my_domain_com.my_lib.mover.MoverDestructionContracts):
+
+    @override
+    def destroy_position_discard(self, particle: literal.Particle):
+        particle.get_position(
+            local.my_domain_com.my_lib.caller_only.CallerOnly
         ).destroy_particle()

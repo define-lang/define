@@ -5,6 +5,17 @@ from typing import override
 from define.runtime import literal
 
 
+class InnerDestructionContracts:
+    def run_destructors_position_inner_run(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_inner_run(self, _particle: literal.Particle):
+        pass
+
+
+_DEFAULT_DESTRUCTION_CONTRACTS = InnerDestructionContracts()
+
+
 class Inner(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
@@ -16,7 +27,7 @@ class Inner(literal.Action):
         )
 
     @override
-    def run(self):
+    def run(self, destruction_contracts: InnerDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         local = literal.LocalPosition(
             "position<local>",
         )
@@ -24,5 +35,11 @@ class Inner(literal.Action):
             "position<inner_run>"
         ).move_particle_to(
             local
+        )
+        destruction_contracts.run_destructors_position_inner_run(
+            local.particle
+        )
+        destruction_contracts.destroy_position_inner_run(
+            local.particle
         )
         local.destroy_particle()

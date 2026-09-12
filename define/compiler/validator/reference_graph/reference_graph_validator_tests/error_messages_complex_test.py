@@ -14,8 +14,6 @@ from __future__ import annotations
 import textwrap
 from typing import TYPE_CHECKING
 
-import pytest
-
 from define.compiler import diagnostics
 from define.compiler.validator.reference_graph.test_helpers import action_graph
 
@@ -239,10 +237,6 @@ _FILES = {
 }
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Destruction Contract contributions are not recorded in TriggeredActions yet",
-)
 def test_destruction_contract_traces_every_trigger_hop(
     validate_project: ValidateProject,
 ):
@@ -254,13 +248,13 @@ def test_destruction_contract_traces_every_trigger_hop(
     # (do_destruction -> d1 and do_destruction -> d2).
     assert action_graph(result.reference_graph_result) == [
         (_BEFORE_DESTRUCTOR, _DO_DESTRUCTION),
-        (_DO_DESTRUCTION, _D1),
-        (_DO_DESTRUCTION, _D2),
         (_EMPTY_P2, _BEFORE_DESTRUCTOR),
         (_DO_NOTHING, _EMPTY_P2),
         (_TRIGGERED_BY_OUTER_IMPLIED, _DO_NOTHING),
+        (_DO_DESTRUCTION, _D1),
         (_OUTER_IMPLIED, _TRIGGERED_BY_OUTER_IMPLIED),
         (_OUTER, _HOLDER),
+        (_DO_DESTRUCTION, _D2),
         (_OUTER, _OUTER_IMPLIED),
         (_TEST, _HOLDER),
         (_TEST, _OUTER),

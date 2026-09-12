@@ -8,6 +8,17 @@ import local.my_domain_com.my_lib.inner
 import local.my_domain_com.my_lib.inner_result
 
 
+class MiddleDestructionContracts:
+    def run_destructors_position_igw(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_igw(self, _particle: literal.Particle):
+        pass
+
+
+_DEFAULT_DESTRUCTION_CONTRACTS = MiddleDestructionContracts()
+
+
 class Middle(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
@@ -27,7 +38,7 @@ class Middle(literal.Action):
         )
 
     @override
-    def run(self):
+    def run(self, destruction_contracts: MiddleDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         self.get_interface_position(
             "position<igw>"
         ).particle.get_action(
@@ -59,6 +70,16 @@ class Middle(literal.Action):
             "position<trigger_pos>"
         ).destroy_particle()
         literal.record_operation("middle.destroy(igw::/inner::trigger_pos)")
+        destruction_contracts.run_destructors_position_igw(
+            self.get_interface_position(
+                "position<igw>"
+            ).particle
+        )
+        destruction_contracts.destroy_position_igw(
+            self.get_interface_position(
+                "position<igw>"
+            ).particle
+        )
         self.get_interface_position(
             "position<igw>"
         ).destroy_particle()

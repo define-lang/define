@@ -5,8 +5,6 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
-import pytest
-
 from define.compiler import diagnostics
 from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
@@ -33,10 +31,6 @@ _D = "action<my.domain.com:my_lib:/d>"
 _CALLEE = "action<my.domain.com:my_lib:/callee>"
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Destruction Contract contributions are not recorded in TriggeredActions yet",
-)
 def test_inner_kept_child_occupied_requirement_satisfied(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -48,10 +42,6 @@ def test_inner_kept_child_occupied_requirement_satisfied(
     ]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Destruction Contract contributions are not recorded in TriggeredActions yet",
-)
 def test_inner_emptied_child_overrides_caller_knowledge_violated(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -118,10 +108,6 @@ def test_inner_emptied_child_overrides_caller_knowledge_violated(
     ]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Destruction Contract contributions are not recorded in TriggeredActions yet",
-)
 def test_cascade_fires_child_then_parent_caller_attached_destructors(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -134,10 +120,6 @@ def test_cascade_fires_child_then_parent_caller_attached_destructors(
     ]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Destruction Contract contributions are not recorded in TriggeredActions yet",
-)
 def test_cascade_verifies_child_destructor_requirement_violated(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -204,10 +186,6 @@ def test_cascade_verifies_child_destructor_requirement_violated(
     ]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Destruction Contract contributions are not recorded in TriggeredActions yet",
-)
 def test_contract_re_records_through_unknowing_middle_and_top_verifies(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -220,10 +198,6 @@ def test_contract_re_records_through_unknowing_middle_and_top_verifies(
     ]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Destruction Contract contributions are not recorded in TriggeredActions yet",
-)
 def test_contract_re_records_through_unknowing_middle_and_top_violates(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -299,10 +273,6 @@ def test_contract_re_records_through_unknowing_middle_and_top_violates(
     ]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Destruction Contract contributions are not recorded in TriggeredActions yet",
-)
 def test_constructor_attaches_destructor_and_verifies_via_contract(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -369,10 +339,6 @@ def test_constructor_attaches_destructor_and_verifies_via_contract(
     ]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Destruction Contract contributions are not recorded in TriggeredActions yet",
-)
 def test_constructor_attached_destructor_requirement_satisfied(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -384,10 +350,6 @@ def test_constructor_attached_destructor_requirement_satisfied(
     ]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Destruction Contract contributions are not recorded in TriggeredActions yet",
-)
 def test_constructor_resolves_implied_action_destruction_contract(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -454,10 +416,6 @@ def test_constructor_resolves_implied_action_destruction_contract(
     ]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Destruction Contract contributions are not recorded in TriggeredActions yet",
-)
 def test_middle_knows_destructor_but_not_child_state_defers_to_owner_satisfied(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -470,10 +428,6 @@ def test_middle_knows_destructor_but_not_child_state_defers_to_owner_satisfied(
     ]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Destruction Contract contributions are not recorded in TriggeredActions yet",
-)
 def test_middle_knows_destructor_but_not_child_state_defers_to_owner_violated(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -549,10 +503,6 @@ def test_middle_knows_destructor_but_not_child_state_defers_to_owner_violated(
     ]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Destruction Contract contributions are not recorded in TriggeredActions yet",
-)
 def test_required_position_error_in_child_state_skips_verification(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -573,10 +523,6 @@ def test_required_position_error_in_child_state_skips_verification(
     ]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Destruction Contract contributions are not recorded in TriggeredActions yet",
-)
 def test_auto_destruction_re_records_through_middle_and_owner_verifies(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -660,10 +606,6 @@ def test_auto_destruction_re_records_through_middle_and_owner_verifies(
     ]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Destruction Contract contributions are not recorded in TriggeredActions yet",
-)
 def test_cascade_re_records_through_middle_and_owner_verifies_child_then_parent(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -801,10 +743,6 @@ def test_cascade_re_records_through_middle_and_owner_verifies_child_then_parent(
     ]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Destruction Contract contributions are not recorded in TriggeredActions yet",
-)
 def test_emptied_child_not_re_destroyed_by_parent_cascade(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):

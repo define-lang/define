@@ -5,8 +5,6 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
-import pytest
-
 from define.compiler import diagnostics
 from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
@@ -109,10 +107,6 @@ def test_destructor_diagnostic_retains_callee_local_assignment(
     )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Destruction Contract contributions are not recorded in TriggeredActions yet",
-)
 def test_intermediate_resolves_one_destructor_and_carries_another(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -252,16 +246,12 @@ def test_intermediate_resolves_one_destructor_and_carries_another(
     )
     assert action_graph(result.reference_graph_result) == [
         (_CLOSE_FILE, _D1),
-        (_CLOSE_FILE, _D2),
         (_MID, _CLOSE_FILE),
+        (_CLOSE_FILE, _D2),
         (_TEST, _MID),
     ]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Destruction Contract contributions are not recorded in TriggeredActions yet",
-)
 def test_five_level_implied_requirements_resolved_across_actions_satisfied(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -275,10 +265,6 @@ def test_five_level_implied_requirements_resolved_across_actions_satisfied(
     ]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Destruction Contract contributions are not recorded in TriggeredActions yet",
-)
 def test_five_level_implied_requirements_resolved_across_actions_violated(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -424,10 +410,6 @@ def test_five_level_implied_requirements_resolved_across_actions_violated(
     ]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Destruction Contract contributions are not recorded in TriggeredActions yet",
-)
 def test_six_level_destructor_knower_separate_from_resolvers_satisfied(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -435,17 +417,13 @@ def test_six_level_destructor_knower_separate_from_resolvers_satisfied(
     assert_no_errors(result.program_result)
     assert action_graph(result.reference_graph_result) == [
         (_INNER, _CLOSE_FILE),
-        (_CLOSE_FILE, _DESTRUCTOR),
         (_MIDDLE, _INNER),
+        (_CLOSE_FILE, _DESTRUCTOR),
         (_OUTER, _MIDDLE),
         (_TEST, _OUTER),
     ]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Destruction Contract contributions are not recorded in TriggeredActions yet",
-)
 def test_six_level_destructor_knower_separate_from_resolvers_violated(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -601,17 +579,13 @@ def test_six_level_destructor_knower_separate_from_resolvers_violated(
     )
     assert action_graph(result.reference_graph_result) == [
         (_INNER, _CLOSE_FILE),
-        (_CLOSE_FILE, _DESTRUCTOR),
         (_MIDDLE, _INNER),
+        (_CLOSE_FILE, _DESTRUCTOR),
         (_OUTER, _MIDDLE),
         (_TEST, _OUTER),
     ]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Destruction Contract contributions are not recorded in TriggeredActions yet",
-)
 def test_owner_with_error_required_position_skips_destructor_check(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):

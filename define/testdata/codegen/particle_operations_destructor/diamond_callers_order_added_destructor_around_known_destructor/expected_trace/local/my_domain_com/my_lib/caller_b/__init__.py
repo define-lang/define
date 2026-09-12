@@ -54,7 +54,7 @@ class CallerB(literal.Action):
         literal.record_operation("caller_b.create(destroyer_particle::/destroyer::trigger_pos)")
         destroyer_particle.particle.get_action(
             local.my_domain_com.my_lib.destroyer.Destroyer
-        ).run()
+        ).run(DestroyerDestructionContracts())
         destroyer_particle.particle.get_action(
             local.my_domain_com.my_lib.destroyer.Destroyer
         ).get_interface_position(
@@ -63,3 +63,12 @@ class CallerB(literal.Action):
         literal.record_operation("caller_b.destroy(destroyer_particle::/destroyer::trigger_pos)")
         destroyer_particle.destroy_particle()
         literal.record_operation("caller_b.destroy(destroyer_particle)")
+
+
+class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.DestroyerDestructionContracts):
+
+    @override
+    def run_destructors_position_target(self, particle: literal.Particle):
+        particle.get_action(
+            local.my_domain_com.my_lib.extra_destructor.ExtraDestructor
+        ).run()

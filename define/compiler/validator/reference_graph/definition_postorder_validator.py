@@ -44,6 +44,8 @@ class PostorderValidationResult:
     operation_graph: operation_graph.OperationGraph
     destructions: dict[ast.SourceLocation, list[ast.PositionReference]]
     triggered_actions: action_contract.TriggeredActions
+    destruction_connections: destruction_contract_types.DestructionConnections
+    propagated_destructions: list[destruction_contract_types.PropagatedDestruction]
 
 
 @dataclass(frozen=True, slots=True)
@@ -140,6 +142,7 @@ class _DestructionContractInCaller:
 
     contract: action_contract.DestructionContract
     position: ast.PositionReference
+    connection: destruction_contract_types.DestructionConnection
 
 
 class ActionPostorderValidator:
@@ -171,6 +174,7 @@ class ActionPostorderValidator:
         self._inferred_requirements = {}
         self._destruction_contracts = []
         self._triggered_actions: action_contract.TriggeredActions = {}
+        self._destruction_connections: destruction_contract_types.DestructionConnections = {}
         self._destructions: dict[ast.SourceLocation, list[ast.PositionReference]] = {}
         self._dead_constraint_tracker = dead_constraint_tracker.DeadConstraintTracker()
 
@@ -536,8 +540,10 @@ class ActionPostorderValidator:
         """Record the Destruction Contract for one caller-passed particle."""
         contracts.append(
             action_contract.DestructionContract(
-                destroyed_position_contracted=particle.origin_position,
-                destruction_fact=destruction_fact,
+                propagated_destruction=destruction_contract_types.PropagatedDestruction(
+                    destruction_fact=destruction_fact,
+                    contracted_position=particle.origin_position,
+                ),
                 # The snapshot's names are relative to the directly destroyed
                 # Position. For a Destroy of position<box>, a particle at
                 # position<box>::position</child> uses just position</child>
@@ -681,6 +687,7 @@ class ActionPostorderValidator:
         destruction_contract_contributions = self._check_destruction_contracts(
             contract,
             action_chain,
+            triggering_statement.location,
         )
         origin_position = (
             parent_particle.origin_position if parent_particle is not None else None
@@ -830,6 +837,7 @@ class ActionPostorderValidator:
         self,
         contract: action_contract.ActionContract,
         action_chain: ast.ActionReference,
+        location: ast.SourceLocation,
     ) -> Sequence[operation_graph_model.DestructionContractContribution]:
         """Check a callee's Destruction Contracts from the caller's perspective."""
         if not contract.destruction_contracts:
@@ -843,45 +851,84 @@ class ActionPostorderValidator:
             triggered_quality_name=action_chain.typed_names[-1].full_typed_name,
         )
         contributions: list[operation_graph_model.DestructionContractContribution] = []
+        connections: list[destruction_contract_types.DestructionConnection] = []
+        self._destruction_connections.setdefault(location, {})[action_chain] = (
+            connections
+        )
         for callee_contracts in contract.destruction_contracts:
-            caller_contracts: list[_DestructionContractInCaller] = []
-            caller_knowledge: position_occupancy.ChildOccupancyMap = {}
-            for destruction_contract in callee_contracts.particles:
-                position = destruction_contract.destroyed_position_contracted.in_caller(
-                    action_chain
+            contributions.extend(
+                self._check_destruction_contract_group(
+                    callee_contracts, action_chain, trigger_step, connections
                 )
-                # The action's requirement check already handles missing or
-                # error-state particles, so there is nothing more to verify here.
-                occupancy = self._tracker.get_occupancy_info(position)
-                if occupancy.occupant is None:
-                    continue
-                caller_contracts.append(
-                    _DestructionContractInCaller(destruction_contract, position)
-                )
-                self._tracker.add_child_state(
-                    caller_knowledge,
-                    callee_contracts.child_state,
-                    position,
-                    destruction_contract.position_in_child_state,
-                    callee_contracts.positions,
-                )
-            propagated_contracts = action_contract.DestructionContracts(
-                child_state=callee_contracts.child_state.with_caller(caller_knowledge),
-                propagation=action_contract.PropagationHistory(
-                    trigger_step, callee_contracts.propagation
-                ),
             )
-            for caller_contract in caller_contracts:
-                contribution = self._check_one_destruction_contract(
-                    caller_contract,
-                    trigger_step,
-                    callee_contracts,
-                    propagated_contracts,
-                )
-                if contribution is not None:
-                    contributions.append(contribution)
-            if propagated_contracts.particles:
-                self._destruction_contracts.append(propagated_contracts)
+        return contributions
+
+    def _destruction_contracts_in_caller(
+        self,
+        callee_contracts: action_contract.DestructionContracts,
+        action_chain: ast.ActionReference,
+        connections: list[destruction_contract_types.DestructionConnection],
+    ) -> tuple[
+        list[_DestructionContractInCaller],
+        position_occupancy.ChildOccupancyMap,
+    ]:
+        """Resolve contracted positions and collect the caller's Child State."""
+        caller_contracts: list[_DestructionContractInCaller] = []
+        caller_knowledge: position_occupancy.ChildOccupancyMap = {}
+        for destruction_contract in callee_contracts.particles:
+            connection = destruction_contract_types.DestructionConnection(
+                callee_destruction=destruction_contract.propagated_destruction,
+            )
+            connections.append(connection)
+            position = destruction_contract.propagated_destruction.contracted_position.in_caller(
+                action_chain
+            )
+            # The action's requirement check already handles missing or
+            # error-state particles, so there is nothing more to verify here.
+            occupancy = self._tracker.get_occupancy_info(position)
+            if occupancy.occupant is None:
+                continue
+            caller_contracts.append(
+                _DestructionContractInCaller(destruction_contract, position, connection)
+            )
+            self._tracker.add_child_state(
+                caller_knowledge,
+                callee_contracts.child_state,
+                position,
+                destruction_contract.position_in_child_state,
+                callee_contracts.positions,
+            )
+        return caller_contracts, caller_knowledge
+
+    def _check_destruction_contract_group(
+        self,
+        callee_contracts: action_contract.DestructionContracts,
+        action_chain: ast.ActionReference,
+        trigger_step: action_contract.PropagationStep,
+        connections: list[destruction_contract_types.DestructionConnection],
+    ) -> list[operation_graph_model.DestructionContractContribution]:
+        """Verify particles sharing Child State and record their contributions."""
+        caller_contracts, caller_knowledge = self._destruction_contracts_in_caller(
+            callee_contracts, action_chain, connections
+        )
+        contributions: list[operation_graph_model.DestructionContractContribution] = []
+        propagated_contracts = action_contract.DestructionContracts(
+            child_state=callee_contracts.child_state.with_caller(caller_knowledge),
+            propagation=action_contract.PropagationHistory(
+                trigger_step, callee_contracts.propagation
+            ),
+        )
+        for caller_contract in caller_contracts:
+            contribution = self._check_one_destruction_contract(
+                caller_contract,
+                trigger_step,
+                callee_contracts,
+                propagated_contracts,
+            )
+            if contribution is not None:
+                contributions.append(contribution)
+        if propagated_contracts.particles:
+            self._destruction_contracts.append(propagated_contracts)
         return contributions
 
     def _check_one_destruction_contract(
@@ -894,7 +941,7 @@ class ActionPostorderValidator:
         destruction_contract = caller_contract.contract
         caller_particle_position = caller_contract.position
         destroying_definition_result = self._definition_results[
-            destruction_contract.destruction_fact.destruction.destroying_action
+            destruction_contract.propagated_destruction.destruction_fact.destruction.destroying_action
         ]
         destroying_definition = typing.cast(
             "ast.ActionDefinition", destroying_definition_result.definition
@@ -905,7 +952,6 @@ class ActionPostorderValidator:
         newly_occupied_children: list[
             operation_graph_model.ContributedDestructionPosition
         ] = []
-        previous_contract_count = len(propagated_contracts.particles)
         final_contributed_positions = self._verify_destruction_cascade(
             caller_particle_position,
             destruction_contract=destruction_contract,
@@ -914,13 +960,14 @@ class ActionPostorderValidator:
             trigger_step=trigger_step,
             callee_contracts=callee_contracts,
             propagated_contracts=propagated_contracts,
+            connection=caller_contract.connection,
             destructor_contributions=destructor_contributions,
             newly_occupied_children=newly_occupied_children,
             callee_destroy_position=(),
         )
-        # Verification only appends contracts, and a child particle can propagate
-        # even when this particle does not, so any added contract counts here.
-        is_propagated = len(propagated_contracts.particles) != previous_contract_count
+        # A child particle can propagate even when this particle does not,
+        # so any forwarded destruction counts here.
+        is_propagated = bool(caller_contract.connection.forwarded_destructions)
         # A locally created parent can have a caller-passed child. Propagation
         # ends independently for each particle, not for the whole destruction.
         if (
@@ -929,8 +976,20 @@ class ActionPostorderValidator:
             and not destructor_contributions
         ):
             return None
+        if destructor_contributions or newly_occupied_children:
+            caller_contract.connection.contribution = destruction_contract_types.DestructionContribution(
+                destruction_fact=destruction_contract.propagated_destruction.destruction_fact,
+                position_in_caller=caller_particle_position,
+                destructors=[
+                    destructor.action for destructor in destructor_contributions
+                ],
+                positions=[
+                    child.destruction_contract_position.position
+                    for child in newly_occupied_children
+                ],
+            )
         return operation_graph_model.DestructionContractContribution(
-            destruction_fact=destruction_contract.destruction_fact,
+            destruction_fact=destruction_contract.propagated_destruction.destruction_fact,
             destroyed_particle_position=caller_particle_position,
             children=newly_occupied_children,
             final_contributed_positions=final_contributed_positions,
@@ -943,6 +1002,7 @@ class ActionPostorderValidator:
         destruction_fact: destruction_contract_types.DestructionFact,
         caller_particle: particle_info.ParticleInfo,
         propagated_contracts: action_contract.DestructionContracts,
+        connection: destruction_contract_types.DestructionConnection,
         position_in_child_state: tuple[str, ...],
         verified_destructors: quality_assignment.QualityAssignments,
         newly_verified: list[ast.GlobalTypedNameReference],
@@ -953,14 +1013,18 @@ class ActionPostorderValidator:
             verified_destructors = quality_assignment.QualityAssignments(
                 (*verified_destructors.assignments, *newly_verified)
             )
+        propagated_destruction = destruction_contract_types.PropagatedDestruction(
+            destruction_fact=destruction_fact,
+            contracted_position=caller_particle.origin_position,
+        )
         propagated_contracts.append(
             action_contract.DestructionContract(
-                destroyed_position_contracted=caller_particle.origin_position,
-                destruction_fact=destruction_fact,
+                propagated_destruction=propagated_destruction,
                 position_in_child_state=position_in_child_state,
                 verified_destructors=verified_destructors,
             )
         )
+        connection.forwarded_destructions.append(propagated_destruction)
 
     def _verify_destruction_cascade(
         self,
@@ -972,6 +1036,7 @@ class ActionPostorderValidator:
         trigger_step: action_contract.PropagationStep,
         callee_contracts: action_contract.DestructionContracts,
         propagated_contracts: action_contract.DestructionContracts,
+        connection: destruction_contract_types.DestructionConnection,
         destructor_contributions: list[
             operation_graph_model.VerifiedDestructionContractDestructor
         ],
@@ -1026,20 +1091,22 @@ class ActionPostorderValidator:
         newly_verified: list[ast.GlobalTypedNameReference] = []
         if relative_key:
             destruction_fact = destruction_contract_types.DestructionFact(
-                destruction=destruction_contract.destruction_fact.destruction,
+                destruction=destruction_contract.propagated_destruction.destruction_fact.destruction,
                 # The contracted position can have a different name in the caller,
                 # but its child-name suffix is unchanged. Append only that suffix
                 # to express the child's position in the destroying action.
                 # For example, if the caller's position<box> corresponds to the
                 # destroyer's position<target>, position<box>::position</child>
                 # becomes position<target>::position</child>.
-                destroyed_position_in_destroyer=destruction_contract.destruction_fact.destroyed_position_in_destroyer.with_position_suffix(
+                destroyed_position_in_destroyer=destruction_contract.propagated_destruction.destruction_fact.destroyed_position_in_destroyer.with_position_suffix(
                     *position.typed_names[caller_prefix_length:]
                 ),
             )
             verified_destructors = quality_assignment.EMPTY_QUALITY_ASSIGNMENTS
         else:
-            destruction_fact = destruction_contract.destruction_fact
+            destruction_fact = (
+                destruction_contract.propagated_destruction.destruction_fact
+            )
             verified_destructors = destruction_contract.verified_destructors
         destruction_contract_position = None
         final_contributed_positions: list[
@@ -1057,6 +1124,7 @@ class ActionPostorderValidator:
                         trigger_step=trigger_step,
                         callee_contracts=callee_contracts,
                         propagated_contracts=propagated_contracts,
+                        connection=connection,
                         destructor_contributions=destructor_contributions,
                         newly_occupied_children=newly_occupied_children,
                         callee_destroy_position=callee_destroy_position_for_children,
@@ -1109,6 +1177,7 @@ class ActionPostorderValidator:
                             trigger_step=trigger_step,
                             callee_contracts=callee_contracts,
                             propagated_contracts=propagated_contracts,
+                            connection=connection,
                             destructor_contributions=destructor_contributions,
                             newly_occupied_children=newly_occupied_children,
                             callee_destroy_position=callee_destroy_position_for_children,
@@ -1123,6 +1192,7 @@ class ActionPostorderValidator:
                 destruction_fact,
                 particle,
                 propagated_contracts,
+                connection,
                 position_in_child_state,
                 verified_destructors,
                 newly_verified,
@@ -1361,6 +1431,7 @@ class ActionPostorderValidator:
                         directly_destroyed_position=position,
                         destroying_action=self._definition.typed_name,
                         is_automatic=True,
+                        location=self._action_definition.action_statements.location,
                     ),
                     auto_destruction_target=auto_destruction_target,
                 )
@@ -1419,6 +1490,7 @@ class ActionPostorderValidator:
             directly_destroyed_position=stmt.target_position,
             destroying_action=self._definition.typed_name,
             is_automatic=False,
+            location=stmt.location,
         )
 
         self._destroy_particles(
@@ -1885,12 +1957,22 @@ class ActionPostorderValidator:
         operation_graph_builder.record_guaranteed_positions(
             final_operation.position for final_operation in contract.final_operations
         )
+        propagated_destructions: list[
+            destruction_contract_types.PropagatedDestruction
+        ] = []
+        for contracts in contract.destruction_contracts:
+            for destruction_contract in contracts.particles:
+                propagated_destructions.append(
+                    destruction_contract.propagated_destruction
+                )
         return PostorderValidationResult(
             diagnostics=self._diagnostics,
             contract=contract,
             operation_graph=operation_graph_builder.finish(),
             destructions=self._destructions,
             triggered_actions=self._triggered_actions,
+            destruction_connections=self._destruction_connections,
+            propagated_destructions=propagated_destructions,
         )
 
     def _check_trigger(

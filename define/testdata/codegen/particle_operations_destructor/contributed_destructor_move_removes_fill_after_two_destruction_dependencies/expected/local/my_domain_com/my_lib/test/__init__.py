@@ -53,4 +53,13 @@ class Test(literal.Action):
         )
         self.on_particle.get_action(
             local.my_domain_com.my_lib.caller.Caller
+        ).run(CallerDestructionContracts())
+
+
+class CallerDestructionContracts(local.my_domain_com.my_lib.caller.CallerDestructionContracts):
+
+    @override
+    def run_destructors_position_run(self, particle: literal.Particle):
+        particle.get_action(
+            local.my_domain_com.my_lib.extra_destructor.ExtraDestructor
         ).run()

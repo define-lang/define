@@ -71,4 +71,26 @@ class Test(literal.Action):
         literal.record_operation("test.move(source, /destroyer::target)")
         self.on_particle.get_action(
             local.my_domain_com.my_lib.destroyer.Destroyer
+        ).run(DestroyerDestructionContracts())
+
+
+class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.DestroyerDestructionContracts):
+
+    @override
+    def run_destructors_position_target(self, particle: literal.Particle):
+        particle.get_action(
+            local.my_domain_com.my_lib.parent_destructor.ParentDestructor
+        ).run()
+
+    @override
+    def destroy_position_target__position_left(self, particle: literal.Particle):
+        particle.get_position(
+            local.my_domain_com.my_lib.extra.Extra
+        ).destroy_particle()
+        literal.record_operation("destroyer.destroy(target::/left::/extra)")
+
+    @override
+    def run_destructors_position_target__position_right(self, particle: literal.Particle):
+        particle.get_action(
+            local.my_domain_com.my_lib.child_destructor.ChildDestructor
         ).run()

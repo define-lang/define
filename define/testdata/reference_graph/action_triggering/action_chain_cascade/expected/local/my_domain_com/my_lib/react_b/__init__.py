@@ -5,6 +5,17 @@ from typing import override
 from define.runtime import literal
 
 
+class ReactBDestructionContracts:
+    def run_destructors_position_trigger(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_trigger(self, _particle: literal.Particle):
+        pass
+
+
+_DEFAULT_DESTRUCTION_CONTRACTS = ReactBDestructionContracts()
+
+
 class ReactB(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
@@ -16,11 +27,21 @@ class ReactB(literal.Action):
         )
 
     @override
-    def run(self):
+    def run(self, destruction_contracts: ReactBDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         local_result = literal.LocalPosition(
             "position<local_result>",
         )
         local_result.create_particle()
+        destruction_contracts.run_destructors_position_trigger(
+            self.get_interface_position(
+                "position<trigger>"
+            ).particle
+        )
+        destruction_contracts.destroy_position_trigger(
+            self.get_interface_position(
+                "position<trigger>"
+            ).particle
+        )
         self.get_interface_position(
             "position<trigger>"
         ).destroy_particle()

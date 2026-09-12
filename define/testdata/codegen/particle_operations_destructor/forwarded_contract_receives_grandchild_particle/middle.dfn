@@ -1,0 +1,17 @@
+define the potential action<my.domain.com:my_lib:/middle> {
+    it also assigns the action</inner>.
+    define the position<input>.
+    it happens when {
+        the position<input> has a particle.
+    } and it does {
+        define the position<holder> {
+            it may only contain particles where {
+                it has the position</child>.
+            }
+        }
+        create a particle in position<holder>.
+        create a particle in position<holder>::position</child>.
+        move the particle in position<input> to position<holder>::position</child>::position</grandchild>.
+        move the particle in position<holder> to action</inner>::position<input>.
+    }
+}

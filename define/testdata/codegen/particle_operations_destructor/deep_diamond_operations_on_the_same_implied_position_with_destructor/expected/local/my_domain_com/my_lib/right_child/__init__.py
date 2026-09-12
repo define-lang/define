@@ -8,6 +8,17 @@ import local.my_domain_com.my_lib.destructor
 import local.my_domain_com.my_lib.marker
 
 
+class RightChildDestructionContracts:
+    def run_destructors_global_position_marker(self, _particle: literal.Particle):
+        pass
+
+    def destroy_global_position_marker(self, _particle: literal.Particle):
+        pass
+
+
+_DEFAULT_DESTRUCTION_CONTRACTS = RightChildDestructionContracts()
+
+
 class RightChild(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.marker.Marker,
@@ -22,12 +33,22 @@ class RightChild(literal.Action):
         )
 
     @override
-    def run(self):
+    def run(self, destruction_contracts: RightChildDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         self.on_particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         ).particle.get_action(
             local.my_domain_com.my_lib.destructor.Destructor
         ).run()
+        destruction_contracts.run_destructors_global_position_marker(
+            self.on_particle.get_position(
+                local.my_domain_com.my_lib.marker.Marker
+            ).particle
+        )
+        destruction_contracts.destroy_global_position_marker(
+            self.on_particle.get_position(
+                local.my_domain_com.my_lib.marker.Marker
+            ).particle
+        )
         self.on_particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         ).destroy_particle()

@@ -38,4 +38,16 @@ class Test(literal.Action):
         ).create_particle()
         self.on_particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
-        ).run()
+        ).run(MiddleDestructionContracts())
+
+
+class MiddleDestructionContracts(local.my_domain_com.my_lib.middle.MiddleDestructionContracts):
+
+    @override
+    def destroy_global_position_parent(self, particle: literal.Particle):
+        particle.get_position(
+            local.my_domain_com.my_lib.b.B
+        ).destroy_particle()
+        particle.get_position(
+            local.my_domain_com.my_lib.a.A
+        ).destroy_particle()

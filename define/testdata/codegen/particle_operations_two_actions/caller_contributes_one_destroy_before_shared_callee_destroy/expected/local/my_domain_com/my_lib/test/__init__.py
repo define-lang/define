@@ -70,10 +70,25 @@ class Test(literal.Action):
         ).create_particle()
         gateway.particle.get_action(
             local.my_domain_com.my_lib.other.Other
-        ).run()
+        ).run(OtherDestructionContracts())
         gateway.particle.get_action(
             local.my_domain_com.my_lib.other.Other
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
         gateway.destroy_particle()
+
+
+class OtherDestructionContracts(local.my_domain_com.my_lib.other.OtherDestructionContracts):
+
+    @override
+    def destroy_position_parent__position_child__position_grandchild(self, particle: literal.Particle):
+        particle.get_position(
+            local.my_domain_com.my_lib.greatgrandchild.Greatgrandchild
+        ).destroy_particle()
+
+    @override
+    def destroy_position_parent__position_child(self, particle: literal.Particle):
+        particle.get_position(
+            local.my_domain_com.my_lib.sibling.Sibling
+        ).destroy_particle()

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import enum
 from dataclasses import InitVar, dataclass, field
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from define.compiler import ast
 
@@ -20,6 +20,8 @@ class StatementKind(enum.Enum):
     MOVE_PARTICLE = enum.auto()
     DESTROY_PARTICLE = enum.auto()
     RUN_ACTION = enum.auto()
+    RUN_CONTRACT_DESTRUCTORS = enum.auto()
+    DESTROY_CONTRACT_CHILDREN = enum.auto()
 
 
 class ChainAccessor(enum.Enum):
@@ -79,19 +81,119 @@ class PositionExpr:
 
     local_position_name: str | None
     chain_elements: list[ChainElement]
+    from_contract_particle: bool = False
 
 
 @dataclass
+class DestructionContractArgument:
+    """A per-invocation contract object and the contributions it forwards."""
+
+    class_name: str
+    forwarded_methods: list[str]
+
+
+@dataclass
+class ForwardedContribution:
+    """A caller contribution applied to its contracted particle."""
+
+    method_name: str
+    position: PositionExpr | None
+
+
+@dataclass
+class DestructionContractMethod:
+    """One named contribution to a callee's destruction."""
+
+    name: str
+    forwarded: list[ForwardedContribution]
+    statements: list[ActionStatementContext]
+
+
+@dataclass
+class DestructionContractDefinition:
+    """Methods implementing caller-contributed destruction work."""
+
+    class_name: str
+    base: naming.ClassReference
+    forwarded_methods: list[str]
+    methods: list[DestructionContractMethod]
+
+
 class ActionStatementContext:
     """Template-friendly representation of an action statement."""
 
-    kind: StatementKind
-    local_position_name: str | None = None
-    local_typed_name: str | None = None
-    constraints: list[naming.ClassReference] = field(default_factory=list)
-    position: PositionExpr | None = None
-    to_position: PositionExpr | None = None
+    kind: ClassVar[StatementKind]
+
+
+@dataclass
+class LocalPositionContext(ActionStatementContext):
+    """A local position definition."""
+
+    kind: ClassVar[StatementKind] = StatementKind.LOCAL_POSITION
+    local_position_name: str
+    local_typed_name: str
+    constraints: list[naming.ClassReference]
+
+
+@dataclass(kw_only=True)
+class ParticleOperationContext(ActionStatementContext):
+    """An operation on a particle, optionally recorded in a trace."""
+
+    position: PositionExpr
     operation_label: str | None = None
+
+
+@dataclass(kw_only=True)
+class CreateParticleContext(ParticleOperationContext):
+    """Create a particle at a position."""
+
+    kind: ClassVar[StatementKind] = StatementKind.CREATE_PARTICLE
+
+
+@dataclass(kw_only=True)
+class MoveParticleContext(ParticleOperationContext):
+    """Move a particle between positions."""
+
+    kind: ClassVar[StatementKind] = StatementKind.MOVE_PARTICLE
+    to_position: PositionExpr
+
+
+@dataclass(kw_only=True)
+class DestroyParticleContext(ParticleOperationContext):
+    """Destroy a particle at a position."""
+
+    kind: ClassVar[StatementKind] = StatementKind.DESTROY_PARTICLE
+
+
+@dataclass
+class RunActionContext(ActionStatementContext):
+    """Invoke an action with its optional destruction contract."""
+
+    kind: ClassVar[StatementKind] = StatementKind.RUN_ACTION
+    position: PositionExpr
+    destruction_contract: DestructionContractArgument | None = None
+
+
+@dataclass
+class ContractContributionContext(ActionStatementContext):
+    """Invoke a contribution for a contracted particle."""
+
+    position: PositionExpr
+    contract_method: str
+
+
+@dataclass
+class RunContractDestructorsContext(ContractContributionContext):
+    """Run caller-contributed Destructors."""
+
+    kind: ClassVar[StatementKind] = StatementKind.RUN_CONTRACT_DESTRUCTORS
+
+
+@dataclass
+class DestroyContractChildrenContext(ContractContributionContext):
+    """Destroy caller-contributed child particles."""
+
+    kind: ClassVar[StatementKind] = StatementKind.DESTROY_CONTRACT_CHILDREN
 
 
 @dataclass

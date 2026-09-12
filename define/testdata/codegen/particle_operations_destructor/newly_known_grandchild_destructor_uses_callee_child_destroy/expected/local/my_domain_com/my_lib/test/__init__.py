@@ -6,6 +6,7 @@ from define.runtime import literal
 
 import local.my_domain_com.my_lib.destroyer
 import local.my_domain_com.my_lib.extra
+import local.my_domain_com.my_lib.grandchild_destruct
 import local.my_domain_com.my_lib.known
 
 
@@ -40,4 +41,21 @@ class Test(literal.Action):
         )
         self.on_particle.get_action(
             local.my_domain_com.my_lib.destroyer.Destroyer
+        ).run(DestroyerDestructionContracts())
+
+
+class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.DestroyerDestructionContracts):
+
+    @override
+    def run_destructors_position_run__position_known(self, particle: literal.Particle):
+        particle.get_position(
+            local.my_domain_com.my_lib.extra.Extra
+        ).particle.get_action(
+            local.my_domain_com.my_lib.grandchild_destruct.GrandchildDestruct
         ).run()
+
+    @override
+    def destroy_position_run__position_known(self, particle: literal.Particle):
+        particle.get_position(
+            local.my_domain_com.my_lib.extra.Extra
+        ).destroy_particle()

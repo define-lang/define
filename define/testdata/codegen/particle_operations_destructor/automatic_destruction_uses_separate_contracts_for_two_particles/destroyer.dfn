@@ -1,0 +1,15 @@
+define the potential action<my.domain.com:my_lib:/destroyer> {
+    define the position<left>.
+    define the position<right>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<first>.
+        # This local name must not shadow the generated contract parameter.
+        define the position<destruction_contracts>.
+        move the particle in position<left> to position<first>.
+        move the particle in position<right> to position<destruction_contracts>.
+        destroy the particle in position<run>.
+    }
+}

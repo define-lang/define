@@ -5,6 +5,7 @@ from typing import ClassVar, override
 from define.runtime import literal
 
 import local.my_domain_com.my_lib.child
+import local.my_domain_com.my_lib.child_destructor
 import local.my_domain_com.my_lib.cleaner
 import local.my_domain_com.my_lib.marker
 
@@ -43,10 +44,28 @@ class ExtraDestructor(literal.Action):
         literal.record_operation("extra_destructor.create(/cleaner::trigger_pos)")
         self.on_particle.get_action(
             local.my_domain_com.my_lib.cleaner.Cleaner
-        ).run()
+        ).run(CleanerDestructionContracts())
         self.on_particle.get_action(
             local.my_domain_com.my_lib.cleaner.Cleaner
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
         literal.record_operation("extra_destructor.destroy(/cleaner::trigger_pos)")
+
+
+class CleanerDestructionContracts(local.my_domain_com.my_lib.cleaner.CleanerDestructionContracts):
+
+    @override
+    def run_destructors_global_position_marker(self, particle: literal.Particle):
+        particle.get_position(
+            local.my_domain_com.my_lib.child.Child
+        ).particle.get_action(
+            local.my_domain_com.my_lib.child_destructor.ChildDestructor
+        ).run()
+
+    @override
+    def destroy_global_position_marker(self, particle: literal.Particle):
+        particle.get_position(
+            local.my_domain_com.my_lib.child.Child
+        ).destroy_particle()
+        literal.record_operation("cleaner.destroy(/marker::/child)")

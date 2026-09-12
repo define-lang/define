@@ -1,0 +1,15 @@
+# Two Constructors triggered by the same Create destroy different caller-provided particles.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<item> {
+            it may only contain particles where {
+                it has the action</initialize>.
+                it has the action</first_cleanup>.
+                it has the action</second_cleanup>.
+            }
+        }
+        create a particle in position<item>.
+    }
+}

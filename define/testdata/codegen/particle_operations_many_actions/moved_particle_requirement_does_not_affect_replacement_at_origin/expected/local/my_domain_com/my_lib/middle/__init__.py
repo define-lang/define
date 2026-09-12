@@ -8,6 +8,23 @@ import local.my_domain_com.my_lib.inner
 import local.my_domain_com.my_lib.item
 
 
+class MiddleDestructionContracts:
+    def run_destructors_position_source__position_item(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_source__position_item(self, _particle: literal.Particle):
+        pass
+
+    def run_destructors_position_source(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_source(self, _particle: literal.Particle):
+        pass
+
+
+_DEFAULT_DESTRUCTION_CONTRACTS = MiddleDestructionContracts()
+
+
 class Middle(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
@@ -26,7 +43,7 @@ class Middle(literal.Action):
         )
 
     @override
-    def run(self):
+    def run(self, destruction_contracts: MiddleDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         inner_holder = literal.LocalPosition(
             "position<inner_holder>",
             constraints=(
@@ -60,7 +77,12 @@ class Middle(literal.Action):
         ).create_particle()
         inner_holder.particle.get_action(
             local.my_domain_com.my_lib.inner.Inner
-        ).run()
+        ).run(
+            InnerDestructionContracts(
+                destruction_contracts.run_destructors_position_source__position_item,
+                destruction_contracts.destroy_position_source__position_item,
+            ),
+        )
         self.get_interface_position(
             "position<source>"
         ).particle.get_position(
@@ -74,6 +96,20 @@ class Middle(literal.Action):
         self.get_interface_position(
             "position<source>"
         ).destroy_particle()
+        destruction_contracts.run_destructors_position_source(
+            inner_holder.particle.get_action(
+                local.my_domain_com.my_lib.inner.Inner
+            ).get_interface_position(
+                "position<input>"
+            ).particle
+        )
+        destruction_contracts.destroy_position_source(
+            inner_holder.particle.get_action(
+                local.my_domain_com.my_lib.inner.Inner
+            ).get_interface_position(
+                "position<input>"
+            ).particle
+        )
         inner_holder.particle.get_action(
             local.my_domain_com.my_lib.inner.Inner
         ).get_interface_position(
@@ -85,3 +121,25 @@ class Middle(literal.Action):
             "position<input>"
         ).destroy_particle()
         inner_holder.destroy_particle()
+
+
+class InnerDestructionContracts(local.my_domain_com.my_lib.inner.InnerDestructionContracts):
+    def __init__(
+        self,
+        run_destructors_position_source__position_item: literal.DestructionContribution,
+        destroy_position_source__position_item: literal.DestructionContribution,
+    ):
+        self._run_destructors_position_source__position_item: literal.DestructionContribution = run_destructors_position_source__position_item
+        self._destroy_position_source__position_item: literal.DestructionContribution = destroy_position_source__position_item
+
+    @override
+    def run_destructors_position_input__position_item(self, particle: literal.Particle):
+        self._run_destructors_position_source__position_item(
+            particle
+        )
+
+    @override
+    def destroy_position_input__position_item(self, particle: literal.Particle):
+        self._destroy_position_source__position_item(
+            particle
+        )

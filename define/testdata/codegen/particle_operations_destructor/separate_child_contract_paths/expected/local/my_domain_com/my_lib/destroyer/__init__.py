@@ -8,6 +8,29 @@ import local.my_domain_com.my_lib.left
 import local.my_domain_com.my_lib.right
 
 
+class DestroyerDestructionContracts:
+    def run_destructors_position_target(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_target(self, _particle: literal.Particle):
+        pass
+
+    def run_destructors_position_target__position_left(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_target__position_left(self, _particle: literal.Particle):
+        pass
+
+    def run_destructors_position_target__position_right(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_target__position_right(self, _particle: literal.Particle):
+        pass
+
+
+_DEFAULT_DESTRUCTION_CONTRACTS = DestroyerDestructionContracts()
+
+
 class Destroyer(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
@@ -25,7 +48,7 @@ class Destroyer(literal.Action):
         )
 
     @override
-    def run(self):
+    def run(self, destruction_contracts: DestroyerDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         left_holder = literal.LocalPosition(
             "position<left_holder>",
         )
@@ -59,6 +82,44 @@ class Destroyer(literal.Action):
             ).particle.get_position(
                 local.my_domain_com.my_lib.right.Right
             )
+        )
+        destruction_contracts.run_destructors_position_target(
+            self.get_interface_position(
+                "position<target>"
+            ).particle
+        )
+        destruction_contracts.run_destructors_position_target__position_left(
+            self.get_interface_position(
+                "position<target>"
+            ).particle.get_position(
+                local.my_domain_com.my_lib.left.Left
+            ).particle
+        )
+        destruction_contracts.run_destructors_position_target__position_right(
+            self.get_interface_position(
+                "position<target>"
+            ).particle.get_position(
+                local.my_domain_com.my_lib.right.Right
+            ).particle
+        )
+        destruction_contracts.destroy_position_target(
+            self.get_interface_position(
+                "position<target>"
+            ).particle
+        )
+        destruction_contracts.destroy_position_target__position_left(
+            self.get_interface_position(
+                "position<target>"
+            ).particle.get_position(
+                local.my_domain_com.my_lib.left.Left
+            ).particle
+        )
+        destruction_contracts.destroy_position_target__position_right(
+            self.get_interface_position(
+                "position<target>"
+            ).particle.get_position(
+                local.my_domain_com.my_lib.right.Right
+            ).particle
         )
         self.get_interface_position(
             "position<target>"

@@ -24,7 +24,7 @@ py_library(
         ":naming",
         ":template_context",
         "//define/compiler:ast",
-        "//define/compiler/validator/reference_graph:action_contract",
+        "//define/compiler/validator:validation_result",
     ],
 )
 
@@ -33,10 +33,27 @@ py_library(
     srcs = ["action_statements.py"],
     visibility = ["//define/compiler/codegen:__subpackages__"],
     deps = [
+        ":destruction_contracts",
         ":naming",
+        ":operation_labels",
+        ":position_expression",
         ":template_context",
         "//define/compiler:ast",
-        "//define/compiler/validator/reference_graph:action_contract",
+        "//define/compiler/validator:validation_result",
+    ],
+)
+
+py_library(
+    name = "destruction_contracts",
+    srcs = ["destruction_contracts.py"],
+    deps = [
+        ":naming",
+        ":operation_labels",
+        ":position_expression",
+        ":template_context",
+        "//define/compiler:ast",
+        "//define/compiler/validator:validation_result",
+        "//define/compiler/validator/reference_graph:destruction_contract",
     ],
 )
 
@@ -54,7 +71,7 @@ py_library(
         ":template_env",
         "//define/compiler:ast",
         "//define/compiler/graphs:reference_graph_executor",
-        "//define/compiler/validator/reference_graph:action_contract",
+        "//define/compiler/validator:validation_result",
         "@pypi//jinja2",
     ],
 )
@@ -67,6 +84,7 @@ py_library(
         "//define/compiler:ast",
         "//define/compiler:constants",
         "//define/compiler/data_structures:define_path",
+        "//define/compiler/validator/reference_graph:destruction_contract",
     ],
 )
 
@@ -82,9 +100,28 @@ py_test(
 )
 
 py_library(
+    name = "operation_labels",
+    srcs = ["operation_labels.py"],
+    deps = [
+        ":template_context",
+        "//define/compiler:ast",
+    ],
+)
+
+py_library(
     name = "position_definition",
     srcs = ["position_definition.py"],
     visibility = ["//define/compiler/codegen:__subpackages__"],
+    deps = [
+        ":naming",
+        ":template_context",
+        "//define/compiler:ast",
+    ],
+)
+
+py_library(
+    name = "position_expression",
+    srcs = ["position_expression.py"],
     deps = [
         ":naming",
         ":template_context",
@@ -149,10 +186,13 @@ pyright_test(
         ":action_context",
         ":action_definition",
         ":action_statements",
+        ":destruction_contracts",
         ":generator",
         ":naming",
         ":naming_test",
+        ":operation_labels",
         ":position_definition",
+        ":position_expression",
         ":python",
         ":template_context",
         ":template_env",

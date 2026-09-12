@@ -19,9 +19,7 @@ from define.compiler.graphs import reference_graph_executor
 if typing.TYPE_CHECKING:
     import jinja2
 
-    from define.compiler.validator.reference_graph import (
-        action_contract,
-    )
+    from define.compiler.validator import validation_result
 
 _TEMPLATES_DIR = Path(__file__).parent
 _COMPILED_DIR = _TEMPLATES_DIR / "templates.compiled"
@@ -49,9 +47,7 @@ class _DefinitionGenerator:
 
     def __init__(
         self,
-        definition_order: reference_graph_executor.ReferenceGraphOrder,
-        destructions: dict[ast.SourceLocation, list[ast.PositionReference]],
-        triggered_actions: action_contract.TriggeredActions,
+        codegen_input: validation_result.CodegenInput,
         entry_point: ast.ActionDefinition,
         converter: naming.NameConverter,
         output_dir: Path,
@@ -59,9 +55,7 @@ class _DefinitionGenerator:
         trace_operations: bool,
     ):
         """Initialize the shared generation inputs."""
-        self._definition_order = definition_order
-        self._destructions = destructions
-        self._triggered_actions = triggered_actions
+        self._codegen_input = codegen_input
         self._entry_point = entry_point
         self._converter = converter
         self._trace_operations = trace_operations
@@ -75,7 +69,7 @@ class _DefinitionGenerator:
     ) -> tuple[action_context.ActionDefinitionContext, set[Path]]:
         """Generate every definition with bounded worker concurrency."""
         package_dirs = reference_graph_executor.process_definitions(
-            self._definition_order,
+            self._codegen_input.definition_order,
             self._generate_definition,
             max_workers=max_workers,
         )
@@ -100,8 +94,7 @@ class _DefinitionGenerator:
         context = action_definition.ActionDefinitionGenerator(
             definition,
             self._converter,
-            self._destructions,
-            self._triggered_actions,
+            self._codegen_input,
             trace_operations=self._trace_operations,
         ).generate()
         if definition.typed_name == self._entry_point.typed_name:
@@ -133,9 +126,7 @@ class PythonLiteralCodeGenerator:
 
     def generate(
         self,
-        definition_order: reference_graph_executor.ReferenceGraphOrder,
-        destructions: dict[ast.SourceLocation, list[ast.PositionReference]],
-        triggered_actions: action_contract.TriggeredActions,
+        codegen_input: validation_result.CodegenInput,
         entry_point: ast.ActionDefinition,
         output_dir: Path,
         *,
@@ -146,12 +137,10 @@ class PythonLiteralCodeGenerator:
         converter = naming.NameConverter()
         # Authority-name collisions are assigned by first use, so preserve the
         # existing definition-order choice before workers share the converter.
-        for definition in definition_order.definitions:
+        for definition in codegen_input.definition_order.definitions:
             _ = converter.module_name(definition.typed_name.name_content)
         entry_definition, package_dirs = _DefinitionGenerator(
-            definition_order,
-            destructions,
-            triggered_actions,
+            codegen_input,
             entry_point,
             converter,
             output_dir,

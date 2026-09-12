@@ -5,6 +5,8 @@ from typing import ClassVar, override
 from define.runtime import literal
 
 import local.my_domain_com.my_lib.destroyer
+import local.my_domain_com.my_lib.destruct_a
+import local.my_domain_com.my_lib.destruct_b
 import local.my_domain_com.my_lib.extra_a
 import local.my_domain_com.my_lib.extra_b
 
@@ -43,4 +45,31 @@ class Test(literal.Action):
         literal.record_operation("test.move(source, /destroyer::run)")
         self.on_particle.get_action(
             local.my_domain_com.my_lib.destroyer.Destroyer
+        ).run(DestroyerDestructionContracts())
+
+
+class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.DestroyerDestructionContracts):
+
+    @override
+    def run_destructors_position_run(self, particle: literal.Particle):
+        particle.get_position(
+            local.my_domain_com.my_lib.extra_b.ExtraB
+        ).particle.get_action(
+            local.my_domain_com.my_lib.destruct_b.DestructB
         ).run()
+        particle.get_position(
+            local.my_domain_com.my_lib.extra_a.ExtraA
+        ).particle.get_action(
+            local.my_domain_com.my_lib.destruct_a.DestructA
+        ).run()
+
+    @override
+    def destroy_position_run(self, particle: literal.Particle):
+        particle.get_position(
+            local.my_domain_com.my_lib.extra_b.ExtraB
+        ).destroy_particle()
+        literal.record_operation("destroyer.destroy(local::/extra_b)")
+        particle.get_position(
+            local.my_domain_com.my_lib.extra_a.ExtraA
+        ).destroy_particle()
+        literal.record_operation("destroyer.destroy(local::/extra_a)")

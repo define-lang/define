@@ -1,7 +1,7 @@
 test.create(source)
-test.create(source::/occupied_last)
 test.create(source::/occupied_first)
 test.create(source::/occupied_first::/transitive)
+test.create(source::/occupied_last)
 test.move(source, /destroyer::target)
 destructor.move(/occupied_first, first_holder)
 destructor.move(first_holder, /occupied_first)

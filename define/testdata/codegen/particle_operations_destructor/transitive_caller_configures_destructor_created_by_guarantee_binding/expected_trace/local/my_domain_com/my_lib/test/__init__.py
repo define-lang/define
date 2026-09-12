@@ -35,4 +35,13 @@ class Test(literal.Action):
         literal.record_operation("test.move(source, /outer::run)")
         self.on_particle.get_action(
             local.my_domain_com.my_lib.outer.Outer
+        ).run(OuterDestructionContracts())
+
+
+class OuterDestructionContracts(local.my_domain_com.my_lib.outer.OuterDestructionContracts):
+
+    @override
+    def run_destructors_position_run(self, particle: literal.Particle):
+        particle.get_action(
+            local.my_domain_com.my_lib.extra_destructor.ExtraDestructor
         ).run()

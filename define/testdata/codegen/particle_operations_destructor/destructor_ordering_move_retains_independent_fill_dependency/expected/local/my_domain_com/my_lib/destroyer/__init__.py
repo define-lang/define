@@ -9,6 +9,23 @@ import local.my_domain_com.my_lib.known_destructor
 import local.my_domain_com.my_lib.shared
 
 
+class DestroyerDestructionContracts:
+    def run_destructors_position_target(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_target(self, _particle: literal.Particle):
+        pass
+
+    def run_destructors_position_target__position_shared(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_target__position_shared(self, _particle: literal.Particle):
+        pass
+
+
+_DEFAULT_DESTRUCTION_CONTRACTS = DestroyerDestructionContracts()
+
+
 class Destroyer(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
@@ -28,7 +45,7 @@ class Destroyer(literal.Action):
         )
 
     @override
-    def run(self):
+    def run(self, destruction_contracts: DestroyerDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         holder = literal.LocalPosition(
             "position<holder>",
         )
@@ -61,6 +78,30 @@ class Destroyer(literal.Action):
         ).particle.get_action(
             local.my_domain_com.my_lib.known_destructor.KnownDestructor
         ).run()
+        destruction_contracts.run_destructors_position_target(
+            self.get_interface_position(
+                "position<target>"
+            ).particle
+        )
+        destruction_contracts.run_destructors_position_target__position_shared(
+            self.get_interface_position(
+                "position<target>"
+            ).particle.get_position(
+                local.my_domain_com.my_lib.shared.Shared
+            ).particle
+        )
+        destruction_contracts.destroy_position_target(
+            self.get_interface_position(
+                "position<target>"
+            ).particle
+        )
+        destruction_contracts.destroy_position_target__position_shared(
+            self.get_interface_position(
+                "position<target>"
+            ).particle.get_position(
+                local.my_domain_com.my_lib.shared.Shared
+            ).particle
+        )
         self.get_interface_position(
             "position<target>"
         ).particle.get_position(

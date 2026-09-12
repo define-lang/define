@@ -8,6 +8,23 @@ import local.my_domain_com.my_lib.input
 import local.my_domain_com.my_lib.item
 
 
+class OtherDestructionContracts:
+    def run_destructors_global_position_input__position_item(self, _particle: literal.Particle):
+        pass
+
+    def destroy_global_position_input__position_item(self, _particle: literal.Particle):
+        pass
+
+    def run_destructors_global_position_input(self, _particle: literal.Particle):
+        pass
+
+    def destroy_global_position_input(self, _particle: literal.Particle):
+        pass
+
+
+_DEFAULT_DESTRUCTION_CONTRACTS = OtherDestructionContracts()
+
+
 class Other(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
         local.my_domain_com.my_lib.input.Input,
@@ -28,7 +45,7 @@ class Other(literal.Action):
         )
 
     @override
-    def run(self):
+    def run(self, destruction_contracts: OtherDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         self.on_particle.get_position(
             local.my_domain_com.my_lib.input.Input
         ).move_particle_to(
@@ -36,11 +53,35 @@ class Other(literal.Action):
                 "position<output>"
             )
         )
+        destruction_contracts.run_destructors_global_position_input__position_item(
+            self.get_interface_position(
+                "position<output>"
+            ).particle.get_position(
+                local.my_domain_com.my_lib.item.Item
+            ).particle
+        )
+        destruction_contracts.destroy_global_position_input__position_item(
+            self.get_interface_position(
+                "position<output>"
+            ).particle.get_position(
+                local.my_domain_com.my_lib.item.Item
+            ).particle
+        )
         self.get_interface_position(
             "position<output>"
         ).particle.get_position(
             local.my_domain_com.my_lib.item.Item
         ).destroy_particle()
+        destruction_contracts.run_destructors_global_position_input(
+            self.get_interface_position(
+                "position<output>"
+            ).particle
+        )
+        destruction_contracts.destroy_global_position_input(
+            self.get_interface_position(
+                "position<output>"
+            ).particle
+        )
         self.get_interface_position(
             "position<output>"
         ).destroy_particle()

@@ -1,0 +1,29 @@
+# Different, partial, and absent contributions across multiple invocations.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</worker>.
+    it also assigns the action</other>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<source> {
+            it may only contain particles where {
+                it has the position</first_child>.
+                it has the position</second_child>.
+                it has the position</third_child>.
+            }
+        }
+        create a particle in position<source>.
+        create a particle in position<source>::position</first_child>.
+        create a particle in action</worker>::position<other_input>.
+        move the particle in position<source> to action</worker>::position<input>.
+        create a particle in position<source>.
+        create a particle in position<source>::position</second_child>.
+        create a particle in action</worker>::position<other_input>.
+        move the particle in position<source> to action</worker>::position<input>.
+        create a particle in position<source>.
+        create a particle in position<source>::position</third_child>.
+        move the particle in position<source> to action</other>::position<input>.
+        create a particle in action</worker>::position<other_input>.
+        create a particle in action</worker>::position<input>.
+    }
+}

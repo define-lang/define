@@ -8,6 +8,17 @@ import local.my_domain_com.my_lib.child
 import local.my_domain_com.my_lib.grandchild
 
 
+class OtherDestructionContracts:
+    def run_destructors_position_trigger_pos(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_trigger_pos(self, _particle: literal.Particle):
+        pass
+
+
+_DEFAULT_DESTRUCTION_CONTRACTS = OtherDestructionContracts()
+
+
 class Other(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
@@ -25,7 +36,7 @@ class Other(literal.Action):
         )
 
     @override
-    def run(self):
+    def run(self, destruction_contracts: OtherDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         self.get_interface_position(
             "position<box>"
         ).particle.get_position(
@@ -33,6 +44,16 @@ class Other(literal.Action):
         ).particle.get_position(
             local.my_domain_com.my_lib.grandchild.Grandchild
         ).create_particle()
+        destruction_contracts.run_destructors_position_trigger_pos(
+            self.get_interface_position(
+                "position<trigger_pos>"
+            ).particle
+        )
+        destruction_contracts.destroy_position_trigger_pos(
+            self.get_interface_position(
+                "position<trigger_pos>"
+            ).particle
+        )
         self.get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

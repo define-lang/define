@@ -5,6 +5,7 @@ from typing import ClassVar, override
 from define.runtime import literal
 
 import local.my_domain_com.my_lib.destroyer
+import local.my_domain_com.my_lib.extra_destructor
 import local.my_domain_com.my_lib.maker
 
 
@@ -31,7 +32,7 @@ class Test(literal.Action):
         ).create_particle()
         self.on_particle.get_action(
             local.my_domain_com.my_lib.destroyer.Destroyer
-        ).run()
+        ).run(DestroyerDestructionContracts())
         self.on_particle.get_action(
             local.my_domain_com.my_lib.maker.Maker
         ).get_interface_position(
@@ -42,3 +43,12 @@ class Test(literal.Action):
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
+
+
+class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.DestroyerDestructionContracts):
+
+    @override
+    def run_destructors_global_position_target(self, particle: literal.Particle):
+        particle.get_action(
+            local.my_domain_com.my_lib.extra_destructor.ExtraDestructor
+        ).run()

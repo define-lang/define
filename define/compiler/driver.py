@@ -36,9 +36,7 @@ from define.compiler.validator.structural import program_validator
 if typing.TYPE_CHECKING:
     import collections.abc
 
-    from define.compiler.graphs import reference_graph_executor
     from define.compiler.validator import validation_result
-    from define.compiler.validator.reference_graph import action_contract
 
 
 class DriverMode(enum.StrEnum):
@@ -95,11 +93,9 @@ class CompilerValidationResult(CompilerResult):
     """Result of completing every compiler validation stage."""
 
     program_validation: validation_result.ProgramValidationResult
-    definition_order: reference_graph_executor.ReferenceGraphOrder
+    codegen_input: validation_result.CodegenInput
     overall_stats: overall_stats.OverallStats
     operation_graphs: operation_graph.OperationGraphs
-    destructions: dict[ast.SourceLocation, list[ast.PositionReference]]
-    triggered_actions: action_contract.TriggeredActions
 
     @typing.override
     def error_strings(self) -> list[str]:
@@ -231,14 +227,12 @@ class Driver:
         reference_graph_result = validator.validate(max_workers=max_threads)
         return CompilerValidationResult(
             program_validation=program_result,
-            definition_order=reference_graph_result.definition_order,
+            codegen_input=reference_graph_result.codegen_input(),
             overall_stats=overall_stats.calculate_overall_stats(
                 program_result.file_results,
                 program_result.config_loading_time_ns,
             ),
             operation_graphs=reference_graph_result.operation_graphs,
-            destructions=reference_graph_result.destructions,
-            triggered_actions=reference_graph_result.triggered_actions,
         )
 
     def compile_program(
@@ -294,9 +288,7 @@ class Driver:
                 )
             )
             return CompilationResult.from_validation_result(compiler_validation)
-        definition_order = compiler_validation.definition_order
-        destructions = compiler_validation.destructions
-        triggered_actions = compiler_validation.triggered_actions
+        codegen_input = compiler_validation.codegen_input
         compilation_result = CompilationResult.from_validation_result(
             compiler_validation
         )
@@ -307,9 +299,7 @@ class Driver:
         del compiler_validation
         codegen = generator.CodeGenerator()
         codegen.generate(
-            definition_order,
-            destructions,
-            triggered_actions,
+            codegen_input,
             entry_action,
             output_dir,
             trace_operations=trace_operations,

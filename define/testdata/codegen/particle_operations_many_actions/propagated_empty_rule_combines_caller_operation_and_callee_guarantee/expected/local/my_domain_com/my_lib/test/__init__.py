@@ -6,6 +6,7 @@ from define.runtime import literal
 
 import local.my_domain_com.my_lib.direct_child
 import local.my_domain_com.my_lib.filler
+import local.my_domain_com.my_lib.guaranteed_child
 import local.my_domain_com.my_lib.middle
 import local.my_domain_com.my_lib.parent
 
@@ -42,7 +43,7 @@ class Test(literal.Action):
         ).create_particle()
         self.on_particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
-        ).run()
+        ).run(MiddleDestructionContracts())
         self.on_particle.get_action(
             local.my_domain_com.my_lib.filler.Filler
         ).get_interface_position(
@@ -52,4 +53,16 @@ class Test(literal.Action):
             local.my_domain_com.my_lib.middle.Middle
         ).get_interface_position(
             "position<trigger_pos>"
+        ).destroy_particle()
+
+
+class MiddleDestructionContracts(local.my_domain_com.my_lib.middle.MiddleDestructionContracts):
+
+    @override
+    def destroy_global_position_parent(self, particle: literal.Particle):
+        particle.get_position(
+            local.my_domain_com.my_lib.guaranteed_child.GuaranteedChild
+        ).destroy_particle()
+        particle.get_position(
+            local.my_domain_com.my_lib.direct_child.DirectChild
         ).destroy_particle()
