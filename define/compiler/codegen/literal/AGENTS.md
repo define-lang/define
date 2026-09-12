@@ -1,8 +1,5 @@
 # Literal Code Generation
 
-Before changing literal code generation, read
-[the shared execution design](../../operation_graph_execution_design.md).
-
 ## Purpose
 
 - Literal transpilation is a debugging, testing, and educational representation
