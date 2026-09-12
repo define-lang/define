@@ -16,7 +16,6 @@ class SimultaneousDestruction:
     directly_destroyed_position: ast.PositionReference
     destroying_action: ast.GlobalTypedName
     is_automatic: bool
-    location: ast.SourceLocation
 
 
 @dataclass(frozen=True, slots=True, eq=False)
@@ -53,9 +52,3 @@ class DestructionConnection:
     callee_destruction: PropagatedDestruction
     contribution: DestructionContribution | None = None
     forwarded_destructions: list[PropagatedDestruction] = field(default_factory=list)
-
-
-type DestructionConnections = dict[
-    ast.SourceLocation,
-    dict[ast.ActionReference, list[DestructionConnection]],
-]

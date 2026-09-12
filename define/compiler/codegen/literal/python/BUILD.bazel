@@ -23,8 +23,7 @@ py_library(
         ":action_statements",
         ":naming",
         ":template_context",
-        "//define/compiler:ast",
-        "//define/compiler/validator:validation_result",
+        "//define/compiler/validator:codegen_input",
     ],
 )
 
@@ -39,7 +38,8 @@ py_library(
         ":position_expression",
         ":template_context",
         "//define/compiler:ast",
-        "//define/compiler/validator:validation_result",
+        "//define/compiler/validator:codegen_input",
+        "//define/compiler/validator/reference_graph:destruction_contract",
     ],
 )
 
@@ -52,7 +52,7 @@ py_library(
         ":position_expression",
         ":template_context",
         "//define/compiler:ast",
-        "//define/compiler/validator:validation_result",
+        "//define/compiler/validator:codegen_input",
         "//define/compiler/validator/reference_graph:destruction_contract",
     ],
 )
@@ -71,7 +71,7 @@ py_library(
         ":template_env",
         "//define/compiler:ast",
         "//define/compiler/graphs:reference_graph_executor",
-        "//define/compiler/validator:validation_result",
+        "//define/compiler/validator:codegen_input",
         "@pypi//jinja2",
     ],
 )

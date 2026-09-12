@@ -36,6 +36,7 @@ from define.compiler.validator.structural import program_validator
 if typing.TYPE_CHECKING:
     import collections.abc
 
+    from define.compiler.validator import codegen_input as codegen_input_types
     from define.compiler.validator import validation_result
 
 
@@ -93,7 +94,7 @@ class CompilerValidationResult(CompilerResult):
     """Result of completing every compiler validation stage."""
 
     program_validation: validation_result.ProgramValidationResult
-    codegen_input: validation_result.CodegenInput
+    codegen_input: codegen_input_types.CodegenInput
     overall_stats: overall_stats.OverallStats
     operation_graphs: operation_graph.OperationGraphs
 
@@ -227,7 +228,7 @@ class Driver:
         reference_graph_result = validator.validate(max_workers=max_threads)
         return CompilerValidationResult(
             program_validation=program_result,
-            codegen_input=reference_graph_result.codegen_input(),
+            codegen_input=reference_graph_result.codegen_input,
             overall_stats=overall_stats.calculate_overall_stats(
                 program_result.file_results,
                 program_result.config_loading_time_ns,

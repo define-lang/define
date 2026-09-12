@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from define.compiler import ast
-    from define.compiler.validator import validation_result
+    from define.compiler.validator import codegen_input as codegen_input_types
 
 
 class CodeGenerator:
@@ -18,7 +18,7 @@ class CodeGenerator:
 
     def generate(
         self,
-        codegen_input: validation_result.CodegenInput,
+        codegen_input: codegen_input_types.CodegenInput,
         entry_action: ast.ActionDefinition,
         output_dir: Path,
         *,

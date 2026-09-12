@@ -16,12 +16,8 @@ if typing.TYPE_CHECKING:
     from collections.abc import Iterator, Sequence
 
     from define.compiler.data_structures import define_path, typed_name_dict
-    from define.compiler.graphs import reference_graph, reference_graph_executor
+    from define.compiler.graphs import reference_graph
     from define.compiler.validator import stats
-    from define.compiler.validator.reference_graph import (
-        action_contract,
-        destruction_contract,
-    )
 
 type AnyValidationException = exceptions.DefineError | lark_standalone.UnexpectedInput
 
@@ -176,18 +172,3 @@ class ProgramValidationResult:
     def has_errors(self) -> bool:
         """Whether any file had exceptions or diagnostics."""
         return bool(self.all_exceptions or self.all_diagnostics)
-
-
-@dataclass
-class CodegenInput:
-    """Validated definitions and particle operations needed by code generation."""
-
-    # TODO: Revisit how validation presents related statement, invocation, and
-    # destruction information to codegen. Codegen currently has to coordinate
-    # separate SourceLocation-keyed mappings instead of receiving those
-    # relationships directly.
-    definition_order: reference_graph_executor.ReferenceGraphOrder
-    destructions: dict[ast.SourceLocation, list[ast.PositionReference]]
-    triggered_actions: action_contract.TriggeredActions
-    destruction_connections: destruction_contract.DestructionConnections
-    propagated_destructions: dict[str, list[destruction_contract.PropagatedDestruction]]

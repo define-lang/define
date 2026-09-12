@@ -70,6 +70,7 @@ py_library(
         "//define/compiler:ast",
         "//define/compiler:diagnostics",
         "//define/compiler/data_structures:typed_name_dict",
+        "//define/compiler/validator:codegen_input",
         "//define/compiler/validator:scope_tracker",
         "//define/compiler/validator:validation_result",
         "//define/compiler/validator/reference_graph/dead_code:dead_constraint_tracker",
@@ -284,9 +285,7 @@ py_library(
         "//tools:__subpackages__",
     ],
     deps = [
-        ":action_contract",
         ":definition_postorder_validator",
-        ":destruction_contract",
         ":operation_graph",
         ":position_occupancy",
         ":reference_graph_validation_state",
@@ -295,6 +294,7 @@ py_library(
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/graphs:reference_graph",
         "//define/compiler/graphs:reference_graph_executor",
+        "//define/compiler/validator:codegen_input",
         "//define/compiler/validator:validation_result",
     ],
 )
@@ -336,6 +336,7 @@ py_library(
         ":destruction_contract",
         ":reference_graph_validator",
         "//define/compiler:ast",
+        "//define/compiler/validator:codegen_input",
     ],
 )
 

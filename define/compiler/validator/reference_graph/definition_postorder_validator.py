@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from functools import cached_property
 
 from define.compiler import ast, diagnostics
-from define.compiler.validator import scope_tracker
+from define.compiler.validator import codegen_input, scope_tracker
 from define.compiler.validator.reference_graph import (
     action_contract,
     child_state,
@@ -42,10 +42,7 @@ class PostorderValidationResult:
     diagnostics: list[diagnostics.Diagnostic]
     contract: action_contract.ActionContract
     operation_graph: operation_graph.OperationGraph
-    destructions: dict[ast.SourceLocation, list[ast.PositionReference]]
-    triggered_actions: action_contract.TriggeredActions
-    destruction_connections: destruction_contract_types.DestructionConnections
-    propagated_destructions: list[destruction_contract_types.PropagatedDestruction]
+    codegen_input: codegen_input.ActionCodegenInput
 
 
 @dataclass(frozen=True, slots=True)
@@ -173,9 +170,7 @@ class ActionPostorderValidator:
         self._diagnostics = []
         self._inferred_requirements = {}
         self._destruction_contracts = []
-        self._triggered_actions: action_contract.TriggeredActions = {}
-        self._destruction_connections: destruction_contract_types.DestructionConnections = {}
-        self._destructions: dict[ast.SourceLocation, list[ast.PositionReference]] = {}
+        self._steps: list[codegen_input.ActionStep] = []
         self._dead_constraint_tracker = dead_constraint_tracker.DeadConstraintTracker()
 
     @property
@@ -366,7 +361,6 @@ class ActionPostorderValidator:
                 action_chain,
                 position,
                 scope,
-                triggering_statement=statement,
                 current_position=position,
                 parent_particle=self._tracker.get_occupant(position),
                 action_assignment=action_contract.ActionAssignment(
@@ -379,10 +373,9 @@ class ActionPostorderValidator:
         self,
         targets: Sequence[_DestructionTarget],
         scope: scope_tracker.ScopeTracker,
-        location: ast.SourceLocation,
     ):
         """Destroy the target particles and their occupied transitive children."""
-        destruction: list[ast.PositionReference] = []
+        step = codegen_input.Destruction()
         particle_destructions: list[particle_tracker.ParticleDestruction] = []
         destructors: list[
             tuple[action_contract.Destructor, ast.PositionReference | None]
@@ -402,7 +395,7 @@ class ActionPostorderValidator:
                 destruction_facts,
                 destructors,
                 pending_contracts,
-                destruction,
+                step.positions,
             )
             if pending_contracts:
                 snapshot_positions.append(target.position)
@@ -414,23 +407,24 @@ class ActionPostorderValidator:
             self._run_destructor(
                 destructor,
                 scope,
-                location,
+                step.destructors,
                 auto_destruction_target=auto_destruction_target,
             )
 
-        self._destructions[location] = destruction
         self._tracker.destroy_simultaneously(particle_destructions)
         for shared_state, pending_contracts in zip(
             child_states, pending_contracts_by_target, strict=True
         ):
             contracts = action_contract.DestructionContracts(child_state=shared_state)
             for pending_contract in pending_contracts:
-                self._record_destruction_contract(
+                propagated = self._record_destruction_contract(
                     pending_contract.particle,
                     contracts,
                     pending_contract.destruction_fact,
                 )
+                step.contract_destructions.append(propagated)
             self._destruction_contracts.append(contracts)
+        self._steps.append(step)
 
     def _collect_particle_destructions(
         self,
@@ -536,14 +530,15 @@ class ActionPostorderValidator:
         particle: particle_info.ParticleInfo,
         contracts: action_contract.DestructionContracts,
         destruction_fact: destruction_contract_types.DestructionFact,
-    ):
+    ) -> destruction_contract_types.PropagatedDestruction:
         """Record the Destruction Contract for one caller-passed particle."""
+        propagated = destruction_contract_types.PropagatedDestruction(
+            destruction_fact=destruction_fact,
+            contracted_position=particle.origin_position,
+        )
         contracts.append(
             action_contract.DestructionContract(
-                propagated_destruction=destruction_contract_types.PropagatedDestruction(
-                    destruction_fact=destruction_fact,
-                    contracted_position=particle.origin_position,
-                ),
+                propagated_destruction=propagated,
                 # The snapshot's names are relative to the directly destroyed
                 # Position. For a Destroy of position<box>, a particle at
                 # position<box>::position</child> uses just position</child>
@@ -562,12 +557,13 @@ class ActionPostorderValidator:
                 ),
             )
         )
+        return propagated
 
     def _run_destructor(
         self,
         destructor: action_contract.Destructor,
         scope: scope_tracker.ScopeTracker,
-        location: ast.SourceLocation,
+        known_destructors: list[ast.ActionReference],
         auto_destruction_target: ast.PositionReference | None = None,
     ):
         """Trigger one directly known destructor before particle destruction."""
@@ -581,7 +577,7 @@ class ActionPostorderValidator:
         if contract is None:
             return
         action_chain = destructor.position.with_action_suffix(destructor_name)
-        self._triggered_actions.setdefault(location, []).append(action_chain)
+        known_destructors.append(action_chain)
         parent_particle = self._tracker.get_occupant(destructor.position)
         requirements_in_caller = contract.requirements_in_caller(action_chain)
         self._mark_callee_contract_constraints_alive(requirements_in_caller, scope)
@@ -645,7 +641,6 @@ class ActionPostorderValidator:
             action_chain,
             particle.last_position,
             scope,
-            triggering_statement=statement,
             current_position=parent_position,
             parent_particle=parent_particle,
         )
@@ -657,14 +652,12 @@ class ActionPostorderValidator:
         acting_on_position: ast.PositionReference,
         scope: scope_tracker.ScopeTracker,
         *,
-        triggering_statement: ast.CreateParticleStatement | ast.MoveParticleStatement,
         current_position: ast.PositionReference | None,
         parent_particle: particle_info.ParticleInfo | None,
         action_assignment: action_contract.ActionAssignment | None = None,
     ):
-        self._triggered_actions.setdefault(triggering_statement.location, []).append(
-            action_chain
-        )
+        execution = codegen_input.ActionExecution(action=action_chain)
+        self._steps.append(execution)
         action = action_chain.get_last_action()
         # Requirement propagation, requirement checking, and the operation graph
         # each need every requirement's position from the caller's perspective
@@ -687,7 +680,7 @@ class ActionPostorderValidator:
         destruction_contract_contributions = self._check_destruction_contracts(
             contract,
             action_chain,
-            triggering_statement.location,
+            execution.destruction_connections,
         )
         origin_position = (
             parent_particle.origin_position if parent_particle is not None else None
@@ -837,7 +830,7 @@ class ActionPostorderValidator:
         self,
         contract: action_contract.ActionContract,
         action_chain: ast.ActionReference,
-        location: ast.SourceLocation,
+        connections: list[destruction_contract_types.DestructionConnection],
     ) -> Sequence[operation_graph_model.DestructionContractContribution]:
         """Check a callee's Destruction Contracts from the caller's perspective."""
         if not contract.destruction_contracts:
@@ -851,10 +844,6 @@ class ActionPostorderValidator:
             triggered_quality_name=action_chain.typed_names[-1].full_typed_name,
         )
         contributions: list[operation_graph_model.DestructionContractContribution] = []
-        connections: list[destruction_contract_types.DestructionConnection] = []
-        self._destruction_connections.setdefault(location, {})[action_chain] = (
-            connections
-        )
         for callee_contracts in contract.destruction_contracts:
             contributions.extend(
                 self._check_destruction_contract_group(
@@ -1389,14 +1378,17 @@ class ActionPostorderValidator:
         for stmt in action_statements.statements:
             match stmt:
                 case ast.LocalPositionDefinition():
+                    self._steps.append(stmt)
                     scope.add_definition(stmt)
                     self._dead_constraint_tracker.register_position_constraints(
                         stmt, self._definition_results
                     )
                 case ast.CreateParticleStatement():
+                    self._steps.append(stmt)
                     validity = next(validity_iter)
                     self._analyze_create(stmt, validity, scope)
                 case ast.MoveParticleStatement():
+                    self._steps.append(stmt)
                     validity = next(validity_iter)
                     self._analyze_move(stmt, validity, scope)
                 case ast.DestroyParticleStatement():
@@ -1431,14 +1423,11 @@ class ActionPostorderValidator:
                         directly_destroyed_position=position,
                         destroying_action=self._definition.typed_name,
                         is_automatic=True,
-                        location=self._action_definition.action_statements.location,
                     ),
                     auto_destruction_target=auto_destruction_target,
                 )
             )
-        self._destroy_particles(
-            targets, scope, self._action_definition.action_statements.location
-        )
+        self._destroy_particles(targets, scope)
 
     def _analyze_create(
         self,
@@ -1490,7 +1479,6 @@ class ActionPostorderValidator:
             directly_destroyed_position=stmt.target_position,
             destroying_action=self._definition.typed_name,
             is_automatic=False,
-            location=stmt.location,
         )
 
         self._destroy_particles(
@@ -1502,7 +1490,6 @@ class ActionPostorderValidator:
                 ),
             ),
             scope,
-            stmt.location,
         )
 
     def _analyze_move(
@@ -1969,10 +1956,11 @@ class ActionPostorderValidator:
             diagnostics=self._diagnostics,
             contract=contract,
             operation_graph=operation_graph_builder.finish(),
-            destructions=self._destructions,
-            triggered_actions=self._triggered_actions,
-            destruction_connections=self._destruction_connections,
-            propagated_destructions=propagated_destructions,
+            codegen_input=codegen_input.ActionCodegenInput(
+                definition=action_def,
+                steps=self._steps,
+                propagated_destructions=propagated_destructions,
+            ),
         )
 
     def _check_trigger(

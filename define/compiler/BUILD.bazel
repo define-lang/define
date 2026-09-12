@@ -138,6 +138,7 @@ py_library(
         ":overall_stats",
         ":parser",
         "//define/compiler/codegen:generator",
+        "//define/compiler/validator:codegen_input",
         "//define/compiler/validator:validation_result",
         "//define/compiler/validator/reference_graph:operation_graph",
         "//define/compiler/validator/reference_graph:reference_graph_validator",

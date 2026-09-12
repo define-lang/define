@@ -12,8 +12,7 @@ from define.compiler.codegen.literal.python import (
 )
 
 if TYPE_CHECKING:
-    from define.compiler import ast
-    from define.compiler.validator import validation_result
+    from define.compiler.validator import codegen_input
 
 
 @final
@@ -22,27 +21,24 @@ class ActionDefinitionGenerator:
 
     def __init__(
         self,
-        definition: ast.ActionDefinition,
+        action_input: codegen_input.ActionCodegenInput,
         converter: naming.NameConverter,
-        codegen_input: validation_result.CodegenInput,
         *,
         trace_operations: bool,
     ):
         """Initialize from validated definitions and known destructions."""
-        self._codegen_input = codegen_input
-        self._definition = definition
+        self._action_input = action_input
         self._converter = converter
         self._statements = action_statements.ActionStatementsGenerator(
-            definition,
+            action_input,
             converter,
-            codegen_input,
             trace_operations=trace_operations,
         )
         self._trace_operations = trace_operations
 
     def generate(self) -> action_context.ActionDefinitionContext:
         """Build the template context for this action."""
-        definition = self._definition
+        definition = self._action_input.definition
         interfaces: list[template_context.InterfacePositionContext] = []
         for position in definition.interface_positions:
             interfaces.append(
@@ -62,9 +58,7 @@ class ActionDefinitionGenerator:
             generated.imports.update(
                 quality.module_name for quality in position.constraints
             )
-        propagated_destructions = self._codegen_input.propagated_destructions[
-            definition.typed_name.full_typed_name
-        ]
+        propagated_destructions = self._action_input.propagated_destructions
         contract_names = self._converter.destruction_method_names(
             propagated_destructions
         ).values()

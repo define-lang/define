@@ -19,7 +19,7 @@ from define.compiler.graphs import reference_graph_executor
 if typing.TYPE_CHECKING:
     import jinja2
 
-    from define.compiler.validator import validation_result
+    from define.compiler.validator import codegen_input as codegen_input_types
 
 _TEMPLATES_DIR = Path(__file__).parent
 _COMPILED_DIR = _TEMPLATES_DIR / "templates.compiled"
@@ -47,7 +47,7 @@ class _DefinitionGenerator:
 
     def __init__(
         self,
-        codegen_input: validation_result.CodegenInput,
+        codegen_input: codegen_input_types.CodegenInput,
         entry_point: ast.ActionDefinition,
         converter: naming.NameConverter,
         output_dir: Path,
@@ -92,9 +92,8 @@ class _DefinitionGenerator:
         definition: ast.ActionDefinition,
     ) -> action_context.ActionDefinitionContext:
         context = action_definition.ActionDefinitionGenerator(
-            definition,
+            self._codegen_input.actions[definition.typed_name.full_typed_name],
             self._converter,
-            self._codegen_input,
             trace_operations=self._trace_operations,
         ).generate()
         if definition.typed_name == self._entry_point.typed_name:
@@ -126,7 +125,7 @@ class PythonLiteralCodeGenerator:
 
     def generate(
         self,
-        codegen_input: validation_result.CodegenInput,
+        codegen_input: codegen_input_types.CodegenInput,
         entry_point: ast.ActionDefinition,
         output_dir: Path,
         *,

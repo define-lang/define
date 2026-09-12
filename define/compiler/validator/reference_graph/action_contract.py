@@ -24,9 +24,6 @@ if typing.TYPE_CHECKING:
     )
 
 
-type TriggeredActions = dict[ast.SourceLocation, list[ast.ActionReference]]
-
-
 class PropagationKind(enum.Enum):
     """How a requirement reached a given step in its propagation chain."""
 

@@ -53,7 +53,7 @@ py_library(
     deps = [
         "//define/compiler:ast",
         "//define/compiler/codegen/literal/python:generator",
-        "//define/compiler/validator:validation_result",
+        "//define/compiler/validator:codegen_input",
     ],
 )
 

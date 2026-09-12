@@ -15,19 +15,17 @@ from define.compiler.codegen.literal.python import (
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from define.compiler.validator import validation_result
+    from define.compiler.validator import codegen_input
     from define.compiler.validator.reference_graph import destruction_contract
 
 
 @final
 class DestructionContractsGenerator:
-    """Build contract methods and classes for one action's invocations."""
+    """Build contract methods and classes for one action's executions."""
 
     def __init__(
         self,
-        definition: ast.ActionDefinition,
         converter: naming.NameConverter,
-        codegen_input: validation_result.CodegenInput,
         positions: position_expression.PositionExpressionBuilder,
         contract_names: dict[destruction_contract.PropagatedDestruction, str],
         class_names: naming.LocalNameAllocator,
@@ -35,31 +33,11 @@ class DestructionContractsGenerator:
         trace_operations: bool,
     ):
         """Initialize from validated contracts and generation inputs."""
-        self._definition = definition
         self._converter = converter
-        self._codegen_input = codegen_input
         self._positions = positions
         self._contract_names = contract_names
         self._class_names = class_names
         self._trace_operations = trace_operations
-
-    def direct_contracts(
-        self,
-    ) -> dict[ast.SourceLocation, list[tuple[str, ast.PositionReference]]]:
-        """Associate direct destructions with their contract methods and positions."""
-        direct_contracts: dict[
-            ast.SourceLocation, list[tuple[str, ast.PositionReference]]
-        ] = {}
-        for propagated, method_name in self._contract_names.items():
-            fact = propagated.destruction_fact
-            destruction = fact.destruction
-            if destruction.destroying_action != self._definition.typed_name:
-                continue
-            direct_contracts.setdefault(destruction.location, []).append(
-                (method_name, fact.destroyed_position_in_destroyer)
-            )
-
-        return direct_contracts
 
     def referenced_modules(
         self,
@@ -83,13 +61,10 @@ class DestructionContractsGenerator:
 
     def generate(
         self,
-        location: ast.SourceLocation,
-        action: ast.ActionReference,
+        execution: codegen_input.ActionExecution,
     ) -> template_context.DestructionContractDefinition | None:
-        """Generate the contribution class needed by an action invocation."""
-        connections = self._codegen_input.destruction_connections.get(location, {}).get(
-            action, ()
-        )
+        """Generate the contribution class needed by an action execution."""
+        connections = execution.destruction_connections
         callee_names = self._converter.destruction_method_names(
             connection.callee_destruction for connection in connections
         )
@@ -144,7 +119,7 @@ class DestructionContractsGenerator:
                     )
         if not methods:
             return None
-        callee = action.get_last_action()
+        callee = execution.action.get_last_action()
         callee_class = self._converter.class_reference(callee)
         base = naming.ClassReference(
             class_name=self._converter.destruction_contract_class_name(
