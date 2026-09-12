@@ -83,20 +83,18 @@ class TestExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.bundle.Bundle
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/bundle",
-            1,
+            "create(/bundle)",
         )
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.bundle.Bundle
         ).particle.get_position(
             local.my_domain_com.my_lib.occupied_first.OccupiedFirst
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/bundle::/occupied_first",
-            1,
+            "create(/bundle::/occupied_first)",
         )
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.bundle.Bundle
@@ -105,10 +103,9 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.transitive.Transitive
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/bundle::/occupied_first::/transitive",
-            1,
+            "create(/bundle::/occupied_first::/transitive)",
         )
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.bundle.Bundle
@@ -119,11 +116,9 @@ class TestExecution:
                 "position<target>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/bundle",
-            "/middle::target",
-            1,
+            "move(/bundle, /middle::target)",
         )
         self.destruction_position_action_middle__position_target__global_position_occupied_first__global_position_transitive = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
@@ -147,15 +142,13 @@ class TestExecution:
 
     def destroy_action_middle__position_target__global_position_occupied_first__global_position_transitive(self):
         self.destruction_position_action_middle__position_target__global_position_occupied_first__global_position_transitive.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.destruction_connection_action_middle.trace_execution,
-            "target::/occupied_first::/transitive",
-            1,
+            "destroy(target::/occupied_first::/transitive)",
         )
         self.destruction_position_action_middle__position_target__global_position_occupied_first.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.destruction_connection_action_middle.trace_execution,
-            "target::/occupied_first",
-            1,
+            "destroy(target::/occupied_first)",
         )
         self.destruction_connection_action_middle.complete()

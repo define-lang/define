@@ -81,10 +81,9 @@ class TestExecution:
 
     def create_position_carrier(self):
         self.local_position_carrier.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "carrier",
-            1,
+            "create(carrier)",
         )
         self.scheduler.continue_with(
             self.create_position_carrier__global_position_first,
@@ -96,19 +95,17 @@ class TestExecution:
         self.local_position_carrier.particle.get_position(
             local.my_domain_com.my_lib.first.First
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "carrier::/first",
-            1,
+            "create(carrier::/first)",
         )
         self.destruction_position_position_carrier__global_position_first = self.local_position_carrier.particle.get_position(
             local.my_domain_com.my_lib.first.First
         )
         self.destruction_position_position_carrier__global_position_first.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "carrier::/first",
-            1,
+            "destroy(carrier::/first)",
         )
         self.move_position_carrier_to_action_destroyer__position_target()
 
@@ -116,19 +113,17 @@ class TestExecution:
         self.local_position_carrier.particle.get_position(
             local.my_domain_com.my_lib.third.Third
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "carrier::/third",
-            1,
+            "create(carrier::/third)",
         )
         self.destruction_position_position_carrier__global_position_third = self.local_position_carrier.particle.get_position(
             local.my_domain_com.my_lib.third.Third
         )
         self.destruction_position_position_carrier__global_position_third.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "carrier::/third",
-            1,
+            "destroy(carrier::/third)",
         )
         self.move_position_carrier_to_action_destroyer__position_target()
 
@@ -136,19 +131,17 @@ class TestExecution:
         self.local_position_carrier.particle.get_position(
             local.my_domain_com.my_lib.fifth.Fifth
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "carrier::/fifth",
-            1,
+            "create(carrier::/fifth)",
         )
         self.destruction_position_position_carrier__global_position_fifth = self.local_position_carrier.particle.get_position(
             local.my_domain_com.my_lib.fifth.Fifth
         )
         self.destruction_position_position_carrier__global_position_fifth.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "carrier::/fifth",
-            1,
+            "destroy(carrier::/fifth)",
         )
         self.move_position_carrier_to_action_destroyer__position_target()
 
@@ -162,11 +155,9 @@ class TestExecution:
                 "position<target>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "carrier",
-            "/destroyer::target",
-            1,
+            "move(carrier, /destroyer::target)",
         )
         self.execution_action_destroyer.init_when_occupied_position_target()
         self.scheduler.continue_with(

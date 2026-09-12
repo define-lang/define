@@ -57,10 +57,9 @@ class TestExecution:
 
     def create_position_box(self):
         self.local_position_box.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box",
-            1,
+            "create(box)",
         )
         self.execution_position_box__action_construct_a = local.my_domain_com.my_lib.construct_a.ConstructAExecution(
             self.local_position_box.particle.get_action(
@@ -122,18 +121,16 @@ class TestExecution:
 
     def destroy_position_box(self):
         self.local_position_box.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box",
-            1,
+            "destroy(box)",
         )
 
     def destroy_position_box__global_position_marker(self):
         self.destruction_position_position_box__global_position_marker.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box::/marker",
-            1,
+            "destroy(box::/marker)",
         )
 
     def init_position_box__action_destruct_b__global_position_marker(self):

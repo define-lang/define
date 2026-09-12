@@ -85,10 +85,9 @@ class DestroyerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.occupied.Occupied
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "target::/occupied",
-            1,
+            "create(target::/occupied)",
         )
         self.destruction_position_position_target__global_position_occupied = self.action.get_interface_position(
             "position<target>"
@@ -106,10 +105,9 @@ class DestroyerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.empty.Empty
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "target::/empty",
-            1,
+            "create(target::/empty)",
         )
         self.destruction_position_position_target__global_position_empty = self.action.get_interface_position(
             "position<target>"
@@ -117,10 +115,9 @@ class DestroyerExecution:
             local.my_domain_com.my_lib.empty.Empty
         )
         self.destruction_position_position_target__global_position_empty.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "target::/empty",
-            1,
+            "destroy(target::/empty)",
         )
         self.destroy_position_target()
 
@@ -133,10 +130,9 @@ class DestroyerExecution:
         self.action.get_interface_position(
             "position<target>"
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "target",
-            1,
+            "destroy(target)",
         )
         self.guarantees.position_target.run()
 
@@ -145,10 +141,9 @@ class DestroyerExecution:
 
     def continue_destroy_position_target__global_position_occupied(self):
         self.destruction_position_position_target__global_position_occupied.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "target::/occupied",
-            1,
+            "destroy(target::/occupied)",
         )
 
     def destroy_position_trigger(self):
@@ -160,9 +155,8 @@ class DestroyerExecution:
         self.action.get_interface_position(
             "position<trigger>"
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "trigger",
-            1,
+            "destroy(trigger)",
         )
         self.guarantees.position_trigger.run()

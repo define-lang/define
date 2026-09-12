@@ -77,11 +77,9 @@ class DestroyerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.known.Known
         ).move_particle_to(self.local_position_holder)
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "run::/known",
-            "holder",
-            1,
+            "move(run::/known, holder)",
         )
         self.local_position_holder.move_particle_to(
             self.action.get_interface_position(
@@ -90,11 +88,9 @@ class DestroyerExecution:
                 local.my_domain_com.my_lib.known.Known
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "holder",
-            "run::/known",
-            1,
+            "move(holder, run::/known)",
         )
         self.destruction_position_position_run__global_position_known = self.action.get_interface_position(
             "position<run>"
@@ -115,10 +111,9 @@ class DestroyerExecution:
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "run",
-            1,
+            "destroy(run)",
         )
         self.guarantees.position_run.run()
 
@@ -127,8 +122,7 @@ class DestroyerExecution:
 
     def continue_destroy_position_run__global_position_known(self):
         self.destruction_position_position_run__global_position_known.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "run::/known",
-            1,
+            "destroy(run::/known)",
         )

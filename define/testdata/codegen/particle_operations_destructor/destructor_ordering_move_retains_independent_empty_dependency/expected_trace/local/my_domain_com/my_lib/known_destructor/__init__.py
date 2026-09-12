@@ -43,17 +43,15 @@ class KnownDestructorExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.destination.Destination
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/destination",
-            1,
+            "create(/destination)",
         )
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.destination.Destination
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/destination",
-            1,
+            "destroy(/destination)",
         )
         self.guarantees.global_position_destination.run()

@@ -117,11 +117,9 @@ class MiddleExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.marker_a.MarkerA
         ).move_particle_to(self.local_position_holder_a)
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "run::/marker_a",
-            "holder_a",
-            1,
+            "move(run::/marker_a, holder_a)",
         )
         self.local_position_holder_a.move_particle_to(
             self.action.get_interface_position(
@@ -130,11 +128,9 @@ class MiddleExecution:
                 local.my_domain_com.my_lib.marker_a.MarkerA
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "holder_a",
-            "run::/marker_a",
-            1,
+            "move(holder_a, run::/marker_a)",
         )
         self.move_position_run_to_action_destroyer__position_run()
 
@@ -146,11 +142,9 @@ class MiddleExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.marker_b.MarkerB
         ).move_particle_to(self.local_position_holder_b)
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "run::/marker_b",
-            "holder_b",
-            1,
+            "move(run::/marker_b, holder_b)",
         )
         self.local_position_holder_b.move_particle_to(
             self.action.get_interface_position(
@@ -159,11 +153,9 @@ class MiddleExecution:
                 local.my_domain_com.my_lib.marker_b.MarkerB
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "holder_b",
-            "run::/marker_b",
-            1,
+            "move(holder_b, run::/marker_b)",
         )
         self.move_position_run_to_action_destroyer__position_run()
 
@@ -173,10 +165,9 @@ class MiddleExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.maybe_empty.MaybeEmpty
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "run::/maybe_empty",
-            1,
+            "create(run::/maybe_empty)",
         )
         self.destruction_position_position_run__global_position_maybe_empty = self.action.get_interface_position(
             "position<run>"
@@ -184,10 +175,9 @@ class MiddleExecution:
             local.my_domain_com.my_lib.maybe_empty.MaybeEmpty
         )
         self.destruction_position_position_run__global_position_maybe_empty.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "run::/maybe_empty",
-            1,
+            "destroy(run::/maybe_empty)",
         )
         self.move_position_run_to_action_destroyer__position_run()
 
@@ -203,11 +193,9 @@ class MiddleExecution:
                 "position<run>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "run",
-            "/destroyer::run",
-            1,
+            "move(run, /destroyer::run)",
         )
         self.execution_action_destroyer.init_position_run__action_destruct()
         self.guarantees.position_run.run(

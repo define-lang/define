@@ -61,18 +61,16 @@ class OtherExecution:
         self.action.get_interface_position(
             "position<scratch>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "scratch",
-            1,
+            "create(scratch)",
         )
         self.action.get_interface_position(
             "position<scratch>"
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "scratch",
-            1,
+            "destroy(scratch)",
         )
         self.guarantees.position_scratch.run()
 
@@ -80,9 +78,8 @@ class OtherExecution:
         self.action.get_interface_position(
             "position<output>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "output",
-            1,
+            "create(output)",
         )
         self.guarantees.position_output.run()

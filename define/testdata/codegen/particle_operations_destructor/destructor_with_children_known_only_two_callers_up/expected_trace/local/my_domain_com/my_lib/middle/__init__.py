@@ -85,11 +85,9 @@ class MiddleExecution:
                 "position<run>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "run",
-            "/destroyer::run",
-            1,
+            "move(run, /destroyer::run)",
         )
         self.execution_action_destroyer.init_when_occupied_position_run()
         self.guarantees.position_run.run(

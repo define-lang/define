@@ -77,10 +77,9 @@ class DestroyerExecution:
 
     def continue_destroy_position_run__global_position_run(self):
         self.destruction_position_position_run__global_position_run.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "run::/run",
-            1,
+            "destroy(run::/run)",
         )
         self.destroy_position_run()
 
@@ -93,9 +92,8 @@ class DestroyerExecution:
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "run",
-            1,
+            "destroy(run)",
         )
         self.guarantees.position_run.run()

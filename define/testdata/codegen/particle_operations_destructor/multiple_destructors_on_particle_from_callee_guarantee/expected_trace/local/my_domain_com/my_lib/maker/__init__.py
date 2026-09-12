@@ -60,9 +60,8 @@ class MakerExecution:
         self.action.get_interface_position(
             "position<result>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "result",
-            1,
+            "create(result)",
         )
         self.guarantees.position_result.run()

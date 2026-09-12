@@ -61,10 +61,9 @@ class OtherExecution:
         self.action.get_interface_position(
             "position<output>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "output",
-            1,
+            "create(output)",
         )
         self.guarantees.position_output.run()
 
@@ -72,17 +71,15 @@ class OtherExecution:
         self.action.get_interface_position(
             "position<late>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "late",
-            1,
+            "create(late)",
         )
         self.action.get_interface_position(
             "position<late>"
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "late",
-            1,
+            "destroy(late)",
         )
         self.guarantees.position_late.run()

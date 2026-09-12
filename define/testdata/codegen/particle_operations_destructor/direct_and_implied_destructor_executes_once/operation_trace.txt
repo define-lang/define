@@ -1,0 +1,8 @@
+test.create(/bundle)
+test.create(/bundle::/marker)
+test.move(/bundle, direct)
+test.move(direct, /destroyer::target)
+destructor.move(/marker, holder)
+destructor.move(holder, /marker)
+destroyer.destroy(target::/marker)
+destroyer.destroy(target)

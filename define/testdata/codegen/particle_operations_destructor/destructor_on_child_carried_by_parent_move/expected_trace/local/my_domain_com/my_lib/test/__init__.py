@@ -52,25 +52,21 @@ class TestExecution:
 
     def create_position_staging(self):
         self.local_position_staging.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "staging",
-            1,
+            "create(staging)",
         )
         self.local_position_staging.particle.get_position(
             local.my_domain_com.my_lib.child.Child
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "staging::/child",
-            1,
+            "create(staging::/child)",
         )
         self.local_position_staging.move_particle_to(self.local_position_box)
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "staging",
-            "box",
-            1,
+            "move(staging, box)",
         )
         self.destruction_position_position_box__global_position_child = self.local_position_box.particle.get_position(
             local.my_domain_com.my_lib.child.Child
@@ -88,16 +84,14 @@ class TestExecution:
 
     def destroy_position_box(self):
         self.local_position_box.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box",
-            1,
+            "destroy(box)",
         )
 
     def destroy_position_box__global_position_child(self):
         self.destruction_position_position_box__global_position_child.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box::/child",
-            1,
+            "destroy(box::/child)",
         )

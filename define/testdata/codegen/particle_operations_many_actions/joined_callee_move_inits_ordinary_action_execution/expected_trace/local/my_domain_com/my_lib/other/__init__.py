@@ -90,10 +90,9 @@ class OtherExecution:
         self.action.get_interface_position(
             "position<source>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            1,
+            "create(source)",
         )
         self.scheduler.continue_with(
             self.create_position_source__global_position_a,
@@ -106,10 +105,9 @@ class OtherExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.a.A
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source::/a",
-            1,
+            "create(source::/a)",
         )
         self.move_position_source_to_position_destination()
 
@@ -119,10 +117,9 @@ class OtherExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.b.B
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source::/b",
-            1,
+            "create(source::/b)",
         )
         self.move_position_source_to_position_destination()
 
@@ -136,11 +133,9 @@ class OtherExecution:
                 "position<destination>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            "destination",
-            1,
+            "move(source, destination)",
         )
         self.execution_position_destination__action_worker = local.my_domain_com.my_lib.worker.WorkerExecution(
             self.action.get_interface_position(
@@ -166,10 +161,9 @@ class OtherExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "destination::/worker::run",
-            1,
+            "create(destination::/worker::run)",
         )
         self.execution_position_destination__action_worker.accept_for_empty_rule_position_run()
 
@@ -182,9 +176,8 @@ class OtherExecution:
         self.action.get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "trigger_pos",
-            1,
+            "destroy(trigger_pos)",
         )
         self.guarantees.position_trigger_pos.run()

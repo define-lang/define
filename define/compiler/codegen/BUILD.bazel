@@ -95,20 +95,6 @@ py_test(
 )
 
 py_library(
-    name = "operation_dependency_analysis",
-    testonly = True,
-    srcs = ["operation_dependency_analysis.py"],
-    deps = [
-        "//define/compiler:ast",
-        "//define/compiler/validator/reference_graph:operation_graph",
-        "//define/compiler/validator/reference_graph:operation_graph_labeler",
-        "//define/compiler/validator/reference_graph:operation_graph_renderer",
-        "//define/compiler/validator/reference_graph:operation_graph_resolver",
-        "//define/runtime:tracing",
-    ],
-)
-
-py_library(
     name = "test_helpers",
     testonly = True,
     srcs = ["test_helpers.py"],
@@ -133,10 +119,11 @@ py_test(
     shard_count = 4,
     deps = [
         ":generated_program_runner",
-        ":operation_dependency_analysis",
         ":test_helpers",
         "//define/compiler:driver",
         "//define/compiler/validator:test_helpers",
+        "//define/runtime:literal",  # keep
+        "//define/runtime:tracing",  # keep
         "@pypi//pytest",
     ],
 )
@@ -170,7 +157,6 @@ pyright_test(
         ":generator",
         ":generator_integration_test",
         ":generator_test",
-        ":operation_dependency_analysis",
         ":test_helpers",
         ":test_helpers_test",
         ":tracing_integration_test",

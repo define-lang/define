@@ -123,10 +123,9 @@ class MiddleExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "igw::/inner::trigger_pos",
-            1,
+            "create(igw::/inner::trigger_pos)",
         )
         self.destruction_position_position_igw__action_inner__position_trigger_pos = self.action.get_interface_position(
             "position<igw>"
@@ -136,10 +135,9 @@ class MiddleExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_position_igw__action_inner__position_trigger_pos.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "igw::/inner::trigger_pos",
-            1,
+            "destroy(igw::/inner::trigger_pos)",
         )
         self.destroy_position_igw()
 
@@ -155,11 +153,9 @@ class MiddleExecution:
                 "position<out>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "igw::/inner_result",
-            "out",
-            1,
+            "move(igw::/inner_result, out)",
         )
         self.guarantees.position_out.run(
             self.destroy_position_igw,
@@ -174,9 +170,8 @@ class MiddleExecution:
         self.action.get_interface_position(
             "position<igw>"
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "igw",
-            1,
+            "destroy(igw)",
         )
         self.guarantees.position_igw.run()

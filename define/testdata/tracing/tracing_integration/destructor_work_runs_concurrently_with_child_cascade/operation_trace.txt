@@ -1,0 +1,6 @@
+test.create(box)
+destructor.create(work)
+destructor.destroy(work)
+test.create(box::/child)
+test.destroy(box::/child)
+test.destroy(box)

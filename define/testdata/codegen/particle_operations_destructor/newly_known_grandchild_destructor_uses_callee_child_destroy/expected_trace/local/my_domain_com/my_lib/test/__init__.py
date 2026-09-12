@@ -81,28 +81,25 @@ class TestExecution:
 
     def create_position_source(self):
         self.local_position_source.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            1,
+            "create(source)",
         )
         self.local_position_source.particle.get_position(
             local.my_domain_com.my_lib.known.Known
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source::/known",
-            1,
+            "create(source::/known)",
         )
         self.local_position_source.particle.get_position(
             local.my_domain_com.my_lib.known.Known
         ).particle.get_position(
             local.my_domain_com.my_lib.extra.Extra
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source::/known::/extra",
-            1,
+            "create(source::/known::/extra)",
         )
         self.local_position_source.move_particle_to(
             self.action.on_particle.get_action(
@@ -111,11 +108,9 @@ class TestExecution:
                 "position<run>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            "/destroyer::run",
-            1,
+            "move(source, /destroyer::run)",
         )
         self.destruction_position_action_destroyer__position_run__global_position_known__global_position_extra = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.destroyer.Destroyer
@@ -130,10 +125,9 @@ class TestExecution:
 
     def destroy_action_destroyer__position_run__global_position_known__global_position_extra(self):
         self.destruction_position_action_destroyer__position_run__global_position_known__global_position_extra.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.destruction_connection_action_destroyer.trace_execution,
-            "run::/known::/extra",
-            1,
+            "destroy(run::/known::/extra)",
         )
         self.destruction_connection_action_destroyer.complete()
 

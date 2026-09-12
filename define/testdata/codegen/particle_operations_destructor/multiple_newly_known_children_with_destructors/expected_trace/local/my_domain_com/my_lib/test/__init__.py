@@ -85,10 +85,9 @@ class TestExecution:
 
     def create_position_source(self):
         self.local_position_source.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            1,
+            "create(source)",
         )
         self.scheduler.continue_with(
             self.create_position_source__global_position_extra_a,
@@ -99,10 +98,9 @@ class TestExecution:
         self.local_position_source.particle.get_position(
             local.my_domain_com.my_lib.extra_a.ExtraA
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source::/extra_a",
-            1,
+            "create(source::/extra_a)",
         )
         self.move_position_source_to_action_destroyer__position_run()
 
@@ -110,10 +108,9 @@ class TestExecution:
         self.local_position_source.particle.get_position(
             local.my_domain_com.my_lib.extra_b.ExtraB
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source::/extra_b",
-            1,
+            "create(source::/extra_b)",
         )
         self.move_position_source_to_action_destroyer__position_run()
 
@@ -127,11 +124,9 @@ class TestExecution:
                 "position<run>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            "/destroyer::run",
-            1,
+            "move(source, /destroyer::run)",
         )
         self.destruction_position_action_destroyer__position_run__global_position_extra_b = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.destroyer.Destroyer
@@ -151,19 +146,17 @@ class TestExecution:
 
     def destroy_action_destroyer__position_run__global_position_extra_b(self):
         self.destruction_position_action_destroyer__position_run__global_position_extra_b.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.destruction_connection_action_destroyer.trace_execution,
-            "local::/extra_b",
-            1,
+            "destroy(local::/extra_b)",
         )
         self.destruction_connection_action_destroyer.complete()
 
     def destroy_action_destroyer__position_run__global_position_extra_a(self):
         self.destruction_position_action_destroyer__position_run__global_position_extra_a.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.destruction_connection_action_destroyer.trace_execution,
-            "local::/extra_a",
-            1,
+            "destroy(local::/extra_a)",
         )
         self.destruction_connection_action_destroyer.complete()
 

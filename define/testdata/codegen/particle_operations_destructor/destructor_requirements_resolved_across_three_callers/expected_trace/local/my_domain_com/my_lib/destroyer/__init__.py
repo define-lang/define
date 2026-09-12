@@ -79,10 +79,9 @@ class DestroyerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.callee_known.CalleeKnown
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "target::/callee_known",
-            1,
+            "create(target::/callee_known)",
         )
         self.destruction_position_position_target__global_position_callee_known = self.action.get_interface_position(
             "position<target>"
@@ -103,10 +102,9 @@ class DestroyerExecution:
         self.action.get_interface_position(
             "position<target>"
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "target",
-            1,
+            "destroy(target)",
         )
         self.guarantees.position_target.run()
 
@@ -115,10 +113,9 @@ class DestroyerExecution:
 
     def continue_destroy_position_target__global_position_callee_known(self):
         self.destruction_position_position_target__global_position_callee_known.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "target::/callee_known",
-            1,
+            "destroy(target::/callee_known)",
         )
 
     def destroy_position_run(self):
@@ -130,9 +127,8 @@ class DestroyerExecution:
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "run",
-            1,
+            "destroy(run)",
         )
         self.guarantees.position_run.run()

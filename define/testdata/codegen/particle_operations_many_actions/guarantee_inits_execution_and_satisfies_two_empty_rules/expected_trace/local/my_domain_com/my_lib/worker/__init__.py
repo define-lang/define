@@ -72,18 +72,16 @@ class WorkerExecution:
         self.action.get_interface_position(
             "position<first>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "first",
-            1,
+            "create(first)",
         )
         self.action.get_interface_position(
             "position<first>"
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "first",
-            1,
+            "destroy(first)",
         )
         self.guarantees.position_first.run()
 
@@ -91,18 +89,16 @@ class WorkerExecution:
         self.action.get_interface_position(
             "position<second>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "second",
-            1,
+            "create(second)",
         )
         self.action.get_interface_position(
             "position<second>"
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "second",
-            1,
+            "destroy(second)",
         )
         self.guarantees.position_second.run()
 
@@ -115,9 +111,8 @@ class WorkerExecution:
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "run",
-            1,
+            "destroy(run)",
         )
         self.guarantees.position_run.run()

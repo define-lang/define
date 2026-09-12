@@ -90,10 +90,9 @@ class MiddleExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.middle_known.MiddleKnown
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "target::/middle_known",
-            1,
+            "create(target::/middle_known)",
         )
         self.destruction_position_position_target__global_position_middle_known = self.action.get_interface_position(
             "position<target>"
@@ -101,10 +100,9 @@ class MiddleExecution:
             local.my_domain_com.my_lib.middle_known.MiddleKnown
         )
         self.destruction_position_position_target__global_position_middle_known.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "target::/middle_known",
-            1,
+            "destroy(target::/middle_known)",
         )
         self.move_position_target_to_action_destroyer__position_target()
 
@@ -120,11 +118,9 @@ class MiddleExecution:
                 "position<target>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "target",
-            "/destroyer::target",
-            1,
+            "move(target, /destroyer::target)",
         )
         self.guarantees.position_target.run(
             self.execution_action_destroyer.accept_when_empty_position_target__global_position_callee_known,
@@ -136,9 +132,8 @@ class MiddleExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/destroyer::run",
-            1,
+            "create(/destroyer::run)",
         )
         self.execution_action_destroyer.accept_for_empty_rule_position_run()

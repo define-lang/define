@@ -69,10 +69,9 @@ class MiddleExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/inner::run",
-            1,
+            "create(/inner::run)",
         )
         self.destruction_position_action_inner__position_run = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.inner.Inner
@@ -80,9 +79,8 @@ class MiddleExecution:
             "position<run>"
         )
         self.destruction_position_action_inner__position_run.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/inner::run",
-            1,
+            "destroy(/inner::run)",
         )
         self.guarantees.action_inner__position_run.run()

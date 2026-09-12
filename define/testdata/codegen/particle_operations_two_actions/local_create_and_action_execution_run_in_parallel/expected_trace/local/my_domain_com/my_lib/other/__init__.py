@@ -42,14 +42,12 @@ class OtherExecution:
 
     def create_position_other_item(self):
         self.local_position_other_item.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "other_item",
-            1,
+            "create(other_item)",
         )
         self.local_position_other_item.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "other_item",
-            1,
+            "destroy(other_item)",
         )

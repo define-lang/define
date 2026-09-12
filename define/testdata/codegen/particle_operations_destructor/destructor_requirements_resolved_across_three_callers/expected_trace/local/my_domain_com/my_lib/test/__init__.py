@@ -89,10 +89,9 @@ class TestExecution:
 
     def create_position_source(self):
         self.local_position_source.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            1,
+            "create(source)",
         )
         self.scheduler.continue_with(
             self.create_position_source__global_position_callee_known,
@@ -104,19 +103,17 @@ class TestExecution:
         self.local_position_source.particle.get_position(
             local.my_domain_com.my_lib.callee_known.CalleeKnown
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source::/callee_known",
-            1,
+            "create(source::/callee_known)",
         )
         self.destruction_position_position_source__global_position_callee_known = self.local_position_source.particle.get_position(
             local.my_domain_com.my_lib.callee_known.CalleeKnown
         )
         self.destruction_position_position_source__global_position_callee_known.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source::/callee_known",
-            1,
+            "destroy(source::/callee_known)",
         )
         self.move_position_source_to_action_middle__position_target()
 
@@ -124,19 +121,17 @@ class TestExecution:
         self.local_position_source.particle.get_position(
             local.my_domain_com.my_lib.middle_known.MiddleKnown
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source::/middle_known",
-            1,
+            "create(source::/middle_known)",
         )
         self.destruction_position_position_source__global_position_middle_known = self.local_position_source.particle.get_position(
             local.my_domain_com.my_lib.middle_known.MiddleKnown
         )
         self.destruction_position_position_source__global_position_middle_known.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source::/middle_known",
-            1,
+            "destroy(source::/middle_known)",
         )
         self.move_position_source_to_action_middle__position_target()
 
@@ -144,10 +139,9 @@ class TestExecution:
         self.local_position_source.particle.get_position(
             local.my_domain_com.my_lib.creator_known.CreatorKnown
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source::/creator_known",
-            1,
+            "create(source::/creator_known)",
         )
         self.move_position_source_to_action_middle__position_target()
 
@@ -161,11 +155,9 @@ class TestExecution:
                 "position<target>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            "/middle::target",
-            1,
+            "move(source, /middle::target)",
         )
         self.destruction_position_action_middle__position_target__global_position_creator_known = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
@@ -178,9 +170,8 @@ class TestExecution:
 
     def destroy_action_middle__position_target__global_position_creator_known(self):
         self.destruction_position_action_middle__position_target__global_position_creator_known.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.destruction_connection_action_middle.trace_execution,
-            "target::/creator_known",
-            1,
+            "destroy(target::/creator_known)",
         )
         self.destruction_connection_action_middle.complete()

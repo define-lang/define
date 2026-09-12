@@ -54,10 +54,9 @@ class TestExecution:
 
     def create_position_box(self):
         self.local_position_box.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box",
-            1,
+            "create(box)",
         )
         self.execution_position_box__action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
             self.local_position_box.particle.get_action(
@@ -86,10 +85,9 @@ class TestExecution:
         ).get_interface_position(
             "position<gw>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box::/middle::gw",
-            1,
+            "create(box::/middle::gw)",
         )
         self.execution_position_box__action_middle.init_when_occupied_position_gw()
         self.execution_position_box__action_middle.execution_position_gw__action_inner.guarantees.global_position_holder__global_position_a.inits.append(
@@ -117,10 +115,9 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.holder.Holder
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box::/middle::gw::/holder",
-            1,
+            "create(box::/middle::gw::/holder)",
         )
         self.local_position_box.particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
@@ -131,10 +128,9 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.a.A
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box::/middle::gw::/holder::/a",
-            1,
+            "create(box::/middle::gw::/holder::/a)",
         )
         self.execution_position_box__action_middle.accept_for_empty_rule_position_gw__global_position_holder__global_position_a()
 
@@ -144,10 +140,9 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box::/middle::trigger_pos",
-            1,
+            "create(box::/middle::trigger_pos)",
         )
         self.destruction_position_position_box__action_middle__position_trigger_pos = self.local_position_box.particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
@@ -155,10 +150,9 @@ class TestExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_position_box__action_middle__position_trigger_pos.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box::/middle::trigger_pos",
-            1,
+            "destroy(box::/middle::trigger_pos)",
         )
         self.destroy_position_box()
 
@@ -166,37 +160,33 @@ class TestExecution:
         if not self.join_for_destroy_position_box__action_middle__position_gw.arrive():
             return
         self.destruction_position_position_box__action_middle__position_gw.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box::/middle::gw",
-            1,
+            "destroy(box::/middle::gw)",
         )
         self.destroy_position_box()
 
     def destroy_position_box__action_middle__position_gw__global_position_holder(self):
         self.destruction_position_position_box__action_middle__position_gw__global_position_holder.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box::/middle::gw::/holder",
-            1,
+            "destroy(box::/middle::gw::/holder)",
         )
 
     def destroy_position_box__action_middle__position_gw__global_position_holder__global_position_a(self):
         self.destruction_position_position_box__action_middle__position_gw__global_position_holder__global_position_a.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box::/middle::gw::/holder::/a",
-            1,
+            "destroy(box::/middle::gw::/holder::/a)",
         )
 
     def destroy_position_box(self):
         if not self.join_for_destroy_position_box.arrive():
             return
         self.local_position_box.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box",
-            1,
+            "destroy(box)",
         )
 
     def init_position_box__action_middle__position_gw__action_inner__position_trigger_pos(self):

@@ -68,10 +68,9 @@ class TestExecution:
 
     def create_position_source(self):
         self.local_position_source.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            1,
+            "create(source)",
         )
         self.local_position_source.move_particle_to(
             self.action.on_particle.get_action(
@@ -80,10 +79,8 @@ class TestExecution:
                 "position<run>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            "/outer::run",
-            1,
+            "move(source, /outer::run)",
         )
         self.execution_action_outer.accept_for_empty_rule_position_run()

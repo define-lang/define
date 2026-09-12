@@ -95,10 +95,9 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/left::trigger_pos",
-            1,
+            "create(/left::trigger_pos)",
         )
         self.destruction_position_action_left__position_trigger_pos = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.left.Left
@@ -106,10 +105,9 @@ class TestExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_action_left__position_trigger_pos.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/left::trigger_pos",
-            1,
+            "destroy(/left::trigger_pos)",
         )
         self.guarantees.action_left__position_trigger_pos.run()
 
@@ -119,10 +117,9 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/right::trigger_pos",
-            1,
+            "create(/right::trigger_pos)",
         )
         self.destruction_position_action_right__position_trigger_pos = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.right.Right
@@ -130,10 +127,9 @@ class TestExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_action_right__position_trigger_pos.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/right::trigger_pos",
-            1,
+            "destroy(/right::trigger_pos)",
         )
         self.guarantees.action_right__position_trigger_pos.run()
 

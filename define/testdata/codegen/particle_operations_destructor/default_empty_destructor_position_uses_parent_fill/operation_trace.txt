@@ -1,0 +1,8 @@
+test.create(carrier)
+test.create(carrier::/callee::trigger_pos)
+test.destroy(carrier::/callee::trigger_pos)
+test.create(carrier::/callee::src)
+destructor.create(/marker)
+destructor.destroy(/marker)
+callee.destroy(src)
+test.destroy(carrier)

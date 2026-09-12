@@ -92,10 +92,9 @@ class TestExecution:
 
     def create_position_source(self):
         self.local_position_source.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            1,
+            "create(source)",
         )
         self.move_position_source_to_global_position_target()
 
@@ -107,21 +106,18 @@ class TestExecution:
                 local.my_domain_com.my_lib.target.Target
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            "/target",
-            1,
+            "move(source, /target)",
         )
         self.execution_action_outer.init_when_occupied_global_position_target()
         self.execution_action_outer.accept_when_empty_global_position_target__global_position_marker()
 
     def create_position_run_source(self):
         self.local_position_run_source.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "run_source",
-            1,
+            "create(run_source)",
         )
         self.local_position_run_source.move_particle_to(
             self.action.on_particle.get_action(
@@ -130,10 +126,8 @@ class TestExecution:
                 "position<run>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "run_source",
-            "/outer::run",
-            1,
+            "move(run_source, /outer::run)",
         )
         self.execution_action_outer.accept_for_empty_rule_position_run()

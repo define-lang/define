@@ -98,20 +98,18 @@ class TestExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.left.Left
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/left",
-            1,
+            "create(/left)",
         )
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.left.Left
         ).particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/left::/marker",
-            1,
+            "create(/left::/marker)",
         )
         self.move_global_position_left_to_global_position_right()
 
@@ -125,11 +123,9 @@ class TestExecution:
                 local.my_domain_com.my_lib.right.Right
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/left",
-            "/right",
-            1,
+            "move(/left, /right)",
         )
         self.guarantees.global_position_left.run(
             self.move_global_position_right_to_action_destroyer__position_target,
@@ -145,11 +141,9 @@ class TestExecution:
                 "position<target>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/right",
-            "/destroyer::target",
-            1,
+            "move(/right, /destroyer::target)",
         )
         self.execution_action_destroyer__position_target__action_destructor = local.my_domain_com.my_lib.destructor.DestructorExecution(
             self.action.on_particle.get_action(
@@ -187,9 +181,8 @@ class TestExecution:
             local.my_domain_com.my_lib.marker.Marker
         )
         self.destruction_position_action_destroyer__position_target__global_position_marker.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.destruction_connection_action_destroyer.trace_execution,
-            "target::/marker",
-            1,
+            "destroy(target::/marker)",
         )
         self.destruction_connection_action_destroyer.complete()

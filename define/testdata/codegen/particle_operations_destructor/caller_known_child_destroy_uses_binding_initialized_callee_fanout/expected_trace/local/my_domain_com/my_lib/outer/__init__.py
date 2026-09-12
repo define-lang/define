@@ -101,11 +101,9 @@ class OuterExecution:
                 "position<target>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "run::/payload",
-            "run::/destroyer::target",
-            1,
+            "move(run::/payload, run::/destroyer::target)",
         )
         self.execution_position_run__action_destroyer.accept_for_empty_rule_position_target()
 
@@ -118,9 +116,8 @@ class OuterExecution:
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "run",
-            1,
+            "destroy(run)",
         )
         self.guarantees.position_run.run()

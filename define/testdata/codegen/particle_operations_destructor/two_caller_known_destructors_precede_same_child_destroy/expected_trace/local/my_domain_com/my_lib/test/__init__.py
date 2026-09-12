@@ -101,18 +101,16 @@ class TestExecution:
 
     def create_position_source(self):
         self.local_position_source.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            1,
+            "create(source)",
         )
         self.local_position_source.particle.get_position(
             local.my_domain_com.my_lib.sibling.Sibling
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source::/sibling",
-            1,
+            "create(source::/sibling)",
         )
         self.local_position_source.move_particle_to(
             self.action.on_particle.get_action(
@@ -121,11 +119,9 @@ class TestExecution:
                 "position<parent>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            "/destroyer::parent",
-            1,
+            "move(source, /destroyer::parent)",
         )
         self.execution_action_destroyer__position_parent__action_destruct_b = local.my_domain_com.my_lib.destruct_b.DestructBExecution(
             self.action.on_particle.get_action(
@@ -186,19 +182,17 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/destroyer::trigger_pos",
-            1,
+            "create(/destroyer::trigger_pos)",
         )
         self.execution_action_destroyer.accept_for_empty_rule_position_trigger_pos()
 
     def destroy_action_destroyer__position_parent__global_position_sibling(self):
         self.destruction_position_action_destroyer__position_parent__global_position_sibling.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.destruction_connection_action_destroyer.trace_execution,
-            "parent::/sibling",
-            1,
+            "destroy(parent::/sibling)",
         )
         self.destruction_connection_action_destroyer.complete()
 

@@ -91,7 +91,7 @@ class ActionStatementsGenerator:
         node: operation_graph_model.PositionOperationNode,
     ) -> template_context.ActionStatementContext:
         """Build template data for one operation-graph node."""
-        local_label = (
+        operation_label = (
             self._operation_labels.operation_label(
                 self._defining_typed_name,
                 node,
@@ -99,6 +99,14 @@ class ActionStatementsGenerator:
             if self._operation_labels is not None
             else None
         )
+        local_label = None
+        if operation_label is not None:
+            positions = (
+                operation_label.target
+                if operation_label.source is None
+                else f"{operation_label.source}, {operation_label.target}"
+            )
+            local_label = f"{operation_label.operation_name}({positions})"
         match node:
             case operation_graph_model.CreateNode():
                 return template_context.ActionStatementContext(

@@ -86,11 +86,9 @@ class DestroyerExecution:
         self.action.get_interface_position(
             "position<run>"
         ).move_particle_to(self.local_position_used_run)
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "run",
-            "used_run",
-            1,
+            "move(run, used_run)",
         )
         self.guarantees.position_run.run(
             self.destroy_position_used_run,
@@ -105,10 +103,9 @@ class DestroyerExecution:
         self.action.get_interface_position(
             "position<first>"
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "first",
-            1,
+            "destroy(first)",
         )
         self.guarantees.position_first.run()
 
@@ -121,10 +118,9 @@ class DestroyerExecution:
         self.action.get_interface_position(
             "position<second>"
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "second",
-            1,
+            "destroy(second)",
         )
         self.guarantees.position_second.run()
 
@@ -133,8 +129,7 @@ class DestroyerExecution:
 
     def continue_destroy_position_used_run(self):
         self.local_position_used_run.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "used_run",
-            1,
+            "destroy(used_run)",
         )

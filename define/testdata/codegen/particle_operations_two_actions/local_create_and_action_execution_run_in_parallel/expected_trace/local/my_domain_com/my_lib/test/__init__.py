@@ -70,10 +70,9 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/other::trigger_pos",
-            1,
+            "create(/other::trigger_pos)",
         )
         self.destruction_position_action_other__position_trigger_pos = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.other.Other
@@ -81,23 +80,20 @@ class TestExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_action_other__position_trigger_pos.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/other::trigger_pos",
-            1,
+            "destroy(/other::trigger_pos)",
         )
         self.guarantees.action_other__position_trigger_pos.run()
 
     def create_position_local_item(self):
         self.local_position_local_item.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "local_item",
-            1,
+            "create(local_item)",
         )
         self.local_position_local_item.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "local_item",
-            1,
+            "destroy(local_item)",
         )

@@ -65,10 +65,9 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/runner::run",
-            1,
+            "create(/runner::run)",
         )
         self.destruction_position_action_runner__position_run = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.runner.Runner
@@ -76,9 +75,8 @@ class TestExecution:
             "position<run>"
         )
         self.destruction_position_action_runner__position_run.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/runner::run",
-            1,
+            "destroy(/runner::run)",
         )
         self.guarantees.action_runner__position_run.run()

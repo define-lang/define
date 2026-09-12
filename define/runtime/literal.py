@@ -298,33 +298,13 @@ class Scheduler:
         """Observe creation of an Action Execution."""
         return None
 
-    def create_completed(
+    def operation_completed(
         self,
         _execution: object | None,
-        _position_name: str,
-        _occurrence: int,
+        _operation_label: str,
         /,
     ):
-        """Observe completion of a Create."""
-
-    def move_completed(
-        self,
-        _execution: object | None,
-        _source_name: str,
-        _destination_name: str,
-        _occurrence: int,
-        /,
-    ):
-        """Observe completion of a Move."""
-
-    def destroy_completed(
-        self,
-        _execution: object | None,
-        _position_name: str,
-        _occurrence: int,
-        /,
-    ):
-        """Observe completion of a Destroy."""
+        """Observe completion of a Particle Operation."""
 
     def start(self, entry_point: type[EntryPoint]):
         """Execute the Define program startup sequence once."""

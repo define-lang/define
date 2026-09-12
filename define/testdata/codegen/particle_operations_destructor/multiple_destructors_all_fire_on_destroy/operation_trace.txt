@@ -1,0 +1,6 @@
+test.create(box)
+destruct_b.create(_noop)
+destruct_b.destroy(_noop)
+test.destroy(box)
+destruct_a.create(_noop)
+destruct_a.destroy(_noop)

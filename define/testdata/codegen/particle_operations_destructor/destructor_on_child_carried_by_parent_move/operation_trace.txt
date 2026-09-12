@@ -1,0 +1,7 @@
+test.create(staging)
+test.create(staging::/child)
+test.move(staging, box)
+destructor.create(_noop)
+destructor.destroy(_noop)
+test.destroy(box)
+test.destroy(box::/child)

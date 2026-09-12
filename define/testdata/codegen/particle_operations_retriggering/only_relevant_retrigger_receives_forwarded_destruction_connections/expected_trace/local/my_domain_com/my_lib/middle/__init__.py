@@ -78,7 +78,7 @@ class MiddleExecution:
             ),
             self.scheduler,
             self.trace_execution,
-            "destroyer#2",
+            "destroyer",
         )
         self.execution_action_destroyer_2.join_for_empty_rule_position_run = literal.NO_JOIN
         self.execution_action_destroyer_2.join_for_destroy_position_run = literal.NO_JOIN
@@ -103,11 +103,9 @@ class MiddleExecution:
                 "position<run>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "run",
-            "/destroyer::run",
-            1,
+            "move(run, /destroyer::run)",
         )
         self.guarantees.position_run.run(
             self.execution_action_destroyer.accept_for_empty_rule_position_run,
@@ -115,10 +113,9 @@ class MiddleExecution:
 
     def create_position_local(self):
         self.local_position_local.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "local",
-            1,
+            "create(local)",
         )
         self.move_position_local_to_action_destroyer__position_run()
 
@@ -132,10 +129,8 @@ class MiddleExecution:
                 "position<run>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "local",
-            "/destroyer::run",
-            1,
+            "move(local, /destroyer::run)",
         )
         self.execution_action_destroyer_2.accept_for_empty_rule_position_run()

@@ -52,28 +52,25 @@ class TestExecution:
 
     def create_position_box(self):
         self.local_position_box.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box",
-            1,
+            "create(box)",
         )
         self.local_position_box.particle.get_position(
             local.my_domain_com.my_lib.child.Child
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box::/child",
-            1,
+            "create(box::/child)",
         )
         self.local_position_box.particle.get_position(
             local.my_domain_com.my_lib.child.Child
         ).particle.get_position(
             local.my_domain_com.my_lib.leaf.Leaf
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box::/child::/leaf",
-            1,
+            "create(box::/child::/leaf)",
         )
         self.destruction_position_position_box__global_position_child = self.local_position_box.particle.get_position(
             local.my_domain_com.my_lib.child.Child
@@ -90,29 +87,24 @@ class TestExecution:
 
     def destroy_position_box__global_position_child(self):
         self.destruction_position_position_box__global_position_child.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box::/child",
-            1,
+            "destroy(box::/child)",
         )
         self.local_position_box.move_particle_to(self.local_position_destination)
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box",
-            "destination",
-            1,
+            "move(box, destination)",
         )
         self.local_position_destination.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "destination",
-            1,
+            "destroy(destination)",
         )
 
     def destroy_position_box__global_position_child__global_position_leaf(self):
         self.destruction_position_position_box__global_position_child__global_position_leaf.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box::/child::/leaf",
-            1,
+            "destroy(box::/child::/leaf)",
         )

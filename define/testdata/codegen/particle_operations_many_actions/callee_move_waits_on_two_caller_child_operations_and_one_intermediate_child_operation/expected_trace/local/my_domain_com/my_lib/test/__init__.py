@@ -86,10 +86,9 @@ class TestExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.input.Input
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/input",
-            1,
+            "create(/input)",
         )
         self.scheduler.continue_with(
             self.create_global_position_input__global_position_second,
@@ -103,21 +102,18 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.second.Second
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/input::/second",
-            1,
+            "create(/input::/second)",
         )
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.input.Input
         ).particle.get_position(
             local.my_domain_com.my_lib.second.Second
         ).move_particle_to(self.local_position_second_holder)
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/input::/second",
-            "second_holder",
-            1,
+            "move(/input::/second, second_holder)",
         )
         self.scheduler.continue_with(
             self.destroy_position_second_holder,
@@ -126,10 +122,9 @@ class TestExecution:
 
     def destroy_position_second_holder(self):
         self.local_position_second_holder.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "second_holder",
-            1,
+            "destroy(second_holder)",
         )
 
     def create_global_position_input__global_position_third(self):
@@ -138,21 +133,18 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.third.Third
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/input::/third",
-            1,
+            "create(/input::/third)",
         )
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.input.Input
         ).particle.get_position(
             local.my_domain_com.my_lib.third.Third
         ).move_particle_to(self.local_position_third_holder)
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/input::/third",
-            "third_holder",
-            1,
+            "move(/input::/third, third_holder)",
         )
         self.scheduler.continue_with(
             self.destroy_position_third_holder,
@@ -161,10 +153,9 @@ class TestExecution:
 
     def destroy_position_third_holder(self):
         self.local_position_third_holder.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "third_holder",
-            1,
+            "destroy(third_holder)",
         )
 
     def create_action_middle_action__position_trigger_pos(self):
@@ -173,10 +164,9 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/middle_action::trigger_pos",
-            1,
+            "create(/middle_action::trigger_pos)",
         )
         self.destruction_position_action_middle_action__position_trigger_pos = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.middle_action.MiddleAction
@@ -184,9 +174,8 @@ class TestExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_action_middle_action__position_trigger_pos.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/middle_action::trigger_pos",
-            1,
+            "destroy(/middle_action::trigger_pos)",
         )
         self.guarantees.action_middle_action__position_trigger_pos.run()

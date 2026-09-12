@@ -102,10 +102,9 @@ class DestroyerExecution:
         self.action.get_interface_position(
             "position<first>"
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "first",
-            1,
+            "destroy(first)",
         )
         self.guarantees.position_first.run()
 
@@ -118,9 +117,8 @@ class DestroyerExecution:
         self.action.get_interface_position(
             "position<second>"
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "second",
-            1,
+            "destroy(second)",
         )
         self.guarantees.position_second.run()

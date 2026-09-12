@@ -89,18 +89,16 @@ class ExtraDestructorExecution:
 
     def create_position_source(self):
         self.local_position_source.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            1,
+            "create(source)",
         )
         self.local_position_source.particle.get_position(
             local.my_domain_com.my_lib.child.Child
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source::/child",
-            1,
+            "create(source::/child)",
         )
         self.move_position_source_to_global_position_marker()
 
@@ -112,11 +110,9 @@ class ExtraDestructorExecution:
                 local.my_domain_com.my_lib.marker.Marker
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            "/marker",
-            1,
+            "move(source, /marker)",
         )
         self.execution_global_position_marker__global_position_child__action_child_destructor = local.my_domain_com.my_lib.child_destructor.ChildDestructorExecution(
             self.action.on_particle.get_position(
@@ -149,10 +145,9 @@ class ExtraDestructorExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/cleaner::trigger_pos",
-            1,
+            "create(/cleaner::trigger_pos)",
         )
         self.destruction_position_action_cleaner__position_trigger_pos = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.cleaner.Cleaner
@@ -160,19 +155,17 @@ class ExtraDestructorExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_action_cleaner__position_trigger_pos.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/cleaner::trigger_pos",
-            1,
+            "destroy(/cleaner::trigger_pos)",
         )
         self.guarantees.action_cleaner__position_trigger_pos.run()
 
     def destroy_global_position_marker__global_position_child(self):
         self.destruction_position_global_position_marker__global_position_child.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.destruction_connection_action_cleaner.trace_execution,
-            "/marker::/child",
-            1,
+            "destroy(/marker::/child)",
         )
         self.destruction_connection_action_cleaner.complete()
 

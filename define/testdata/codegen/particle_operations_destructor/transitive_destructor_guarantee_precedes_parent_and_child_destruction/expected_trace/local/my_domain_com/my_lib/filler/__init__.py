@@ -75,22 +75,18 @@ class FillerExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         ).move_particle_to(self.local_position_holder)
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/marker",
-            "holder",
-            1,
+            "move(/marker, holder)",
         )
         self.local_position_holder.move_particle_to(
             self.action.on_particle.get_position(
                 local.my_domain_com.my_lib.marker.Marker
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "holder",
-            "/marker",
-            1,
+            "move(holder, /marker)",
         )
         self.guarantees.global_position_marker.run()
 
@@ -103,9 +99,8 @@ class FillerExecution:
         self.action.get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "trigger_pos",
-            1,
+            "destroy(trigger_pos)",
         )
         self.guarantees.position_trigger_pos.run()

@@ -76,10 +76,9 @@ class CallEmptyExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/empty_item::trigger_pos",
-            1,
+            "create(/empty_item::trigger_pos)",
         )
         self.destruction_position_action_empty_item__position_trigger_pos = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.empty_item.EmptyItem
@@ -87,9 +86,8 @@ class CallEmptyExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_action_empty_item__position_trigger_pos.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/empty_item::trigger_pos",
-            1,
+            "destroy(/empty_item::trigger_pos)",
         )
         self.guarantees.action_empty_item__position_trigger_pos.run()

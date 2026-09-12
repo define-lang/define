@@ -1,0 +1,8 @@
+test.create(source)
+test.create(source::/extra)
+test.move(source, /destroyer::run)
+destroyer.move(run, local)
+destroyer.destroy(local::/extra)
+destroyer.destroy(local)
+parent_destruct.create(_noop)
+parent_destruct.destroy(_noop)

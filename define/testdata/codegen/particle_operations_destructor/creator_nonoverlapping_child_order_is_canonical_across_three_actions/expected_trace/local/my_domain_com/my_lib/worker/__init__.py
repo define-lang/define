@@ -49,10 +49,9 @@ class WorkerExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.first_interface.FirstInterface
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/first_interface",
-            1,
+            "create(/first_interface)",
         )
         self.guarantees.global_position_first_interface.run()
 
@@ -60,9 +59,8 @@ class WorkerExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.second_interface.SecondInterface
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/second_interface",
-            1,
+            "create(/second_interface)",
         )
         self.guarantees.global_position_second_interface.run()

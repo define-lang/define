@@ -58,9 +58,8 @@ class DestructorExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/forwarder::trigger_pos",
-            1,
+            "create(/forwarder::trigger_pos)",
         )
         self.execution_action_forwarder.accept_for_empty_rule_position_trigger_pos()

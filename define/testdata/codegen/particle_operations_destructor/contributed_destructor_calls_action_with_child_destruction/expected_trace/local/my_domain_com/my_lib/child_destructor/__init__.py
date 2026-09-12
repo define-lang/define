@@ -43,17 +43,15 @@ class ChildDestructorExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.child_marker.ChildMarker
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/child_marker",
-            1,
+            "create(/child_marker)",
         )
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.child_marker.ChildMarker
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/child_marker",
-            1,
+            "destroy(/child_marker)",
         )
         self.guarantees.global_position_child_marker.run()

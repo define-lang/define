@@ -94,10 +94,9 @@ class OuterExecution:
 
     def create_position_middle_holder(self):
         self.local_position_middle_holder.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "middle_holder",
-            1,
+            "create(middle_holder)",
         )
         self.execution_position_middle_holder__action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
             self.local_position_middle_holder.particle.get_action(
@@ -130,11 +129,9 @@ class OuterExecution:
                 "position<inner_parent>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            "middle_holder::/middle::inner_parent",
-            1,
+            "move(source, middle_holder::/middle::inner_parent)",
         )
         self.guarantees.position_source.run(
             self.execution_position_middle_holder__action_middle.accept_for_empty_rule_position_inner_parent,
@@ -146,10 +143,9 @@ class OuterExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "middle_holder::/middle::trigger_pos",
-            1,
+            "create(middle_holder::/middle::trigger_pos)",
         )
         self.destruction_position_position_middle_holder__action_middle__position_trigger_pos = self.local_position_middle_holder.particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
@@ -169,11 +165,9 @@ class OuterExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.result_value.ResultValue
         ).move_particle_to(self.local_position_result_holder)
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "middle_holder::/middle::inner_parent::/result_value",
-            "result_holder",
-            1,
+            "move(middle_holder::/middle::inner_parent::/result_value, result_holder)",
         )
         self.move_position_middle_holder__action_middle__position_inner_parent_to_position_destination()
 
@@ -189,11 +183,9 @@ class OuterExecution:
                 "position<destination>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "middle_holder::/middle::inner_parent",
-            "destination",
-            1,
+            "move(middle_holder::/middle::inner_parent, destination)",
         )
         self.guarantees.position_destination.run(
             self.move_position_result_holder_to_position_destination__global_position_result_value,
@@ -208,11 +200,9 @@ class OuterExecution:
                 local.my_domain_com.my_lib.result_value.ResultValue
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "result_holder",
-            "destination::/result_value",
-            1,
+            "move(result_holder, destination::/result_value)",
         )
         self.guarantees.position_destination__global_position_result_value.run()
 
@@ -220,16 +210,14 @@ class OuterExecution:
         if not self.join_for_destroy_position_middle_holder.arrive():
             return
         self.local_position_middle_holder.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "middle_holder",
-            1,
+            "destroy(middle_holder)",
         )
 
     def destroy_position_middle_holder__action_middle__position_trigger_pos(self):
         self.destruction_position_position_middle_holder__action_middle__position_trigger_pos.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "middle_holder::/middle::trigger_pos",
-            1,
+            "destroy(middle_holder::/middle::trigger_pos)",
         )

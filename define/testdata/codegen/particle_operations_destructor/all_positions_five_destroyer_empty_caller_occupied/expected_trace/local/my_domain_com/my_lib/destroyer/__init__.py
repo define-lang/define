@@ -191,10 +191,9 @@ class DestroyerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.second.Second
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "target::/second",
-            1,
+            "create(target::/second)",
         )
         self.destruction_position_position_target__global_position_second = self.action.get_interface_position(
             "position<target>"
@@ -202,10 +201,9 @@ class DestroyerExecution:
             local.my_domain_com.my_lib.second.Second
         )
         self.destruction_position_position_target__global_position_second.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "target::/second",
-            1,
+            "destroy(target::/second)",
         )
         self.execution_position_target__action_second_destructor.accept_when_empty_global_position_second()
 
@@ -215,10 +213,9 @@ class DestroyerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.fourth.Fourth
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "target::/fourth",
-            1,
+            "create(target::/fourth)",
         )
         self.destruction_position_position_target__global_position_fourth = self.action.get_interface_position(
             "position<target>"
@@ -226,10 +223,9 @@ class DestroyerExecution:
             local.my_domain_com.my_lib.fourth.Fourth
         )
         self.destruction_position_position_target__global_position_fourth.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "target::/fourth",
-            1,
+            "destroy(target::/fourth)",
         )
         self.execution_position_target__action_fourth_destructor.accept_when_empty_global_position_fourth()
 
@@ -242,10 +238,9 @@ class DestroyerExecution:
         self.action.get_interface_position(
             "position<target>"
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "target",
-            1,
+            "destroy(target)",
         )
         self.guarantees.position_target.run()
 

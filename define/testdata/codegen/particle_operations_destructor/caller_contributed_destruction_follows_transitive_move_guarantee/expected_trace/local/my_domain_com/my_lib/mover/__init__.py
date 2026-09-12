@@ -63,10 +63,8 @@ class MoverExecution:
                 "position<result>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "run",
-            "result",
-            1,
+            "move(run, result)",
         )
         self.guarantees.position_run__move__position_result.run()

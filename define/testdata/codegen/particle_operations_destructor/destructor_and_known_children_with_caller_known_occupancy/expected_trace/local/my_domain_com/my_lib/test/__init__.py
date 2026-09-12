@@ -75,10 +75,9 @@ class TestExecution:
 
     def create_position_source(self):
         self.local_position_source.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            1,
+            "create(source)",
         )
         self.scheduler.continue_with(
             self.create_position_source__global_position_marker_a,
@@ -90,10 +89,9 @@ class TestExecution:
         self.local_position_source.particle.get_position(
             local.my_domain_com.my_lib.marker_a.MarkerA
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source::/marker_a",
-            1,
+            "create(source::/marker_a)",
         )
         self.move_position_source_to_action_middle__position_run()
 
@@ -101,10 +99,9 @@ class TestExecution:
         self.local_position_source.particle.get_position(
             local.my_domain_com.my_lib.marker_b.MarkerB
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source::/marker_b",
-            1,
+            "create(source::/marker_b)",
         )
         self.move_position_source_to_action_middle__position_run()
 
@@ -112,19 +109,17 @@ class TestExecution:
         self.local_position_source.particle.get_position(
             local.my_domain_com.my_lib.maybe_empty.MaybeEmpty
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source::/maybe_empty",
-            1,
+            "create(source::/maybe_empty)",
         )
         self.destruction_position_position_source__global_position_maybe_empty = self.local_position_source.particle.get_position(
             local.my_domain_com.my_lib.maybe_empty.MaybeEmpty
         )
         self.destruction_position_position_source__global_position_maybe_empty.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source::/maybe_empty",
-            1,
+            "destroy(source::/maybe_empty)",
         )
         self.move_position_source_to_action_middle__position_run()
 
@@ -138,11 +133,9 @@ class TestExecution:
                 "position<run>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            "/middle::run",
-            1,
+            "move(source, /middle::run)",
         )
         self.scheduler.continue_with(
             self.execution_action_middle.accept_for_empty_rule_position_run__global_position_marker_a,

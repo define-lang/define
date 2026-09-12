@@ -68,10 +68,8 @@ class FillerExecution:
                 local.my_domain_com.my_lib.target.Target
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "run",
-            "/target",
-            1,
+            "move(run, /target)",
         )
         self.guarantees.position_run__move__global_position_target.run()

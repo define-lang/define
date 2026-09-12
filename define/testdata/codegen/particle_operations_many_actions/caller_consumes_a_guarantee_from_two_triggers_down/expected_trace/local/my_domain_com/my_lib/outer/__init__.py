@@ -137,10 +137,9 @@ class OuterExecution:
         ).get_interface_position(
             "position<igw>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "gw::/middle::igw",
-            1,
+            "create(gw::/middle::igw)",
         )
         self.execution_position_gw__action_middle.init_when_occupied_position_igw()
         self.scheduler.continue_with(
@@ -156,10 +155,9 @@ class OuterExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "gw::/middle::trigger_pos",
-            1,
+            "create(gw::/middle::trigger_pos)",
         )
         self.destruction_position_position_gw__action_middle__position_trigger_pos = self.action.get_interface_position(
             "position<gw>"
@@ -169,10 +167,9 @@ class OuterExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_position_gw__action_middle__position_trigger_pos.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "gw::/middle::trigger_pos",
-            1,
+            "destroy(gw::/middle::trigger_pos)",
         )
         self.destroy_position_gw()
 
@@ -190,11 +187,9 @@ class OuterExecution:
                 "position<out>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "gw::/middle::out",
-            "out",
-            1,
+            "move(gw::/middle::out, out)",
         )
         self.guarantees.position_out.run(
             self.destroy_position_gw,
@@ -209,9 +204,8 @@ class OuterExecution:
         self.action.get_interface_position(
             "position<gw>"
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "gw",
-            1,
+            "destroy(gw)",
         )
         self.guarantees.position_gw.run()

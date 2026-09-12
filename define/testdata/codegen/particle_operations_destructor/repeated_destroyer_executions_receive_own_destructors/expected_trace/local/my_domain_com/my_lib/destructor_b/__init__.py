@@ -32,14 +32,12 @@ class DestructorBExecution:
 
     def create_position_work(self):
         self.local_position_work.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "work",
-            1,
+            "create(work)",
         )
         self.local_position_work.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "work",
-            1,
+            "destroy(work)",
         )

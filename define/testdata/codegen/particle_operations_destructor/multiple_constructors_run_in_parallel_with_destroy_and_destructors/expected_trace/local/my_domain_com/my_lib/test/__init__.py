@@ -55,10 +55,9 @@ class TestExecution:
 
     def create_position_box(self):
         self.local_position_box.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box",
-            1,
+            "create(box)",
         )
         self.execution_position_box__action_construct_a = local.my_domain_com.my_lib.construct_a.ConstructAExecution(
             self.scheduler,
@@ -90,8 +89,7 @@ class TestExecution:
 
     def destroy_position_box(self):
         self.local_position_box.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box",
-            1,
+            "destroy(box)",
         )

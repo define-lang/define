@@ -86,9 +86,8 @@ class DestroyerExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.target.Target
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/target",
-            1,
+            "destroy(/target)",
         )
         self.guarantees.global_position_target.run()

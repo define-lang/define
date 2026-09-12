@@ -49,10 +49,9 @@ class TestExecution:
 
     def create_position_gateway(self):
         self.local_position_gateway.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "gateway",
-            1,
+            "create(gateway)",
         )
         self.execution_position_gateway__action_worker = local.my_domain_com.my_lib.worker.WorkerExecution(
             self.local_position_gateway.particle.get_action(
@@ -78,7 +77,7 @@ class TestExecution:
             ),
             self.scheduler,
             self.trace_execution,
-            "worker#2",
+            "worker",
         )
         self.execution_position_gateway__action_worker_2.join_for_empty_rule_position_item = literal.NO_JOIN
         self.execution_position_gateway__action_worker_2.join_for_empty_rule_position_trigger_pos = literal.NO_JOIN
@@ -104,10 +103,9 @@ class TestExecution:
         ).get_interface_position(
             "position<item>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "gateway::/worker::item",
-            1,
+            "create(gateway::/worker::item)",
         )
         self.execution_position_gateway__action_worker.accept_for_empty_rule_position_item()
 
@@ -117,10 +115,9 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "gateway::/worker::trigger_pos",
-            1,
+            "create(gateway::/worker::trigger_pos)",
         )
         self.execution_position_gateway__action_worker.accept_for_empty_rule_position_trigger_pos()
 
@@ -130,19 +127,17 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "gateway::/worker::trigger_pos",
-            2,
+            "create(gateway::/worker::trigger_pos)",
         )
         self.execution_position_gateway__action_worker_2.accept_for_empty_rule_position_trigger_pos()
 
     def destroy_position_gateway__action_worker__position_item(self):
         self.destruction_position_position_gateway__action_worker__position_item.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "gateway::/worker::item",
-            1,
+            "destroy(gateway::/worker::item)",
         )
         self.destroy_position_gateway()
 
@@ -150,10 +145,9 @@ class TestExecution:
         if not self.join_for_destroy_position_gateway.arrive():
             return
         self.local_position_gateway.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "gateway",
-            1,
+            "destroy(gateway)",
         )
 
     def init_position_gateway__action_worker__position_item(self):

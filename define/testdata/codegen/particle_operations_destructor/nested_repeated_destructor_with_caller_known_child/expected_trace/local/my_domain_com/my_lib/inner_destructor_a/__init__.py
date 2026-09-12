@@ -32,14 +32,12 @@ class InnerDestructorAExecution:
 
     def create_position_work_a(self):
         self.local_position_work_a.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "work_a",
-            1,
+            "create(work_a)",
         )
         self.local_position_work_a.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "work_a",
-            1,
+            "destroy(work_a)",
         )

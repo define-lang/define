@@ -157,10 +157,9 @@ class DestroyerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.first.First
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "target::/first",
-            1,
+            "create(target::/first)",
         )
         self.execution_position_target__action_first_destructor.accept_for_empty_rule_global_position_first()
 
@@ -170,10 +169,9 @@ class DestroyerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.third.Third
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "target::/third",
-            1,
+            "create(target::/third)",
         )
         self.execution_position_target__action_third_destructor.accept_for_empty_rule_global_position_third()
 
@@ -186,10 +184,9 @@ class DestroyerExecution:
         self.action.get_interface_position(
             "position<target>"
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "target",
-            1,
+            "destroy(target)",
         )
         self.guarantees.position_target.run()
 
@@ -198,10 +195,9 @@ class DestroyerExecution:
 
     def continue_destroy_position_target__global_position_first(self):
         self.destruction_position_position_target__global_position_first.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "target::/first",
-            1,
+            "destroy(target::/first)",
         )
 
     def destroy_position_target__global_position_third(self):
@@ -209,10 +205,9 @@ class DestroyerExecution:
 
     def continue_destroy_position_target__global_position_third(self):
         self.destruction_position_position_target__global_position_third.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "target::/third",
-            1,
+            "destroy(target::/third)",
         )
 
     def init_position_target__action_first_destructor__global_position_first(self):

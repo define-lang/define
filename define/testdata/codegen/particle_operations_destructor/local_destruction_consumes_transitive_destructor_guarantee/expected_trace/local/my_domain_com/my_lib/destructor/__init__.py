@@ -67,10 +67,9 @@ class DestructorExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/forwarder::trigger_pos",
-            1,
+            "create(/forwarder::trigger_pos)",
         )
         self.execution_action_forwarder.accept_for_empty_rule_position_trigger_pos()
 
@@ -78,17 +77,15 @@ class DestructorExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.implied.Implied
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/implied",
-            1,
+            "create(/implied)",
         )
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.implied.Implied
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/implied",
-            1,
+            "destroy(/implied)",
         )
         self.guarantees.global_position_implied.run()

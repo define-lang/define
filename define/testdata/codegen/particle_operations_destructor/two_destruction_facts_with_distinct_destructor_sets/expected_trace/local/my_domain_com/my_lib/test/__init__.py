@@ -108,10 +108,9 @@ class TestExecution:
 
     def create_position_first_source(self):
         self.local_position_first_source.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "first_source",
-            1,
+            "create(first_source)",
         )
         self.local_position_first_source.move_particle_to(
             self.action.on_particle.get_action(
@@ -120,11 +119,9 @@ class TestExecution:
                 "position<first>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "first_source",
-            "/destroyer::first",
-            1,
+            "move(first_source, /destroyer::first)",
         )
         self.execution_action_destroyer.init_when_occupied_position_first()
         self.scheduler.continue_with(
@@ -134,10 +131,9 @@ class TestExecution:
 
     def create_position_second_source(self):
         self.local_position_second_source.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "second_source",
-            1,
+            "create(second_source)",
         )
         self.local_position_second_source.move_particle_to(
             self.action.on_particle.get_action(
@@ -146,11 +142,9 @@ class TestExecution:
                 "position<second>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "second_source",
-            "/destroyer::second",
-            1,
+            "move(second_source, /destroyer::second)",
         )
         self.execution_action_destroyer.accept_for_empty_rule_position_second()
 
@@ -160,10 +154,9 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/destroyer::run",
-            1,
+            "create(/destroyer::run)",
         )
         self.destruction_position_action_destroyer__position_run = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.destroyer.Destroyer
@@ -171,10 +164,9 @@ class TestExecution:
             "position<run>"
         )
         self.destruction_position_action_destroyer__position_run.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/destroyer::run",
-            1,
+            "destroy(/destroyer::run)",
         )
         self.guarantees.action_destroyer__position_run.run()
 
@@ -198,6 +190,6 @@ class TestExecution:
         execution = local.my_domain_com.my_lib.shared_destructor.SharedDestructorExecution(
             self.scheduler,
             self.destruction_connection_action_destroyer_2.trace_execution,
-            "shared_destructor#2",
+            "shared_destructor",
         )
         execution.on_action_parent_occupied()

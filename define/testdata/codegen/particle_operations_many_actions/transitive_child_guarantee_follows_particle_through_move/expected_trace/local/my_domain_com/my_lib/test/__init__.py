@@ -54,10 +54,9 @@ class TestExecution:
 
     def create_position_gateway(self):
         self.local_position_gateway.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "gateway",
-            1,
+            "create(gateway)",
         )
         self.execution_position_gateway__action_outer = local.my_domain_com.my_lib.outer.OuterExecution(
             self.local_position_gateway.particle.get_action(
@@ -86,10 +85,9 @@ class TestExecution:
         ).get_interface_position(
             "position<source>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "gateway::/outer::source",
-            1,
+            "create(gateway::/outer::source)",
         )
         self.execution_position_gateway__action_outer.accept_for_empty_rule_position_source()
 
@@ -99,10 +97,9 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "gateway::/outer::trigger_pos",
-            1,
+            "create(gateway::/outer::trigger_pos)",
         )
         self.destruction_position_position_gateway__action_outer__position_trigger_pos = self.local_position_gateway.particle.get_action(
             local.my_domain_com.my_lib.outer.Outer
@@ -110,10 +107,9 @@ class TestExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_position_gateway__action_outer__position_trigger_pos.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "gateway::/outer::trigger_pos",
-            1,
+            "destroy(gateway::/outer::trigger_pos)",
         )
         self.destroy_position_gateway()
 
@@ -125,11 +121,9 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.result_value.ResultValue
         ).move_particle_to(self.local_position_result)
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "gateway::/outer::destination::/result_value",
-            "result",
-            1,
+            "move(gateway::/outer::destination::/result_value, result)",
         )
         self.destruction_position_position_gateway__action_outer__position_destination = self.local_position_gateway.particle.get_action(
             local.my_domain_com.my_lib.outer.Outer
@@ -143,27 +137,24 @@ class TestExecution:
 
     def destroy_position_gateway__action_outer__position_destination(self):
         self.destruction_position_position_gateway__action_outer__position_destination.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "gateway::/outer::destination",
-            1,
+            "destroy(gateway::/outer::destination)",
         )
         self.destroy_position_gateway()
 
     def destroy_position_result(self):
         self.local_position_result.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "result",
-            1,
+            "destroy(result)",
         )
 
     def destroy_position_gateway(self):
         if not self.join_for_destroy_position_gateway.arrive():
             return
         self.local_position_gateway.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "gateway",
-            1,
+            "destroy(gateway)",
         )

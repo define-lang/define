@@ -71,10 +71,9 @@ class DestructorExecution:
 
     def create_position_worker(self):
         self.local_position_worker.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "worker",
-            1,
+            "create(worker)",
         )
         self.execution_position_worker__action_worker = local.my_domain_com.my_lib.worker.WorkerExecution(
             self.local_position_worker.particle.get_action(
@@ -95,7 +94,7 @@ class DestructorExecution:
             ),
             self.scheduler,
             self.trace_execution,
-            "worker#2",
+            "worker",
         )
         self.execution_position_worker__action_worker_2.join_for_empty_rule_position_target = literal.NO_JOIN
         self.execution_position_worker__action_worker_2.join_for_destroy_position_target = literal.NO_JOIN
@@ -136,7 +135,7 @@ class DestructorExecution:
             ),
             self.scheduler,
             self.trace_execution,
-            "nested_worker#2",
+            "nested_worker",
             destruction_connections=literal.DestructionConnections(
             {
                 local.my_domain_com.my_lib.nested_worker.NestedWorkerExecution.continue_destroy_position_target: self.destruction_connection_position_worker__action_nested_worker_2,
@@ -155,10 +154,9 @@ class DestructorExecution:
 
     def create_position_source(self):
         self.local_position_source.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            1,
+            "create(source)",
         )
         self.move_position_source_to_position_worker__action_worker__position_target()
 
@@ -172,11 +170,9 @@ class DestructorExecution:
                 "position<target>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            "worker::/worker::target",
-            1,
+            "move(source, worker::/worker::target)",
         )
         self.scheduler.continue_with(
             self.create_position_source_2,
@@ -185,10 +181,9 @@ class DestructorExecution:
 
     def create_position_source_2(self):
         self.local_position_source.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            2,
+            "create(source)",
         )
         self.move_position_source_to_position_worker__action_worker__position_target_2()
 
@@ -202,20 +197,17 @@ class DestructorExecution:
                 "position<target>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            "worker::/worker::target",
-            2,
+            "move(source, worker::/worker::target)",
         )
         self.execution_position_worker__action_worker_2.accept_when_empty_position_target__global_position_child()
 
     def create_position_contributor(self):
         self.local_position_contributor.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "contributor",
-            1,
+            "create(contributor)",
         )
         self.move_position_contributor_to_position_worker__action_nested_worker__position_target()
 
@@ -229,11 +221,9 @@ class DestructorExecution:
                 "position<target>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "contributor",
-            "worker::/nested_worker::target",
-            1,
+            "move(contributor, worker::/nested_worker::target)",
         )
         self.scheduler.continue_with(
             self.create_position_contributor_2,
@@ -242,10 +232,9 @@ class DestructorExecution:
 
     def create_position_contributor_2(self):
         self.local_position_contributor.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "contributor",
-            2,
+            "create(contributor)",
         )
         self.move_position_contributor_to_position_worker__action_nested_worker__position_target_2()
 
@@ -259,11 +248,9 @@ class DestructorExecution:
                 "position<target>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "contributor",
-            "worker::/nested_worker::target",
-            2,
+            "move(contributor, worker::/nested_worker::target)",
         )
         self.execution_position_worker__action_nested_worker_2.accept_for_empty_rule_position_target()
 
@@ -271,10 +258,9 @@ class DestructorExecution:
         if not self.join_for_destroy_position_worker.arrive():
             return
         self.local_position_worker.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "worker",
-            1,
+            "destroy(worker)",
         )
 
     def run_position_worker__action_nested_worker__position_target__action_inner_destructor(self):
@@ -289,6 +275,6 @@ class DestructorExecution:
         execution = local.my_domain_com.my_lib.inner_destructor.InnerDestructorExecution(
             self.scheduler,
             self.destruction_connection_position_worker__action_nested_worker_2.trace_execution,
-            "inner_destructor#2",
+            "inner_destructor",
         )
         execution.on_action_parent_occupied()

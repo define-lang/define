@@ -81,10 +81,9 @@ class InnerExecution:
 
     def continue_destroy_position_input__global_position_child(self):
         self.destruction_position_position_input__global_position_child.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "input::/child",
-            1,
+            "destroy(input::/child)",
         )
         self.destroy_position_input()
 
@@ -97,9 +96,8 @@ class InnerExecution:
         self.action.get_interface_position(
             "position<input>"
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "input",
-            1,
+            "destroy(input)",
         )
         self.guarantees.position_input.run()

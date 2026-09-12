@@ -59,22 +59,18 @@ class FourthDestructorExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.fourth.Fourth
         ).move_particle_to(self.local_position_holder)
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/fourth",
-            "holder",
-            1,
+            "move(/fourth, holder)",
         )
         self.local_position_holder.move_particle_to(
             self.action.on_particle.get_position(
                 local.my_domain_com.my_lib.fourth.Fourth
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "holder",
-            "/fourth",
-            1,
+            "move(holder, /fourth)",
         )
         self.guarantees.global_position_fourth.run()
 
@@ -82,17 +78,15 @@ class FourthDestructorExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/marker",
-            1,
+            "create(/marker)",
         )
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/marker",
-            1,
+            "destroy(/marker)",
         )
         self.guarantees.global_position_marker.run()

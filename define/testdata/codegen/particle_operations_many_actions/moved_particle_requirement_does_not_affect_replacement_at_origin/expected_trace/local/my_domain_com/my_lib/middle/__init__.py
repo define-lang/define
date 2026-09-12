@@ -93,11 +93,9 @@ class MiddleExecution:
                 "position<holder>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            "holder",
-            1,
+            "move(source, holder)",
         )
         self.scheduler.continue_with(
             self.create_position_source,
@@ -108,20 +106,18 @@ class MiddleExecution:
         self.action.get_interface_position(
             "position<source>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            1,
+            "create(source)",
         )
         self.action.get_interface_position(
             "position<source>"
         ).particle.get_position(
             local.my_domain_com.my_lib.item.Item
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source::/item",
-            1,
+            "create(source::/item)",
         )
         self.destruction_position_position_source__global_position_item = self.action.get_interface_position(
             "position<source>"
@@ -129,27 +125,24 @@ class MiddleExecution:
             local.my_domain_com.my_lib.item.Item
         )
         self.destruction_position_position_source__global_position_item.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source::/item",
-            1,
+            "destroy(source::/item)",
         )
         self.action.get_interface_position(
             "position<source>"
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            1,
+            "destroy(source)",
         )
         self.guarantees.position_source.run()
 
     def create_position_inner_holder(self):
         self.local_position_inner_holder.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "inner_holder",
-            1,
+            "create(inner_holder)",
         )
         self.execution_position_inner_holder__action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
             self.local_position_inner_holder.particle.get_action(
@@ -188,11 +181,9 @@ class MiddleExecution:
                 "position<input>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "holder",
-            "inner_holder::/inner::input",
-            1,
+            "move(holder, inner_holder::/inner::input)",
         )
         self.guarantees.position_holder.run(
             self.execution_position_inner_holder__action_inner.accept_for_empty_rule_position_input__global_position_item,
@@ -204,10 +195,9 @@ class MiddleExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "inner_holder::/inner::trigger_pos",
-            1,
+            "create(inner_holder::/inner::trigger_pos)",
         )
         self.destruction_position_position_inner_holder__action_inner__position_trigger_pos = self.local_position_inner_holder.particle.get_action(
             local.my_domain_com.my_lib.inner.Inner
@@ -226,10 +216,9 @@ class MiddleExecution:
 
     def continue_destroy_position_inner_holder(self):
         self.local_position_inner_holder.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "inner_holder",
-            1,
+            "destroy(inner_holder)",
         )
 
     def destroy_position_inner_holder__action_inner__position_trigger_pos(self):
@@ -237,10 +226,9 @@ class MiddleExecution:
 
     def continue_destroy_position_inner_holder__action_inner__position_trigger_pos(self):
         self.destruction_position_position_inner_holder__action_inner__position_trigger_pos.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "inner_holder::/inner::trigger_pos",
-            1,
+            "destroy(inner_holder::/inner::trigger_pos)",
         )
 
     def destroy_position_inner_holder__action_inner__position_input(self):
@@ -248,10 +236,9 @@ class MiddleExecution:
 
     def continue_destroy_position_inner_holder__action_inner__position_input(self):
         self.destruction_position_position_inner_holder__action_inner__position_input.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "inner_holder::/inner::input",
-            1,
+            "destroy(inner_holder::/inner::input)",
         )
 
     def init_position_inner_holder__action_inner__position_input__global_position_item(self):

@@ -61,10 +61,9 @@ class InnerExecution:
         self.action.get_interface_position(
             "position<result>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "result",
-            1,
+            "create(result)",
         )
         self.guarantees.position_result.run(
             self.create_position_result__global_position_marker,
@@ -76,9 +75,8 @@ class InnerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "result::/marker",
-            1,
+            "create(result::/marker)",
         )
         self.guarantees.position_result__global_position_marker.run()

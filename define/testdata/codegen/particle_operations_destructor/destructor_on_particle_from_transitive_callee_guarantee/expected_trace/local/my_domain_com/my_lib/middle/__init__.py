@@ -81,10 +81,9 @@ class MiddleExecution:
 
     def create_position_box(self):
         self.local_position_box.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box",
-            1,
+            "create(box)",
         )
         self.execution_position_box__action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
             self.local_position_box.particle.get_action(
@@ -108,10 +107,9 @@ class MiddleExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box::/inner::run",
-            1,
+            "create(box::/inner::run)",
         )
         self.destruction_position_position_box__action_inner__position_run = self.local_position_box.particle.get_action(
             local.my_domain_com.my_lib.inner.Inner
@@ -119,10 +117,9 @@ class MiddleExecution:
             "position<run>"
         )
         self.destruction_position_position_box__action_inner__position_run.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box::/inner::run",
-            1,
+            "destroy(box::/inner::run)",
         )
         self.destroy_position_box()
 
@@ -134,11 +131,9 @@ class MiddleExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         ).move_particle_to(self.local_position_held_marker)
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box::/inner::result::/marker",
-            "held_marker",
-            1,
+            "move(box::/inner::result::/marker, held_marker)",
         )
         self.move_position_box__action_inner__position_result_to_position_result()
 
@@ -154,11 +149,9 @@ class MiddleExecution:
                 "position<result>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box::/inner::result",
-            "result",
-            1,
+            "move(box::/inner::result, result)",
         )
         self.guarantees.position_result.run(
             self.move_position_held_marker_to_position_result__global_position_marker,
@@ -173,11 +166,9 @@ class MiddleExecution:
                 local.my_domain_com.my_lib.marker.Marker
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "held_marker",
-            "result::/marker",
-            1,
+            "move(held_marker, result::/marker)",
         )
         self.guarantees.position_result__global_position_marker.run()
 
@@ -185,8 +176,7 @@ class MiddleExecution:
         if not self.join_for_destroy_position_box.arrive():
             return
         self.local_position_box.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box",
-            1,
+            "destroy(box)",
         )

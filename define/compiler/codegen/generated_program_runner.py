@@ -22,7 +22,7 @@ def run_generated_program(
     generated_dir: Path,
     entry_script: str = "__main__.py",
     *,
-    operation_dependencies_file: Path | None = None,
+    operation_trace_file: Path | None = None,
     max_threads: int | None = None,
 ) -> GeneratedProgramResult:
     """Execute a generated program and capture its occupied positions.
@@ -31,8 +31,8 @@ def run_generated_program(
         generated_dir: The directory a program was generated into.
         entry_script: A script in that directory to run instead of the generated
             entry point, for a test that needs to start the program differently.
-        operation_dependencies_file: A file to receive the generated program's
-            Particle Operation dependencies.
+        operation_trace_file: A file to receive the generated program's ordered
+            Particle Operation trace.
         max_threads: The maximum scheduler threads for this execution.
     """
     # Closing the file leaves it in place for the generated program to write,
@@ -44,9 +44,9 @@ def run_generated_program(
             "PYTHONPATH": os.pathsep.join([str(generated_dir), *sys.path]),
             "DEFINE_REPORT_OCCUPIED_POSITIONS": report_file.name,
         }
-        if operation_dependencies_file is not None:
-            generated_environment["DEFINE_OPERATION_DEPENDENCIES_FILE"] = str(
-                operation_dependencies_file
+        if operation_trace_file is not None:
+            generated_environment["DEFINE_OPERATION_TRACE_FILE"] = str(
+                operation_trace_file
             )
         if max_threads is not None:
             generated_environment["DEFINE_MAX_THREADS"] = str(max_threads)

@@ -221,9 +221,9 @@ class TestScheduler:
             None,
             "test",
         )
-        scheduler.create_completed(execution, "item", 1)
-        scheduler.move_completed(execution, "item", "destination", 1)
-        scheduler.destroy_completed(execution, "destination", 1)
+        scheduler.operation_completed(execution, "create(item)")
+        scheduler.operation_completed(execution, "move(item, destination)")
+        scheduler.operation_completed(execution, "destroy(destination)")
 
         assert execution is None
 

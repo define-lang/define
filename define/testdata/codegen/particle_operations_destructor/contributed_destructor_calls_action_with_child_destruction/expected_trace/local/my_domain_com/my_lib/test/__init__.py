@@ -93,10 +93,9 @@ class TestExecution:
 
     def create_position_source(self):
         self.local_position_source.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            1,
+            "create(source)",
         )
         self.local_position_source.move_particle_to(
             self.action.on_particle.get_action(
@@ -105,20 +104,17 @@ class TestExecution:
                 "position<run>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            "/caller::run",
-            1,
+            "move(source, /caller::run)",
         )
         self.execution_action_caller.accept_for_empty_rule_position_run()
 
     def create_position_parent_source(self):
         self.local_position_parent_source.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "parent_source",
-            1,
+            "create(parent_source)",
         )
         self.move_position_parent_source_to_global_position_parent()
 
@@ -130,11 +126,9 @@ class TestExecution:
                 local.my_domain_com.my_lib.parent.Parent
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "parent_source",
-            "/parent",
-            1,
+            "move(parent_source, /parent)",
         )
         self.scheduler.continue_with(
             self.execution_action_caller.accept_when_occupied_global_position_parent,

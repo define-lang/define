@@ -83,18 +83,16 @@ class TestExecution:
 
     def create_position_carrier(self):
         self.local_position_carrier.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "carrier",
-            1,
+            "create(carrier)",
         )
         self.local_position_carrier.particle.get_position(
             local.my_domain_com.my_lib.second.Second
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "carrier::/second",
-            1,
+            "create(carrier::/second)",
         )
         self.local_position_carrier.move_particle_to(
             self.action.on_particle.get_action(
@@ -103,11 +101,9 @@ class TestExecution:
                 "position<target>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "carrier",
-            "/destroyer::target",
-            1,
+            "move(carrier, /destroyer::target)",
         )
         self.destruction_position_action_destroyer__position_target__global_position_second = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.destroyer.Destroyer
@@ -128,9 +124,8 @@ class TestExecution:
 
     def destroy_action_destroyer__position_target__global_position_second(self):
         self.destruction_position_action_destroyer__position_target__global_position_second.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.destruction_connection_action_destroyer.trace_execution,
-            "target::/second",
-            1,
+            "destroy(target::/second)",
         )
         self.destruction_connection_action_destroyer.complete()

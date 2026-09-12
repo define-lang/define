@@ -77,10 +77,9 @@ class MiddleExecution:
 
     def create_position_inner_holder(self):
         self.local_position_inner_holder.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "inner_holder",
-            1,
+            "create(inner_holder)",
         )
         self.execution_position_inner_holder__action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
             self.local_position_inner_holder.particle.get_action(
@@ -115,11 +114,9 @@ class MiddleExecution:
                 "position<input>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "input",
-            "inner_holder::/inner::input",
-            1,
+            "move(input, inner_holder::/inner::input)",
         )
         self.guarantees.position_input.run(
             self.execution_position_inner_holder__action_inner.accept_for_empty_rule_position_input__global_position_child,
@@ -131,10 +128,9 @@ class MiddleExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "inner_holder::/inner::run",
-            1,
+            "create(inner_holder::/inner::run)",
         )
         self.destruction_position_position_inner_holder__action_inner__position_run = self.local_position_inner_holder.particle.get_action(
             local.my_domain_com.my_lib.inner.Inner
@@ -150,16 +146,14 @@ class MiddleExecution:
         if not self.join_for_destroy_position_inner_holder.arrive():
             return
         self.local_position_inner_holder.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "inner_holder",
-            1,
+            "destroy(inner_holder)",
         )
 
     def destroy_position_inner_holder__action_inner__position_run(self):
         self.destruction_position_position_inner_holder__action_inner__position_run.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "inner_holder::/inner::run",
-            1,
+            "destroy(inner_holder::/inner::run)",
         )

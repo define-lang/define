@@ -42,14 +42,12 @@ class StorageExecution:
 
     def create_position_local_item(self):
         self.local_position_local_item.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "local_item",
-            1,
+            "create(local_item)",
         )
         self.local_position_local_item.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "local_item",
-            1,
+            "destroy(local_item)",
         )

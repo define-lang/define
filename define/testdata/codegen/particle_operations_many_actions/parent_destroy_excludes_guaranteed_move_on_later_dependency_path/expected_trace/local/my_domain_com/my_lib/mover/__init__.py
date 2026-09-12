@@ -86,11 +86,9 @@ class MoverExecution:
         self.action.get_interface_position(
             "position<source>"
         ).move_particle_to(self.local_position_intermediate)
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            "intermediate",
-            1,
+            "move(source, intermediate)",
         )
         self.guarantees.position_source.run(
             self.move_position_intermediate_to_position_destination,
@@ -104,11 +102,9 @@ class MoverExecution:
                 "position<destination>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "intermediate",
-            "destination",
-            1,
+            "move(intermediate, destination)",
         )
         self.guarantees.position_destination.run()
 
@@ -121,9 +117,8 @@ class MoverExecution:
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "run",
-            1,
+            "destroy(run)",
         )
         self.guarantees.position_run.run()

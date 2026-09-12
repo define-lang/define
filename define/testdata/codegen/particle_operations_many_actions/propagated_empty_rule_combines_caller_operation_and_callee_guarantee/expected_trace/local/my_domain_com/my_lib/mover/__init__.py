@@ -74,10 +74,8 @@ class MoverExecution:
                 "position<destination>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/parent",
-            "destination",
-            1,
+            "move(/parent, destination)",
         )
         self.guarantees.global_position_parent__move__position_destination.run()

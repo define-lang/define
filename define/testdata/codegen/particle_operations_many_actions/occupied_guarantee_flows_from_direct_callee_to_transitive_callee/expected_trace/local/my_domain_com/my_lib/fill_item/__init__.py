@@ -54,9 +54,8 @@ class FillItemExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.item.Item
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/item",
-            1,
+            "create(/item)",
         )
         self.guarantees.global_position_item.run()

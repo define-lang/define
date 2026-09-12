@@ -90,10 +90,9 @@ class TestExecution:
 
     def create_position_source(self):
         self.local_position_source.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            1,
+            "create(source)",
         )
         self.scheduler.continue_with(
             self.create_position_source__global_position_occupied_first,
@@ -104,20 +103,18 @@ class TestExecution:
         self.local_position_source.particle.get_position(
             local.my_domain_com.my_lib.occupied_first.OccupiedFirst
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source::/occupied_first",
-            1,
+            "create(source::/occupied_first)",
         )
         self.local_position_source.particle.get_position(
             local.my_domain_com.my_lib.occupied_first.OccupiedFirst
         ).particle.get_position(
             local.my_domain_com.my_lib.transitive.Transitive
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source::/occupied_first::/transitive",
-            1,
+            "create(source::/occupied_first::/transitive)",
         )
         self.move_position_source_to_action_destroyer__position_target()
 
@@ -125,10 +122,9 @@ class TestExecution:
         self.local_position_source.particle.get_position(
             local.my_domain_com.my_lib.occupied_last.OccupiedLast
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source::/occupied_last",
-            1,
+            "create(source::/occupied_last)",
         )
         self.move_position_source_to_action_destroyer__position_target()
 
@@ -142,11 +138,9 @@ class TestExecution:
                 "position<target>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            "/destroyer::target",
-            1,
+            "move(source, /destroyer::target)",
         )
         self.execution_action_destroyer__position_target__action_destructor = local.my_domain_com.my_lib.destructor.DestructorExecution(
             self.action.on_particle.get_action(
@@ -196,10 +190,9 @@ class TestExecution:
             local.my_domain_com.my_lib.occupied_last.OccupiedLast
         )
         self.destruction_position_action_destroyer__position_target__global_position_occupied_last.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.destruction_connection_action_destroyer.trace_execution,
-            "target::/occupied_last",
-            1,
+            "destroy(target::/occupied_last)",
         )
         self.destruction_connection_action_destroyer.complete()
 
@@ -216,10 +209,9 @@ class TestExecution:
             local.my_domain_com.my_lib.transitive.Transitive
         )
         self.destruction_position_action_destroyer__position_target__global_position_occupied_first__global_position_transitive.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.destruction_connection_action_destroyer.trace_execution,
-            "target::/occupied_first::/transitive",
-            1,
+            "destroy(target::/occupied_first::/transitive)",
         )
         self.destroy_action_destroyer__position_target__global_position_occupied_first()
 
@@ -234,10 +226,9 @@ class TestExecution:
             local.my_domain_com.my_lib.occupied_first.OccupiedFirst
         )
         self.destruction_position_action_destroyer__position_target__global_position_occupied_first.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.destruction_connection_action_destroyer.trace_execution,
-            "target::/occupied_first",
-            1,
+            "destroy(target::/occupied_first)",
         )
         self.destruction_connection_action_destroyer.complete()
 

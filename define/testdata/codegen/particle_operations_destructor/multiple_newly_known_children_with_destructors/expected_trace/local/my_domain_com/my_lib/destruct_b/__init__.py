@@ -32,14 +32,12 @@ class DestructBExecution:
 
     def create_position_noop_b(self):
         self.local_position__noop_b.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "_noop_b",
-            1,
+            "create(_noop_b)",
         )
         self.local_position__noop_b.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "_noop_b",
-            1,
+            "destroy(_noop_b)",
         )

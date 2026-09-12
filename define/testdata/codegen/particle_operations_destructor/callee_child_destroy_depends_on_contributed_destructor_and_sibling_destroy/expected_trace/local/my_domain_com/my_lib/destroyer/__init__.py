@@ -90,11 +90,9 @@ class DestroyerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.required.Required
         ).move_particle_to(self.local_position_held_required)
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "parent::/required",
-            "held_required",
-            1,
+            "move(parent::/required, held_required)",
         )
         self.scheduler.continue_with(
             self.create_position_held_required__global_position_extra_a,
@@ -105,10 +103,9 @@ class DestroyerExecution:
         self.local_position_held_required.particle.get_position(
             local.my_domain_com.my_lib.extra_a.ExtraA
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "held_required::/extra_a",
-            1,
+            "create(held_required::/extra_a)",
         )
         self.move_position_held_required_to_position_parent__global_position_required()
 
@@ -116,10 +113,9 @@ class DestroyerExecution:
         self.local_position_held_required.particle.get_position(
             local.my_domain_com.my_lib.extra_b.ExtraB
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "held_required::/extra_b",
-            1,
+            "create(held_required::/extra_b)",
         )
         self.move_position_held_required_to_position_parent__global_position_required()
 
@@ -133,11 +129,9 @@ class DestroyerExecution:
                 local.my_domain_com.my_lib.required.Required
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "held_required",
-            "parent::/required",
-            1,
+            "move(held_required, parent::/required)",
         )
         self.destruction_position_position_parent__global_position_required = self.action.get_interface_position(
             "position<parent>"
@@ -174,10 +168,9 @@ class DestroyerExecution:
         self.action.get_interface_position(
             "position<parent>"
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "parent",
-            1,
+            "destroy(parent)",
         )
         self.guarantees.position_parent.run()
 
@@ -186,10 +179,9 @@ class DestroyerExecution:
 
     def continue_destroy_position_parent__global_position_required(self):
         self.destruction_position_position_parent__global_position_required.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "parent::/required",
-            1,
+            "destroy(parent::/required)",
         )
 
     def destroy_position_parent__global_position_required__global_position_extra_a(self):
@@ -197,10 +189,9 @@ class DestroyerExecution:
 
     def continue_destroy_position_parent__global_position_required__global_position_extra_a(self):
         self.destruction_position_position_parent__global_position_required__global_position_extra_a.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "parent::/required::/extra_a",
-            1,
+            "destroy(parent::/required::/extra_a)",
         )
 
     def destroy_position_parent__global_position_required__global_position_extra_b(self):
@@ -208,8 +199,7 @@ class DestroyerExecution:
 
     def continue_destroy_position_parent__global_position_required__global_position_extra_b(self):
         self.destruction_position_position_parent__global_position_required__global_position_extra_b.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "parent::/required::/extra_b",
-            1,
+            "destroy(parent::/required::/extra_b)",
         )

@@ -186,7 +186,6 @@ py_library(
     deps = [
         ":naming",
         "//define/compiler:ast",
-        "//define/compiler/validator/reference_graph:operation_graph_labeler",
     ],
 )
 

@@ -77,10 +77,9 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/middle_a::run",
-            1,
+            "create(/middle_a::run)",
         )
         self.execution_action_middle_a.accept_for_empty_rule_position_run()
 
@@ -90,9 +89,8 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/middle_b::run",
-            1,
+            "create(/middle_b::run)",
         )
         self.execution_action_middle_b.accept_for_empty_rule_position_run()

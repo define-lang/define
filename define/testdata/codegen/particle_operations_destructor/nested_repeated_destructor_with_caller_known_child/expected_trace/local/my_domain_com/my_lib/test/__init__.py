@@ -46,10 +46,9 @@ class TestExecution:
 
     def create_position_outer(self):
         self.local_position_outer.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "outer",
-            1,
+            "create(outer)",
         )
         self.execution_position_outer__action_outer_destructor = local.my_domain_com.my_lib.outer_destructor.OuterDestructorExecution(
             self.scheduler,
@@ -63,8 +62,7 @@ class TestExecution:
 
     def destroy_position_outer(self):
         self.local_position_outer.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "outer",
-            1,
+            "destroy(outer)",
         )

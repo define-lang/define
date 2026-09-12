@@ -54,9 +54,8 @@ class ChildExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.result.Result
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/result",
-            1,
+            "create(/result)",
         )
         self.guarantees.global_position_result.run()

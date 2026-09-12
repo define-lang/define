@@ -55,11 +55,9 @@ class ExtraDestructorExecution:
                 local.my_domain_com.my_lib.destination.Destination
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/shared",
-            "/destination",
-            1,
+            "move(/shared, /destination)",
         )
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.destination.Destination
@@ -68,10 +66,8 @@ class ExtraDestructorExecution:
                 local.my_domain_com.my_lib.shared.Shared
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/destination",
-            "/shared",
-            1,
+            "move(/destination, /shared)",
         )
         self.guarantees.global_position_destination__move__global_position_shared.run()

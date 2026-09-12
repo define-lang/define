@@ -66,10 +66,9 @@ class CallerBExecution:
 
     def create_position_destroyer_particle(self):
         self.local_position_destroyer_particle.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "destroyer_particle",
-            1,
+            "create(destroyer_particle)",
         )
         self.destruction_connection_position_destroyer_particle__action_destroyer = tracing.DestructionConnection(
             self.scheduler,
@@ -101,10 +100,9 @@ class CallerBExecution:
 
     def create_position_carrier(self):
         self.local_position_carrier.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "carrier",
-            1,
+            "create(carrier)",
         )
         self.move_position_carrier_to_position_destroyer_particle__action_destroyer__position_target()
 
@@ -118,11 +116,9 @@ class CallerBExecution:
                 "position<target>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "carrier",
-            "destroyer_particle::/destroyer::target",
-            1,
+            "move(carrier, destroyer_particle::/destroyer::target)",
         )
         self.execution_position_destroyer_particle__action_destroyer.init_when_occupied_position_target()
         self.scheduler.continue_with(
@@ -136,10 +132,9 @@ class CallerBExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "destroyer_particle::/destroyer::trigger_pos",
-            1,
+            "create(destroyer_particle::/destroyer::trigger_pos)",
         )
         self.destruction_position_position_destroyer_particle__action_destroyer__position_trigger_pos = self.local_position_destroyer_particle.particle.get_action(
             local.my_domain_com.my_lib.destroyer.Destroyer
@@ -155,18 +150,16 @@ class CallerBExecution:
         if not self.join_for_destroy_position_destroyer_particle.arrive():
             return
         self.local_position_destroyer_particle.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "destroyer_particle",
-            1,
+            "destroy(destroyer_particle)",
         )
 
     def destroy_position_destroyer_particle__action_destroyer__position_trigger_pos(self):
         self.destruction_position_position_destroyer_particle__action_destroyer__position_trigger_pos.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "destroyer_particle::/destroyer::trigger_pos",
-            1,
+            "destroy(destroyer_particle::/destroyer::trigger_pos)",
         )
 
     def run_position_destroyer_particle__action_destroyer__position_target__action_extra_destructor(self):

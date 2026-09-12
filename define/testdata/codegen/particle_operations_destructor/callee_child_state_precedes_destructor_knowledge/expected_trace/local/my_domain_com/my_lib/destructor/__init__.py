@@ -59,22 +59,18 @@ class DestructorExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.occupied.Occupied
         ).move_particle_to(self.local_position_holder)
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/occupied",
-            "holder",
-            1,
+            "move(/occupied, holder)",
         )
         self.local_position_holder.move_particle_to(
             self.action.on_particle.get_position(
                 local.my_domain_com.my_lib.occupied.Occupied
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "holder",
-            "/occupied",
-            1,
+            "move(holder, /occupied)",
         )
         self.guarantees.global_position_occupied.run()
 
@@ -82,17 +78,15 @@ class DestructorExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.empty.Empty
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/empty",
-            1,
+            "create(/empty)",
         )
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.empty.Empty
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/empty",
-            1,
+            "destroy(/empty)",
         )
         self.guarantees.global_position_empty.run()

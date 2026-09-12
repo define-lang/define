@@ -73,22 +73,18 @@ class DestructorExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.callee_known.CalleeKnown
         ).move_particle_to(self.local_position_callee_holder)
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/callee_known",
-            "callee_holder",
-            1,
+            "move(/callee_known, callee_holder)",
         )
         self.local_position_callee_holder.move_particle_to(
             self.action.on_particle.get_position(
                 local.my_domain_com.my_lib.callee_known.CalleeKnown
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "callee_holder",
-            "/callee_known",
-            1,
+            "move(callee_holder, /callee_known)",
         )
         self.guarantees.global_position_callee_known.run()
 
@@ -96,18 +92,16 @@ class DestructorExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.middle_known.MiddleKnown
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/middle_known",
-            1,
+            "create(/middle_known)",
         )
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.middle_known.MiddleKnown
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/middle_known",
-            1,
+            "destroy(/middle_known)",
         )
         self.guarantees.global_position_middle_known.run()
 
@@ -117,21 +111,17 @@ class DestructorExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.creator_known.CreatorKnown
         ).move_particle_to(self.local_position_creator_holder)
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/creator_known",
-            "creator_holder",
-            1,
+            "move(/creator_known, creator_holder)",
         )
         self.local_position_creator_holder.move_particle_to(
             self.action.on_particle.get_position(
                 local.my_domain_com.my_lib.creator_known.CreatorKnown
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "creator_holder",
-            "/creator_known",
-            1,
+            "move(creator_holder, /creator_known)",
         )
         self.guarantees.global_position_creator_known.run()

@@ -104,10 +104,9 @@ class TestExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.parent.Parent
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/parent",
-            1,
+            "create(/parent)",
         )
         self.scheduler.continue_with(
             self.create_global_position_parent__global_position_child,
@@ -120,10 +119,9 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.child.Child
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/parent::/child",
-            1,
+            "create(/parent::/child)",
         )
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.parent.Parent
@@ -132,10 +130,9 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.grandchild.Grandchild
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/parent::/child::/grandchild",
-            1,
+            "create(/parent::/child::/grandchild)",
         )
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.parent.Parent
@@ -146,10 +143,9 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.greatgrandchild.Greatgrandchild
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/parent::/child::/grandchild::/greatgrandchild",
-            1,
+            "create(/parent::/child::/grandchild::/greatgrandchild)",
         )
         self.destruction_position_global_position_parent__global_position_child__global_position_grandchild__global_position_greatgrandchild = self.action.on_particle.get_position(
             local.my_domain_com.my_lib.parent.Parent
@@ -168,10 +164,9 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.sibling.Sibling
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/parent::/sibling",
-            1,
+            "create(/parent::/sibling)",
         )
         self.destruction_position_global_position_parent__global_position_sibling = self.action.on_particle.get_position(
             local.my_domain_com.my_lib.parent.Parent
@@ -186,10 +181,9 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/middle::trigger_pos",
-            1,
+            "create(/middle::trigger_pos)",
         )
         self.destruction_position_action_middle__position_trigger_pos = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
@@ -197,27 +191,24 @@ class TestExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_action_middle__position_trigger_pos.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/middle::trigger_pos",
-            1,
+            "destroy(/middle::trigger_pos)",
         )
         self.guarantees.action_middle__position_trigger_pos.run()
 
     def destroy_global_position_parent__global_position_child__global_position_grandchild__global_position_greatgrandchild(self):
         self.destruction_position_global_position_parent__global_position_child__global_position_grandchild__global_position_greatgrandchild.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.destruction_connection_action_middle.trace_execution,
-            "/parent::/child::/grandchild::/greatgrandchild",
-            1,
+            "destroy(/parent::/child::/grandchild::/greatgrandchild)",
         )
         self.destruction_connection_action_middle.complete()
 
     def destroy_global_position_parent__global_position_sibling(self):
         self.destruction_position_global_position_parent__global_position_sibling.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.destruction_connection_action_middle_2.trace_execution,
-            "/parent::/sibling",
-            1,
+            "destroy(/parent::/sibling)",
         )
         self.destruction_connection_action_middle_2.complete()

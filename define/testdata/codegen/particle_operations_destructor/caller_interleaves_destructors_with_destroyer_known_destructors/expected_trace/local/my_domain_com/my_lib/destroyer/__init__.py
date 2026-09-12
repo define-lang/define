@@ -105,10 +105,9 @@ class DestroyerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "target::/marker",
-            1,
+            "create(target::/marker)",
         )
         self.destruction_position_position_target__global_position_marker = self.action.get_interface_position(
             "position<target>"
@@ -116,10 +115,9 @@ class DestroyerExecution:
             local.my_domain_com.my_lib.marker.Marker
         )
         self.destruction_position_position_target__global_position_marker.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "target::/marker",
-            1,
+            "destroy(target::/marker)",
         )
         self.execution_position_target__action_second_destructor.accept_when_empty_global_position_marker()
 
@@ -132,10 +130,9 @@ class DestroyerExecution:
         self.action.get_interface_position(
             "position<target>"
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "target",
-            1,
+            "destroy(target)",
         )
         self.guarantees.position_target.run()
 

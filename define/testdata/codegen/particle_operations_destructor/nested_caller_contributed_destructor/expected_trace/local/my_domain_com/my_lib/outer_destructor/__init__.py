@@ -52,10 +52,9 @@ class OuterDestructorExecution:
 
     def create_position_inner_destroyer_particle(self):
         self.local_position_inner_destroyer_particle.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "inner_destroyer_particle",
-            1,
+            "create(inner_destroyer_particle)",
         )
         self.destruction_connection_position_inner_destroyer_particle__action_inner_destroyer = tracing.DestructionConnection(
             self.scheduler,
@@ -84,10 +83,9 @@ class OuterDestructorExecution:
 
     def create_position_inner_source(self):
         self.local_position_inner_source.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "inner_source",
-            1,
+            "create(inner_source)",
         )
         self.move_position_inner_source_to_position_inner_destroyer_particle__action_inner_destroyer__position_target()
 
@@ -101,20 +99,17 @@ class OuterDestructorExecution:
                 "position<target>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "inner_source",
-            "inner_destroyer_particle::/inner_destroyer::target",
-            1,
+            "move(inner_source, inner_destroyer_particle::/inner_destroyer::target)",
         )
         self.execution_position_inner_destroyer_particle__action_inner_destroyer.accept_for_empty_rule_position_target()
 
     def destroy_position_inner_destroyer_particle(self):
         self.local_position_inner_destroyer_particle.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "inner_destroyer_particle",
-            1,
+            "destroy(inner_destroyer_particle)",
         )
 
     def run_position_inner_destroyer_particle__action_inner_destroyer__position_target__action_inner_destructor(self):

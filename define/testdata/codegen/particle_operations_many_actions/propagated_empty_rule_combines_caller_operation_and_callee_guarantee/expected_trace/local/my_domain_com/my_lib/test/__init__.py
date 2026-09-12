@@ -121,10 +121,9 @@ class TestExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.parent.Parent
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/parent",
-            1,
+            "create(/parent)",
         )
         self.scheduler.continue_with(
             self.create_global_position_parent__global_position_direct_child,
@@ -137,10 +136,9 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.direct_child.DirectChild
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/parent::/direct_child",
-            1,
+            "create(/parent::/direct_child)",
         )
         self.accept_guarantee_action_middle()
 
@@ -150,10 +148,9 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/filler::trigger_pos",
-            1,
+            "create(/filler::trigger_pos)",
         )
         self.destruction_position_action_filler__position_trigger_pos = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.filler.Filler
@@ -161,10 +158,9 @@ class TestExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_action_filler__position_trigger_pos.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/filler::trigger_pos",
-            1,
+            "destroy(/filler::trigger_pos)",
         )
         self.guarantees.action_filler__position_trigger_pos.run()
 
@@ -174,10 +170,9 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/middle::trigger_pos",
-            1,
+            "create(/middle::trigger_pos)",
         )
         self.destruction_position_action_middle__position_trigger_pos = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
@@ -185,28 +180,25 @@ class TestExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_action_middle__position_trigger_pos.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/middle::trigger_pos",
-            1,
+            "destroy(/middle::trigger_pos)",
         )
         self.guarantees.action_middle__position_trigger_pos.run()
 
     def destroy_global_position_parent__global_position_guaranteed_child(self):
         self.destruction_position_global_position_parent__global_position_guaranteed_child.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.destruction_connection_action_middle.trace_execution,
-            "/mover::destination::/guaranteed_child",
-            1,
+            "destroy(/mover::destination::/guaranteed_child)",
         )
         self.destruction_connection_action_middle.complete()
 
     def destroy_global_position_parent__global_position_direct_child(self):
         self.destruction_position_global_position_parent__global_position_direct_child.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.destruction_connection_action_middle.trace_execution,
-            "/mover::destination::/direct_child",
-            1,
+            "destroy(/mover::destination::/direct_child)",
         )
         self.destruction_connection_action_middle.complete()
 

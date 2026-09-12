@@ -126,10 +126,9 @@ class MiddleExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.first.First
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "target::/first",
-            1,
+            "create(target::/first)",
         )
         self.move_position_target_to_action_destroyer__position_target()
 
@@ -139,10 +138,9 @@ class MiddleExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.second.Second
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "target::/second",
-            1,
+            "create(target::/second)",
         )
         self.move_position_target_to_action_destroyer__position_target()
 
@@ -152,10 +150,9 @@ class MiddleExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.fifth.Fifth
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "target::/fifth",
-            1,
+            "create(target::/fifth)",
         )
         self.move_position_target_to_action_destroyer__position_target()
 
@@ -171,11 +168,9 @@ class MiddleExecution:
                 "position<target>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "target",
-            "/destroyer::target",
-            1,
+            "move(target, /destroyer::target)",
         )
         self.execution_action_destroyer__position_target__action_fifth_destructor = local.my_domain_com.my_lib.fifth_destructor.FifthDestructorExecution(
             self.action.on_particle.get_action(
@@ -246,10 +241,9 @@ class MiddleExecution:
             local.my_domain_com.my_lib.fifth.Fifth
         )
         self.destruction_position_action_destroyer__position_target__global_position_fifth.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.destruction_connection_action_destroyer.trace_execution,
-            "target::/fifth",
-            1,
+            "destroy(target::/fifth)",
         )
         self.destruction_connection_action_destroyer.complete()
 
@@ -267,10 +261,9 @@ class MiddleExecution:
             local.my_domain_com.my_lib.first.First
         )
         self.destruction_position_action_destroyer__position_target__global_position_first.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.destruction_connection_action_destroyer.trace_execution,
-            "target::/first",
-            1,
+            "destroy(target::/first)",
         )
         self.destruction_connection_action_destroyer.complete()
 

@@ -56,16 +56,14 @@ class DestructorExecution:
 
     def create_position_noop(self):
         self.local_position__noop.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "_noop",
-            1,
+            "create(_noop)",
         )
         self.local_position__noop.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "_noop",
-            1,
+            "destroy(_noop)",
         )
 
     def move_global_position_marker_to_position_holder(self):
@@ -74,21 +72,17 @@ class DestructorExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         ).move_particle_to(self.local_position_holder)
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/marker",
-            "holder",
-            1,
+            "move(/marker, holder)",
         )
         self.local_position_holder.move_particle_to(
             self.action.on_particle.get_position(
                 local.my_domain_com.my_lib.marker.Marker
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "holder",
-            "/marker",
-            1,
+            "move(holder, /marker)",
         )
         self.guarantees.global_position_marker.run()

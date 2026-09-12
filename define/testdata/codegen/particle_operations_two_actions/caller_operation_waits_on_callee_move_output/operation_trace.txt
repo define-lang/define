@@ -1,0 +1,5 @@
+test.create(gateway)
+test.create(gateway::/other::trigger_pos)
+other.move(trigger_pos, output)
+test.destroy(gateway::/other::output)
+test.destroy(gateway)

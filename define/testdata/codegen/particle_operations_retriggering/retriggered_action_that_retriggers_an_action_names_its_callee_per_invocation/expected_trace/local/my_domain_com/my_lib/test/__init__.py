@@ -49,10 +49,9 @@ class TestExecution:
 
     def create_position_holder(self):
         self.local_position_holder.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "holder",
-            1,
+            "create(holder)",
         )
         self.execution_position_holder__action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
             self.scheduler,
@@ -62,7 +61,7 @@ class TestExecution:
         self.execution_position_holder__action_middle_2 = local.my_domain_com.my_lib.middle.MiddleExecution(
             self.scheduler,
             self.trace_execution,
-            "middle#2",
+            "middle",
         )
         self.scheduler.continue_with(
             self.create_position_holder__action_middle__position_trigger_pos,
@@ -76,10 +75,9 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "holder::/middle::trigger_pos",
-            1,
+            "create(holder::/middle::trigger_pos)",
         )
         self.destruction_position_position_holder__action_middle__position_trigger_pos = self.local_position_holder.particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
@@ -87,20 +85,18 @@ class TestExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_position_holder__action_middle__position_trigger_pos.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "holder::/middle::trigger_pos",
-            1,
+            "destroy(holder::/middle::trigger_pos)",
         )
         self.local_position_holder.particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "holder::/middle::trigger_pos",
-            2,
+            "create(holder::/middle::trigger_pos)",
         )
         self.destruction_position_position_holder__action_middle__position_trigger_pos_2 = self.local_position_holder.particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
@@ -108,14 +104,12 @@ class TestExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_position_holder__action_middle__position_trigger_pos_2.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "holder::/middle::trigger_pos",
-            2,
+            "destroy(holder::/middle::trigger_pos)",
         )
         self.local_position_holder.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "holder",
-            1,
+            "destroy(holder)",
         )

@@ -66,9 +66,8 @@ class EmptyItemExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.item.Item
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/item",
-            1,
+            "destroy(/item)",
         )
         self.guarantees.global_position_item.run()

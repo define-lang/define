@@ -61,16 +61,14 @@ class ChildExecution:
 
     def create_position_scratch(self):
         self.local_position_scratch.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "scratch",
-            1,
+            "create(scratch)",
         )
         self.local_position_scratch.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "scratch",
-            1,
+            "destroy(scratch)",
         )
 
     def destroy_position_trigger_pos(self):
@@ -82,9 +80,8 @@ class ChildExecution:
         self.action.get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "trigger_pos",
-            1,
+            "destroy(trigger_pos)",
         )
         self.guarantees.position_trigger_pos.run()

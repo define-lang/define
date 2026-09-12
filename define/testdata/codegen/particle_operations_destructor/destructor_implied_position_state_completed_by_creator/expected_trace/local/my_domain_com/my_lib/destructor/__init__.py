@@ -79,22 +79,18 @@ class DestructorExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.occupied_first.OccupiedFirst
         ).move_particle_to(self.local_position_first_holder)
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/occupied_first",
-            "first_holder",
-            1,
+            "move(/occupied_first, first_holder)",
         )
         self.local_position_first_holder.move_particle_to(
             self.action.on_particle.get_position(
                 local.my_domain_com.my_lib.occupied_first.OccupiedFirst
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "first_holder",
-            "/occupied_first",
-            1,
+            "move(first_holder, /occupied_first)",
         )
         self.guarantees.global_position_occupied_first.run(
             self.move_global_position_occupied_first__global_position_transitive_to_position_transitive_holder,
@@ -106,11 +102,9 @@ class DestructorExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.transitive.Transitive
         ).move_particle_to(self.local_position_transitive_holder)
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/occupied_first::/transitive",
-            "transitive_holder",
-            1,
+            "move(/occupied_first::/transitive, transitive_holder)",
         )
         self.local_position_transitive_holder.move_particle_to(
             self.action.on_particle.get_position(
@@ -119,11 +113,9 @@ class DestructorExecution:
                 local.my_domain_com.my_lib.transitive.Transitive
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "transitive_holder",
-            "/occupied_first::/transitive",
-            1,
+            "move(transitive_holder, /occupied_first::/transitive)",
         )
         self.guarantees.global_position_occupied_first__global_position_transitive.run()
 
@@ -131,18 +123,16 @@ class DestructorExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.empty.Empty
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/empty",
-            1,
+            "create(/empty)",
         )
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.empty.Empty
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/empty",
-            1,
+            "destroy(/empty)",
         )
         self.guarantees.global_position_empty.run()
 
@@ -152,21 +142,17 @@ class DestructorExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.occupied_last.OccupiedLast
         ).move_particle_to(self.local_position_last_holder)
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/occupied_last",
-            "last_holder",
-            1,
+            "move(/occupied_last, last_holder)",
         )
         self.local_position_last_holder.move_particle_to(
             self.action.on_particle.get_position(
                 local.my_domain_com.my_lib.occupied_last.OccupiedLast
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "last_holder",
-            "/occupied_last",
-            1,
+            "move(last_holder, /occupied_last)",
         )
         self.guarantees.global_position_occupied_last.run()

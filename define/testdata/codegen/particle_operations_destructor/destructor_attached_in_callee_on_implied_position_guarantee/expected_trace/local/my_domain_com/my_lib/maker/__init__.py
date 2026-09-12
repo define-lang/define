@@ -67,10 +67,9 @@ class MakerExecution:
 
     def create_position_temp(self):
         self.local_position_temp.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "temp",
-            1,
+            "create(temp)",
         )
         self.move_position_temp_to_global_position_child()
 
@@ -82,10 +81,8 @@ class MakerExecution:
                 local.my_domain_com.my_lib.child.Child
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "temp",
-            "/child",
-            1,
+            "move(temp, /child)",
         )
         self.guarantees.global_position_child.run()

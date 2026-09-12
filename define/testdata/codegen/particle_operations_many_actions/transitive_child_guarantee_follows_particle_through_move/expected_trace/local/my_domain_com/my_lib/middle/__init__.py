@@ -79,10 +79,9 @@ class MiddleExecution:
 
     def create_position_inner_holder(self):
         self.local_position_inner_holder.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "inner_holder",
-            1,
+            "create(inner_holder)",
         )
         self.execution_position_inner_holder__action_inner = local.my_domain_com.my_lib.inner.InnerExecution(
             self.local_position_inner_holder.particle.get_action(
@@ -112,11 +111,9 @@ class MiddleExecution:
                 "position<input>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "inner_parent",
-            "inner_holder::/inner::input",
-            1,
+            "move(inner_parent, inner_holder::/inner::input)",
         )
         self.execution_position_inner_holder__action_inner.accept_when_empty_position_input__global_position_result_value()
 
@@ -126,10 +123,9 @@ class MiddleExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "inner_holder::/inner::trigger_pos",
-            1,
+            "create(inner_holder::/inner::trigger_pos)",
         )
         self.destruction_position_position_inner_holder__action_inner__position_trigger_pos = self.local_position_inner_holder.particle.get_action(
             local.my_domain_com.my_lib.inner.Inner
@@ -149,11 +145,9 @@ class MiddleExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.result_value.ResultValue
         ).move_particle_to(self.local_position_result_holder)
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "inner_holder::/inner::input::/result_value",
-            "result_holder",
-            1,
+            "move(inner_holder::/inner::input::/result_value, result_holder)",
         )
         self.local_position_inner_holder.particle.get_action(
             local.my_domain_com.my_lib.inner.Inner
@@ -164,11 +158,9 @@ class MiddleExecution:
                 "position<inner_parent>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "inner_holder::/inner::input",
-            "inner_parent",
-            1,
+            "move(inner_holder::/inner::input, inner_parent)",
         )
         self.guarantees.position_inner_parent.run(
             self.move_position_result_holder_to_position_inner_parent__global_position_result_value,
@@ -183,11 +175,9 @@ class MiddleExecution:
                 local.my_domain_com.my_lib.result_value.ResultValue
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "result_holder",
-            "inner_parent::/result_value",
-            1,
+            "move(result_holder, inner_parent::/result_value)",
         )
         self.guarantees.position_inner_parent__global_position_result_value.run()
 
@@ -195,16 +185,14 @@ class MiddleExecution:
         if not self.join_for_destroy_position_inner_holder.arrive():
             return
         self.local_position_inner_holder.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "inner_holder",
-            1,
+            "destroy(inner_holder)",
         )
 
     def destroy_position_inner_holder__action_inner__position_trigger_pos(self):
         self.destruction_position_position_inner_holder__action_inner__position_trigger_pos.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "inner_holder::/inner::trigger_pos",
-            1,
+            "destroy(inner_holder::/inner::trigger_pos)",
         )

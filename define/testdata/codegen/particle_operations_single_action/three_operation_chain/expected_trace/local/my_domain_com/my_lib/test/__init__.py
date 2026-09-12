@@ -44,21 +44,17 @@ class TestExecution:
 
     def create_position_item(self):
         self.local_position_item.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "item",
-            1,
+            "create(item)",
         )
         self.local_position_item.move_particle_to(self.local_position_dest)
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "item",
-            "dest",
-            1,
+            "move(item, dest)",
         )
         self.local_position_dest.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "dest",
-            1,
+            "destroy(dest)",
         )

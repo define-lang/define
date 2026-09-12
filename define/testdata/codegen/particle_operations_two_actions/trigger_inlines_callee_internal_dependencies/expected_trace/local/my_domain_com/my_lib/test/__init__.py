@@ -49,10 +49,9 @@ class TestExecution:
 
     def create_position_gateway(self):
         self.local_position_gateway.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "gateway",
-            1,
+            "create(gateway)",
         )
         self.execution_position_gateway__action_other = local.my_domain_com.my_lib.other.OtherExecution(
             self.local_position_gateway.particle.get_action(
@@ -83,10 +82,9 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "gateway::/other::trigger_pos",
-            1,
+            "create(gateway::/other::trigger_pos)",
         )
         self.destruction_position_position_gateway__action_other__position_trigger_pos = self.local_position_gateway.particle.get_action(
             local.my_domain_com.my_lib.other.Other
@@ -94,19 +92,17 @@ class TestExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_position_gateway__action_other__position_trigger_pos.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "gateway::/other::trigger_pos",
-            1,
+            "destroy(gateway::/other::trigger_pos)",
         )
         self.destroy_position_gateway()
 
     def destroy_position_gateway__action_other__position_output(self):
         self.destruction_position_position_gateway__action_other__position_output.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "gateway::/other::output",
-            1,
+            "destroy(gateway::/other::output)",
         )
         self.destroy_position_gateway()
 
@@ -114,10 +110,9 @@ class TestExecution:
         if not self.join_for_destroy_position_gateway.arrive():
             return
         self.local_position_gateway.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "gateway",
-            1,
+            "destroy(gateway)",
         )
 
     def init_position_gateway__action_other__position_output(self):

@@ -1,0 +1,6 @@
+other.create(other_item)
+other.destroy(other_item)
+test.create(/other::trigger_pos)
+test.destroy(/other::trigger_pos)
+test.create(local_item)
+test.destroy(local_item)

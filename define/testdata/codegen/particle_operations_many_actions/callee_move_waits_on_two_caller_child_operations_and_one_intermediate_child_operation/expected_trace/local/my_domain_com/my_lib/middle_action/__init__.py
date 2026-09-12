@@ -99,10 +99,9 @@ class MiddleActionExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.first.First
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/input::/first",
-            1,
+            "create(/input::/first)",
         )
         self.action_inner__for_empty_rule_global_position_input()
 
@@ -112,10 +111,9 @@ class MiddleActionExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/inner::trigger_pos",
-            1,
+            "create(/inner::trigger_pos)",
         )
         self.destruction_position_action_inner__position_trigger_pos = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.inner.Inner
@@ -123,10 +121,9 @@ class MiddleActionExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_action_inner__position_trigger_pos.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/inner::trigger_pos",
-            1,
+            "destroy(/inner::trigger_pos)",
         )
         self.guarantees.action_inner__position_trigger_pos.run()
 
@@ -135,10 +132,9 @@ class MiddleActionExecution:
 
     def continue_destroy_global_position_input__global_position_first(self):
         self.destruction_position_global_position_input__global_position_first.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.destruction_connection_action_inner.trace_execution,
-            "holder::/first",
-            1,
+            "destroy(holder::/first)",
         )
         self.destruction_connection_action_inner.complete()
 

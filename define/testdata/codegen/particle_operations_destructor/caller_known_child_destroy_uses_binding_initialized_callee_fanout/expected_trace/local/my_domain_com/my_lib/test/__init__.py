@@ -92,27 +92,24 @@ class TestExecution:
 
     def create_position_source(self):
         self.local_position_source.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            1,
+            "create(source)",
         )
         self.move_position_payload_source_to_position_source__global_position_payload()
 
     def create_position_payload_source(self):
         self.local_position_payload_source.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "payload_source",
-            1,
+            "create(payload_source)",
         )
         self.local_position_payload_source.particle.get_position(
             local.my_domain_com.my_lib.child.Child
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "payload_source::/child",
-            1,
+            "create(payload_source::/child)",
         )
         self.move_position_payload_source_to_position_source__global_position_payload()
 
@@ -124,11 +121,9 @@ class TestExecution:
                 local.my_domain_com.my_lib.payload.Payload
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "payload_source",
-            "source::/payload",
-            1,
+            "move(payload_source, source::/payload)",
         )
         self.local_position_source.move_particle_to(
             self.action.on_particle.get_action(
@@ -137,11 +132,9 @@ class TestExecution:
                 "position<run>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            "/outer::run",
-            1,
+            "move(source, /outer::run)",
         )
         self.destruction_position_action_outer__position_run__global_position_payload__global_position_child = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.outer.Outer
@@ -157,9 +150,8 @@ class TestExecution:
 
     def destroy_action_outer__position_run__global_position_payload__global_position_child(self):
         self.destruction_position_action_outer__position_run__global_position_payload__global_position_child.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.destruction_connection_action_outer.trace_execution,
-            "holder::/child",
-            1,
+            "destroy(holder::/child)",
         )
         self.destruction_connection_action_outer.complete()

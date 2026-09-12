@@ -47,10 +47,9 @@ class DestructExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.work.Work
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/required::/work",
-            1,
+            "create(/required::/work)",
         )
         self.destruction_position_global_position_required__global_position_work = self.action.on_particle.get_position(
             local.my_domain_com.my_lib.required.Required
@@ -58,9 +57,8 @@ class DestructExecution:
             local.my_domain_com.my_lib.work.Work
         )
         self.destruction_position_global_position_required__global_position_work.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/required::/work",
-            1,
+            "destroy(/required::/work)",
         )
         self.guarantees.global_position_required__global_position_work.run()

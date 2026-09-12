@@ -49,18 +49,16 @@ class ThirdDestructorExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.third.Third
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/third",
-            1,
+            "create(/third)",
         )
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.third.Third
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/third",
-            1,
+            "destroy(/third)",
         )
         self.guarantees.global_position_third.run()
 
@@ -68,17 +66,15 @@ class ThirdDestructorExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/marker",
-            1,
+            "create(/marker)",
         )
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/marker",
-            1,
+            "destroy(/marker)",
         )
         self.guarantees.global_position_marker.run()

@@ -83,10 +83,9 @@ class OuterExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/inner::trigger_pos",
-            1,
+            "create(/inner::trigger_pos)",
         )
         self.destruction_position_action_inner__position_trigger_pos = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.inner.Inner
@@ -94,10 +93,9 @@ class OuterExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_action_inner__position_trigger_pos.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/inner::trigger_pos",
-            1,
+            "destroy(/inner::trigger_pos)",
         )
         self.guarantees.action_inner__position_trigger_pos.run()
 
@@ -107,10 +105,9 @@ class OuterExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/storage::trigger_pos",
-            1,
+            "create(/storage::trigger_pos)",
         )
         self.destruction_position_action_storage__position_trigger_pos = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.storage.Storage
@@ -118,9 +115,8 @@ class OuterExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_action_storage__position_trigger_pos.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/storage::trigger_pos",
-            1,
+            "destroy(/storage::trigger_pos)",
         )
         self.guarantees.action_storage__position_trigger_pos.run()

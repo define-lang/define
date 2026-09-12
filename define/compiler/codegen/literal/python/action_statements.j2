@@ -22,23 +22,21 @@
         {% elif stmt.kind == StatementKind.CREATE_PARTICLE %}
         {{ position_expression(stmt.position) }}.create_particle()
             {% if stmt.operation_label is not none %}
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "{{ stmt.operation_label.target }}",
-            {{ stmt.operation_label.occurrence }},
+            "{{ stmt.operation_label }}",
         )
             {% endif %}
         {% elif stmt.kind == StatementKind.DESTROY_PARTICLE %}
         {{ position_expression(stmt.position) }}.destroy_particle()
             {% if stmt.operation_label is not none %}
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
                 {% if stmt.destruction_connection_name is not none %}
             self.{{ stmt.destruction_connection_name }}.trace_execution,
                 {% else %}
             self.trace_execution,
                 {% endif %}
-            "{{ stmt.operation_label.target }}",
-            {{ stmt.operation_label.occurrence }},
+            "{{ stmt.operation_label }}",
         )
             {% endif %}
         {% elif stmt.kind == StatementKind.MOVE_PARTICLE %}
@@ -50,11 +48,9 @@
         {{ position_expression(stmt.position) }}.move_particle_to({{ position_expression(stmt.to_position) }})
             {% endif %}
             {% if stmt.operation_label is not none %}
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "{{ stmt.operation_label.source }}",
-            "{{ stmt.operation_label.target }}",
-            {{ stmt.operation_label.occurrence }},
+            "{{ stmt.operation_label }}",
         )
             {% endif %}
         {% endif %}

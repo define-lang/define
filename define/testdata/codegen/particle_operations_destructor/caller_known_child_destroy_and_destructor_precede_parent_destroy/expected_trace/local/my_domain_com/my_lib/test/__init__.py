@@ -103,10 +103,9 @@ class TestExecution:
 
     def create_position_source(self):
         self.local_position_source.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            1,
+            "create(source)",
         )
         self.scheduler.continue_with(
             self.create_position_source__global_position_required,
@@ -117,20 +116,18 @@ class TestExecution:
         self.local_position_source.particle.get_position(
             local.my_domain_com.my_lib.required.Required
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source::/required",
-            1,
+            "create(source::/required)",
         )
         self.local_position_source.particle.get_position(
             local.my_domain_com.my_lib.required.Required
         ).particle.get_position(
             local.my_domain_com.my_lib.extra.Extra
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source::/required::/extra",
-            1,
+            "create(source::/required::/extra)",
         )
         self.move_position_source_to_action_destroyer__position_parent()
 
@@ -138,10 +135,9 @@ class TestExecution:
         self.local_position_source.particle.get_position(
             local.my_domain_com.my_lib.sibling.Sibling
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source::/sibling",
-            1,
+            "create(source::/sibling)",
         )
         self.move_position_source_to_action_destroyer__position_parent()
 
@@ -155,11 +151,9 @@ class TestExecution:
                 "position<parent>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            "/destroyer::parent",
-            1,
+            "move(source, /destroyer::parent)",
         )
         self.execution_action_destroyer__position_parent__action_destruct_sibling = local.my_domain_com.my_lib.destruct_sibling.DestructSiblingExecution(
             self.action.on_particle.get_action(
@@ -221,10 +215,9 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/destroyer::trigger_pos",
-            1,
+            "create(/destroyer::trigger_pos)",
         )
         self.execution_action_destroyer.accept_for_empty_rule_position_trigger_pos()
 
@@ -239,19 +232,17 @@ class TestExecution:
             local.my_domain_com.my_lib.sibling.Sibling
         )
         self.destruction_position_action_destroyer__position_parent__global_position_sibling.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.destruction_connection_action_destroyer.trace_execution,
-            "parent::/sibling",
-            1,
+            "destroy(parent::/sibling)",
         )
         self.destruction_connection_action_destroyer.complete()
 
     def destroy_action_destroyer__position_parent__global_position_required__global_position_extra(self):
         self.destruction_position_action_destroyer__position_parent__global_position_required__global_position_extra.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.destruction_connection_action_destroyer_2.trace_execution,
-            "parent::/required::/extra",
-            1,
+            "destroy(parent::/required::/extra)",
         )
         self.destruction_connection_action_destroyer_2.complete()
 

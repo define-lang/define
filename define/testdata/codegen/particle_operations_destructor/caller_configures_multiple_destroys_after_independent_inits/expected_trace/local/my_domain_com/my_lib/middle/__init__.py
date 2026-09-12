@@ -131,11 +131,9 @@ class MiddleExecution:
                 "position<target>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "run",
-            "/parent::/destroyer::target",
-            1,
+            "move(run, /parent::/destroyer::target)",
         )
         self.execution_global_position_parent__action_destroyer.init_position_target__action_known_destructor()
         self.guarantees.position_run.run(
@@ -151,10 +149,9 @@ class MiddleExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/parent::/destroyer::trigger_pos",
-            1,
+            "create(/parent::/destroyer::trigger_pos)",
         )
         self.destruction_position_global_position_parent__action_destroyer__position_trigger_pos = self.action.on_particle.get_position(
             local.my_domain_com.my_lib.parent.Parent
@@ -164,10 +161,9 @@ class MiddleExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_global_position_parent__action_destroyer__position_trigger_pos.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/parent::/destroyer::trigger_pos",
-            1,
+            "destroy(/parent::/destroyer::trigger_pos)",
         )
         self.destroy_global_position_parent()
 
@@ -180,9 +176,8 @@ class MiddleExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.parent.Parent
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/parent",
-            1,
+            "destroy(/parent)",
         )
         self.guarantees.global_position_parent.run()

@@ -106,10 +106,9 @@ class OuterExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/filler::run",
-            1,
+            "create(/filler::run)",
         )
         self.destruction_position_action_filler__position_run = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.filler.Filler
@@ -117,10 +116,9 @@ class OuterExecution:
             "position<run>"
         )
         self.destruction_position_action_filler__position_run.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/filler::run",
-            1,
+            "destroy(/filler::run)",
         )
         self.guarantees.action_filler__position_run.run()
 
@@ -130,11 +128,9 @@ class OuterExecution:
         self.action.get_interface_position(
             "position<run>"
         ).move_particle_to(self.local_position_receiver)
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "run",
-            "receiver",
-            1,
+            "move(run, receiver)",
         )
         self.guarantees.position_run.run(
             self.move_position_receiver_to_global_position_result,
@@ -148,11 +144,9 @@ class OuterExecution:
                 local.my_domain_com.my_lib.result.Result
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "receiver",
-            "/result",
-            1,
+            "move(receiver, /result)",
         )
         self.execution_global_position_result__action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
             self.action.on_particle.get_position(
@@ -192,11 +186,9 @@ class OuterExecution:
                 "position<run>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/result::/payload",
-            "/result::/middle::run",
-            1,
+            "move(/result::/payload, /result::/middle::run)",
         )
         self.execution_global_position_result__action_middle.accept_for_empty_rule_position_run()
 
@@ -209,9 +201,8 @@ class OuterExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.result.Result
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/result",
-            1,
+            "destroy(/result)",
         )
         self.guarantees.global_position_result.run()

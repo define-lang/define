@@ -42,14 +42,12 @@ class ChildAExecution:
 
     def create_position_scratch(self):
         self.local_position_scratch.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "scratch",
-            1,
+            "create(scratch)",
         )
         self.local_position_scratch.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "scratch",
-            1,
+            "destroy(scratch)",
         )

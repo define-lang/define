@@ -60,10 +60,9 @@ class TestExecution:
 
     def create_position_holder_first(self):
         self.local_position_holder_first.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "holder_first",
-            1,
+            "create(holder_first)",
         )
         self.execution_position_holder_first__action_first = local.my_domain_com.my_lib.first.FirstExecution(
             self.scheduler,
@@ -81,10 +80,9 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "holder_first::/first::trigger_pos",
-            1,
+            "create(holder_first::/first::trigger_pos)",
         )
         self.destruction_position_position_holder_first__action_first__position_trigger_pos = self.local_position_holder_first.particle.get_action(
             local.my_domain_com.my_lib.first.First
@@ -92,24 +90,21 @@ class TestExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_position_holder_first__action_first__position_trigger_pos.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "holder_first::/first::trigger_pos",
-            1,
+            "destroy(holder_first::/first::trigger_pos)",
         )
         self.local_position_holder_first.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "holder_first",
-            1,
+            "destroy(holder_first)",
         )
 
     def create_position_holder_second(self):
         self.local_position_holder_second.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "holder_second",
-            1,
+            "create(holder_second)",
         )
         self.execution_position_holder_second__action_second = local.my_domain_com.my_lib.second.SecondExecution(
             self.scheduler,
@@ -127,10 +122,9 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "holder_second::/second::trigger_pos",
-            1,
+            "create(holder_second::/second::trigger_pos)",
         )
         self.destruction_position_position_holder_second__action_second__position_trigger_pos = self.local_position_holder_second.particle.get_action(
             local.my_domain_com.my_lib.second.Second
@@ -138,14 +132,12 @@ class TestExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_position_holder_second__action_second__position_trigger_pos.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "holder_second::/second::trigger_pos",
-            1,
+            "destroy(holder_second::/second::trigger_pos)",
         )
         self.local_position_holder_second.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "holder_second",
-            1,
+            "destroy(holder_second)",
         )

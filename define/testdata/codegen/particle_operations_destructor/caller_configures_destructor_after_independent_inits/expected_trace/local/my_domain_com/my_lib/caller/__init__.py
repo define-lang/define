@@ -101,11 +101,9 @@ class CallerExecution:
                 "position<run>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "run",
-            "/middle::run",
-            1,
+            "move(run, /middle::run)",
         )
         self.guarantees.position_run.run(
             self.execution_action_middle.accept_for_empty_rule_position_run,

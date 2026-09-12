@@ -49,10 +49,9 @@ class TestExecution:
 
     def create_position_gateway(self):
         self.local_position_gateway.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "gateway",
-            1,
+            "create(gateway)",
         )
         self.execution_position_gateway__action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
             self.local_position_gateway.particle.get_action(
@@ -82,10 +81,9 @@ class TestExecution:
         ).get_interface_position(
             "position<source>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "gateway::/middle::source",
-            1,
+            "create(gateway::/middle::source)",
         )
         self.local_position_gateway.particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
@@ -94,10 +92,9 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.item.Item
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "gateway::/middle::source::/item",
-            1,
+            "create(gateway::/middle::source::/item)",
         )
         self.execution_position_gateway__action_middle.accept_for_empty_rule_position_source()
 
@@ -107,10 +104,9 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "gateway::/middle::trigger_pos",
-            1,
+            "create(gateway::/middle::trigger_pos)",
         )
         self.destruction_position_position_gateway__action_middle__position_trigger_pos = self.local_position_gateway.particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
@@ -118,10 +114,9 @@ class TestExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_position_gateway__action_middle__position_trigger_pos.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "gateway::/middle::trigger_pos",
-            1,
+            "destroy(gateway::/middle::trigger_pos)",
         )
         self.destroy_position_gateway()
 
@@ -129,8 +124,7 @@ class TestExecution:
         if not self.join_for_destroy_position_gateway.arrive():
             return
         self.local_position_gateway.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "gateway",
-            1,
+            "destroy(gateway)",
         )

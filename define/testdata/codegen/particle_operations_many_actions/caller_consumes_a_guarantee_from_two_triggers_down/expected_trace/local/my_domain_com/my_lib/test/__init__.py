@@ -52,10 +52,9 @@ class TestExecution:
 
     def create_position_box(self):
         self.local_position_box.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box",
-            1,
+            "create(box)",
         )
         self.execution_position_box__action_outer = local.my_domain_com.my_lib.outer.OuterExecution(
             self.local_position_box.particle.get_action(
@@ -87,10 +86,9 @@ class TestExecution:
         ).get_interface_position(
             "position<gw>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box::/outer::gw",
-            1,
+            "create(box::/outer::gw)",
         )
         self.execution_position_box__action_outer.init_when_occupied_position_gw()
         self.execution_position_box__action_outer.execution_position_gw__action_middle.join_when_empty_position_out = literal.NO_JOIN
@@ -103,10 +101,9 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box::/outer::trigger_pos",
-            1,
+            "create(box::/outer::trigger_pos)",
         )
         self.destruction_position_position_box__action_outer__position_trigger_pos = self.local_position_box.particle.get_action(
             local.my_domain_com.my_lib.outer.Outer
@@ -114,10 +111,9 @@ class TestExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_position_box__action_outer__position_trigger_pos.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box::/outer::trigger_pos",
-            1,
+            "destroy(box::/outer::trigger_pos)",
         )
         self.destroy_position_box()
 
@@ -127,11 +123,9 @@ class TestExecution:
         ).get_interface_position(
             "position<out>"
         ).move_particle_to(self.local_position_result)
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box::/outer::out",
-            "result",
-            1,
+            "move(box::/outer::out, result)",
         )
         self.scheduler.continue_with(
             self.destroy_position_result,
@@ -140,18 +134,16 @@ class TestExecution:
 
     def destroy_position_result(self):
         self.local_position_result.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "result",
-            1,
+            "destroy(result)",
         )
 
     def destroy_position_box(self):
         if not self.join_for_destroy_position_box.arrive():
             return
         self.local_position_box.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box",
-            1,
+            "destroy(box)",
         )

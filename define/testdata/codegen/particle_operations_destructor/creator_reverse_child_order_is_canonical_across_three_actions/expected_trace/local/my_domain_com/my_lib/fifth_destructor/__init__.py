@@ -59,22 +59,18 @@ class FifthDestructorExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.fifth.Fifth
         ).move_particle_to(self.local_position_holder)
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/fifth",
-            "holder",
-            1,
+            "move(/fifth, holder)",
         )
         self.local_position_holder.move_particle_to(
             self.action.on_particle.get_position(
                 local.my_domain_com.my_lib.fifth.Fifth
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "holder",
-            "/fifth",
-            1,
+            "move(holder, /fifth)",
         )
         self.guarantees.global_position_fifth.run()
 
@@ -82,17 +78,15 @@ class FifthDestructorExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/marker",
-            1,
+            "create(/marker)",
         )
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/marker",
-            1,
+            "destroy(/marker)",
         )
         self.guarantees.global_position_marker.run()

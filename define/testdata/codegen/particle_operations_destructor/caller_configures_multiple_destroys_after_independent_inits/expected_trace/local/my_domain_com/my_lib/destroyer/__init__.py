@@ -113,11 +113,9 @@ class DestroyerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         ).move_particle_to(self.local_position_retained_marker)
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "target::/marker",
-            "retained_marker",
-            1,
+            "move(target::/marker, retained_marker)",
         )
         self.local_position_retained_marker.move_particle_to(
             self.action.get_interface_position(
@@ -126,11 +124,9 @@ class DestroyerExecution:
                 local.my_domain_com.my_lib.marker.Marker
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "retained_marker",
-            "target::/marker",
-            1,
+            "move(retained_marker, target::/marker)",
         )
         self.execution_position_target__action_known_destructor.accept_for_empty_rule_global_position_marker()
 
@@ -143,10 +139,9 @@ class DestroyerExecution:
         self.action.get_interface_position(
             "position<target>"
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "target",
-            1,
+            "destroy(target)",
         )
         self.guarantees.position_target.run()
 
@@ -155,10 +150,9 @@ class DestroyerExecution:
 
     def continue_destroy_position_target__global_position_marker(self):
         self.destruction_position_position_target__global_position_marker.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "target::/marker",
-            1,
+            "destroy(target::/marker)",
         )
 
     def init_position_target__action_known_destructor__global_position_marker(self):

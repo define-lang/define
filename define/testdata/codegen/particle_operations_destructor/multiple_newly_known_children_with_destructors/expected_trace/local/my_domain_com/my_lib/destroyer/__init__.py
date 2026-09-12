@@ -62,11 +62,9 @@ class DestroyerExecution:
         self.action.get_interface_position(
             "position<run>"
         ).move_particle_to(self.local_position_local)
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "run",
-            "local",
-            1,
+            "move(run, local)",
         )
         self.guarantees.position_run.run(
             self.destroy_position_local,
@@ -77,8 +75,7 @@ class DestroyerExecution:
 
     def continue_destroy_position_local(self):
         self.local_position_local.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "local",
-            1,
+            "destroy(local)",
         )

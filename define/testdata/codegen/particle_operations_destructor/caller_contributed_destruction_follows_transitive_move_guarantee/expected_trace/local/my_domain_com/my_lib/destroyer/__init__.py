@@ -93,11 +93,9 @@ class DestroyerExecution:
                 "position<run>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "run",
-            "/mover::run",
-            1,
+            "move(run, /mover::run)",
         )
         self.guarantees.position_run.run(
             self.execution_action_mover.accept_for_empty_rule_position_run,
@@ -108,10 +106,9 @@ class DestroyerExecution:
 
     def continue_destroy_action_mover__position_result(self):
         self.destruction_position_action_mover__position_result.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/mover::result",
-            1,
+            "destroy(/mover::result)",
         )
         self.guarantees.action_mover__position_result.run()
 

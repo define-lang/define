@@ -53,21 +53,17 @@ class DestructExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.required.Required
         ).move_particle_to(self.local_position_held_result)
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/required",
-            "held_result",
-            1,
+            "move(/required, held_result)",
         )
         self.local_position_held_result.move_particle_to(
             self.action.on_particle.get_position(
                 local.my_domain_com.my_lib.required.Required
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "held_result",
-            "/required",
-            1,
+            "move(held_result, /required)",
         )
         self.guarantees.global_position_required.run()

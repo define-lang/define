@@ -77,10 +77,9 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/caller_a::trigger_pos",
-            1,
+            "create(/caller_a::trigger_pos)",
         )
         self.destruction_position_action_caller_a__position_trigger_pos = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.caller_a.CallerA
@@ -88,10 +87,9 @@ class TestExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_action_caller_a__position_trigger_pos.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/caller_a::trigger_pos",
-            1,
+            "destroy(/caller_a::trigger_pos)",
         )
         self.guarantees.action_caller_a__position_trigger_pos.run()
 
@@ -101,10 +99,9 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/caller_b::trigger_pos",
-            1,
+            "create(/caller_b::trigger_pos)",
         )
         self.destruction_position_action_caller_b__position_trigger_pos = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.caller_b.CallerB
@@ -112,9 +109,8 @@ class TestExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_action_caller_b__position_trigger_pos.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/caller_b::trigger_pos",
-            1,
+            "destroy(/caller_b::trigger_pos)",
         )
         self.guarantees.action_caller_b__position_trigger_pos.run()

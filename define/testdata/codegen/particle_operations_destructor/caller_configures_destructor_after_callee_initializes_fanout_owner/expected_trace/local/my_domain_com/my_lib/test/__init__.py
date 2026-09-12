@@ -103,37 +103,33 @@ class TestExecution:
 
     def create_position_source(self):
         self.local_position_source.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            1,
+            "create(source)",
         )
         self.move_position_crate_source_to_position_source__global_position_crate()
 
     def create_position_crate_source(self):
         self.local_position_crate_source.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "crate_source",
-            1,
+            "create(crate_source)",
         )
         self.move_position_carrier_source_to_position_crate_source__global_position_carrier()
 
     def create_position_carrier_source(self):
         self.local_position_carrier_source.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "carrier_source",
-            1,
+            "create(carrier_source)",
         )
         self.move_position_payload_source_to_position_carrier_source__global_position_payload()
 
     def create_position_payload_source(self):
         self.local_position_payload_source.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "payload_source",
-            1,
+            "create(payload_source)",
         )
         self.move_position_payload_source_to_position_carrier_source__global_position_payload()
 
@@ -145,11 +141,9 @@ class TestExecution:
                 local.my_domain_com.my_lib.payload.Payload
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "payload_source",
-            "carrier_source::/payload",
-            1,
+            "move(payload_source, carrier_source::/payload)",
         )
         self.move_position_carrier_source_to_position_crate_source__global_position_carrier()
 
@@ -161,11 +155,9 @@ class TestExecution:
                 local.my_domain_com.my_lib.carrier.Carrier
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "carrier_source",
-            "crate_source::/carrier",
-            1,
+            "move(carrier_source, crate_source::/carrier)",
         )
         self.move_position_crate_source_to_position_source__global_position_crate()
 
@@ -177,11 +169,9 @@ class TestExecution:
                 local.my_domain_com.my_lib.crate.Crate
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "crate_source",
-            "source::/crate",
-            1,
+            "move(crate_source, source::/crate)",
         )
         self.local_position_source.move_particle_to(
             self.action.on_particle.get_action(
@@ -190,10 +180,8 @@ class TestExecution:
                 "position<run>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            "/starter::run",
-            1,
+            "move(source, /starter::run)",
         )
         self.execution_action_starter.accept_for_empty_rule_position_run()

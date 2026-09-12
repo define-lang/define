@@ -69,10 +69,9 @@ class MakerExecution:
 
     def create_position_source(self):
         self.local_position_source.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            1,
+            "create(source)",
         )
         self.move_position_source_to_global_position_target()
 
@@ -84,10 +83,8 @@ class MakerExecution:
                 local.my_domain_com.my_lib.target.Target
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            "/target",
-            1,
+            "move(source, /target)",
         )
         self.guarantees.global_position_target.run()

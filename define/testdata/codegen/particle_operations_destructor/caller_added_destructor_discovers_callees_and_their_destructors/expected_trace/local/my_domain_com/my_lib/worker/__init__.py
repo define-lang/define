@@ -69,10 +69,9 @@ class WorkerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.child.Child
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "target::/child",
-            1,
+            "create(target::/child)",
         )
         self.destruction_position_position_target__global_position_child = self.action.get_interface_position(
             "position<target>"
@@ -99,10 +98,9 @@ class WorkerExecution:
         self.action.get_interface_position(
             "position<target>"
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "target",
-            1,
+            "destroy(target)",
         )
         self.guarantees.position_target.run()
 
@@ -111,8 +109,7 @@ class WorkerExecution:
 
     def continue_destroy_position_target__global_position_child(self):
         self.destruction_position_position_target__global_position_child.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "target::/child",
-            1,
+            "destroy(target::/child)",
         )

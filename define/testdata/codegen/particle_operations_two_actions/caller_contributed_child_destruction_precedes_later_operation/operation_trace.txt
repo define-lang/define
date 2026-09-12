@@ -1,0 +1,8 @@
+test.create(child_particle)
+test.create(child_particle::/child)
+test.create(source)
+test.move(child_particle, source::/run)
+test.move(source, /destroyer::run)
+destroyer.destroy(run::/run::/child)
+destroyer.destroy(run::/run)
+destroyer.destroy(run)

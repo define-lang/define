@@ -74,9 +74,8 @@ class InnerExecution:
 
     def continue_destroy_position_input__global_position_item(self):
         self.destruction_position_position_input__global_position_item.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "input::/item",
-            1,
+            "destroy(input::/item)",
         )
         self.guarantees.position_input__global_position_item.run()

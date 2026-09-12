@@ -74,11 +74,9 @@ class StarterExecution:
         self.action.get_interface_position(
             "position<run>"
         ).move_particle_to(self.local_position_gateway)
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "run",
-            "gateway",
-            1,
+            "move(run, gateway)",
         )
         self.execution_position_gateway__action_wrapper = local.my_domain_com.my_lib.wrapper.WrapperExecution(
             self.local_position_gateway.particle.get_action(
@@ -110,11 +108,9 @@ class StarterExecution:
                 "position<run>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "gateway::/crate",
-            "gateway::/wrapper::run",
-            1,
+            "move(gateway::/crate, gateway::/wrapper::run)",
         )
         self.execution_position_gateway__action_wrapper.init_position_run__action_outer()
         self.execution_position_gateway__action_wrapper.accept_for_empty_rule_position_run__global_position_carrier()
@@ -124,8 +120,7 @@ class StarterExecution:
 
     def continue_destroy_position_gateway(self):
         self.local_position_gateway.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "gateway",
-            1,
+            "destroy(gateway)",
         )

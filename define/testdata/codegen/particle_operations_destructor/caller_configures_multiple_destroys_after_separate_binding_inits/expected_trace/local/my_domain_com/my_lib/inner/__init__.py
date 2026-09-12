@@ -106,11 +106,9 @@ class InnerExecution:
                 "position<target>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "run",
-            "/destroyer::target",
-            1,
+            "move(run, /destroyer::target)",
         )
         self.destruction_position_action_destroyer__position_target__global_position_marker = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.destroyer.Destroyer
@@ -132,10 +130,9 @@ class InnerExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/destroyer::trigger_pos",
-            1,
+            "create(/destroyer::trigger_pos)",
         )
         self.destruction_position_action_destroyer__position_trigger_pos = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.destroyer.Destroyer
@@ -143,10 +140,9 @@ class InnerExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_action_destroyer__position_trigger_pos.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/destroyer::trigger_pos",
-            1,
+            "destroy(/destroyer::trigger_pos)",
         )
         self.guarantees.action_destroyer__position_trigger_pos.run()
 
@@ -155,9 +151,8 @@ class InnerExecution:
 
     def continue_destroy_action_destroyer__position_target__global_position_marker(self):
         self.destruction_position_action_destroyer__position_target__global_position_marker.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.destruction_connection_action_destroyer.trace_execution,
-            "target::/marker",
-            1,
+            "destroy(target::/marker)",
         )
         self.destruction_connection_action_destroyer.complete()

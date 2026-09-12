@@ -182,10 +182,7 @@ class TriggeredActionExecutionGenerator:
     ) -> str | None:
         if self._operation_labels is None:
             return None
-        return self._operation_labels.triggered_action_execution_name(
-            self._definition.typed_name,
-            execution,
-        ).local_name
+        return execution.callee_action_name.name_content.path.name.removeprefix("/")
 
     def _generate_created_destruction_connections(
         self,

@@ -67,11 +67,9 @@ class InnerExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.input.Input
         ).move_particle_to(self.local_position_holder)
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/input",
-            "holder",
-            1,
+            "move(/input, holder)",
         )
         self.guarantees.global_position_input.run(
             self.destroy_position_holder,
@@ -82,8 +80,7 @@ class InnerExecution:
 
     def continue_destroy_position_holder(self):
         self.local_position_holder.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "holder",
-            1,
+            "destroy(holder)",
         )

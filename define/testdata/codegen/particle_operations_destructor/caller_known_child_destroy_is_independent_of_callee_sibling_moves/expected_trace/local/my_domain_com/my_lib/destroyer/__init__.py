@@ -79,11 +79,9 @@ class DestroyerExecution:
         self.action.get_interface_position(
             "position<run>"
         ).move_particle_to(self.local_position_incoming)
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "run",
-            "incoming",
-            1,
+            "move(run, incoming)",
         )
         self.guarantees.position_run.run(
             self.move_position_incoming_to_position_parent,
@@ -91,31 +89,25 @@ class DestroyerExecution:
 
     def move_position_incoming_to_position_parent(self):
         self.local_position_incoming.move_particle_to(self.local_position_parent)
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "incoming",
-            "parent",
-            1,
+            "move(incoming, parent)",
         )
         self.local_position_parent.particle.get_position(
             local.my_domain_com.my_lib.known.Known
         ).move_particle_to(self.local_position_holder)
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "parent::/known",
-            "holder",
-            1,
+            "move(parent::/known, holder)",
         )
         self.local_position_holder.move_particle_to(
             self.local_position_parent.particle.get_position(
                 local.my_domain_com.my_lib.known.Known
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "holder",
-            "parent::/known",
-            1,
+            "move(holder, parent::/known)",
         )
         self.destruction_position_position_parent__global_position_known = self.local_position_parent.particle.get_position(
             local.my_domain_com.my_lib.known.Known
@@ -130,10 +122,9 @@ class DestroyerExecution:
 
     def continue_destroy_position_parent(self):
         self.local_position_parent.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "parent",
-            1,
+            "destroy(parent)",
         )
 
     def destroy_position_parent__global_position_known(self):
@@ -141,8 +132,7 @@ class DestroyerExecution:
 
     def continue_destroy_position_parent__global_position_known(self):
         self.destruction_position_position_parent__global_position_known.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "parent::/known",
-            1,
+            "destroy(parent::/known)",
         )

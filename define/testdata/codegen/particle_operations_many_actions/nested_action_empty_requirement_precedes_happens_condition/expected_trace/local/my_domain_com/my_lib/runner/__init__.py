@@ -50,10 +50,9 @@ class RunnerExecution:
 
     def create_position_wrapper(self):
         self.local_position_wrapper.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "wrapper",
-            1,
+            "create(wrapper)",
         )
         self.execution_position_wrapper__action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
             self.local_position_wrapper.particle.get_action(
@@ -93,10 +92,9 @@ class RunnerExecution:
         ).get_interface_position(
             "position<box>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "wrapper::/middle::box",
-            1,
+            "create(wrapper::/middle::box)",
         )
         self.execution_position_wrapper__action_middle.init_when_occupied_position_box()
         self.execution_position_wrapper__action_middle.execution_position_box__action_worker.join_for_empty_rule_position_input = literal.NO_JOIN
@@ -108,10 +106,9 @@ class RunnerExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "wrapper::/middle::run",
-            1,
+            "create(wrapper::/middle::run)",
         )
         self.execution_position_wrapper__action_middle.accept_for_empty_rule_position_run()
 
@@ -119,18 +116,16 @@ class RunnerExecution:
         if not self.join_for_destroy_position_wrapper.arrive():
             return
         self.local_position_wrapper.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "wrapper",
-            1,
+            "destroy(wrapper)",
         )
 
     def destroy_position_wrapper__action_middle__position_final(self):
         self.destruction_position_position_wrapper__action_middle__position_final.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "wrapper::/middle::final",
-            1,
+            "destroy(wrapper::/middle::final)",
         )
 
     def init_position_wrapper__action_middle__position_final(self):

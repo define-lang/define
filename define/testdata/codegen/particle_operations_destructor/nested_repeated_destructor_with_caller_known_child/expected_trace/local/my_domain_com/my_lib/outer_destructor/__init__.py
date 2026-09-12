@@ -70,10 +70,9 @@ class OuterDestructorExecution:
 
     def create_position_inner_destroyer_particle(self):
         self.local_position_inner_destroyer_particle.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "inner_destroyer_particle",
-            1,
+            "create(inner_destroyer_particle)",
         )
         self.destruction_connection_position_inner_destroyer_particle__action_inner_destroyer = tracing.DestructionConnection(
             self.scheduler,
@@ -112,7 +111,7 @@ class OuterDestructorExecution:
             ),
             self.scheduler,
             self.trace_execution,
-            "inner_destroyer#2",
+            "inner_destroyer",
             destruction_connections=literal.DestructionConnections(
             {
                 local.my_domain_com.my_lib.inner_destroyer.InnerDestroyerExecution.continue_destroy_position_target: self.destruction_connection_position_inner_destroyer_particle__action_inner_destroyer_2,
@@ -128,18 +127,16 @@ class OuterDestructorExecution:
 
     def create_position_first_source(self):
         self.local_position_first_source.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "first_source",
-            1,
+            "create(first_source)",
         )
         self.local_position_first_source.particle.get_position(
             local.my_domain_com.my_lib.extra.Extra
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "first_source::/extra",
-            1,
+            "create(first_source::/extra)",
         )
         self.move_position_first_source_to_position_inner_destroyer_particle__action_inner_destroyer__position_target()
 
@@ -153,11 +150,9 @@ class OuterDestructorExecution:
                 "position<target>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "first_source",
-            "inner_destroyer_particle::/inner_destroyer::target",
-            1,
+            "move(first_source, inner_destroyer_particle::/inner_destroyer::target)",
         )
         self.destruction_position_position_inner_destroyer_particle__action_inner_destroyer__position_target__global_position_extra = self.local_position_inner_destroyer_particle.particle.get_action(
             local.my_domain_com.my_lib.inner_destroyer.InnerDestroyer
@@ -170,27 +165,24 @@ class OuterDestructorExecution:
 
     def destroy_position_inner_destroyer_particle__action_inner_destroyer__position_target__global_position_extra(self):
         self.destruction_position_position_inner_destroyer_particle__action_inner_destroyer__position_target__global_position_extra.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.destruction_connection_position_inner_destroyer_particle__action_inner_destroyer.trace_execution,
-            "target::/extra",
-            1,
+            "destroy(target::/extra)",
         )
         self.destruction_connection_position_inner_destroyer_particle__action_inner_destroyer.complete()
 
     def create_position_second_source(self):
         self.local_position_second_source.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "second_source",
-            1,
+            "create(second_source)",
         )
         self.local_position_second_source.particle.get_position(
             local.my_domain_com.my_lib.extra.Extra
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "second_source::/extra",
-            1,
+            "create(second_source::/extra)",
         )
         self.move_position_second_source_to_position_inner_destroyer_particle__action_inner_destroyer__position_target()
 
@@ -204,11 +196,9 @@ class OuterDestructorExecution:
                 "position<target>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "second_source",
-            "inner_destroyer_particle::/inner_destroyer::target",
-            1,
+            "move(second_source, inner_destroyer_particle::/inner_destroyer::target)",
         )
         self.destruction_position_position_inner_destroyer_particle__action_inner_destroyer__position_target__global_position_extra_2 = self.local_position_inner_destroyer_particle.particle.get_action(
             local.my_domain_com.my_lib.inner_destroyer.InnerDestroyer
@@ -221,19 +211,17 @@ class OuterDestructorExecution:
 
     def destroy_position_inner_destroyer_particle__action_inner_destroyer__position_target__global_position_extra_2(self):
         self.destruction_position_position_inner_destroyer_particle__action_inner_destroyer__position_target__global_position_extra_2.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.destruction_connection_position_inner_destroyer_particle__action_inner_destroyer_2.trace_execution,
-            "target::/extra",
-            2,
+            "destroy(target::/extra)",
         )
         self.destruction_connection_position_inner_destroyer_particle__action_inner_destroyer_2.complete()
 
     def destroy_position_inner_destroyer_particle(self):
         self.local_position_inner_destroyer_particle.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "inner_destroyer_particle",
-            1,
+            "destroy(inner_destroyer_particle)",
         )
 
     def run_position_inner_destroyer_particle__action_inner_destroyer__position_target__action_inner_destructor_a(self):
@@ -256,6 +244,6 @@ class OuterDestructorExecution:
         execution = local.my_domain_com.my_lib.inner_destructor_a.InnerDestructorAExecution(
             self.scheduler,
             self.destruction_connection_position_inner_destroyer_particle__action_inner_destroyer_2.trace_execution,
-            "inner_destructor_a#2",
+            "inner_destructor_a",
         )
         execution.on_action_parent_occupied()

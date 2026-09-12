@@ -86,18 +86,16 @@ class TestExecution:
 
     def create_position_source(self):
         self.local_position_source.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            1,
+            "create(source)",
         )
         self.local_position_source.particle.get_position(
             local.my_domain_com.my_lib.extra.Extra
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source::/extra",
-            1,
+            "create(source::/extra)",
         )
         self.scheduler.continue_with(
             self.create_position_source__global_position_extra__global_position_marker_a,
@@ -110,10 +108,9 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.marker_a.MarkerA
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source::/extra::/marker_a",
-            1,
+            "create(source::/extra::/marker_a)",
         )
         self.move_position_source_to_action_middle__position_run()
 
@@ -123,10 +120,9 @@ class TestExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.marker_b.MarkerB
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source::/extra::/marker_b",
-            1,
+            "create(source::/extra::/marker_b)",
         )
         self.move_position_source_to_action_middle__position_run()
 
@@ -140,11 +136,9 @@ class TestExecution:
                 "position<run>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            "/middle::run",
-            1,
+            "move(source, /middle::run)",
         )
         self.destruction_position_action_middle__position_run__global_position_extra__global_position_marker_b = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
@@ -175,19 +169,17 @@ class TestExecution:
 
     def destroy_action_middle__position_run__global_position_extra__global_position_marker_b(self):
         self.destruction_position_action_middle__position_run__global_position_extra__global_position_marker_b.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.destruction_connection_action_middle.trace_execution,
-            "run::/extra::/marker_b",
-            1,
+            "destroy(run::/extra::/marker_b)",
         )
         self.destroy_action_middle__position_run__global_position_extra()
 
     def destroy_action_middle__position_run__global_position_extra__global_position_marker_a(self):
         self.destruction_position_action_middle__position_run__global_position_extra__global_position_marker_a.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.destruction_connection_action_middle.trace_execution,
-            "run::/extra::/marker_a",
-            1,
+            "destroy(run::/extra::/marker_a)",
         )
         self.destroy_action_middle__position_run__global_position_extra()
 
@@ -195,9 +187,8 @@ class TestExecution:
         if not self.join_for_destroy_action_middle__position_run__global_position_extra.arrive():
             return
         self.destruction_position_action_middle__position_run__global_position_extra.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.destruction_connection_action_middle.trace_execution,
-            "run::/extra",
-            1,
+            "destroy(run::/extra)",
         )
         self.destruction_connection_action_middle.complete()

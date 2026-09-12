@@ -110,10 +110,9 @@ class MiddleExecution:
 
     def continue_destroy_position_gw__global_position_holder__global_position_a(self):
         self.destruction_position_position_gw__global_position_holder__global_position_a.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "gw::/holder::/a",
-            1,
+            "destroy(gw::/holder::/a)",
         )
         self.execution_position_gw__action_inner.accept_when_empty_global_position_holder__global_position_a()
 
@@ -125,10 +124,9 @@ class MiddleExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "gw::/inner::trigger_pos",
-            1,
+            "create(gw::/inner::trigger_pos)",
         )
         self.destruction_position_position_gw__action_inner__position_trigger_pos = self.action.get_interface_position(
             "position<gw>"
@@ -138,9 +136,8 @@ class MiddleExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_position_gw__action_inner__position_trigger_pos.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "gw::/inner::trigger_pos",
-            1,
+            "destroy(gw::/inner::trigger_pos)",
         )
         self.guarantees.position_gw__action_inner__position_trigger_pos.run()

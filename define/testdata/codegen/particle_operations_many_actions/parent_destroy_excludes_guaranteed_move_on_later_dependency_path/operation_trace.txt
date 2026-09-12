@@ -1,0 +1,8 @@
+test.create(parent)
+test.create(parent::/mover::run)
+mover.destroy(run)
+test.create(parent::/mover::source)
+mover.move(source, intermediate)
+mover.move(intermediate, destination)
+test.destroy(parent::/mover::destination)
+test.destroy(parent)

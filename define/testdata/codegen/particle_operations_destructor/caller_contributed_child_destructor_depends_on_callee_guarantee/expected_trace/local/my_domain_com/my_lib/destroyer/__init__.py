@@ -132,10 +132,9 @@ class DestroyerExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "parent::/maker::trigger_pos",
-            1,
+            "create(parent::/maker::trigger_pos)",
         )
         self.execution_position_parent__action_maker.accept_for_empty_rule_position_trigger_pos()
 
@@ -155,22 +154,18 @@ class DestroyerExecution:
                 local.my_domain_com.my_lib.required.Required
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "parent::/maker::result",
-            "parent::/required",
-            1,
+            "move(parent::/maker::result, parent::/required)",
         )
         self.action.get_interface_position(
             "position<parent>"
         ).particle.get_position(
             local.my_domain_com.my_lib.required.Required
         ).move_particle_to(self.local_position_held_required)
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "parent::/required",
-            "held_required",
-            1,
+            "move(parent::/required, held_required)",
         )
         self.local_position_held_required.move_particle_to(
             self.action.get_interface_position(
@@ -179,11 +174,9 @@ class DestroyerExecution:
                 local.my_domain_com.my_lib.required.Required
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "held_required",
-            "parent::/required",
-            1,
+            "move(held_required, parent::/required)",
         )
         self.destruction_position_position_parent__global_position_required = self.action.get_interface_position(
             "position<parent>"
@@ -204,10 +197,9 @@ class DestroyerExecution:
         self.action.get_interface_position(
             "position<parent>"
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "parent",
-            1,
+            "destroy(parent)",
         )
         self.guarantees.position_parent.run()
 
@@ -216,8 +208,7 @@ class DestroyerExecution:
 
     def continue_destroy_position_parent__global_position_required(self):
         self.destruction_position_position_parent__global_position_required.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "parent::/required",
-            1,
+            "destroy(parent::/required)",
         )

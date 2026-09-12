@@ -112,7 +112,7 @@ class TestExecution:
             ),
             self.scheduler,
             self.trace_execution,
-            "destroyer#2",
+            "destroyer",
             destruction_connections=literal.DestructionConnections(
             {
                 local.my_domain_com.my_lib.destroyer.DestroyerExecution.continue_destroy_position_target: self.destruction_connection_action_destroyer_2,
@@ -135,7 +135,7 @@ class TestExecution:
             ),
             self.scheduler,
             self.trace_execution,
-            "destroyer#3",
+            "destroyer",
             destruction_connections=literal.DestructionConnections(
             {
                 local.my_domain_com.my_lib.destroyer.DestroyerExecution.continue_destroy_position_target: self.destruction_connection_action_destroyer_3,
@@ -153,7 +153,7 @@ class TestExecution:
             ),
             self.scheduler,
             self.trace_execution,
-            "destroyer#4",
+            "destroyer",
         )
         self.execution_action_destroyer_4.join_for_empty_rule_position_target = literal.NO_JOIN
         self.execution_action_destroyer_4.join_for_destroy_position_target = literal.NO_JOIN
@@ -168,10 +168,9 @@ class TestExecution:
 
     def create_position_a_only(self):
         self.local_position_a_only.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "a_only",
-            1,
+            "create(a_only)",
         )
         self.local_position_a_only.move_particle_to(
             self.action.on_particle.get_action(
@@ -180,20 +179,17 @@ class TestExecution:
                 "position<target>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "a_only",
-            "/destroyer::target",
-            1,
+            "move(a_only, /destroyer::target)",
         )
         self.execution_action_destroyer.accept_for_empty_rule_position_target()
 
     def create_position_a_and_b(self):
         self.local_position_a_and_b.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "a_and_b",
-            1,
+            "create(a_and_b)",
         )
         self.move_position_a_and_b_to_action_destroyer__position_target()
 
@@ -207,20 +203,17 @@ class TestExecution:
                 "position<target>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "a_and_b",
-            "/destroyer::target",
-            1,
+            "move(a_and_b, /destroyer::target)",
         )
         self.execution_action_destroyer_2.accept_for_empty_rule_position_target()
 
     def create_position_b_only(self):
         self.local_position_b_only.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "b_only",
-            1,
+            "create(b_only)",
         )
         self.move_position_b_only_to_action_destroyer__position_target()
 
@@ -234,20 +227,17 @@ class TestExecution:
                 "position<target>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "b_only",
-            "/destroyer::target",
-            1,
+            "move(b_only, /destroyer::target)",
         )
         self.execution_action_destroyer_3.accept_for_empty_rule_position_target()
 
     def create_position_none(self):
         self.local_position_none.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "none",
-            1,
+            "create(none)",
         )
         self.move_position_none_to_action_destroyer__position_target()
 
@@ -261,11 +251,9 @@ class TestExecution:
                 "position<target>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "none",
-            "/destroyer::target",
-            1,
+            "move(none, /destroyer::target)",
         )
         self.execution_action_destroyer_4.accept_for_empty_rule_position_target()
 
@@ -289,7 +277,7 @@ class TestExecution:
         execution = local.my_domain_com.my_lib.destructor_a.DestructorAExecution(
             self.scheduler,
             self.destruction_connection_action_destroyer_2.trace_execution,
-            "destructor_a#2",
+            "destructor_a",
         )
         execution.on_action_parent_occupied()
 
@@ -297,6 +285,6 @@ class TestExecution:
         execution = local.my_domain_com.my_lib.destructor_b.DestructorBExecution(
             self.scheduler,
             self.destruction_connection_action_destroyer_3.trace_execution,
-            "destructor_b#2",
+            "destructor_b",
         )
         execution.on_action_parent_occupied()

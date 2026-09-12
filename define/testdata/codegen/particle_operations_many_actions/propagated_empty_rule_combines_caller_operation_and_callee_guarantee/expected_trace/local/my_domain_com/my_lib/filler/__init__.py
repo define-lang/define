@@ -57,9 +57,8 @@ class FillerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.guaranteed_child.GuaranteedChild
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/parent::/guaranteed_child",
-            1,
+            "create(/parent::/guaranteed_child)",
         )
         self.guarantees.global_position_parent__global_position_guaranteed_child.run()

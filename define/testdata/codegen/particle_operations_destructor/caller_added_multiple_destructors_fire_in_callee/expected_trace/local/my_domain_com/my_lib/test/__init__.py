@@ -64,10 +64,9 @@ class TestExecution:
 
     def create_position_box(self):
         self.local_position_box.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box",
-            1,
+            "create(box)",
         )
         self.destruction_connection_position_box__action_callee = tracing.DestructionConnection(
             self.scheduler,
@@ -100,10 +99,9 @@ class TestExecution:
 
     def create_position_carrier(self):
         self.local_position_carrier.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "carrier",
-            1,
+            "create(carrier)",
         )
         self.move_position_carrier_to_position_box__action_callee__position_target()
 
@@ -117,11 +115,9 @@ class TestExecution:
                 "position<target>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "carrier",
-            "box::/callee::target",
-            1,
+            "move(carrier, box::/callee::target)",
         )
         self.execution_position_box__action_callee.accept_for_empty_rule_position_target()
 
@@ -131,10 +127,9 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box::/callee::run",
-            1,
+            "create(box::/callee::run)",
         )
         self.destruction_position_position_box__action_callee__position_run = self.local_position_box.particle.get_action(
             local.my_domain_com.my_lib.callee.Callee
@@ -150,18 +145,16 @@ class TestExecution:
         if not self.join_for_destroy_position_box.arrive():
             return
         self.local_position_box.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box",
-            1,
+            "destroy(box)",
         )
 
     def destroy_position_box__action_callee__position_run(self):
         self.destruction_position_position_box__action_callee__position_run.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box::/callee::run",
-            1,
+            "destroy(box::/callee::run)",
         )
 
     def run_position_box__action_callee__position_target__action_destructor_b(self):

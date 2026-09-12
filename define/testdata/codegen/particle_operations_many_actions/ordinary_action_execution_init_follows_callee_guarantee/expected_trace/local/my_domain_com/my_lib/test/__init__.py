@@ -50,10 +50,9 @@ class TestExecution:
 
     def create_position_box(self):
         self.local_position_box.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box",
-            1,
+            "create(box)",
         )
         self.execution_position_box__action_carrier = local.my_domain_com.my_lib.carrier.CarrierExecution(
             self.local_position_box.particle.get_action(
@@ -87,10 +86,9 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box::/carrier::run",
-            1,
+            "create(box::/carrier::run)",
         )
         self.execution_position_box__action_carrier.accept_for_empty_rule_position_run()
 
@@ -104,19 +102,17 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box::/carrier::result::/worker::run",
-            1,
+            "create(box::/carrier::result::/worker::run)",
         )
         self.execution_position_box__action_carrier__position_result__action_worker.accept_for_empty_rule_position_run()
 
     def destroy_position_box__action_carrier__position_result(self):
         self.destruction_position_position_box__action_carrier__position_result.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box::/carrier::result",
-            1,
+            "destroy(box::/carrier::result)",
         )
         self.destroy_position_box()
 
@@ -124,10 +120,9 @@ class TestExecution:
         if not self.join_for_destroy_position_box.arrive():
             return
         self.local_position_box.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box",
-            1,
+            "destroy(box)",
         )
 
     def init_position_box__action_carrier__position_source__move__position_result(self):

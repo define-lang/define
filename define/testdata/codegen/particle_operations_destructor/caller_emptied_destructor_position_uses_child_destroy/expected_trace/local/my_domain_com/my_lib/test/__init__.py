@@ -63,10 +63,9 @@ class TestExecution:
 
     def create_position_carrier(self):
         self.local_position_carrier.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "carrier",
-            1,
+            "create(carrier)",
         )
         self.execution_position_carrier__action_callee = local.my_domain_com.my_lib.callee.CalleeExecution(
             self.local_position_carrier.particle.get_action(
@@ -88,27 +87,24 @@ class TestExecution:
 
     def create_position_source(self):
         self.local_position_source.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            1,
+            "create(source)",
         )
         self.local_position_source.particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source::/marker",
-            1,
+            "create(source::/marker)",
         )
         self.destruction_position_position_source__global_position_marker = self.local_position_source.particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         )
         self.destruction_position_position_source__global_position_marker.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source::/marker",
-            1,
+            "destroy(source::/marker)",
         )
         self.move_position_source_to_position_carrier__action_callee__position_src()
 
@@ -122,11 +118,9 @@ class TestExecution:
                 "position<src>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            "carrier::/callee::src",
-            1,
+            "move(source, carrier::/callee::src)",
         )
         self.execution_position_carrier__action_callee.init_position_src__action_destructor()
         self.execution_position_carrier__action_callee.accept_when_empty_position_src__global_position_marker()
@@ -137,10 +131,9 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "carrier::/callee::trigger_pos",
-            1,
+            "create(carrier::/callee::trigger_pos)",
         )
         self.destruction_position_position_carrier__action_callee__position_trigger_pos = self.local_position_carrier.particle.get_action(
             local.my_domain_com.my_lib.callee.Callee
@@ -148,10 +141,9 @@ class TestExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_position_carrier__action_callee__position_trigger_pos.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "carrier::/callee::trigger_pos",
-            1,
+            "destroy(carrier::/callee::trigger_pos)",
         )
         self.destroy_position_carrier()
 
@@ -159,8 +151,7 @@ class TestExecution:
         if not self.join_for_destroy_position_carrier.arrive():
             return
         self.local_position_carrier.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "carrier",
-            1,
+            "destroy(carrier)",
         )

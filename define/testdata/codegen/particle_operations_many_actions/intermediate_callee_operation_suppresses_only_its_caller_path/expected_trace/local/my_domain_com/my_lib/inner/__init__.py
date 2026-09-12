@@ -66,9 +66,8 @@ class InnerExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.parent.Parent
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/parent",
-            1,
+            "destroy(/parent)",
         )
         self.guarantees.global_position_parent.run()

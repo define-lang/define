@@ -88,11 +88,9 @@ class MiddleExecution:
                 "position<run>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "run",
-            "/inner::run",
-            1,
+            "move(run, /inner::run)",
         )
         self.guarantees.position_run.run(
             self.execution_action_inner.accept_for_empty_rule_position_run,

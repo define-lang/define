@@ -79,10 +79,9 @@ class OuterExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/middle::trigger_pos",
-            1,
+            "create(/middle::trigger_pos)",
         )
         self.destruction_position_action_middle__position_trigger_pos = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
@@ -90,9 +89,8 @@ class OuterExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_action_middle__position_trigger_pos.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/middle::trigger_pos",
-            1,
+            "destroy(/middle::trigger_pos)",
         )
         self.guarantees.action_middle__position_trigger_pos.run()

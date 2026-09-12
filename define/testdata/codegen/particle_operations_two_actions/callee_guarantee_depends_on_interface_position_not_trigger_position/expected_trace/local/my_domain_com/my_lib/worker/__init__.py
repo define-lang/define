@@ -67,10 +67,8 @@ class WorkerExecution:
                 "position<output>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "input",
-            "output",
-            1,
+            "move(input, output)",
         )
         self.guarantees.position_input__move__position_output.run()

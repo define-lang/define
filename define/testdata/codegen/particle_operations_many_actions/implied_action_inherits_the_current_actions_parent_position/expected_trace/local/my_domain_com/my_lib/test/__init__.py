@@ -51,18 +51,16 @@ class TestExecution:
 
     def create_position_local(self):
         self.local_position_local.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "local",
-            1,
+            "create(local)",
         )
         self.local_position_local.particle.get_position(
             local.my_domain_com.my_lib.parent.Parent
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "local::/parent",
-            1,
+            "create(local::/parent)",
         )
         self.execution_position_local__global_position_parent__action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
             self.local_position_local.particle.get_position(
@@ -93,10 +91,9 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "local::/parent::/middle::trigger_pos",
-            1,
+            "create(local::/parent::/middle::trigger_pos)",
         )
         self.destruction_position_position_local__global_position_parent__action_middle__position_trigger_pos = self.local_position_local.particle.get_position(
             local.my_domain_com.my_lib.parent.Parent
@@ -106,10 +103,9 @@ class TestExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_position_local__global_position_parent__action_middle__position_trigger_pos.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "local::/parent::/middle::trigger_pos",
-            1,
+            "destroy(local::/parent::/middle::trigger_pos)",
         )
         self.destruction_position_position_local__global_position_parent = self.local_position_local.particle.get_position(
             local.my_domain_com.my_lib.parent.Parent
@@ -123,18 +119,16 @@ class TestExecution:
         if not self.join_for_destroy_position_local.arrive():
             return
         self.local_position_local.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "local",
-            1,
+            "destroy(local)",
         )
 
     def destroy_position_local__global_position_parent(self):
         if not self.join_for_destroy_position_local__global_position_parent.arrive():
             return
         self.destruction_position_position_local__global_position_parent.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "local::/parent",
-            1,
+            "destroy(local::/parent)",
         )

@@ -117,10 +117,9 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/maker::run",
-            1,
+            "create(/maker::run)",
         )
         self.destruction_position_action_maker__position_run = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.maker.Maker
@@ -128,10 +127,9 @@ class TestExecution:
             "position<run>"
         )
         self.destruction_position_action_maker__position_run.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/maker::run",
-            1,
+            "destroy(/maker::run)",
         )
         self.guarantees.action_maker__position_run.run()
 
@@ -141,10 +139,9 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/destroyer::trigger_pos",
-            1,
+            "create(/destroyer::trigger_pos)",
         )
         self.destruction_position_action_destroyer__position_trigger_pos = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.destroyer.Destroyer
@@ -152,10 +149,9 @@ class TestExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_action_destroyer__position_trigger_pos.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/destroyer::trigger_pos",
-            1,
+            "destroy(/destroyer::trigger_pos)",
         )
         self.guarantees.action_destroyer__position_trigger_pos.run()
 

@@ -63,10 +63,8 @@ class OtherExecution:
                 "position<output>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "trigger_pos",
-            "output",
-            1,
+            "move(trigger_pos, output)",
         )
         self.guarantees.position_trigger_pos__move__position_output.run()

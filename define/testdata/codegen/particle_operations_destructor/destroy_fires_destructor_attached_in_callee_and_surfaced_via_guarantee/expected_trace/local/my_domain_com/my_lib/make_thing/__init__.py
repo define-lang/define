@@ -67,10 +67,9 @@ class MakeThingExecution:
 
     def create_position_temp(self):
         self.local_position_temp.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "temp",
-            1,
+            "create(temp)",
         )
         self.move_position_temp_to_position_result()
 
@@ -82,10 +81,8 @@ class MakeThingExecution:
                 "position<result>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "temp",
-            "result",
-            1,
+            "move(temp, result)",
         )
         self.guarantees.position_result.run()

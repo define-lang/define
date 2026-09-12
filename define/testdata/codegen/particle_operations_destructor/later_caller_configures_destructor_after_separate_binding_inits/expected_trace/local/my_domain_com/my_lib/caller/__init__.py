@@ -106,19 +106,17 @@ class CallerExecution:
 
     def create_position_source(self):
         self.local_position_source.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            1,
+            "create(source)",
         )
         self.move_position_carrier_source_to_position_source__global_position_carrier()
 
     def create_position_carrier_source(self):
         self.local_position_carrier_source.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "carrier_source",
-            1,
+            "create(carrier_source)",
         )
         self.move_position_run_to_position_carrier_source__global_position_payload()
 
@@ -132,11 +130,9 @@ class CallerExecution:
                 local.my_domain_com.my_lib.payload.Payload
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "run",
-            "carrier_source::/payload",
-            1,
+            "move(run, carrier_source::/payload)",
         )
         self.guarantees.position_run.run(
             self.move_position_carrier_source_to_position_source__global_position_carrier,
@@ -150,11 +146,9 @@ class CallerExecution:
                 local.my_domain_com.my_lib.carrier.Carrier
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "carrier_source",
-            "source::/carrier",
-            1,
+            "move(carrier_source, source::/carrier)",
         )
         self.local_position_source.move_particle_to(
             self.action.on_particle.get_action(
@@ -163,11 +157,9 @@ class CallerExecution:
                 "position<run>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            "/wrapper::run",
-            1,
+            "move(source, /wrapper::run)",
         )
         self.execution_action_wrapper.init_position_run__action_outer()
         self.execution_action_wrapper.accept_for_empty_rule_position_run__global_position_carrier()

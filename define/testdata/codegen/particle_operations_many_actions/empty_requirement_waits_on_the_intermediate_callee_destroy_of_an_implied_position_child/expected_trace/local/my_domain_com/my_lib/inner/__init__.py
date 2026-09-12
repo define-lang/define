@@ -57,9 +57,8 @@ class InnerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.a.A
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/holder::/a",
-            1,
+            "create(/holder::/a)",
         )
         self.guarantees.global_position_holder__global_position_a.run()

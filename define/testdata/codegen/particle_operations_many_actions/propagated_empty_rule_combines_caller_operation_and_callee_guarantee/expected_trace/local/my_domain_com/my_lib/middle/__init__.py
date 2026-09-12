@@ -83,10 +83,9 @@ class MiddleExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/mover::trigger_pos",
-            1,
+            "create(/mover::trigger_pos)",
         )
         self.destruction_position_action_mover__position_trigger_pos = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.mover.Mover
@@ -94,10 +93,9 @@ class MiddleExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_action_mover__position_trigger_pos.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/mover::trigger_pos",
-            1,
+            "destroy(/mover::trigger_pos)",
         )
         self.guarantees.action_mover__position_trigger_pos.run()
 
@@ -106,10 +104,9 @@ class MiddleExecution:
 
     def continue_destroy_action_mover__position_destination(self):
         self.destruction_position_action_mover__position_destination.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/mover::destination",
-            1,
+            "destroy(/mover::destination)",
         )
         self.guarantees.action_mover__position_destination.run()
 

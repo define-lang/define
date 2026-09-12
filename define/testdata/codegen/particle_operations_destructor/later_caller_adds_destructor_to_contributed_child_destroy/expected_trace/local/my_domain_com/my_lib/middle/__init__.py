@@ -106,11 +106,9 @@ class MiddleExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.child.Child
         ).move_particle_to(self.local_position_retained_child)
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "target::/child",
-            "retained_child",
-            1,
+            "move(target::/child, retained_child)",
         )
         self.local_position_retained_child.move_particle_to(
             self.action.get_interface_position(
@@ -119,11 +117,9 @@ class MiddleExecution:
                 local.my_domain_com.my_lib.child.Child
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "retained_child",
-            "target::/child",
-            1,
+            "move(retained_child, target::/child)",
         )
         self.move_position_target_to_action_destroyer__position_target()
 
@@ -139,11 +135,9 @@ class MiddleExecution:
                 "position<target>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "target",
-            "/destroyer::target",
-            1,
+            "move(target, /destroyer::target)",
         )
         self.destruction_position_action_destroyer__position_target__global_position_child = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.destroyer.Destroyer
@@ -161,9 +155,8 @@ class MiddleExecution:
 
     def continue_destroy_action_destroyer__position_target__global_position_child(self):
         self.destruction_position_action_destroyer__position_target__global_position_child.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.destruction_connection_action_destroyer.trace_execution,
-            "holder::/child",
-            1,
+            "destroy(holder::/child)",
         )
         self.destruction_connection_action_destroyer.complete()

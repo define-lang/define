@@ -80,18 +80,16 @@ class TestExecution:
 
     def create_position_source(self):
         self.local_position_source.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            1,
+            "create(source)",
         )
         self.local_position_source.particle.get_position(
             local.my_domain_com.my_lib.child.Child
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source::/child",
-            1,
+            "create(source::/child)",
         )
         self.local_position_source.move_particle_to(
             self.action.on_particle.get_action(
@@ -100,11 +98,9 @@ class TestExecution:
                 "position<run>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            "/middle::run",
-            1,
+            "move(source, /middle::run)",
         )
         self.destruction_position_action_middle__position_run__global_position_child = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
@@ -117,9 +113,8 @@ class TestExecution:
 
     def destroy_action_middle__position_run__global_position_child(self):
         self.destruction_position_action_middle__position_run__global_position_child.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.destruction_connection_action_middle.trace_execution,
-            "run::/child",
-            1,
+            "destroy(run::/child)",
         )
         self.destruction_connection_action_middle.complete()

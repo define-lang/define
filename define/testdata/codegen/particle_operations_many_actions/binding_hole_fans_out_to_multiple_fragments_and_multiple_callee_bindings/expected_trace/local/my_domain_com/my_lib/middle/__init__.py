@@ -84,30 +84,26 @@ class MiddleExecution:
 
     def create_position_first(self):
         self.local_position_first.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "first",
-            1,
+            "create(first)",
         )
         self.local_position_first.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "first",
-            1,
+            "destroy(first)",
         )
 
     def create_position_second(self):
         self.local_position_second.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "second",
-            1,
+            "create(second)",
         )
         self.local_position_second.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "second",
-            1,
+            "destroy(second)",
         )
 
     def create_action_child_a__position_trigger_pos(self):
@@ -116,10 +112,9 @@ class MiddleExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/child_a::trigger_pos",
-            1,
+            "create(/child_a::trigger_pos)",
         )
         self.destruction_position_action_child_a__position_trigger_pos = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.child_a.ChildA
@@ -127,10 +122,9 @@ class MiddleExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_action_child_a__position_trigger_pos.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/child_a::trigger_pos",
-            1,
+            "destroy(/child_a::trigger_pos)",
         )
         self.guarantees.action_child_a__position_trigger_pos.run()
 
@@ -140,10 +134,9 @@ class MiddleExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/child_b::trigger_pos",
-            1,
+            "create(/child_b::trigger_pos)",
         )
         self.destruction_position_action_child_b__position_trigger_pos = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.child_b.ChildB
@@ -151,9 +144,8 @@ class MiddleExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_action_child_b__position_trigger_pos.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/child_b::trigger_pos",
-            1,
+            "destroy(/child_b::trigger_pos)",
         )
         self.guarantees.action_child_b__position_trigger_pos.run()

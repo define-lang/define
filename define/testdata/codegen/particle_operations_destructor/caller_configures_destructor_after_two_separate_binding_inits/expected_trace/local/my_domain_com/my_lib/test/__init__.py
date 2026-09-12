@@ -81,19 +81,17 @@ class TestExecution:
 
     def create_position_source(self):
         self.local_position_source.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            1,
+            "create(source)",
         )
         self.move_position_payload_source_to_position_source__global_position_payload()
 
     def create_position_payload_source(self):
         self.local_position_payload_source.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "payload_source",
-            1,
+            "create(payload_source)",
         )
         self.move_position_payload_source_to_position_source__global_position_payload()
 
@@ -105,11 +103,9 @@ class TestExecution:
                 local.my_domain_com.my_lib.payload.Payload
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "payload_source",
-            "source::/payload",
-            1,
+            "move(payload_source, source::/payload)",
         )
         self.local_position_source.move_particle_to(
             self.action.on_particle.get_action(
@@ -118,11 +114,9 @@ class TestExecution:
                 "position<run>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            "/outer::run",
-            1,
+            "move(source, /outer::run)",
         )
         self.execution_action_outer.init_when_occupied_position_run()
         self.scheduler.continue_with(

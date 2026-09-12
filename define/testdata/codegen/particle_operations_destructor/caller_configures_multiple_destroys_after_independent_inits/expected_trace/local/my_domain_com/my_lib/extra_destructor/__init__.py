@@ -55,11 +55,9 @@ class ExtraDestructorExecution:
                 local.my_domain_com.my_lib.empty_marker.EmptyMarker
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/marker",
-            "/empty_marker",
-            1,
+            "move(/marker, /empty_marker)",
         )
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.empty_marker.EmptyMarker
@@ -68,10 +66,8 @@ class ExtraDestructorExecution:
                 local.my_domain_com.my_lib.marker.Marker
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/empty_marker",
-            "/marker",
-            1,
+            "move(/empty_marker, /marker)",
         )
         self.guarantees.global_position_empty_marker__move__global_position_marker.run()

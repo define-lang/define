@@ -39,28 +39,24 @@ class DestructorExecution:
 
     def create_position_first(self):
         self.local_position_first.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "first",
-            1,
+            "create(first)",
         )
         self.local_position_first.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "first",
-            1,
+            "destroy(first)",
         )
 
     def create_position_second(self):
         self.local_position_second.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "second",
-            1,
+            "create(second)",
         )
         self.local_position_second.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "second",
-            1,
+            "destroy(second)",
         )

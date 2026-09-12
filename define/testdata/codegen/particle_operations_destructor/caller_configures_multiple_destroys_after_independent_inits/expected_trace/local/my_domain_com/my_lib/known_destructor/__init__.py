@@ -59,22 +59,18 @@ class KnownDestructorExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.marker.Marker
         ).move_particle_to(self.local_position_retained_marker)
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/marker",
-            "retained_marker",
-            1,
+            "move(/marker, retained_marker)",
         )
         self.local_position_retained_marker.move_particle_to(
             self.action.on_particle.get_position(
                 local.my_domain_com.my_lib.marker.Marker
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "retained_marker",
-            "/marker",
-            1,
+            "move(retained_marker, /marker)",
         )
         self.guarantees.global_position_marker.run()
 
@@ -82,17 +78,15 @@ class KnownDestructorExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.empty_marker.EmptyMarker
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/empty_marker",
-            1,
+            "create(/empty_marker)",
         )
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.empty_marker.EmptyMarker
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/empty_marker",
-            1,
+            "destroy(/empty_marker)",
         )
         self.guarantees.global_position_empty_marker.run()

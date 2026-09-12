@@ -69,10 +69,9 @@ class CallFillExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/fill_item::trigger_pos",
-            1,
+            "create(/fill_item::trigger_pos)",
         )
         self.destruction_position_action_fill_item__position_trigger_pos = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.fill_item.FillItem
@@ -80,9 +79,8 @@ class CallFillExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_action_fill_item__position_trigger_pos.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/fill_item::trigger_pos",
-            1,
+            "destroy(/fill_item::trigger_pos)",
         )
         self.guarantees.action_fill_item__position_trigger_pos.run()

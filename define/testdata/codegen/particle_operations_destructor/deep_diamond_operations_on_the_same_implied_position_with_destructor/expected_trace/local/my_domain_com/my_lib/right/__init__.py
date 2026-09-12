@@ -79,10 +79,9 @@ class RightExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/right_child::trigger_pos",
-            1,
+            "create(/right_child::trigger_pos)",
         )
         self.destruction_position_action_right_child__position_trigger_pos = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.right_child.RightChild
@@ -90,9 +89,8 @@ class RightExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_action_right_child__position_trigger_pos.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/right_child::trigger_pos",
-            1,
+            "destroy(/right_child::trigger_pos)",
         )
         self.guarantees.action_right_child__position_trigger_pos.run()

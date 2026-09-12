@@ -12,7 +12,6 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Sequence
 
     from define.compiler.codegen.literal.python import naming
-    from define.compiler.validator.reference_graph import operation_graph_labeler
 
 
 class StatementKind(enum.Enum):
@@ -99,7 +98,7 @@ class ActionStatementContext:
     constraints: list[naming.ClassReference] = field(default_factory=list)
     position: PositionExpr | None = None
     to_position: PositionExpr | None = None
-    operation_label: operation_graph_labeler.OperationLabel | None = None
+    operation_label: str | None = None
     destruction_connection_name: str | None = None
     destruction_positions_to_retain: list[DestructionPositionContext] = field(
         default_factory=list

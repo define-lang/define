@@ -83,10 +83,9 @@ class CarrierExecution:
         self.action.get_interface_position(
             "position<source>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            1,
+            "create(source)",
         )
         self.move_position_source_to_position_result()
 
@@ -100,11 +99,9 @@ class CarrierExecution:
                 "position<result>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            "result",
-            1,
+            "move(source, result)",
         )
         self.guarantees.position_source__move__position_result.run()
 
@@ -117,9 +114,8 @@ class CarrierExecution:
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "run",
-            1,
+            "destroy(run)",
         )
         self.guarantees.position_run.run()

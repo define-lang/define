@@ -98,10 +98,9 @@ class MiddleExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.occupied_last.OccupiedLast
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "target::/occupied_last",
-            1,
+            "create(target::/occupied_last)",
         )
         self.move_position_target_to_action_destroyer__position_target()
 
@@ -117,11 +116,9 @@ class MiddleExecution:
                 "position<target>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "target",
-            "/destroyer::target",
-            1,
+            "move(target, /destroyer::target)",
         )
         self.destruction_position_action_destroyer__position_target__global_position_occupied_last = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.destroyer.Destroyer
@@ -139,9 +136,8 @@ class MiddleExecution:
 
     def continue_destroy_action_destroyer__position_target__global_position_occupied_last(self):
         self.destruction_position_action_destroyer__position_target__global_position_occupied_last.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.destruction_connection_action_destroyer.trace_execution,
-            "target::/occupied_last",
-            1,
+            "destroy(target::/occupied_last)",
         )
         self.destruction_connection_action_destroyer.complete()

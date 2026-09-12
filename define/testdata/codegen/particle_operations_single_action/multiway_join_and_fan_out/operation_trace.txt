@@ -1,0 +1,6 @@
+test.create(box)
+test.create(box::/b)
+test.destroy(box::/b)
+test.create(box::/a)
+test.destroy(box::/a)
+test.destroy(box)

@@ -67,11 +67,9 @@ class ExtraDestructorExecution:
                 local.my_domain_com.my_lib.second.Second
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/marker",
-            "/destinations::/second",
-            1,
+            "move(/marker, /destinations::/second)",
         )
         self.move_global_position_destinations__global_position_second_to_global_position_destinations__global_position_third()
 
@@ -89,11 +87,9 @@ class ExtraDestructorExecution:
                 local.my_domain_com.my_lib.third.Third
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/destinations::/second",
-            "/destinations::/third",
-            1,
+            "move(/destinations::/second, /destinations::/third)",
         )
         self.guarantees.global_position_destinations__global_position_second.run(
             self.move_global_position_destinations__global_position_third_to_global_position_marker,
@@ -109,10 +105,8 @@ class ExtraDestructorExecution:
                 local.my_domain_com.my_lib.marker.Marker
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/destinations::/third",
-            "/marker",
-            1,
+            "move(/destinations::/third, /marker)",
         )
         self.guarantees.global_position_destinations__global_position_third__move__global_position_marker.run()

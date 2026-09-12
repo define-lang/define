@@ -82,10 +82,9 @@ class MiddleBExecution:
 
     def create_position_destroyer_holder(self):
         self.local_position_destroyer_holder.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "destroyer_holder",
-            1,
+            "create(destroyer_holder)",
         )
         self.destruction_connection_position_destroyer_holder__action_destroyer = tracing.DestructionConnection(
             self.scheduler,
@@ -114,18 +113,16 @@ class MiddleBExecution:
 
     def create_position_box(self):
         self.local_position_box.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box",
-            1,
+            "create(box)",
         )
         self.local_position_box.particle.get_position(
             local.my_domain_com.my_lib.b.B
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box::/b",
-            1,
+            "create(box::/b)",
         )
         self.move_position_box_to_position_destroyer_holder__action_destroyer__position_run()
 
@@ -139,11 +136,9 @@ class MiddleBExecution:
                 "position<run>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box",
-            "destroyer_holder::/destroyer::run",
-            1,
+            "move(box, destroyer_holder::/destroyer::run)",
         )
         self.destruction_position_position_destroyer_holder__action_destroyer__position_run__global_position_b = self.local_position_destroyer_holder.particle.get_action(
             local.my_domain_com.my_lib.destroyer.Destroyer
@@ -156,19 +151,17 @@ class MiddleBExecution:
 
     def destroy_position_destroyer_holder__action_destroyer__position_run__global_position_b(self):
         self.destruction_position_position_destroyer_holder__action_destroyer__position_run__global_position_b.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.destruction_connection_position_destroyer_holder__action_destroyer.trace_execution,
-            "run::/b",
-            1,
+            "destroy(run::/b)",
         )
         self.destruction_connection_position_destroyer_holder__action_destroyer.complete()
 
     def destroy_position_destroyer_holder(self):
         self.local_position_destroyer_holder.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "destroyer_holder",
-            1,
+            "destroy(destroyer_holder)",
         )
 
     def destroy_position_run(self):
@@ -180,9 +173,8 @@ class MiddleBExecution:
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "run",
-            1,
+            "destroy(run)",
         )
         self.guarantees.position_run.run()

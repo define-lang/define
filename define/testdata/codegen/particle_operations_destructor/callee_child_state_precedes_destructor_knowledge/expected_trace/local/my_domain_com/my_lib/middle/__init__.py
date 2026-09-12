@@ -128,11 +128,9 @@ class MiddleExecution:
                 "position<target>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "target",
-            "/destroyer::target",
-            1,
+            "move(target, /destroyer::target)",
         )
         self.execution_action_destroyer__position_target__action_destructor = local.my_domain_com.my_lib.destructor.DestructorExecution(
             self.action.on_particle.get_action(
@@ -168,10 +166,9 @@ class MiddleExecution:
         ).get_interface_position(
             "position<trigger>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/destroyer::trigger",
-            1,
+            "create(/destroyer::trigger)",
         )
         self.execution_action_destroyer.accept_for_empty_rule_position_trigger()
 
@@ -184,10 +181,9 @@ class MiddleExecution:
         self.action.get_interface_position(
             "position<trigger>"
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "trigger",
-            1,
+            "destroy(trigger)",
         )
         self.guarantees.position_trigger.run()
 

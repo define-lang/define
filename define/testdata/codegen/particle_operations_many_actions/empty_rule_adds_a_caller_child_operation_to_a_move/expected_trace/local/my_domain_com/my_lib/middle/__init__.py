@@ -123,10 +123,9 @@ class MiddleExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source::/child::trigger_pos",
-            1,
+            "create(source::/child::trigger_pos)",
         )
         self.execution_position_source__action_child.accept_for_empty_rule_position_trigger_pos()
 
@@ -140,11 +139,9 @@ class MiddleExecution:
                 "position<holder>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            "holder",
-            1,
+            "move(source, holder)",
         )
         self.destruction_position_position_holder__global_position_marker = self.action.get_interface_position(
             "position<holder>"
@@ -160,10 +157,9 @@ class MiddleExecution:
 
     def continue_destroy_position_holder__global_position_marker(self):
         self.destruction_position_position_holder__global_position_marker.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "holder::/marker",
-            1,
+            "destroy(holder::/marker)",
         )
         self.destroy_position_holder()
 
@@ -174,9 +170,8 @@ class MiddleExecution:
         self.action.get_interface_position(
             "position<holder>"
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "holder",
-            1,
+            "destroy(holder)",
         )
         self.guarantees.position_holder.run()

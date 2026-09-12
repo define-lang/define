@@ -59,25 +59,22 @@ class ChildExecution:
 
     def create_position_scratch(self):
         self.local_position_scratch.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "scratch",
-            1,
+            "create(scratch)",
         )
         self.local_position_scratch.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "scratch",
-            1,
+            "destroy(scratch)",
         )
 
     def create_global_position_result(self):
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.result.Result
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/result",
-            1,
+            "create(/result)",
         )
         self.guarantees.global_position_result.run()

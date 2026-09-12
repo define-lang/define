@@ -91,11 +91,9 @@ class DestroyerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.left.Left
         ).move_particle_to(self.local_position_left_holder)
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "target::/left",
-            "left_holder",
-            1,
+            "move(target::/left, left_holder)",
         )
         self.local_position_left_holder.move_particle_to(
             self.action.get_interface_position(
@@ -104,11 +102,9 @@ class DestroyerExecution:
                 local.my_domain_com.my_lib.left.Left
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "left_holder",
-            "target::/left",
-            1,
+            "move(left_holder, target::/left)",
         )
         self.destruction_position_position_target__global_position_left = self.action.get_interface_position(
             "position<target>"
@@ -128,11 +124,9 @@ class DestroyerExecution:
         ).particle.get_position(
             local.my_domain_com.my_lib.right.Right
         ).move_particle_to(self.local_position_right_holder)
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "target::/right",
-            "right_holder",
-            1,
+            "move(target::/right, right_holder)",
         )
         self.local_position_right_holder.move_particle_to(
             self.action.get_interface_position(
@@ -141,11 +135,9 @@ class DestroyerExecution:
                 local.my_domain_com.my_lib.right.Right
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "right_holder",
-            "target::/right",
-            1,
+            "move(right_holder, target::/right)",
         )
         self.destruction_position_position_target__global_position_right = self.action.get_interface_position(
             "position<target>"
@@ -166,10 +158,9 @@ class DestroyerExecution:
         self.action.get_interface_position(
             "position<target>"
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "target",
-            1,
+            "destroy(target)",
         )
         self.guarantees.position_target.run()
 
@@ -178,10 +169,9 @@ class DestroyerExecution:
 
     def continue_destroy_position_target__global_position_left(self):
         self.destruction_position_position_target__global_position_left.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "target::/left",
-            1,
+            "destroy(target::/left)",
         )
 
     def destroy_position_target__global_position_right(self):
@@ -189,8 +179,7 @@ class DestroyerExecution:
 
     def continue_destroy_position_target__global_position_right(self):
         self.destruction_position_position_target__global_position_right.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "target::/right",
-            1,
+            "destroy(target::/right)",
         )

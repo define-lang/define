@@ -146,10 +146,9 @@ class MiddleExecution:
         ).get_interface_position(
             "position<input>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box::/worker::input",
-            1,
+            "create(box::/worker::input)",
         )
         self.execution_position_box__action_worker.accept_for_empty_rule_position_input()
 
@@ -161,10 +160,9 @@ class MiddleExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box::/worker::run",
-            1,
+            "create(box::/worker::run)",
         )
         self.execution_position_box__action_worker.accept_for_empty_rule_position_run()
 
@@ -182,11 +180,9 @@ class MiddleExecution:
                 "position<final>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box::/worker::output",
-            "final",
-            1,
+            "move(box::/worker::output, final)",
         )
         self.guarantees.position_final.run(
             self.destroy_position_box,
@@ -201,10 +197,9 @@ class MiddleExecution:
         self.action.get_interface_position(
             "position<box>"
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box",
-            1,
+            "destroy(box)",
         )
         self.guarantees.position_box.run()
 
@@ -217,9 +212,8 @@ class MiddleExecution:
         self.action.get_interface_position(
             "position<run>"
         ).destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "run",
-            1,
+            "destroy(run)",
         )
         self.guarantees.position_run.run()

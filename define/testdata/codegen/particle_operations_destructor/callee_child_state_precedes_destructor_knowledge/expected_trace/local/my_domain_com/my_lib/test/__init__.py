@@ -73,10 +73,9 @@ class TestExecution:
 
     def create_position_source(self):
         self.local_position_source.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            1,
+            "create(source)",
         )
         self.local_position_source.move_particle_to(
             self.action.on_particle.get_action(
@@ -85,11 +84,9 @@ class TestExecution:
                 "position<target>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "source",
-            "/middle::target",
-            1,
+            "move(source, /middle::target)",
         )
         self.execution_action_middle.accept_for_empty_rule_position_target()
 
@@ -99,9 +96,8 @@ class TestExecution:
         ).get_interface_position(
             "position<trigger>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/middle::trigger",
-            1,
+            "create(/middle::trigger)",
         )
         self.execution_action_middle.accept_for_empty_rule_position_trigger()

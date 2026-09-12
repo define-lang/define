@@ -54,10 +54,9 @@ class TestExecution:
 
     def create_position_box(self):
         self.local_position_box.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box",
-            1,
+            "create(box)",
         )
         self.execution_position_box__action_maker = local.my_domain_com.my_lib.maker.MakerExecution(
             self.local_position_box.particle.get_action(
@@ -83,10 +82,9 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box::/maker::run",
-            1,
+            "create(box::/maker::run)",
         )
         self.destruction_position_position_box__action_maker__position_run = self.local_position_box.particle.get_action(
             local.my_domain_com.my_lib.maker.Maker
@@ -104,11 +102,9 @@ class TestExecution:
         ).get_interface_position(
             "position<result>"
         ).move_particle_to(self.local_position_held)
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box::/maker::result",
-            "held",
-            1,
+            "move(box::/maker::result, held)",
         )
         self.execution_position_held__action_destructor = local.my_domain_com.my_lib.destructor.DestructorExecution(
             self.scheduler,
@@ -123,26 +119,23 @@ class TestExecution:
 
     def destroy_position_held(self):
         self.local_position_held.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "held",
-            1,
+            "destroy(held)",
         )
 
     def destroy_position_box(self):
         if not self.join_for_destroy_position_box.arrive():
             return
         self.local_position_box.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box",
-            1,
+            "destroy(box)",
         )
 
     def destroy_position_box__action_maker__position_run(self):
         self.destruction_position_position_box__action_maker__position_run.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "box::/maker::run",
-            1,
+            "destroy(box::/maker::run)",
         )

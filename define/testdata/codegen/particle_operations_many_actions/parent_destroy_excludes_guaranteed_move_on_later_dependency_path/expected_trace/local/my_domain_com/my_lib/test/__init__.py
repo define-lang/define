@@ -48,10 +48,9 @@ class TestExecution:
 
     def create_position_parent(self):
         self.local_position_parent.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "parent",
-            1,
+            "create(parent)",
         )
         self.execution_position_parent__action_mover = local.my_domain_com.my_lib.mover.MoverExecution(
             self.local_position_parent.particle.get_action(
@@ -87,10 +86,9 @@ class TestExecution:
         ).get_interface_position(
             "position<source>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "parent::/mover::source",
-            1,
+            "create(parent::/mover::source)",
         )
         self.execution_position_parent__action_mover.accept_for_empty_rule_position_source()
 
@@ -100,19 +98,17 @@ class TestExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "parent::/mover::run",
-            1,
+            "create(parent::/mover::run)",
         )
         self.execution_position_parent__action_mover.accept_for_empty_rule_position_run()
 
     def destroy_position_parent__action_mover__position_destination(self):
         self.destruction_position_position_parent__action_mover__position_destination.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "parent::/mover::destination",
-            1,
+            "destroy(parent::/mover::destination)",
         )
         self.destroy_position_parent()
 
@@ -120,10 +116,9 @@ class TestExecution:
         if not self.join_for_destroy_position_parent.arrive():
             return
         self.local_position_parent.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "parent",
-            1,
+            "destroy(parent)",
         )
 
     def init_position_parent__action_mover__position_destination(self):

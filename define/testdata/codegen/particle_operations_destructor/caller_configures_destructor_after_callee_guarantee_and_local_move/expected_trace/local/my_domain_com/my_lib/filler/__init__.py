@@ -66,16 +66,14 @@ class FillerExecution:
 
     def create_position_scratch(self):
         self.local_position_scratch.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "scratch",
-            1,
+            "create(scratch)",
         )
         self.local_position_scratch.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "scratch",
-            1,
+            "destroy(scratch)",
         )
         self.move_global_position_result_to_position_scratch()
 
@@ -85,11 +83,9 @@ class FillerExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.result.Result
         ).move_particle_to(self.local_position_scratch)
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/result",
-            "scratch",
-            1,
+            "move(/result, scratch)",
         )
         self.guarantees.global_position_result.run(
             self.destroy_position_scratch,
@@ -100,8 +96,7 @@ class FillerExecution:
 
     def continue_destroy_position_scratch(self):
         self.local_position_scratch.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "scratch",
-            2,
+            "destroy(scratch)",
         )

@@ -53,21 +53,17 @@ class DestructSiblingExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.sibling.Sibling
         ).move_particle_to(self.local_position_held_sibling)
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/sibling",
-            "held_sibling",
-            1,
+            "move(/sibling, held_sibling)",
         )
         self.local_position_held_sibling.move_particle_to(
             self.action.on_particle.get_position(
                 local.my_domain_com.my_lib.sibling.Sibling
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "held_sibling",
-            "/sibling",
-            1,
+            "move(held_sibling, /sibling)",
         )
         self.guarantees.global_position_sibling.run()

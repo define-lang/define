@@ -80,10 +80,9 @@ class OuterExecution:
         self.action.get_interface_position(
             "position<middle_holder>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "middle_holder",
-            1,
+            "create(middle_holder)",
         )
         self.execution_position_middle_holder__action_middle = local.my_domain_com.my_lib.middle.MiddleExecution(
             self.action.get_interface_position(
@@ -118,11 +117,9 @@ class OuterExecution:
                 "position<input>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "input",
-            "middle_holder::/middle::input",
-            1,
+            "move(input, middle_holder::/middle::input)",
         )
         self.guarantees.position_input.run(
             self.execution_position_middle_holder__action_middle.accept_for_empty_rule_position_input,
@@ -136,10 +133,9 @@ class OuterExecution:
         ).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "middle_holder::/middle::run",
-            1,
+            "create(middle_holder::/middle::run)",
         )
         self.destruction_position_position_middle_holder__action_middle__position_run = self.action.get_interface_position(
             "position<middle_holder>"
@@ -149,9 +145,8 @@ class OuterExecution:
             "position<run>"
         )
         self.destruction_position_position_middle_holder__action_middle__position_run.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "middle_holder::/middle::run",
-            1,
+            "destroy(middle_holder::/middle::run)",
         )
         self.guarantees.position_middle_holder__action_middle__position_run.run()

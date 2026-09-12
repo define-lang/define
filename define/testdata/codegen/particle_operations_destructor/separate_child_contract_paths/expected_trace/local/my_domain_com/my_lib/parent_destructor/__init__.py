@@ -53,21 +53,17 @@ class ParentDestructorExecution:
         self.action.on_particle.get_position(
             local.my_domain_com.my_lib.left.Left
         ).move_particle_to(self.local_position_holder)
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/left",
-            "holder",
-            1,
+            "move(/left, holder)",
         )
         self.local_position_holder.move_particle_to(
             self.action.on_particle.get_position(
                 local.my_domain_com.my_lib.left.Left
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "holder",
-            "/left",
-            1,
+            "move(holder, /left)",
         )
         self.guarantees.global_position_left.run()

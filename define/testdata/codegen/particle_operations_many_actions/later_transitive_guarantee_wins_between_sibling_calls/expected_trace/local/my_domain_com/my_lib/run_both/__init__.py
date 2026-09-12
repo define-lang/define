@@ -93,10 +93,9 @@ class RunBothExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/call_fill::trigger_pos",
-            1,
+            "create(/call_fill::trigger_pos)",
         )
         self.destruction_position_action_call_fill__position_trigger_pos = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.call_fill.CallFill
@@ -104,10 +103,9 @@ class RunBothExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_action_call_fill__position_trigger_pos.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/call_fill::trigger_pos",
-            1,
+            "destroy(/call_fill::trigger_pos)",
         )
         self.guarantees.action_call_fill__position_trigger_pos.run()
 
@@ -117,10 +115,9 @@ class RunBothExecution:
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/call_empty::trigger_pos",
-            1,
+            "create(/call_empty::trigger_pos)",
         )
         self.destruction_position_action_call_empty__position_trigger_pos = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.call_empty.CallEmpty
@@ -128,10 +125,9 @@ class RunBothExecution:
             "position<trigger_pos>"
         )
         self.destruction_position_action_call_empty__position_trigger_pos.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "/call_empty::trigger_pos",
-            1,
+            "destroy(/call_empty::trigger_pos)",
         )
         self.guarantees.action_call_empty__position_trigger_pos.run()
 

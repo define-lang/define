@@ -1,0 +1,7 @@
+test.create(box)
+test.create(box::/child)
+test.create(box::/child::/leaf)
+test.destroy(box::/child::/leaf)
+test.destroy(box::/child)
+test.move(box, destination)
+test.destroy(destination)

@@ -97,10 +97,9 @@ class TestExecution:
 
     def create_position_carrier(self):
         self.local_position_carrier.create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "carrier",
-            1,
+            "create(carrier)",
         )
         self.execution_position_carrier__action_worker = local.my_domain_com.my_lib.worker.WorkerExecution(
             self.local_position_carrier.particle.get_action(
@@ -126,10 +125,9 @@ class TestExecution:
         self.local_position_carrier.particle.get_position(
             local.my_domain_com.my_lib.third.Third
         ).create_particle()
-        self.scheduler.create_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "carrier::/third",
-            1,
+            "create(carrier::/third)",
         )
         self.move_position_carrier_to_action_middle__position_target()
 
@@ -143,11 +141,9 @@ class TestExecution:
                 "position<target>"
             )
         )
-        self.scheduler.move_completed(
+        self.scheduler.operation_completed(
             self.trace_execution,
-            "carrier",
-            "/middle::target",
-            1,
+            "move(carrier, /middle::target)",
         )
         self.destruction_position_action_middle__position_target__global_position_second_interface = self.action.on_particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
@@ -178,27 +174,24 @@ class TestExecution:
 
     def destroy_action_middle__position_target__global_position_second_interface(self):
         self.destruction_position_action_middle__position_target__global_position_second_interface.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.destruction_connection_action_middle.trace_execution,
-            "target::/second_interface",
-            1,
+            "destroy(target::/second_interface)",
         )
         self.destruction_connection_action_middle.complete()
 
     def destroy_action_middle__position_target__global_position_first_interface(self):
         self.destruction_position_action_middle__position_target__global_position_first_interface.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.destruction_connection_action_middle.trace_execution,
-            "target::/first_interface",
-            1,
+            "destroy(target::/first_interface)",
         )
         self.destruction_connection_action_middle.complete()
 
     def destroy_action_middle__position_target__global_position_third(self):
         self.destruction_position_action_middle__position_target__global_position_third.destroy_particle()
-        self.scheduler.destroy_completed(
+        self.scheduler.operation_completed(
             self.destruction_connection_action_middle.trace_execution,
-            "target::/third",
-            1,
+            "destroy(target::/third)",
         )
         self.destruction_connection_action_middle.complete()
