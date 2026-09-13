@@ -26,6 +26,19 @@ py_library(
 )
 
 py_test(
+    name = "reference_graph_executor_test",
+    size = "small",
+    srcs = ["reference_graph_executor_test.py"],
+    deps = [
+        ":reference_graph_executor",
+        "//define/compiler:ast",
+        "//define/compiler/validator:test_helpers",
+        "//define/compiler/validator/structural:program_validator",
+        "@pypi//pytest",
+    ],
+)
+
+py_test(
     name = "reference_graph_test",
     size = "small",
     srcs = ["reference_graph_test.py"],
@@ -51,6 +64,7 @@ pyright_test(
         ":graphs",
         ":reference_graph",
         ":reference_graph_executor",
+        ":reference_graph_executor_test",
         ":reference_graph_test",
     ],
 )
