@@ -497,7 +497,7 @@ dev = [
 requires-dist = [
     { name = "click", specifier = ">=8.1,!=8.3.0,!=8.3.1" },
     { name = "jinja2", specifier = ">=3" },
-    { name = "lark-cython", git = "https://github.com/define-lang/lark_cython?rev=d6e349ee35478ed9890a5f4ea9098f45762ed8dc" },
+    { name = "lark-cython", git = "https://github.com/define-lang/lark_cython?rev=74da050787c8dfef9299240d1446b05698e06bc9" },
     { name = "protobuf", specifier = ">=6.31" },
     { name = "protovalidate", specifier = ">=1.1.2" },
 ]
@@ -684,7 +684,7 @@ wheels = [
 [[package]]
 name = "lark-cython"
 version = "0.0.17"
-source = { git = "https://github.com/define-lang/lark_cython?rev=d6e349ee35478ed9890a5f4ea9098f45762ed8dc#d6e349ee35478ed9890a5f4ea9098f45762ed8dc" }
+source = { git = "https://github.com/define-lang/lark_cython?rev=74da050787c8dfef9299240d1446b05698e06bc9#74da050787c8dfef9299240d1446b05698e06bc9" }
 dependencies = [
     { name = "lark" },
 ]
