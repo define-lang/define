@@ -171,6 +171,13 @@ class ActionPostorderValidator:
         # - Combining requirement propagation stages into one pass changed
         #   runtime by only about 1%. The existing code already shares caller
         #   PositionReferences and batches nearest-particle work.
+        # - A September 2026 experiment batched requirement classification before
+        #   recording assumptions. On the default action-graph workload, sampled
+        #   requirement-processing CPU fell about 32%, and five-run medians
+        #   initially suggested a 0.96% compilation improvement. CPU-pinned,
+        #   fixed-hash A/B controls instead showed a 0.16% regression, within
+        #   timing noise. The local saving did not establish a compilation
+        #   speedup sufficient to justify the structural change, so it was rejected.
         # Revisit only if those consumers or the propagation pipeline change
         # substantially.
         requirement_key = contracted_position.canonical_chained_name_tuple
