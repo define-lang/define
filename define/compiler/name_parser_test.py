@@ -1,16 +1,14 @@
 # pyright: reportUnusedCallResult=false
 from __future__ import annotations
 
+import lark_cython
 import pytest
 
 from define.compiler import ast, name_parser, parser_exceptions
-from define.compiler.lark import lark_standalone
 
 
-def _make_name_content_token(
-    value: str, line: int, column: int
-) -> lark_standalone.Token:
-    return lark_standalone.Token(
+def _make_name_content_token(value: str, line: int, column: int) -> lark_cython.Token:
+    return lark_cython.Token(
         "NAME_CONTENT",
         value,
         line=line,

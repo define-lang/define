@@ -7,6 +7,8 @@ import threading
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, cast
 
+import lark_cython
+
 from define.compiler import ast, name_parser
 from define.compiler.lark import lark_standalone
 
@@ -14,7 +16,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from pathlib import PurePosixPath
 
-type _LocatedItem = ast.ASTNode | lark_standalone.Token
+type _LocatedItem = ast.ASTNode | lark_cython.Token
 
 # Hoisted out of the per-item filter loop to avoid a global+attribute lookup on
 # every item across the millions of rule reductions in a large parse.
@@ -51,25 +53,23 @@ class _ActionDefinitionBlockData:
     interface_positions: tuple[ast.LocalPositionDefinition, ...]
     trigger_conditions: ast.TriggerConditionsBlock
     action_statements: ast.ActionStatementsBlock
-    block_close: lark_standalone.Token
+    block_close: lark_cython.Token
 
 
 @dataclass(frozen=True, slots=True)
 class _PotentialPositionBlockData:
     quality_implications: tuple[ast.QualityImplicationStatement, ...]
     constraints: ast.PositionConstraintBlock | None
-    block_close: lark_standalone.Token
+    block_close: lark_cython.Token
 
 
 @dataclass(frozen=True, slots=True)
 class _LocalPositionBlockData:
     constraints: ast.PositionConstraintBlock
-    block_close: lark_standalone.Token
+    block_close: lark_cython.Token
 
 
-class DefineTransformer(
-    lark_standalone.Transformer[lark_standalone.Token, ast.Program]
-):
+class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Program]):
     """Builds an AST inline as the Lark parser reduces each rule."""
 
     _context: _ParseContext
@@ -110,7 +110,7 @@ class DefineTransformer(
 
     @_strip_discard
     def global_name_definition_content(
-        self, items: list[lark_standalone.Token]
+        self, items: list[lark_cython.Token]
     ) -> ast.DefinitionGlobalNameContent:
         """Parse definition-site name content into a global definition node.
 
@@ -163,7 +163,7 @@ class DefineTransformer(
     def position_definition(
         self,
         items: list[
-            lark_standalone.Token
+            lark_cython.Token
             | ast.DefinitionGlobalNameContent
             | _PotentialPositionBlockData
         ],
@@ -172,7 +172,7 @@ class DefineTransformer(
 
         items: [DEFINE_THE_POTENTIAL_POSITION token, name, optional block data].
         """
-        keyword = cast("lark_standalone.Token", items[0])
+        keyword = cast("lark_cython.Token", items[0])
         name = cast("ast.DefinitionGlobalNameContent", items[1])
         if len(items) > 2:
             block_data = cast("_PotentialPositionBlockData", items[2])
@@ -193,7 +193,7 @@ class DefineTransformer(
     def action_definition(
         self,
         items: list[
-            lark_standalone.Token
+            lark_cython.Token
             | ast.DefinitionGlobalNameContent
             | _ActionDefinitionBlockData
         ],
@@ -202,7 +202,7 @@ class DefineTransformer(
 
         items: [DEFINE_THE_POTENTIAL_ACTION token, name, action block data].
         """
-        keyword = cast("lark_standalone.Token", items[0])
+        keyword = cast("lark_cython.Token", items[0])
         name = cast("ast.DefinitionGlobalNameContent", items[1])
         block_data = cast("_ActionDefinitionBlockData", items[2])
         return ast.ActionDefinition(
@@ -225,34 +225,32 @@ class DefineTransformer(
     # The tokens below are the exception -- they never anchor a location,
     # so they are discarded.
 
-    def TO(self, _token: lark_standalone.Token) -> object:  # noqa: N802
+    def TO(self, _token: lark_cython.Token) -> object:  # noqa: N802
         """Discard the 'to' keyword token."""
         return _DISCARD
 
-    def CHAIN_SEPARATOR(self, _token: lark_standalone.Token) -> object:  # noqa: N802
+    def CHAIN_SEPARATOR(self, _token: lark_cython.Token) -> object:  # noqa: N802
         """Discard chain separator tokens."""
         return _DISCARD
 
-    def SPACE_AND_OPEN_BRACE(self, _token: lark_standalone.Token) -> object:  # noqa: N802
+    def SPACE_AND_OPEN_BRACE(self, _token: lark_cython.Token) -> object:  # noqa: N802
         """Discard opening braces."""
         return _DISCARD
 
-    def NEWLINE(self, _token: lark_standalone.Token) -> object:  # noqa: N802
+    def NEWLINE(self, _token: lark_cython.Token) -> object:  # noqa: N802
         """Drop newline tokens from the parse tree."""
         return _DISCARD
 
     @_strip_discard
     def local_position_definition(
         self,
-        items: list[
-            lark_standalone.Token | ast.LocalNameContent | _LocalPositionBlockData
-        ],
+        items: list[lark_cython.Token | ast.LocalNameContent | _LocalPositionBlockData],
     ) -> ast.LocalPositionDefinition:
         """Transform a local position definition.
 
         items: [DEFINE_THE_POSITION token, local_name, optional block data].
         """
-        keyword = cast("lark_standalone.Token", items[0])
+        keyword = cast("lark_cython.Token", items[0])
         local_name = cast("ast.LocalNameContent", items[1])
         if len(items) > 2:
             block_data = cast("_LocalPositionBlockData", items[2])
@@ -270,7 +268,7 @@ class DefineTransformer(
     @_strip_discard
     def local_position_definition_block(
         self,
-        items: list[lark_standalone.Token | ast.PositionConstraintBlock],
+        items: list[lark_cython.Token | ast.PositionConstraintBlock],
     ) -> _LocalPositionBlockData:
         """Bundle the inner constraint block with the outer ``}`` token.
 
@@ -278,14 +276,14 @@ class DefineTransformer(
         """
         return _LocalPositionBlockData(
             constraints=cast("ast.PositionConstraintBlock", items[0]),
-            block_close=cast("lark_standalone.Token", items[1]),
+            block_close=cast("lark_cython.Token", items[1]),
         )
 
     @_strip_discard
     def potential_position_definition_block(
         self,
         items: list[
-            lark_standalone.Token
+            lark_cython.Token
             | ast.QualityImplicationStatement
             | ast.PositionConstraintBlock
         ],
@@ -294,7 +292,7 @@ class DefineTransformer(
 
         items: [*quality_implications, position_constraint_block, CLOSE_BRACE token].
         """
-        close_brace = cast("lark_standalone.Token", items[-1])
+        close_brace = cast("lark_cython.Token", items[-1])
         quality_implications: list[ast.QualityImplicationStatement] = []
         constraints: ast.PositionConstraintBlock | None = None
         for item in items[:-1]:
@@ -311,15 +309,15 @@ class DefineTransformer(
     @_strip_discard
     def position_constraint_block(
         self,
-        items: list[lark_standalone.Token | ast.PositionRequirementStatement],
+        items: list[lark_cython.Token | ast.PositionRequirementStatement],
     ) -> ast.PositionConstraintBlock:
         """Transform a position constraint block.
 
         items: [IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE token, *requirements,
         CLOSE_BRACE token].
         """
-        keyword = cast("lark_standalone.Token", items[0])
-        close_brace = cast("lark_standalone.Token", items[-1])
+        keyword = cast("lark_cython.Token", items[0])
+        close_brace = cast("lark_cython.Token", items[-1])
         requirements = cast("list[ast.PositionRequirementStatement]", items[1:-1])
         return ast.PositionConstraintBlock(
             requirements=tuple(requirements),
@@ -329,13 +327,13 @@ class DefineTransformer(
     @_strip_discard
     def position_requirement_statement(
         self,
-        items: list[lark_standalone.Token | ast.GlobalTypedNameReference],
+        items: list[lark_cython.Token | ast.GlobalTypedNameReference],
     ) -> ast.PositionRequirementStatement:
         """Transform a position requirement statement.
 
         items: [IT_HAS_THE token, typed_global_name_reference].
         """
-        keyword = cast("lark_standalone.Token", items[0])
+        keyword = cast("lark_cython.Token", items[0])
         typed_global_name = cast("ast.GlobalTypedNameReference", items[1])
         return ast.PositionRequirementStatement(
             typed_global_name=typed_global_name,
@@ -347,13 +345,13 @@ class DefineTransformer(
     @_strip_discard
     def quality_implication_statement(
         self,
-        items: list[lark_standalone.Token | ast.GlobalTypedNameReference],
+        items: list[lark_cython.Token | ast.GlobalTypedNameReference],
     ) -> ast.QualityImplicationStatement:
         """Transform a quality implication statement.
 
         items: [IT_ALSO_ASSIGNS_THE token, typed_global_name_reference].
         """
-        keyword = cast("lark_standalone.Token", items[0])
+        keyword = cast("lark_cython.Token", items[0])
         typed_global_name = cast("ast.GlobalTypedNameReference", items[1])
         return ast.QualityImplicationStatement(
             typed_global_name=typed_global_name,
@@ -362,9 +360,9 @@ class DefineTransformer(
             ),
         )
 
-    def NAME_TYPE(self, token: lark_standalone.Token) -> ast.NameType:  # noqa: N802
+    def NAME_TYPE(self, token: lark_cython.Token) -> ast.NameType:  # noqa: N802
         """Transform a name-type token into a NameType enum."""
-        return ast.NameType(token)
+        return ast.NameType(token.value)
 
     @_strip_discard
     def typed_global_name_reference(
@@ -408,13 +406,13 @@ class DefineTransformer(
 
     @_strip_discard
     def create_particle_statement(
-        self, items: list[lark_standalone.Token | ast.PositionReference]
+        self, items: list[lark_cython.Token | ast.PositionReference]
     ) -> ast.CreateParticleStatement:
         """Transform a create particle statement.
 
         items: [CREATE_A_PARTICLE_IN token, position_reference].
         """
-        keyword = cast("lark_standalone.Token", items[0])
+        keyword = cast("lark_cython.Token", items[0])
         target = cast("ast.PositionReference", items[1])
         return ast.CreateParticleStatement(
             target_position=target,
@@ -423,14 +421,14 @@ class DefineTransformer(
 
     @_strip_discard
     def move_particle_statement(
-        self, items: list[lark_standalone.Token | ast.PositionReference]
+        self, items: list[lark_cython.Token | ast.PositionReference]
     ) -> ast.MoveParticleStatement:
         """Transform a move particle statement.
 
         items: [MOVE_THE_PARTICLE_IN token, source_position, target_position].
         The TO separator between source and target is discarded.
         """
-        keyword = cast("lark_standalone.Token", items[0])
+        keyword = cast("lark_cython.Token", items[0])
         source = cast("ast.PositionReference", items[1])
         target = cast("ast.PositionReference", items[2])
         return ast.MoveParticleStatement(
@@ -441,13 +439,13 @@ class DefineTransformer(
 
     @_strip_discard
     def destroy_particle_statement(
-        self, items: list[lark_standalone.Token | ast.PositionReference]
+        self, items: list[lark_cython.Token | ast.PositionReference]
     ) -> ast.DestroyParticleStatement:
         """Transform a destroy particle statement.
 
         items: [DESTROY_THE_PARTICLE_IN token, position_reference].
         """
-        keyword = cast("lark_standalone.Token", items[0])
+        keyword = cast("lark_cython.Token", items[0])
         target = cast("ast.PositionReference", items[1])
         return ast.DestroyParticleStatement(
             target_position=target,
@@ -456,15 +454,15 @@ class DefineTransformer(
 
     @_strip_discard
     def position_presence_statement(
-        self, items: list[lark_standalone.Token | ast.LocalTypedNameReference]
+        self, items: list[lark_cython.Token | ast.LocalTypedNameReference]
     ) -> ast.PositionPresenceStatement:
         """Transform a position presence statement.
 
         items: [THE token, typed_local_name_reference, HAS_A_PARTICLE token].
         """
-        the_keyword = cast("lark_standalone.Token", items[0])
+        the_keyword = cast("lark_cython.Token", items[0])
         typed_name = cast("ast.LocalTypedNameReference", items[1])
-        has_a_particle = cast("lark_standalone.Token", items[2])
+        has_a_particle = cast("lark_cython.Token", items[2])
         return ast.PositionPresenceStatement(
             typed_name=typed_name,
             location=self._location_with_terminator(
@@ -474,7 +472,7 @@ class DefineTransformer(
 
     @_strip_discard
     def constructor_condition_statement(
-        self, items: list[lark_standalone.Token]
+        self, items: list[lark_cython.Token]
     ) -> ast.ConstructorConditionStatement:
         """Transform a constructor condition statement.
 
@@ -487,7 +485,7 @@ class DefineTransformer(
 
     @_strip_discard
     def destructor_condition_statement(
-        self, items: list[lark_standalone.Token]
+        self, items: list[lark_cython.Token]
     ) -> ast.DestructorConditionStatement:
         """Transform a destructor condition statement.
 
@@ -501,14 +499,14 @@ class DefineTransformer(
     @_strip_discard
     def trigger_conditions_block(
         self,
-        items: list[lark_standalone.Token | ast.TriggerConditionStatement],
+        items: list[lark_cython.Token | ast.TriggerConditionStatement],
     ) -> ast.TriggerConditionsBlock:
         """Transform a trigger conditions block.
 
         items: [IT_HAPPENS_WHEN token, condition, CLOSE_BRACE token].
         """
-        keyword = cast("lark_standalone.Token", items[0])
-        close_brace = cast("lark_standalone.Token", items[-1])
+        keyword = cast("lark_cython.Token", items[0])
+        close_brace = cast("lark_cython.Token", items[-1])
         condition = cast("ast.TriggerConditionStatement", items[1])
         return ast.TriggerConditionsBlock(
             condition=condition,
@@ -517,14 +515,14 @@ class DefineTransformer(
 
     @_strip_discard
     def action_statements_block(
-        self, items: list[lark_standalone.Token | ast.ActionStatement]
+        self, items: list[lark_cython.Token | ast.ActionStatement]
     ) -> ast.ActionStatementsBlock:
         """Transform an action statements block.
 
         items: [AND_IT_DOES token, *statements, CLOSE_BRACE token].
         """
-        keyword = cast("lark_standalone.Token", items[0])
-        close_brace = cast("lark_standalone.Token", items[-1])
+        keyword = cast("lark_cython.Token", items[0])
+        close_brace = cast("lark_cython.Token", items[-1])
         statements = cast("list[ast.ActionStatement]", items[1:-1])
         return ast.ActionStatementsBlock(
             statements=tuple(statements),
@@ -535,7 +533,7 @@ class DefineTransformer(
     def action_definition_block(
         self,
         items: list[
-            lark_standalone.Token
+            lark_cython.Token
             | ast.QualityImplicationStatement
             | ast.LocalPositionDefinition
             | ast.TriggerConditionsBlock
@@ -547,7 +545,7 @@ class DefineTransformer(
         items: [*quality_implications, *interface_positions, trigger_conditions,
         action_statements, CLOSE_BRACE token].
         """
-        close_brace = cast("lark_standalone.Token", items[-1])
+        close_brace = cast("lark_cython.Token", items[-1])
         action_statements = cast("ast.ActionStatementsBlock", items[-2])
         trigger_conditions = cast("ast.TriggerConditionsBlock", items[-3])
         quality_implications: list[ast.QualityImplicationStatement] = []
@@ -572,7 +570,7 @@ class DefineTransformer(
 
     @_strip_discard
     def global_name_reference_content(
-        self, items: list[lark_standalone.Token]
+        self, items: list[lark_cython.Token]
     ) -> ast.ReferenceGlobalNameContent:
         """Parse reference-site name content into a global reference node."""
         return name_parser.parse_global_name_reference(
@@ -581,7 +579,7 @@ class DefineTransformer(
 
     @_strip_discard
     def local_name_content(
-        self, items: list[lark_standalone.Token]
+        self, items: list[lark_cython.Token]
     ) -> ast.LocalNameContent:
         """Parse local-name content into a local-name node."""
         return name_parser.parse_local_name(items[0], self._context.file_path)

@@ -9,6 +9,7 @@ py_library(
     deps = [
         "//defcl/python:exceptions",
         "//defcl/python/lark:lark_standalone",
+        "@pypi//lark_cython",
         "@pypi//protobuf",
     ],
 )
@@ -41,6 +42,7 @@ py_library(
     deps = [
         "//defcl/python:exceptions",
         "//defcl/python/lark:lark_standalone",
+        "@pypi//lark_cython",
     ],
 )
 
@@ -54,6 +56,7 @@ py_test(
         ":syntax",
         "//defcl/python:exceptions",
         "//defcl/python/lark:lark_standalone",
+        "@pypi//lark_cython",
         "@pypi//pytest",
     ],
 )

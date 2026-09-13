@@ -6,6 +6,9 @@ import typing
 from dataclasses import dataclass, field
 from functools import cached_property
 
+import lark_cython
+from lark_cython import standalone
+
 from define.compiler import diagnostics as diagnostics_mod
 from define.compiler import (
     indentation_validator,
@@ -29,7 +32,7 @@ type ParseException = (
 class ParseResult:
     """Result of parsing Define source code into a Lark parse tree."""
 
-    tree: lark_standalone.Tree[lark_standalone.Token] | None
+    tree: lark_standalone.Tree[lark_cython.Token] | None
     diagnostics: list[diagnostics_mod.Diagnostic] = field(default_factory=list)
     exception: ParseException | None = None
 
@@ -58,12 +61,17 @@ class Parser:
     @cached_property
     def _parse_only_lark(self) -> lark_standalone.Lark:
         """A transformer-less Lark that produces a raw parse tree."""
-        return lark_standalone.Lark_StandAlone()
+        return lark_standalone.Lark_StandAlone(
+            _plugins=standalone.standalone_plugins(lark_standalone)
+        )
 
     @cached_property
     def _transforming_lark(self) -> lark_standalone.Lark:
         """A Lark that builds the AST inline as it parses."""
-        return lark_standalone.Lark_StandAlone(transformer=self._transformer)
+        return lark_standalone.Lark_StandAlone(
+            transformer=self._transformer,
+            _plugins=standalone.standalone_plugins(lark_standalone),
+        )
 
     def parse(
         self, source: str, file_path: pathlib.PurePosixPath | None = None
@@ -101,7 +109,7 @@ class Parser:
         file_path: pathlib.PurePosixPath | None,
     ) -> ParseResult:
         """Run a Lark instance and collect its tree, diagnostics, and error."""
-        tree: lark_standalone.Tree[lark_standalone.Token] | None = None
+        tree: lark_standalone.Tree[lark_cython.Token] | None = None
         exception: ParseException | None = None
         try:
             tree = self._run_lark_parser(lark, source, file_path)
@@ -118,7 +126,7 @@ class Parser:
         lark: lark_standalone.Lark,
         source: str,
         file_path: pathlib.PurePosixPath | None,
-    ) -> lark_standalone.Tree[lark_standalone.Token]:
+    ) -> lark_standalone.Tree[lark_cython.Token]:
         """Run the actual Lark parser, raising DefineSyntaxError exceptions."""
         try:
             return lark.parse(source)

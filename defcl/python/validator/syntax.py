@@ -5,6 +5,9 @@ from __future__ import annotations
 from functools import cached_property
 from typing import TYPE_CHECKING
 
+import lark_cython
+from lark_cython import standalone
+
 from defcl.python import exceptions as dcl_exceptions
 from defcl.python.lark import lark_standalone
 
@@ -111,7 +114,9 @@ class Parser:
 
     @cached_property
     def _parser(self) -> lark_standalone.Lark:
-        return lark_standalone.Lark_StandAlone()
+        return lark_standalone.Lark_StandAlone(
+            _plugins=standalone.standalone_plugins(lark_standalone)
+        )
 
     def _classify_char_error(
         self, e: lark_standalone.UnexpectedCharacters
@@ -154,7 +159,7 @@ class Parser:
 
     def parse(
         self, text: str, path_name: str | os.PathLike[str] | None = None
-    ) -> lark_standalone.Tree[lark_standalone.Token]:
+    ) -> lark_standalone.Tree[lark_cython.Token]:
         """Parse DCL text and return the parse tree.
 
         path_name is only used for error messages.
@@ -181,7 +186,7 @@ class Parser:
 
     def parse_file(
         self, path: str | os.PathLike[str]
-    ) -> lark_standalone.Tree[lark_standalone.Token]:
+    ) -> lark_standalone.Tree[lark_cython.Token]:
         """Parse a DCL file and return the parse tree."""
         with open(path, encoding="utf-8", newline="") as f:
             return self.parse(f.read(), path_name=path)

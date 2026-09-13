@@ -10,15 +10,15 @@ from define.compiler import ast, parser_exceptions
 if TYPE_CHECKING:
     from pathlib import PurePosixPath
 
-    from define.compiler.lark import lark_standalone
+    import lark_cython
 
 
 def parse_local_name(
-    token: lark_standalone.Token, file_path: PurePosixPath | None = None
+    token: lark_cython.Token, file_path: PurePosixPath | None = None
 ) -> ast.LocalNameContent:
     """Parse local name content into an AST local-name node."""
     return ast.LocalNameContent(
-        name=token,
+        name=token.value,
         location=ast.SourceLocation.from_ast_or_token(
             start=token, end=token, file_path=file_path
         ),
@@ -26,13 +26,13 @@ def parse_local_name(
 
 
 def parse_global_name_definition(
-    token: lark_standalone.Token, file_path: PurePosixPath | None = None
+    token: lark_cython.Token, file_path: PurePosixPath | None = None
 ) -> ast.DefinitionGlobalNameContent:
     """Parse definition-site global name content into an AST node."""
     parsed = _parse_global_name(token, file_path)
     if parsed.fqun is None:
         raise parser_exceptions.DefinitionGlobalNameContentRequiresFqun(
-            token,
+            token.value,
             _line(token),
             _column(token),
             file_path,
@@ -47,7 +47,7 @@ def parse_global_name_definition(
 
 
 def parse_global_name_reference(
-    token: lark_standalone.Token, file_path: PurePosixPath | None = None
+    token: lark_cython.Token, file_path: PurePosixPath | None = None
 ) -> ast.ReferenceGlobalNameContent:
     """Parse reference-site global name content into an AST node."""
     parsed = _parse_global_name(token, file_path)
@@ -67,19 +67,19 @@ class _ParsedGlobalName:
 
 
 def _parse_global_name(
-    token: lark_standalone.Token, file_path: PurePosixPath | None = None
+    token: lark_cython.Token, file_path: PurePosixPath | None = None
 ) -> _ParsedGlobalName:
     # TODO: Support escaped :
-    fqun_sep_index = token.rfind(":")
+    fqun_sep_index = token.value.rfind(":")
     fqun = None
     path_start = 0
     if fqun_sep_index > 0:
-        fqun_text = token[:fqun_sep_index]
-        path_text = token[fqun_sep_index + 1 :]
+        fqun_text = token.value[:fqun_sep_index]
+        path_text = token.value[fqun_sep_index + 1 :]
         path_start = fqun_sep_index + 1
         fqun = _parse_fqun(token, fqun_text, file_path)
     else:
-        path_text = token
+        path_text = token.value
 
     global_path = ast.GlobalPathName(
         name=path_text,
@@ -91,13 +91,13 @@ def _parse_global_name(
 
 
 def _parse_fqun(
-    token: lark_standalone.Token, text: str, file_path: PurePosixPath | None = None
+    token: lark_cython.Token, text: str, file_path: PurePosixPath | None = None
 ) -> ast.Fqun:
     # TODO: Support escaped :
     parts = text.split(":")
     if len(parts) not in {1, 2, 3}:
         raise parser_exceptions.GlobalNameInvalidFqunFormat(
-            token,
+            token.value,
             _line(token),
             _column(token),
             file_path,
@@ -164,22 +164,22 @@ def _parse_fqun(
     )
 
 
-def _line(token: lark_standalone.Token) -> int:
+def _line(token: lark_cython.Token) -> int:
     line = token.line
-    if line is None:
+    if line < 0:
         raise ValueError("Expected token.line to be present")
     return line
 
 
-def _column(token: lark_standalone.Token) -> int:
+def _column(token: lark_cython.Token) -> int:
     column = token.column
-    if column is None:
+    if column < 0:
         raise ValueError("Expected token.column to be present")
     return column
 
 
 def _position_for_offsets(
-    token: lark_standalone.Token,
+    token: lark_cython.Token,
     start_offset: int,
     end_offset: int,
     file_path: PurePosixPath | None = None,

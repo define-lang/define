@@ -88,6 +88,7 @@ py_library(
     deps = [
         "//define/compiler:parser",
         "//define/compiler/lark:lark_standalone",
+        "@pypi//lark_cython",
         "@pypi//pytest",
     ],
 )
@@ -214,7 +215,10 @@ py_test(
 py_library(
     name = "test_helpers",
     srcs = ["test_helpers.py"],
-    deps = ["//define/compiler/lark:lark_standalone"],
+    deps = [
+        "//define/compiler/lark:lark_standalone",
+        "@pypi//lark_cython",
+    ],
 )
 
 py_test(

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import lark_cython
 import pytest
 
 from defcl.python import exceptions
@@ -15,13 +16,13 @@ _parser = syntax.Parser()
 
 
 def _get_tokens_by_type(
-    tree: lark_standalone.Tree[lark_standalone.Token], token_type: str
+    tree: lark_standalone.Tree[lark_cython.Token], token_type: str
 ) -> list[str]:
     tokens: list[str] = []
     for child in tree.children:
         if isinstance(child, lark_standalone.Tree):
             tokens.extend(_get_tokens_by_type(child, token_type))
-        elif isinstance(child, lark_standalone.Token) and child.type == token_type:
+        elif isinstance(child, lark_cython.Token) and child.type == token_type:
             tokens.append(str(child))
     return tokens
 

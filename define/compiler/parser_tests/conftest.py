@@ -11,6 +11,8 @@ from define.compiler import parser
 if TYPE_CHECKING:
     import pathlib
 
+    import lark_cython
+
     from define.compiler.lark import lark_standalone
 
 _parser = parser.Parser()
@@ -23,7 +25,7 @@ class Parse(Protocol):
         self,
         source: str,
         file_path: pathlib.PurePosixPath | None = ...,
-    ) -> lark_standalone.Tree[lark_standalone.Token]:
+    ) -> lark_standalone.Tree[lark_cython.Token]:
         """Parse source and return the parse tree."""
         ...
 
@@ -40,7 +42,7 @@ def parse() -> Parse:
 
     def _parse(
         source: str, file_path: pathlib.PurePosixPath | None = None
-    ) -> lark_standalone.Tree[lark_standalone.Token]:
+    ) -> lark_standalone.Tree[lark_cython.Token]:
         result = _parser.parse(source, file_path=file_path)
         assert result.diagnostics == []
         if result.exception is not None:

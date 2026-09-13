@@ -14,7 +14,7 @@ from define.compiler.data_structures import define_path
 if TYPE_CHECKING:
     from pathlib import PurePosixPath
 
-    from define.compiler.lark import lark_standalone
+    import lark_cython
 
 
 class NameType(enum.StrEnum):
@@ -40,15 +40,15 @@ class SourceLocation:
     def from_ast_or_token(
         cls,
         *,
-        start: ASTNode | lark_standalone.Token,
-        end: ASTNode | lark_standalone.Token,
+        start: ASTNode | lark_cython.Token,
+        end: ASTNode | lark_cython.Token,
         file_path: PurePosixPath | None = None,
         end_column_offset: int = 0,
     ) -> Self:
         """Build a SourceLocation spanning ``start`` through ``end``.
 
         Each argument is either an ``ASTNode`` (whose ``.location`` is read)
-        or a ``lark_standalone.Token`` (whose lexer-set
+        or a ``lark_cython.Token`` (whose lexer-set
         ``line``/``column``/``end_line``/``end_column`` are read). When
         ``start`` and ``end`` are the same instance, the result is that
         item's full span.
@@ -57,7 +57,7 @@ class SourceLocation:
             start_line = start.location.line
             start_column = start.location.column
         else:
-            if start.line is None or start.column is None:
+            if start.line < 0 or start.column < 0:
                 raise ValueError(f"token {start!r} has no line/column")
             start_line = start.line
             start_column = start.column
@@ -178,15 +178,12 @@ class LocalNameContent(NameContent):
     name: str
 
     def __post_init__(self):
-        """Coerce to a plain interned str.
+        """Intern names shared by many references.
 
-        The parser passes a lark Token here, which is a str subclass that
-        carries extra slots (type, start_pos, line, column, ...) and is
-        rejected by sys.intern. Local names like ``run`` repeat heavily
-        across a program, so we drop the Token wrapper and intern the
-        underlying string for sharing.
+        Local names like ``run`` repeat heavily across a program, so we intern
+        the token's underlying string for sharing.
         """
-        object.__setattr__(self, "name", sys.intern(str(self.name)))
+        object.__setattr__(self, "name", sys.intern(self.name))
 
     @property
     @override
@@ -733,8 +730,9 @@ class GlobalPathName(ASTNode):
 
     def __post_init__(self):
         """Intern the path string to deduplicate across many references."""
-        # str() coerces lark Token (a str subclass) to plain str; sys.intern rejects subclasses.
-        object.__setattr__(self, "name", sys.intern(str(self.name)))
+        # The parser supplies the token's string value because sys.intern rejects
+        # token objects.
+        object.__setattr__(self, "name", sys.intern(self.name))
 
     @property
     def relative_path(self) -> define_path.DefinePath:

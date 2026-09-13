@@ -9,6 +9,8 @@ from define.compiler import exceptions
 if TYPE_CHECKING:
     import pathlib
 
+    import lark_cython
+
     from define.compiler.lark import lark_standalone
 
 
@@ -68,7 +70,7 @@ class DefineSyntaxError(exceptions.DefineError):
 class DefineTokenError(DefineSyntaxError):
     """Base class for Define syntax errors caused by unexpected tokens."""
 
-    token: lark_standalone.Token
+    token: lark_cython.Token
 
     def __init__(
         self,

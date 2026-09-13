@@ -92,15 +92,17 @@ def raise_token_error(
 
     # This needs to come first; it's the only error type that reliably escapes control
     # characters.
-    if len(e.token) > 0:
-        char_error = _classify_invalid_char(e.token[0])
+    if len(e.token.value) > 0:
+        char_error = _classify_invalid_char(e.token.value[0])
         if char_error:
-            raise char_error.from_lark_exception(e, source, e.token[0], file_path)
+            raise char_error.from_lark_exception(e, source, e.token.value[0], file_path)
 
     # If there's a space followed only by other spaces.
-    if e.token.startswith(" ") and not _stripped_context(source, e.line, e.column):
+    if e.token.value.startswith(" ") and not _stripped_context(
+        source, e.line, e.column
+    ):
         raise parser_exceptions.TrailingWhitespaceError.from_lark_exception(
-            e, source, e.token, file_path
+            e, source, e.token.value, file_path
         )
 
     ###############################
@@ -110,17 +112,19 @@ def raise_token_error(
     # Same for <, which means the previous token was the start of a definition
     # and we expect a name and didn't get <.
     if e.accepts == {"LESSTHAN"}:
-        raise parser_exceptions.MissingOpenAngleBracket(e, source, file_path, e.token)
+        raise parser_exceptions.MissingOpenAngleBracket(
+            e, source, file_path, e.token.value
+        )
 
     # This is just <> or < with nothing after it, while expecting a name.
     if ("GLOBAL_NAME_CONTENT" in e.accepts or "LOCAL_NAME_CONTENT" in e.accepts) and (
-        e.token == ">" or e.token.type in ("NEWLINE", "$END")
+        e.token.value == ">" or e.token.type in ("NEWLINE", "$END")
     ):
         raise parser_exceptions.EmptyName(e, source, file_path)
 
     if e.accepts == {"LOCAL_NAME_CONTENT"}:
         raise parser_exceptions.InvalidLocalNameCharacter.from_lark_exception(
-            e, source, e.token[0], file_path
+            e, source, e.token.value[0], file_path
         )
 
     if e.accepts == {"GLOBAL_NAME_CONTENT"}:
@@ -138,7 +142,7 @@ def raise_token_error(
             )
         if e.token_history:
             raise parser_exceptions.MissingCloseAngleBracket(
-                e, source, file_path, e.token_history[-1]
+                e, source, file_path, e.token_history[-1].value
             )
         # Due to some quirks of Lark, $END never has token_history.
         if e.token.type == "$END":
@@ -147,7 +151,7 @@ def raise_token_error(
             )
 
     if e.accepts == {"SPACE_AND_OPEN_BRACE", "DOT"}:
-        if e.token == "{":
+        if e.token.value == "{":
             raise parser_exceptions.MissingWhitespaceBeforeBrace(e, source, file_path)
         # This happens at least if it's a newline or just a space and a newline.
         raise parser_exceptions.MissingTerminatorOrBrace(e, source, file_path)
@@ -159,7 +163,7 @@ def raise_token_error(
         raise parser_exceptions.MissingTerminator(e, source, file_path)
 
     if e.accepts == {"SPACE_AND_OPEN_BRACE"}:
-        if e.token == " ":
+        if e.token.value == " ":
             raise parser_exceptions.ExtraWhitespace(e, source, file_path)
         raise parser_exceptions.MissingOpenBrace(e, source, file_path)
 
@@ -177,7 +181,7 @@ def raise_token_error(
                         e, source, file_path
                     )
                 case "SPACE_AND_OPEN_BRACE":
-                    if e.token == "}":
+                    if e.token.value == "}":
                         raise parser_exceptions.EmptyBlock(e, source, file_path)
                     raise parser_exceptions.MissingNewlineAfterOpenBrace(
                         e, source, file_path
@@ -203,7 +207,7 @@ def raise_token_error(
 
     if e.accepts == {"AND_IT_DOES"}:
         # This catches the case where you put too many spaces before "and it does"
-        if e.token == " ":
+        if e.token.value == " ":
             raise parser_exceptions.ExtraWhitespace(e, source, file_path)
         raise parser_exceptions.MissingActionStatementsBlock(e, source, file_path)
 
@@ -219,7 +223,7 @@ def raise_token_error(
         raise parser_exceptions.ExpectedChainSeparatorOrTerminator(e, source, file_path)
 
     if e.accepts == {"NEWLINE", "THE", "CONSTRUCTOR_STATEMENT", "DESTRUCTOR_STATEMENT"}:
-        if e.token == "}":
+        if e.token.value == "}":
             raise parser_exceptions.MissingTriggerConditionContent(e, source, file_path)
         if e.token.type == "IT_ALSO_ASSIGNS_THE":
             raise parser_exceptions.QualityImplicationInWrongLocation(
@@ -267,7 +271,7 @@ def raise_token_error(
 
     # A relatively broad fallback for random nonsense inside an Action Definition Block.
     if "IT_HAPPENS_WHEN" in e.accepts:
-        if e.token == "}":
+        if e.token.value == "}":
             # TODO: Needs more context to see the start of the block, not the end of it.
             raise parser_exceptions.MissingActionDefinitionSyntax(e, source, file_path)
         raise parser_exceptions.InvalidActionDefinitionsBlock(e, source, file_path)
@@ -283,7 +287,7 @@ def raise_token_error(
     # because IT_ALSO_ASSIGNS_THE (quality implications are only allowed in a
     # potential position block) distinguishes the potential block from local.
     if "IT_ALSO_ASSIGNS_THE" in e.accepts:
-        if e.token == "}":
+        if e.token.value == "}":
             raise parser_exceptions.MissingPotentialPositionDefinitionContent(
                 e, source, file_path
             )
@@ -293,7 +297,7 @@ def raise_token_error(
 
     # We are in a position definition block.
     if "IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE" in e.accepts:
-        if e.token == "}":
+        if e.token.value == "}":
             raise parser_exceptions.MissingPositionDefinitionContent(
                 e, source, file_path
             )
@@ -301,7 +305,7 @@ def raise_token_error(
 
     # We are in a position constraint block.
     if "IT_HAS_THE" in e.accepts:
-        if e.token == "}":
+        if e.token.value == "}":
             raise parser_exceptions.MissingPositionConstraintContent(
                 e, source, file_path
             )

@@ -15,7 +15,7 @@ py_library(
     deps = [
         ":constants",
         "//define/compiler/data_structures:define_path",
-        "//define/compiler/lark:lark_standalone",
+        "@pypi//lark_cython",
     ],
 )
 
@@ -316,7 +316,7 @@ py_library(
     deps = [
         ":ast",
         ":parser_exceptions",
-        "//define/compiler/lark:lark_standalone",
+        "@pypi//lark_cython",
     ],
 )
 
@@ -328,7 +328,7 @@ py_test(
         ":ast",
         ":name_parser",
         ":parser_exceptions",
-        "//define/compiler/lark:lark_standalone",
+        "@pypi//lark_cython",
         "@pypi//pytest",
     ],
 )
@@ -371,6 +371,7 @@ py_library(
         ":parser_exceptions",
         ":transformer",
         "//define/compiler/lark:lark_standalone",
+        "@pypi//lark_cython",
     ],
 )
 
@@ -391,6 +392,7 @@ py_library(
     deps = [
         ":exceptions",
         "//define/compiler/lark:lark_standalone",
+        "@pypi//lark_cython",
     ],
 )
 
@@ -423,6 +425,7 @@ py_library(
         ":ast",
         ":name_parser",
         "//define/compiler/lark:lark_standalone",
+        "@pypi//lark_cython",
     ],
 )
 

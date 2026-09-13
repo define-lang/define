@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, ClassVar, override
 if TYPE_CHECKING:
     import os
 
-    from defcl.python.lark import lark_standalone
+    import lark_cython
 
 
 class DclSyntaxError(Exception):
@@ -53,14 +53,14 @@ class DclSyntaxError(Exception):
 class DclTokenError(DclSyntaxError):
     """Base class for DCL syntax errors caused by unexpected tokens."""
 
-    token: lark_standalone.Token
+    token: lark_cython.Token
 
     def __init__(
         self,
         context: str,
         line: int,
         column: int,
-        token: lark_standalone.Token,
+        token: lark_cython.Token,
         path_name: str | os.PathLike[str] | None = None,
     ):
         """Initialize with the unexpected token."""

@@ -62,6 +62,10 @@ pypi.project(
     lock = "//:uv.lock",
     pyproject = "//:pyproject.toml",
 )
+pypi.annotate_packages(
+    src = "//:python_build_annotations.toml",
+    lock = "//:uv.lock",
+)
 
 # The PyPI wheel's abi3 extension segfaults when imported by free-threaded CPython.
 # TODO: Use the PyPI package when protobuf supports free-threaded CPython:

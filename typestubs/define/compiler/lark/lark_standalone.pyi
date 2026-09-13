@@ -1,6 +1,8 @@
 from collections.abc import Callable, Iterable, Mapping
 from typing import Self, TypeVar
 
+import lark_cython
+
 _Label_T = TypeVar("_Label_T")
 
 class Meta:
@@ -54,7 +56,7 @@ class UnexpectedInput(Exception):  # noqa: N818
     def get_context(self, text: str, span: int = 40) -> str: ...
     def match_examples(
         self,
-        parse_fn: Callable[[str], Tree[Token]],
+        parse_fn: Callable[[str], Tree[lark_cython.Token]],
         examples: Mapping[_Label_T, Iterable[str]]
         | Iterable[tuple[_Label_T, Iterable[str]]],
         token_type_match_fallback: bool = False,
@@ -67,13 +69,13 @@ class InteractiveParser:
 class UnexpectedCharacters(UnexpectedInput):
     allowed: set[str]
     char: str
-    token_history: list[Token] | None
+    token_history: list[lark_cython.Token] | None
     interactive_parser: InteractiveParser
 
 class UnexpectedToken(UnexpectedInput):
-    token: Token
+    token: lark_cython.Token
     expected: set[str]
-    token_history: list[Token] | None
+    token_history: list[lark_cython.Token] | None
     interactive_parser: InteractiveParser | None
 
     @property
@@ -105,6 +107,6 @@ class Lark:
         text: str,
         start: str | None = None,
         on_error: Callable[[UnexpectedInput], bool] | None = None,
-    ) -> Tree[Token]: ...
+    ) -> Tree[lark_cython.Token]: ...
 
 def Lark_StandAlone(**kwargs: object) -> Lark: ...  # noqa: N802

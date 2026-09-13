@@ -1,0 +1,3 @@
+from types import ModuleType
+
+def standalone_plugins(module: ModuleType) -> dict[str, object]: ...
