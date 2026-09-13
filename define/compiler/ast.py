@@ -5,8 +5,8 @@ from __future__ import annotations
 import abc
 import enum
 import sys
-from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Final, Self, cast, override
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, ClassVar, Final, Self, cast, override
 
 from define.compiler import constants
 from define.compiler.data_structures import define_path
@@ -105,31 +105,60 @@ def start_of_file_location(
     )
 
 
-@dataclass(frozen=True, slots=True)
 class ASTNode:
-    """Base class for all AST nodes."""
+    """Base class for all AST nodes.
+
+    Treat nodes as immutable after construction so cached values remain valid.
+    """
+
+    __slots__: ClassVar[tuple[str, ...]] = ("location",)
 
     location: SourceLocation
 
+    def __init__(self, location: SourceLocation):
+        """Initialize an AST node."""
+        self.location = location
 
-@dataclass(frozen=True, slots=True)
+
 class Program(ASTNode):
     """Represents the entire program."""
 
+    __slots__: ClassVar[tuple[str, ...]] = ("definitions",)
+
     definitions: tuple[QualityDefinition, ...]
 
+    def __init__(
+        self, location: SourceLocation, definitions: tuple[QualityDefinition, ...]
+    ):
+        """Initialize a program."""
+        super().__init__(location=location)
+        self.definitions = definitions
 
-@dataclass(frozen=True, slots=True)
+
 class QualityDefinition(ASTNode):
     """Base class for quality definitions (positions and actions)."""
+
+    __slots__: ClassVar[tuple[str, ...]] = ("quality_implications", "typed_name")
 
     typed_name: GlobalTypedNameInDefinition
     quality_implications: tuple[QualityImplicationStatement, ...]
 
+    def __init__(
+        self,
+        location: SourceLocation,
+        typed_name: GlobalTypedNameInDefinition,
+        quality_implications: tuple[QualityImplicationStatement, ...],
+    ):
+        """Initialize a quality definition."""
+        super().__init__(location=location)
+        self.typed_name = typed_name
+        self.quality_implications = quality_implications
 
-@dataclass(frozen=True, slots=True, init=False)
+
 class PositionDefinition(QualityDefinition):
     """Represents a position definition."""
+
+    __slots__: ClassVar[tuple[str, ...]] = ("constraints",)
 
     constraints: PositionConstraintBlock | None
 
@@ -151,7 +180,7 @@ class PositionDefinition(QualityDefinition):
             quality_implications=quality_implications or (),
             location=location,
         )
-        object.__setattr__(self, "constraints", constraints)
+        self.constraints = constraints
 
     @property
     def constraint_typed_names(self) -> tuple[GlobalTypedNameReference, ...]:
@@ -161,9 +190,10 @@ class PositionDefinition(QualityDefinition):
         return tuple(req.typed_global_name for req in self.constraints.requirements)
 
 
-@dataclass(frozen=True, slots=True)
 class NameContent(ASTNode, abc.ABC):
     """Base class for name content nodes (local or global)."""
+
+    __slots__: ClassVar[tuple[str, ...]] = ()
 
     @property
     @abc.abstractmethod
@@ -171,19 +201,17 @@ class NameContent(ASTNode, abc.ABC):
         """Return the inner content as it appears in the source."""
 
 
-@dataclass(frozen=True, slots=True)
 class LocalNameContent(NameContent):
     """Represents a local name."""
 
+    __slots__: ClassVar[tuple[str, ...]] = ("name",)
+
     name: str
 
-    def __post_init__(self):
-        """Intern names shared by many references.
-
-        Local names like ``run`` repeat heavily across a program, so we intern
-        the token's underlying string for sharing.
-        """
-        object.__setattr__(self, "name", sys.intern(self.name))
+    def __init__(self, location: SourceLocation, name: str):
+        """Initialize a local name."""
+        super().__init__(location=location)
+        self.name = sys.intern(name)
 
     @property
     @override
@@ -191,9 +219,10 @@ class LocalNameContent(NameContent):
         return self.name
 
 
-@dataclass(frozen=True, slots=True, init=False)
 class LocalPositionDefinition(ASTNode):
     """Represents a local position definition."""
+
+    __slots__: ClassVar[tuple[str, ...]] = ("constraints", "typed_name")
 
     typed_name: LocalTypedNameReference
     constraints: PositionConstraintBlock | None
@@ -207,18 +236,12 @@ class LocalPositionDefinition(ASTNode):
     ):
         """Initialize with a local name, wrapping it in a typed name."""
         super().__init__(location=location)
-        object.__setattr__(
-            self,
-            "typed_name",
-            LocalTypedNameReference(
-                name_type=NameType.POSITION,
-                name_content=local_name,
-                location=SourceLocation.from_definition_name(
-                    local_name, NameType.POSITION
-                ),
-            ),
+        self.typed_name = LocalTypedNameReference(
+            name_type=NameType.POSITION,
+            name_content=local_name,
+            location=SourceLocation.from_definition_name(local_name, NameType.POSITION),
         )
-        object.__setattr__(self, "constraints", constraints)
+        self.constraints = constraints
 
     @property
     def constraint_typed_names(self) -> tuple[GlobalTypedNameReference, ...]:
@@ -231,20 +254,28 @@ class LocalPositionDefinition(ASTNode):
 type AnyPositionDefinition = PositionDefinition | LocalPositionDefinition
 
 
-@dataclass(frozen=True, slots=True)
-class TypedName(ASTNode):
+class TypedName[NameContentT: NameContent](ASTNode):
     """Represents a typed name (local or global)."""
 
-    name_type: NameType
-    name_content: NameContent
-    _source_typed_name: str = field(init=False, repr=False, compare=False)
+    __slots__: ClassVar[tuple[str, ...]] = (
+        "_source_typed_name",
+        "name_content",
+        "name_type",
+    )
 
-    def __post_init__(self):
-        """Compute and cache the source typed name string."""
-        object.__setattr__(
-            self,
-            "_source_typed_name",
-            sys.intern(f"{self.name_type.value}<{self.name_content.source_name}>"),
+    name_type: NameType
+    name_content: Final[NameContentT]
+    _source_typed_name: str
+
+    def __init__(
+        self, location: SourceLocation, name_type: NameType, name_content: NameContentT
+    ):
+        """Initialize a typed name."""
+        super().__init__(location=location)
+        self.name_type = name_type
+        self.name_content = name_content
+        self._source_typed_name = sys.intern(
+            f"{self.name_type.value}<{self.name_content.source_name}>"
         )
 
     @property
@@ -258,32 +289,37 @@ class TypedName(ASTNode):
         return self._source_typed_name
 
 
-@dataclass(frozen=True, slots=True)
-class GlobalTypedName(TypedName):
+class GlobalTypedName[NameContentT: GlobalNameContent[Fqun | None]](
+    TypedName[NameContentT]
+):
     """A typed global name, at either a definition site or a reference site."""
 
-    name_content: GlobalNameContent
+    __slots__: ClassVar[tuple[str, ...]] = ()
 
 
-@dataclass(frozen=True, slots=True)
-class GlobalTypedNameReference(GlobalTypedName):
+class GlobalTypedNameReference(GlobalTypedName["ReferenceGlobalNameContent"]):
     """Represents a typed global name reference."""
 
-    name_content: ReferenceGlobalNameContent
-    enclosing_fqun: Fqun
-    _full_typed_name: str = field(init=False, repr=False, compare=False)
+    __slots__: ClassVar[tuple[str, ...]] = ("_full_typed_name", "enclosing_fqun")
 
-    @override
-    def __post_init__(self):
-        """Compute and cache the source and full typed-name strings."""
-        super().__post_init__()
+    enclosing_fqun: Fqun
+    _full_typed_name: str
+
+    def __init__(
+        self,
+        location: SourceLocation,
+        name_type: NameType,
+        name_content: ReferenceGlobalNameContent,
+        enclosing_fqun: Fqun,
+    ):
+        """Initialize a global typed name reference."""
+        super().__init__(
+            location=location, name_type=name_type, name_content=name_content
+        )
+        self.enclosing_fqun = enclosing_fqun
         fqun = self.name_content.fqun or self.enclosing_fqun
-        object.__setattr__(
-            self,
-            "_full_typed_name",
-            sys.intern(
-                f"{self.name_type.value}<{fqun.canonical}:{self.name_content.path.name}>"
-            ),
+        self._full_typed_name = sys.intern(
+            f"{self.name_type.value}<{fqun.canonical}:{self.name_content.path.name}>"
         )
 
     @property
@@ -303,11 +339,10 @@ class GlobalTypedNameReference(GlobalTypedName):
         return self.source_typed_name
 
 
-@dataclass(frozen=True, slots=True)
-class LocalTypedNameReference(TypedName):
+class LocalTypedNameReference(TypedName[LocalNameContent]):
     """Represents a typed local name reference."""
 
-    name_content: LocalNameContent
+    __slots__: ClassVar[tuple[str, ...]] = ()
 
 
 type TypedNameReference = GlobalTypedNameReference | LocalTypedNameReference
@@ -407,16 +442,23 @@ def chain_parent_position(key: ChainedNameTuple) -> ChainedNameTuple | None:
     return None
 
 
-@dataclass(frozen=True, slots=True, init=False)
 class ChainedName(ASTNode):
-    """A chain of typed name references joined by ::."""
+    """A chain of typed name references joined by ::.
 
+    Treat location and typed_names as immutable after construction so that
+    cached canonical forms and dictionary keys remain valid.
+    """
+
+    __slots__: ClassVar[tuple[str, ...]] = (
+        "canonical_chained_name",
+        "canonical_chained_name_tuple",
+        "typed_names",
+    )
+
+    location: SourceLocation
     typed_names: tuple[TypedNameReference, ...]
     # Filled lazily on first access by __getattr__ and cached in the slot.
-    canonical_chained_name_tuple: ChainedNameTuple = field(
-        init=False, repr=False, compare=False
-    )
-    canonical_chained_name: str = field(init=False, repr=False, compare=False)
+    canonical_chained_name_tuple: ChainedNameTuple
 
     def __init__(
         self,
@@ -433,11 +475,10 @@ class ChainedName(ASTNode):
         if not typed_names:
             raise ValueError("ChainedName must contain at least one typed name")
         super().__init__(location=location)
-        object.__setattr__(self, "typed_names", typed_names)
+        self.typed_names = typed_names
+        self.canonical_chained_name: str
         if canonical_chained_name_tuple is not None:
-            object.__setattr__(
-                self, "canonical_chained_name_tuple", canonical_chained_name_tuple
-            )
+            self.canonical_chained_name_tuple = canonical_chained_name_tuple
 
     # These are optimized because they were _the_ top hotspots in a CPU profile
     # of compilation when they were just computed always in __post_init__.
@@ -451,12 +492,13 @@ class ChainedName(ASTNode):
         """Lazily compute and cache the canonical chained-name forms."""
         match name:
             case "canonical_chained_name_tuple":
-                value = tuple(elem.full_typed_name for elem in self.typed_names)
+                value = tuple([elem.full_typed_name for elem in self.typed_names])
+                self.canonical_chained_name_tuple = value
             case "canonical_chained_name":
                 value = "::".join(self.canonical_chained_name_tuple)
+                self.canonical_chained_name = value
             case _:
                 raise AttributeError(name)
-        object.__setattr__(self, name, value)
         return value
 
     @property
@@ -535,7 +577,7 @@ class ChainedName(ASTNode):
         """
         return type(self)(
             location=self.location,
-            typed_names=(*prefix.typed_names, *self.typed_names),
+            typed_names=prefix.typed_names + self.typed_names,
             # Specifying this here shaves 10% of the time off a full compile of a complex
             # multi-action compile, mostly because it saves recomputing the canonical
             # chained_name_tuple over and over for requirement checks. (Concatenating
@@ -554,10 +596,10 @@ class ChainedName(ASTNode):
         """
         return PositionReference(
             location=self.location,
-            typed_names=(*self.typed_names, *names),
+            typed_names=self.typed_names + names,
             canonical_chained_name_tuple=(
                 self.canonical_chained_name_tuple
-                + tuple(name.full_typed_name for name in names)
+                + tuple([name.full_typed_name for name in names])
             ),
         )
 
@@ -569,10 +611,10 @@ class ChainedName(ASTNode):
         """
         return ActionReference(
             location=self.location,
-            typed_names=(*self.typed_names, *names),
+            typed_names=self.typed_names + names,
             canonical_chained_name_tuple=(
                 self.canonical_chained_name_tuple
-                + tuple(name.full_typed_name for name in names)
+                + tuple([name.full_typed_name for name in names])
             ),
         )
 
@@ -589,9 +631,10 @@ class ChainedName(ASTNode):
         return self.with_prefix(caller_chain)
 
 
-@dataclass(frozen=True, slots=True, init=False)
 class PositionReference(ChainedName):
     """Represents a position reference, possibly chained with ::."""
+
+    __slots__: ClassVar[tuple[str, ...]] = ()
 
     def __init__(
         self,
@@ -602,7 +645,9 @@ class PositionReference(ChainedName):
         canonical_chained_name_tuple: ChainedNameTuple | None = None,
     ):
         """Initialize, optionally validating that the chain ends with a position."""
-        super().__init__(
+        # Direct dispatch avoids super's overhead on this frequent construction path.
+        ChainedName.__init__(
+            self,
             typed_names=typed_names,
             location=location,
             canonical_chained_name_tuple=canonical_chained_name_tuple,
@@ -623,13 +668,14 @@ class PositionReference(ChainedName):
         )
 
 
-@dataclass(frozen=True, slots=True, init=False)
 class ActionReference(ChainedName):
     """Represents a chained name known to end with an action.
 
     Unlike PositionReference, the parser never produces this directly; the
     compiler synthesizes it for chains it has determined end in an action.
     """
+
+    __slots__: ClassVar[tuple[str, ...]] = ()
 
     def __init__(
         self,
@@ -639,7 +685,9 @@ class ActionReference(ChainedName):
         canonical_chained_name_tuple: ChainedNameTuple | None = None,
     ):
         """Initialize, validating that the chain ends with an action."""
-        super().__init__(
+        # Direct dispatch avoids super's overhead on this frequent construction path.
+        ChainedName.__init__(
+            self,
             typed_names=typed_names,
             location=location,
             canonical_chained_name_tuple=canonical_chained_name_tuple,
@@ -657,28 +705,47 @@ class ActionReference(ChainedName):
         return cast("GlobalTypedNameReference", self.typed_names[-1])
 
 
-@dataclass(frozen=True, slots=True)
 class ParticleStatement(ASTNode):
     """Base class for statements that operate on a target particle position."""
 
+    __slots__: ClassVar[tuple[str, ...]] = ("target_position",)
+
     target_position: PositionReference
 
+    def __init__(self, location: SourceLocation, target_position: PositionReference):
+        """Initialize a particle statement."""
+        super().__init__(location=location)
+        self.target_position = target_position
 
-@dataclass(frozen=True, slots=True)
+
 class CreateParticleStatement(ParticleStatement):
     """Represents a 'create a particle in' statement."""
 
+    __slots__: ClassVar[tuple[str, ...]] = ()
 
-@dataclass(frozen=True, slots=True)
+
 class MoveParticleStatement(ParticleStatement):
     """Represents a 'move the particle in ... to' statement."""
 
+    __slots__: ClassVar[tuple[str, ...]] = ("source_position",)
+
     source_position: PositionReference
 
+    def __init__(
+        self,
+        location: SourceLocation,
+        target_position: PositionReference,
+        source_position: PositionReference,
+    ):
+        """Initialize a move statement."""
+        super().__init__(location=location, target_position=target_position)
+        self.source_position = source_position
 
-@dataclass(frozen=True, slots=True)
+
 class DestroyParticleStatement(ParticleStatement):
     """Represents a 'destroy the particle in' statement."""
+
+    __slots__: ClassVar[tuple[str, ...]] = ()
 
 
 type ActionStatement = (
@@ -689,50 +756,71 @@ type ActionStatement = (
 )
 
 
-@dataclass(frozen=True, slots=True)
 class PositionRequirementStatement(ASTNode):
     """Represents a position requirement statement in a constraints block."""
 
+    __slots__: ClassVar[tuple[str, ...]] = ("typed_global_name",)
+
     typed_global_name: GlobalTypedNameReference
 
+    def __init__(
+        self, location: SourceLocation, typed_global_name: GlobalTypedNameReference
+    ):
+        """Initialize a position requirement."""
+        super().__init__(location=location)
+        self.typed_global_name = typed_global_name
 
-@dataclass(frozen=True, slots=True)
+
 class QualityImplicationStatement(ASTNode):
     """Represents a quality implication statement."""
 
+    __slots__: ClassVar[tuple[str, ...]] = ("typed_global_name",)
+
     typed_global_name: GlobalTypedNameReference
 
+    def __init__(
+        self, location: SourceLocation, typed_global_name: GlobalTypedNameReference
+    ):
+        """Initialize a quality implication."""
+        super().__init__(location=location)
+        self.typed_global_name = typed_global_name
 
-@dataclass(frozen=True, slots=True)
+
 class PositionConstraintBlock(ASTNode):
     """Represents a position constraint block."""
 
-    requirements: tuple[PositionRequirementStatement, ...]
-    as_set: frozenset[str] = field(init=False, repr=False, compare=False)
+    __slots__: ClassVar[tuple[str, ...]] = ("as_set", "requirements")
 
-    def __post_init__(self):
-        """Precompute the set of requirement names."""
-        object.__setattr__(
-            self,
-            "as_set",
-            frozenset(
-                requirement.typed_global_name.full_typed_name
-                for requirement in self.requirements
-            ),
+    requirements: tuple[PositionRequirementStatement, ...]
+    as_set: frozenset[str]
+
+    def __init__(
+        self,
+        location: SourceLocation,
+        requirements: tuple[PositionRequirementStatement, ...],
+    ):
+        """Initialize a position constraint block."""
+        super().__init__(location=location)
+        self.requirements = requirements
+        self.as_set = frozenset(
+            requirement.typed_global_name.full_typed_name
+            for requirement in self.requirements
         )
 
 
-@dataclass(frozen=True, slots=True)
 class GlobalPathName(ASTNode):
     """Represents the path portion of a global name."""
 
+    __slots__: ClassVar[tuple[str, ...]] = ("name",)
+
     name: str
 
-    def __post_init__(self):
-        """Intern the path string to deduplicate across many references."""
+    def __init__(self, location: SourceLocation, name: str):
+        """Initialize a global name's path."""
+        super().__init__(location=location)
         # The parser supplies the token's string value because sys.intern rejects
         # token objects.
-        object.__setattr__(self, "name", sys.intern(self.name))
+        self.name = sys.intern(name)
 
     @property
     def relative_path(self) -> define_path.DefinePath:
@@ -747,34 +835,35 @@ class GlobalPathName(ASTNode):
         return root / self.relative_path.with_suffix(constants.DEFINE_FILE_SUFFIX)
 
 
-@dataclass(frozen=True, slots=True)
 class PositionPresenceStatement(ASTNode):
     """Represents a position presence statement."""
 
-    typed_name: LocalTypedNameReference
-    position_reference: PositionReference = field(init=False)
+    __slots__: ClassVar[tuple[str, ...]] = ("position_reference", "typed_name")
 
-    def __post_init__(self):
-        """Pre-compute the position_reference from the typed name."""
-        object.__setattr__(
-            self,
-            "position_reference",
-            PositionReference(
-                typed_names=(self.typed_name,),
-                location=self.typed_name.location,
-                from_source=True,
-            ),
+    typed_name: LocalTypedNameReference
+    position_reference: PositionReference
+
+    def __init__(self, location: SourceLocation, typed_name: LocalTypedNameReference):
+        """Initialize a position presence statement."""
+        super().__init__(location=location)
+        self.typed_name = typed_name
+        self.position_reference = PositionReference(
+            typed_names=(self.typed_name,),
+            location=self.typed_name.location,
+            from_source=True,
         )
 
 
-@dataclass(frozen=True, slots=True)
 class ConstructorConditionStatement(ASTNode):
     """Represents a constructor condition statement."""
 
+    __slots__: ClassVar[tuple[str, ...]] = ()
 
-@dataclass(frozen=True, slots=True)
+
 class DestructorConditionStatement(ASTNode):
     """Represents a destructor condition statement."""
+
+    __slots__: ClassVar[tuple[str, ...]] = ()
 
 
 type TriggerConditionStatement = (
@@ -784,28 +873,48 @@ type TriggerConditionStatement = (
 )
 
 
-@dataclass(frozen=True, slots=True)
 class TriggerConditionsBlock(ASTNode):
     """Represents a trigger conditions block."""
 
+    __slots__: ClassVar[tuple[str, ...]] = ("condition",)
+
     condition: TriggerConditionStatement
 
+    def __init__(self, location: SourceLocation, condition: TriggerConditionStatement):
+        """Initialize a trigger conditions block."""
+        super().__init__(location=location)
+        self.condition = condition
 
-@dataclass(frozen=True, slots=True)
+
 class ActionStatementsBlock(ASTNode):
     """Represents an action statements block."""
 
+    __slots__: ClassVar[tuple[str, ...]] = ("statements",)
+
     statements: tuple[ActionStatement, ...]
 
+    def __init__(
+        self, location: SourceLocation, statements: tuple[ActionStatement, ...]
+    ):
+        """Initialize an action statements block."""
+        super().__init__(location=location)
+        self.statements = statements
 
-@dataclass(frozen=True, slots=True, init=False)
+
 class ActionDefinition(QualityDefinition):
     """Represents an action definition."""
+
+    __slots__: ClassVar[tuple[str, ...]] = (
+        "action_statements",
+        "interface_positions",
+        "interface_positions_by_name",
+        "trigger_conditions",
+        "trigger_position",
+    )
 
     interface_positions: tuple[LocalPositionDefinition, ...]
     trigger_conditions: TriggerConditionsBlock
     action_statements: ActionStatementsBlock
-
     # Computed properties
     interface_positions_by_name: dict[str, LocalPositionDefinition]
     trigger_position: LocalPositionDefinition | None
@@ -830,23 +939,16 @@ class ActionDefinition(QualityDefinition):
             quality_implications=quality_implications,
             location=location,
         )
-        object.__setattr__(self, "interface_positions", interface_positions)
-        object.__setattr__(self, "trigger_conditions", trigger_conditions)
-        object.__setattr__(self, "action_statements", action_statements)
-        # Instead of making these into properties, we compute them up front for two
-        # reasons: (1) it's complex to make cached properties on frozen dataclasses
-        # (2) this guarantees later thread-safety for accessing this information
-        # on this object (instead of trying to potentially create multiple cached
-        # copies of it across threads).
-        object.__setattr__(
-            self,
-            "interface_positions_by_name",
-            self._compute_interface_positions_by_name(),
-        )
-        object.__setattr__(self, "trigger_position", self._compute_trigger_position())
+        self.interface_positions = interface_positions
+        self.trigger_conditions = trigger_conditions
+        self.action_statements = action_statements
+        # Computing these up front guarantees later thread-safety for accessing
+        # this information instead of creating multiple cached copies across threads.
+        self.interface_positions_by_name = self._compute_interface_positions_by_name()
+        self.trigger_position = self._compute_trigger_position()
 
     @property
-    def interface_position_names(self) -> tuple[TypedName, ...]:
+    def interface_position_names(self) -> tuple[TypedName[NameContent], ...]:
         """Return the TypedName objects for all interface positions."""
         return tuple(pos.typed_name for pos in self.interface_positions)
 
@@ -892,50 +994,72 @@ class ActionDefinition(QualityDefinition):
         )
 
 
-@dataclass(frozen=True, slots=True)
 class Multiverse(ASTNode):
     """Represents a multiverse name."""
 
+    __slots__: ClassVar[tuple[str, ...]] = ("name",)
+
     name: str
 
-    def __post_init__(self):
-        """Intern the multiverse name to deduplicate across many references."""
-        object.__setattr__(self, "name", sys.intern(str(self.name)))
+    def __init__(self, location: SourceLocation, name: str):
+        """Initialize a multiverse name."""
+        super().__init__(location=location)
+        self.name = sys.intern(str(name))
 
 
-@dataclass(frozen=True, slots=True)
 class Universe(ASTNode):
     """Represents a universe name."""
 
+    __slots__: ClassVar[tuple[str, ...]] = ("name",)
+
     name: str
 
-    def __post_init__(self):
-        """Intern the universe name to deduplicate across many references."""
-        object.__setattr__(self, "name", sys.intern(str(self.name)))
+    def __init__(self, location: SourceLocation, name: str):
+        """Initialize a universe name."""
+        super().__init__(location=location)
+        self.name = sys.intern(str(name))
 
 
-@dataclass(frozen=True, slots=True)
 class Authority(ASTNode):
     """Represents an authority (domain plus optional path)."""
 
+    __slots__: ClassVar[tuple[str, ...]] = ("name",)
+
     name: str
 
-    def __post_init__(self):
-        """Intern the authority name to deduplicate across many references."""
-        object.__setattr__(self, "name", sys.intern(str(self.name)))
+    def __init__(self, location: SourceLocation, name: str):
+        """Initialize an authority."""
+        super().__init__(location=location)
+        self.name = sys.intern(str(name))
 
 
-@dataclass(frozen=True, slots=True)
 class Fqun(ASTNode):
     """Represents a fully-qualified universe name."""
+
+    __slots__: ClassVar[tuple[str, ...]] = (
+        "authority",
+        "canonical",
+        "multiverse",
+        "universe",
+    )
 
     multiverse: Multiverse | None
     authority: Authority | None
     universe: Universe
-    canonical: str = field(init=False, repr=False, compare=False)
+    canonical: str
 
-    def __post_init__(self):
-        """Compute and intern the canonical FQUN string."""
+    def __init__(
+        self,
+        location: SourceLocation,
+        multiverse: Multiverse | None,
+        authority: Authority | None,
+        universe: Universe,
+    ):
+        """Initialize a fully-qualified universe name."""
+        super().__init__(location=location)
+        self.multiverse = multiverse
+        self.authority = authority
+        self.universe = universe
         # Pre-built because canonical is the only part of Fqun that
         # anything needs after name validation.
         if self.authority is None:
@@ -949,15 +1073,22 @@ class Fqun(ASTNode):
             value = ":".join(parts)
         # Interned to deduplicate across the many Fqun instances
         # sharing the same combination.
-        object.__setattr__(self, "canonical", sys.intern(value))
+        self.canonical = sys.intern(value)
 
 
-@dataclass(frozen=True, slots=True)
-class GlobalNameContent(NameContent):
+class GlobalNameContent[FqunT: Fqun | None](NameContent):
     """Base class for global name-like nodes."""
 
-    fqun: Fqun | None
+    __slots__: ClassVar[tuple[str, ...]] = ("fqun", "path")
+
+    fqun: Final[FqunT]
     path: GlobalPathName
+
+    def __init__(self, location: SourceLocation, fqun: FqunT, path: GlobalPathName):
+        """Initialize global name content."""
+        super().__init__(location=location)
+        self.fqun = fqun
+        self.path = path
 
     @property
     @override
@@ -967,20 +1098,19 @@ class GlobalNameContent(NameContent):
         return self.path.name
 
 
-@dataclass(frozen=True, slots=True)
-class DefinitionGlobalNameContent(GlobalNameContent):
+class DefinitionGlobalNameContent(GlobalNameContent[Fqun]):
     """Represents a global name at a definition site."""
 
-    fqun: Fqun
+    __slots__: ClassVar[tuple[str, ...]] = ()
 
 
-@dataclass(frozen=True, slots=True)
-class ReferenceGlobalNameContent(GlobalNameContent):
+class ReferenceGlobalNameContent(GlobalNameContent[Fqun | None]):
     """Represents a global name at a reference site."""
 
+    __slots__: ClassVar[tuple[str, ...]] = ()
 
-@dataclass(frozen=True, slots=True)
-class GlobalTypedNameInDefinition(GlobalTypedName):
+
+class GlobalTypedNameInDefinition(GlobalTypedName[DefinitionGlobalNameContent]):
     """Represents a typed global name at a definition site."""
 
-    name_content: DefinitionGlobalNameContent
+    __slots__: ClassVar[tuple[str, ...]] = ()

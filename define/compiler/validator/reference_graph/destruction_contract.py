@@ -14,7 +14,7 @@ class SimultaneousDestruction:
     """The directly destroyed particle and its Simultaneous Transitive Destruction."""
 
     directly_destroyed_position: ast.PositionReference
-    destroying_action: ast.GlobalTypedName
+    destroying_action: ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]]
     is_automatic: bool
 
 

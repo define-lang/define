@@ -14,7 +14,9 @@ def _at(line: int) -> ast.SourceLocation:
     return ast.SourceLocation(line=line, column=1, end_line=line, end_column=1)
 
 
-def _base(name: str, name_type: ast.NameType = ast.NameType.POSITION) -> ast.TypedName:
+def _base(
+    name: str, name_type: ast.NameType = ast.NameType.POSITION
+) -> ast.TypedName[ast.NameContent]:
     return ast.TypedName(
         location=_LOC,
         name_type=name_type,
@@ -155,7 +157,7 @@ class TestBasicOps:
             del d[_local("a")]
 
     def test_base_typed_name_key(self):
-        d: typed_name_dict.TypedNameDict[ast.TypedName, int] = (
+        d: typed_name_dict.TypedNameDict[ast.TypedName[ast.NameContent], int] = (
             typed_name_dict.TypedNameDict()
         )
         d[_base("a")] = 1

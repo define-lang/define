@@ -367,7 +367,8 @@ def _validate_fqun(fqun: ast.Fqun) -> list[diagnostics.Diagnostic]:
 
 
 def validate_global_name(
-    name: ast.GlobalNameContent, must_use_short_form: ast.Fqun | None = None
+    name: ast.GlobalNameContent[ast.Fqun | None],
+    must_use_short_form: ast.Fqun | None = None,
 ) -> list[diagnostics.Diagnostic]:
     """Validate a global name and its FQUN."""
     result: list[diagnostics.Diagnostic] = []

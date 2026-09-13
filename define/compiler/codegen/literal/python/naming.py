@@ -220,7 +220,10 @@ class NameConverter:
             for implication in quality_implications
         ]
 
-    def class_reference(self, typed_global_name: ast.GlobalTypedName) -> ClassReference:
+    def class_reference(
+        self,
+        typed_global_name: ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
+    ) -> ClassReference:
         """Build a reference to one generated global class."""
         canonical_name = typed_global_name.full_typed_name
         existing = self._class_references.get(canonical_name)

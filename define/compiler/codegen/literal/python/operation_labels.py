@@ -17,7 +17,7 @@ _OPERATION_NAMES = {
 
 
 def operation_label(
-    action: ast.GlobalTypedName,
+    action: ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
     kind: template_context.StatementKind,
     position: ast.PositionReference,
     destination: ast.PositionReference | None = None,

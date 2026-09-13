@@ -30,7 +30,7 @@ def published_contracts() -> Iterator[dict[str, action_contract.ActionContract]]
 
     def publish(
         state: reference_graph_validation_state.ReferenceGraphValidationState,
-        action_name: ast.GlobalTypedName,
+        action_name: ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
         contract: action_contract.ActionContract,
     ):
         contracts[action_name.full_typed_name] = contract

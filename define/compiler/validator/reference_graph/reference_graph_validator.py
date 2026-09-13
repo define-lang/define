@@ -44,7 +44,8 @@ class ReferenceGraphValidator:
 
     _reference_graph: reference_graph.ReferenceGraph
     _definition_results: typed_name_dict.TypedNameDict[
-        ast.GlobalTypedName, validation_result.DefinitionValidationResult
+        ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
+        validation_result.DefinitionValidationResult,
     ]
     _entry_action: ast.ActionDefinition | None
     _validation_state: reference_graph_validation_state.ReferenceGraphValidationState
@@ -54,7 +55,8 @@ class ReferenceGraphValidator:
         self,
         graph: reference_graph.ReferenceGraph,
         definition_results: typed_name_dict.TypedNameDict[
-            ast.GlobalTypedName, validation_result.DefinitionValidationResult
+            ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
+            validation_result.DefinitionValidationResult,
         ],
         *,
         entry_action: ast.ActionDefinition | None,

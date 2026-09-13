@@ -11,7 +11,7 @@ from __future__ import annotations
 from define.compiler import ast, test_helpers
 
 
-def _require_fqun(name: ast.GlobalNameContent) -> ast.Fqun:
+def _require_fqun(name: ast.GlobalNameContent[ast.Fqun | None]) -> ast.Fqun:
     assert name.fqun is not None
     return name.fqun
 

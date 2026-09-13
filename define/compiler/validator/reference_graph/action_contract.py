@@ -81,7 +81,7 @@ class ActionAssignment:
     """An action's assignment to a particle at a position."""
 
     quality: ast.GlobalTypedNameReference
-    assigned_to_position_name: ast.TypedName
+    assigned_to_position_name: ast.TypedName[ast.NameContent]
 
     def propagation_step(self) -> PropagationStep:
         """Return the action's assignment step."""

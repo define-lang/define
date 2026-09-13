@@ -143,7 +143,8 @@ class ProgramValidationResult:
     config_loading_time_ns: int
     reference_graph: reference_graph.ReferenceGraph
     definition_results: typed_name_dict.TypedNameDict[
-        ast.GlobalTypedName, DefinitionValidationResult
+        ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
+        DefinitionValidationResult,
     ]
 
     @property

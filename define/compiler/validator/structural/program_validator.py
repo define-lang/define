@@ -109,7 +109,8 @@ class ProgramStructuralValidator:
     _reference_graph: reference_graph.ReferenceGraph
     _deferred_edges: dict[define_path.DefinePath, list[_DeferredReferenceEdge]]
     _definition_results: typed_name_dict.TypedNameDict[
-        ast.GlobalTypedName, validation_result.DefinitionValidationResult
+        ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
+        validation_result.DefinitionValidationResult,
     ]
     _config_loading_time_ns: int
     _allow_entry_action_interface_positions: bool

@@ -18,7 +18,7 @@ def _make_name_content_token(value: str, line: int, column: int) -> lark_cython.
     )
 
 
-def _require_fqun(name: ast.GlobalNameContent) -> ast.Fqun:
+def _require_fqun(name: ast.GlobalNameContent[ast.Fqun | None]) -> ast.Fqun:
     assert name.fqun is not None
     return name.fqun
 

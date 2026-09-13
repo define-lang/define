@@ -82,7 +82,8 @@ class ActionPostorderValidator:
 
     _definition_result: validation_result.DefinitionValidationResult
     _definition_results: typed_name_dict.TypedNameDict[
-        ast.GlobalTypedName, validation_result.DefinitionValidationResult
+        ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
+        validation_result.DefinitionValidationResult,
     ]
     _validation_state: reference_graph_validation_state.ReferenceGraphValidationState
     _diagnostics: list[diagnostics.Diagnostic]
@@ -94,7 +95,8 @@ class ActionPostorderValidator:
         self,
         definition_result: validation_result.DefinitionValidationResult,
         definition_results: typed_name_dict.TypedNameDict[
-            ast.GlobalTypedName, validation_result.DefinitionValidationResult
+            ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
+            validation_result.DefinitionValidationResult,
         ],
         validation_state: reference_graph_validation_state.ReferenceGraphValidationState,
     ):

@@ -1295,7 +1295,7 @@ class ParticleTracker:
 
     def generate_own_guarantees(
         self,
-        interface_names: tuple[ast.TypedName, ...],
+        interface_names: tuple[ast.TypedName[ast.NameContent], ...],
         implied_quality_names: tuple[ast.GlobalTypedNameReference, ...],
         requirements: dict[tuple[str, ...], action_contract.PositionRequirement],
     ) -> dict[ast.ChainedNameTuple, action_contract.PositionGuarantee]:
@@ -1313,7 +1313,7 @@ class ParticleTracker:
 
     def generate_destructor_guarantees(
         self,
-        interface_names: tuple[ast.TypedName, ...],
+        interface_names: tuple[ast.TypedName[ast.NameContent], ...],
         implied_quality_names: tuple[ast.GlobalTypedNameReference, ...],
         requirements: dict[tuple[str, ...], action_contract.PositionRequirement],
     ) -> dict[ast.ChainedNameTuple, action_contract.PositionGuarantee]:
@@ -1332,7 +1332,7 @@ class ParticleTracker:
 
     def _collect_contracted_position_guarantees(
         self,
-        interface_names: tuple[ast.TypedName, ...],
+        interface_names: tuple[ast.TypedName[ast.NameContent], ...],
         implied_quality_names: tuple[ast.GlobalTypedNameReference, ...],
         requirements: dict[tuple[str, ...], action_contract.PositionRequirement],
         *,

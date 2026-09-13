@@ -39,7 +39,7 @@ class ScopeTracker:
         )
         return inner.values()
 
-    def defined_on_line(self, typed_name: ast.TypedName) -> int:
+    def defined_on_line(self, typed_name: ast.TypedName[ast.NameContent]) -> int:
         """Return the line where a typed name was defined."""
         return self._definitions[typed_name.full_typed_name].location.line
 
@@ -52,14 +52,16 @@ class ScopeTracker:
             return False
         return self.is_defined(first)
 
-    def is_defined(self, name: ast.TypedName) -> bool:
+    def is_defined(self, name: ast.TypedName[ast.NameContent]) -> bool:
         """Check if a typed name reference is defined in scope."""
         return name.full_typed_name in self._definitions
 
-    def is_defined_in_current_scope(self, name: ast.TypedName) -> bool:
+    def is_defined_in_current_scope(self, name: ast.TypedName[ast.NameContent]) -> bool:
         """Check if a typed name reference is defined in the current (innermost) scope only."""
         return name.full_typed_name in self._definitions.maps[0]
 
-    def get_definition(self, name: ast.TypedName) -> ast.LocalPositionDefinition:
+    def get_definition(
+        self, name: ast.TypedName[ast.NameContent]
+    ) -> ast.LocalPositionDefinition:
         """Return the position definition for a typed name."""
         return self._definitions[name.full_typed_name]

@@ -19,7 +19,7 @@ class DeadConstraintCandidate:
     """A directly-written constraint on a local or interface position pending a DLP 42 liveness check."""
 
     # The local or interface position the constraint is written on.
-    position: ast.TypedName
+    position: ast.TypedName[ast.NameContent]
     constraint: ast.GlobalTypedNameReference
 
     @property
@@ -57,7 +57,9 @@ class DeadConstraintTracker:
         self._implied_action_candidates: dict[str, ast.GlobalTypedNameReference] = {}
 
     def register_constraint(
-        self, position: ast.TypedName, constraint: ast.GlobalTypedNameReference
+        self,
+        position: ast.TypedName[ast.NameContent],
+        constraint: ast.GlobalTypedNameReference,
     ):
         """Register a directly-written constraint as a pending-dead candidate."""
         candidate = DeadConstraintCandidate(position=position, constraint=constraint)
@@ -81,7 +83,8 @@ class DeadConstraintTracker:
         self,
         position_definition: ast.LocalPositionDefinition,
         definition_results: typed_name_dict.TypedNameDict[
-            ast.GlobalTypedName, validation_result.DefinitionValidationResult
+            ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
+            validation_result.DefinitionValidationResult,
         ],
     ):
         """Register a local or interface position's directly-written constraints as pending-dead candidates (DLP 42).

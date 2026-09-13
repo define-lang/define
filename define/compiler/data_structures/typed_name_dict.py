@@ -107,7 +107,7 @@ class _AstNodeDict[K: ast.ASTNode, V](collections.abc.MutableMapping[K, V], abc.
         return f"{type(self).__name__}({dict(self.items())!r})"
 
 
-class TypedNameDict[K: ast.TypedName, V](_AstNodeDict[K, V]):
+class TypedNameDict[K: ast.TypedName[ast.NameContent], V](_AstNodeDict[K, V]):
     """A mapping whose keys are identified by their canonical typed name.
 
     Two typed names that share a ``full_typed_name`` refer to the same entry,
