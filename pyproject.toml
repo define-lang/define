@@ -159,7 +159,7 @@ pytest_add_cli_args = [
 branch = true
 
 [tool.uv.sources]
-lark-cython = { git = "https://github.com/define-lang/lark_cython", rev = "667b0622291e228e91fd45af8555a83f3be05092" }
+lark-cython = { git = "https://github.com/define-lang/lark_cython", rev = "a524058a4336e9af3eb4223e24fbc65dbe4847d5" }
 google-re2 = { path = "vendored/re2/python", package = false }
 
 [tool.basedpyright]
