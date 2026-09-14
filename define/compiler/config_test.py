@@ -131,10 +131,10 @@ class TestLocalDepsConfig:
 
         result = config.ConfigLoader(constants.PROJECT_ROOT).local_deps_config()
         assert result == {
-            "mv:define-lang.org:lib": define_path.DefinePathFromPosix.from_posix(
+            "mv:define-lang.org:lib": define_path.DefinePathFromPosix(
                 PurePosixPath("vendor/lib")
             ),
-            "mv:define-lang.org:core": define_path.DefinePathFromPosix.from_posix(
+            "mv:define-lang.org:core": define_path.DefinePathFromPosix(
                 PurePosixPath("vendor/core")
             ),
         }
@@ -334,7 +334,7 @@ class TestLoadProjectRootConfig:
         result = config.ConfigLoader(constants.PROJECT_ROOT).load_project_root_config()
         assert result.fqun == "test.example.com:my_lib"
         assert result.sub_roots == {
-            "mv:define-lang.org:lib": define_path.DefinePathFromPosix.from_posix(
+            "mv:define-lang.org:lib": define_path.DefinePathFromPosix(
                 PurePosixPath("vendor/lib")
             )
         }
@@ -499,7 +499,7 @@ class TestSubRoot:
             define_path.DefinePath("subroot")
         ).local_deps_config()
         assert result == {
-            "mv:define-lang.org:lib": define_path.DefinePathFromPosix.from_posix(
+            "mv:define-lang.org:lib": define_path.DefinePathFromPosix(
                 PurePosixPath("vendor/lib")
             )
         }

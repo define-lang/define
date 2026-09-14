@@ -35,37 +35,66 @@ class ChainAccessor(enum.Enum):
     IMPLIED_POSITION = enum.auto()
 
 
-def chain_accessor(
-    previous_name_type: ast.NameType | None, name_type: ast.NameType
-) -> ChainAccessor:
-    """Select access to a chain element from its predecessor."""
-    if previous_name_type is None:
-        if name_type == ast.NameType.ACTION:
-            return ChainAccessor.IMPLIED_ACTION
-        return ChainAccessor.IMPLIED_POSITION
-    if previous_name_type == ast.NameType.ACTION:
-        return ChainAccessor.POSITION_FROM_ACTION
-    if name_type == ast.NameType.ACTION:
-        return ChainAccessor.ACTION_FROM_POSITION
-    return ChainAccessor.POSITION_FROM_POSITION
-
-
-class ChainElement(msgspec.Struct):
+class ChainElement:
     """An element in a position reference chain."""
 
+    __slots__: ClassVar[tuple[str, ...]] = ("accessor",)
+
     accessor: ChainAccessor
+
+    def __init__(
+        self,
+        previous_name_type: ast.NameType | None,
+        name_type: ast.NameType,
+    ):
+        """Derive the accessor from this element and its predecessor."""
+        if previous_name_type is None:
+            if name_type == ast.NameType.ACTION:
+                self.accessor = ChainAccessor.IMPLIED_ACTION
+            else:
+                self.accessor = ChainAccessor.IMPLIED_POSITION
+        elif previous_name_type == ast.NameType.ACTION:
+            self.accessor = ChainAccessor.POSITION_FROM_ACTION
+        elif name_type == ast.NameType.ACTION:
+            self.accessor = ChainAccessor.ACTION_FROM_POSITION
+        else:
+            self.accessor = ChainAccessor.POSITION_FROM_POSITION
 
 
 class GlobalQualityChainElement(ChainElement):
     """A global quality in a position reference chain."""
 
+    __slots__: ClassVar[tuple[str, ...]] = ("class_reference",)
+
     class_reference: naming.ClassReference
+
+    def __init__(
+        self,
+        previous_name_type: ast.NameType | None,
+        name_type: ast.NameType,
+        class_reference: naming.ClassReference,
+    ):
+        """Initialize a global quality in a position reference chain."""
+        super().__init__(previous_name_type, name_type)
+        self.class_reference = class_reference
 
 
 class InterfacePositionChainElement(ChainElement):
     """An interface position in a position reference chain."""
 
+    __slots__: ClassVar[tuple[str, ...]] = ("typed_name",)
+
     typed_name: str
+
+    def __init__(
+        self,
+        previous_name_type: ast.NameType | None,
+        name_type: ast.NameType,
+        typed_name: str,
+    ):
+        """Initialize an interface position in a position reference chain."""
+        super().__init__(previous_name_type, name_type)
+        self.typed_name = typed_name
 
 
 class PositionExpr(msgspec.Struct):

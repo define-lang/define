@@ -149,7 +149,7 @@ class ProgramStructuralValidator:
     ) -> validation_result.ProgramValidationResult:
         """Validate a program starting from the given file path."""
         root_prefix = constants.PROJECT_ROOT
-        path_dp = define_path.DefinePathFromPosix.from_posix(path)
+        path_dp = define_path.DefinePathFromPosix(path)
         try:
             root_config = self._load_root_config(root_prefix)
         except config.ConfigError as e:

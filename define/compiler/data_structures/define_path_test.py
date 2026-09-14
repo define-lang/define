@@ -234,38 +234,38 @@ class TestAsPosixPath:
 
 
 class TestDefinePathFromPosix:
+    def test_current_directory_is_empty_path(self):
+        source = PurePosixPath(".")
+        path = define_path.DefinePathFromPosix(source)
+
+        assert path == define_path.EMPTY
+        assert path.as_posix_path() is source
+
     def test_str_matches_source(self):
-        assert str(
-            define_path.DefinePathFromPosix.from_posix(PurePosixPath("/foo/bar"))
-        ) == ("/foo/bar")
+        assert str(define_path.DefinePathFromPosix(PurePosixPath("/foo/bar"))) == (
+            "/foo/bar"
+        )
 
     def test_as_posix_path_returns_original_object(self):
         source = PurePosixPath("/foo/bar")
-        assert (
-            source is define_path.DefinePathFromPosix.from_posix(source).as_posix_path()
-        )
+        assert source is define_path.DefinePathFromPosix(source).as_posix_path()
 
     def test_inherits_parts(self):
-        assert define_path.DefinePathFromPosix.from_posix(
-            PurePosixPath("/foo/bar")
-        ).parts == [
+        assert define_path.DefinePathFromPosix(PurePosixPath("/foo/bar")).parts == [
             "",
             "foo",
             "bar",
         ]
 
     def test_inherits_name(self):
-        assert (
-            define_path.DefinePathFromPosix.from_posix(PurePosixPath("/foo/bar")).name
-            == "bar"
-        )
+        assert define_path.DefinePathFromPosix(PurePosixPath("/foo/bar")).name == "bar"
 
     def test_inherits_with_suffix(self):
         assert define_path.DefinePath(
             "/foo/bar.dfn"
-        ) == define_path.DefinePathFromPosix.from_posix(
-            PurePosixPath("/foo/bar")
-        ).with_suffix(".dfn")
+        ) == define_path.DefinePathFromPosix(PurePosixPath("/foo/bar")).with_suffix(
+            ".dfn"
+        )
 
 
 class TestInvalidDefinePath:
@@ -339,13 +339,13 @@ class TestEquality:
         assert s == {define_path.DefinePath("a"), define_path.DefinePath("b")}
 
     def test_plain_equals_from_posix(self):
-        assert define_path.DefinePath(
-            "foo/bar"
-        ) == define_path.DefinePathFromPosix.from_posix(PurePosixPath("foo/bar"))
+        assert define_path.DefinePath("foo/bar") == define_path.DefinePathFromPosix(
+            PurePosixPath("foo/bar")
+        )
 
     def test_dict_lookup_across_subclasses(self):
         d: dict[define_path.DefinePath, int] = {
-            define_path.DefinePathFromPosix.from_posix(PurePosixPath("foo")): 1
+            define_path.DefinePathFromPosix(PurePosixPath("foo")): 1
         }
         assert d[define_path.DefinePath("foo")] == 1
 

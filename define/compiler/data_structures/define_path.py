@@ -3,15 +3,13 @@
 from __future__ import annotations
 
 from pathlib import PurePosixPath
-from typing import Final, Self, override
-
-import msgspec
+from typing import ClassVar, Final, override
 
 
 # We used to use pathlib.PurePosixPath but it represented a significant amount
 # of our memory allocations and a significant amount of the CPU during
 # compilation, all for functionality that we don't need in the compiler.
-class DefinePath(msgspec.Struct, frozen=True, eq=False):
+class DefinePath:
     """A POSIX-shaped path used in the compiler's internal data structures.
 
     Note that this class does no validation of the input path; it expects well-formed
@@ -19,7 +17,13 @@ class DefinePath(msgspec.Struct, frozen=True, eq=False):
     DefinePathFromPosix below.
     """
 
-    _path: str
+    __slots__: ClassVar[tuple[str, ...]] = ("_path",)
+
+    _path: Final[str]
+
+    def __init__(self, path: str):
+        """Initialize a path."""
+        self._path = path
 
     @override
     def __str__(self) -> str:
@@ -98,19 +102,21 @@ class DefinePath(msgspec.Struct, frozen=True, eq=False):
         return PurePosixPath(self._path)
 
 
-class DefinePathFromPosix(DefinePath, frozen=True, eq=False):
+class DefinePathFromPosix(DefinePath):
     """A DefinePath that caches the PurePosixPath it was built from."""
 
-    _path_obj: PurePosixPath
+    __slots__: ClassVar[tuple[str, ...]] = ("_path_obj",)
 
-    @classmethod
-    def from_posix(cls, path_obj: PurePosixPath) -> Self:
+    _path_obj: Final[PurePosixPath]
+
+    def __init__(self, path_obj: PurePosixPath):
         """Initialize with a PurePosixPath, caching it for as_posix_path."""
         # PurePosixPath uses "." as its relative-root identity element;
         # DefinePath uses "". The bridge maps between them so the join
         # operator behaves the same way in either representation.
         path_str = "" if path_obj == PurePosixPath(".") else str(path_obj)
-        return cls(path_str, path_obj)
+        super().__init__(path_str)
+        self._path_obj = path_obj
 
     @override
     def as_posix_path(self) -> PurePosixPath:
@@ -121,12 +127,14 @@ class InvalidPathError(Exception):
     """Raised when a path operation is invoked on an InvalidDefinePath."""
 
 
-class InvalidDefinePath(DefinePath, frozen=True, eq=False):
+class InvalidDefinePath(DefinePath):
     """A DefinePath sentinel that rejects path operations.
 
     Supports __str__ and name; every other path operation raises
     InvalidPathError.
     """
+
+    __slots__: ClassVar[tuple[str, ...]] = ()
 
     @override
     def __truediv__(self, other: DefinePath) -> DefinePath:

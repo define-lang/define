@@ -13,9 +13,6 @@ py_library(
     name = "define_path",
     srcs = ["define_path.py"],
     visibility = ["//define/compiler:__subpackages__"],
-    deps = [
-        "@pypi//msgspec",
-    ],
 )
 
 py_test(
