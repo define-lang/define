@@ -9,6 +9,7 @@ dependencies = [
     # 3 is the first Python 3-only series
     "jinja2>=3",
     "lark-cython",
+    "msgspec",
     # 6.31 is the first version with FieldDescriptor.is_repeated
     "protobuf>=6.31",
     # 1.1.2 is the first version to support protobuf v7

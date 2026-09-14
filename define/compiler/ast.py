@@ -8,6 +8,8 @@ import sys
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, ClassVar, Final, Self, cast, override
 
+import msgspec
+
 from define.compiler import constants
 from define.compiler.data_structures import define_path
 
@@ -24,8 +26,7 @@ class NameType(enum.StrEnum):
     ACTION = "action"
 
 
-@dataclass(frozen=True, slots=True)
-class SourceLocation:
+class SourceLocation(msgspec.Struct, frozen=True):
     """Represents a location in source code."""
 
     line: int

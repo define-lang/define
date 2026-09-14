@@ -16,6 +16,7 @@ py_library(
         ":constants",
         "//define/compiler/data_structures:define_path",
         "@pypi//lark_cython",
+        "@pypi//msgspec",
     ],
 )
 
