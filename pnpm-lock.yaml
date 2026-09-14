@@ -10,7 +10,7 @@ importers:
     devDependencies:
       basedpyright:
         specifier: latest
-        version: 1.39.10
+        version: 1.40.1
 
   tools:
     devDependencies:
@@ -20,8 +20,8 @@ importers:
 
 packages:
 
-  basedpyright@1.39.10:
-    resolution: {integrity: sha512-9NTfbegeSey8Trhaf+Tr8++Uo/UFCtsUMzpvXA/seDfSTN3kOwfmPJ4lf/tjxPjVlr/fsHo34W9/qW+ZF+b6kg==}
+  basedpyright@1.40.1:
+    resolution: {integrity: sha512-98BUK6yuNcUCgaEVaaFzhW4ReGjB8Tip9XBX4s7rGIsoKtc1Be7O4PB0A8Z4zV42FKvfUR5hwYzRYafU/BVTtQ==}
     engines: {node: '>=14.0.0'}
     hasBin: true
 
@@ -37,7 +37,7 @@ packages:
 
 snapshots:
 
-  basedpyright@1.39.10:
+  basedpyright@1.40.1:
     optionalDependencies:
       fsevents: 2.3.3
 
