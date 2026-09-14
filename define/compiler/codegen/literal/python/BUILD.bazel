@@ -11,6 +11,7 @@ py_library(
     deps = [
         ":naming",
         ":template_context",
+        "@pypi//msgspec",
     ],
 )
 

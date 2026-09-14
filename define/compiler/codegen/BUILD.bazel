@@ -18,6 +18,7 @@ py_test(
         "//define/compiler:driver",
         "//define/compiler/validator:test_helpers",
         "//define/runtime:literal",  # keep
+        "@pypi//msgspec",
         "@pypi//pytest",
     ],
 )

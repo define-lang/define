@@ -39,8 +39,9 @@ class PositionExpressionBuilder:
                 local_position_name = None
                 chain_elements: list[template_context.ChainElement] = [
                     template_context.InterfacePositionChainElement(
-                        previous_name_type=ast.NameType.ACTION,
-                        name_type=first.name_type,
+                        accessor=template_context.chain_accessor(
+                            ast.NameType.ACTION, first.name_type
+                        ),
                         typed_name=first.source_typed_name,
                     )
                 ]
@@ -53,8 +54,7 @@ class PositionExpressionBuilder:
             local_position_name = None
             chain_elements = [
                 template_context.GlobalQualityChainElement(
-                    previous_name_type=None,
-                    name_type=first.name_type,
+                    accessor=template_context.chain_accessor(None, first.name_type),
                     class_reference=self._converter.class_reference(first),
                 )
             ]
@@ -63,15 +63,17 @@ class PositionExpressionBuilder:
             if isinstance(elem, ast.GlobalTypedNameReference):
                 chain_element: template_context.ChainElement = (
                     template_context.GlobalQualityChainElement(
-                        previous_name_type=prev.name_type,
-                        name_type=elem.name_type,
+                        accessor=template_context.chain_accessor(
+                            prev.name_type, elem.name_type
+                        ),
                         class_reference=self._converter.class_reference(elem),
                     )
                 )
             else:
                 chain_element = template_context.InterfacePositionChainElement(
-                    previous_name_type=prev.name_type,
-                    name_type=elem.name_type,
+                    accessor=template_context.chain_accessor(
+                        prev.name_type, elem.name_type
+                    ),
                     typed_name=elem.full_typed_name,
                 )
             chain_elements.append(chain_element)

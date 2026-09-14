@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import enum
-from dataclasses import InitVar, dataclass, field
 from typing import TYPE_CHECKING, ClassVar
 
 import msgspec
@@ -36,41 +35,33 @@ class ChainAccessor(enum.Enum):
     IMPLIED_POSITION = enum.auto()
 
 
-@dataclass
-class ChainElement:
+def chain_accessor(
+    previous_name_type: ast.NameType | None, name_type: ast.NameType
+) -> ChainAccessor:
+    """Select access to a chain element from its predecessor."""
+    if previous_name_type is None:
+        if name_type == ast.NameType.ACTION:
+            return ChainAccessor.IMPLIED_ACTION
+        return ChainAccessor.IMPLIED_POSITION
+    if previous_name_type == ast.NameType.ACTION:
+        return ChainAccessor.POSITION_FROM_ACTION
+    if name_type == ast.NameType.ACTION:
+        return ChainAccessor.ACTION_FROM_POSITION
+    return ChainAccessor.POSITION_FROM_POSITION
+
+
+class ChainElement(msgspec.Struct):
     """An element in a position reference chain."""
 
-    previous_name_type: InitVar[ast.NameType | None]
-    name_type: InitVar[ast.NameType]
-    accessor: ChainAccessor = field(init=False)
-
-    def __post_init__(
-        self,
-        previous_name_type: ast.NameType | None,
-        name_type: ast.NameType,
-    ):
-        """Derive the accessor from this element and its predecessor."""
-        if previous_name_type is None:
-            if name_type == ast.NameType.ACTION:
-                self.accessor = ChainAccessor.IMPLIED_ACTION
-            else:
-                self.accessor = ChainAccessor.IMPLIED_POSITION
-        elif previous_name_type == ast.NameType.ACTION:
-            self.accessor = ChainAccessor.POSITION_FROM_ACTION
-        elif name_type == ast.NameType.ACTION:
-            self.accessor = ChainAccessor.ACTION_FROM_POSITION
-        else:
-            self.accessor = ChainAccessor.POSITION_FROM_POSITION
+    accessor: ChainAccessor
 
 
-@dataclass
 class GlobalQualityChainElement(ChainElement):
     """A global quality in a position reference chain."""
 
     class_reference: naming.ClassReference
 
 
-@dataclass
 class InterfacePositionChainElement(ChainElement):
     """An interface position in a position reference chain."""
 
@@ -116,13 +107,12 @@ class DestructionContractDefinition(msgspec.Struct):
     methods: list[DestructionContractMethod]
 
 
-class ActionStatementContext:
+class ActionStatementContext(msgspec.Struct):
     """Template-friendly representation of an action statement."""
 
     kind: ClassVar[StatementKind]
 
 
-@dataclass
 class LocalPositionContext(ActionStatementContext):
     """A local position definition."""
 
@@ -132,37 +122,32 @@ class LocalPositionContext(ActionStatementContext):
     constraints: list[naming.ClassReference]
 
 
-@dataclass(kw_only=True)
-class ParticleOperationContext(ActionStatementContext):
+class ParticleOperationContext(ActionStatementContext, kw_only=True):
     """An operation on a particle, optionally recorded in a trace."""
 
     position: PositionExpr
     operation_label: str | None = None
 
 
-@dataclass(kw_only=True)
-class CreateParticleContext(ParticleOperationContext):
+class CreateParticleContext(ParticleOperationContext, kw_only=True):
     """Create a particle at a position."""
 
     kind: ClassVar[StatementKind] = StatementKind.CREATE_PARTICLE
 
 
-@dataclass(kw_only=True)
-class MoveParticleContext(ParticleOperationContext):
+class MoveParticleContext(ParticleOperationContext, kw_only=True):
     """Move a particle between positions."""
 
     kind: ClassVar[StatementKind] = StatementKind.MOVE_PARTICLE
     to_position: PositionExpr
 
 
-@dataclass(kw_only=True)
-class DestroyParticleContext(ParticleOperationContext):
+class DestroyParticleContext(ParticleOperationContext, kw_only=True):
     """Destroy a particle at a position."""
 
     kind: ClassVar[StatementKind] = StatementKind.DESTROY_PARTICLE
 
 
-@dataclass
 class RunActionContext(ActionStatementContext):
     """Invoke an action with its optional destruction contract."""
 
@@ -171,7 +156,6 @@ class RunActionContext(ActionStatementContext):
     destruction_contract: DestructionContractArgument | None = None
 
 
-@dataclass
 class ContractContributionContext(ActionStatementContext):
     """Invoke a contribution for a contracted particle."""
 
@@ -179,14 +163,12 @@ class ContractContributionContext(ActionStatementContext):
     contract_method: str
 
 
-@dataclass
 class RunContractDestructorsContext(ContractContributionContext):
     """Run caller-contributed Destructors."""
 
     kind: ClassVar[StatementKind] = StatementKind.RUN_CONTRACT_DESTRUCTORS
 
 
-@dataclass
 class DestroyContractChildrenContext(ContractContributionContext):
     """Destroy caller-contributed child particles."""
 
@@ -200,8 +182,7 @@ class InterfacePositionContext(msgspec.Struct):
     constraints: list[naming.ClassReference]
 
 
-@dataclass
-class PositionDefinitionContext:
+class PositionDefinitionContext(msgspec.Struct):
     """Template context for rendering a position definition class."""
 
     class_name: str

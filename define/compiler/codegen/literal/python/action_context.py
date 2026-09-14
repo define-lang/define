@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import TYPE_CHECKING
+
+import msgspec
 
 if TYPE_CHECKING:
     from collections.abc import Collection
@@ -11,8 +12,7 @@ if TYPE_CHECKING:
     from define.compiler.codegen.literal.python import naming, template_context
 
 
-@dataclass
-class ActionDefinitionContext:
+class ActionDefinitionContext(msgspec.Struct):
     """Template context for an action and its sequential statements."""
 
     class_name: str

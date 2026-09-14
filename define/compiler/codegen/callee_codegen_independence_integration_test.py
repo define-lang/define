@@ -4,9 +4,9 @@
 from __future__ import annotations
 
 import shutil
-from dataclasses import dataclass
 from pathlib import Path
 
+import msgspec
 import pytest
 
 from define.compiler import driver
@@ -31,14 +31,12 @@ _ADDITIONAL_CALLER_ENTRY_SOURCE = """    } and it does {
 """
 
 
-@dataclass(frozen=True, slots=True)
-class _Case:
+class _Case(msgspec.Struct, frozen=True):
     name: str
     baseline: Path
 
 
-@dataclass(frozen=True, slots=True)
-class _DestructorContributionCase(_Case):
+class _DestructorContributionCase(_Case, frozen=True):
     callee_module: Path
     caller_sources: Path
 
