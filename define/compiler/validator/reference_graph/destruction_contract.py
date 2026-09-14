@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
+
+import msgspec
 
 if TYPE_CHECKING:
     from define.compiler import ast
 
 
-@dataclass(frozen=True, slots=True, eq=False)
-class SimultaneousDestruction:
+class SimultaneousDestruction(msgspec.Struct, frozen=True, eq=False):
     """The directly destroyed particle and its Simultaneous Transitive Destruction."""
 
     directly_destroyed_position: ast.PositionReference
@@ -18,16 +18,14 @@ class SimultaneousDestruction:
     is_automatic: bool
 
 
-@dataclass(frozen=True, slots=True, eq=False)
-class DestructionFact:
+class DestructionFact(msgspec.Struct, frozen=True, eq=False):
     """Identifies the destruction of one specific particle."""
 
     destruction: SimultaneousDestruction
     destroyed_position_in_destroyer: ast.PositionReference
 
 
-@dataclass(eq=False, slots=True)
-class PropagatedDestruction:
+class PropagatedDestruction(msgspec.Struct, eq=False):
     """A destruction expressed through an action's contracted position."""
 
     destruction_fact: DestructionFact
@@ -35,8 +33,7 @@ class PropagatedDestruction:
     contracted_position: ast.PositionReference
 
 
-@dataclass
-class DestructionContribution:
+class DestructionContribution(msgspec.Struct):
     """Additional destruction work known by one caller."""
 
     destruction_fact: DestructionFact
@@ -45,10 +42,11 @@ class DestructionContribution:
     positions: list[ast.PositionReference]
 
 
-@dataclass
-class DestructionConnection:
+class DestructionConnection(msgspec.Struct):
     """Contributions supplied or forwarded to one callee destruction."""
 
     callee_destruction: PropagatedDestruction
     contribution: DestructionContribution | None = None
-    forwarded_destructions: list[PropagatedDestruction] = field(default_factory=list)
+    forwarded_destructions: list[PropagatedDestruction] = msgspec.field(
+        default_factory=list
+    )

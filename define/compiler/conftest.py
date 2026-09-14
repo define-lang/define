@@ -4,10 +4,10 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Protocol, cast
 
+import msgspec
 import pytest
 
 from define.compiler import parser
@@ -19,8 +19,7 @@ from define.testdata import path_resolver
 _PARSER = parser.Parser()
 
 
-@dataclass
-class FullValidationResult:
+class FullValidationResult(msgspec.Struct):
     """Result of running both structural and reference graph validation."""
 
     program_result: validation_result.ProgramValidationResult

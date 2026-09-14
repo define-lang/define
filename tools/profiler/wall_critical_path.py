@@ -7,11 +7,12 @@ import dataclasses
 import itertools
 import typing
 
+import msgspec
+
 from tools.profiler import analyzer_model, schema, wall_model
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
-class DependentWait:
+class DependentWait(msgspec.Struct, frozen=True):
     """A completion-dependent thread observed waiting during critical work."""
 
     # PRF-047: Multi-threaded critical path.
@@ -44,8 +45,7 @@ class UncertainSegment:
 CriticalPathSegment = ResolvedSegment | UncertainSegment
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
-class ResolvedHandoff:
+class ResolvedHandoff(msgspec.Struct, frozen=True):
     """A sampled cross-thread transition with one producer candidate."""
 
     # PRF-047: Multi-threaded critical path.
@@ -58,8 +58,7 @@ class ResolvedHandoff:
     evidence: typing.Literal["scheduler-wake", "sampled-transition"]
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
-class UnresolvedHandoff:
+class UnresolvedHandoff(msgspec.Struct, frozen=True):
     """A sampled cross-thread transition without one producer candidate."""
 
     # PRF-047: Multi-threaded critical path.
@@ -75,8 +74,7 @@ class UnresolvedHandoff:
 CriticalPathHandoff = ResolvedHandoff | UnresolvedHandoff
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
-class FunctionRow:
+class FunctionRow(msgspec.Struct, frozen=True):
     """Self or cumulative function attribution along the critical path."""
 
     # PRF-047: Multi-threaded critical path.
@@ -148,8 +146,7 @@ class _Transition:
         return self.downstream_sample.interval.start_ns >= self.target_running_ns
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
-class _Phase:
+class _Phase(msgspec.Struct, frozen=True):
     # PRF-047: Multi-threaded critical path.
     interval: wall_model.Interval
     actor: wall_model.ThreadIdentity

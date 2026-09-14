@@ -15,6 +15,8 @@ import shutil
 import subprocess
 import typing
 
+import msgspec
+
 from tools.profiler import analyzer_model, perf_profiler
 
 if typing.TYPE_CHECKING:
@@ -67,8 +69,7 @@ class Profile:
         return self.metadata["compiler_exit_status"] == 0 and not self.diagnostics
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
-class FunctionRow:
+class FunctionRow(msgspec.Struct, frozen=True):
     """CPU attribution for one Python function."""
 
     identity: analyzer_model.FunctionIdentity
@@ -78,8 +79,7 @@ class FunctionRow:
     sample_hits: int
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
-class RelationshipRow:
+class RelationshipRow(msgspec.Struct, frozen=True):
     """CPU attribution for one sampled Python caller and callee."""
 
     caller: analyzer_model.FunctionIdentity
@@ -90,8 +90,7 @@ class RelationshipRow:
     sample_hits: int
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
-class ThreadRow:
+class ThreadRow(msgspec.Struct, frozen=True):
     """Weighted perf CPU samples for one OS thread."""
 
     os_thread_id: int
@@ -120,8 +119,7 @@ class Analysis:
         return self.sampled_cpu_ns - self.python_attributed_cpu_ns
 
 
-@dataclasses.dataclass(slots=True)
-class _Weight:
+class _Weight(msgspec.Struct):
     cpu_time_ns: int = 0
     sample_hits: int = 0
 

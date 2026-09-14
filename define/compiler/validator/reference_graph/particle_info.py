@@ -3,15 +3,15 @@
 from __future__ import annotations
 
 import typing
-from dataclasses import dataclass
+
+import msgspec
 
 if typing.TYPE_CHECKING:
     from define.compiler import ast
     from define.compiler.validator.reference_graph import quality_assignment
 
 
-@dataclass(slots=True, eq=False)
-class ParticleInfo:
+class ParticleInfo(msgspec.Struct, eq=False):
     """Information about a tracked particle."""
 
     # The last position reference written in the code for the last

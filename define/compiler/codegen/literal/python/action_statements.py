@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import TYPE_CHECKING, final
+
+import msgspec
 
 from define.compiler import ast
 from define.compiler.codegen.literal.python import (
@@ -19,8 +20,7 @@ if TYPE_CHECKING:
     from define.compiler.validator.reference_graph import destruction_contract
 
 
-@dataclass
-class GeneratedActionStatements:
+class GeneratedActionStatements(msgspec.Struct):
     """Generated statements and the imports and contract classes they require."""
 
     statements: list[template_context.ActionStatementContext]

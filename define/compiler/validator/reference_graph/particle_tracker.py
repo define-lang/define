@@ -6,6 +6,8 @@ import itertools
 import typing
 from dataclasses import dataclass, field
 
+import msgspec
+
 from define.compiler import ast
 from define.compiler.data_structures import trie
 from define.compiler.validator.reference_graph import (
@@ -44,8 +46,7 @@ class ParticleDestruction:
             yield fact.destroyed_position_in_destroyer
 
 
-@dataclass(frozen=True, slots=True)
-class OccupancyInfo:
+class OccupancyInfo(msgspec.Struct, frozen=True):
     """A position's error state and occupant, resolved together in one lookup."""
 
     # When an ancestor is in an error condition we ignore the position entirely,
@@ -54,8 +55,7 @@ class OccupancyInfo:
     occupant: particle_info.ParticleInfo | None
 
 
-@dataclass(frozen=True, slots=True)
-class ResolvedRequirementPosition:
+class ResolvedRequirementPosition(msgspec.Struct, frozen=True):
     """A local requirement position and the contracted position it resolves to."""
 
     local_position: ast.PositionReference
@@ -63,16 +63,14 @@ class ResolvedRequirementPosition:
     required_state: position_occupancy.PositionOccupancyState
 
 
-@dataclass(frozen=True, slots=True)
-class PropagatedRequirement:
+class PropagatedRequirement(msgspec.Struct, frozen=True):
     """A callee requirement that must be propagated into the current contract."""
 
     requirement_in_caller: action_contract.PositionRequirementInCaller
     contracted_position: ast.PositionReference
 
 
-@dataclass
-class _NodeState:
+class _NodeState(msgspec.Struct):
     """Mutable state for a position in the state trie."""
 
     particle_info: particle_info.ParticleInfo | None = None
@@ -83,8 +81,7 @@ def _node_is_occupied(state: _NodeState) -> bool:
     return state.particle_info is not None
 
 
-@dataclass
-class _ErrorState:
+class _ErrorState(msgspec.Struct):
     """Wrapper for error-state trie values.
 
     LenientReparentingTrie can't use None as a value, so we wrap
@@ -118,8 +115,7 @@ def _child_error_occupancy(
 _BODY_DEPTH = 0
 
 
-@dataclass(frozen=True, slots=True)
-class _WriteRecord:
+class _WriteRecord(msgspec.Struct, frozen=True):
     """A record of a write to a position, containing the information necessary to resolve it when applying guarantees.
 
     Writes are ordered by execution: a higher ``body_operation_number`` wins, and

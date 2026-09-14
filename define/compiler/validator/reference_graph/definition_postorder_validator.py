@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import typing
-from dataclasses import dataclass
 from functools import cached_property
+
+import msgspec
 
 from define.compiler import ast, diagnostics
 from define.compiler.validator import codegen_input, scope_tracker
@@ -33,8 +34,7 @@ if typing.TYPE_CHECKING:
     from define.compiler.validator import validation_result
 
 
-@dataclass
-class PostorderValidationResult:
+class PostorderValidationResult(msgspec.Struct):
     """Result of validating a single definition during the DFS post-order walk."""
 
     diagnostics: list[diagnostics.Diagnostic]
@@ -42,8 +42,7 @@ class PostorderValidationResult:
     codegen_input: codegen_input.ActionCodegenInput
 
 
-@dataclass(frozen=True, slots=True)
-class _ResolvedRequirement:
+class _ResolvedRequirement(msgspec.Struct, frozen=True):
     """A destructor requirement whose required position's destruction-time occupancy is known here."""
 
     requirement: action_contract.PositionRequirement
@@ -51,8 +50,7 @@ class _ResolvedRequirement:
     occupancy: position_occupancy.ChildOccupancy
 
 
-@dataclass(frozen=True, slots=True)
-class _DestructionTarget:
+class _DestructionTarget(msgspec.Struct, frozen=True):
     """A particle whose destruction also destroys its occupied children."""
 
     position: ast.PositionReference
@@ -60,16 +58,14 @@ class _DestructionTarget:
     auto_destruction_target: ast.PositionReference | None
 
 
-@dataclass(frozen=True, slots=True)
-class _PendingDestructionContract:
+class _PendingDestructionContract(msgspec.Struct, frozen=True):
     """A Destruction Contract captured before tracked particle state changes."""
 
     particle: particle_info.ParticleInfo
     destruction_fact: destruction_contract_types.DestructionFact
 
 
-@dataclass(frozen=True, slots=True)
-class _DestructionContractInCaller:
+class _DestructionContractInCaller(msgspec.Struct, frozen=True):
     """A callee's Destruction Contract and its particle from the caller's perspective."""
 
     contract: action_contract.DestructionContract

@@ -12,7 +12,10 @@ npm_link_all_packages()
 py_binary(
     name = "analyze_coverage",
     srcs = ["analyze_coverage.py"],
-    deps = ["@pypi//click"],
+    deps = [
+        "@pypi//click",
+        "@pypi//msgspec",
+    ],
 )
 
 py_test(
@@ -53,6 +56,9 @@ py_test(
 py_binary(
     name = "check_python_deps",
     srcs = ["check_python_deps.py"],
+    deps = [
+        "@pypi//msgspec",
+    ],
 )
 
 py_test(
@@ -151,7 +157,10 @@ prettier_bin.prettier_binary(
 py_library(
     name = "profile_orchestration",
     srcs = ["profile_orchestration.py"],
-    deps = ["@pypi//click"],
+    deps = [
+        "@pypi//click",
+        "@pypi//msgspec",
+    ],
 )
 
 # PRF-012: Orchestration boundary. PRF-014: CPU mode.
@@ -281,6 +290,9 @@ py_binary(
     visibility = [
         "//defcl/proposals:__pkg__",
         "//define/proposals:__pkg__",
+    ],
+    deps = [
+        "@pypi//msgspec",
     ],
 )
 

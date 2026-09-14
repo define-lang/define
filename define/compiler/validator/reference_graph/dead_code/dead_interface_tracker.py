@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import collections
 import typing
-from dataclasses import dataclass
+
+import msgspec
 
 from define.compiler.validator.reference_graph import particle_info
 
@@ -16,16 +17,14 @@ if typing.TYPE_CHECKING:
 type _Callee = tuple[particle_info.ParticleInfo | None, str]
 
 
-@dataclass(slots=True)
-class _PendingArrival:
+class _PendingArrival(msgspec.Struct):
     """An explicit interface arrival awaiting its callee's trigger."""
 
     callee: _Callee
     position: ast.PositionReference
 
 
-@dataclass(slots=True)
-class _OccupiedInterfaceChildPosition:
+class _OccupiedInterfaceChildPosition(msgspec.Struct):
     """An occupied interface child position and the callees it prevents from triggering."""
 
     position: ast.ChainedNameTuple

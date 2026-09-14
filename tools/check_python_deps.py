@@ -11,12 +11,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Final, cast
 
+import msgspec
+
 PYTHON_RULE_CLASSES: Final = frozenset({"py_binary", "py_library", "py_test"})
 BAZEL_IMPORTS: Final = {"python.runfiles": "@rules_python//python/runfiles"}
 
 
-@dataclass(frozen=True)
-class PythonTarget:
+class PythonTarget(msgspec.Struct, frozen=True):
     """A hand-maintained one-source Python target."""
 
     label: str
@@ -28,8 +29,7 @@ class PythonTarget:
     generated_source: bool = False
 
 
-@dataclass(frozen=True)
-class PyrightTarget:
+class PyrightTarget(msgspec.Struct, frozen=True):
     """A pyright test that type-checks Python targets."""
 
     label: str
@@ -60,24 +60,21 @@ class DependencyChanges:
         return self.target.deps - self.expected
 
 
-@dataclass(frozen=True)
-class ImportAnalysis:
+class ImportAnalysis(msgspec.Struct, frozen=True):
     """Bazel owners and unresolved modules found in Python imports."""
 
     dependencies: frozenset[str]
     unresolved: frozenset[str]
 
 
-@dataclass(frozen=True)
-class ParsedTarget:
+class ParsedTarget(msgspec.Struct, frozen=True):
     """A Python target paired with its parsed source."""
 
     target: PythonTarget
     tree: ast.Module
 
 
-@dataclass(frozen=True)
-class RepositoryAnalysis:
+class RepositoryAnalysis(msgspec.Struct, frozen=True):
     """Loaded Python targets and reusable source analysis for a repository."""
 
     repository: Path
@@ -88,8 +85,7 @@ class RepositoryAnalysis:
     pyright_targets: tuple[PyrightTarget, ...] = ()
 
 
-@dataclass(frozen=True)
-class AnalysisResults:
+class AnalysisResults(msgspec.Struct, frozen=True):
     """Dependency changes and unresolved imports found for selected targets."""
 
     changes: tuple[DependencyChanges, ...]

@@ -33,7 +33,10 @@ py_library(
     name = "analyzer_model",
     srcs = ["analyzer_model.py"],
     visibility = ["//tools:__pkg__"],
-    deps = [":schema"],
+    deps = [
+        ":schema",
+        "@pypi//msgspec",
+    ],
 )
 
 # PRF-041: Realistic tests. PRF-043: Analyzer at every checkpoint.
@@ -62,6 +65,7 @@ py_library(
     deps = [
         ":analyzer_model",
         ":perf_profiler",
+        "@pypi//msgspec",
     ],
 )
 
@@ -103,7 +107,10 @@ py_library(
     name = "process_events",
     srcs = ["process_events.py"],
     target_compatible_with = ["@platforms//os:linux"],
-    deps = [":schema"],
+    deps = [
+        ":schema",
+        "@pypi//msgspec",
+    ],
 )
 
 # PRF-022: Launcher safety. PRF-049: Event-driven coordination.
@@ -129,6 +136,7 @@ py_library(
         ":scheduler_events",
         ":schema",
         "@pypi//click",
+        "@pypi//msgspec",
     ],
 )
 
@@ -239,6 +247,9 @@ py_library(
     name = "remote_frame_names",
     srcs = ["remote_frame_names.py"],
     target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "@pypi//msgspec",
+    ],
 )
 
 # PRF-010: Raw-data preservation.
@@ -253,7 +264,10 @@ py_library(
     name = "scheduler_events",
     srcs = ["scheduler_events.py"],
     target_compatible_with = ["@platforms//os:linux"],
-    deps = [":schema"],
+    deps = [
+        ":schema",
+        "@pypi//msgspec",
+    ],
 )
 
 # PRF-052: Independent causal evidence. PRF-053: Causal diagnostics.
@@ -278,6 +292,7 @@ py_library(
         ":schema",
         ":wall_critical_path",
         ":wall_model",
+        "@pypi//msgspec",
     ],
 )
 
@@ -289,6 +304,7 @@ py_library(
         ":analyzer_model",
         ":schema",
         ":wall_model",
+        "@pypi//msgspec",
     ],
 )
 
@@ -311,7 +327,10 @@ py_library(
     name = "wall_model",
     srcs = ["wall_model.py"],
     visibility = ["//tools:__pkg__"],
-    deps = [":schema"],
+    deps = [
+        ":schema",
+        "@pypi//msgspec",
+    ],
 )
 
 format_test(

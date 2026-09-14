@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import types
 import typing
-from dataclasses import dataclass
 from functools import cached_property
 from pathlib import Path, PurePosixPath
 
+import msgspec
 import protovalidate
 from google.protobuf import message
 
@@ -134,8 +134,7 @@ _EMPTY_DEPS: types.MappingProxyType[str, define_path.DefinePathFromPosix] = (
 )
 
 
-@dataclass(slots=True)
-class ProjectRootConfig:
+class ProjectRootConfig(msgspec.Struct):
     """Resolved project configuration for a project root."""
 
     fqun: str

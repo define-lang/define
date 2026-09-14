@@ -5,8 +5,9 @@ from __future__ import annotations
 import hashlib
 import keyword
 import typing
-from dataclasses import dataclass
 from pathlib import Path
+
+import msgspec
 
 from define.compiler import ast, constants
 
@@ -54,8 +55,7 @@ def _truncate_module_component(component: str) -> str:
     return prefix + suffix
 
 
-@dataclass
-class ClassReference:
+class ClassReference(msgspec.Struct):
     """A reference to a generated class, including its module location."""
 
     class_name: str

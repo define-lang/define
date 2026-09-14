@@ -10,6 +10,8 @@ import signal
 import subprocess
 import typing
 
+import msgspec
+
 if typing.TYPE_CHECKING:
     from tools.profiler import schema
 
@@ -27,8 +29,7 @@ _LOST_PATTERN = re.compile(
 )
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
-class CaptureResult:
+class CaptureResult(msgspec.Struct, frozen=True):
     """Scheduler-event records and their collection status."""
 
     events: list[schema.SchedulerWakeEvent]

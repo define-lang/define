@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import contextlib
-import dataclasses
 import os
 import pathlib
 import shutil
@@ -13,6 +12,7 @@ import tempfile
 import typing
 
 import click
+import msgspec
 
 _PATH = click.Path(path_type=pathlib.Path)
 _INHERITED_RUNTIME_VARIABLES = (
@@ -25,8 +25,7 @@ _INHERITED_RUNTIME_VARIABLES = (
 )
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
-class ProfileInvocation:
+class ProfileInvocation(msgspec.Struct, frozen=True):
     """Generic inputs needed to run a target through a profiler command."""
 
     # PRF-012: Orchestration boundary.

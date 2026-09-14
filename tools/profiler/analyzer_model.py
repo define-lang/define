@@ -7,12 +7,13 @@ import itertools
 import pathlib
 import typing
 
+import msgspec
+
 if typing.TYPE_CHECKING:
     from tools.profiler import schema
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
-class AnalysisFilters:
+class AnalysisFilters(msgspec.Struct, frozen=True):
     """Dimensions selected for one analyzer report."""
 
     # PRF-018: Focused analysis.

@@ -5,6 +5,8 @@ from __future__ import annotations
 import typing
 from dataclasses import dataclass, field
 
+import msgspec
+
 from define.compiler import (
     ast,
     diagnostics,
@@ -22,8 +24,7 @@ if typing.TYPE_CHECKING:
 type AnyValidationException = exceptions.DefineError | lark_standalone.UnexpectedInput
 
 
-@dataclass(frozen=True)
-class ParticleStatementValidity:
+class ParticleStatementValidity(msgspec.Struct, frozen=True):
     """Name validation results for a create or move statement."""
 
     target_ok: bool

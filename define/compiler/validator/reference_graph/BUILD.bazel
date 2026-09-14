@@ -13,6 +13,7 @@ py_library(
         ":position_occupancy",
         ":quality_assignment",
         "//define/compiler:ast",
+        "@pypi//msgspec",
     ],
 )
 
@@ -71,6 +72,7 @@ py_library(
         "//define/compiler/validator:scope_tracker",
         "//define/compiler/validator:validation_result",
         "//define/compiler/validator/reference_graph/dead_code:dead_constraint_tracker",
+        "@pypi//msgspec",
     ],
 )
 
@@ -78,7 +80,10 @@ py_library(
     name = "destruction_contract",
     srcs = ["destruction_contract.py"],
     visibility = ["//define/compiler:__subpackages__"],
-    deps = ["//define/compiler:ast"],
+    deps = [
+        "//define/compiler:ast",
+        "@pypi//msgspec",
+    ],
 )
 
 py_library(
@@ -88,6 +93,7 @@ py_library(
     deps = [
         ":quality_assignment",
         "//define/compiler:ast",
+        "@pypi//msgspec",
     ],
 )
 
@@ -117,6 +123,7 @@ py_library(
         "//define/compiler/data_structures:trie",
         "//define/compiler/validator:codegen_input",
         "//define/compiler/validator/reference_graph/dead_code:dead_interface_tracker",
+        "@pypi//msgspec",
     ],
 )
 
@@ -124,7 +131,10 @@ py_library(
     name = "position_occupancy",
     srcs = ["position_occupancy.py"],
     visibility = ["//define/compiler:__subpackages__"],
-    deps = ["//define/compiler:ast"],
+    deps = [
+        "//define/compiler:ast",
+        "@pypi//msgspec",
+    ],
 )
 
 py_library(
@@ -192,6 +202,7 @@ py_library(
         "//define/compiler/graphs:reference_graph_executor",
         "//define/compiler/validator:codegen_input",
         "//define/compiler/validator:validation_result",
+        "@pypi//msgspec",
     ],
 )
 
@@ -220,6 +231,7 @@ py_library(
         ":position_occupancy",
         "//define/compiler:ast",
         "//define/compiler:diagnostics",
+        "@pypi//msgspec",
     ],
 )
 

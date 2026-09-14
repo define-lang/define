@@ -13,7 +13,8 @@ its own small recipe.
 from __future__ import annotations
 
 import typing
-from dataclasses import dataclass
+
+import msgspec
 
 from define.compiler import ast, diagnostics
 from define.compiler.validator.reference_graph import (
@@ -26,8 +27,7 @@ if typing.TYPE_CHECKING:
     from collections.abc import Iterable
 
 
-@dataclass(frozen=True, slots=True)
-class _AutoDestruction:
+class _AutoDestruction(msgspec.Struct, frozen=True):
     """A particle auto-destroyed at the end of a body, firing the gated destructor."""
 
     local_position_name: str

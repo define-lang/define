@@ -23,6 +23,7 @@ from typing import Protocol, cast
 
 import _remote_debugging  # pyright: ignore[reportMissingImports]
 import click
+import msgspec
 
 from tools.profiler import (
     perf_profiler,
@@ -170,31 +171,27 @@ def _observation_failure_kind(
     typing.assert_never(failure)
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
-class _ThreadEvidence:
+class _ThreadEvidence(msgspec.Struct, frozen=True):
     # PRF-010: Raw-data preservation.
     start_time_ticks: int
     state: str
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
-class _RawStoppedThread:
+class _RawStoppedThread(msgspec.Struct, frozen=True):
     # PRF-005: Lifecycle-bounded attribution. PRF-007: Consistent stack.
     # PRF-050: Minimal stopped section.
     os_thread_id: str
     stat: bytes
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
-class _CapturedThread:
+class _CapturedThread(msgspec.Struct, frozen=True):
     # PRF-010: Raw-data preservation.
     os_thread_id: int
     evidence: _ThreadEvidence
     stack: list[schema.Frame]
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
-class _SuccessfulObservationResult:
+class _SuccessfulObservationResult(msgspec.Struct, frozen=True):
     # PRF-007: Consistent stack.
     timing: schema.ObservationBase
     threads: list[_CapturedThread]
@@ -231,8 +228,7 @@ def _blocked_interruption_signals() -> collections.abc.Generator[None, None, Non
         _ = signal.pthread_sigmask(signal.SIG_SETMASK, previous_mask)
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
-class _ObservationCapture:
+class _ObservationCapture(msgspec.Struct, frozen=True):
     # PRF-022: Launcher safety.
     result: _ObservationWork
     unwinder: _Unwinder | None
@@ -246,8 +242,7 @@ class _AttachedRuntime:
     observed_target_running_ns: int
 
 
-@dataclasses.dataclass(slots=True)
-class _CaptureState:
+class _CaptureState(msgspec.Struct):
     # PRF-003: Pause exclusion. PRF-005: Lifecycle-bounded attribution.
     # PRF-024: Explicit failures.
     # PRF-027: Incremental persistence.

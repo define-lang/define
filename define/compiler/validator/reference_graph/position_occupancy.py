@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import enum
 import typing
-from dataclasses import dataclass
+
+import msgspec
 
 if typing.TYPE_CHECKING:
     from define.compiler import ast
@@ -18,8 +19,7 @@ class PositionOccupancyState(enum.Enum):
     ERROR = enum.auto()
 
 
-@dataclass(frozen=True, slots=True)
-class ChildOccupancy:
+class ChildOccupancy(msgspec.Struct, frozen=True):
     """A child position's occupancy and the Source location of the statement that filled it."""
 
     state: PositionOccupancyState

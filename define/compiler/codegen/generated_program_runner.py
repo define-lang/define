@@ -6,12 +6,12 @@ import os
 import subprocess
 import sys
 import tempfile
-from dataclasses import dataclass
 from pathlib import Path
 
+import msgspec
 
-@dataclass(frozen=True)
-class GeneratedProgramResult:
+
+class GeneratedProgramResult(msgspec.Struct, frozen=True):
     """The outcome of executing a generated program."""
 
     process: subprocess.CompletedProcess[str]

@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import enum
 import typing
-from dataclasses import dataclass
+
+import msgspec
 
 if typing.TYPE_CHECKING:
     from collections.abc import Sequence
@@ -14,8 +15,7 @@ if typing.TYPE_CHECKING:
     from define.compiler.validator import validation_result
 
 
-@dataclass(frozen=True, slots=True)
-class FileTiming:
+class FileTiming(msgspec.Struct, frozen=True):
     """The validation timing retained for one compiled file."""
 
     file_path: define_path.DefinePath
@@ -29,8 +29,7 @@ class StatsMode(enum.StrEnum):
     PER_FILE = "per-file"
 
 
-@dataclass
-class OverallStats:
+class OverallStats(msgspec.Struct):
     """Aggregated timing totals across all compiled files."""
 
     config_loading: int = 0

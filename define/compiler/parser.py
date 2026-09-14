@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import typing
-from dataclasses import dataclass, field
 from functools import cached_property
 
 import lark_cython
+import msgspec
 from lark_cython import standalone
 
 from define.compiler import diagnostics as diagnostics_mod
@@ -28,21 +28,19 @@ type ParseException = (
 )
 
 
-@dataclass
-class ParseResult:
+class ParseResult(msgspec.Struct):
     """Result of parsing Define source code into a Lark parse tree."""
 
     tree: lark_standalone.Tree[lark_cython.Token] | None
-    diagnostics: list[diagnostics_mod.Diagnostic] = field(default_factory=list)
+    diagnostics: list[diagnostics_mod.Diagnostic] = msgspec.field(default_factory=list)
     exception: ParseException | None = None
 
 
-@dataclass
-class ParseAndTransformResult:
+class ParseAndTransformResult(msgspec.Struct):
     """Result of parsing Define source code directly into an AST Program."""
 
     program: ast.Program | None
-    diagnostics: list[diagnostics_mod.Diagnostic] = field(default_factory=list)
+    diagnostics: list[diagnostics_mod.Diagnostic] = msgspec.field(default_factory=list)
     exception: ParseException | None = None
 
 

@@ -5,11 +5,11 @@ from __future__ import annotations
 import ast
 import os
 import re
-from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
 import click
+import msgspec
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -19,8 +19,7 @@ _COVERAGE_REPORT = Path("bazel-out/_coverage/_coverage_report.dat")
 _RUNFILES_WORKSPACE = Path(__file__).resolve().parent.parent
 
 
-@dataclass(frozen=True)
-class UncoveredBranch:
+class UncoveredBranch(msgspec.Struct, frozen=True):
     """An uncovered branch from an LCOV report."""
 
     source_file: Path

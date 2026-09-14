@@ -11,6 +11,7 @@ py_library(
         "//define/compiler:ast",
         "//define/compiler/graphs:reference_graph_executor",
         "//define/compiler/validator/reference_graph:destruction_contract",
+        "@pypi//msgspec",
     ],
 )
 
@@ -74,6 +75,7 @@ py_library(
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/graphs:reference_graph",
         "//define/compiler/lark:lark_standalone",
+        "@pypi//msgspec",
     ],
 )
 

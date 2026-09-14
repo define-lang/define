@@ -7,11 +7,12 @@ import dataclasses
 import itertools
 import typing
 
+import msgspec
+
 from tools.profiler import analyzer_model, schema, wall_critical_path, wall_model
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
-class FrameRow:
+class FrameRow(msgspec.Struct, frozen=True):
     """Wall attribution for one source-identified Python frame."""
 
     frame: schema.Frame
@@ -20,8 +21,7 @@ class FrameRow:
     sample_hits: int
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
-class FunctionRow:
+class FunctionRow(msgspec.Struct, frozen=True):
     """Wall attribution aggregated across sampled lines of one function."""
 
     identity: analyzer_model.FunctionIdentity
@@ -31,8 +31,7 @@ class FunctionRow:
     sample_hits: int
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
-class StackPathRow:
+class StackPathRow(msgspec.Struct, frozen=True):
     """Wall attribution for one complete caller-to-leaf function path."""
 
     stack_path: tuple[analyzer_model.FunctionIdentity, ...]
@@ -41,8 +40,7 @@ class StackPathRow:
     sample_hits: int
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
-class RelationshipRow:
+class RelationshipRow(msgspec.Struct, frozen=True):
     """Sampled caller-to-callee relationship."""
 
     caller: analyzer_model.FunctionIdentity
@@ -51,8 +49,7 @@ class RelationshipRow:
     sample_hits: int
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
-class ThreadRow:
+class ThreadRow(msgspec.Struct, frozen=True):
     """Sampled occupancy for one OS thread."""
 
     os_thread_id: int
@@ -131,10 +128,9 @@ class _OccupancyMetrics:
         self.wall_occupancy_ns += added_ns
 
 
-@dataclasses.dataclass(slots=True)
-class _ThreadMetrics:
-    occupancy: _OccupancyMetrics = dataclasses.field(default_factory=_OccupancyMetrics)
-    attributed: _OccupancyMetrics = dataclasses.field(default_factory=_OccupancyMetrics)
+class _ThreadMetrics(msgspec.Struct):
+    occupancy: _OccupancyMetrics = msgspec.field(default_factory=_OccupancyMetrics)
+    attributed: _OccupancyMetrics = msgspec.field(default_factory=_OccupancyMetrics)
 
 
 def _wall_union_update(

@@ -6,6 +6,8 @@ import enum
 import typing
 from dataclasses import dataclass, field
 
+import msgspec
+
 if typing.TYPE_CHECKING:
     from collections.abc import Iterator
 
@@ -47,8 +49,7 @@ class PropagationKind(enum.Enum):
     FILL_SITE = enum.auto()
 
 
-@dataclass(frozen=True, slots=True)
-class PropagationStep:
+class PropagationStep(msgspec.Struct, frozen=True):
     """One step in a requirement's propagation chain, with its source location."""
 
     location: ast.SourceLocation
@@ -168,8 +169,7 @@ class PositionRequirement:
         )
 
 
-@dataclass(frozen=True, slots=True)
-class PositionRequirementInCaller:
+class PositionRequirementInCaller(msgspec.Struct, frozen=True):
     """A callee's Position Requirement expressed from its caller's perspective."""
 
     requirement: PositionRequirement
@@ -213,16 +213,14 @@ class ErrorGuarantee(PositionGuarantee):
     """The position's state could not be determined due to an error."""
 
 
-@dataclass(frozen=True, slots=True)
-class CalleeContract:
+class CalleeContract(msgspec.Struct, frozen=True):
     """A callee's contract at its current action chain."""
 
     action_chain: ast.ChainedNameTuple
     contract: ActionContract
 
 
-@dataclass(frozen=True, slots=True)
-class DestructionContract:
+class DestructionContract(msgspec.Struct, frozen=True):
     """Records that an action destroyed a caller-passed particle in a contracted position (DLP 41).
 
     Callers higher in the stack use this to verify destructors they attach

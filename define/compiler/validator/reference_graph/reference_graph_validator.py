@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import typing
-from dataclasses import dataclass
+
+import msgspec
 
 from define.compiler import ast, diagnostics
 from define.compiler.graphs import (
@@ -24,8 +25,7 @@ if typing.TYPE_CHECKING:
 type _PostorderResult = definition_postorder_validator.PostorderValidationResult | None
 
 
-@dataclass(frozen=True, slots=True)
-class ReferenceGraphValidationResult:
+class ReferenceGraphValidationResult(msgspec.Struct, frozen=True):
     """What reference graph validation produces, beyond the diagnostics it reports."""
 
     codegen_input: codegen_input.CodegenInput

@@ -6,6 +6,8 @@ import enum
 from dataclasses import InitVar, dataclass, field
 from typing import TYPE_CHECKING, ClassVar
 
+import msgspec
+
 from define.compiler import ast
 
 if TYPE_CHECKING:
@@ -75,8 +77,7 @@ class InterfacePositionChainElement(ChainElement):
     typed_name: str
 
 
-@dataclass
-class PositionExpr:
+class PositionExpr(msgspec.Struct):
     """A position expression for use in templates."""
 
     local_position_name: str | None
@@ -84,24 +85,21 @@ class PositionExpr:
     from_contract_particle: bool = False
 
 
-@dataclass
-class DestructionContractArgument:
+class DestructionContractArgument(msgspec.Struct):
     """A per-invocation contract object and the contributions it forwards."""
 
     class_name: str
     forwarded_methods: list[str]
 
 
-@dataclass
-class ForwardedContribution:
+class ForwardedContribution(msgspec.Struct):
     """A caller contribution applied to its contracted particle."""
 
     method_name: str
     position: PositionExpr | None
 
 
-@dataclass
-class DestructionContractMethod:
+class DestructionContractMethod(msgspec.Struct):
     """One named contribution to a callee's destruction."""
 
     name: str
@@ -109,8 +107,7 @@ class DestructionContractMethod:
     statements: list[ActionStatementContext]
 
 
-@dataclass
-class DestructionContractDefinition:
+class DestructionContractDefinition(msgspec.Struct):
     """Methods implementing caller-contributed destruction work."""
 
     class_name: str
@@ -196,8 +193,7 @@ class DestroyContractChildrenContext(ContractContributionContext):
     kind: ClassVar[StatementKind] = StatementKind.DESTROY_CONTRACT_CHILDREN
 
 
-@dataclass
-class InterfacePositionContext:
+class InterfacePositionContext(msgspec.Struct):
     """Template context for an interface position in an action definition."""
 
     typed_name: str

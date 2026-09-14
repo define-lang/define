@@ -6,6 +6,8 @@ import bisect
 import dataclasses
 import typing
 
+import msgspec
+
 if typing.TYPE_CHECKING:
     import collections.abc
 
@@ -26,8 +28,7 @@ class Interval:
         return self.end_ns - self.start_ns
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
-class ThreadIdentity:
+class ThreadIdentity(msgspec.Struct, frozen=True):
     """The identity of one lifetime of an operating-system thread ID."""
 
     # PRF-047: Multi-threaded critical path.
@@ -77,8 +78,7 @@ class ThreadSample:
         return self.pre_stop_state == "S" and bool(self.stack)
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
-class SchedulerWake:
+class SchedulerWake(msgspec.Struct, frozen=True):
     """A scheduler wake translated to the target-running clock."""
 
     # PRF-052: Independent causal evidence.

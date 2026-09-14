@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import TYPE_CHECKING
+
+import msgspec
 
 from define.compiler import ast, parser_exceptions
 
@@ -60,8 +61,7 @@ def parse_global_name_reference(
     )
 
 
-@dataclass(frozen=True)
-class _ParsedGlobalName:
+class _ParsedGlobalName(msgspec.Struct, frozen=True):
     fqun: ast.Fqun | None
     path: ast.GlobalPathName
 

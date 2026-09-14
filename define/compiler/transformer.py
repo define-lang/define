@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import functools
 import threading
-from dataclasses import dataclass
 from typing import TYPE_CHECKING, cast
 
 import lark_cython
+import msgspec
 
 from define.compiler import ast, name_parser
 from define.compiler.lark import lark_standalone
@@ -47,8 +47,7 @@ class _ParseContext(threading.local):
     enclosing_fqun: ast.Fqun | None = None
 
 
-@dataclass(frozen=True, slots=True)
-class _ActionDefinitionBlockData:
+class _ActionDefinitionBlockData(msgspec.Struct, frozen=True):
     quality_implications: tuple[ast.QualityImplicationStatement, ...]
     interface_positions: tuple[ast.LocalPositionDefinition, ...]
     trigger_conditions: ast.TriggerConditionsBlock
@@ -56,15 +55,13 @@ class _ActionDefinitionBlockData:
     block_close: lark_cython.Token
 
 
-@dataclass(frozen=True, slots=True)
-class _PotentialPositionBlockData:
+class _PotentialPositionBlockData(msgspec.Struct, frozen=True):
     quality_implications: tuple[ast.QualityImplicationStatement, ...]
     constraints: ast.PositionConstraintBlock | None
     block_close: lark_cython.Token
 
 
-@dataclass(frozen=True, slots=True)
-class _LocalPositionBlockData:
+class _LocalPositionBlockData(msgspec.Struct, frozen=True):
     constraints: ast.PositionConstraintBlock
     block_close: lark_cython.Token
 

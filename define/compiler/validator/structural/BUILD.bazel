@@ -112,6 +112,7 @@ py_library(
         "//define/compiler/graphs:reference_graph",
         "//define/compiler/validator:stats",
         "//define/compiler/validator:validation_result",
+        "@pypi//msgspec",
     ],
 )
 

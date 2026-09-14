@@ -8,6 +8,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, cast
 
+import msgspec
 import pytest
 from hypothesis import HealthCheck, example, given, settings
 from hypothesis import strategies as st
@@ -972,8 +973,7 @@ class ProjectRootCase:
     local_deps: dict[str, str]
 
 
-@dataclass(frozen=True)
-class ProjectCase:
+class ProjectCase(msgspec.Struct, frozen=True):
     entrypoint: str
     roots: tuple[ProjectRootCase, ...]
 

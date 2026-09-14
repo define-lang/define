@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import contextlib
 import ctypes
-import dataclasses
 import enum
 import os
 import select
 import signal
 import time
 import typing
+
+import msgspec
 
 if typing.TYPE_CHECKING:
     import collections.abc
@@ -60,8 +61,7 @@ class ScheduleEvent(enum.Enum):
     TARGET_EXITED = enum.auto()
 
 
-@dataclasses.dataclass(slots=True)
-class TargetProcess:
+class TargetProcess(msgspec.Struct):
     """A launched process and its Linux event handles."""
 
     # PRF-011: Complete invocation. PRF-049: Event-driven coordination.
@@ -71,8 +71,7 @@ class TargetProcess:
     trace_stopped: bool = False
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
-class ExecutableWaitResult:
+class ExecutableWaitResult(msgspec.Struct, frozen=True):
     """A matched executable and profiler-induced attachment pause."""
 
     # PRF-003: Pause exclusion. PRF-021: Version match.

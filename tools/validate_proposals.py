@@ -5,8 +5,9 @@ from __future__ import annotations
 
 import re
 import sys
-from dataclasses import dataclass
 from pathlib import Path
+
+import msgspec
 
 REQUIRED_HEADERS: list[tuple[str, ...] | str] = [
     ("Problems", "Problem"),
@@ -30,16 +31,14 @@ DCL_PROPOSAL_TITLE_PREFIX = "Define Configuration Language Proposal"
 FILENAME_PATTERN = re.compile(r"^(\d{5})-[a-z0-9]+(?:-[a-z0-9]+)*\.md$")
 
 
-@dataclass
-class ValidationResult:
+class ValidationResult(msgspec.Struct):
     """Result of a validation check."""
 
     is_valid: bool
     error_message: str | None = None
 
 
-@dataclass
-class FilenameValidationResult:
+class FilenameValidationResult(msgspec.Struct):
     """Result of filename validation."""
 
     is_valid: bool

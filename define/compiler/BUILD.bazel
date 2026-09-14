@@ -50,6 +50,7 @@ py_library(
         "//define/compiler/validator/reference_graph:reference_graph_validator",
         "//define/compiler/validator/structural:program_validator",
         "//define/testdata:path_resolver",
+        "@pypi//msgspec",
         "@pypi//pytest",
     ],
 )
@@ -73,6 +74,7 @@ py_library(
         "//define/compiler/data_structures:define_path",
         "//define/config/deps:local_proto_py",
         "//define/config/project:config_proto_py",
+        "@pypi//msgspec",
         "@pypi//protobuf",
         "@pypi//protovalidate",
     ],
@@ -158,6 +160,7 @@ py_test(
         ":parser_exceptions",
         "//define/compiler/validator:validation_result",
         "@pypi//hypothesis",
+        "@pypi//msgspec",
         "@pypi//pytest",
     ],
 )
@@ -318,6 +321,7 @@ py_library(
         ":ast",
         ":parser_exceptions",
         "@pypi//lark_cython",
+        "@pypi//msgspec",
     ],
 )
 
@@ -342,6 +346,7 @@ py_library(
         "//define/compiler/data_structures:define_path",
         "//define/compiler/validator:stats",
         "//define/compiler/validator:validation_result",
+        "@pypi//msgspec",
     ],
 )
 
@@ -373,6 +378,7 @@ py_library(
         ":transformer",
         "//define/compiler/lark:lark_standalone",
         "@pypi//lark_cython",
+        "@pypi//msgspec",
     ],
 )
 
@@ -427,6 +433,7 @@ py_library(
         ":name_parser",
         "//define/compiler/lark:lark_standalone",
         "@pypi//lark_cython",
+        "@pypi//msgspec",
     ],
 )
 

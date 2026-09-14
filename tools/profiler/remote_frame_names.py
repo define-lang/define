@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import ctypes
-import dataclasses
 import os
 import pathlib
 import typing
 from typing import Protocol, cast
+
+import msgspec
 
 if typing.TYPE_CHECKING:
     import collections.abc
@@ -47,16 +48,14 @@ class _Readable(Protocol):
 type CapturedFrameNames = list[tuple[int, int, bytes]]
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
-class CapturedStackTrace:
+class CapturedStackTrace(msgspec.Struct, frozen=True):
     """Hold copied remote stacks and undecoded invocation-specific names."""
 
     threads: list[RemoteThread]
     frame_names: CapturedFrameNames
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
-class _DebugOffsets:
+class _DebugOffsets(msgspec.Struct, frozen=True):
     runtime_interpreters_head: int
     interpreter_next: int
     interpreter_threads_head: int

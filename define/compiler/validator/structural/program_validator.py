@@ -11,7 +11,8 @@ import queue
 import time
 import typing
 from concurrent.futures import Future, ThreadPoolExecutor
-from dataclasses import dataclass
+
+import msgspec
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -30,8 +31,7 @@ from define.compiler.validator import stats, validation_result
 from define.compiler.validator.structural import file_validator, path_tracker
 
 
-@dataclass
-class _DeferredReferenceEdge:
+class _DeferredReferenceEdge(msgspec.Struct):
     """An edge waiting for its target file to complete validation."""
 
     edge: reference_graph.ReferenceEdge
