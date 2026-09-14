@@ -75,6 +75,7 @@ class _DestructionContractInCaller:
     contract: action_contract.DestructionContract
     position: ast.PositionReference
     connection: destruction_contract_types.DestructionConnection
+    particles: dict[ast.ChainedNameTuple, particle_info.ParticleInfo]
 
 
 class ActionPostorderValidator:
@@ -815,15 +816,17 @@ class ActionPostorderValidator:
             occupancy = self._tracker.get_occupancy_info(position)
             if occupancy.occupant is None:
                 continue
-            caller_contracts.append(
-                _DestructionContractInCaller(destruction_contract, position, connection)
-            )
-            self._tracker.add_child_state(
+            particles = self._tracker.collect_caller_destruction_state(
                 caller_knowledge,
                 callee_contracts.child_state,
                 position,
                 destruction_contract.position_in_child_state,
                 callee_contracts.positions,
+            )
+            caller_contracts.append(
+                _DestructionContractInCaller(
+                    destruction_contract, position, connection, particles
+                )
             )
         return caller_contracts, caller_knowledge
 
@@ -873,6 +876,9 @@ class ActionPostorderValidator:
         newly_occupied_children: list[ast.PositionReference] = []
         self._verify_destruction_cascade(
             caller_particle_position,
+            (),
+            destruction_contract.position_in_child_state,
+            caller_particles=caller_contract.particles,
             destruction_contract=destruction_contract,
             destroying_definition=destroying_definition,
             caller_prefix_length=len(caller_particle_position.typed_names),
@@ -922,8 +928,11 @@ class ActionPostorderValidator:
 
     def _verify_destruction_cascade(
         self,
-        position: ast.PositionReference,
+        position_prefix: ast.PositionReference,
+        position_suffix: tuple[ast.TypedNameReference, ...],
+        position_in_child_state: ast.ChainedNameTuple,
         *,
+        caller_particles: dict[ast.ChainedNameTuple, particle_info.ParticleInfo],
         destruction_contract: action_contract.DestructionContract,
         destroying_definition: ast.ActionDefinition,
         caller_prefix_length: int,
@@ -934,19 +943,13 @@ class ActionPostorderValidator:
         destructor_contributions: list[ast.ActionReference],
         newly_occupied_children: list[ast.PositionReference],
     ):
-        position_key = position.canonical_chained_name_tuple
-        relative_key = position_key[caller_prefix_length:]
-        position_in_child_state = (
-            *destruction_contract.position_in_child_state,
-            *relative_key,
-        )
         # Another Destruction Contract for this simultaneous destruction starts at this
         # position. It validates this position and its child names, so continuing
         # this traversal would record their caller-contributed Destroys twice.
-        if relative_key and position_in_child_state in callee_contracts.positions:
+        if position_suffix and position_in_child_state in callee_contracts.positions:
             return
-        occupancy_info = self._tracker.get_occupancy_info(position)
-        if occupancy_info.has_error or occupancy_info.occupant is None:
+        particle = caller_particles.get(position_in_child_state)
+        if particle is None:
             return
         occupancy = propagated_contracts.child_state.get(position_in_child_state)
         # A position the destruction-time picture records as empty was emptied
@@ -957,6 +960,14 @@ class ActionPostorderValidator:
             and occupancy.state == position_occupancy.PositionOccupancyState.EMPTY
         ):
             return
+        position = (
+            position_prefix.with_position_suffix(*position_suffix)
+            if position_suffix
+            else position_prefix
+        )
+        relative_key = position_in_child_state[
+            len(destruction_contract.position_in_child_state) :
+        ]
         # A child absent from the contract was unknown to the callee but is
         # occupied from this caller's perspective, so this caller contributes
         # its Destroy. The contracted position itself is already destroyed by
@@ -965,7 +976,6 @@ class ActionPostorderValidator:
             destruction_contract, relative_key
         )
         is_newly_occupied_child = bool(relative_key and callee_occupancy is None)
-        particle = occupancy_info.occupant
         created_in_this_action = not particle.from_caller
         newly_verified: list[ast.GlobalTypedNameReference] = []
         if relative_key:
@@ -989,9 +999,16 @@ class ActionPostorderValidator:
             verified_destructors = destruction_contract.verified_destructors
         for quality in reversed(particle.qualities.assignments):
             if quality.name_type == ast.NameType.POSITION:
-                child = position.with_position_suffix(quality)
+                child_position_suffix = (quality,)
+                child_position_in_child_state = (
+                    *position_in_child_state,
+                    quality.full_typed_name,
+                )
                 self._verify_destruction_cascade(
-                    child,
+                    position,
+                    child_position_suffix,
+                    child_position_in_child_state,
+                    caller_particles=caller_particles,
                     destruction_contract=destruction_contract,
                     destroying_definition=destroying_definition,
                     caller_prefix_length=caller_prefix_length,
@@ -1029,11 +1046,18 @@ class ActionPostorderValidator:
                 if destructor_contribution is not None:
                     destructor_contributions.append(destructor_contribution)
                 for interface_position in reversed(definition.interface_positions):
-                    child = position.with_position_suffix(
-                        quality, interface_position.typed_name
+                    interface_position_name = interface_position.typed_name
+                    child_position_suffix = (quality, interface_position_name)
+                    child_position_in_child_state = (
+                        *position_in_child_state,
+                        quality.full_typed_name,
+                        interface_position_name.full_typed_name,
                     )
                     self._verify_destruction_cascade(
-                        child,
+                        position,
+                        child_position_suffix,
+                        child_position_in_child_state,
+                        caller_particles=caller_particles,
                         destruction_contract=destruction_contract,
                         destroying_definition=destroying_definition,
                         caller_prefix_length=caller_prefix_length,

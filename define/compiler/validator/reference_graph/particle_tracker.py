@@ -511,15 +511,17 @@ class _ParticleStateStore:
         result.update(self._error.selected_subtree_items(key, _child_error_occupancy))
         return child_state.FlatChildState(result)
 
-    def add_child_state(
+    def collect_caller_destruction_state(
         self,
         values: position_occupancy.ChildOccupancyMap,
         snapshot: child_state.ChildState,
         key: tuple[str, ...],
         position_in_child_state: tuple[str, ...],
         contract_positions: set[tuple[str, ...]],
-    ):
-        """Collect new caller knowledge up to other contract positions."""
+    ) -> dict[ast.ChainedNameTuple, particle_info.ParticleInfo]:
+        """Collect caller particles and additional Child State."""
+        particles = {position_in_child_state: self.occupant(key)}
+        prefix_length = len(position_in_child_state)
         # Another contract can describe a child particle with an independent
         # origin after a Move. Its own caller knowledge must determine that
         # particle's Child State, not the old contents of this caller position.
@@ -528,6 +530,11 @@ class _ParticleStateStore:
             key_prefix=position_in_child_state,
             excluded_keys=contract_positions,
         ):
+            particle = node.particle_info
+            if particle is not None:
+                caller_position_key = (*key, *state_position[prefix_length:])
+                if not self.has_error_in_chain(caller_position_key):
+                    particles[state_position] = particle
             if snapshot.get(state_position) is not None:
                 continue
             occupancy = _child_occupancy(node)
@@ -543,6 +550,7 @@ class _ParticleStateStore:
                 continue
             if error.caused_by is not None:
                 values[state_position] = position_occupancy.ERROR_OCCUPANCY
+        return particles
 
     def callees_with_occupied_interface_child_position(
         self, position: ast.ChainedNameTuple
@@ -1115,18 +1123,18 @@ class ParticleTracker:
         self._fully_resolve_pending_guarantees(*keys)
         return [self._store.snapshot_child_state(key) for key in keys]
 
-    def add_child_state(
+    def collect_caller_destruction_state(
         self,
         values: position_occupancy.ChildOccupancyMap,
         snapshot: child_state.ChildState,
         for_position: ast.PositionReference,
         position_in_child_state: tuple[str, ...],
         contract_positions: set[tuple[str, ...]],
-    ):
-        """Collect new caller knowledge up to other contract positions."""
+    ) -> dict[ast.ChainedNameTuple, particle_info.ParticleInfo]:
+        """Collect caller particles and additional Child State."""
         key = for_position.canonical_chained_name_tuple
         self._fully_resolve_pending_guarantees(key)
-        self._store.add_child_state(
+        return self._store.collect_caller_destruction_state(
             values, snapshot, key, position_in_child_state, contract_positions
         )
 
