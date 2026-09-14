@@ -213,6 +213,8 @@ def test_builds_compiler_before_preparing_profile(
         [
             "/usr/bin/bazelisk",
             "build",
+            "-c",
+            "opt",
             "--noshow_progress",
             "--ui_event_filters=-info",
             "//define/compiler:main",

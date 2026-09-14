@@ -64,6 +64,8 @@ def _build_compiler(workspace: pathlib.Path) -> pathlib.Path:
         [
             bazelisk_path,
             "build",
+            "-c",
+            "opt",
             "--noshow_progress",
             "--ui_event_filters=-info",
             "//define/compiler:main",
