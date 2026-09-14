@@ -1,38 +1,33 @@
-{% macro position_expression(expr, extra_indent="") -%}
-    {%- if expr.from_contract_particle -%}
+{% macro position_expression(expr, extra_indent) -%}
+    {% if expr.from_contract_particle -%}
 particle
-    {%- elif expr.local_position_name is none -%}
-self
+    {%- else if let Some(name) = expr.local_position_name -%}
+{{ name }}
     {%- else -%}
-{{ expr.local_position_name }}
+self
     {%- endif -%}
-    {%- for element in expr.chain_elements -%}
-        {% if element.accessor == ChainAccessor.POSITION_FROM_POSITION -%}
+    {% for element in expr.chain_elements -%}
+        {% match element -%}
+            {% when ChainElement::PositionFromPosition with (class_reference) -%}
 .particle.get_position(
-{{ extra_indent }}            {{ element.class_reference.module_name }}.{{ element.class_reference.class_name }}
+{{ extra_indent }}            {{ class_reference.module_name }}.{{ class_reference.class_name }}
 {{ extra_indent }}        )
-        {%- elif element.accessor == ChainAccessor.ACTION_FROM_POSITION -%}
+            {%- when ChainElement::ActionFromPosition with (class_reference) -%}
 .particle.get_action(
-{{ extra_indent }}            {{ element.class_reference.module_name }}.{{ element.class_reference.class_name }}
+{{ extra_indent }}            {{ class_reference.module_name }}.{{ class_reference.class_name }}
 {{ extra_indent }}        )
-        {%- elif element.accessor == ChainAccessor.POSITION_FROM_ACTION -%}
+            {%- when ChainElement::PositionFromAction with (typed_name) -%}
 .get_interface_position(
-{{ extra_indent }}            "{{ element.typed_name }}"
+{{ extra_indent }}            "{{ typed_name }}"
 {{ extra_indent }}        )
-        {%- elif element.accessor == ChainAccessor.IMPLIED_ACTION -%}
-            {% if not expr.from_contract_particle -%}
-.on_particle
-            {%- endif -%}
-.get_action(
-{{ extra_indent }}            {{ element.class_reference.module_name }}.{{ element.class_reference.class_name }}
+            {%- when ChainElement::ImpliedAction with (class_reference) -%}
+{% if !expr.from_contract_particle %}.on_particle{% endif %}.get_action(
+{{ extra_indent }}            {{ class_reference.module_name }}.{{ class_reference.class_name }}
 {{ extra_indent }}        )
-        {%- elif element.accessor == ChainAccessor.IMPLIED_POSITION -%}
-            {% if not expr.from_contract_particle -%}
-.on_particle
-            {%- endif -%}
-.get_position(
-{{ extra_indent }}            {{ element.class_reference.module_name }}.{{ element.class_reference.class_name }}
+            {%- when ChainElement::ImpliedPosition with (class_reference) -%}
+{% if !expr.from_contract_particle %}.on_particle{% endif %}.get_position(
+{{ extra_indent }}            {{ class_reference.module_name }}.{{ class_reference.class_name }}
 {{ extra_indent }}        )
-        {%- endif %}
-    {%- endfor %}
-{%- endmacro %}
+        {%- endmatch -%}
+    {% endfor -%}
+{% endmacro %}

@@ -22,6 +22,8 @@ LARK_FILES = [
     "defcl/python/lark/lark_standalone.py",
 ]
 
+TEMPLATE_RENDERER_PACKAGE = "define/compiler/codegen/literal/python"
+
 BUF_VALIDATE_SRC = (
     "external/protovalidate+/proto/protovalidate/buf/validate"
     "/_virtual_imports/validate_proto/buf/validate"
@@ -179,6 +181,10 @@ def main():
     _copy_lark_files()
     _copy_buf_validate()
     _copy_re2()
+    extension_name = "_templates.pyd" if os.name == "nt" else "_templates.so"
+    extension_path = Path(TEMPLATE_RENDERER_PACKAGE) / extension_name
+    _copy_file(RUNFILES_WORKSPACE / extension_path, REPO_ROOT / extension_path)
+    print(extension_path)
     print("Done.")
 
 

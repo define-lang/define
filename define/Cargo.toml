@@ -1,0 +1,21 @@
+[package]
+name = "define"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[lib]
+name = "_templates"
+path = "compiler/codegen/literal/python/renderer.rs"
+crate-type = ["cdylib"]
+
+[dependencies]
+askama.workspace = true
+pyo3.workspace = true
+
+[dev-dependencies]
+pyo3-introspection = "=0.29.2"
+
+[lints]
+workspace = true

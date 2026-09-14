@@ -1,8 +1,21 @@
 load("@aspect_rules_py//py:defs.bzl", "py_library")
+load("@crates//:defs.bzl", "lint_config")
+load("@rules_rust//rust:defs.bzl", "rust_clippy_test", "rustfmt_test")
+load("@rules_rust_pyo3//:defs.bzl", "pyo3_extension")
 load("//tools/bzl:format.bzl", "format_test")
-load("//tools/bzl:jinja2.bzl", "jinja_templates")
 load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
+
+py_library(
+    name = "_templates",
+    srcs = ["_templates.pyi"],
+    deps = [
+        ":action_context",
+        ":naming",
+        ":renderer",  # keep: supplies the native implementation of this stub
+        ":template_context",
+    ],
+)
 
 py_library(
     name = "action_context",
@@ -62,19 +75,17 @@ py_library(
 py_library(
     name = "generator",
     srcs = ["generator.py"],
-    data = [":templates"],
     visibility = ["//define/compiler/codegen:__subpackages__"],
     deps = [
+        ":_templates",
         ":action_context",
         ":action_definition",
         ":naming",
         ":position_definition",
         ":template_context",
-        ":template_env",
         "//define/compiler:ast",
         "//define/compiler/graphs:reference_graph_executor",
         "//define/compiler/validator:codegen_input",
-        "@pypi//jinja2",
     ],
 )
 
@@ -138,6 +149,19 @@ py_library(
     visibility = ["//define/compiler/codegen:__subpackages__"],
 )
 
+pyo3_extension(
+    name = "renderer",
+    srcs = ["renderer.rs"],
+    compile_data = glob(["*.j2"]) + ["askama.toml"],
+    crate_root = "renderer.rs",
+    lint_config = lint_config(),
+    module_name = "_templates",
+    rustc_flags = ["-Clink-arg=-Qunused-arguments"],
+    stubs = False,
+    visibility = ["//tools:__pkg__"],
+    deps = ["@crates//:askama"],
+)
+
 py_library(
     name = "template_context",
     srcs = ["template_context.py"],
@@ -149,34 +173,26 @@ py_library(
     ],
 )
 
-py_library(
-    name = "template_env",
-    srcs = ["template_env.py"],
-    visibility = [
-        "//define/compiler/codegen:__subpackages__",
-        "//tools:__pkg__",
-    ],
-    deps = ["@pypi//jinja2"],
-)
-
-py_test(
-    name = "template_env_test",
-    size = "small",
-    srcs = ["template_env_test.py"],
-    data = [":templates"],
-    deps = [":template_env"],
-)
-
-jinja_templates(
-    name = "templates",
-    srcs = glob(["*.j2"]),
-)
-
 # --- Format checking ---
+
+rustfmt_test(
+    name = "rustfmt_test",
+    size = "small",
+    targets = [":renderer_shared"],
+)
+
+rust_clippy_test(
+    name = "clippy_test",
+    size = "small",
+    targets = [":renderer_shared"],
+)
 
 format_test(
     name = "format_test",
-    srcs = glob(["*.py"]),
+    srcs = glob([
+        "*.py",
+        "*.pyi",
+    ]),
     python = "@multitool//tools/ruff",
 )
 
@@ -187,6 +203,7 @@ format_test(
 pyright_test(
     name = "pyright_test",
     deps = [
+        ":_templates",
         ":action_context",
         ":action_definition",
         ":action_statements",
@@ -199,7 +216,5 @@ pyright_test(
         ":position_expression",
         ":python",
         ":template_context",
-        ":template_env",
-        ":template_env_test",
     ],
 )

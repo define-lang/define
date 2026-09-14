@@ -5,6 +5,7 @@ load("@npm//:basedpyright/package_json.bzl", basedpyright_bin = "bin")
 load("@npm//:defs.bzl", "npm_link_all_packages")
 
 exports_files([
+    "Cargo.toml",
     ".codex/rules/default.rules",
     "pyproject.toml",
     ".claude/settings.json",

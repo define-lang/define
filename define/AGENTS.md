@@ -98,10 +98,10 @@ flowchart LR
     PositionDef["codegen/literal/python/position_definition.py"] --> PythonGenerator
     ActionDef["codegen/literal/python/action_definition.py"] --> PythonGenerator
     TemplateCtx["codegen/literal/python/template_context.py"] --> PythonGenerator
-    TemplateEnv["codegen/literal/python/template_env.py"] --> PythonGenerator
+    Renderer["codegen/literal/python/renderer.rs"] --> PythonGenerator
     ActionStmts["codegen/literal/python/action_statements.py"] --> PositionDef
     ActionStmts --> ActionDef
-    Template["codegen/literal/python/*.j2"] --> PythonGenerator
+    Template["codegen/literal/python/*.j2"] --> Renderer
 ```
 
 ### CLI

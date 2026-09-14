@@ -72,13 +72,6 @@ py_test(
 )
 
 py_binary(
-    name = "compile_jinja_templates",
-    srcs = ["compile_jinja_templates.py"],
-    visibility = ["//visibility:public"],
-    deps = ["//define/compiler/codegen/literal/python:template_env"],
-)
-
-py_binary(
     name = "generate_lark_standalone",
     srcs = ["generate_lark_standalone.py"],
     visibility = ["//:__subpackages__"],
@@ -100,13 +93,6 @@ py_binary(
     deps = ["@pypi//pyyaml"],
 )
 
-py_binary(
-    name = "j2lint_runner",
-    srcs = ["j2lint_runner.py"],
-    visibility = ["//visibility:public"],
-    deps = ["@pypi//j2lint"],
-)
-
 py_library(
     name = "loop_coverage",
     srcs = ["loop_coverage.py"],
@@ -122,6 +108,20 @@ py_test(
         ":loop_coverage",
         "@pypi//pytest",
     ],
+)
+
+py_binary(
+    name = "pyo3_config",
+    srcs = ["pyo3_config.py"],
+    main = "pyo3_config.py",
+)
+
+genrule(
+    name = "pyo3_config_file",
+    outs = ["pyo3-build-config.txt"],
+    cmd = "$(location :pyo3_config) $@",
+    tools = [":pyo3_config"],
+    visibility = ["//visibility:public"],
 )
 
 py_binary(
@@ -220,6 +220,7 @@ py_binary(
     srcs = ["setup_local_dev.py"],
     args = ["$(location @multitool//tools/uv)"],
     data = [
+        "//define/compiler/codegen/literal/python:renderer",
         "@multitool//tools/uv",
         "@re2//python:re2",
     ],
@@ -320,6 +321,16 @@ format_multirun(
     ],
     protocol_buffer = "@multitool//tools/buf",
     python = "@multitool//tools/ruff",
+    rust = "@rules_rust//rust/toolchain:current_rustfmt_toolchain",
+    rust_check_args = [
+        "--edition",
+        "2024",
+        "--check",
+    ],
+    rust_fix_args = [
+        "--edition",
+        "2024",
+    ],
     starlark = "@multitool//tools/buildifier",
     starlark_check_args = [
         "-mode=check",
@@ -359,14 +370,13 @@ pyright_test(
         ":analyze_profile_test",
         ":check_python_deps",
         ":check_python_deps_test",
-        ":compile_jinja_templates",
         ":generate_lark_standalone",
         ":generate_programming_languages",
         ":git_commit_via_api",
-        ":j2lint_runner",
         ":loop_coverage",
         ":loop_coverage_test",
         ":profile_orchestration",
+        ":pyo3_config",
         ":regenerate_codegen_testdata",
         ":regenerate_codegen_testdata_test",
         ":run_profile",

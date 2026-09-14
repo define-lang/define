@@ -126,7 +126,7 @@ class ActionStatementsGenerator:
                     local_position_names[source_name] = name
                     statements.append(
                         template_context.LocalPositionContext(
-                            local_position_name=name,
+                            name=name,
                             local_typed_name=statement.typed_name.source_typed_name,
                             constraints=self._converter.constraints_to_class_references(
                                 statement.constraints

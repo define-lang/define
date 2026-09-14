@@ -1,49 +1,55 @@
-{% from "position_expression.j2" import position_expression %}
-{% macro action_statements(statements) %}
-    {% for statement in statements %}
-        {% if statement.kind == StatementKind.LOCAL_POSITION %}
-        {{ statement.local_position_name }} = literal.LocalPosition(
+{% import "position_expression.j2" as expressions -%}
+{% macro action_statements(statements) -%}
+    {%- for statement in statements.iter() %}
+        {%- match statement %}
+            {%- when Statement::LocalPosition with (statement) %}
+        {{ statement.name }} = literal.LocalPosition(
             "{{ statement.local_typed_name }}",
-            {% if statement.constraints %}
+                {%- if !statement.constraints.is_empty() %}
             constraints=(
-                {% for constraint in statement.constraints %}
+                    {%- for constraint in statement.constraints %}
                 {{ constraint.module_name }}.{{ constraint.class_name }},
-                {% endfor %}
+                    {%- endfor %}
             ),
-            {% endif %}
+                {%- endif %}
         )
-        {% elif statement.kind == StatementKind.CREATE_PARTICLE %}
-        {{ position_expression(statement.position) }}.create_particle()
-        {% elif statement.kind == StatementKind.MOVE_PARTICLE %}
-        {{ position_expression(statement.position) }}.move_particle_to(
-            {{ position_expression(statement.to_position, "    ") }}
+            {%- when Statement::CreateParticle with (statement) %}
+        {{ expressions::position_expression(statement.position, "") }}.create_particle()
+                {%- if let Some(label) = statement.operation_label %}
+        literal.record_operation("{{ label }}")
+                {%- endif %}
+            {%- when Statement::MoveParticle with (statement) %}
+        {{ expressions::position_expression(statement.position, "") }}.move_particle_to(
+            {{ expressions::position_expression(statement.to_position, "    ") }}
         )
-        {% elif statement.kind == StatementKind.DESTROY_PARTICLE %}
-        {{ position_expression(statement.position) }}.destroy_particle()
-        {% elif statement.kind == StatementKind.RUN_ACTION %}
-            {% if statement.destruction_contract %}
-                {% set contract = statement.destruction_contract %}
-                {% if contract.forwarded_methods %}
-        {{ position_expression(statement.position) }}.run(
+                {%- if let Some(label) = statement.operation_label %}
+        literal.record_operation("{{ label }}")
+                {%- endif %}
+            {%- when Statement::DestroyParticle with (statement) %}
+        {{ expressions::position_expression(statement.position, "") }}.destroy_particle()
+                {%- if let Some(label) = statement.operation_label %}
+        literal.record_operation("{{ label }}")
+                {%- endif %}
+            {%- when Statement::RunAction with (statement) %}
+                {%- if let Some(contract) = statement.destruction_contract %}
+                    {%- if !contract.forwarded_methods.is_empty() %}
+        {{ expressions::position_expression(statement.position, "") }}.run(
             {{ contract.class_name }}(
-                    {% for method in contract.forwarded_methods %}
+                        {%- for method in contract.forwarded_methods %}
                 destruction_contracts.{{ method }},
-                    {% endfor %}
+                        {%- endfor %}
             ),
         )
-                {% else %}
-        {{ position_expression(statement.position) }}.run({{ contract.class_name }}())
-                {% endif %}
-            {% else %}
-        {{ position_expression(statement.position) }}.run()
-            {% endif %}
-        {% elif statement.kind == StatementKind.RUN_CONTRACT_DESTRUCTORS or statement.kind == StatementKind.DESTROY_CONTRACT_CHILDREN %}
+                    {%- else %}
+        {{ expressions::position_expression(statement.position, "") }}.run({{ contract.class_name }}())
+                    {%- endif %}
+                {%- else %}
+        {{ expressions::position_expression(statement.position, "") }}.run()
+                {%- endif %}
+            {%- when Statement::ContractContribution with (statement) %}
         destruction_contracts.{{ statement.contract_method }}(
-            {{ position_expression(statement.position, "    ") }}.particle
+            {{ expressions::position_expression(statement.position, "    ") }}.particle
         )
-        {% endif %}
-        {% if statement.kind in (StatementKind.CREATE_PARTICLE, StatementKind.MOVE_PARTICLE, StatementKind.DESTROY_PARTICLE) and statement.operation_label is not none %}
-        literal.record_operation("{{ statement.operation_label }}")
-        {% endif %}
-    {% endfor %}
+        {%- endmatch %}
+    {%- endfor %}
 {% endmacro %}

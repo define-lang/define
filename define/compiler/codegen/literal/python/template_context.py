@@ -146,7 +146,7 @@ class LocalPositionContext(ActionStatementContext):
     """A local position definition."""
 
     kind: ClassVar[StatementKind] = StatementKind.LOCAL_POSITION
-    local_position_name: str
+    name: str
     local_typed_name: str
     constraints: list[naming.ClassReference]
 

@@ -49,7 +49,17 @@ repos:
         name: fix Python BUILD dependencies
         entry: uv run tools/check_python_deps.py
         language: system
-        files: (^|/)(BUILD\.bazel|.*\.py)$
+        files: (^|/)(BUILD\.bazel|.*\.pyi?)$
+
+      - id: rust-checks
+        name: Rust lint and format checks
+        entry:
+          bazelisk test --noshow_progress
+          //define/compiler/codegen/literal/python:clippy_test
+          //define/compiler/codegen/literal/python:rustfmt_test
+        language: system
+        files: (\.rs|\.j2|Cargo\.toml|Cargo\.lock|rust-toolchain\.toml)$
+        pass_filenames: false
 
       - id: format
         name: reformat files

@@ -239,7 +239,7 @@ def _load_targets(
                     raise ValueError(
                         f"{label} must have exactly one Python source, found {sources}"
                     )
-                if not sources[0].endswith(".py"):
+                if not sources[0].endswith((".py", ".pyi")):
                     raise ValueError(
                         f"{label} source must be a Python file, found {sources[0]!r}"
                     )

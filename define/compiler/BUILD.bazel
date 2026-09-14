@@ -227,9 +227,6 @@ py_test(
     ],
 )
 
-# Ideally this would specify venv = default. Unfortunately, that breaks
-# pyright_test, which tries to use j2lint and build it with the default
-# venv only to find it doesn't exist.
 py_binary(
     name = "main",
     srcs = ["main.py"],

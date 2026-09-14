@@ -1,8 +1,8 @@
 """Update toolchain versions that Renovate cannot handle.
 
-Handles Go SDK version (MODULE.bazel + go.mod), buf toolchain
-version + SHA256 (MODULE.bazel), Node.js toolchain version
-(MODULE.bazel), and multitool lockfile (ruff, uv).
+Handles Go SDK version (MODULE.bazel + go.mod), buf toolchain version + SHA256
+(MODULE.bazel), Node.js toolchain version (MODULE.bazel), and multitool lockfile
+(ruff, uv).
 
 Usage:
     uv run tools/update_toolchains.py

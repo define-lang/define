@@ -4,3 +4,5 @@ tools/node_modules
 .todo-worktrees
 .claude/worktrees
 vendored/re2
+target
+tmp

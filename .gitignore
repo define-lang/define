@@ -229,3 +229,6 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Cargo build artifacts; dependencies are pinned in Cargo.lock.
+/target/

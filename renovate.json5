@@ -20,6 +20,17 @@
       datasourceTemplate: "github-releases",
       versioningTemplate: "regex:^(?<major>\\d{4})(?<minor>\\d{2})(?<patch>\\d{2})$",
     },
+    {
+      customType: "regex",
+      managerFilePatterns: ["/^Cargo\\.toml$/", "/^MODULE\\.bazel$/"],
+      matchStrings: [
+        'rust-version\\s*=\\s*"(?<currentValue>\\d+\\.\\d+)"',
+        'rust_toolchains\\.toolchain\\([\\s\\S]*?version\\s*=\\s*"(?<currentValue>\\d+\\.\\d+\\.\\d+)"',
+      ],
+      depNameTemplate: "rust",
+      datasourceTemplate: "rust-version",
+      versioningTemplate: "rust-release-channel",
+    },
   ],
   packageRules: [
     {
@@ -46,6 +57,11 @@
     {
       matchManagers: ["pep621"],
       groupName: "python dependencies",
+    },
+    {
+      matchManagers: ["rust-toolchain", "custom.regex"],
+      matchDepNames: ["rust"],
+      groupName: "Rust toolchain",
     },
     {
       matchUpdateTypes: ["lockFileMaintenance"],

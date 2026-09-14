@@ -1,6 +1,11 @@
 load("@aspect_rules_py//py:defs.bzl", "py_library")
 load("//tools/bzl:format.bzl", "format_test")
 
+exports_files(
+    ["Cargo.toml"],
+    visibility = ["//define:__subpackages__"],
+)
+
 py_library(
     name = "define",
     srcs = ["__init__.py"],

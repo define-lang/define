@@ -92,6 +92,37 @@ def test_module_name_uses_package_for_init():
     )
 
 
+def test_native_extension_stub_preserves_implementation_and_infers_imports(
+    tmp_path: Path,
+):
+    package = tmp_path / "define" / "example"
+    package.mkdir(parents=True)
+    _ = (package / "context.py").write_text("class Context: pass\n")
+    _ = (package / "native.pyi").write_text(
+        """from define.example import context
+def render(value: context.Context) -> str: ...
+"""
+    )
+    _ = (package / "BUILD.bazel").write_text(
+        """py_library(name = "context", srcs = ["context.py"])
+py_library(
+name = "native", srcs = ["native.pyi"],
+deps = [
+":renderer", # keep: native implementation
+],
+)
+"""
+    )
+    repository = check_python_deps.load_repository(tmp_path)
+    results = check_python_deps.analyze_targets(repository, [package / "native.pyi"])
+    assert len(results.changes) == 1
+    assert results.changes[0].target.label == "//define/example:native"
+    assert results.changes[0].expected == {
+        "//define/example:context",
+        "//define/example:renderer",
+    }
+
+
 def test_analyze_imports_ignores_standard_library_for_unresolved_imports():
     tree = ast.parse("import pathlib\nimport unknown_package\n")
 
