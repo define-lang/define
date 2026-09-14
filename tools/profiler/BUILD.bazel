@@ -90,6 +90,7 @@ py_test(
         ":perf_test_support",
         ":profiler",
         "@pypi//click",
+        "@pypi//msgspec",
         "@pypi//pytest",
     ],
 )
@@ -198,6 +199,7 @@ py_library(
     srcs = ["test_helpers.py"],
     deps = [
         ":schema",
+        "@pypi//msgspec",
         "@rules_python//python/runfiles",
     ],
 )
@@ -217,6 +219,7 @@ py_test(
         ":remote_frame_names",
         ":schema",
         "@pypi//click",
+        "@pypi//msgspec",
         "@pypi//pytest",
     ],
 )
@@ -257,6 +260,9 @@ py_library(
     name = "schema",
     srcs = ["schema.py"],
     visibility = ["//tools:__pkg__"],
+    deps = [
+        "@pypi//msgspec",
+    ],
 )
 
 # PRF-052: Independent causal evidence. PRF-053: Causal diagnostics.
@@ -317,6 +323,7 @@ py_test(
         ":schema",
         ":wall_critical_path",
         ":wall_model",
+        "@pypi//msgspec",
     ],
 )
 

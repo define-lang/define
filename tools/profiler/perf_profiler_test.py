@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import contextlib
-import dataclasses
 import io
 import json
 import shutil
@@ -10,6 +9,7 @@ import sys
 import typing
 from unittest import mock
 
+import msgspec
 import pytest
 from click import testing
 
@@ -78,16 +78,20 @@ def test_parses_perf_samples_and_python_frame_trampolines():
         )
     )
 
-    assert [dataclasses.asdict(sample) for sample in samples] == [
-        {
-            "os_thread_id": 102,
-            "period_ns": 1_003_009,
-            "python_stack_leaf_first": (
-                {"filename": "/workspace/example.py", "function": "leaf"},
-                {"filename": "/workspace/example.py", "function": "caller"},
+    assert samples == [
+        perf_analyzer.Sample(
+            os_thread_id=102,
+            period_ns=1_003_009,
+            python_stack_leaf_first=(
+                analyzer_model.FunctionIdentity(
+                    filename="/workspace/example.py", function="leaf"
+                ),
+                analyzer_model.FunctionIdentity(
+                    filename="/workspace/example.py", function="caller"
+                ),
             ),
-            "unresolved_python_frame_count": 0,
-        }
+            unresolved_python_frame_count=0,
+        )
     ]
 
 
@@ -502,7 +506,7 @@ def test_filters_perf_relationships_and_threads():
         filename="/workspace/define/compiler/example.py",
         function="caller",
     )
-    profile.samples[0] = dataclasses.replace(
+    profile.samples[0] = msgspec.structs.replace(
         profile.samples[0],
         python_stack_leaf_first=(*profile.samples[0].python_stack_leaf_first, caller),
     )
@@ -534,7 +538,7 @@ def test_filters_perf_relationships_and_threads():
 
 
 def test_reports_perf_warnings():
-    profile = dataclasses.replace(
+    profile = msgspec.structs.replace(
         _profile([(100, 1, "compile")]),
         perf_script_warnings=["sample warning"],
     )

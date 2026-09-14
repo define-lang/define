@@ -7,7 +7,6 @@ import ast
 import importlib.metadata
 import re
 import sys
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Final, cast
 
@@ -42,8 +41,7 @@ class PyrightTarget(msgspec.Struct, frozen=True):
 type DependencyTarget = PythonTarget | PyrightTarget
 
 
-@dataclass(frozen=True)
-class DependencyChanges:
+class DependencyChanges(msgspec.Struct, frozen=True):
     """Differences between declared and expected dependencies."""
 
     target: DependencyTarget

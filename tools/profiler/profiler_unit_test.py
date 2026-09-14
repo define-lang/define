@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import dataclasses
 import io
 import os
 import random
@@ -13,6 +12,7 @@ from pathlib import Path
 from unittest import mock
 
 import click.testing
+import msgspec
 import pytest
 
 from tools.profiler import process_events, profiler, remote_frame_names, schema
@@ -1211,7 +1211,7 @@ def test_attached_capture_requires_a_python_stack(
     target_process = _target_process()
     writer = profiler._ProfileWriter(io.StringIO())  # pyright: ignore[reportPrivateUsage]
     state = _capture_state(python_stack_observed=python_stack_observed)
-    attached_runtime = dataclasses.replace(
+    attached_runtime = msgspec.structs.replace(
         _attached_runtime(),
         observed_target_running_ns=8,
     )

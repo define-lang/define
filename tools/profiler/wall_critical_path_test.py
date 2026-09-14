@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-import dataclasses
 import types
 import typing
+
+import msgspec
 
 from tools.profiler import schema, wall_critical_path, wall_model
 
@@ -40,7 +41,7 @@ def _samples(
             first_sample.interval,
         )
         for identity, sample in observation.items():
-            sample = dataclasses.replace(sample, observation=observation_sample)
+            sample = msgspec.structs.replace(sample, observation=observation_sample)
             observation_sample.threads[identity] = sample
             by_identity.setdefault(identity, []).append(sample)
         observation_samples.append(observation_sample)

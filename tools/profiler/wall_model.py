@@ -14,8 +14,7 @@ if typing.TYPE_CHECKING:
     from tools.profiler import schema
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
-class Interval:
+class Interval(msgspec.Struct, frozen=True):
     """A target-running interval bounded in nanoseconds."""
 
     # PRF-005: Lifecycle-bounded attribution.
@@ -48,8 +47,7 @@ class ObservationSample:
     )
 
 
-@dataclasses.dataclass(slots=True)
-class ThreadSample:
+class ThreadSample(msgspec.Struct):
     """One thread's state and stack over a sampled wall interval."""
 
     # PRF-005: Lifecycle-bounded attribution.
@@ -88,13 +86,12 @@ class SchedulerWake(msgspec.Struct, frozen=True):
     downstream_os_thread_id: int
 
 
-@dataclasses.dataclass(slots=True)
-class Samples:
+class Samples(msgspec.Struct):
     """Canonical wall samples indexed for the analyzers' access patterns."""
 
     observations: list[ObservationSample]
     by_identity: dict[ThreadIdentity, list[ThreadSample]]
-    scheduler_wakes: list[SchedulerWake] = dataclasses.field(default_factory=list)
+    scheduler_wakes: list[SchedulerWake] = msgspec.field(default_factory=list)
 
     def __iter__(self) -> collections.abc.Iterator[ThreadSample]:
         """Iterate over every sampled thread in observation order."""

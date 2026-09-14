@@ -3,25 +3,24 @@
 from __future__ import annotations
 
 import collections
-import dataclasses
 import os
 import select
 import sys
 import time
 from pathlib import Path
 
+import msgspec
 from python.runfiles import runfiles  # pyright: ignore[reportMissingTypeStubs]
 
 from tools.profiler import schema
 
 
-@dataclasses.dataclass(slots=True)
-class ProfilerEventReader:
+class ProfilerEventReader(msgspec.Struct):
     """Read explicit profiler coordination events."""
 
     # PRF-041: Realistic tests. PRF-049: Event-driven coordination.
     file_descriptor: int
-    buffered_events: collections.deque[str] = dataclasses.field(
+    buffered_events: collections.deque[str] = msgspec.field(
         default_factory=collections.deque
     )
     incomplete_event: bytes = b""

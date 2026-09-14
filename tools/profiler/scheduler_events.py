@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import dataclasses
 import pathlib
 import re
 import shutil
@@ -129,8 +128,7 @@ def parse_script_output(output: str) -> tuple[list[schema.SchedulerWakeEvent], i
     return events, lost_event_count
 
 
-@dataclasses.dataclass(slots=True)
-class Collector:
+class Collector(msgspec.Struct):
     """An external perf scheduler-event collection process."""
 
     perf_executable: str | None

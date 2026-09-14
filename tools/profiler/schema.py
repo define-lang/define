@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-import dataclasses
 import enum
 import json
 import typing
 from typing import Literal, TypedDict, cast
+
+import msgspec
 
 if typing.TYPE_CHECKING:
     import collections.abc
@@ -278,8 +279,7 @@ ProfileRecord = (
 )
 
 
-@dataclasses.dataclass(slots=True)
-class RawProfile:
+class RawProfile(msgspec.Struct):
     """Loaded continuous wall profile artifact."""
 
     # PRF-010: Raw-data preservation. PRF-020: Machine and human interfaces.

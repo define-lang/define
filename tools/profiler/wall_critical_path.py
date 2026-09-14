@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import bisect
-import dataclasses
 import itertools
 import typing
 
@@ -20,8 +19,7 @@ class DependentWait(msgspec.Struct, frozen=True):
     stack: tuple[int, ...]
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
-class ResolvedSegment:
+class ResolvedSegment(msgspec.Struct, frozen=True):
     """A sampled critical-path interval attributed to a Python stack."""
 
     # PRF-047: Multi-threaded critical path.
@@ -33,8 +31,7 @@ class ResolvedSegment:
     parallel_off_path_threads: tuple[wall_model.ThreadIdentity, ...]
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
-class UncertainSegment:
+class UncertainSegment(msgspec.Struct, frozen=True):
     """A critical-path interval that sampling could not attribute."""
 
     # PRF-047: Multi-threaded critical path.
@@ -83,8 +80,7 @@ class FunctionRow(msgspec.Struct, frozen=True):
     wait_ns: int
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
-class Analysis:
+class Analysis(msgspec.Struct, frozen=True):
     """Sampled wall critical-path analysis."""
 
     # PRF-047: Multi-threaded critical path.
@@ -132,8 +128,7 @@ class Analysis:
         )
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
-class _Transition:
+class _Transition(msgspec.Struct, frozen=True):
     # PRF-047: Multi-threaded critical path.
     target_running_ns: int
     downstream_sample: wall_model.ThreadSample
@@ -153,8 +148,7 @@ class _Phase(msgspec.Struct, frozen=True):
     waiter: wall_model.ThreadIdentity | None
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
-class _PathSkeleton:
+class _PathSkeleton(msgspec.Struct, frozen=True):
     # PRF-047: Multi-threaded critical path.
     phases: list[_Phase]
     uncertain_segments: list[UncertainSegment]
@@ -663,13 +657,13 @@ def _merge_segments(segments: list[CriticalPathSegment]) -> list[CriticalPathSeg
         if (
             isinstance(previous, ResolvedSegment)
             and isinstance(segment, ResolvedSegment)
-            and dataclasses.replace(previous, interval=segment.interval) == segment
+            and msgspec.structs.replace(previous, interval=segment.interval) == segment
         ) or (
             isinstance(previous, UncertainSegment)
             and isinstance(segment, UncertainSegment)
             and previous.reason == segment.reason
         ):
-            merged[-1] = dataclasses.replace(previous, interval=interval)
+            merged[-1] = msgspec.structs.replace(previous, interval=interval)
         else:
             merged.append(segment)
     return merged

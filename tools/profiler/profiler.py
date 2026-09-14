@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import contextlib
-import dataclasses
 import hashlib
 import json
 import os
@@ -197,8 +196,7 @@ class _SuccessfulObservationResult(msgspec.Struct, frozen=True):
     threads: list[_CapturedThread]
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
-class _RawObservation:
+class _RawObservation(msgspec.Struct, frozen=True):
     # PRF-010: Raw-data preservation. PRF-050: Minimal stopped section.
     timing: schema.ObservationBase
     evidence: dict[int, _ThreadEvidence]
@@ -234,8 +232,7 @@ class _ObservationCapture(msgspec.Struct, frozen=True):
     unwinder: _Unwinder | None
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
-class _AttachedRuntime:
+class _AttachedRuntime(msgspec.Struct, frozen=True):
     # PRF-011: Complete invocation. PRF-022: Launcher safety.
     runtime: schema.PythonRuntime
     observed_ns: int
@@ -254,11 +251,10 @@ class _CaptureState(msgspec.Struct):
     interruption_signal: int | None = None
 
 
-@dataclasses.dataclass(slots=True)
-class _ProfileWriter:
+class _ProfileWriter(msgspec.Struct):
     # PRF-027: Incremental persistence. PRF-028: Bounded storage.
     profile_file: typing.TextIO
-    frame_ids: dict[tuple[str, str, int], int] = dataclasses.field(default_factory=dict)
+    frame_ids: dict[tuple[str, str, int], int] = msgspec.field(default_factory=dict)
 
     def append_records(self, records: list[schema.ProfileRecord]) -> None:
         with _blocked_interruption_signals():

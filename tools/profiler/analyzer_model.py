@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import dataclasses
 import itertools
 import pathlib
 import typing
@@ -47,8 +46,7 @@ def display_stack_filename(filename: str) -> str:
     return pathlib.PurePath(display_filename(filename)).name
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
-class FunctionIdentity:
+class FunctionIdentity(msgspec.Struct, frozen=True):
     """Stable function identity independent of the sampled source line."""
 
     filename: str

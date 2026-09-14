@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import contextlib
-import dataclasses
 import fcntl
 import itertools
 import json
@@ -42,8 +41,7 @@ def _perf_executable() -> str:
     return executable
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
-class Sample:
+class Sample(msgspec.Struct, frozen=True):
     """One weighted call chain decoded from native perf data."""
 
     os_thread_id: int
@@ -52,8 +50,7 @@ class Sample:
     unresolved_python_frame_count: int = 0
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
-class Profile:
+class Profile(msgspec.Struct, frozen=True):
     """Transient decoded view of a native perf artifact."""
 
     metadata: perf_profiler.Metadata
@@ -99,8 +96,7 @@ class ThreadRow(msgspec.Struct, frozen=True):
     sample_count: int
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
-class Analysis:
+class Analysis(msgspec.Struct, frozen=True):
     """Derived CPU attribution from actual on-CPU perf samples."""
 
     self_function_rows: list[FunctionRow]

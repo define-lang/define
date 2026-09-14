@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import collections
-import dataclasses
 import itertools
 import typing
 
@@ -58,8 +57,7 @@ class ThreadRow(msgspec.Struct, frozen=True):
     sample_hits: int
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
-class Analysis:
+class Analysis(msgspec.Struct, frozen=True):
     """Derived wall attribution from raw independent observations."""
 
     # PRF-010: Raw-data preservation. PRF-018: Focused analysis.
@@ -79,13 +77,12 @@ class Analysis:
         return max(0, self.wall_window_ns - self.attributed_wall_ns)
 
 
-@dataclasses.dataclass(slots=True)
-class _SpanMetrics:
+class _SpanMetrics(msgspec.Struct):
     wall_occupancy_ns: int = 0
     sample_hits: int = 0
     longest_span_ns: int = 0
     _wall_end_ns: int | None = None
-    _thread_spans: dict[int, tuple[int, int]] = dataclasses.field(default_factory=dict)
+    _thread_spans: dict[int, tuple[int, int]] = msgspec.field(default_factory=dict)
 
     def add(self, thread_id: int, interval: wall_model.Interval) -> None:
         self.sample_hits += 1
@@ -106,7 +103,6 @@ class _SpanMetrics:
         self.longest_span_ns = max(self.longest_span_ns, span_ns)
 
 
-@dataclasses.dataclass(slots=True)
 class _IntervalMetrics(_SpanMetrics):
     thread_time_ns: int = 0
 
@@ -116,8 +112,7 @@ class _IntervalMetrics(_SpanMetrics):
         self.thread_time_ns += interval.duration_ns
 
 
-@dataclasses.dataclass(slots=True)
-class _OccupancyMetrics:
+class _OccupancyMetrics(msgspec.Struct):
     wall_occupancy_ns: int = 0
     sample_hits: int = 0
     _wall_end_ns: int | None = None
