@@ -16,7 +16,6 @@
     "https://bcr.bazel.build/modules/abseil-cpp/20250512.1/MODULE.bazel": "d209fdb6f36ffaf61c509fcc81b19e81b411a999a934a032e10cd009a0226215",
     "https://bcr.bazel.build/modules/abseil-cpp/20250814.0/MODULE.bazel": "c43c16ca2c432566cdb78913964497259903ebe8fb7d9b57b38e9f1425b427b8",
     "https://bcr.bazel.build/modules/abseil-cpp/20250814.1/MODULE.bazel": "51f2312901470cdab0dbdf3b88c40cd21c62a7ed58a3de45b365ddc5b11bcab2",
-    "https://bcr.bazel.build/modules/abseil-cpp/20250814.2/MODULE.bazel": "17b900597f44dfec6fe502fc3b123a57d86ad7aafe815f9ef4f99d85452a3104",
     "https://bcr.bazel.build/modules/abseil-cpp/20260107.1/MODULE.bazel": "e33b3801443f5fd64465262084534115db76363df13d2168a42bbfacc747be81",
     "https://bcr.bazel.build/modules/abseil-cpp/20260526.0/MODULE.bazel": "b4a76a8d70ba08aa0253fd5e374ca5a5fa6b15aba985a7bbe4467c138954830f",
     "https://bcr.bazel.build/modules/abseil-cpp/20260817.0/MODULE.bazel": "026d79f94313a7b41e1d133834b802713b2d86faee4acf6008ad1dce5f0c4de3",
