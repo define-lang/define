@@ -176,13 +176,13 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
         name = cast("ast.DefinitionGlobalNameContent", items[1])
         if len(items) > 2:
             block_data = cast("_PotentialPositionBlockData", items[2])
-            return ast.PositionDefinition(
+            return ast.PositionDefinition.from_name(
                 name=name,
                 quality_implications=block_data.quality_implications,
                 constraints=block_data.constraints,
                 location=self._location(start=keyword, end=block_data.block_close),
             )
-        return ast.PositionDefinition(
+        return ast.PositionDefinition.from_name(
             name=name,
             quality_implications=(),
             constraints=None,
@@ -205,7 +205,7 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
         keyword = cast("lark_cython.Token", items[0])
         name = cast("ast.DefinitionGlobalNameContent", items[1])
         block_data = cast("_ActionDefinitionBlockData", items[2])
-        return ast.ActionDefinition(
+        return ast.ActionDefinition.from_name(
             name=name,
             quality_implications=block_data.quality_implications,
             interface_positions=block_data.interface_positions,
@@ -254,12 +254,12 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
         local_name = cast("ast.LocalNameContent", items[1])
         if len(items) > 2:
             block_data = cast("_LocalPositionBlockData", items[2])
-            return ast.LocalPositionDefinition(
+            return ast.LocalPositionDefinition.from_name(
                 local_name=local_name,
                 constraints=block_data.constraints,
                 location=self._location(start=keyword, end=block_data.block_close),
             )
-        return ast.LocalPositionDefinition(
+        return ast.LocalPositionDefinition.from_name(
             local_name=local_name,
             constraints=None,
             location=self._location_for_bare_definition(start=keyword, name=local_name),
@@ -463,7 +463,7 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
         the_keyword = cast("lark_cython.Token", items[0])
         typed_name = cast("ast.LocalTypedNameReference", items[1])
         has_a_particle = cast("lark_cython.Token", items[2])
-        return ast.PositionPresenceStatement(
+        return ast.PositionPresenceStatement.from_typed_name(
             typed_name=typed_name,
             location=self._location_with_terminator(
                 start=the_keyword, end=has_a_particle

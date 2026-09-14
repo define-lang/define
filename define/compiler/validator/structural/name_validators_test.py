@@ -726,7 +726,7 @@ class TestValidateGlobalName:
 
 
 def _enclosing_definition() -> ast.PositionDefinition:
-    return ast.PositionDefinition(
+    return ast.PositionDefinition.from_name(
         name=ast.DefinitionGlobalNameContent(
             fqun=_fqun("my_lib", authority=_authority("my.domain.com")),
             path=_global_path_name("/test"),

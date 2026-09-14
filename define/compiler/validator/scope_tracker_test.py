@@ -21,7 +21,7 @@ def _make_local_def(
     name: str,
     constraints: ast.PositionConstraintBlock | None = None,
 ) -> ast.LocalPositionDefinition:
-    return ast.LocalPositionDefinition(
+    return ast.LocalPositionDefinition.from_name(
         local_name=ast.LocalNameContent(name=name, location=_LOC),
         constraints=constraints,
         location=_LOC,

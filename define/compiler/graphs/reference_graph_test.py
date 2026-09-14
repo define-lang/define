@@ -19,7 +19,7 @@ def _p(path: str) -> str:
 
 
 def _make_position(path_name: str) -> ast.PositionDefinition:
-    return ast.PositionDefinition(
+    return ast.PositionDefinition.from_name(
         name=ast.DefinitionGlobalNameContent(
             path=ast.GlobalPathName(name=path_name, location=_LOC),
             fqun=_FQUN,
@@ -37,7 +37,7 @@ _TRIGGER_REF = ast.LocalTypedNameReference(
 
 
 def _make_action(path_name: str) -> ast.ActionDefinition:
-    return ast.ActionDefinition(
+    return ast.ActionDefinition.from_name(
         name=ast.DefinitionGlobalNameContent(
             path=ast.GlobalPathName(name=path_name, location=_LOC),
             fqun=_FQUN,
@@ -46,7 +46,7 @@ def _make_action(path_name: str) -> ast.ActionDefinition:
         quality_implications=(),
         interface_positions=(),
         trigger_conditions=ast.TriggerConditionsBlock(
-            condition=ast.PositionPresenceStatement(
+            condition=ast.PositionPresenceStatement.from_typed_name(
                 typed_name=_TRIGGER_REF, location=_LOC
             ),
             location=_LOC,

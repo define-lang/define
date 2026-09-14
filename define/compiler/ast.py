@@ -5,8 +5,15 @@ from __future__ import annotations
 import abc
 import enum
 import sys
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, ClassVar, Final, Self, cast, override
+from typing import (
+    TYPE_CHECKING,
+    Final,
+    Generic,
+    Self,
+    TypeVar,
+    cast,
+    override,
+)
 
 import msgspec
 
@@ -24,6 +31,10 @@ class NameType(enum.StrEnum):
 
     POSITION = "position"
     ACTION = "action"
+
+
+class ASTNodeMeta(msgspec.StructMeta, abc.ABCMeta):
+    """Combine msgspec struct construction with abstract AST base classes."""
 
 
 class SourceLocation(msgspec.Struct, frozen=True):
@@ -106,82 +117,53 @@ def start_of_file_location(
     )
 
 
-class ASTNode:
+class ASTNode(msgspec.Struct, metaclass=ASTNodeMeta, eq=False):
     """Base class for all AST nodes.
 
     Treat nodes as immutable after construction so cached values remain valid.
     """
 
-    __slots__: ClassVar[tuple[str, ...]] = ("location",)
-
     location: SourceLocation
-
-    def __init__(self, location: SourceLocation):
-        """Initialize an AST node."""
-        self.location = location
 
 
 class Program(ASTNode):
     """Represents the entire program."""
 
-    __slots__: ClassVar[tuple[str, ...]] = ("definitions",)
-
     definitions: tuple[QualityDefinition, ...]
-
-    def __init__(
-        self, location: SourceLocation, definitions: tuple[QualityDefinition, ...]
-    ):
-        """Initialize a program."""
-        super().__init__(location=location)
-        self.definitions = definitions
 
 
 class QualityDefinition(ASTNode):
     """Base class for quality definitions (positions and actions)."""
 
-    __slots__: ClassVar[tuple[str, ...]] = ("quality_implications", "typed_name")
-
     typed_name: GlobalTypedNameInDefinition
     quality_implications: tuple[QualityImplicationStatement, ...]
-
-    def __init__(
-        self,
-        location: SourceLocation,
-        typed_name: GlobalTypedNameInDefinition,
-        quality_implications: tuple[QualityImplicationStatement, ...],
-    ):
-        """Initialize a quality definition."""
-        super().__init__(location=location)
-        self.typed_name = typed_name
-        self.quality_implications = quality_implications
 
 
 class PositionDefinition(QualityDefinition):
     """Represents a position definition."""
 
-    __slots__: ClassVar[tuple[str, ...]] = ("constraints",)
+    constraints: PositionConstraintBlock | None = None
 
-    constraints: PositionConstraintBlock | None
-
-    def __init__(
-        self,
+    @classmethod
+    def from_name(
+        cls,
         *,
         name: DefinitionGlobalNameContent,
         location: SourceLocation,
-        quality_implications: tuple[QualityImplicationStatement, ...] | None = None,
+        quality_implications: tuple[QualityImplicationStatement, ...] = (),
         constraints: PositionConstraintBlock | None = None,
-    ):
+    ) -> Self:
         """Initialize with a global name, wrapping it in a typed definition name."""
-        super().__init__(
+        return cls(
             typed_name=GlobalTypedNameInDefinition(
                 name_type=NameType.POSITION,
                 name_content=name,
                 location=SourceLocation.from_definition_name(name, NameType.POSITION),
             ),
-            quality_implications=quality_implications or (),
+            quality_implications=quality_implications,
             location=location,
+            constraints=constraints,
         )
-        self.constraints = constraints
 
     @property
     def constraint_typed_names(self) -> tuple[GlobalTypedNameReference, ...]:
@@ -194,8 +176,6 @@ class PositionDefinition(QualityDefinition):
 class NameContent(ASTNode, abc.ABC):
     """Base class for name content nodes (local or global)."""
 
-    __slots__: ClassVar[tuple[str, ...]] = ()
-
     @property
     @abc.abstractmethod
     def source_name(self) -> str:
@@ -205,14 +185,11 @@ class NameContent(ASTNode, abc.ABC):
 class LocalNameContent(NameContent):
     """Represents a local name."""
 
-    __slots__: ClassVar[tuple[str, ...]] = ("name",)
-
     name: str
 
-    def __init__(self, location: SourceLocation, name: str):
-        """Initialize a local name."""
-        super().__init__(location=location)
-        self.name = sys.intern(name)
+    def __post_init__(self):
+        """Intern the local name."""
+        self.name = sys.intern(self.name)
 
     @property
     @override
@@ -223,26 +200,29 @@ class LocalNameContent(NameContent):
 class LocalPositionDefinition(ASTNode):
     """Represents a local position definition."""
 
-    __slots__: ClassVar[tuple[str, ...]] = ("constraints", "typed_name")
-
     typed_name: LocalTypedNameReference
-    constraints: PositionConstraintBlock | None
+    constraints: PositionConstraintBlock | None = None
 
-    def __init__(
-        self,
+    @classmethod
+    def from_name(
+        cls,
         *,
         local_name: LocalNameContent,
         location: SourceLocation,
         constraints: PositionConstraintBlock | None = None,
-    ):
+    ) -> Self:
         """Initialize with a local name, wrapping it in a typed name."""
-        super().__init__(location=location)
-        self.typed_name = LocalTypedNameReference(
-            name_type=NameType.POSITION,
-            name_content=local_name,
-            location=SourceLocation.from_definition_name(local_name, NameType.POSITION),
+        return cls(
+            typed_name=LocalTypedNameReference(
+                name_type=NameType.POSITION,
+                name_content=local_name,
+                location=SourceLocation.from_definition_name(
+                    local_name, NameType.POSITION
+                ),
+            ),
+            location=location,
+            constraints=constraints,
         )
-        self.constraints = constraints
 
     @property
     def constraint_typed_names(self) -> tuple[GlobalTypedNameReference, ...]:
@@ -255,26 +235,19 @@ class LocalPositionDefinition(ASTNode):
 type AnyPositionDefinition = PositionDefinition | LocalPositionDefinition
 
 
-class TypedName[NameContentT: NameContent](ASTNode):
+# Struct-generated constructors prevent automatic covariance inference.
+NameContentT_co = TypeVar("NameContentT_co", bound=NameContent, covariant=True)
+
+
+class TypedName(ASTNode, Generic[NameContentT_co], kw_only=True):  # noqa: UP046
     """Represents a typed name (local or global)."""
 
-    __slots__: ClassVar[tuple[str, ...]] = (
-        "_source_typed_name",
-        "name_content",
-        "name_type",
-    )
-
     name_type: NameType
-    name_content: Final[NameContentT]
-    _source_typed_name: str
+    name_content: Final[NameContentT_co]
+    _source_typed_name: str = ""
 
-    def __init__(
-        self, location: SourceLocation, name_type: NameType, name_content: NameContentT
-    ):
-        """Initialize a typed name."""
-        super().__init__(location=location)
-        self.name_type = name_type
-        self.name_content = name_content
+    def __post_init__(self):
+        """Build the interned source-form typed name."""
         self._source_typed_name = sys.intern(
             f"{self.name_type.value}<{self.name_content.source_name}>"
         )
@@ -290,34 +263,27 @@ class TypedName[NameContentT: NameContent](ASTNode):
         return self._source_typed_name
 
 
-class GlobalTypedName[NameContentT: GlobalNameContent[Fqun | None]](
-    TypedName[NameContentT]
+GlobalNameContentT_co = TypeVar(
+    "GlobalNameContentT_co", bound="GlobalNameContent[Fqun | None]", covariant=True
+)
+
+
+class GlobalTypedName(
+    TypedName[GlobalNameContentT_co],
+    Generic[GlobalNameContentT_co],  # noqa: UP046
 ):
     """A typed global name, at either a definition site or a reference site."""
-
-    __slots__: ClassVar[tuple[str, ...]] = ()
 
 
 class GlobalTypedNameReference(GlobalTypedName["ReferenceGlobalNameContent"]):
     """Represents a typed global name reference."""
 
-    __slots__: ClassVar[tuple[str, ...]] = ("_full_typed_name", "enclosing_fqun")
-
     enclosing_fqun: Fqun
-    _full_typed_name: str
+    _full_typed_name: str = ""
 
-    def __init__(
-        self,
-        location: SourceLocation,
-        name_type: NameType,
-        name_content: ReferenceGlobalNameContent,
-        enclosing_fqun: Fqun,
-    ):
-        """Initialize a global typed name reference."""
-        super().__init__(
-            location=location, name_type=name_type, name_content=name_content
-        )
-        self.enclosing_fqun = enclosing_fqun
+    def __post_init__(self):
+        """Build the interned canonical typed name."""
+        super().__post_init__()
         fqun = self.name_content.fqun or self.enclosing_fqun
         self._full_typed_name = sys.intern(
             f"{self.name_type.value}<{fqun.canonical}:{self.name_content.path.name}>"
@@ -343,14 +309,11 @@ class GlobalTypedNameReference(GlobalTypedName["ReferenceGlobalNameContent"]):
 class LocalTypedNameReference(TypedName[LocalNameContent]):
     """Represents a typed local name reference."""
 
-    __slots__: ClassVar[tuple[str, ...]] = ()
-
 
 type TypedNameReference = GlobalTypedNameReference | LocalTypedNameReference
 
 
-@dataclass(frozen=True, slots=True)
-class SourceFormTypedNameParts:
+class SourceFormTypedNameParts(msgspec.Struct, frozen=True):
     """Source-form parts parsed from one full typed name."""
 
     name_type: NameType
@@ -450,57 +413,33 @@ class ChainedName(ASTNode):
     cached canonical forms and dictionary keys remain valid.
     """
 
-    __slots__: ClassVar[tuple[str, ...]] = (
-        "canonical_chained_name",
-        "canonical_chained_name_tuple",
-        "typed_names",
-    )
-
-    location: SourceLocation
     typed_names: tuple[TypedNameReference, ...]
-    # Filled lazily on first access by __getattr__ and cached in the slot.
-    canonical_chained_name_tuple: ChainedNameTuple
+    _canonical_chained_name_tuple: ChainedNameTuple | None = None
+    _canonical_chained_name: str | None = None
 
-    def __init__(
-        self,
-        *,
-        typed_names: tuple[TypedNameReference, ...],
-        location: SourceLocation,
-        canonical_chained_name_tuple: ChainedNameTuple | None = None,
-    ):
-        """Initialize the chain, optionally seeding its cached canonical tuple.
-
-        canonical_chained_name_tuple is only pre-filled by other methods on
-        ChainedName itself as a performance optimization.
-        """
-        if not typed_names:
+    def __post_init__(self):
+        """Require at least one typed name."""
+        if not self.typed_names:
             raise ValueError("ChainedName must contain at least one typed name")
-        super().__init__(location=location)
-        self.typed_names = typed_names
-        self.canonical_chained_name: str
-        if canonical_chained_name_tuple is not None:
-            self.canonical_chained_name_tuple = canonical_chained_name_tuple
 
-    # These are optimized because they were _the_ top hotspots in a CPU profile
-    # of compilation when they were just computed always in __post_init__.
-    #
-    # Computed on first read and stored into the slot so later reads are a bare
-    # slot read. The values are deterministic over the immutable typed_names, so
-    # a benign race across threads recomputes an equal value and the slot store
-    # is atomic. Anything other than these two names must raise so copy/pickle's
-    # dunder probing still fails cleanly.
-    def __getattr__(self, name: str) -> ChainedNameTuple | str:
-        """Lazily compute and cache the canonical chained-name forms."""
-        match name:
-            case "canonical_chained_name_tuple":
-                value = tuple([elem.full_typed_name for elem in self.typed_names])
-                self.canonical_chained_name_tuple = value
-            case "canonical_chained_name":
-                value = "::".join(self.canonical_chained_name_tuple)
-                self.canonical_chained_name = value
-            case _:
-                raise AttributeError(name)
-        return value
+    # These remain lazy because computing them for every new chain was a top
+    # hotspot in compilation profiles. The values are deterministic over the
+    # immutable typed_names, so a benign race recomputes an equal value.
+    @property
+    def canonical_chained_name_tuple(self) -> ChainedNameTuple:
+        """The canonical typed names in this chain."""
+        if self._canonical_chained_name_tuple is None:
+            self._canonical_chained_name_tuple = tuple(
+                [elem.full_typed_name for elem in self.typed_names]
+            )
+        return self._canonical_chained_name_tuple
+
+    @property
+    def canonical_chained_name(self) -> str:
+        """The canonical chained name."""
+        if self._canonical_chained_name is None:
+            self._canonical_chained_name = "::".join(self.canonical_chained_name_tuple)
+        return self._canonical_chained_name
 
     @property
     def source_chained_name(self) -> str:
@@ -554,7 +493,7 @@ class ChainedName(ASTNode):
                     typed_names=names[: i + 1],
                     # A prefix of self's canonical tuple is exactly the parent's,
                     # so slice it here instead of making the parent recompute it.
-                    canonical_chained_name_tuple=self.canonical_chained_name_tuple[
+                    _canonical_chained_name_tuple=self.canonical_chained_name_tuple[
                         : i + 1
                     ],
                 )
@@ -584,7 +523,7 @@ class ChainedName(ASTNode):
             # chained_name_tuple over and over for requirement checks. (Concatenating
             # these two tuples is much faster than generating the tuple from the typed
             # names.)
-            canonical_chained_name_tuple=(
+            _canonical_chained_name_tuple=(
                 prefix.canonical_chained_name_tuple + self.canonical_chained_name_tuple
             ),
         )
@@ -598,7 +537,7 @@ class ChainedName(ASTNode):
         return PositionReference(
             location=self.location,
             typed_names=self.typed_names + names,
-            canonical_chained_name_tuple=(
+            _canonical_chained_name_tuple=(
                 self.canonical_chained_name_tuple
                 + tuple([name.full_typed_name for name in names])
             ),
@@ -613,7 +552,7 @@ class ChainedName(ASTNode):
         return ActionReference(
             location=self.location,
             typed_names=self.typed_names + names,
-            canonical_chained_name_tuple=(
+            _canonical_chained_name_tuple=(
                 self.canonical_chained_name_tuple
                 + tuple([name.full_typed_name for name in names])
             ),
@@ -635,25 +574,12 @@ class ChainedName(ASTNode):
 class PositionReference(ChainedName):
     """Represents a position reference, possibly chained with ::."""
 
-    __slots__: ClassVar[tuple[str, ...]] = ()
+    from_source: bool = False
 
-    def __init__(
-        self,
-        *,
-        typed_names: tuple[TypedNameReference, ...],
-        location: SourceLocation,
-        from_source: bool = False,
-        canonical_chained_name_tuple: ChainedNameTuple | None = None,
-    ):
-        """Initialize, optionally validating that the chain ends with a position."""
-        # Direct dispatch avoids super's overhead on this frequent construction path.
-        ChainedName.__init__(
-            self,
-            typed_names=typed_names,
-            location=location,
-            canonical_chained_name_tuple=canonical_chained_name_tuple,
-        )
-        if not from_source and typed_names[-1].name_type != NameType.POSITION:
+    def __post_init__(self):
+        """Require a position as the final typed name."""
+        super().__post_init__()
+        if not self.from_source and self.typed_names[-1].name_type != NameType.POSITION:
             raise ValueError(
                 f"Last element of a PositionReference must be a position: {self.source_chained_name}"
             )
@@ -665,7 +591,9 @@ class PositionReference(ChainedName):
         return PositionReference(
             location=self.location,
             typed_names=self.typed_names[:name_count],
-            canonical_chained_name_tuple=self.canonical_chained_name_tuple[:name_count],
+            _canonical_chained_name_tuple=self.canonical_chained_name_tuple[
+                :name_count
+            ],
         )
 
 
@@ -676,24 +604,10 @@ class ActionReference(ChainedName):
     compiler synthesizes it for chains it has determined end in an action.
     """
 
-    __slots__: ClassVar[tuple[str, ...]] = ()
-
-    def __init__(
-        self,
-        *,
-        typed_names: tuple[TypedNameReference, ...],
-        location: SourceLocation,
-        canonical_chained_name_tuple: ChainedNameTuple | None = None,
-    ):
-        """Initialize, validating that the chain ends with an action."""
-        # Direct dispatch avoids super's overhead on this frequent construction path.
-        ChainedName.__init__(
-            self,
-            typed_names=typed_names,
-            location=location,
-            canonical_chained_name_tuple=canonical_chained_name_tuple,
-        )
-        if typed_names[-1].name_type != NameType.ACTION:
+    def __post_init__(self):
+        """Require an action as the final typed name."""
+        super().__post_init__()
+        if self.typed_names[-1].name_type != NameType.ACTION:
             raise ValueError(
                 f"Last element of an ActionReference must be an action: {self.source_chained_name}"
             )
@@ -701,7 +615,7 @@ class ActionReference(ChainedName):
     @override
     def get_last_action(self) -> GlobalTypedNameReference:
         """Return the action this chain ends with."""
-        # Every action name is global, and __init__ checked that the chain ends
+        # Every action name is global, and construction checked that the chain ends
         # with an action, so its last element is that action.
         return cast("GlobalTypedNameReference", self.typed_names[-1])
 
@@ -709,44 +623,21 @@ class ActionReference(ChainedName):
 class ParticleStatement(ASTNode):
     """Base class for statements that operate on a target particle position."""
 
-    __slots__: ClassVar[tuple[str, ...]] = ("target_position",)
-
     target_position: PositionReference
-
-    def __init__(self, location: SourceLocation, target_position: PositionReference):
-        """Initialize a particle statement."""
-        super().__init__(location=location)
-        self.target_position = target_position
 
 
 class CreateParticleStatement(ParticleStatement):
     """Represents a 'create a particle in' statement."""
 
-    __slots__: ClassVar[tuple[str, ...]] = ()
-
 
 class MoveParticleStatement(ParticleStatement):
     """Represents a 'move the particle in ... to' statement."""
 
-    __slots__: ClassVar[tuple[str, ...]] = ("source_position",)
-
     source_position: PositionReference
-
-    def __init__(
-        self,
-        location: SourceLocation,
-        target_position: PositionReference,
-        source_position: PositionReference,
-    ):
-        """Initialize a move statement."""
-        super().__init__(location=location, target_position=target_position)
-        self.source_position = source_position
 
 
 class DestroyParticleStatement(ParticleStatement):
     """Represents a 'destroy the particle in' statement."""
-
-    __slots__: ClassVar[tuple[str, ...]] = ()
 
 
 type ActionStatement = (
@@ -760,49 +651,23 @@ type ActionStatement = (
 class PositionRequirementStatement(ASTNode):
     """Represents a position requirement statement in a constraints block."""
 
-    __slots__: ClassVar[tuple[str, ...]] = ("typed_global_name",)
-
     typed_global_name: GlobalTypedNameReference
-
-    def __init__(
-        self, location: SourceLocation, typed_global_name: GlobalTypedNameReference
-    ):
-        """Initialize a position requirement."""
-        super().__init__(location=location)
-        self.typed_global_name = typed_global_name
 
 
 class QualityImplicationStatement(ASTNode):
     """Represents a quality implication statement."""
 
-    __slots__: ClassVar[tuple[str, ...]] = ("typed_global_name",)
-
     typed_global_name: GlobalTypedNameReference
-
-    def __init__(
-        self, location: SourceLocation, typed_global_name: GlobalTypedNameReference
-    ):
-        """Initialize a quality implication."""
-        super().__init__(location=location)
-        self.typed_global_name = typed_global_name
 
 
 class PositionConstraintBlock(ASTNode):
     """Represents a position constraint block."""
 
-    __slots__: ClassVar[tuple[str, ...]] = ("as_set", "requirements")
-
     requirements: tuple[PositionRequirementStatement, ...]
-    as_set: frozenset[str]
+    as_set: frozenset[str] = frozenset()
 
-    def __init__(
-        self,
-        location: SourceLocation,
-        requirements: tuple[PositionRequirementStatement, ...],
-    ):
-        """Initialize a position constraint block."""
-        super().__init__(location=location)
-        self.requirements = requirements
+    def __post_init__(self):
+        """Build the set of canonical required names."""
         self.as_set = frozenset(
             requirement.typed_global_name.full_typed_name
             for requirement in self.requirements
@@ -812,16 +677,13 @@ class PositionConstraintBlock(ASTNode):
 class GlobalPathName(ASTNode):
     """Represents the path portion of a global name."""
 
-    __slots__: ClassVar[tuple[str, ...]] = ("name",)
-
     name: str
 
-    def __init__(self, location: SourceLocation, name: str):
-        """Initialize a global name's path."""
-        super().__init__(location=location)
+    def __post_init__(self):
+        """Intern the global path name."""
         # The parser supplies the token's string value because sys.intern rejects
         # token objects.
-        self.name = sys.intern(name)
+        self.name = sys.intern(self.name)
 
     @property
     def relative_path(self) -> define_path.DefinePath:
@@ -839,32 +701,31 @@ class GlobalPathName(ASTNode):
 class PositionPresenceStatement(ASTNode):
     """Represents a position presence statement."""
 
-    __slots__: ClassVar[tuple[str, ...]] = ("position_reference", "typed_name")
-
     typed_name: LocalTypedNameReference
     position_reference: PositionReference
 
-    def __init__(self, location: SourceLocation, typed_name: LocalTypedNameReference):
-        """Initialize a position presence statement."""
-        super().__init__(location=location)
-        self.typed_name = typed_name
-        self.position_reference = PositionReference(
-            typed_names=(self.typed_name,),
-            location=self.typed_name.location,
-            from_source=True,
+    @classmethod
+    def from_typed_name(
+        cls, *, location: SourceLocation, typed_name: LocalTypedNameReference
+    ) -> Self:
+        """Create a position presence statement for a typed name."""
+        return cls(
+            location=location,
+            typed_name=typed_name,
+            position_reference=PositionReference(
+                typed_names=(typed_name,),
+                location=typed_name.location,
+                from_source=True,
+            ),
         )
 
 
 class ConstructorConditionStatement(ASTNode):
     """Represents a constructor condition statement."""
 
-    __slots__: ClassVar[tuple[str, ...]] = ()
-
 
 class DestructorConditionStatement(ASTNode):
     """Represents a destructor condition statement."""
-
-    __slots__: ClassVar[tuple[str, ...]] = ()
 
 
 type TriggerConditionStatement = (
@@ -877,51 +738,30 @@ type TriggerConditionStatement = (
 class TriggerConditionsBlock(ASTNode):
     """Represents a trigger conditions block."""
 
-    __slots__: ClassVar[tuple[str, ...]] = ("condition",)
-
     condition: TriggerConditionStatement
-
-    def __init__(self, location: SourceLocation, condition: TriggerConditionStatement):
-        """Initialize a trigger conditions block."""
-        super().__init__(location=location)
-        self.condition = condition
 
 
 class ActionStatementsBlock(ASTNode):
     """Represents an action statements block."""
 
-    __slots__: ClassVar[tuple[str, ...]] = ("statements",)
-
     statements: tuple[ActionStatement, ...]
-
-    def __init__(
-        self, location: SourceLocation, statements: tuple[ActionStatement, ...]
-    ):
-        """Initialize an action statements block."""
-        super().__init__(location=location)
-        self.statements = statements
 
 
 class ActionDefinition(QualityDefinition):
     """Represents an action definition."""
 
-    __slots__: ClassVar[tuple[str, ...]] = (
-        "action_statements",
-        "interface_positions",
-        "interface_positions_by_name",
-        "trigger_conditions",
-        "trigger_position",
-    )
-
     interface_positions: tuple[LocalPositionDefinition, ...]
     trigger_conditions: TriggerConditionsBlock
     action_statements: ActionStatementsBlock
     # Computed properties
-    interface_positions_by_name: dict[str, LocalPositionDefinition]
-    trigger_position: LocalPositionDefinition | None
+    interface_positions_by_name: dict[str, LocalPositionDefinition] = msgspec.field(
+        default_factory=dict
+    )
+    trigger_position: LocalPositionDefinition | None = None
 
-    def __init__(
-        self,
+    @classmethod
+    def from_name(
+        cls,
         *,
         name: DefinitionGlobalNameContent,
         location: SourceLocation,
@@ -929,9 +769,9 @@ class ActionDefinition(QualityDefinition):
         interface_positions: tuple[LocalPositionDefinition, ...],
         trigger_conditions: TriggerConditionsBlock,
         action_statements: ActionStatementsBlock,
-    ):
+    ) -> Self:
         """Initialize with a global name, wrapping it in a typed definition name."""
-        super().__init__(
+        return cls(
             typed_name=GlobalTypedNameInDefinition(
                 name_type=NameType.ACTION,
                 name_content=name,
@@ -939,29 +779,25 @@ class ActionDefinition(QualityDefinition):
             ),
             quality_implications=quality_implications,
             location=location,
+            interface_positions=interface_positions,
+            trigger_conditions=trigger_conditions,
+            action_statements=action_statements,
         )
-        self.interface_positions = interface_positions
-        self.trigger_conditions = trigger_conditions
-        self.action_statements = action_statements
+
+    def __post_init__(self):
+        """Populate the interface-position lookup values."""
         # Computing these up front guarantees later thread-safety for accessing
         # this information instead of creating multiple cached copies across threads.
-        self.interface_positions_by_name = self._compute_interface_positions_by_name()
+        for local_def in self.interface_positions:
+            local_name = local_def.typed_name.source_typed_name
+            if local_name not in self.interface_positions_by_name:
+                self.interface_positions_by_name[local_name] = local_def
         self.trigger_position = self._compute_trigger_position()
 
     @property
     def interface_position_names(self) -> tuple[TypedName[NameContent], ...]:
         """Return the TypedName objects for all interface positions."""
         return tuple(pos.typed_name for pos in self.interface_positions)
-
-    def _compute_interface_positions_by_name(
-        self,
-    ) -> dict[str, LocalPositionDefinition]:
-        result: dict[str, LocalPositionDefinition] = {}
-        for local_def in self.interface_positions:
-            local_name = local_def.typed_name.source_typed_name
-            if local_name not in result:
-                result[local_name] = local_def
-        return result
 
     def _compute_trigger_position(self) -> LocalPositionDefinition | None:
         condition = self.trigger_conditions.condition
@@ -998,69 +834,43 @@ class ActionDefinition(QualityDefinition):
 class Multiverse(ASTNode):
     """Represents a multiverse name."""
 
-    __slots__: ClassVar[tuple[str, ...]] = ("name",)
-
     name: str
 
-    def __init__(self, location: SourceLocation, name: str):
-        """Initialize a multiverse name."""
-        super().__init__(location=location)
-        self.name = sys.intern(str(name))
+    def __post_init__(self):
+        """Intern the multiverse name."""
+        self.name = sys.intern(str(self.name))
 
 
 class Universe(ASTNode):
     """Represents a universe name."""
 
-    __slots__: ClassVar[tuple[str, ...]] = ("name",)
-
     name: str
 
-    def __init__(self, location: SourceLocation, name: str):
-        """Initialize a universe name."""
-        super().__init__(location=location)
-        self.name = sys.intern(str(name))
+    def __post_init__(self):
+        """Intern the universe name."""
+        self.name = sys.intern(str(self.name))
 
 
 class Authority(ASTNode):
     """Represents an authority (domain plus optional path)."""
 
-    __slots__: ClassVar[tuple[str, ...]] = ("name",)
-
     name: str
 
-    def __init__(self, location: SourceLocation, name: str):
-        """Initialize an authority."""
-        super().__init__(location=location)
-        self.name = sys.intern(str(name))
+    def __post_init__(self):
+        """Intern the authority name."""
+        self.name = sys.intern(str(self.name))
 
 
 class Fqun(ASTNode):
     """Represents a fully-qualified universe name."""
 
-    __slots__: ClassVar[tuple[str, ...]] = (
-        "authority",
-        "canonical",
-        "multiverse",
-        "universe",
-    )
-
     multiverse: Multiverse | None
     authority: Authority | None
     universe: Universe
-    canonical: str
+    canonical: str = ""
 
-    def __init__(
-        self,
-        location: SourceLocation,
-        multiverse: Multiverse | None,
-        authority: Authority | None,
-        universe: Universe,
-    ):
-        """Initialize a fully-qualified universe name."""
-        super().__init__(location=location)
-        self.multiverse = multiverse
-        self.authority = authority
-        self.universe = universe
+    def __post_init__(self):
+        """Build the interned canonical FQUN."""
         # Pre-built because canonical is the only part of Fqun that
         # anything needs after name validation.
         if self.authority is None:
@@ -1077,19 +887,14 @@ class Fqun(ASTNode):
         self.canonical = sys.intern(value)
 
 
-class GlobalNameContent[FqunT: Fqun | None](NameContent):
+FqunT_co = TypeVar("FqunT_co", bound=Fqun | None, covariant=True)
+
+
+class GlobalNameContent(NameContent, Generic[FqunT_co]):  # noqa: UP046
     """Base class for global name-like nodes."""
 
-    __slots__: ClassVar[tuple[str, ...]] = ("fqun", "path")
-
-    fqun: Final[FqunT]
+    fqun: Final[FqunT_co]
     path: GlobalPathName
-
-    def __init__(self, location: SourceLocation, fqun: FqunT, path: GlobalPathName):
-        """Initialize global name content."""
-        super().__init__(location=location)
-        self.fqun = fqun
-        self.path = path
 
     @property
     @override
@@ -1102,16 +907,10 @@ class GlobalNameContent[FqunT: Fqun | None](NameContent):
 class DefinitionGlobalNameContent(GlobalNameContent[Fqun]):
     """Represents a global name at a definition site."""
 
-    __slots__: ClassVar[tuple[str, ...]] = ()
-
 
 class ReferenceGlobalNameContent(GlobalNameContent[Fqun | None]):
     """Represents a global name at a reference site."""
 
-    __slots__: ClassVar[tuple[str, ...]] = ()
-
 
 class GlobalTypedNameInDefinition(GlobalTypedName[DefinitionGlobalNameContent]):
     """Represents a typed global name at a definition site."""
-
-    __slots__: ClassVar[tuple[str, ...]] = ()

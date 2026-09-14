@@ -75,6 +75,16 @@ def _make_fqun(
     )
 
 
+class TestASTNodeIdentity:
+    def test_equal_content_preserves_distinct_nodes(self):
+        first = ast.LocalNameContent(location=_LOC, name="item")
+        second = ast.LocalNameContent(location=_LOC, name="item")
+
+        assert first != second
+        assert hash(first) == object.__hash__(first)
+        assert hash(second) == object.__hash__(second)
+
+
 class TestSourceFormTypedNameParts:
     def test_local_name(self):
         assert ast.source_form_typed_name_parts("position<item>", _FQUN) == (
@@ -475,6 +485,12 @@ class TestChainedNameConstruction:
 
 
 class TestChainedNameCanonical:
+    def test_reuses_cached_string(self):
+        position = _position_reference_for("position<local>::position</x>")
+        canonical = position.canonical_chained_name
+
+        assert position.canonical_chained_name is canonical
+
     def test_single_element(self):
         pos = _position_reference_for("position<local>")
         assert pos.canonical_chained_name == "position<local>"
@@ -492,6 +508,12 @@ class TestChainedNameCanonical:
 
 
 class TestChainedNameCanonicalTuple:
+    def test_reuses_cached_tuple(self):
+        position = _position_reference_for("position<local>::position</x>")
+        canonical = position.canonical_chained_name_tuple
+
+        assert position.canonical_chained_name_tuple is canonical
+
     def test_single_element(self):
         pos = _position_reference_for("position<local>")
         assert pos.canonical_chained_name_tuple == ("position<local>",)
