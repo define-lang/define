@@ -32,15 +32,16 @@ class ParticleStatementValidity(msgspec.Struct, frozen=True):
     from_is_prefix_of_to: bool = False
 
 
-@dataclass
-class DefinitionValidationResult:
+class DefinitionValidationResult(msgspec.Struct):
     """Validation output for one definition within a file."""
 
     definition: ast.QualityDefinition
-    _diagnostics: list[diagnostics.Diagnostic] = field(default_factory=list)
+    _diagnostics: list[diagnostics.Diagnostic] = msgspec.field(default_factory=list)
 
-    reference_edges: list[reference_graph.ReferenceEdge] = field(default_factory=list)
-    particle_statement_validity: list[ParticleStatementValidity] = field(
+    reference_edges: list[reference_graph.ReferenceEdge] = msgspec.field(
+        default_factory=list
+    )
+    particle_statement_validity: list[ParticleStatementValidity] = msgspec.field(
         default_factory=list
     )
 
@@ -136,8 +137,7 @@ class FileValidationResult:
                 yield edge
 
 
-@dataclass
-class ProgramValidationResult:
+class ProgramValidationResult(msgspec.Struct):
     """Full result of validating a Define program."""
 
     file_results: list[FileValidationResult]

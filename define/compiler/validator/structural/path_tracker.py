@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import TYPE_CHECKING, cast, final
+
+import msgspec
 
 if TYPE_CHECKING:
     from define.compiler import config
@@ -11,8 +12,7 @@ if TYPE_CHECKING:
 
 
 @final
-@dataclass(slots=True, eq=False)
-class _ProjectRootNode:
+class _ProjectRootNode(msgspec.Struct, eq=False):
     children: dict[str, _ProjectRootNode] | None = None
     failed: bool = False
     project_root: tuple[define_path.DefinePath, config.ProjectRootConfig] | None = None
@@ -33,8 +33,7 @@ class _ProjectRootNode:
 
 
 @final
-@dataclass(slots=True, eq=False)
-class _TrackedFileNode:
+class _TrackedFileNode(msgspec.Struct, eq=False):
     children: dict[str, _TrackedFileNode] | None = None
     first_file: define_path.DefinePath | None = None
 

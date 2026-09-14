@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass
+
+import msgspec
 
 
-@dataclass
-class ValidationTimingStats:
+class ValidationTimingStats(msgspec.Struct):
     """Timing measurements for per-file and coordinator validation work."""
 
     file_loading: int = 0

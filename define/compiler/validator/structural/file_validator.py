@@ -8,8 +8,9 @@ to shared mutable state.
 from __future__ import annotations
 
 import pathlib
-from dataclasses import dataclass
 from functools import cached_property
+
+import msgspec
 
 from define.compiler import (
     ast,
@@ -26,8 +27,7 @@ from define.compiler.validator import scope_tracker, stats, validation_result
 from define.compiler.validator.structural import name_validators
 
 
-@dataclass(frozen=True)
-class FileValidationContext:
+class FileValidationContext(msgspec.Struct, frozen=True, dict=True):
     """Immutable input for validating a single file."""
 
     file_path: define_path.DefinePath
@@ -46,8 +46,7 @@ class FileValidationContext:
         return self.file_path.without_suffix(constants.DEFINE_FILE_SUFFIX)
 
 
-@dataclass(frozen=True)
-class EmptyFileValidationContext(FileValidationContext):
+class EmptyFileValidationContext(FileValidationContext, frozen=True, dict=True):
     """Validation context for non-filesystem source validation."""
 
     file_path: define_path.DefinePath = constants.NON_FILESYSTEM_PATH

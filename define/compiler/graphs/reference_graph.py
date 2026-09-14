@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import typing
-from dataclasses import dataclass
+
+import msgspec
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
@@ -11,8 +12,7 @@ if typing.TYPE_CHECKING:
     from define.compiler import ast
 
 
-@dataclass(frozen=True, slots=True)
-class ReferenceEdge:
+class ReferenceEdge(msgspec.Struct, frozen=True):
     """A reference made by one definition to a global name in another file."""
 
     enclosing_definition: ast.QualityDefinition

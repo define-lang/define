@@ -10,6 +10,7 @@ py_library(
         "//define/compiler:ast",
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/validator:validation_result",
+        "@pypi//msgspec",
     ],
 )
 

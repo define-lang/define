@@ -48,6 +48,9 @@ py_library(
     name = "stats",
     srcs = ["stats.py"],
     visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        "@pypi//msgspec",
+    ],
 )
 
 py_test(

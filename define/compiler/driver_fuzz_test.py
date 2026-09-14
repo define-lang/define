@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import shutil
-from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, cast
 
@@ -965,8 +964,7 @@ def mutated_sources(draw: st.DrawFn) -> str:
     return source
 
 
-@dataclass(frozen=True)
-class ProjectRootCase:
+class ProjectRootCase(msgspec.Struct, frozen=True):
     relative_path: str
     universe_name: str
     files: dict[str, str]
@@ -1413,7 +1411,7 @@ def valid_project_cases(draw: st.DrawFn) -> ProjectCase:
                 path: draw(_decorated_source(content))
                 for path, content in root.files.items()
             }
-            decorated_roots.append(replace(root, files=decorated_files))
+            decorated_roots.append(msgspec.structs.replace(root, files=decorated_files))
         project_case = ProjectCase(
             entrypoint=project_case.entrypoint,
             roots=tuple(decorated_roots),
@@ -1434,7 +1432,7 @@ def _mutate_project_case(
     target_root = roots[target_root_idx]
     mutated_files = dict(target_root.files)
     mutated_files[target_file] = _mutate_source(mutated_files[target_file], draw)
-    roots[target_root_idx] = replace(target_root, files=mutated_files)
+    roots[target_root_idx] = msgspec.structs.replace(target_root, files=mutated_files)
     return ProjectCase(entrypoint=project_case.entrypoint, roots=tuple(roots))
 
 

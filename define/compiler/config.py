@@ -122,10 +122,10 @@ class ConfigValidationError(ConfigError):
         )
 
 
-CONFIG_PATH = define_path.DefinePathFromPosix(
+CONFIG_PATH = define_path.DefinePathFromPosix.from_posix(
     PurePosixPath(".define/project/config.defcl")
 )
-LOCAL_DEPS_PATH = define_path.DefinePathFromPosix(
+LOCAL_DEPS_PATH = define_path.DefinePathFromPosix.from_posix(
     PurePosixPath(".define/deps/local.defcl")
 )
 
@@ -211,7 +211,7 @@ class ConfigLoader:
                     deps_path,
                     [f'deps.local: duplicate universe_name "{dep.universe_name}"'],
                 )
-            deps[dep.universe_name] = define_path.DefinePathFromPosix(
+            deps[dep.universe_name] = define_path.DefinePathFromPosix.from_posix(
                 PurePosixPath(dep.path)
             )
         return types.MappingProxyType(deps)

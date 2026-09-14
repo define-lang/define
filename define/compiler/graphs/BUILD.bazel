@@ -12,7 +12,10 @@ py_library(
     name = "reference_graph",
     srcs = ["reference_graph.py"],
     visibility = ["//define/compiler:__subpackages__"],
-    deps = ["//define/compiler:ast"],
+    deps = [
+        "//define/compiler:ast",
+        "@pypi//msgspec",
+    ],
 )
 
 py_library(

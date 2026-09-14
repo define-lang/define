@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import itertools
 import typing
-from dataclasses import dataclass, field
 
 import msgspec
 
@@ -33,8 +32,7 @@ if typing.TYPE_CHECKING:
     from define.compiler.validator import codegen_input
 
 
-@dataclass(frozen=True, slots=True)
-class ParticleDestruction:
+class ParticleDestruction(msgspec.Struct, frozen=True):
     """A destruction target and its occupied transitive child Positions."""
 
     position: ast.PositionReference
@@ -129,8 +127,7 @@ class _WriteRecord(msgspec.Struct, frozen=True):
     include_in_own_guarantees: bool
 
 
-@dataclass(frozen=True, slots=True)
-class _PendingGuarantee:
+class _PendingGuarantee(msgspec.Struct, frozen=True):
     """A callee's guarantees and the execution path where they apply."""
 
     # The triggered action's chain.
@@ -301,22 +298,21 @@ class _PendingNestedGuarantees:
                 yield from self._by_prefix.pop(prefix)
 
 
-@dataclass(frozen=True, slots=True)
-class _GuaranteeApplicationState:
+class _GuaranteeApplicationState(msgspec.Struct, frozen=True):
     """Shared particle state for applying one callee's guarantees."""
 
     origin_keys: set[ast.ChainedNameTuple]
     # Saved subtrees for swap safety. Keyed by the origin's full key.
     saved_state: dict[ast.ChainedNameTuple, trie.StrictReparentingTrie[_NodeState]] = (
-        field(default_factory=dict)
+        msgspec.field(default_factory=dict)
     )
     saved_error: dict[ast.ChainedNameTuple, trie.StrictReparentingTrie[_ErrorState]] = (
-        field(default_factory=dict)
+        msgspec.field(default_factory=dict)
     )
     saved_nested_guarantees: dict[
         ast.ChainedNameTuple,
         trie.StrictReparentingTrie[list[codegen_input.ActionExecution]],
-    ] = field(default_factory=dict)
+    ] = msgspec.field(default_factory=dict)
 
     @classmethod
     def for_callee(cls, pending_guarantee: _PendingGuarantee) -> typing.Self:

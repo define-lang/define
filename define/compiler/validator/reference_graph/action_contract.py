@@ -62,8 +62,7 @@ class PropagationStep(msgspec.Struct, frozen=True):
     triggered_quality_name: str | None
 
 
-@dataclass(frozen=True, slots=True, eq=False)
-class PropagationHistory:
+class PropagationHistory(msgspec.Struct, frozen=True, eq=False):
     """A shared sequence of Destruction Contract propagation steps."""
 
     step: PropagationStep
@@ -77,8 +76,7 @@ class PropagationHistory:
             current = current.previous
 
 
-@dataclass(frozen=True)
-class ActionAssignment:
+class ActionAssignment(msgspec.Struct, frozen=True):
     """An action's assignment to a particle at a position."""
 
     quality: ast.GlobalTypedNameReference
@@ -94,8 +92,7 @@ class ActionAssignment:
         )
 
 
-@dataclass(frozen=True)
-class PositionRequirement:
+class PositionRequirement(msgspec.Struct, frozen=True):
     """An automatically inferred requirement on a contracted position.
 
     A contracted position is an interface position, a child of an interface
@@ -176,40 +173,34 @@ class PositionRequirementInCaller(msgspec.Struct, frozen=True):
     caller_position: ast.PositionReference
 
 
-@dataclass(frozen=True)
-class PositionGuarantee:
+class PositionGuarantee(msgspec.Struct, frozen=True):
     """An automatically inferred guarantee about an interface position after action completion."""
 
     caused_by: ast.PositionReference
 
 
-@dataclass(frozen=True)
-class EmptyGuarantee(PositionGuarantee):
+class EmptyGuarantee(PositionGuarantee, frozen=True):
     """The position is guaranteed to be empty after the action completes."""
 
 
-@dataclass(frozen=True)
-class OccupiedByExistingGuarantee(PositionGuarantee):
+class OccupiedByExistingGuarantee(PositionGuarantee, frozen=True):
     """The position contains the same particle that was passed into another interface position."""
 
     origin_position: ast.PositionReference
 
 
-@dataclass(frozen=True)
-class OccupiedByNewGuarantee(PositionGuarantee):
+class OccupiedByNewGuarantee(PositionGuarantee, frozen=True):
     """The position contains a new particle created by the action."""
 
     qualities: quality_assignment.QualityAssignments
     origin_position: ast.PositionReference
 
 
-@dataclass(frozen=True)
-class UnchangedGuarantee(PositionGuarantee):
+class UnchangedGuarantee(PositionGuarantee, frozen=True):
     """The action operated on the position but left it in the same state it was in at the start of the action."""
 
 
-@dataclass(frozen=True)
-class ErrorGuarantee(PositionGuarantee):
+class ErrorGuarantee(PositionGuarantee, frozen=True):
     """The position's state could not be determined due to an error."""
 
 
@@ -267,8 +258,7 @@ class DestructionContracts:
             yield from self.propagation
 
 
-@dataclass(frozen=True, slots=True)
-class Destructor:
+class Destructor(msgspec.Struct, frozen=True):
     """One destructor paired with the position on which it triggers."""
 
     destructor: ast.GlobalTypedNameReference
@@ -283,8 +273,7 @@ class Destructor:
         )
 
 
-@dataclass(frozen=True)
-class ActionContract:
+class ActionContract(msgspec.Struct, frozen=True):
     """The automatically inferred requirements and guarantees for an action."""
 
     # TODO: Consider publishing requirements as a sequence. Callers only iterate

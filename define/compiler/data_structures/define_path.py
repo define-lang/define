@@ -2,16 +2,16 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from pathlib import PurePosixPath
-from typing import Final, override
+from typing import Final, Self, override
+
+import msgspec
 
 
 # We used to use pathlib.PurePosixPath but it represented a significant amount
 # of our memory allocations and a significant amount of the CPU during
 # compilation, all for functionality that we don't need in the compiler.
-@dataclass(frozen=True, slots=True, eq=False)
-class DefinePath:
+class DefinePath(msgspec.Struct, frozen=True, eq=False):
     """A POSIX-shaped path used in the compiler's internal data structures.
 
     Note that this class does no validation of the input path; it expects well-formed
@@ -98,20 +98,19 @@ class DefinePath:
         return PurePosixPath(self._path)
 
 
-@dataclass(frozen=True, slots=True, init=False, eq=False)
-class DefinePathFromPosix(DefinePath):
+class DefinePathFromPosix(DefinePath, frozen=True, eq=False):
     """A DefinePath that caches the PurePosixPath it was built from."""
 
     _path_obj: PurePosixPath
 
-    def __init__(self, path_obj: PurePosixPath):
+    @classmethod
+    def from_posix(cls, path_obj: PurePosixPath) -> Self:
         """Initialize with a PurePosixPath, caching it for as_posix_path."""
         # PurePosixPath uses "." as its relative-root identity element;
         # DefinePath uses "". The bridge maps between them so the join
         # operator behaves the same way in either representation.
         path_str = "" if path_obj == PurePosixPath(".") else str(path_obj)
-        super().__init__(path_str)
-        object.__setattr__(self, "_path_obj", path_obj)
+        return cls(path_str, path_obj)
 
     @override
     def as_posix_path(self) -> PurePosixPath:
@@ -122,8 +121,7 @@ class InvalidPathError(Exception):
     """Raised when a path operation is invoked on an InvalidDefinePath."""
 
 
-@dataclass(frozen=True, slots=True, eq=False)
-class InvalidDefinePath(DefinePath):
+class InvalidDefinePath(DefinePath, frozen=True, eq=False):
     """A DefinePath sentinel that rejects path operations.
 
     Supports __str__ and name; every other path operation raises

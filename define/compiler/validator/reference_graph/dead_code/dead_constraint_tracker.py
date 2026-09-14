@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import typing
-from dataclasses import dataclass
+
+import msgspec
 
 from define.compiler import ast
 
@@ -14,8 +15,7 @@ if typing.TYPE_CHECKING:
     from define.compiler.validator import validation_result
 
 
-@dataclass(frozen=True, slots=True)
-class DeadConstraintCandidate:
+class DeadConstraintCandidate(msgspec.Struct, frozen=True):
     """A directly-written constraint on a local or interface position pending a DLP 42 liveness check."""
 
     # The local or interface position the constraint is written on.
