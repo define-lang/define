@@ -105,6 +105,7 @@ py_library(
         ":config",
         ":constants",
         "//define/compiler/validator/reference_graph:action_contract",
+        "@pypi//msgspec",
     ],
 )
 

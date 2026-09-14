@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import typing
-from dataclasses import dataclass
 from typing import ClassVar
+
+import msgspec
 
 from define.compiler import ast, constants
 from define.compiler.validator.reference_graph import action_contract
@@ -22,8 +23,7 @@ def _format_location(location: ast.SourceLocation) -> str:
     return f"line {location.line}, column {location.column}"
 
 
-@dataclass
-class Diagnostic:
+class Diagnostic(msgspec.Struct):
     """Base class for all validation diagnostics."""
 
     location: ast.SourceLocation
@@ -48,21 +48,18 @@ class Diagnostic:
         return f"{header}\n{source_line}\n{caret_line}\n{self.message}"
 
 
-@dataclass
 class ReservedNameDiagnostic(Diagnostic):
     """Base class for reserved name diagnostics."""
 
     reserved_name: str
 
 
-@dataclass
 class ReservedUniverseNameDiagnostic(ReservedNameDiagnostic):
     """Diagnostic for when a reserved universe name is used."""
 
     message_format: ClassVar[str] = "'{self.reserved_name}' is a reserved universe name"
 
 
-@dataclass
 class ReservedAuthorityDomainDiagnostic(ReservedNameDiagnostic):
     """Diagnostic for when a reserved authority domain is used."""
 
@@ -71,7 +68,6 @@ class ReservedAuthorityDomainDiagnostic(ReservedNameDiagnostic):
     )
 
 
-@dataclass
 class DotlessAuthorityDomainDiagnostic(ReservedNameDiagnostic):
     """Diagnostic for when a dotless authority domain is used in a restricted multiverse."""
 
@@ -83,7 +79,6 @@ class DotlessAuthorityDomainDiagnostic(ReservedNameDiagnostic):
     )
 
 
-@dataclass
 class ReservedMultiverseNameDiagnostic(ReservedNameDiagnostic):
     """Diagnostic for when a reserved multiverse name is used."""
 
@@ -92,7 +87,6 @@ class ReservedMultiverseNameDiagnostic(ReservedNameDiagnostic):
     )
 
 
-@dataclass
 class PathMismatchDiagnostic(Diagnostic):
     """Diagnostic for when a definition's path doesn't match the file path."""
 
@@ -104,7 +98,6 @@ class PathMismatchDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class UniverseWithoutAuthorityDiagnostic(Diagnostic):
     """Diagnostic for when a universe other than 'standard' is used without an authority."""
 
@@ -115,7 +108,6 @@ class UniverseWithoutAuthorityDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class DuplicateDefinitionDiagnostic(Diagnostic):
     """Diagnostic for when the same type is defined twice with the same path."""
 
@@ -128,7 +120,6 @@ class DuplicateDefinitionDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class LocalNameConflictDiagnostic(Diagnostic):
     """Diagnostic for when a local name conflicts with another local definition."""
 
@@ -140,7 +131,6 @@ class LocalNameConflictDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class DuplicatePositionConstraintDiagnostic(Diagnostic):
     """Diagnostic for when a quality constraint appears twice in the same Position Constraint Block."""
 
@@ -152,7 +142,6 @@ class DuplicatePositionConstraintDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class DuplicateQualityImplicationDiagnostic(Diagnostic):
     """Diagnostic for when the same quality implication appears twice in the same definition."""
 
@@ -164,7 +153,6 @@ class DuplicateQualityImplicationDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class UnusedQualityImplicationDiagnostic(Diagnostic):
     """Diagnostic for when a Quality Implication Statement is never used as a chain start in the definition body."""
 
@@ -177,7 +165,6 @@ class UnusedQualityImplicationDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class UnreferencedPositionDiagnostic(Diagnostic):
     """Diagnostic for a position defined but never referenced in its definition."""
 
@@ -189,7 +176,6 @@ class UnreferencedPositionDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class DeadConstraintDiagnostic(Diagnostic):
     """Base class for an unused constraint on a local or interface position."""
 
@@ -197,7 +183,6 @@ class DeadConstraintDiagnostic(Diagnostic):
     position_name: str
 
 
-@dataclass
 class DeadChildPositionDiagnostic(DeadConstraintDiagnostic):
     """Diagnostic for a position constraint on a local or interface position that is never used."""
 
@@ -209,7 +194,6 @@ class DeadChildPositionDiagnostic(DeadConstraintDiagnostic):
     )
 
 
-@dataclass
 class UntriggeredActionDiagnostic(DeadConstraintDiagnostic):
     """Diagnostic for an action constraint on a local or interface position that is never triggered."""
 
@@ -220,7 +204,6 @@ class UntriggeredActionDiagnostic(DeadConstraintDiagnostic):
     )
 
 
-@dataclass
 class UntriggeredImpliedActionDiagnostic(Diagnostic):
     """Diagnostic for an implied action that is never triggered by the implying action."""
 
@@ -231,7 +214,6 @@ class UntriggeredImpliedActionDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class UntriggeredActionInterfaceDiagnostic(Diagnostic):
     """Diagnostic for an interface particle not present when its action triggers."""
 
@@ -244,7 +226,6 @@ class UntriggeredActionInterfaceDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class UnconsumedActionInterfaceDiagnostic(Diagnostic):
     """Diagnostic for an interface particle that remains after its caller ends."""
 
@@ -257,7 +238,6 @@ class UnconsumedActionInterfaceDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class OccupiedActionInterfaceWhenActionTriggersDiagnostic(Diagnostic):
     """Diagnostic for an occupied action interface passed to another action."""
 
@@ -269,7 +249,6 @@ class OccupiedActionInterfaceWhenActionTriggersDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class FqunMismatchDiagnostic(Diagnostic):
     """Diagnostic for when a definition's FQUN doesn't match the expected project FQUN."""
 
@@ -281,7 +260,6 @@ class FqunMismatchDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class AuthorityDomainTooShortDiagnostic(Diagnostic):
     """Diagnostic for when an authority domain is too short."""
 
@@ -291,7 +269,6 @@ class AuthorityDomainTooShortDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class AuthorityDomainInvalidCharDiagnostic(Diagnostic):
     """Diagnostic for when an authority domain has an invalid character."""
 
@@ -302,7 +279,6 @@ class AuthorityDomainInvalidCharDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class InvalidAuthorityPathSegmentDiagnostic(Diagnostic):
     """Diagnostic for when an authority path segment has invalid format."""
 
@@ -313,7 +289,6 @@ class InvalidAuthorityPathSegmentDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class AuthorityPathEmptySegmentDiagnostic(Diagnostic):
     """Diagnostic for when an authority path contains an empty segment."""
 
@@ -323,7 +298,6 @@ class AuthorityPathEmptySegmentDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class InvalidGlobalNamePathCharacterDiagnostic(Diagnostic):
     """Diagnostic for when a global name path segment has invalid format."""
 
@@ -334,7 +308,6 @@ class InvalidGlobalNamePathCharacterDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class GlobalNamePathMissingLeadingSlashDiagnostic(Diagnostic):
     """Diagnostic for when a global path does not start with '/'."""
 
@@ -342,7 +315,6 @@ class GlobalNamePathMissingLeadingSlashDiagnostic(Diagnostic):
     message_format: ClassVar[str] = "global name path '{self.path}' must start with '/'"
 
 
-@dataclass
 class GlobalNamePathTrailingSlashDiagnostic(Diagnostic):
     """Diagnostic for when a global path ends with '/'."""
 
@@ -352,7 +324,6 @@ class GlobalNamePathTrailingSlashDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class GlobalNamePathEmptySegmentDiagnostic(Diagnostic):
     """Diagnostic for when a global path contains an empty segment."""
 
@@ -362,7 +333,6 @@ class GlobalNamePathEmptySegmentDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class InvalidLocalNameFormatDiagnostic(Diagnostic):
     """Diagnostic for when a local name has invalid format."""
 
@@ -373,7 +343,6 @@ class InvalidLocalNameFormatDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class MultiverseNameTooShortDiagnostic(Diagnostic):
     """Diagnostic for when a multiverse name is too short."""
 
@@ -383,7 +352,6 @@ class MultiverseNameTooShortDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class MultiverseNameInvalidCharDiagnostic(Diagnostic):
     """Diagnostic for when a multiverse name has an invalid character."""
 
@@ -394,7 +362,6 @@ class MultiverseNameInvalidCharDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class UniverseNameTooShortDiagnostic(Diagnostic):
     """Diagnostic for when a universe name is too short."""
 
@@ -404,7 +371,6 @@ class UniverseNameTooShortDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class UniverseNameInvalidCharDiagnostic(Diagnostic):
     """Diagnostic for when a universe name has an invalid character."""
 
@@ -415,7 +381,6 @@ class UniverseNameInvalidCharDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class GlobalReferenceMustUseShortFormDiagnostic(Diagnostic):
     """Diagnostic for when a same-FQUN global reference uses full form."""
 
@@ -427,7 +392,6 @@ class GlobalReferenceMustUseShortFormDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class ReferencedDefinitionNotFoundDiagnostic(Diagnostic):
     """Diagnostic for when a resolved file does not contain the referenced definition."""
 
@@ -439,7 +403,6 @@ class ReferencedDefinitionNotFoundDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class ReferencedFileNotFoundDiagnostic(Diagnostic):
     """Diagnostic for when a referenced file does not exist."""
 
@@ -449,7 +412,6 @@ class ReferencedFileNotFoundDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class ExternalUniverseNotConfiguredDiagnostic(Diagnostic):
     """Diagnostic for when a cross-universe reference targets an unconfigured universe."""
 
@@ -462,7 +424,6 @@ class ExternalUniverseNotConfiguredDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class NoProjectRootInNonFilesystemContextDiagnostic(Diagnostic):
     """Diagnostic for when an external universe reference requires loading from disk outside a project root."""
 
@@ -478,7 +439,6 @@ class NoProjectRootInNonFilesystemContextDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class ConfigLoadErrorDiagnostic(Diagnostic):
     """Diagnostic for when project configuration fails to load."""
 
@@ -488,7 +448,6 @@ class ConfigLoadErrorDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class SubRootAlreadyOccupiedDiagnostic(Diagnostic):
     """Diagnostic for when a sub-root path already has files loaded under a different universe."""
 
@@ -504,7 +463,6 @@ class SubRootAlreadyOccupiedDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class PathInsideOtherUniverseDiagnostic(Diagnostic):
     """Diagnostic for when a path being loaded falls inside a different universe's sub-root."""
 
@@ -518,7 +476,6 @@ class PathInsideOtherUniverseDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class CircularGlobalReferenceDiagnostic(Diagnostic):
     """Diagnostic for when resolving references would create a cycle."""
 
@@ -539,7 +496,6 @@ class CircularGlobalReferenceDiagnostic(Diagnostic):
         )
 
 
-@dataclass
 class UnnecessarySelfReferenceDiagnostic(Diagnostic):
     """Diagnostic for when a definition unnecessarily references itself in a chain."""
 
@@ -550,14 +506,12 @@ class UnnecessarySelfReferenceDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class PositionReferenceChainEndDiagnostic(Diagnostic):
     """Diagnostic for when a position reference chain ends with an action."""
 
     message_format: ClassVar[str] = "position references must end with a position name"
 
 
-@dataclass
 class UndefinedLocalNameDiagnostic(Diagnostic):
     """Diagnostic for when a local typed name is used but not defined in scope."""
 
@@ -567,7 +521,6 @@ class UndefinedLocalNameDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class UnknownGlobalNameDiagnostic(Diagnostic):
     """Diagnostic for when a global name starts a chain but is not available."""
 
@@ -580,7 +533,6 @@ class UnknownGlobalNameDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class LocalActionNameDiagnostic(Diagnostic):
     """Diagnostic for when an action uses a local name instead of a global reference."""
 
@@ -595,7 +547,6 @@ class LocalActionNameDiagnostic(Diagnostic):
 # the same position that do something conflicting to one of the other positions, and
 # you need to refer to three things (the create statement that triggered the
 # constructors and then the two different constructors that are conflicting).
-@dataclass
 class CreateInOccupiedPositionDiagnostic(Diagnostic):
     """Diagnostic for when a particle is created in a position that already has one."""
 
@@ -612,7 +563,6 @@ class CreateInOccupiedPositionDiagnostic(Diagnostic):
         return _format_location(self.populated_at)
 
 
-@dataclass
 class ParentPositionNotOccupiedDiagnostic(Diagnostic):
     """Diagnostic for when a position is accessed but its parent has no particle."""
 
@@ -626,7 +576,6 @@ class ParentPositionNotOccupiedDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class MoveToOccupiedPositionDiagnostic(Diagnostic):
     """Diagnostic for when a move's destination position already contains a particle."""
 
@@ -646,7 +595,6 @@ class MoveToOccupiedPositionDiagnostic(Diagnostic):
         return base
 
 
-@dataclass
 class MoveFromEmptyPositionDiagnostic(Diagnostic):
     """Diagnostic for when a move statement's source position has no particle."""
 
@@ -669,7 +617,6 @@ class MoveFromEmptyPositionDiagnostic(Diagnostic):
         return base
 
 
-@dataclass
 class DestroyInEmptyPositionDiagnostic(Diagnostic):
     """Diagnostic for when a destroy statement's target position has no particle."""
 
@@ -680,7 +627,6 @@ class DestroyInEmptyPositionDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class MoveToSamePositionDiagnostic(Diagnostic):
     """Diagnostic for when a move statement's from and to positions are the same."""
 
@@ -692,7 +638,6 @@ class MoveToSamePositionDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class MoveViolatesConstraintsDiagnostic(Diagnostic):
     """Diagnostic for when a move's destination constraints are not satisfied."""
 
@@ -714,7 +659,6 @@ class MoveViolatesConstraintsDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class MoveIntoDefiningPositionDiagnostic(Diagnostic):
     """Diagnostic for when a move statement moves a particle into a position it defines."""
 
@@ -729,7 +673,6 @@ class MoveIntoDefiningPositionDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class ChainedLocalNameRequiresActionDiagnostic(Diagnostic):
     """Diagnostic for when a local name in a chain is not preceded by a global action."""
 
@@ -741,7 +684,6 @@ class ChainedLocalNameRequiresActionDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class ChainElementNotInConstraintsDiagnostic(Diagnostic):
     """Diagnostic for when a chain element is not in the first position's constraints."""
 
@@ -753,7 +695,6 @@ class ChainElementNotInConstraintsDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class ChainElementNotInterfacePositionDiagnostic(Diagnostic):
     """Diagnostic for when a local name after an action is not an interface position of that action."""
 
@@ -766,7 +707,6 @@ class ChainElementNotInterfacePositionDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class ChainGlobalNameAfterActionDiagnostic(Diagnostic):
     """Diagnostic for when a global name follows an action in a chained name."""
 
@@ -779,7 +719,6 @@ class ChainGlobalNameAfterActionDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class EmptyActionStatementsBlockDiagnostic(Diagnostic):
     """Diagnostic for when an action statements block contains no statements."""
 
@@ -788,7 +727,6 @@ class EmptyActionStatementsBlockDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class EntryPointNotConstructorDiagnostic(Diagnostic):
     """Diagnostic for when the program entry point is not a constructor."""
 
@@ -797,7 +735,6 @@ class EntryPointNotConstructorDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class EntryPointInterfacePositionDiagnostic(Diagnostic):
     """Diagnostic for an interface position on the program entry point."""
 
@@ -808,7 +745,6 @@ class EntryPointInterfacePositionDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class EntryPointOccupiedImpliedPositionRequirementDiagnostic(Diagnostic):
     """Diagnostic for an occupied implied-position requirement on the entry point."""
 
@@ -819,7 +755,6 @@ class EntryPointOccupiedImpliedPositionRequirementDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class IncorrectIndentationDiagnostic(Diagnostic):
     """Diagnostic for when a line has incorrect indentation."""
 
@@ -831,7 +766,6 @@ class IncorrectIndentationDiagnostic(Diagnostic):
     )
 
 
-@dataclass
 class InferredRequirementViolationDiagnostic(Diagnostic):
     """Diagnostic for when an automatically inferred occupancy requirement is violated.
 
@@ -911,14 +845,12 @@ class InferredRequirementViolationDiagnostic(Diagnostic):
                 return f"'{step.enclosing_quality_name}' is filled here"
 
 
-@dataclass
 class DestructorGuaranteeDiagnostic(Diagnostic):
     """Base class for diagnostics about a destructor changing a contracted position's state."""
 
     position_name: str
 
 
-@dataclass
 class DestructorProducesEmptyGuaranteeDiagnostic(DestructorGuaranteeDiagnostic):
     """Diagnostic for when a destructor leaves a contracted position empty that started occupied."""
 
@@ -929,7 +861,6 @@ class DestructorProducesEmptyGuaranteeDiagnostic(DestructorGuaranteeDiagnostic):
     )
 
 
-@dataclass
 class DestructorProducesOccupiedGuaranteeDiagnostic(DestructorGuaranteeDiagnostic):
     """Diagnostic for when a destructor leaves a new particle in a contracted position."""
 
@@ -940,7 +871,6 @@ class DestructorProducesOccupiedGuaranteeDiagnostic(DestructorGuaranteeDiagnosti
     )
 
 
-@dataclass
 class DestructorProducesOccupiedByExistingGuaranteeDiagnostic(
     DestructorGuaranteeDiagnostic
 ):
@@ -954,7 +884,6 @@ class DestructorProducesOccupiedByExistingGuaranteeDiagnostic(
     )
 
 
-@dataclass
 class DestroyInEmptyInterfacePositionDiagnostic(Diagnostic):
     """Diagnostic for destroying from an empty action interface position."""
 
@@ -974,7 +903,6 @@ class DestroyInEmptyInterfacePositionDiagnostic(Diagnostic):
         return f"{base}; action interface positions are empty by default"
 
 
-@dataclass
 class ActionSelfTriggerDiagnostic(Diagnostic):
     """Diagnostic for when an action writes to its own trigger position."""
 
