@@ -1,0 +1,46 @@
+# This is a super-basic example of values, operations, and encodings.
+define the potential action<define-lang.org:rectangle:/main> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<width> {
+            it may only contain particles where {
+                it has the value</integer>.
+            }
+        }
+        define the position<height> {
+            it may only contain particles where {
+                it has the value</integer>.
+            }
+        }
+        define the position<area> {
+            it may only contain particles where {
+                it has the value</integer>.
+            }
+        }
+
+        # We start off as a square.
+        create a particle in position<width>.
+        set the value of position<width> to 5.
+        create a particle in position<height>.
+        set the value of position<height> to position<width>.
+        create a particle in position<area>.
+
+        # After this, position<area> will be 25.
+        execute the operation</integer/multiply> {
+            with view<a> looking at position<width>.
+            with view<b> looking at position<height>.
+            with view<result> looking at position<area>.
+        }
+        # Note: Failing to consume position<area> here would result in a
+        # dead code error.
+
+        set the value of position<width> to 10.
+        # position<area> will contain 50.
+        execute the operation</integer/multiply> {
+            with view<a> looking at position<width>.
+            with view<b> looking at position<height>.
+            with view<result> looking at position<area>.
+        }
+    }
+}
