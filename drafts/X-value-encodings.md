@@ -123,6 +123,9 @@ The maximum and minimum values may be the same. For now, the value is always an
 integer. Even if constraints gain more capability in the future, constraints
 specified on encoding options must still be only integer constraints.
 
+The minimum and maximum are not necessary, but if an option exists, it must
+specify at least one of them.
+
 Encoding operations gain syntax on their views like this:
 
 ```define
@@ -191,3 +194,122 @@ Then each of those would have an option `bits` to say how long they are. Then we
 would have to implement encoding operations as appropriate to deal with the
 combinations that we need to be able to actually represent at code generation
 time.
+
+## A Real Program
+
+```define
+define the constraint<mv:example.com:example:/bits/8to128> {
+    its minimum value is 8.
+    its maximum value is 128.
+}
+
+define the constraint<mv:example.com:example:/bits/33to64> {
+    its minimum value is 33.
+    its maximum value is 64.
+}
+
+define the encoding<mv:example.com:example:/integer/twos_complement/little_endian> {
+    define the encoding_option<bits> {
+        it has the constraint</bits/8to128>.
+    }
+}
+
+define the encoding_operation<mv:example.com:example:/integer/twos_complement/little_endian/add/33to64> {
+    it implements the operation<standard:/number/integer/add>.
+
+    define the view<a> {
+        it may only contain particles where {
+            it has the encoding</integer/twos_complement/little_endian> {
+                it has the encoding_option<bits> {
+                    it has the constraint</bits/33to64>.
+                }
+            }
+        }
+    }
+
+    define the view<b> {
+        it may only contain particles where {
+            it has the encoding</integer/twos_complement/little_endian> {
+                it has the encoding_option<bits> {
+                    it has the constraint</bits/33to64>.
+                }
+            }
+        }
+    }
+
+    define the view<sum> {
+        it may only contain particles where {
+            it has the encoding</integer/twos_complement/little_endian> {
+                it has the encoding_option<bits> {
+                    it has the constraint</bits/33to64>.
+                }
+            }
+        }
+    }
+
+    it does {
+        execute the computer operation.
+    }
+}
+```
+
+## Why Is This the Right Solution?
+
+In designing encodings there were a bunch of problems that I had to overcome.
+
+### Different Versions of the Same Encoding
+
+One of the first problems was the infinite combinatorial nature of potential
+encodings that could exist, even though any acutal set that would be used in any
+program was finite.
+
+At first I considered making _everything_ about an encoding into an option, but
+then the question would be why do we even have encodings? Why don't we just have
+properties of binary values? The problem with _that_ is that some options are
+genuinely grouped together. To have a floating point you need a significand and
+a mantissa. They have separate lengths, but they have to go together. They also
+have a bit width. And they are, conceptually, a single standard (IEEE 754
+floating point). As we get into implementation, I may change my mind about some
+of this, as there may be requirements here that are not yet clear to me.
+
+### What Should be an Encoding Option?
+
+Another problem I had to work with is that when you think about an encoding,
+there are a bunch of variations on that encoding that seem to go with it that
+are just minor variations of the same encoding. An integer can be signed,
+unsigned, big-endian, or little-endian. Operations on it can saturate, wrap, or
+error on overflow. Which of those should be a property of the encoding or value,
+and which should be a property of the operation?
+
+One question I had was: when a developer declares a certain value, does that
+mean they expect certain operational semantics from that type of value? Or are
+operational semantics purely about the _operation_ that runs on that value?
+
+Well, there are certainly certain types of values that we expect to have certain
+semantics. For example, we expect floats to be inexact, and fixed points to be
+exact within a bound of limited significance. That's a property that persists
+through any operation. You can't add two fixed-point numbers together and have
+them become inexact.
+
+Signedness is also another property of the number itself. An operation can
+change the sign of a signed value, but it can't changed the _signedness_ of the
+encoding. And it certainly can't make an unsigned number negative.
+
+On the other hand, overflow behavior _can_ be a property of an operation. You
+_could_ have a situation in which for the same two numbers, at one point you
+want the calculation to saturate, and at another point you want the operation to
+error. Thus, that _must_ be an option related to the _operation_, not the
+encoding or value type.
+
+### MLIR
+
+Probably the system most similar to ours overall is
+[MLIR](https://mlir.llvm.org/docs/Rationale/Rationale/#introduction-and-motivation)
+which has made a few design decisions that are similar to ours and a few that
+are different from ours. Their design is a nice validation of the need to be
+able to associate hardware operations with logical operations without losing the
+context of what logical operation is being executed, when doing optimizations.
+
+## Forward Compatibility
+
+## Refactoring Existing Systems
