@@ -595,6 +595,25 @@ encompasses exactly that. It doesn't exactly specify how all of those parts will
 work or exactly how each of the proposed pieces solves all of the problems, but
 it gives us the basic building blocks on which we can write later proposals.
 
+### MLIR
+
+Probably the system most similar to ours overall is
+[MLIR](https://mlir.llvm.org/docs/Rationale/Rationale/#introduction-and-motivation)
+which has made a few design decisions that are similar to ours and a few that
+are different from ours. Their design is a nice validation of the need to be
+able to associate hardware operations with logical operations without losing the
+context of what logical operation is being executed, when doing optimizations.
+
+They've made a few different implementation choices, in particular around how
+operations are connected to abstract data types. I think their design decisions
+make a lot of sense for a generic compiler backend. In particular, their system
+of association allows much more fredom and requires writing less code. (Those
+differences will become clearer in a later proposal, but the general comparison
+with MLIR was worth pointing out here in this proposal as an overall thing.) We
+may decide to go in a similar direction in the future, but I wanted to start off
+with the strictest, most explicit stance and only evolve if we found the more
+complex, more free design to be necessary.
+
 ## Forward Compatibility
 
 Given how explicit everything is in the proposal, it should be possible to

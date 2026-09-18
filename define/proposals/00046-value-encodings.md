@@ -1,8 +1,8 @@
-# Define Language Proposal X: Value Encodings
+# Define Language Proposal 46: Value Encodings
 
 - **Author:** Max Kanat-Alexander
 - **Status:** Draft
-- **Date Proposed:** September 16, 2026
+- **Date Proposed:** September 18, 2026
 - **Date Finalized:**
 
 ## Problems
@@ -253,21 +253,21 @@ define the encoding_operation<mv:example.com:example:/integer/twos_complement/li
 }
 ```
 
-## Why Is This the Right Solution?
+## Why This is the Right Solution
 
 In designing encodings there were a bunch of problems that I had to overcome.
 
 ### Different Versions of the Same Encoding
 
 One of the first problems was the infinite combinatorial nature of potential
-encodings that could exist, even though any acutal set that would be used in any
+encodings that could exist, even though any actual set that would be used in any
 program was finite.
 
 At first I considered making _everything_ about an encoding into an option, but
 then the question would be why do we even have encodings? Why don't we just have
 properties of binary values? The problem with _that_ is that some options are
 genuinely grouped together. To have a floating point you need a significand and
-a mantissa. They have separate lengths, but they have to go together. They also
+an exponent. They have separate lengths, but they have to go together. They also
 have a bit width. And they are, conceptually, a single standard (IEEE 754
 floating point). As we get into implementation, I may change my mind about some
 of this, as there may be requirements here that are not yet clear to me.
@@ -292,7 +292,7 @@ through any operation. You can't add two fixed-point numbers together and have
 them become inexact.
 
 Signedness is also another property of the number itself. An operation can
-change the sign of a signed value, but it can't changed the _signedness_ of the
+change the sign of a signed value, but it can't change the _signedness_ of the
 encoding. And it certainly can't make an unsigned number negative.
 
 On the other hand, overflow behavior _can_ be a property of an operation. You
@@ -301,15 +301,69 @@ want the calculation to saturate, and at another point you want the operation to
 error. Thus, that _must_ be an option related to the _operation_, not the
 encoding or value type.
 
-### MLIR
+### Why Only Integers for Options?
 
-Probably the system most similar to ours overall is
-[MLIR](https://mlir.llvm.org/docs/Rationale/Rationale/#introduction-and-motivation)
-which has made a few design decisions that are similar to ours and a few that
-are different from ours. Their design is a nice validation of the need to be
-able to associate hardware operations with logical operations without losing the
-context of what logical operation is being executed, when doing optimizations.
+In my analysis of existing hardware operations across different types of
+hardware, anything that had potentially infinite variability in hardware could
+be expressed as an integer. Anything that has limited variability would look
+more like an enum. Upon my analysis, everything that would require an enum fell
+into one of two camps:
+
+1. It really belonged as an operation option. This is rounding behavior of
+   integers, 0 behaviors of floats, etc.
+2. It was logically a different encoding.
+
+In all real-world cases found so far, I did not discover a combinatorial
+explosion of different required encodings that happened as a result of making
+enum-typed options into separately defined encodings.
+
+### Why Allow Negative Integers?
+
+At one point I wrote in this proposal (while I was still drafting it) that
+options could only be natural numbers greater than zero. But it turns out there
+are actually hardware situations where the option can be a negative number!
+
+AMD’s FPGA synthesis tools support
+[negative-sized exponents on fixed point numbers](https://docs.amd.com/r/2024.1-English/ug1399-vitis-hls/Overview-of-Arbitrary-Precision-Fixed-Point-Data-Types).
+The syntax is `ap_fixed<W, I>`, where `W` is total width and `I` specifies the
+binary-point position through an integer-bit count. AMD explicitly permits
+negative `I`. For example, `W = 8, I = −4` means the value represents
+`n × 2⁻¹²`, which is useful when all your values are very small numbers that are
+less than 1.
+
+### Specialized Encodings
+
+There is one interesting case that I ran across in my research: Rust enum
+optimization. For example, cconsider `Option<NonZeroU32>`. Logically, it has two
+alternatives:
+
+- `None`
+- `Some(n)`, where `n` is any nonzero unsigned 32-bit integer
+
+Because zero is forbidden for `NonZeroU32`, the combined type can _use 0 to mean
+None_. This means you can represent the whole enum in a single unsigned 32-bit
+integer in hardware.
+
+Theoretically, one could implement that as a custom encoding in Define, or we
+could simply choose to do that in the compiler backend when we see that the
+constraints allow the optimization.
 
 ## Forward Compatibility
 
+The intentional design of this system is to be fully statically analyzable.
+Since we can see the exact options for encodings and exact encodings in use, we
+should be able to change this syntax to any other syntax in the future by
+analyzing the intent expressed in any program. At this point, however, this is
+somewhat of a bare assertion based on my reasoning through the problem; it
+deserves some deeper analysis.
+
 ## Refactoring Existing Systems
+
+In my analysis thus far, all necessary character, integer, and decimal encodings
+used in any real hardware can be represented via this system.
+
+There are things that people call "encodings" that cannot be represented by this
+system, but that is becasue they are not primitive values, but rather an
+_algorithm_. This is most common with compression schemes, image encodings, RPC
+protocols, etc. Those would be represented by code that actively encodes and
+decodes things, not by Define's value-type system.
