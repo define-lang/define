@@ -189,7 +189,6 @@ that have concrete encodings. The syntax for an encoding operation looks like:
 ```
 define the encoding_operation<mv:example.com:example:/my/operation/encoded> {
     # Operation Definition Block
-    it implements the operation<mv:example.com:example:/my/operation>.
 
     # Interface View
     define the view<name> {
@@ -206,19 +205,6 @@ define the encoding_operation<mv:example.com:example:/my/operation/encoded> {
 ```
 
 This has a few different pieces.
-
-#### Implementation Statement
-
-Every encoding operation must indicate what logical operation or operations it
-is intended to implement. It may say that it implements more than one logical
-operation. The syntax for this is:
-
-`it implements the operation<mv:example.com:example:/path>.`
-
-An encoding_operation must have at least one Implementation Statement in its
-Operation Definition Block.
-
-Implementation Statements must come before Interface View definitions.
 
 #### Encoding Operation Interface Views
 
@@ -325,8 +311,6 @@ define the operation<standard:/number/integer/add> {
 }
 
 define the encoding_operation<standard:/number/cpu/integer/64bit/add> {
-    it implements the operation<standard:/number/integer/add>.
-
     define the view<a> {
         it may only contain particles where {
             it has the encoding<standard:/number/cpu/integer/64bit>.

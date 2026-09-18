@@ -206,6 +206,12 @@ encodings: {
 As you might infer from the above example, these use the global name short form,
 meaning they only refer to names in the current project.
 
+The same value or the same encoding can be specified multiple times, to provide
+multiple different associations for a value or an encoding. However, it is an
+error to specify the same value/encoding pair more than once.
+
+The list must be sorted lexicographically by the value name.
+
 What this does is declare that an encoding is _potentially_ available for a
 value. The compiler _will_ have to load and parse every encoding available for a
 value, but that's not as bad as having to load and parse every encoding in the
@@ -388,8 +394,10 @@ more functionality than they currently have in order for that to be meaningful.
 
 ## Forward Compatibility
 
-Otherwise, everything about this configuration format could easily be converted
-into any other syntax or configuration format that we need.
+As far as I can tell, everything about this configuration format could easily be
+converted into any other syntax or configuration format that we need. It is both
+the most potentially flexible format, while also banning the specific _forms_ of
+flexibility that would be hard to change our minds about in the future.
 
 ## Refactoring Existing Systems
 
