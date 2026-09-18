@@ -206,7 +206,7 @@ might contain configuration values like this (in an imaginary configuration
 language since this is being specified before the configuration language
 exists):
 
-`sub_root { fqun "mv:alice.com:math-utils" path "lib/math-utils" }`
+`sub_root { fqun: "mv:alice.com:math-utils" path: "lib/math-utils" }`
 
 When the compiler reads the configuration in `lib/math-utils`, the file
 `lib/math-utils/.define/project/config.defcl` must say that the project is named

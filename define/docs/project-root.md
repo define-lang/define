@@ -26,7 +26,7 @@ use in your source code.
 
 For example, if your `config.defcl` contains:
 
-```textproto
+```protocol-buffer-text-format
 project: {
   universe_name: "mv:my-company.com:my_lib"
 }
