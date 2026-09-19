@@ -54,6 +54,40 @@ halting problem unavoidable. However, all other static guarantees (no
 uninitialized access, constraint satisfaction, memory safety, concurrency
 conflict detection) can be preserved.
 
+# ALTERNATIVE SOLUTION
+
+So we could have three components: (1) The action to call (2) The condition to
+check (3) A set of things that happen after the action is called, which can only
+be create, move, or destroy statements.
+
+The compiler must infer why continued repetition eventually becomes impossible.
+
+One workable rule would be: find a nonnegative integer, or a finite structure,
+that gets strictly smaller on every continuing iteration. The action’s
+guarantees and the subsequent create/move/destroy statements must together
+establish that decrease.
+
+For example, consider an action performing one step of Euclid’s algorithm:
+
+Before: a, b, with b > 0 After: a becomes the previous b b becomes the previous
+a modulo the previous b Stop when: b = 0
+
+The remainder operation’s contract supplies:
+
+0 ≤ new_b < previous_b
+
+The compiler can therefore establish termination automatically. Each continuing
+call starts with a smaller positive integer b. There cannot be infinitely many
+such decreases.
+
+For your three-component construct, the compiler could:
+
+1. Compose the action’s guarantees with the prescribed particle statements.
+2. Look for a known decreasing relationship between the values or structures
+   used by successive calls.
+3. Verify that the condition and those guarantees make every continuing call
+   valid.
+
 ## Solution
 
 We introduce three constructs:
