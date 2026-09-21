@@ -154,6 +154,31 @@ accepts all possible values for that option that that encoding accepts. (You can
 think of it as being "the constraint is identical to the one specified on the
 encoding option itself.")
 
+### Encodings as Constraints
+
+Encodings _may_ be specified as a constraint on a particle:
+
+```define
+define the position<network_integer> {
+    it may only contain particles where {
+        it has the value</number/integer/unsigned>.
+        it has the encoding<mv:example.com:example:/number/integer/unsigned/little_endian>.
+    }
+}
+```
+
+Note that if an encoding is specified on a position, a value must also be
+specified (the program has to understand how to logically work with the bits).
+
+When a value is specified and no encoding is specified, the compiler attempts to
+infer the encoding if possible. Its inference priorities are around runtime
+performance, but also avoiding unsustainable, explosive memory growth.
+
+In general, the expectation is that encodings should only be specified on the
+external boundaries of a program, unless there is a very performance-specific
+need where the developer has a very strong reason to override the compiler's
+inference.
+
 ### Choosing Between Conflicting Encoding Operations
 
 What happens when more than one encoding operation can satisfy an operation for
