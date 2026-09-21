@@ -133,7 +133,8 @@ If no converter is available from the literal's encoding to the destination
 value encoding, the compiler will throw an error at compile this. This is how we
 will prevent assigning inappropriate literals to values.
 
-The converter is thus both the parser and the validity checker.
+The converter is thus both the parser and the validity checker. **TBD**: What
+happens when the parser fails? Most converters can't fail.
 
 ### Selecting Destination Encodings
 
@@ -142,6 +143,49 @@ literal as something you set a value to can influence the compiler's decision on
 what encoding type it will have. In particular, if no other type is available,
 the available converters for the literal can influence what encoding the value
 gets.
+
+If the destination encoding cannot hold the literal's value, the compiler throws
+an error. This will happen most often for particles that have an explicit
+encoding specified as part of their assigned qualities.
+
+### Ephemeral Particles
+
+When a literal is specified as as an input to an operation, conceptually what
+occurs is an ephemeral particle is created just for running that operation,
+given that literal as its set value, and assigned the value type the operation
+expects with the constraints the operation expects.
+
+You could think of this:
+
+```define
+execute the operation<standard:/number/rational/add> {
+    with view<a> looking at literal<standard:/number:5>.
+    with view<b> looking at position<second_input>.
+    with view<result> looking at position<result>.
+}
+```
+
+As being equivalent to this:
+
+```define
+define the postiion<temporary> {
+    it may only contain particles where {
+        it has the value<standard:/number/rational>.
+    }
+}
+create a particle in position<temporary>.
+set the value of position<temporary> to literal<standard:/number:5>.
+execute the operation<standard:/number/rational/add> {
+    with view<a> looking at position<temporary>.
+    with view<b> looking at position<second_input>.
+    with view<result> looking at position<result>.
+}
+```
+
+In fact, the compiler will enforce this: if all you do is create a particle just
+to give it a literal value and pass it to _one_ operation, the compiler will
+require you to specify the literal directly as the input (to prevent "there is
+more than one way to do it").
 
 ## A Real Program
 
