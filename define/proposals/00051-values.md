@@ -114,6 +114,31 @@ with some very particular behaviors.
 
 ## A Real Program
 
+```define
+define the potential value<standard:/number/rational>.
+
+define the potential action<mv:example.com:example:/copy_item_count> {
+    define the position<item_count> {
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+            it has the constraint<standard:/number/integer>.
+            it has the constraint<standard:/number/unsigned>.
+        }
+    }
+    define the position<quantity> {
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+        }
+    }
+
+    it happens when {
+        the position<item_count> has a particle.
+    } and it does {
+        set the value of position<quantity> to position<item_count>.
+    }
+}
+```
+
 ## Why This is the Right Solution
 
 [DLP 39 (Value Types)](00039-value-types.md) covers a lot of the logic, here.
