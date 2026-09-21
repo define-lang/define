@@ -2,7 +2,7 @@
 
 - **Author:** Max Kanat-Alexander
 - **Status:** Draft
-- **Date Proposed:** September 19, 2026
+- **Date Proposed:** September 20, 2026
 - **Date Finalized:**
 
 ## Problems
