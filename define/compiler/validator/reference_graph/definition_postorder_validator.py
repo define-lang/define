@@ -11,6 +11,7 @@ from define.compiler import ast, diagnostics
 from define.compiler.validator import codegen_input, scope_tracker
 from define.compiler.validator.reference_graph import (
     action_contract,
+    chained_name_validator,
     destruction_contract_validator,
     particle_info,
     particle_operation_validator,
@@ -108,6 +109,12 @@ class ActionPostorderValidator:
     ) -> particle_operation_validator.ParticleOperationValidator:
         return particle_operation_validator.ParticleOperationValidator(
             self._tracker, self._enclosing_fqun
+        )
+
+    @cached_property
+    def _chained_name_validator(self) -> chained_name_validator.ChainedNameValidator:
+        return chained_name_validator.ChainedNameValidator(
+            self._definition_results, self._tracker
         )
 
     @cached_property
@@ -829,7 +836,10 @@ class ActionPostorderValidator:
     ):
         if not validity.target_ok:
             return
-        self._validate_chained_name(stmt.target_position, scope)
+        self._mark_referenced_position_constraints_alive(stmt.target_position)
+        self._diagnostics.extend(
+            self._chained_name_validator.validate(stmt.target_position, scope)
+        )
         position = stmt.target_position
         if self._tracker.has_error_state(position):
             return
@@ -854,7 +864,10 @@ class ActionPostorderValidator:
     ):
         if not validity.target_ok:
             return
-        self._validate_chained_name(stmt.target_position, scope)
+        self._mark_referenced_position_constraints_alive(stmt.target_position)
+        self._diagnostics.extend(
+            self._chained_name_validator.validate(stmt.target_position, scope)
+        )
         if self._tracker.has_error_state(stmt.target_position):
             return
 
@@ -896,8 +909,14 @@ class ActionPostorderValidator:
             self._tracker.mark_error(stmt.source_position)
             self._tracker.mark_error(stmt.target_position)
             return
-        self._validate_chained_name(stmt.source_position, scope)
-        self._validate_chained_name(stmt.target_position, scope)
+        self._mark_referenced_position_constraints_alive(stmt.source_position)
+        self._diagnostics.extend(
+            self._chained_name_validator.validate(stmt.source_position, scope)
+        )
+        self._mark_referenced_position_constraints_alive(stmt.target_position)
+        self._diagnostics.extend(
+            self._chained_name_validator.validate(stmt.target_position, scope)
+        )
         if (
             stmt.source_position.canonical_chained_name_tuple
             == stmt.target_position.canonical_chained_name_tuple
@@ -942,165 +961,6 @@ class ActionPostorderValidator:
             return
         self._tracker.move(from_pos, to_pos)
         self._check_trigger(stmt, scope)
-
-    def _validate_chained_name(
-        self,
-        chain: ast.PositionReference,
-        scope: scope_tracker.ScopeTracker,
-    ):
-        """Validate chained name elements against their parent name's constraints.
-
-        Marks the chain's occupancy state as ERROR in the tracker if validation fails.
-        """
-        self._mark_referenced_position_constraints_alive(chain)
-        if len(chain.typed_names) < 2:
-            return
-        elements = chain.typed_names
-        first = elements[0]
-        # An interface position at index 0 is in scope and provides its own
-        # constraints; every other parent name in the chain must be a global
-        # definition that we have to look up.
-        index = 0
-        if scope.is_defined(first):
-            self._check_chain_element_in_constraints(
-                chain,
-                elements[1],
-                scope.get_definition(first).constraints,
-                first.full_typed_name,
-            )
-            index = 1
-
-        while index < len(elements) - 1:
-            # The file_validator rejects any non-first local in a chain unless
-            # it follows a global action, and _validate_action_chain_step
-            # consumes that local along with the global, so parent is always
-            # global here.
-            parent = elements[index]
-            if not isinstance(parent, ast.GlobalTypedNameReference):
-                raise TypeError(
-                    f"chain parent at index {index} is not global: {parent}"
-                )
-            child = elements[index + 1]
-            parent_def = self._get_chain_element_definition(parent, chain)
-            if parent_def is None:
-                return
-            match parent_def:
-                case ast.PositionDefinition() as position_def:
-                    self._check_chain_element_in_constraints(
-                        chain,
-                        child,
-                        position_def.constraints,
-                        parent.full_typed_name,
-                    )
-                    index += 1
-                case ast.ActionDefinition() as action_def:
-                    consumed = self._validate_action_chain_step(
-                        chain,
-                        child,
-                        elements,
-                        index + 1,
-                        action_def,
-                        parent.full_typed_name,
-                    )
-                    if consumed == 0:
-                        return
-                    index += consumed
-                case _:
-                    raise TypeError(f"Unexpected definition type: {type(parent_def)}")
-
-    def _get_chain_element_definition(
-        self,
-        parent: ast.GlobalTypedNameReference,
-        chain: ast.PositionReference,
-    ) -> ast.QualityDefinition | None:
-        """Get the QualityDefinition for a chain element, or None on failure (and mark chain error)."""
-        parent_result = self._definition_results.get(parent)
-        # This means the definition's file did not load or did not parse.
-        if parent_result is None:
-            self._tracker.mark_error(chain)
-            return None
-        return parent_result.definition
-
-    def _validate_action_chain_step(
-        self,
-        chain: ast.PositionReference,
-        child: ast.TypedNameReference,
-        elements: tuple[ast.TypedNameReference, ...],
-        child_index: int,
-        action_def: ast.ActionDefinition,
-        parent_name: str,
-    ) -> int:
-        """Validate chain elements against an action definition's local positions.
-
-        Returns the number of elements consumed (0 means stop walking).
-        """
-        if not isinstance(child, ast.LocalTypedNameReference):
-            self._emit_chain_after_action_diagnostic(
-                chain,
-                child,
-                parent_name,
-                diagnostics.ChainGlobalNameAfterActionDiagnostic,
-            )
-            return 0
-        if child.full_typed_name not in action_def.interface_positions_by_name:
-            self._emit_chain_after_action_diagnostic(
-                chain,
-                child,
-                parent_name,
-                diagnostics.ChainElementNotInterfacePositionDiagnostic,
-            )
-            return 0
-        # The caller guarantees child exists, but not that the child's child exists.
-        if child_index + 1 >= len(elements):
-            return 1
-        next_child = elements[child_index + 1]
-        self._check_chain_element_in_constraints(
-            chain,
-            next_child,
-            action_def.interface_positions_by_name[child.full_typed_name].constraints,
-            child.source_typed_name,
-        )
-        return 2
-
-    def _check_chain_element_in_constraints(
-        self,
-        chain: ast.PositionReference,
-        element: ast.TypedNameReference,
-        constraints: ast.PositionConstraintBlock | None,
-        parent_name: str,
-    ):
-        """Check that a chain element is an explicit constraint of its parent name."""
-        element_name = element.full_typed_name
-        declared = constraints.as_set if constraints is not None else frozenset[str]()
-        if element_name not in declared:
-            self._diagnostics.append(
-                diagnostics.ChainElementNotInConstraintsDiagnostic(
-                    location=element.location,
-                    element_name=element_name,
-                    parent_name=parent_name,
-                )
-            )
-            self._tracker.mark_error(chain)
-
-    def _emit_chain_after_action_diagnostic(
-        self,
-        chain: ast.PositionReference,
-        element: ast.TypedNameReference,
-        parent_name: str,
-        diagnostic_class: type[
-            diagnostics.ChainGlobalNameAfterActionDiagnostic
-            | diagnostics.ChainElementNotInterfacePositionDiagnostic
-        ],
-    ):
-        """Emit a diagnostic for a chain element that cannot follow an action."""
-        self._diagnostics.append(
-            diagnostic_class(
-                location=element.location,
-                element_name=element.full_typed_name,
-                parent_name=parent_name,
-            )
-        )
-        self._tracker.mark_error(chain)
 
     def _particle_origin_position(
         self, position: ast.PositionReference
