@@ -5,12 +5,30 @@ load("//tools/bzl:pyright.bzl", "pyright_test")
 py_library(
     name = "dead_constraint_tracker",
     srcs = ["dead_constraint_tracker.py"],
-    visibility = ["//define/compiler/validator/reference_graph:__pkg__"],
     deps = [
         "//define/compiler:ast",
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/validator:validation_result",
         "@pypi//msgspec",
+    ],
+)
+
+py_library(
+    name = "dead_constraint_validator",
+    srcs = ["dead_constraint_validator.py"],
+    visibility = ["//define/compiler/validator/reference_graph:__pkg__"],
+    deps = [
+        ":dead_constraint_tracker",
+        "//define/compiler:ast",
+        "//define/compiler:diagnostics",
+        "//define/compiler/data_structures:typed_name_dict",
+        "//define/compiler/validator:scope_tracker",
+        "//define/compiler/validator:validation_result",
+        "//define/compiler/validator/reference_graph:action_contract",
+        "//define/compiler/validator/reference_graph:particle_info",
+        "//define/compiler/validator/reference_graph:particle_tracker",
+        "//define/compiler/validator/reference_graph:position_occupancy",
+        "//define/compiler/validator/reference_graph:position_quality_resolver",
     ],
 )
 
@@ -35,6 +53,7 @@ pyright_test(
     name = "pyright_test",
     deps = [
         ":dead_constraint_tracker",
+        ":dead_constraint_validator",
         ":dead_interface_tracker",
     ],
 )

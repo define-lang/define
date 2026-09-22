@@ -86,7 +86,7 @@ py_library(
         "//define/compiler/validator:codegen_input",
         "//define/compiler/validator:scope_tracker",
         "//define/compiler/validator:validation_result",
-        "//define/compiler/validator/reference_graph/dead_code:dead_constraint_tracker",
+        "//define/compiler/validator/reference_graph/dead_code:dead_constraint_validator",
         "@pypi//msgspec",
     ],
 )
@@ -176,6 +176,7 @@ py_library(
 py_library(
     name = "position_quality_resolver",
     srcs = ["position_quality_resolver.py"],
+    visibility = ["//define/compiler/validator/reference_graph/dead_code:__pkg__"],
     deps = [
         ":quality_assignment",
         ":reference_graph_validation_state",
