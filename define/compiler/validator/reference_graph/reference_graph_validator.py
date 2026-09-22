@@ -124,9 +124,10 @@ class ReferenceGraphValidator:
     ) -> definition_postorder_validator.PostorderValidationResult:
         definition_result = self._definition_results[definition.typed_name]
         result = definition_postorder_validator.ActionPostorderValidator(
-            definition_result,
-            self._definition_results,
-            self._validation_state,
+            definition=definition,
+            particle_statement_validity=definition_result.particle_statement_validity,
+            definition_results=self._definition_results,
+            validation_state=self._validation_state,
         ).analyze()
         self._validation_state.publish_contract(definition.typed_name, result.contract)
         return result

@@ -62,7 +62,8 @@ class _PendingDestructionContract(msgspec.Struct, frozen=True):
 class ActionPostorderValidator:
     """Validates an action definition during a DFS post-order walk of the reference graph."""
 
-    _definition_result: validation_result.DefinitionValidationResult
+    _definition: ast.ActionDefinition
+    _particle_statement_validity: Sequence[validation_result.ParticleStatementValidity]
     _definition_results: typed_name_dict.TypedNameDict[
         ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
         validation_result.DefinitionValidationResult,
@@ -75,15 +76,19 @@ class ActionPostorderValidator:
 
     def __init__(
         self,
-        definition_result: validation_result.DefinitionValidationResult,
+        definition: ast.ActionDefinition,
+        particle_statement_validity: Sequence[
+            validation_result.ParticleStatementValidity
+        ],
         definition_results: typed_name_dict.TypedNameDict[
             ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
             validation_result.DefinitionValidationResult,
         ],
         validation_state: reference_graph_validation_state.ReferenceGraphValidationState,
     ):
-        """Initialize with the definition to validate and the full results map."""
-        self._definition_result = definition_result
+        """Initialize with the Action Definition, statement validity, and known definitions."""
+        self._definition = definition
+        self._particle_statement_validity = particle_statement_validity
         self._definition_results = definition_results
         self._validation_state = validation_state
         self._diagnostics = []
@@ -91,10 +96,6 @@ class ActionPostorderValidator:
         self._destruction_contracts = []
         self._steps: list[codegen_input.ActionStep] = []
         self._dead_constraint_tracker = dead_constraint_tracker.DeadConstraintTracker()
-
-    @property
-    def _definition(self) -> ast.QualityDefinition:
-        return self._definition_result.definition
 
     @property
     def _enclosing_fqun(self) -> ast.Fqun:
@@ -123,7 +124,7 @@ class ActionPostorderValidator:
         self,
     ) -> destruction_contract_validator.DestructionContractValidator:
         return destruction_contract_validator.DestructionContractValidator(
-            self._action_definition,
+            self._definition,
             self._definition_results,
             self._validation_state,
             self._tracker,
@@ -134,7 +135,7 @@ class ActionPostorderValidator:
         self,
     ) -> position_quality_resolver.PositionQualityResolver:
         return position_quality_resolver.PositionQualityResolver(
-            self._action_definition,
+            self._definition,
             self._definition_results,
             self._validation_state,
         )
@@ -197,7 +198,7 @@ class ActionPostorderValidator:
                 required_state=required_state,
                 position=contracted_position,
                 inferred_at=inferred_at,
-                enclosing_action=self._action_definition,
+                enclosing_action=self._definition,
                 propagated_from=propagated_from,
                 action_assignment=action_assignment,
             )
@@ -786,7 +787,7 @@ class ActionPostorderValidator:
         action_statements: ast.ActionStatementsBlock,
         scope: scope_tracker.ScopeTracker,
     ):
-        validity_iter = iter(self._definition_result.particle_statement_validity)
+        validity_iter = iter(self._particle_statement_validity)
         for stmt in action_statements.statements:
             match stmt:
                 case ast.LocalPositionDefinition():
@@ -963,7 +964,7 @@ class ActionPostorderValidator:
             position_occupancy.PositionOccupancyState.EMPTY, to_pos, scope
         )
 
-        target_required_qualities, _ = (
+        target_required_qualities = (
             self._position_quality_resolver.get_direct_required_qualities(to_pos, scope)
         )
         move_diagnostics = self._operation_validator.validate_move(
@@ -1037,7 +1038,7 @@ class ActionPostorderValidator:
     ):
         if not self._dead_constraint_tracker.has_constraint_candidates():
             return
-        constraints, _ = self._position_quality_resolver.get_direct_required_qualities(
+        constraints = self._position_quality_resolver.get_direct_required_qualities(
             position, scope
         )
         if constraints is None:
@@ -1086,12 +1087,8 @@ class ActionPostorderValidator:
             )
 
     @property
-    def _action_definition(self) -> ast.ActionDefinition:
-        return typing.cast("ast.ActionDefinition", self._definition)
-
-    @property
     def _interface_positions(self) -> dict[str, ast.LocalPositionDefinition]:
-        return self._action_definition.interface_positions_by_name
+        return self._definition.interface_positions_by_name
 
     def _mark_own_contract_guarantees_alive(
         self,
@@ -1106,10 +1103,8 @@ class ActionPostorderValidator:
             origin_position = self._particle_origin_position(final_position)
             if origin_position is None:
                 continue
-            constraints, _ = (
-                self._position_quality_resolver.get_direct_required_qualities(
-                    final_position, scope
-                )
+            constraints = self._position_quality_resolver.get_direct_required_qualities(
+                final_position, scope
             )
             constraints = typing.cast(
                 "tuple[ast.GlobalTypedNameReference, ...]", constraints
@@ -1120,14 +1115,13 @@ class ActionPostorderValidator:
 
     @property
     def _trigger_position_name(self) -> str | None:
-        if self._action_definition.trigger_position is not None:
-            return self._action_definition.trigger_position.typed_name.full_typed_name
+        if self._definition.trigger_position is not None:
+            return self._definition.trigger_position.typed_name.full_typed_name
         return None
 
     def analyze(self) -> PostorderValidationResult:
         """Run post-order validation and return diagnostics, contract, and codegen input."""
-        action_def = self._action_definition
-        contract = self._analyze_action_definition(action_def)
+        contract = self._analyze_action_definition()
         propagated_destructions: list[
             destruction_contract_types.PropagatedDestruction
         ] = []
@@ -1140,7 +1134,7 @@ class ActionPostorderValidator:
             diagnostics=self._diagnostics,
             contract=contract,
             codegen_input=codegen_input.ActionCodegenInput(
-                definition=action_def,
+                definition=self._definition,
                 steps=self._steps,
                 propagated_destructions=propagated_destructions,
             ),
@@ -1171,17 +1165,14 @@ class ActionPostorderValidator:
             )
         )
 
-    def _analyze_action_definition(
-        self,
-        definition: ast.ActionDefinition,
-    ) -> action_contract.ActionContract:
+    def _analyze_action_definition(self) -> action_contract.ActionContract:
         scope = scope_tracker.ScopeTracker()
-        for implication in definition.quality_implications:
+        for implication in self._definition.quality_implications:
             implied_action = implication.typed_global_name
             if implied_action.name_type != ast.NameType.ACTION:
                 continue
             self._dead_constraint_tracker.register_implied_action(implied_action)
-        for pos in definition.interface_positions:
+        for pos in self._definition.interface_positions:
             # Skip duplicates so the first definition's constraints are preserved,
             # matching file_validator's behavior of not adding conflicting names.
             if not scope.is_defined(pos.typed_name):
@@ -1192,7 +1183,7 @@ class ActionPostorderValidator:
 
         # Set all positions from the Trigger Conditions Block as having
         # the state that the Trigger Conditions Block says they have.
-        trigger_ref = self._action_definition.trigger_position_reference
+        trigger_ref = self._definition.trigger_position_reference
         if trigger_ref is not None:
             qualities = (
                 self._position_quality_resolver.get_transitive_required_qualities(
@@ -1209,7 +1200,7 @@ class ActionPostorderValidator:
             )
 
         scope.enter_child_scope()
-        self._analyze_statements(definition.action_statements, scope)
+        self._analyze_statements(self._definition.action_statements, scope)
         self._check_unconsumed_action_interfaces()
 
         contract = self._generate_contract()
@@ -1232,21 +1223,21 @@ class ActionPostorderValidator:
 
     def _generate_contract(self) -> action_contract.ActionContract:
         """Generate the action contract from inferred requirements and final tracker state."""
-        if self._action_definition.is_destructor:
+        if self._definition.is_destructor:
             guarantees = self._tracker.generate_destructor_guarantees(
-                self._action_definition.interface_position_names,
+                self._definition.interface_position_names,
                 self._implied_quality_list,
                 self._inferred_requirements,
             )
             callees: list[action_contract.CalleeContract] = []
         else:
             guarantees = self._tracker.generate_own_guarantees(
-                self._action_definition.interface_position_names,
+                self._definition.interface_position_names,
                 self._implied_quality_list,
                 self._inferred_requirements,
             )
             callees = self._tracker.nested_guarantees()
-        if self._action_definition.is_destructor:
+        if self._definition.is_destructor:
             self._check_destructor_guarantees(guarantees)
         return action_contract.ActionContract(
             requirements=self._inferred_requirements,

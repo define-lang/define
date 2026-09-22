@@ -43,6 +43,17 @@ class PositionQualityResolver:
         self,
         position: ast.PositionReference,
         scope: scope_tracker.ScopeTracker,
+    ) -> tuple[ast.GlobalTypedNameReference, ...] | None:
+        """Resolve the constraint Qualities required at a Position, in source order."""
+        qualities, _ = self._get_direct_required_qualities_and_cache_key(
+            position, scope
+        )
+        return qualities
+
+    def _get_direct_required_qualities_and_cache_key(
+        self,
+        position: ast.PositionReference,
+        scope: scope_tracker.ScopeTracker,
     ) -> tuple[
         tuple[ast.GlobalTypedNameReference, ...] | None,
         tuple[str, ...] | None,
@@ -99,7 +110,9 @@ class PositionQualityResolver:
         scope: scope_tracker.ScopeTracker,
     ) -> quality_assignment.QualityAssignments:
         """Resolve required Qualities and their implications in assignment order."""
-        direct, cache_key = self.get_direct_required_qualities(position, scope)
+        direct, cache_key = self._get_direct_required_qualities_and_cache_key(
+            position, scope
+        )
         if direct is None:
             return quality_assignment.EMPTY_QUALITY_ASSIGNMENTS
         if cache_key is None:
