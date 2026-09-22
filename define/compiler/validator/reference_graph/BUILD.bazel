@@ -31,6 +31,22 @@ py_test(
 )
 
 py_library(
+    name = "action_requirement_validator",
+    srcs = ["action_requirement_validator.py"],
+    deps = [
+        ":action_contract",
+        ":particle_info",
+        ":particle_tracker",
+        ":position_occupancy",
+        ":position_quality_resolver",
+        ":requirement_violation",
+        "//define/compiler:ast",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:scope_tracker",
+    ],
+)
+
+py_library(
     name = "chained_name_validator",
     srcs = ["chained_name_validator.py"],
     deps = [
@@ -69,6 +85,7 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         ":action_contract",
+        ":action_requirement_validator",
         ":chained_name_validator",
         ":destruction_contract",
         ":destruction_contract_validator",
@@ -79,7 +96,6 @@ py_library(
         ":position_quality_resolver",
         ":quality_assignment",
         ":reference_graph_validation_state",
-        ":requirement_violation",
         "//define/compiler:ast",
         "//define/compiler:diagnostics",
         "//define/compiler/data_structures:typed_name_dict",
@@ -313,6 +329,7 @@ pyright_test(
     deps = [
         ":action_contract",
         ":action_contract_test",
+        ":action_requirement_validator",
         ":chained_name_validator",
         ":child_state",
         ":child_state_test",
