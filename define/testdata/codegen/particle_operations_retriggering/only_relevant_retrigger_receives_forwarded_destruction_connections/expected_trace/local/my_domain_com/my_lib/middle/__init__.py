@@ -51,12 +51,12 @@ class Middle(literal.Action):
                 destruction_contracts.destroy_position_run,
             ),
         )
-        local_2 = literal.LocalPosition(
+        local_ = literal.LocalPosition(
             "position<local>",
         )
-        local_2.create_particle()
+        local_.create_particle()
         literal.record_operation("middle.create(local)")
-        local_2.move_particle_to(
+        local_.move_particle_to(
             self.on_particle.get_action(
                 local.my_domain_com.my_lib.destroyer.Destroyer
             ).get_interface_position(

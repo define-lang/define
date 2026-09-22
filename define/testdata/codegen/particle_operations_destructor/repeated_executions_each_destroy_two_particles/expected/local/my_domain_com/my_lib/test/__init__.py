@@ -85,7 +85,7 @@ class Test(literal.Action):
         ).create_particle()
         self.on_particle.get_action(
             local.my_domain_com.my_lib.destroyer.Destroyer
-        ).run(DestroyerDestructionContracts_2())
+        ).run(DestroyerDestructionContracts_())
 
 
 class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.DestroyerDestructionContracts):
@@ -97,7 +97,7 @@ class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.Destroy
         ).run()
 
 
-class DestroyerDestructionContracts_2(local.my_domain_com.my_lib.destroyer.DestroyerDestructionContracts):
+class DestroyerDestructionContracts_(local.my_domain_com.my_lib.destroyer.DestroyerDestructionContracts):
 
     @override
     def run_destructors_position_first(self, particle: literal.Particle):

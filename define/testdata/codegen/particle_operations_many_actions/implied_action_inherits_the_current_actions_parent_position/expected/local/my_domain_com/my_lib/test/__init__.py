@@ -12,36 +12,36 @@ class Test(literal.Action):
 
     @override
     def run(self):
-        local_2 = literal.LocalPosition(
+        local_ = literal.LocalPosition(
             "position<local>",
             constraints=(
                 local.my_domain_com.my_lib.parent.Parent,
             ),
         )
-        local_2.create_particle()
-        local_2.particle.get_position(
+        local_.create_particle()
+        local_.particle.get_position(
             local.my_domain_com.my_lib.parent.Parent
         ).create_particle()
-        local_2.particle.get_position(
+        local_.particle.get_position(
             local.my_domain_com.my_lib.parent.Parent
         ).particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        local_2.particle.get_position(
+        local_.particle.get_position(
             local.my_domain_com.my_lib.parent.Parent
         ).particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
         ).run()
-        local_2.particle.get_position(
+        local_.particle.get_position(
             local.my_domain_com.my_lib.parent.Parent
         ).particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
-        local_2.particle.get_position(
+        local_.particle.get_position(
             local.my_domain_com.my_lib.parent.Parent
         ).destroy_particle()
-        local_2.destroy_particle()
+        local_.destroy_particle()

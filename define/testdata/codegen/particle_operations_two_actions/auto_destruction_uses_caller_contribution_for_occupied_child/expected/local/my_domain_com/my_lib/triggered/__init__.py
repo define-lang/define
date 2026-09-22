@@ -33,7 +33,7 @@ class Triggered(literal.Action):
 
     @override
     def run(self, destruction_contracts: TriggeredDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
-        local_2 = literal.LocalPosition(
+        local_ = literal.LocalPosition(
             "position<local>",
         )
         self.get_interface_position(
@@ -46,12 +46,12 @@ class Triggered(literal.Action):
         self.on_particle.get_position(
             local.my_domain_com.my_lib.target.Target
         ).move_particle_to(
-            local_2
+            local_
         )
         destruction_contracts.run_destructors_position_run(
-            local_2.particle
+            local_.particle
         )
         destruction_contracts.destroy_position_run(
-            local_2.particle
+            local_.particle
         )
-        local_2.destroy_particle()
+        local_.destroy_particle()

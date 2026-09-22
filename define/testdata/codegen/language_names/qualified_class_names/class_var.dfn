@@ -13,7 +13,7 @@ define the potential action<my.domain.com:my_lib:/class_var> {
         define the position<type>.
         define the position<typing>.
         define the position<class>.
-        define the position<class_2>.
+        define the position<class_>.
         define the position<local> {
             it may only contain particles where {
                 it has the position</child>.
@@ -26,7 +26,7 @@ define the potential action<my.domain.com:my_lib:/class_var> {
         create a particle in position<type>.
         create a particle in position<typing>.
         create a particle in position<class>.
-        create a particle in position<class_2>.
+        create a particle in position<class_>.
         create a particle in position<local>.
         create a particle in position<local>::position</child>.
         destroy the particle in position<trigger_pos>.

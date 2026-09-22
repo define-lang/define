@@ -9,18 +9,18 @@ class Test(literal.Action):
 
     @override
     def run(self):
-        self_2 = literal.LocalPosition(
-            "position<self_2>",
+        self_ = literal.LocalPosition(
+            "position<self_>",
         )
-        self_3 = literal.LocalPosition(
-            "position<self_3>",
+        self__ = literal.LocalPosition(
+            "position<self__>",
         )
-        self_4 = literal.LocalPosition(
+        self___ = literal.LocalPosition(
             "position<self>",
         )
-        self_2.create_particle()
-        self_3.create_particle()
-        self_4.create_particle()
-        self_2.destroy_particle()
-        self_3.destroy_particle()
-        self_4.destroy_particle()
+        self_.create_particle()
+        self__.create_particle()
+        self___.create_particle()
+        self_.destroy_particle()
+        self__.destroy_particle()
+        self___.destroy_particle()

@@ -45,7 +45,7 @@ class Destroyer(literal.Action):
         first = literal.LocalPosition(
             "position<first>",
         )
-        destruction_contracts_2 = literal.LocalPosition(
+        destruction_contracts_ = literal.LocalPosition(
             "position<destruction_contracts>",
         )
         self.get_interface_position(
@@ -56,7 +56,7 @@ class Destroyer(literal.Action):
         self.get_interface_position(
             "position<right>"
         ).move_particle_to(
-            destruction_contracts_2
+            destruction_contracts_
         )
         destruction_contracts.run_destructors_position_run(
             self.get_interface_position(
@@ -75,13 +75,13 @@ class Destroyer(literal.Action):
             first.particle
         )
         destruction_contracts.run_destructors_position_right(
-            destruction_contracts_2.particle
+            destruction_contracts_.particle
         )
         destruction_contracts.destroy_position_left(
             first.particle
         )
         destruction_contracts.destroy_position_right(
-            destruction_contracts_2.particle
+            destruction_contracts_.particle
         )
         first.destroy_particle()
-        destruction_contracts_2.destroy_particle()
+        destruction_contracts_.destroy_particle()

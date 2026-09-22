@@ -70,7 +70,7 @@ class OuterDestructor(literal.Action):
         literal.record_operation("outer_destructor.move(second_source, inner_destroyer_particle::/inner_destroyer::target)")
         inner_destroyer_particle.particle.get_action(
             local.my_domain_com.my_lib.inner_destroyer.InnerDestroyer
-        ).run(InnerDestroyerDestructionContracts_2())
+        ).run(InnerDestroyerDestructionContracts_())
         inner_destroyer_particle.destroy_particle()
         literal.record_operation("outer_destructor.destroy(inner_destroyer_particle)")
 
@@ -91,7 +91,7 @@ class InnerDestroyerDestructionContracts(local.my_domain_com.my_lib.inner_destro
         literal.record_operation("inner_destroyer.destroy(target::/extra)")
 
 
-class InnerDestroyerDestructionContracts_2(local.my_domain_com.my_lib.inner_destroyer.InnerDestroyerDestructionContracts):
+class InnerDestroyerDestructionContracts_(local.my_domain_com.my_lib.inner_destroyer.InnerDestroyerDestructionContracts):
 
     @override
     def run_destructors_position_target(self, particle: literal.Particle):

@@ -43,7 +43,7 @@ class Destroyer(literal.Action):
 
     @override
     def run(self, destruction_contracts: DestroyerDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
-        local_2 = literal.LocalPosition(
+        local_ = literal.LocalPosition(
             "position<local>",
             constraints=(
                 local.my_domain_com.my_lib.known_empty.KnownEmpty,
@@ -60,25 +60,25 @@ class Destroyer(literal.Action):
         self.on_particle.get_position(
             local.my_domain_com.my_lib.target.Target
         ).move_particle_to(
-            local_2
+            local_
         )
-        local_2.particle.get_position(
+        local_.particle.get_position(
             local.my_domain_com.my_lib.known_empty.KnownEmpty
         ).move_particle_to(
             self.on_particle.get_position(
                 local.my_domain_com.my_lib.destination.Destination
             )
         )
-        local_2.particle.get_position(
+        local_.particle.get_position(
             local.my_domain_com.my_lib.known_occupied.KnownOccupied
         ).create_particle()
         destruction_contracts.run_destructors_position_run(
-            local_2.particle
+            local_.particle
         )
         destruction_contracts.destroy_position_run(
-            local_2.particle
+            local_.particle
         )
-        local_2.particle.get_position(
+        local_.particle.get_position(
             local.my_domain_com.my_lib.known_occupied.KnownOccupied
         ).destroy_particle()
-        local_2.destroy_particle()
+        local_.destroy_particle()

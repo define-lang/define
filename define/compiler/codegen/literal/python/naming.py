@@ -74,21 +74,13 @@ class LocalNameAllocator:
     def __init__(self):
         """Reserve Python keywords and names used by generated methods."""
         self._used = set(_RESERVED_NAMES)
-        self._next_suffix: dict[str, int] = {}
 
     def allocate(self, candidate: str) -> str:
         """Return the first available name based on ``candidate``."""
-        # TODO: For reserved names, append underscores until available; keep
-        # numeric suffixes for collisions between user-defined names.
-        if candidate not in self._used:
-            self._used.add(candidate)
-            return candidate
-        suffix = self._next_suffix.get(candidate, 2)
-        while f"{candidate}_{suffix}" in self._used:
-            suffix += 1
-        name = f"{candidate}_{suffix}"
+        name = candidate
+        while name in self._used:
+            name += "_"
         self._used.add(name)
-        self._next_suffix[candidate] = suffix + 1
         return name
 
     def reserve_module_first_names(self, modules: Iterable[str]):

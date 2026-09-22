@@ -86,7 +86,7 @@ class Test(literal.Action):
         )
         self.on_particle.get_action(
             local.my_domain_com.my_lib.class_var_.ClassVar_
-        ).run(ClassVarDestructionContracts_2())
+        ).run(ClassVarDestructionContracts_())
         self.on_particle.get_action(
             local.my_domain_com.my_lib.type_error.TypeError
         ).get_interface_position(
@@ -106,7 +106,7 @@ class ClassVarDestructionContracts(local.my_domain_com.my_lib.class_var.ClassVar
         ).destroy_particle()
 
 
-class ClassVarDestructionContracts_2(local.my_domain_com.my_lib.class_var_.ClassVarDestructionContracts):
+class ClassVarDestructionContracts_(local.my_domain_com.my_lib.class_var_.ClassVarDestructionContracts):
 
     @override
     def destroy_position_trigger_pos(self, particle: literal.Particle):

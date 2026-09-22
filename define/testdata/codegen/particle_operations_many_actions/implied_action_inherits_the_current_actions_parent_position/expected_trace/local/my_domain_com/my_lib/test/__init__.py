@@ -12,19 +12,19 @@ class Test(literal.Action):
 
     @override
     def run(self):
-        local_2 = literal.LocalPosition(
+        local_ = literal.LocalPosition(
             "position<local>",
             constraints=(
                 local.my_domain_com.my_lib.parent.Parent,
             ),
         )
-        local_2.create_particle()
+        local_.create_particle()
         literal.record_operation("test.create(local)")
-        local_2.particle.get_position(
+        local_.particle.get_position(
             local.my_domain_com.my_lib.parent.Parent
         ).create_particle()
         literal.record_operation("test.create(local::/parent)")
-        local_2.particle.get_position(
+        local_.particle.get_position(
             local.my_domain_com.my_lib.parent.Parent
         ).particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
@@ -32,12 +32,12 @@ class Test(literal.Action):
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("test.create(local::/parent::/middle::trigger_pos)")
-        local_2.particle.get_position(
+        local_.particle.get_position(
             local.my_domain_com.my_lib.parent.Parent
         ).particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
         ).run()
-        local_2.particle.get_position(
+        local_.particle.get_position(
             local.my_domain_com.my_lib.parent.Parent
         ).particle.get_action(
             local.my_domain_com.my_lib.middle.Middle
@@ -45,9 +45,9 @@ class Test(literal.Action):
             "position<trigger_pos>"
         ).destroy_particle()
         literal.record_operation("test.destroy(local::/parent::/middle::trigger_pos)")
-        local_2.particle.get_position(
+        local_.particle.get_position(
             local.my_domain_com.my_lib.parent.Parent
         ).destroy_particle()
         literal.record_operation("test.destroy(local::/parent)")
-        local_2.destroy_particle()
+        local_.destroy_particle()
         literal.record_operation("test.destroy(local)")
