@@ -35,7 +35,6 @@ def test_compile_failure_preserves_output_and_does_not_stop_later_cases(
     failed_expected.mkdir()
     failed_expected_file = failed_expected / "generated.py"
     _ = failed_expected_file.write_text("existing output")
-    _ = (successful_case / "occupied_positions.txt").write_text("existing occupancy")
     _ = (successful_case / "operation_trace.txt").write_text("existing trace")
 
     def compile_program(
@@ -73,9 +72,6 @@ def test_compile_failure_preserves_output_and_does_not_stop_later_cases(
     assert (
         successful_case / "expected_trace" / "generated.py"
     ).read_text() == "new output"
-    assert (
-        successful_case / "occupied_positions.txt"
-    ).read_text() == "existing occupancy"
     assert (successful_case / "operation_trace.txt").read_text() == "existing trace"
     assert capsys.readouterr().out == (
         "  category/failed: FAILED\n"

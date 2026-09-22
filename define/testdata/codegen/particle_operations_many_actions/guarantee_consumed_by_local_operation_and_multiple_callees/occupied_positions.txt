@@ -1,2 +1,0 @@
-position<local.my_domain_com.my_lib.shared.Shared>
-position<local.my_domain_com.my_lib.shared.Shared>::position<local.my_domain_com.my_lib.marker.Marker>

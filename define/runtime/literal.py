@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING, ClassVar, cast, override
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
 
-_REPORT_OCCUPIED_POSITIONS_ENV_VAR = "DEFINE_REPORT_OCCUPIED_POSITIONS"
 # TODO: Make operation tracing thread-safe somehow. Not a high priority.
 _operation_trace: list[str] | None = None
 
@@ -144,35 +143,6 @@ class Particle:
     def quality_types(self) -> frozenset[type[Quality]]:
         """Return the set of constraint types satisfied by this particle."""
         return frozenset(type(q) for q in self._assigned_qualities)
-
-    def occupied_position_names(self) -> list[str]:
-        """Return chained names of occupied positions reachable from this particle.
-
-        Names are returned depth-first, each parent position before the
-        positions nested within its particle, in quality-assignment order.
-        """
-        # TODO: Render occupied position names with Define syntax instead of
-        # Python class paths.
-        return self._occupied_position_names(())
-
-    def _occupied_position_names(self, prefix: tuple[str, ...]) -> list[str]:
-        names: list[str] = []
-        for quality in self._assigned_qualities:
-            if isinstance(quality, GlobalPosition):
-                chain = (*prefix, quality.name)
-                if quality.has_particle:
-                    names.append("::".join(chain))
-                    names.extend(quality.particle._occupied_position_names(chain))
-            elif isinstance(quality, Action):
-                action_chain = (*prefix, quality.name)
-                for interface_position in quality.interface_positions:
-                    chain = (*action_chain, interface_position.name)
-                    if interface_position.has_particle:
-                        names.append("::".join(chain))
-                        names.extend(
-                            interface_position.particle._occupied_position_names(chain)
-                        )
-        return names
 
 
 class Position(ABC):
@@ -332,12 +302,6 @@ def start(entry_point: type[Action], *, trace_operations: bool = False):
         view_point = LocalPosition("position<view_point>", constraints=(entry_point,))
         view_point.create_particle()
         view_point.particle.get_action(entry_point).run()
-        occupied_positions_file = os.environ.get(_REPORT_OCCUPIED_POSITIONS_ENV_VAR)
-        if occupied_positions_file is not None:
-            occupied_names = view_point.particle.occupied_position_names()
-            _ = Path(occupied_positions_file).write_text(
-                "".join(f"{name}\n" for name in occupied_names)
-            )
         trace_file = os.environ.get("DEFINE_OPERATION_TRACE_FILE")
         if _operation_trace is not None and trace_file is not None:
             _ = Path(trace_file).write_text(

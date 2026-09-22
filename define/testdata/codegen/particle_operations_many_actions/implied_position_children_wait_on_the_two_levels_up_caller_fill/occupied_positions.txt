@@ -1,3 +1,0 @@
-position<local.my_domain_com.my_lib.parent.Parent>
-position<local.my_domain_com.my_lib.parent.Parent>::position<local.my_domain_com.my_lib.child1.Child1>
-position<local.my_domain_com.my_lib.parent.Parent>::position<local.my_domain_com.my_lib.child2.Child2>

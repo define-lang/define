@@ -213,8 +213,8 @@ def _compile_and_run_project(
     result = driver.Driver().compile_program(Path("test.dfn"), generated)
     assert_no_errors(result)
     runtime_result = generated_program_runner.run_generated_program(generated)
-    if runtime_result.process.returncode != 0:
-        pytest.fail(runtime_result.process.stderr)
+    if runtime_result.returncode != 0:
+        pytest.fail(runtime_result.stderr)
 
 
 def _generate_with_additional_caller(

@@ -51,41 +51,26 @@ def _run_case(
     *,
     testdata_root: Path,
     operation_trace_file: Path | None = None,
-) -> generated_program_runner.GeneratedProgramResult | None:
+) -> bool:
     case_dir = expected_dir.parent
     runtime_result = generated_program_runner.run_generated_program(
         expected_dir,
         operation_trace_file=operation_trace_file,
     )
-    if runtime_result.process.returncode != 0:
+    if runtime_result.returncode != 0:
         print(f"  {case_dir.relative_to(testdata_root)}: FAILED")
-        print(runtime_result.process.stderr)
-        return None
-    return runtime_result
+        print(runtime_result.stderr)
+        return False
+    return True
 
 
 def _regenerate_codegen_case(case_dir: Path, *, testdata_root: Path) -> bool:
     expected_dir = case_dir / "expected"
-    if not _compile_case(
+    return _compile_case(
         expected_dir,
         trace_operations=False,
         testdata_root=testdata_root,
-    ):
-        return False
-
-    # Existing occupancy is a behavioral expectation; execution is only needed
-    # when a new case does not have that expectation yet.
-    occupied_positions = case_dir / "occupied_positions.txt"
-    if occupied_positions.exists():
-        return True
-    runtime_result = _run_case(
-        expected_dir,
-        testdata_root=testdata_root,
     )
-    if runtime_result is None:
-        return False
-    _ = occupied_positions.write_text(runtime_result.occupied_positions)
-    return True
 
 
 def _regenerate_tracing_case(case_dir: Path, *, testdata_root: Path) -> bool:
@@ -102,13 +87,10 @@ def _regenerate_tracing_case(case_dir: Path, *, testdata_root: Path) -> bool:
     operation_trace_file = case_dir / "operation_trace.txt"
     if operation_trace_file.exists():
         return True
-    return (
-        _run_case(
-            expected_dir,
-            testdata_root=testdata_root,
-            operation_trace_file=operation_trace_file,
-        )
-        is not None
+    return _run_case(
+        expected_dir,
+        testdata_root=testdata_root,
+        operation_trace_file=operation_trace_file,
     )
 
 

@@ -58,6 +58,6 @@ def test_runtime_operation_order_matches_expected_trace(
         Path("expected_trace"),
         operation_trace_file=trace_file,
     )
-    if runtime_result.process.returncode != 0:
-        pytest.fail(runtime_result.process.stderr)
+    if runtime_result.returncode != 0:
+        pytest.fail(runtime_result.stderr)
     assert trace_file.read_bytes() == Path("operation_trace.txt").read_bytes()

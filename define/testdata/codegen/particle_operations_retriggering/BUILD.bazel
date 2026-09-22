@@ -20,7 +20,6 @@ filegroup(
         ["**"],
         exclude = [
             "**/expected/**",
-            "**/occupied_positions.txt",
         ],
     ),
     visibility = ["//define/testdata/codegen:__pkg__"],

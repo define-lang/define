@@ -7,7 +7,6 @@ filegroup(
         ["**"],
         exclude = [
             "**/expected/**",
-            "**/occupied_positions.txt",
         ],
     ),
     visibility = [

@@ -32,9 +32,6 @@ py_library(
     name = "generated_program_runner",
     srcs = ["generated_program_runner.py"],
     visibility = ["//tools:__pkg__"],
-    deps = [
-        "@pypi//msgspec",
-    ],
 )
 
 py_library(
