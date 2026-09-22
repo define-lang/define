@@ -1589,11 +1589,12 @@ occurs from the compiler's viewpoint when starting a program:
 
 1. An anonymous position is created, called the "view point position."
 2. The view point position has exactly one constraint: it is assigned the
-   constructor that is the program's entry point.
+   constructor that is the program's entry point. This constructor is called the
+   "entry point action."
 3. A particle is created in the view point position. This particle is called the
    "view point."
-4. This triggers the constructor, and all code in the program executes from
-   there.
+4. This triggers the entry point action, and all code in the program executes
+   from there.
 
 ### Entry Points Restrictions
 
@@ -1605,6 +1606,11 @@ The entry point action of a program must not define any interface positions.
 
 The entry point action of a program must not infer that any implied position is
 occupied.
+
+### Non-Filesystem Entry Points
+
+In a non-filesystem context, the entry point action is the last defined
+constructor in the source that was supplied in a non-filesystem context.
 
 ## Ending Define Programs
 

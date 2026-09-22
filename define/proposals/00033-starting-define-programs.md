@@ -70,6 +70,20 @@ shared library, but we have not yet defined how that would work.
 Define programs do not terminate when the first constructor ends. They only
 terminate as described in a later proposal.
 
+### Non-Filesystem Contexts
+
+In a non-filesystem context, it's less clear which constructor is supposed to be
+the entry point action, since there can be multiple actions defined. To resolve
+this, the final constructor defined in the non-filesystem context is the entry
+point.
+
+In other words, it's the last constructor in the source that was directly
+provided to the compiler via whatever non-filesystem mechanism is being used,
+such as stdin.
+
+A non-filesystem context that has no entry point may be validated, but code
+generation can't occur.
+
 ## A Real Program
 
 ```
@@ -116,6 +130,23 @@ main, and that seemed both unnecessary and more likely to lock us into a bad
 forward compatibility situation that we would eventually want to get out of
 (like Java making `String[] args` a required argument on every main function
 even when it hardly matters for many programs).
+
+### Non-Filesystem Entry Points
+
+Although "last constructor" isn't quite the _only_ want to do this, it is the
+most logical. The way that Define works in a non-filesystem context is that
+definitions have to be defined before the thing that references them. Thus the
+"root node" in the DAG has to be the last item in the initial source.
+
+The only time the last constructor wouldn't logically be the entry point is if
+you had some sort of dangling, unnecessary constructor that was never used (dead
+code).
+
+There are other ways we could have done this, such as having a configuration
+flag or config file, but it seemed like there was a natural structure within
+Define code that would inherently determine this for us, so it seemed best to
+just use that to avoid duplication and there being more than one way to do a
+thing.
 
 ## Forward Compatibility
 
