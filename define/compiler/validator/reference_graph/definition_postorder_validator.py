@@ -912,7 +912,7 @@ class ActionPostorderValidator:
             )
             callees = self._tracker.nested_guarantees()
         return action_contract.ActionContract(
-            requirements=requirements,
+            requirements=list(requirements.values()),
             guarantees=guarantees,
             callees=callees,
             destruction_contracts=self._destruction_contracts,

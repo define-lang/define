@@ -138,7 +138,7 @@ class ReferenceGraphValidator:
     ):
         definition_result = self._definition_results[entry_action.typed_name]
         contract = self._validation_state.get_contract(entry_action.typed_name)
-        for requirement in contract.requirements.values():
+        for requirement in contract.requirements:
             if (
                 requirement.position.starts_with_global
                 and requirement.required_state

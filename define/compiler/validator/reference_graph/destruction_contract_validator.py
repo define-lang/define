@@ -439,7 +439,7 @@ class DestructionContractValidator:
         # state of every position it requires. Resolve the state of all required positions
         # first, before we attempt to check its requirements.
         resolved_requirements: list[_ResolvedRequirement] = []
-        for inner_req in destructor_contract.requirements.values():
+        for inner_req in destructor_contract.requirements:
             resolution = self._resolve_destructor_requirement(
                 inner_req=inner_req,
                 action_chain=action_chain,

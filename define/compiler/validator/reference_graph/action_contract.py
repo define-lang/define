@@ -276,9 +276,7 @@ class Destructor(msgspec.Struct, frozen=True):
 class ActionContract(msgspec.Struct, frozen=True):
     """The automatically inferred requirements and guarantees for an action."""
 
-    # TODO: Consider publishing requirements as a sequence. Callers only iterate
-    # them; keyed lookup is needed during analysis, not after publication.
-    requirements: dict[tuple[str, ...], PositionRequirement]
+    requirements: list[PositionRequirement]
     guarantees: dict[ast.ChainedNameTuple, PositionGuarantee]
     # Callee contracts are referenced rather than folded in so that we don't
     # get unbounded memory growth from re-copying guarantees as we walk up a
@@ -293,10 +291,12 @@ class ActionContract(msgspec.Struct, frozen=True):
         self, action_chain: ast.ActionReference
     ) -> list[PositionRequirementInCaller]:
         """Express every Position Requirement from the caller's perspective."""
-        return [
-            PositionRequirementInCaller(
-                requirement=requirement,
-                caller_position=requirement.position.in_caller(action_chain),
+        requirements: list[PositionRequirementInCaller] = []
+        for requirement in self.requirements:
+            requirements.append(
+                PositionRequirementInCaller(
+                    requirement=requirement,
+                    caller_position=requirement.position.in_caller(action_chain),
+                )
             )
-            for requirement in self.requirements.values()
-        ]
+        return requirements
