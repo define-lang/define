@@ -1,14 +1,15 @@
-"""Shared assertions for code generation tests."""
+"""Shared discovery and assertions for code generation tests."""
 
 from __future__ import annotations
 
 import difflib
-from typing import TYPE_CHECKING
+import glob
+import os
+from pathlib import Path
 
 import pytest
 
-if TYPE_CHECKING:
-    from pathlib import Path
+_CODEGEN_TESTDATA_ROOT = Path("define/testdata/codegen")
 
 
 def _all_files(directory: Path) -> dict[str, str]:
@@ -58,3 +59,19 @@ def _assert_file_contents_match(
             )
         )
     pytest.fail("".join(differences))
+
+
+def codegen_test_cases() -> list[Path]:
+    """Discover the codegen cases selected by the test target."""
+    # Bazel shards these tests by category through this environment variable, but
+    # direct pytest runners such as mutmut do not set it and must discover all cases.
+    category = os.environ.get("DEFINE_CODEGEN_TESTDATA_CATEGORY")
+    pattern = f"{category}/*/test.dfn" if category is not None else "*/*/test.dfn"
+    return sorted(
+        Path(path).parent for path in glob.glob(str(_CODEGEN_TESTDATA_ROOT / pattern))
+    )
+
+
+def codegen_test_case_id(test_case_dir: Path) -> str:
+    """Identify a case by its category and name."""
+    return test_case_dir.relative_to(_CODEGEN_TESTDATA_ROOT).as_posix()

@@ -9,8 +9,6 @@ generated files, and an occupied_positions.txt runtime expectation.
 from __future__ import annotations
 
 import difflib
-import glob
-import os
 import tempfile
 from pathlib import Path
 
@@ -20,22 +18,7 @@ from define.compiler import driver
 from define.compiler.codegen import generated_program_runner, test_helpers
 from define.compiler.validator.test_helpers import assert_no_errors
 
-_TESTDATA_ROOT = Path("define/testdata/codegen")
-# Bazel shards these tests by category through this environment variable, but
-# direct pytest runners such as mutmut do not set it and must discover all cases.
-_TESTDATA_CATEGORY = os.environ.get("DEFINE_CODEGEN_TESTDATA_CATEGORY")
-_TESTDATA_PATTERN = (
-    f"{_TESTDATA_CATEGORY}/*/test.dfn"
-    if _TESTDATA_CATEGORY is not None
-    else "*/*/test.dfn"
-)
-_TEST_CASES = sorted(
-    Path(path).parent for path in glob.glob(str(_TESTDATA_ROOT / _TESTDATA_PATTERN))
-)
-_TEST_CASE_PARAMS: list[object] = []
-for test_case_dir in _TEST_CASES:
-    test_case_id = test_case_dir.relative_to(_TESTDATA_ROOT).as_posix()
-    _TEST_CASE_PARAMS.append(pytest.param(test_case_dir, id=test_case_id))
+_TEST_CASES = test_helpers.codegen_test_cases()
 
 
 def test_test_cases_not_empty():
@@ -44,7 +27,8 @@ def test_test_cases_not_empty():
 
 @pytest.mark.parametrize(
     "test_case_dir",
-    _TEST_CASE_PARAMS,
+    _TEST_CASES,
+    ids=test_helpers.codegen_test_case_id,
 )
 def test_generates_expected_output(
     test_case_dir: Path, monkeypatch: pytest.MonkeyPatch
@@ -61,7 +45,8 @@ def test_generates_expected_output(
 
 @pytest.mark.parametrize(
     "test_case_dir",
-    _TEST_CASE_PARAMS,
+    _TEST_CASES,
+    ids=test_helpers.codegen_test_case_id,
 )
 def test_expected_output_runs(test_case_dir: Path):
     expected_dir = test_case_dir / "expected"

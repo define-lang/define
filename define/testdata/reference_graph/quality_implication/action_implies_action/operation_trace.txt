@@ -1,0 +1,6 @@
+test.create(/outer::run)
+outer.create(/inner::run)
+inner.create(noop)
+inner.destroy(run)
+inner.destroy(noop)
+outer.destroy(run)

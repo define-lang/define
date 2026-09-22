@@ -1,0 +1,4 @@
+test.create(/start::pp)
+start.create(noop)
+start.destroy(pp)
+start.destroy(noop)

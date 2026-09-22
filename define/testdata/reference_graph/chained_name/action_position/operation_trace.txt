@@ -1,0 +1,8 @@
+test.create(/act::trigger_pos)
+test.create(/act::trigger_pos::/inner)
+test.create(/act::run)
+act.create(result)
+act.destroy(trigger_pos::/inner)
+act.destroy(trigger_pos)
+act.destroy(run)
+act.destroy(result)

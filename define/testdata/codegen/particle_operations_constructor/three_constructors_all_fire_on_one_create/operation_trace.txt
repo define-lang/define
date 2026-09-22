@@ -1,0 +1,8 @@
+test.create(box)
+construct_a.create(/marker_a)
+construct_b.create(/marker_b)
+construct_c.create(/marker_c)
+test.destroy(box::/marker_a)
+test.destroy(box::/marker_b)
+test.destroy(box::/marker_c)
+test.destroy(box)

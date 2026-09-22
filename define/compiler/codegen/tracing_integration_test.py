@@ -11,10 +11,7 @@ from define.compiler import driver
 from define.compiler.codegen import generated_program_runner, test_helpers
 from define.compiler.validator.test_helpers import assert_no_errors
 
-_TESTDATA_ROOT = Path("define/testdata/tracing/tracing_integration")
-_TEST_CASE_DIRS = [
-    test_file.parent for test_file in sorted(_TESTDATA_ROOT.glob("*/test.dfn"))
-]
+_TEST_CASE_DIRS = test_helpers.codegen_test_cases()
 
 
 def _compile(generated_dir: Path):
@@ -27,11 +24,13 @@ def _compile(generated_dir: Path):
     assert_no_errors(result)
 
 
-def _test_id(test_case_dir: Path) -> str:
-    return test_case_dir.name
+def test_test_cases_not_empty():
+    assert _TEST_CASE_DIRS
 
 
-@pytest.mark.parametrize("test_case_dir", _TEST_CASE_DIRS, ids=_test_id)
+@pytest.mark.parametrize(
+    "test_case_dir", _TEST_CASE_DIRS, ids=test_helpers.codegen_test_case_id
+)
 def test_generated_tracing_code_matches_expected_artifacts(
     test_case_dir: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -45,7 +44,9 @@ def test_generated_tracing_code_matches_expected_artifacts(
     )
 
 
-@pytest.mark.parametrize("test_case_dir", _TEST_CASE_DIRS, ids=_test_id)
+@pytest.mark.parametrize(
+    "test_case_dir", _TEST_CASE_DIRS, ids=test_helpers.codegen_test_case_id
+)
 def test_runtime_operation_order_matches_expected_trace(
     test_case_dir: Path,
     monkeypatch: pytest.MonkeyPatch,

@@ -1,0 +1,8 @@
+test.create(box)
+test.create(box::/child)
+parent_destructor.create(_noop)
+parent_destructor.destroy(_noop)
+child_destructor.create(_noop)
+child_destructor.destroy(_noop)
+test.destroy(box::/child)
+test.destroy(box)

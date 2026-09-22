@@ -1,0 +1,5 @@
+test.create(/a)
+test.create(/a::/act::trigger_pos)
+act.create(result)
+act.destroy(trigger_pos)
+act.destroy(result)

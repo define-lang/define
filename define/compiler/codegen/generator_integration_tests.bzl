@@ -6,6 +6,7 @@ def generator_integration_tests(
         name,
         test_module,
         testdata_packages,
+        testdata_target,
         deps,
         visibility = None):
     """Creates one generator integration test for each codegen testdata package.
@@ -14,6 +15,7 @@ def generator_integration_tests(
       name: The test suite name and prefix for each generated test.
       test_module: The Python module that runs each integration test.
       testdata_packages: Codegen testdata package names to test.
+      testdata_target: Filegroup to use from each testdata package.
       deps: Dependencies shared by the generated tests.
       visibility: Visibility of the generated test suite.
     """
@@ -25,7 +27,7 @@ def generator_integration_tests(
             name = test_name,
             size = "small",
             args = [test_module],
-            data = ["//define/testdata/codegen/%s:codegen_testdata" % category],
+            data = ["//define/testdata/codegen/%s:%s" % (category, testdata_target)],
             env = {
                 "DEFINE_CODEGEN_TESTDATA_CATEGORY": category,
             },

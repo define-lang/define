@@ -1,0 +1,6 @@
+test.create(box)
+host.create(/helper::run)
+helper.create(work)
+helper.destroy(run)
+helper.destroy(work)
+test.destroy(box)

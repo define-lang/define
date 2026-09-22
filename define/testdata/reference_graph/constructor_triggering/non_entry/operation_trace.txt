@@ -1,0 +1,4 @@
+test.create(box)
+other.create(/filled)
+test.destroy(box::/filled)
+test.destroy(box)

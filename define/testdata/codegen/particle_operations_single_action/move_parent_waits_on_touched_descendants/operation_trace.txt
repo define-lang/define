@@ -1,0 +1,5 @@
+test.create(src)
+test.create(src::/child)
+test.move(src, dest)
+test.destroy(dest::/child)
+test.destroy(dest)

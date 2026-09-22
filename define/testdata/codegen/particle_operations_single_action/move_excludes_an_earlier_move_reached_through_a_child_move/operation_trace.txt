@@ -1,0 +1,7 @@
+test.create(box)
+test.create(box::/origin)
+test.move(box::/origin, box::/middle)
+test.move(box::/middle, box::/target)
+test.move(box, holder)
+test.destroy(holder::/target)
+test.destroy(holder)

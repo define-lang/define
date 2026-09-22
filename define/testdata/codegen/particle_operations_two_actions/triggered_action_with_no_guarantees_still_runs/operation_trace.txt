@@ -1,0 +1,8 @@
+test.create(gw)
+test.create(gw::/worker::trigger_pos)
+worker.create(scratch)
+worker.destroy(scratch)
+test.create(note)
+test.destroy(gw::/worker::trigger_pos)
+test.destroy(note)
+test.destroy(gw)

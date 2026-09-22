@@ -1,0 +1,6 @@
+test.create(/parent)
+test.create(/parent::/child)
+test.create(/inner::trigger_pos)
+inner.create(/parent::/child::/grandchild1)
+inner.create(/parent::/child::/grandchild2)
+test.destroy(/inner::trigger_pos)

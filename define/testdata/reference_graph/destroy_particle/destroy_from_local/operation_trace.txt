@@ -1,0 +1,4 @@
+test.create(/act::trigger)
+act.create(a)
+act.destroy(a)
+act.destroy(trigger)

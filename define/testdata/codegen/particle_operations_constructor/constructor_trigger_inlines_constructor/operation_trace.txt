@@ -1,0 +1,4 @@
+test.create(box)
+construct.create(/marker)
+test.destroy(box::/marker)
+test.destroy(box)

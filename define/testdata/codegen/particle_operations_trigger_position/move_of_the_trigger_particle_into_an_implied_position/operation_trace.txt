@@ -1,0 +1,2 @@
+test.create(/triggered::run)
+triggered.move(run, /implied)

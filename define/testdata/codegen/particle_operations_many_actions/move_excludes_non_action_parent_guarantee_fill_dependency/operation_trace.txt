@@ -1,0 +1,8 @@
+test.create(/input)
+test.create(/producer::trigger_pos)
+producer.move(/input, /box)
+test.create(/consumer::trigger_pos)
+consumer.create(/box::/item)
+consumer.move(/box::/item, /box::/destination)
+test.destroy(/producer::trigger_pos)
+test.destroy(/consumer::trigger_pos)

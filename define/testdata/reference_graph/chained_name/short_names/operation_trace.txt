@@ -1,0 +1,5 @@
+test.create(/a)
+test.create(/a::/b::t)
+b.create(r)
+b.destroy(t)
+b.destroy(r)

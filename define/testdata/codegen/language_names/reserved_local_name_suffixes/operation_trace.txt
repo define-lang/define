@@ -1,0 +1,6 @@
+test.create(self_)
+test.create(self__)
+test.create(self)
+test.destroy(self_)
+test.destroy(self__)
+test.destroy(self)

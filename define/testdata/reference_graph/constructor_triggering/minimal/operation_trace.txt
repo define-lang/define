@@ -1,0 +1,4 @@
+test.create(box)
+constructor.create(output)
+test.destroy(box::/constructor::output)
+test.destroy(box)

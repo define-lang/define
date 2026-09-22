@@ -1,0 +1,6 @@
+test.create(box)
+combiner.create(/first_marker)
+combiner.create(/second_marker)
+test.destroy(box::/first_marker)
+test.destroy(box::/second_marker)
+test.destroy(box)

@@ -1,0 +1,8 @@
+test.create(/input)
+test.create(/destination)
+test.create(/middle::trigger_pos)
+middle.move(/destination, /input::/marker)
+middle.create(/inner::trigger_pos)
+inner.move(/input, /destination)
+middle.destroy(/inner::trigger_pos)
+test.destroy(/middle::trigger_pos)

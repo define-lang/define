@@ -1,0 +1,4 @@
+test.create(/triggered::input)
+test.create(/triggered::run)
+triggered.destroy(input)
+triggered.destroy(run)

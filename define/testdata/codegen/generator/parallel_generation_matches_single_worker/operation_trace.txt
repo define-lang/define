@@ -1,0 +1,8 @@
+test.create(/left::trigger)
+left.create(/shared::trigger)
+shared.destroy(trigger)
+left.destroy(trigger)
+test.create(/right::trigger)
+right.create(/shared::trigger)
+shared.destroy(trigger)
+right.destroy(trigger)

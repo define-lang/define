@@ -1,0 +1,6 @@
+test.create(parent)
+test.create(parent::/child)
+test.destroy(parent::/child)
+test.create(parent::/child)
+test.destroy(parent::/child)
+test.destroy(parent)

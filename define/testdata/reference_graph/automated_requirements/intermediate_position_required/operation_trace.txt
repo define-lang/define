@@ -1,0 +1,8 @@
+test.create(/runner::wrap)
+test.create(/runner::wrap::/mid)
+test.create(/runner::wrap::/mid::/leaf)
+test.create(/runner::run)
+runner.destroy(wrap::/mid::/leaf)
+runner.destroy(wrap::/mid)
+runner.destroy(wrap)
+runner.destroy(run)

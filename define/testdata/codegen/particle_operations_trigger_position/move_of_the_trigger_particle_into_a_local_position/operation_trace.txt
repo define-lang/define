@@ -1,0 +1,3 @@
+test.create(/triggered::run)
+triggered.move(run, local)
+triggered.destroy(local)

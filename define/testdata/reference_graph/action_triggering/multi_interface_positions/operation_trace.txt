@@ -1,0 +1,8 @@
+test.create(/process::input)
+test.create(/process::trigger)
+process.create(result)
+process.destroy(input)
+process.create(config)
+process.destroy(config)
+process.destroy(trigger)
+process.destroy(result)

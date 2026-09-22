@@ -1,0 +1,5 @@
+test.create(/parent)
+test.create(/parent::/child)
+test.move(/parent::/child, destination)
+test.destroy(/parent)
+test.destroy(destination)

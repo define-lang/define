@@ -1,0 +1,8 @@
+test.create(box)
+test.create(box::/beep::trigger)
+beep.create(_noop)
+beep.destroy(_noop)
+destructor.create(_noop)
+destructor.destroy(_noop)
+test.destroy(box::/beep::trigger)
+test.destroy(box)

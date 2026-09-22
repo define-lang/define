@@ -1,0 +1,7 @@
+test.create(source)
+test.create(source::/a)
+test.create(source::/b)
+test.move(source, destination)
+test.destroy(destination::/a)
+test.destroy(destination::/b)
+test.destroy(destination)

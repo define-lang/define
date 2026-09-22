@@ -1,0 +1,7 @@
+test.create(box)
+test.create(box::/item)
+test.move(box, holder_a)
+test.move(holder_a, holder_b)
+test.move(holder_b, holder_c)
+test.destroy(holder_c::/item)
+test.destroy(holder_c)

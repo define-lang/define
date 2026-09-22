@@ -28,16 +28,15 @@ def test_compile_failure_preserves_output_and_does_not_stop_later_cases(
     codegen_root = tmp_path / "codegen"
     failed_case = codegen_root / "category" / "failed"
     successful_case = codegen_root / "category" / "successful"
-    tracing_root = tmp_path / "tracing"
     for case_dir in (failed_case, successful_case):
         case_dir.mkdir(parents=True)
         _ = (case_dir / "test.dfn").write_text("")
-    tracing_root.mkdir()
     failed_expected = failed_case / "expected"
     failed_expected.mkdir()
     failed_expected_file = failed_expected / "generated.py"
     _ = failed_expected_file.write_text("existing output")
-    _ = (successful_case / "occupied_positions.txt").write_text("")
+    _ = (successful_case / "occupied_positions.txt").write_text("existing occupancy")
+    _ = (successful_case / "operation_trace.txt").write_text("existing trace")
 
     def compile_program(
         driver_instance: driver.Driver,
@@ -66,14 +65,22 @@ def test_compile_failure_preserves_output_and_does_not_stop_later_cases(
     ):
         regenerate_codegen_testdata.main(
             codegen_testdata_root=codegen_root,
-            tracing_testdata_root=tracing_root,
         )
 
     assert raised.value.code == 1
     assert failed_expected_file.read_text() == "existing output"
     assert (successful_case / "expected" / "generated.py").read_text() == "new output"
+    assert (
+        successful_case / "expected_trace" / "generated.py"
+    ).read_text() == "new output"
+    assert (
+        successful_case / "occupied_positions.txt"
+    ).read_text() == "existing occupancy"
+    assert (successful_case / "operation_trace.txt").read_text() == "existing trace"
     assert capsys.readouterr().out == (
         "  category/failed: FAILED\n"
         "    compilation failed\n"
-        "Regenerated 1 of 2 codegen cases and 0 of 0 tracing cases.\n"
+        "  category/failed: FAILED\n"
+        "    compilation failed\n"
+        "Regenerated 1 of 2 codegen cases and 1 of 2 tracing cases.\n"
     )

@@ -1,0 +1,6 @@
+test.create(box)
+host.create(/worker::input)
+host.create(/worker::run)
+worker.destroy(input)
+worker.destroy(run)
+test.destroy(box)

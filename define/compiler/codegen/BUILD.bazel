@@ -102,12 +102,11 @@ py_test(
     ],
 )
 
-py_test(
+py_library(
     name = "tracing_integration_test",
-    size = "small",
+    testonly = True,
     srcs = ["tracing_integration_test.py"],
-    data = ["//define/testdata/tracing/tracing_integration"],
-    shard_count = 4,
+    visibility = ["//define/testdata/codegen:__pkg__"],
     deps = [
         ":generated_program_runner",
         ":test_helpers",
@@ -116,6 +115,12 @@ py_test(
         "//define/runtime:literal",  # keep
         "@pypi//pytest",
     ],
+)
+
+# Keep the suite here so //define/compiler/codegen/... includes it.
+test_suite(
+    name = "tracing_integration_tests",
+    tests = ["//define/testdata/codegen:tracing_integration_tests"],
 )
 
 filegroup(

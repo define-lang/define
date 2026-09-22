@@ -1,0 +1,8 @@
+test.create(a)
+test.create(a::/b)
+test.create(a::/b::/c)
+test.create(a::/b::/c::/d)
+test.destroy(a::/b::/c::/d)
+test.destroy(a::/b::/c)
+test.destroy(a::/b)
+test.destroy(a)

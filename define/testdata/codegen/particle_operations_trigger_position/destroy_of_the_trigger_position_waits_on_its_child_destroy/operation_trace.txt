@@ -1,0 +1,5 @@
+test.create(source)
+test.create(source::/child)
+test.move(source, /triggered::run)
+triggered.destroy(run::/child)
+triggered.destroy(run)

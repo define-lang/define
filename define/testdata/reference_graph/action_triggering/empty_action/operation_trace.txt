@@ -1,0 +1,4 @@
+test.create(/do_thing::pp)
+do_thing.create(noop)
+do_thing.destroy(pp)
+do_thing.destroy(noop)

@@ -1,0 +1,4 @@
+test.create(box)
+destructor.create(_noop)
+destructor.destroy(_noop)
+test.destroy(box)

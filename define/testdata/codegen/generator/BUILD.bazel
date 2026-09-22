@@ -1,9 +1,28 @@
 filegroup(
     name = "generator",
     testonly = True,
-    srcs = glob(["**"]),
+    srcs = glob(
+        ["**"],
+        exclude = [
+            "**/expected_trace/**",
+            "**/operation_trace.txt",
+        ],
+    ),
     visibility = [
         "//define/compiler/codegen:__pkg__",
         "//define/testdata:__pkg__",
     ],
+)
+
+filegroup(
+    name = "tracing_testdata",
+    testonly = True,
+    srcs = glob(
+        ["**"],
+        exclude = [
+            "**/expected/**",
+            "**/occupied_positions.txt",
+        ],
+    ),
+    visibility = ["//define/testdata/codegen:__pkg__"],
 )

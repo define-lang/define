@@ -1,0 +1,7 @@
+test.create(/implied)
+test.create(/implied::/child)
+test.create(/triggered::run)
+triggered.move(/implied, dest)
+triggered.destroy(dest::/child)
+triggered.destroy(run)
+test.destroy(/triggered::dest)

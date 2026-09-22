@@ -1,0 +1,8 @@
+test.create(gateway)
+test.create(gateway::/worker::trigger_pos)
+worker.create(first)
+worker.create(second)
+worker.destroy(first)
+worker.destroy(second)
+test.destroy(gateway::/worker::trigger_pos)
+test.destroy(gateway)

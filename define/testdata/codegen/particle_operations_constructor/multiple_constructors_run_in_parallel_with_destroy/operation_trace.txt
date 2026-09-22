@@ -1,0 +1,6 @@
+test.create(box)
+construct_a.create(scratch)
+construct_a.destroy(scratch)
+construct_b.create(scratch)
+construct_b.destroy(scratch)
+test.destroy(box)

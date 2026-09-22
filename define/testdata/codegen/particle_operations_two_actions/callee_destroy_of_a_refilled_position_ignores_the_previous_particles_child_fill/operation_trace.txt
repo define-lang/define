@@ -1,0 +1,8 @@
+test.create(/origin)
+test.create(/origin::/child)
+test.destroy(/origin::/child)
+test.destroy(/origin)
+test.create(/origin)
+test.create(/other::trigger_pos)
+other.destroy(/origin)
+test.destroy(/other::trigger_pos)

@@ -1,0 +1,4 @@
+test.create(/implied)
+test.create(/triggered::run)
+triggered.destroy(/implied)
+triggered.destroy(run)

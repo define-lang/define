@@ -1,0 +1,5 @@
+test.create(a)
+test.move(a, b)
+test.create(a)
+test.destroy(b)
+test.destroy(a)

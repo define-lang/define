@@ -1,0 +1,3 @@
+test.create(item)
+test.move(item, dest)
+test.destroy(dest)

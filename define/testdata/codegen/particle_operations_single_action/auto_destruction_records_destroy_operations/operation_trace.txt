@@ -1,0 +1,4 @@
+test.create(first)
+test.create(second)
+test.destroy(first)
+test.destroy(second)

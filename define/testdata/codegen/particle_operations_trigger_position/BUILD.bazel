@@ -3,7 +3,26 @@ load("//tools/bzl:pyright.bzl", "pyright_test")
 filegroup(
     name = "codegen_testdata",
     testonly = True,
-    srcs = glob(["**"]),
+    srcs = glob(
+        ["**"],
+        exclude = [
+            "**/expected_trace/**",
+            "**/operation_trace.txt",
+        ],
+    ),
+    visibility = ["//define/testdata/codegen:__pkg__"],
+)
+
+filegroup(
+    name = "tracing_testdata",
+    testonly = True,
+    srcs = glob(
+        ["**"],
+        exclude = [
+            "**/expected/**",
+            "**/occupied_positions.txt",
+        ],
+    ),
     visibility = ["//define/testdata/codegen:__pkg__"],
 )
 

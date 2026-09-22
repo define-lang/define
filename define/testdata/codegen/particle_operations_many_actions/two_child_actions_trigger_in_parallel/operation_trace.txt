@@ -1,0 +1,6 @@
+test.create(box)
+test.create(box::/first::trigger_pos)
+first.destroy(trigger_pos)
+test.create(box::/second::trigger_pos)
+second.destroy(trigger_pos)
+test.destroy(box)

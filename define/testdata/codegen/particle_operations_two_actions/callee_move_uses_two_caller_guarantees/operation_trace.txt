@@ -1,0 +1,6 @@
+test.create(/destination)
+test.destroy(/destination)
+test.create(source)
+test.move(source, /worker::source)
+worker.move(source, /destination)
+worker.destroy(/destination)

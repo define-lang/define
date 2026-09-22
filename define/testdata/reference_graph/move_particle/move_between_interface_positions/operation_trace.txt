@@ -1,0 +1,5 @@
+test.create(/runner::source)
+test.create(/runner::run)
+runner.move(source, dest)
+runner.destroy(dest)
+runner.destroy(run)

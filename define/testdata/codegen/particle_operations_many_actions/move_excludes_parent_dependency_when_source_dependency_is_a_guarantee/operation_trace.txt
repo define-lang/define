@@ -1,0 +1,4 @@
+test.create(/box)
+test.create(/box::/producer::input)
+producer.move(input, result)
+test.move(/box::/producer::result, /box::/destination)

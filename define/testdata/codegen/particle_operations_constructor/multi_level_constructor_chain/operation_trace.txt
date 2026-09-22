@@ -1,0 +1,6 @@
+test.create(box)
+construct_b.create(/inner)
+construct_c.create(/leaf)
+test.destroy(box::/inner::/leaf)
+test.destroy(box::/inner)
+test.destroy(box)

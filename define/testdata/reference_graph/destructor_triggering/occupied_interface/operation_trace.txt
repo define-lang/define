@@ -1,0 +1,6 @@
+test.create(box)
+test.create(box::/destructor::item)
+destructor.move(item, _holder)
+destructor.move(_holder, item)
+test.destroy(box::/destructor::item)
+test.destroy(box)

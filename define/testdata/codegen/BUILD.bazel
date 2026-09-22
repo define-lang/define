@@ -25,6 +25,16 @@ generator_integration_tests(
     name = "generator_integration_tests",
     test_module = "define/compiler/codegen/generator_integration_test.py",
     testdata_packages = _CODEGEN_MODULES,
+    testdata_target = "codegen_testdata",
     visibility = ["//define/compiler/codegen:__pkg__"],
     deps = ["//define/compiler/codegen:generator_integration_test"],
+)
+
+generator_integration_tests(
+    name = "tracing_integration_tests",
+    test_module = "define/compiler/codegen/tracing_integration_test.py",
+    testdata_packages = _CODEGEN_MODULES + ["generator"],
+    testdata_target = "tracing_testdata",
+    visibility = ["//define/compiler/codegen:__pkg__"],
+    deps = ["//define/compiler/codegen:tracing_integration_test"],
 )

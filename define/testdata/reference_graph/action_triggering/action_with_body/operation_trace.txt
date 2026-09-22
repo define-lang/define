@@ -1,0 +1,4 @@
+test.create(/do_thing::trigger_pos)
+do_thing.create(local_pos)
+do_thing.destroy(trigger_pos)
+do_thing.destroy(local_pos)

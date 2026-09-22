@@ -1,0 +1,6 @@
+test.create(box)
+test.create(box::/child)
+test.move(box, basket)
+test.move(basket, crate)
+test.destroy(crate::/child)
+test.destroy(crate)

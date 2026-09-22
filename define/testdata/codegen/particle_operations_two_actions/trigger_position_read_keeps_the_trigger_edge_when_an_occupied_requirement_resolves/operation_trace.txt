@@ -1,0 +1,7 @@
+test.create(gw)
+test.create(gw::/worker::box)
+test.create(gw::/worker::in)
+worker.move(in, box::/y)
+test.destroy(gw::/worker::box::/y)
+test.destroy(gw::/worker::box)
+test.destroy(gw)

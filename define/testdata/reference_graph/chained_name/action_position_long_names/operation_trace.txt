@@ -1,0 +1,8 @@
+test.create(/perform_operation::operation_trigger)
+test.create(/perform_operation::operation_trigger::/inner_position)
+test.create(/perform_operation::run)
+perform_operation.create(result)
+perform_operation.destroy(operation_trigger::/inner_position)
+perform_operation.destroy(operation_trigger)
+perform_operation.destroy(run)
+perform_operation.destroy(result)

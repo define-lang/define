@@ -1,0 +1,4 @@
+test.create(/runner::run)
+runner.create(/marker_a)
+runner.create(/marker_b)
+runner.destroy(run)

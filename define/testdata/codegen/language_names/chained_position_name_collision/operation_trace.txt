@@ -1,0 +1,4 @@
+test.create(/item/name)
+test.create(/item/name_2)
+test.create(/item/name_3)
+test.create(/item_name)

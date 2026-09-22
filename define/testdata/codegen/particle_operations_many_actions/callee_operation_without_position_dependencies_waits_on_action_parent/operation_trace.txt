@@ -1,0 +1,5 @@
+test.create(/box)
+test.create(/box::/worker::trigger_pos)
+worker.create(result)
+test.destroy(/box::/worker::result)
+test.destroy(/box::/worker::trigger_pos)

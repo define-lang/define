@@ -1,0 +1,5 @@
+test.create(box)
+test.create(box::/worker::input)
+worker.move(input, result)
+test.destroy(box::/worker::result)
+test.destroy(box)

@@ -16,7 +16,6 @@ from define.compiler.codegen import generated_program_runner
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CODEGEN_TESTDATA_ROOT = REPO_ROOT / "define/testdata/codegen"
-TRACING_TESTDATA_ROOT = REPO_ROOT / "define/testdata/tracing/tracing_integration"
 
 
 def _compile_case(
@@ -116,14 +115,10 @@ def _regenerate_tracing_case(case_dir: Path, *, testdata_root: Path) -> bool:
 def main(
     *,
     codegen_testdata_root: Path = CODEGEN_TESTDATA_ROOT,
-    tracing_testdata_root: Path = TRACING_TESTDATA_ROOT,
 ):
     """Regenerate ordinary and traced expected output files."""
     codegen_case_dirs = sorted(
         test_file.parent for test_file in codegen_testdata_root.glob("*/*/test.dfn")
-    )
-    tracing_case_dirs = sorted(
-        test_file.parent for test_file in tracing_testdata_root.glob("*/test.dfn")
     )
     regenerated_codegen_case_count = 0
     regenerated_tracing_case_count = 0
@@ -133,13 +128,12 @@ def main(
             regenerated_codegen_case_count += 1
         else:
             success = False
-    for case_dir in tracing_case_dirs:
-        if _regenerate_tracing_case(case_dir, testdata_root=tracing_testdata_root):
+        if _regenerate_tracing_case(case_dir, testdata_root=codegen_testdata_root):
             regenerated_tracing_case_count += 1
         else:
             success = False
     print(
-        f"Regenerated {regenerated_codegen_case_count} of {len(codegen_case_dirs)} codegen cases and {regenerated_tracing_case_count} of {len(tracing_case_dirs)} tracing cases."
+        f"Regenerated {regenerated_codegen_case_count} of {len(codegen_case_dirs)} codegen cases and {regenerated_tracing_case_count} of {len(codegen_case_dirs)} tracing cases."
     )
     if not success:
         sys.exit(1)

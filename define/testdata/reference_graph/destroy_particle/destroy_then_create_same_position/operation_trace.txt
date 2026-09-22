@@ -1,0 +1,6 @@
+test.create(/runner::slot)
+test.create(/runner::run)
+runner.destroy(slot)
+runner.create(slot)
+runner.destroy(slot)
+runner.destroy(run)

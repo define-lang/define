@@ -1,6 +1,0 @@
-filegroup(
-    name = "tracing",
-    testonly = True,
-    srcs = ["//define/testdata/tracing/tracing_integration"],
-    visibility = ["//define/testdata:__pkg__"],
-)

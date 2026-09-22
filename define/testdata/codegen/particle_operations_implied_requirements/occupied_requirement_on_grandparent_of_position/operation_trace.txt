@@ -1,0 +1,8 @@
+test.create(/triggered::input)
+test.create(/triggered::input::/child)
+test.create(/triggered::input::/child::/grandchild)
+test.create(/triggered::run)
+triggered.destroy(input::/child::/grandchild)
+triggered.destroy(run)
+test.destroy(/triggered::input::/child)
+test.destroy(/triggered::input)

@@ -1,0 +1,7 @@
+test.create(/work::run)
+work.create(source)
+work.create(source::/shared)
+work.move(source, dest)
+work.destroy(dest::/shared)
+work.destroy(dest)
+work.destroy(run)

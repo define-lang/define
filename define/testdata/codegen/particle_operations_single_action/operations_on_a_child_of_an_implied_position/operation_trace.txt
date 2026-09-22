@@ -1,0 +1,4 @@
+test.create(/implied)
+test.create(/implied::/child)
+test.destroy(/implied::/child)
+test.destroy(/implied)

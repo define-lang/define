@@ -1,0 +1,8 @@
+test.create(/act::chain_src)
+test.create(/act::chain_src::/mid)
+test.create(/act::chain_src::/mid::/end)
+test.create(/act::trigger)
+act.destroy(chain_src::/mid::/end)
+act.destroy(chain_src::/mid)
+act.destroy(chain_src)
+act.destroy(trigger)
