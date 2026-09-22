@@ -76,6 +76,7 @@ py_library(
         ":particle_operation_validator",
         ":particle_tracker",
         ":position_occupancy",
+        ":position_quality_resolver",
         ":quality_assignment",
         ":reference_graph_validation_state",
         ":requirement_violation",
@@ -169,6 +170,19 @@ py_library(
     deps = [
         "//define/compiler:ast",
         "@pypi//msgspec",
+    ],
+)
+
+py_library(
+    name = "position_quality_resolver",
+    srcs = ["position_quality_resolver.py"],
+    deps = [
+        ":quality_assignment",
+        ":reference_graph_validation_state",
+        "//define/compiler:ast",
+        "//define/compiler/data_structures:typed_name_dict",
+        "//define/compiler/validator:scope_tracker",
+        "//define/compiler/validator:validation_result",
     ],
 )
 
@@ -308,6 +322,7 @@ pyright_test(
         ":particle_operation_validator",
         ":particle_tracker",
         ":position_occupancy",
+        ":position_quality_resolver",
         ":quality_assignment",
         ":quality_assignment_test",
         ":reference_graph",

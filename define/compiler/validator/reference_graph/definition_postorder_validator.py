@@ -17,6 +17,7 @@ from define.compiler.validator.reference_graph import (
     particle_operation_validator,
     particle_tracker,
     position_occupancy,
+    position_quality_resolver,
     quality_assignment,
     reference_graph_validation_state,
     requirement_violation,
@@ -129,6 +130,16 @@ class ActionPostorderValidator:
         )
 
     @cached_property
+    def _position_quality_resolver(
+        self,
+    ) -> position_quality_resolver.PositionQualityResolver:
+        return position_quality_resolver.PositionQualityResolver(
+            self._action_definition,
+            self._definition_results,
+            self._validation_state,
+        )
+
+    @cached_property
     def _implied_quality_list(self) -> tuple[ast.GlobalTypedNameReference, ...]:
         return tuple(
             impl.typed_global_name for impl in self._definition.quality_implications
@@ -201,8 +212,10 @@ class ActionPostorderValidator:
                 # We can't know exactly what qualities the particle has, but we
                 # can know the minimal set that it _must_ have according to the constraints
                 # the contracted position has.
-                qualities = self._get_transitive_required_qualities(
-                    contracted_position, scope
+                qualities = (
+                    self._position_quality_resolver.get_transitive_required_qualities(
+                        contracted_position, scope
+                    )
                 )
                 self._tracker.assume_occupied(
                     local_position,
@@ -847,7 +860,9 @@ class ActionPostorderValidator:
         self._maybe_infer_requirements_on_chain(
             position_occupancy.PositionOccupancyState.EMPTY, position, scope
         )
-        qualities = self._get_transitive_required_qualities(position, scope)
+        qualities = self._position_quality_resolver.get_transitive_required_qualities(
+            position, scope
+        )
         diagnostic = self._operation_validator.validate_create(position)
         if diagnostic is not None:
             self._diagnostics.append(diagnostic)
@@ -948,8 +963,8 @@ class ActionPostorderValidator:
             position_occupancy.PositionOccupancyState.EMPTY, to_pos, scope
         )
 
-        target_required_qualities, _ = self._get_direct_required_qualities(
-            to_pos, scope
+        target_required_qualities, _ = (
+            self._position_quality_resolver.get_direct_required_qualities(to_pos, scope)
         )
         move_diagnostics = self._operation_validator.validate_move(
             source=from_pos,
@@ -1022,7 +1037,9 @@ class ActionPostorderValidator:
     ):
         if not self._dead_constraint_tracker.has_constraint_candidates():
             return
-        constraints, _ = self._get_direct_required_qualities(position, scope)
+        constraints, _ = self._position_quality_resolver.get_direct_required_qualities(
+            position, scope
+        )
         if constraints is None:
             return
         self._dead_constraint_tracker.mark_contract_constraints_alive(
@@ -1068,94 +1085,6 @@ class ActionPostorderValidator:
                 )
             )
 
-    def _get_direct_required_qualities(
-        self,
-        position: ast.PositionReference,
-        scope: scope_tracker.ScopeTracker,
-    ) -> tuple[
-        tuple[ast.GlobalTypedNameReference, ...] | None,
-        tuple[str, ...] | None,
-    ]:
-        """Resolve the constraint qualities required at a position, in source order.
-
-        Also returns the cache key identifying the cacheable entity (a
-        global position or an action interface position), or ``None``
-        for local positions defined inside of an Action Statements Block.
-        """
-        if scope.is_defined_local(position):
-            # is_defined_local already verified the chain is a single LocalTypedNameReference.
-            local_name = typing.cast(
-                "ast.LocalTypedNameReference", position.typed_names[0]
-            )
-            definition = scope.get_definition(local_name)
-            return (
-                definition.constraint_typed_names,
-                self._local_definition_cache_key(local_name),
-            )
-
-        last_element = position.typed_names[-1]
-
-        if isinstance(last_element, ast.LocalTypedNameReference):
-            # Local position inside an action — look up the parent action's
-            # interface position definition. Chain validation guarantees the
-            # parent is a global action reference whose definition exists and
-            # contains this interface position.
-            parent = typing.cast(
-                "ast.GlobalTypedNameReference", position.typed_names[-2]
-            )
-            action_def = self._definition_results[parent].definition
-            action_def = typing.cast("ast.ActionDefinition", action_def)
-            return (
-                action_def.interface_positions_by_name[
-                    last_element.full_typed_name
-                ].constraint_typed_names,
-                (parent.full_typed_name, last_element.full_typed_name),
-            )
-
-        # This can be None if the last element in the chain is a definition we never loaded
-        # (file not found or failed to parse).
-        definition_result = self._definition_results.get(last_element)
-        if definition_result is None:
-            return (None, None)
-        position_def = typing.cast(
-            "ast.PositionDefinition", definition_result.definition
-        )
-        return (position_def.constraint_typed_names, (last_element.full_typed_name,))
-
-    def _get_transitive_required_qualities(
-        self,
-        position: ast.PositionReference,
-        scope: scope_tracker.ScopeTracker,
-    ) -> quality_assignment.QualityAssignments:
-        direct, cache_key = self._get_direct_required_qualities(position, scope)
-        if direct is None:
-            return quality_assignment.EMPTY_QUALITY_ASSIGNMENTS
-        if cache_key is None:
-            return self._build_quality_assignments(direct)
-        return self._validation_state.get_or_build_quality_assignments(
-            cache_key, lambda: self._build_quality_assignments(direct)
-        )
-
-    def _build_quality_assignments(
-        self, direct: tuple[ast.GlobalTypedNameReference, ...]
-    ) -> quality_assignment.QualityAssignments:
-        """Build assigned qualities in source-order depth-first assignment order."""
-
-        def implications_for(
-            typed_name: ast.GlobalTypedNameReference,
-        ) -> tuple[ast.GlobalTypedNameReference, ...]:
-            defn_result = self._definition_results.get(typed_name)
-            if defn_result is None:
-                return ()
-            return tuple(
-                implication.typed_global_name
-                for implication in defn_result.definition.quality_implications
-            )
-
-        return quality_assignment.QualityAssignments.expand_implications(
-            direct, implications_for
-        )
-
     @property
     def _action_definition(self) -> ast.ActionDefinition:
         return typing.cast("ast.ActionDefinition", self._definition)
@@ -1177,7 +1106,11 @@ class ActionPostorderValidator:
             origin_position = self._particle_origin_position(final_position)
             if origin_position is None:
                 continue
-            constraints, _ = self._get_direct_required_qualities(final_position, scope)
+            constraints, _ = (
+                self._position_quality_resolver.get_direct_required_qualities(
+                    final_position, scope
+                )
+            )
             constraints = typing.cast(
                 "tuple[ast.GlobalTypedNameReference, ...]", constraints
             )
@@ -1261,7 +1194,11 @@ class ActionPostorderValidator:
         # the state that the Trigger Conditions Block says they have.
         trigger_ref = self._action_definition.trigger_position_reference
         if trigger_ref is not None:
-            qualities = self._get_transitive_required_qualities(trigger_ref, scope)
+            qualities = (
+                self._position_quality_resolver.get_transitive_required_qualities(
+                    trigger_ref, scope
+                )
+            )
             # DLP 37: We assume trigger points are occupied upon the start
             # of the action, but we can only assume they have the qualities
             # they are declared with.
@@ -1379,15 +1316,3 @@ class ActionPostorderValidator:
             guarantees[position] = action_contract.ErrorGuarantee(
                 caused_by=guarantee.caused_by,
             )
-
-    def _local_definition_cache_key(
-        self,
-        local_name: ast.LocalTypedNameReference,
-    ) -> tuple[str, ...] | None:
-        """Cache interface positions so the action's own processing fills the same key external references use."""
-        if local_name.full_typed_name in self._interface_positions:
-            return (
-                self._action_definition.typed_name.full_typed_name,
-                local_name.full_typed_name,
-            )
-        return None
