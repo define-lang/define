@@ -3,44 +3,37 @@
 load("@aspect_rules_py//py:defs.bzl", "PyInfo", _py_test = "py_test")
 load("@rules_python//python:py_info.bzl", LegacyPyInfo = "PyInfo")
 
-# rules_py includes declared .pyi sources in transitive_sources, so they need no
-# special handling here. Protobuf's py_proto_library instead returns
-# rules_python's PyInfo and keeps generated stubs only in transitive_pyi_files.
-# When a rules_py target consumes that library, it propagates transitive_sources
-# and imports but not the rules_python-only stub field, so this aspect preserves
-# those generated protobuf stubs for basedpyright. Native extensions must also
-# be present so stub imports can resolve to their implementation.
+# Native extensions must be present so stub imports can resolve to their
+# implementation. They are not included in PyInfo's transitive sources or stubs.
 
-_PythonSupportFilesInfo = provider(
-    "Collects generated stubs and native extensions from dependencies.",
-    fields = {"transitive_support_files": "depset of Python support files"},
+_NativeExtensionsInfo = provider(
+    "Collects native extensions from dependencies.",
+    fields = {"transitive_native_extensions": "depset of native extension files"},
 )
 
-def _python_support_collector_aspect_impl(target, ctx):
-    transitive_support_files = []
-    if LegacyPyInfo in target:
-        transitive_support_files.append(target[LegacyPyInfo].transitive_pyi_files)
+def _native_extensions_collector_aspect_impl(target, ctx):
+    transitive_native_extensions = []
     native_extensions = []
     if LegacyPyInfo in target and DefaultInfo in target:
         for file in target[DefaultInfo].files.to_list():
             if file.extension in ["so", "pyd"]:
                 native_extensions.append(file)
-    transitive_support_files.append(depset(native_extensions))
+    transitive_native_extensions.append(depset(native_extensions))
     for dep in getattr(ctx.rule.attr, "deps", []):
-        if _PythonSupportFilesInfo in dep:
-            transitive_support_files.append(dep[_PythonSupportFilesInfo].transitive_support_files)
+        if _NativeExtensionsInfo in dep:
+            transitive_native_extensions.append(dep[_NativeExtensionsInfo].transitive_native_extensions)
 
     # rules_py puts py_binary and py_test dependencies on a hidden sibling venv
     # target, so following only deps would miss protobuf libraries below them.
     venv = getattr(ctx.rule.attr, "venv", None)
-    if venv and _PythonSupportFilesInfo in venv:
-        transitive_support_files.append(venv[_PythonSupportFilesInfo].transitive_support_files)
-    return [_PythonSupportFilesInfo(
-        transitive_support_files = depset(transitive = transitive_support_files),
+    if venv and _NativeExtensionsInfo in venv:
+        transitive_native_extensions.append(venv[_NativeExtensionsInfo].transitive_native_extensions)
+    return [_NativeExtensionsInfo(
+        transitive_native_extensions = depset(transitive = transitive_native_extensions),
     )]
 
-_python_support_collector_aspect = aspect(
-    implementation = _python_support_collector_aspect_impl,
+_native_extensions_collector_aspect = aspect(
+    implementation = _native_extensions_collector_aspect_impl,
     attr_aspects = ["deps", "venv"],
 )
 
@@ -51,6 +44,9 @@ def _pyright_deps_impl(ctx):
     transitive_sources = depset(
         transitive = [dep[PyInfo].transitive_sources for dep in ctx.attr.deps],
     )
+    transitive_pyi_files = depset(
+        transitive = [dep[PyInfo].transitive_pyi_files for dep in ctx.attr.deps],
+    )
     imports = depset(
         transitive = [dep[PyInfo].imports for dep in ctx.attr.deps],
     )
@@ -60,13 +56,13 @@ def _pyright_deps_impl(ctx):
     virtual_resolutions = depset(
         transitive = [dep[PyInfo].virtual_resolutions for dep in ctx.attr.deps],
     )
-    transitive_support_files = depset(
+    transitive_native_extensions = depset(
         transitive = [
-            dep[_PythonSupportFilesInfo].transitive_support_files
+            dep[_NativeExtensionsInfo].transitive_native_extensions
             for dep in ctx.attr.deps
         ],
     )
-    source_and_stub_files = depset(transitive = [transitive_sources, transitive_support_files])
+    source_and_stub_files = depset(transitive = [transitive_sources, transitive_pyi_files, transitive_native_extensions])
     return [
         DefaultInfo(
             files = source_and_stub_files,
@@ -74,6 +70,7 @@ def _pyright_deps_impl(ctx):
         ),
         PyInfo(
             transitive_sources = transitive_sources,
+            transitive_pyi_files = transitive_pyi_files,
             imports = imports,
             virtual_dependencies = virtual_dependencies,
             virtual_resolutions = virtual_resolutions,
@@ -85,7 +82,7 @@ _pyright_deps = rule(
     attrs = {
         "deps": attr.label_list(
             providers = [PyInfo],
-            aspects = [_python_support_collector_aspect],
+            aspects = [_native_extensions_collector_aspect],
         ),
     },
 )

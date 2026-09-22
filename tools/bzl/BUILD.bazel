@@ -58,6 +58,7 @@ bzl_library(
 
 exports_files([
     "pyright_test_runner.py",
+    "rules_py_pyi_propagation.patch",
     "rules_rust_pyo3_lint_config.patch",
 ])
 
