@@ -1116,6 +1116,7 @@ class ActionPostorderValidator:
                 self._inferred_requirements,
             )
             callees: list[action_contract.CalleeContract] = []
+            self._check_destructor_guarantees(guarantees)
         else:
             guarantees = self._tracker.generate_own_guarantees(
                 self._definition.interface_position_names,
@@ -1123,8 +1124,6 @@ class ActionPostorderValidator:
                 self._inferred_requirements,
             )
             callees = self._tracker.nested_guarantees()
-        if self._definition.is_destructor:
-            self._check_destructor_guarantees(guarantees)
         return action_contract.ActionContract(
             requirements=self._inferred_requirements,
             guarantees=guarantees,
