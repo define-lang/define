@@ -56,8 +56,8 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         ":action_contract",
-        ":child_state",
         ":destruction_contract",
+        ":destruction_contract_validator",
         ":particle_info",
         ":particle_operation_validator",
         ":particle_tracker",
@@ -82,6 +82,27 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         "//define/compiler:ast",
+        "@pypi//msgspec",
+    ],
+)
+
+py_library(
+    name = "destruction_contract_validator",
+    srcs = ["destruction_contract_validator.py"],
+    deps = [
+        ":action_contract",
+        ":child_state",
+        ":destruction_contract",
+        ":particle_info",
+        ":particle_tracker",
+        ":position_occupancy",
+        ":quality_assignment",
+        ":reference_graph_validation_state",
+        ":requirement_violation",
+        "//define/compiler:ast",
+        "//define/compiler:diagnostics",
+        "//define/compiler/data_structures:typed_name_dict",
+        "//define/compiler/validator:validation_result",
         "@pypi//msgspec",
     ],
 )
@@ -267,6 +288,7 @@ pyright_test(
         ":child_state_test",
         ":definition_postorder_validator",
         ":destruction_contract",
+        ":destruction_contract_validator",
         ":particle_info",
         ":particle_operation_validator",
         ":particle_tracker",
