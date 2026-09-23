@@ -355,6 +355,19 @@ py_library(
     srcs = ["__init__.py"],
 )
 
+py_test(
+    name = "value_definition_test",
+    size = "small",
+    srcs = ["value_definition_test.py"],
+    data = ["//define/testdata/structural/value_definition"],
+    deps = [
+        "//define/compiler:ast",
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+    ],
+)
+
 # --- Format checking ---
 
 format_test(
@@ -396,5 +409,6 @@ pyright_test(
         ":universe_without_authority_test",
         ":unreferenced_positions_test",
         ":validation_timing_stats_test",
+        ":value_definition_test",
     ],
 )
