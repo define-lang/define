@@ -1,0 +1,5 @@
+define the potential position<mv:define-lang.org:bench:/lib/pkg2/m3074> {
+    it may only contain particles where {
+        it has the position</lib/pkg1/m3073>.
+    }
+}

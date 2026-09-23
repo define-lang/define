@@ -1,0 +1,117 @@
+load("@aspect_rules_py//py:defs.bzl", "py_binary", "py_library")
+load("//tools/bzl:format.bzl", "format_test")
+load("//tools/bzl:py_test.bzl", "py_test")
+load("//tools/bzl:pyright.bzl", "pyright_test")
+
+py_test(
+    name = "resource_integration_test",
+    size = "small",
+    timeout = "moderate",
+    srcs = ["resource_integration_test.py"],
+    data = [
+        ":resource_limit_runner",
+        ":resource_test_runner",
+        "//define/compiler:main",
+        "//define/testdata/compiler_resources",
+        "//define/testdata/compiler_resources:deep_requirements",
+        "//define/testdata/compiler_resources:destruction_contracts",
+        "//define/testdata/compiler_resources:guarantee_expansion",
+        "//define/testdata/compiler_resources:large_operation_volume",
+        "//define/testdata/compiler_resources:many_substantial_actions",
+        "//define/testdata/compiler_resources:particle_operations",
+        "//define/testdata/compiler_resources:pending_guarantees",
+        "//define/testdata/compiler_resources:quality_implications",
+        "//define/testdata/compiler_resources:quality_implications_control",
+        "//define/testdata/compiler_resources:reference_depth_updates",
+        "//define/testdata/compiler_resources:reference_depth_updates_control",
+        "//define/testdata/compiler_resources:reference_graph_project",
+        "//define/testdata/compiler_resources:reference_graph_project_entry",
+        "//define/testdata/compiler_resources:wide_destruction",
+    ],
+    env = {
+        "PENDING_GUARANTEES": "$(rlocationpath //define/testdata/compiler_resources:pending_guarantees)",
+        "QUALITY_IMPLICATIONS": "$(rlocationpath //define/testdata/compiler_resources:quality_implications)",
+        "QUALITY_IMPLICATIONS_CONTROL": "$(rlocationpath //define/testdata/compiler_resources:quality_implications_control)",
+        "REFERENCE_DEPTH_UPDATES": "$(rlocationpath //define/testdata/compiler_resources:reference_depth_updates)",
+        "REFERENCE_DEPTH_UPDATES_CONTROL": "$(rlocationpath //define/testdata/compiler_resources:reference_depth_updates_control)",
+        "MAIN_BINARY": "$(rlocationpath //define/compiler:main)",
+        "DEEP_REQUIREMENTS": "$(rlocationpath //define/testdata/compiler_resources:deep_requirements)",
+        "DESTRUCTION_CONTRACTS": "$(rlocationpath //define/testdata/compiler_resources:destruction_contracts)",
+        "WIDE_DESTRUCTION": "$(rlocationpath //define/testdata/compiler_resources:wide_destruction)",
+        "GUARANTEE_EXPANSION": "$(rlocationpath //define/testdata/compiler_resources:guarantee_expansion)",
+        "LARGE_OPERATION_VOLUME": "$(rlocationpath //define/testdata/compiler_resources:large_operation_volume)",
+        "MANY_SUBSTANTIAL_ACTIONS": "$(rlocationpath //define/testdata/compiler_resources:many_substantial_actions)",
+        "PARTICLE_OPERATIONS": "$(rlocationpath //define/testdata/compiler_resources:particle_operations)",
+        "REFERENCE_GRAPH_PROJECT": "$(rlocationpath //define/testdata/compiler_resources:reference_graph_project_entry)",
+        "RESOURCE_LIMIT_RUNNER": "$(rlocationpath :resource_limit_runner)",
+        "RESOURCE_TEST_RUNNER": "$(rlocationpath :resource_test_runner)",
+    },
+    tags = ["no-coverage"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":resource_test_runner",
+        "//define/compiler:test_runfiles",
+        "@pypi//pytest",
+    ],
+)
+
+py_binary(
+    name = "resource_limit_runner",
+    testonly = True,
+    srcs = ["resource_limit_runner.py"],
+    target_compatible_with = ["@platforms//os:linux"],
+)
+
+py_binary(
+    name = "resource_test_runner",
+    testonly = True,
+    srcs = ["resource_test_runner.py"],
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        "@pypi//click",
+        "@pypi//msgspec",
+    ],
+)
+
+py_test(
+    name = "resource_test_runner_test",
+    size = "small",
+    srcs = ["resource_test_runner_test.py"],
+    data = [
+        ":resource_limit_runner",
+        ":resource_test_runner",
+    ],
+    env = {
+        "RESOURCE_LIMIT_RUNNER": "$(rlocationpath :resource_limit_runner)",
+        "RESOURCE_TEST_RUNNER": "$(rlocationpath :resource_test_runner)",
+    },
+    target_compatible_with = ["@platforms//os:linux"],
+    deps = [
+        ":resource_test_runner",
+        "//define/compiler:test_runfiles",
+        "@pypi//pytest",
+    ],
+)
+
+py_library(
+    name = "resource_tests",
+    testonly = True,
+    srcs = ["__init__.py"],
+)
+
+format_test(
+    name = "format_test",
+    srcs = glob(["*.py"]),
+    python = "@multitool//tools/ruff",
+)
+
+pyright_test(
+    name = "pyright_test",
+    deps = [
+        ":resource_integration_test",
+        ":resource_limit_runner",
+        ":resource_test_runner",
+        ":resource_test_runner_test",
+        ":resource_tests",
+    ],
+)

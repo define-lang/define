@@ -1,0 +1,150 @@
+filegroup(
+    name = "compiler_resources",
+    testonly = True,
+    srcs = [
+        ":deep_requirements",
+        ":destruction_contracts",
+        ":guarantee_expansion",
+        ":large_operation_volume",
+        ":many_substantial_actions",
+        ":particle_operations",
+        ":pending_guarantees",
+        ":project_config",
+        ":quality_implications",
+        ":quality_implications_control",
+        ":reference_depth_updates",
+        ":reference_depth_updates_control",
+        ":reference_depth_updates_control_project",
+        ":reference_depth_updates_project",
+        ":reference_graph_project",
+        ":wide_destruction",
+    ],
+    visibility = [
+        "//define/compiler/resource_tests:__pkg__",
+        "//define/testdata:__pkg__",
+    ],
+)
+
+filegroup(
+    name = "deep_requirements",
+    testonly = True,
+    srcs = ["deep_requirements.dfn"],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)
+
+filegroup(
+    name = "destruction_contracts",
+    testonly = True,
+    srcs = ["destruction_contracts.dfn"],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)
+
+filegroup(
+    name = "guarantee_expansion",
+    testonly = True,
+    srcs = ["guarantee_expansion.dfn"],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)
+
+filegroup(
+    name = "large_operation_volume",
+    testonly = True,
+    srcs = ["large_operation_volume.dfn"],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)
+
+filegroup(
+    name = "many_substantial_actions",
+    testonly = True,
+    srcs = ["many_substantial_actions.dfn"],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)
+
+filegroup(
+    name = "particle_operations",
+    testonly = True,
+    srcs = ["particle_operations.dfn"],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)
+
+filegroup(
+    name = "pending_guarantees",
+    testonly = True,
+    srcs = ["pending_guarantees.dfn"],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)
+
+filegroup(
+    name = "project_config",
+    testonly = True,
+    srcs = [".define/project/config.defcl"],
+)
+
+filegroup(
+    name = "quality_implications",
+    testonly = True,
+    srcs = ["quality_implications.dfn"],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)
+
+filegroup(
+    name = "quality_implications_control",
+    testonly = True,
+    srcs = ["quality_implications_control.dfn"],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)
+
+filegroup(
+    name = "reference_depth_updates",
+    testonly = True,
+    srcs = ["reference_depth_updates_project/test.dfn"],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)
+
+filegroup(
+    name = "reference_depth_updates_control",
+    testonly = True,
+    srcs = ["reference_depth_updates_control_project/test.dfn"],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)
+
+filegroup(
+    name = "reference_depth_updates_control_project",
+    testonly = True,
+    srcs = glob(["reference_depth_updates_control_project/**/*.dfn"]) + [
+        "reference_depth_updates_control_project/.define/project/config.defcl",
+    ],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)
+
+filegroup(
+    name = "reference_depth_updates_project",
+    testonly = True,
+    srcs = glob(["reference_depth_updates_project/**/*.dfn"]) + [
+        "reference_depth_updates_project/.define/project/config.defcl",
+    ],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)
+
+filegroup(
+    name = "reference_graph_project",
+    testonly = True,
+    srcs = glob(["reference_graph_project/**/*.dfn"]) + [
+        "reference_graph_project/.define/project/config.defcl",
+    ],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)
+
+filegroup(
+    name = "reference_graph_project_entry",
+    testonly = True,
+    srcs = ["reference_graph_project/test.dfn"],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)
+
+filegroup(
+    name = "wide_destruction",
+    testonly = True,
+    srcs = ["wide_destruction.dfn"],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)

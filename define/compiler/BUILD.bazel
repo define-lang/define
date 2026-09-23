@@ -267,51 +267,6 @@ py_test(
     ],
 )
 
-py_test(
-    name = "memory_integration_test",
-    size = "small",
-    srcs = ["memory_integration_test.py"],
-    data = [
-        ":main",
-        ":memory_limit_runner",
-        "//define/testdata/compiler_memory",
-        "//define/testdata/compiler_memory:deep_requirements",
-        "//define/testdata/compiler_memory:destruction_contracts",
-        "//define/testdata/compiler_memory:guarantee_expansion",
-        "//define/testdata/compiler_memory:large_operation_volume",
-        "//define/testdata/compiler_memory:many_substantial_actions",
-        "//define/testdata/compiler_memory:particle_operations",
-        "//define/testdata/compiler_memory:reference_graph_project",
-        "//define/testdata/compiler_memory:reference_graph_project_entry",
-        "//define/testdata/compiler_memory:wide_destruction",
-    ],
-    env = {
-        "MAIN_BINARY": "$(rlocationpath :main)",
-        "MEMORY_TEST_DEEP_REQUIREMENTS": "$(rlocationpath //define/testdata/compiler_memory:deep_requirements)",
-        "MEMORY_TEST_DESTRUCTION_CONTRACTS": "$(rlocationpath //define/testdata/compiler_memory:destruction_contracts)",
-        "MEMORY_TEST_WIDE_DESTRUCTION": "$(rlocationpath //define/testdata/compiler_memory:wide_destruction)",
-        "MEMORY_TEST_GUARANTEE_EXPANSION": "$(rlocationpath //define/testdata/compiler_memory:guarantee_expansion)",
-        "MEMORY_TEST_LARGE_OPERATION_VOLUME": "$(rlocationpath //define/testdata/compiler_memory:large_operation_volume)",
-        "MEMORY_TEST_MANY_SUBSTANTIAL_ACTIONS": "$(rlocationpath //define/testdata/compiler_memory:many_substantial_actions)",
-        "MEMORY_TEST_PARTICLE_OPERATIONS": "$(rlocationpath //define/testdata/compiler_memory:particle_operations)",
-        "MEMORY_TEST_REFERENCE_GRAPH_PROJECT": "$(rlocationpath //define/testdata/compiler_memory:reference_graph_project_entry)",
-        "MEMORY_LIMIT_RUNNER": "$(rlocationpath :memory_limit_runner)",
-    },
-    tags = ["no-coverage"],
-    target_compatible_with = ["@platforms//os:linux"],
-    deps = [
-        ":test_runfiles",
-        "@pypi//pytest",
-    ],
-)
-
-py_binary(
-    name = "memory_limit_runner",
-    testonly = True,
-    srcs = ["memory_limit_runner.py"],
-    target_compatible_with = ["@platforms//os:linux"],
-)
-
 py_library(
     name = "name_parser",
     srcs = ["name_parser.py"],
@@ -417,6 +372,7 @@ py_library(
     name = "test_runfiles",
     testonly = True,
     srcs = ["test_runfiles.py"],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
     deps = ["@rules_python//python/runfiles"],
 )
 
@@ -480,8 +436,6 @@ pyright_test(
         ":main",
         ":main_integration_test",
         ":main_test",
-        ":memory_integration_test",
-        ":memory_limit_runner",
         ":name_parser",
         ":name_parser_test",
         ":overall_stats",

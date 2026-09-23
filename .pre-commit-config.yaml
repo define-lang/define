@@ -5,6 +5,8 @@ repos:
     rev: v6.0.0
     hooks:
       - id: check-added-large-files
+        # These generated fixtures need enough references to expose quadratic CPU growth.
+        exclude: ^define/testdata/compiler_resources/reference_depth_updates(_control)?_project/lib/pkg0/m0\.dfn$
       - id: check-case-conflict
       - id: check-illegal-windows-names
       - id: check-json

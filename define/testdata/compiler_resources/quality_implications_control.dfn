@@ -1,0 +1,296 @@
+define the potential action<mv:define-lang.org:quality_implications:/quality_11_0> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+    }
+}
+define the potential action<mv:define-lang.org:quality_implications:/quality_11_1> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+    }
+}
+define the potential action<mv:define-lang.org:quality_implications:/quality_10_0> {
+    it also assigns the action</quality_11_0>.
+    it also assigns the action</quality_11_1>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+        create a particle in action</quality_11_0>::position<run>.
+        create a particle in action</quality_11_1>::position<run>.
+    }
+}
+define the potential action<mv:define-lang.org:quality_implications:/quality_10_1> {
+    it also assigns the action</quality_11_1>.
+    it also assigns the action</quality_11_0>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+        create a particle in action</quality_11_1>::position<run>.
+        create a particle in action</quality_11_0>::position<run>.
+    }
+}
+define the potential action<mv:define-lang.org:quality_implications:/quality_9_0> {
+    it also assigns the action</quality_10_0>.
+    it also assigns the action</quality_10_1>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+        create a particle in action</quality_10_0>::position<run>.
+        create a particle in action</quality_10_1>::position<run>.
+    }
+}
+define the potential action<mv:define-lang.org:quality_implications:/quality_9_1> {
+    it also assigns the action</quality_10_1>.
+    it also assigns the action</quality_10_0>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+        create a particle in action</quality_10_1>::position<run>.
+        create a particle in action</quality_10_0>::position<run>.
+    }
+}
+define the potential action<mv:define-lang.org:quality_implications:/quality_8_0> {
+    it also assigns the action</quality_9_0>.
+    it also assigns the action</quality_9_1>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+        create a particle in action</quality_9_0>::position<run>.
+        create a particle in action</quality_9_1>::position<run>.
+    }
+}
+define the potential action<mv:define-lang.org:quality_implications:/quality_8_1> {
+    it also assigns the action</quality_9_1>.
+    it also assigns the action</quality_9_0>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+        create a particle in action</quality_9_1>::position<run>.
+        create a particle in action</quality_9_0>::position<run>.
+    }
+}
+define the potential action<mv:define-lang.org:quality_implications:/quality_7_0> {
+    it also assigns the action</quality_8_0>.
+    it also assigns the action</quality_8_1>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+        create a particle in action</quality_8_0>::position<run>.
+        create a particle in action</quality_8_1>::position<run>.
+    }
+}
+define the potential action<mv:define-lang.org:quality_implications:/quality_7_1> {
+    it also assigns the action</quality_8_1>.
+    it also assigns the action</quality_8_0>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+        create a particle in action</quality_8_1>::position<run>.
+        create a particle in action</quality_8_0>::position<run>.
+    }
+}
+define the potential action<mv:define-lang.org:quality_implications:/quality_6_0> {
+    it also assigns the action</quality_7_0>.
+    it also assigns the action</quality_7_1>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+        create a particle in action</quality_7_0>::position<run>.
+        create a particle in action</quality_7_1>::position<run>.
+    }
+}
+define the potential action<mv:define-lang.org:quality_implications:/quality_6_1> {
+    it also assigns the action</quality_7_1>.
+    it also assigns the action</quality_7_0>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+        create a particle in action</quality_7_1>::position<run>.
+        create a particle in action</quality_7_0>::position<run>.
+    }
+}
+define the potential action<mv:define-lang.org:quality_implications:/quality_5_0> {
+    it also assigns the action</quality_6_0>.
+    it also assigns the action</quality_6_1>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+        create a particle in action</quality_6_0>::position<run>.
+        create a particle in action</quality_6_1>::position<run>.
+    }
+}
+define the potential action<mv:define-lang.org:quality_implications:/quality_5_1> {
+    it also assigns the action</quality_6_1>.
+    it also assigns the action</quality_6_0>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+        create a particle in action</quality_6_1>::position<run>.
+        create a particle in action</quality_6_0>::position<run>.
+    }
+}
+define the potential action<mv:define-lang.org:quality_implications:/quality_4_0> {
+    it also assigns the action</quality_5_0>.
+    it also assigns the action</quality_5_1>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+        create a particle in action</quality_5_0>::position<run>.
+        create a particle in action</quality_5_1>::position<run>.
+    }
+}
+define the potential action<mv:define-lang.org:quality_implications:/quality_4_1> {
+    it also assigns the action</quality_5_1>.
+    it also assigns the action</quality_5_0>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+        create a particle in action</quality_5_1>::position<run>.
+        create a particle in action</quality_5_0>::position<run>.
+    }
+}
+define the potential action<mv:define-lang.org:quality_implications:/quality_3_0> {
+    it also assigns the action</quality_4_0>.
+    it also assigns the action</quality_4_1>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+        create a particle in action</quality_4_0>::position<run>.
+        create a particle in action</quality_4_1>::position<run>.
+    }
+}
+define the potential action<mv:define-lang.org:quality_implications:/quality_3_1> {
+    it also assigns the action</quality_4_1>.
+    it also assigns the action</quality_4_0>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+        create a particle in action</quality_4_1>::position<run>.
+        create a particle in action</quality_4_0>::position<run>.
+    }
+}
+define the potential action<mv:define-lang.org:quality_implications:/quality_2_0> {
+    it also assigns the action</quality_3_0>.
+    it also assigns the action</quality_3_1>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+        create a particle in action</quality_3_0>::position<run>.
+        create a particle in action</quality_3_1>::position<run>.
+    }
+}
+define the potential action<mv:define-lang.org:quality_implications:/quality_2_1> {
+    it also assigns the action</quality_3_1>.
+    it also assigns the action</quality_3_0>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+        create a particle in action</quality_3_1>::position<run>.
+        create a particle in action</quality_3_0>::position<run>.
+    }
+}
+define the potential action<mv:define-lang.org:quality_implications:/quality_1_0> {
+    it also assigns the action</quality_2_0>.
+    it also assigns the action</quality_2_1>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+        create a particle in action</quality_2_0>::position<run>.
+        create a particle in action</quality_2_1>::position<run>.
+    }
+}
+define the potential action<mv:define-lang.org:quality_implications:/quality_1_1> {
+    it also assigns the action</quality_2_1>.
+    it also assigns the action</quality_2_0>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+        create a particle in action</quality_2_1>::position<run>.
+        create a particle in action</quality_2_0>::position<run>.
+    }
+}
+define the potential action<mv:define-lang.org:quality_implications:/quality_0_0> {
+    it also assigns the action</quality_1_0>.
+    it also assigns the action</quality_1_1>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+        create a particle in action</quality_1_0>::position<run>.
+        create a particle in action</quality_1_1>::position<run>.
+    }
+}
+define the potential action<mv:define-lang.org:quality_implications:/quality_0_1> {
+    it also assigns the action</quality_1_1>.
+    it also assigns the action</quality_1_0>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+        create a particle in action</quality_1_1>::position<run>.
+        create a particle in action</quality_1_0>::position<run>.
+    }
+}
+define the potential action<mv:define-lang.org:quality_implications:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<sample_0> {
+            it may only contain particles where {
+                it has the action</quality_0_0>.
+                it has the action</quality_0_1>.
+            }
+        }
+        create a particle in position<sample_0>.
+        create a particle in position<sample_0>::action</quality_0_0>::position<run>.
+        create a particle in position<sample_0>::action</quality_0_1>::position<run>.
+        destroy the particle in position<sample_0>.
+    }
+}

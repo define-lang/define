@@ -99,10 +99,17 @@ class TestMain:
 
 
 class TestGeneratedProjectCompiles:
+    @pytest.mark.parametrize("reverse_references", [False, True])
     def test_project_compiles_without_diagnostics_or_exceptions(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        *,
+        reverse_references: bool,
     ):
-        files = gen.generate_project_files(modules=12, layers=3)
+        files = gen.generate_project_files(
+            modules=12, layers=3, reverse_references=reverse_references
+        )
         for relative_path, content in files.items():
             file_path = tmp_path / relative_path
             file_path.parent.mkdir(parents=True, exist_ok=True)
@@ -130,14 +137,24 @@ class TestGeneratedProjectCompiles:
     ],
 )
 @pytest.mark.parametrize("modules", [1, 7])
+@pytest.mark.parametrize("reverse_references", [False, True])
 def test_structured_projects_load_every_definition(
-    shape: gen.Shape, modules: int, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    shape: gen.Shape,
+    modules: int,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    reverse_references: bool,
 ):
     output = tmp_path / "project"
     gen.write_project(
         output,
         gen.generate_project_files(
-            modules=modules, shape=shape, fan_out=3, path_depth=2
+            modules=modules,
+            shape=shape,
+            fan_out=3,
+            path_depth=2,
+            reverse_references=reverse_references,
         ),
     )
     monkeypatch.chdir(output)
@@ -286,3 +303,35 @@ def test_invalid_structured_sizes(modules: int, depth: int):
         gen.generate_project_files(
             modules=modules, path_depth=depth, shape=gen.Shape.CHAIN
         )
+
+
+def test_cli_reverses_references_without_changing_the_graph(tmp_path: Path):
+    output = tmp_path / "project"
+    result = click.testing.CliRunner().invoke(
+        gen.main,
+        [
+            "--output",
+            str(output),
+            "--shape",
+            "depth-updates",
+            "--modules",
+            "4",
+            "--reverse-references",
+        ],
+    )
+    assert result.exit_code == 0
+    expected = gen.generate_project_files(modules=4, shape=gen.Shape.DEPTH_UPDATES)
+    expected["lib/pkg0/m0.dfn"] = (
+        "define the potential position<mv:define-lang.org:bench:/lib/pkg0/m0> {\n"
+        "    it may only contain particles where {\n"
+        "        it has the position</lib/pkg3/m3>.\n"
+        "        it has the position</lib/pkg2/m2>.\n"
+        "        it has the position</lib/pkg1/m1>.\n"
+        "    }\n"
+        "}\n"
+    )
+    actual = {}
+    for path in output.rglob("*"):
+        if path.is_file():
+            actual[path.relative_to(output).as_posix()] = path.read_text()
+    assert actual == expected

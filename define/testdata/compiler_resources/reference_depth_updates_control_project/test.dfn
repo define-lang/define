@@ -1,0 +1,13 @@
+define the potential action<mv:define-lang.org:bench:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<references> {
+            it may only contain particles where {
+                it has the position</lib/pkg0/m0>.
+            }
+        }
+        create a particle in position<references>.
+        create a particle in position<references>::position</lib/pkg0/m0>.
+    }
+}

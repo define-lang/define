@@ -32,7 +32,8 @@ source file reachable.
 Use one compiler worker with `depth-updates` to preserve the adversarial
 reference insertion order. `--modules` includes the first position, which
 references all others before their predecessor references force repeated depth
-updates.
+updates. Add `--reverse-references` to generate the same dependency graph in the
+opposite reference order for a control project.
 
 Indentation diagnostics from `generate_diagnostics_source --indent-width`
 require parsing with a file path; validation without filesystem context omits

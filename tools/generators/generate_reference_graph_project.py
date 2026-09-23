@@ -201,6 +201,8 @@ def generate_project_files(
     universe_name: str = DEFAULT_UNIVERSE_NAME,
     shape: Shape = Shape.LAYERED,
     path_depth: int = 0,
+    *,
+    reverse_references: bool = False,
 ) -> dict[str, str]:
     """Return every file of the project, keyed by its path below the project root."""
     if modules < 1:
@@ -239,7 +241,10 @@ def generate_project_files(
                 utility_fraction,
             )
             files[_file_path(index, path_depth)] = _definition(
-                universe_name, index, targets, path_depth
+                universe_name,
+                index,
+                targets[::-1] if reverse_references else targets,
+                path_depth,
             )
         entry_targets = range(width)
     else:
@@ -251,8 +256,14 @@ def generate_project_files(
             entry_targets = range(1)
         for index, targets in enumerate(_structured_targets(shape, modules, fan_out)):
             files[_file_path(index, path_depth)] = _definition(
-                universe_name, index, targets, path_depth
+                universe_name,
+                index,
+                targets[::-1] if reverse_references else targets,
+                path_depth,
             )
+
+    if reverse_references:
+        entry_targets = entry_targets[::-1]
 
     # The entry file references the first layer so validation follows references
     # through every layer; definitions no layer references are never validated.
@@ -297,6 +308,11 @@ def write_project(output: Path, files: dict[str, str]):
 
 
 @click.command()
+@click.option(
+    "--reverse-references",
+    is_flag=True,
+    help="Reverse reference order in each definition, preserving the dependency graph.",
+)
 @click.option(
     "--shape",
     type=click.Choice([shape.value for shape in Shape]),
@@ -367,6 +383,8 @@ def main(
     universe_name: str,
     shape: str,
     path_depth: int,
+    *,
+    reverse_references: bool,
 ):
     """Generate a many-file Define project with heavy cross-file referencing.
 
@@ -396,6 +414,7 @@ def main(
             seed=seed,
             universe_name=universe_name,
             shape=Shape(shape),
+            reverse_references=reverse_references,
             path_depth=path_depth,
         )
     )
