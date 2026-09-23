@@ -340,7 +340,7 @@ class DestructionContractValidator:
                     newly_occupied_children=newly_occupied_children,
                     validation_diagnostics=validation_diagnostics,
                 )
-            else:
+            elif quality.name_type == ast.NameType.ACTION:
                 definition_result = self._definition_results.get(quality)
                 if definition_result is None:
                     continue

@@ -1,0 +1,28 @@
+# A particle retains its value type after an action moves it through unconstrained interface positions.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<worker> {
+            it may only contain particles where {
+                it has the action</consume>.
+            }
+        }
+        define the position<source> {
+            it may only contain particles where {
+                it has the value</number>.
+            }
+        }
+        define the position<target> {
+            it may only contain particles where {
+                it has the value</number>.
+            }
+        }
+        create a particle in position<worker>.
+        create a particle in position<source>.
+        move the particle in position<source> to position<worker>::action</consume>::position<input>.
+        move the particle in position<worker>::action</consume>::position<result> to position<target>.
+        destroy the particle in position<target>.
+        destroy the particle in position<worker>.
+    }
+}

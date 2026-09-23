@@ -306,7 +306,7 @@ class ActionPostorderValidator:
                     pending_contracts,
                     destruction,
                 )
-            else:
+            elif quality.name_type == ast.NameType.ACTION:
                 definition_result = self._definition_results.get(quality)
                 if definition_result is None:
                     continue

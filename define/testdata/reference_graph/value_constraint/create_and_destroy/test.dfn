@@ -1,0 +1,14 @@
+# A value constraint is not a child position or a destructor.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<item> {
+            it may only contain particles where {
+                it has the value</number>.
+            }
+        }
+        create a particle in position<item>.
+        destroy the particle in position<item>.
+    }
+}

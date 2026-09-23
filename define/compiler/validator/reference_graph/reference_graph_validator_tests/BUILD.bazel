@@ -872,6 +872,18 @@ py_test(
     ],
 )
 
+py_test(
+    name = "value_constraint_test",
+    size = "small",
+    srcs = ["value_constraint_test.py"],
+    data = ["//define/testdata/reference_graph/value_constraint"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+    ],
+)
+
 # --- Format checking ---
 
 format_test(
@@ -950,5 +962,6 @@ pyright_test(
         ":reference_graph_validator_tests",
         ":test_helpers",
         ":trigger_conditions_test",
+        ":value_constraint_test",
     ],
 )

@@ -94,6 +94,8 @@ class DeadConstraintTracker:
         destroyed.
         """
         for constraint in position_definition.constraint_typed_names:
+            if constraint.name_type == ast.NameType.VALUE:
+                continue
             definition_result = definition_results.get(constraint)
             if definition_result is None:
                 continue
