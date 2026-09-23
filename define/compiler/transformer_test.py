@@ -52,6 +52,7 @@ _FULL_POSITION = (
     + "    it may only contain particles where {\n"
     + "        it has the position</child>.\n"
     + "        it has the action</other>.\n"
+    + "        it has the value</number/rational>.\n"
     + "    }\n"
     + "}\n"
 )
@@ -502,20 +503,29 @@ def test_position_constraint_block_fields():
     definition = _only_position(_FULL_POSITION)
     assert definition.constraints is not None
     block = definition.constraints
-    assert len(block.requirements) == 2
+    assert len(block.requirements) == 3
     assert all(
         isinstance(requirement, ast.PositionRequirementStatement)
         for requirement in block.requirements
     )
     assert block.location == ast.SourceLocation(
-        line=3, column=5, end_line=6, end_column=6
+        line=3, column=5, end_line=7, end_column=6
     )
     assert _slice(_FULL_POSITION, block.location) == (
         "it may only contain particles where {\n"
         "        it has the position</child>.\n"
         "        it has the action</other>.\n"
+        "        it has the value</number/rational>.\n"
         "    }"
     )
+
+
+def test_value_constraint_fields():
+    definition = _only_position(_FULL_POSITION)
+    assert definition.constraints is not None
+    typed_name = definition.constraints.requirements[2].typed_global_name
+    assert isinstance(typed_name, ast.GlobalTypedNameReference)
+    assert typed_name.name_type == ast.NameType.VALUE
 
 
 def test_position_requirement_statement_fields():
@@ -668,7 +678,7 @@ def test_position_definition_full_fields():
     )
     assert isinstance(definition.constraints, ast.PositionConstraintBlock)
     assert definition.location == ast.SourceLocation(
-        line=1, column=1, end_line=7, end_column=2
+        line=1, column=1, end_line=8, end_column=2
     )
     assert _slice(_FULL_POSITION, definition.location) == (
         "define the potential position<standard:/path> {\n"
@@ -676,6 +686,7 @@ def test_position_definition_full_fields():
         "    it may only contain particles where {\n"
         "        it has the position</child>.\n"
         "        it has the action</other>.\n"
+        "        it has the value</number/rational>.\n"
         "    }\n"
         "}"
     )

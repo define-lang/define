@@ -1,0 +1,3 @@
+project: {
+  universe_name: "other.org:other_lib"
+}

@@ -211,8 +211,11 @@ def raise_token_error(
             raise parser_exceptions.ExtraWhitespace(e, source, file_path)
         raise parser_exceptions.MissingActionStatementsBlock(e, source, file_path)
 
-    if e.accepts == {"NAME_TYPE"}:
-        raise parser_exceptions.ExpectedNameType(e, source, file_path)
+    if e.accepts == {"POSITION_OR_ACTION"}:
+        raise parser_exceptions.ExpectedPositionOrAction(e, source, file_path)
+
+    if e.accepts == {"POSITION_OR_ACTION", "VALUE"}:
+        raise parser_exceptions.ExpectedConstraintNameType(e, source, file_path)
 
     # TODO: After changing the priority of the *_NAME_CONTENT terminals, I think
     # we could do better here.

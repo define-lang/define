@@ -1,0 +1,8 @@
+# An invalid reference must not suppress validation of the next constraint.
+define the potential value<my.domain.com:my_lib:/number>.
+define the potential position<my.domain.com:my_lib:/test> {
+    it may only contain particles where {
+        it has the value</Bad>.
+        it has the value</number>.
+    }
+}

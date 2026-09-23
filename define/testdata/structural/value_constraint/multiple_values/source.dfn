@@ -1,0 +1,11 @@
+# Each additional distinct value type conflicts with the first.
+define the potential value<my.domain.com:my_lib:/number>.
+define the potential value<my.domain.com:my_lib:/text>.
+define the potential value<my.domain.com:my_lib:/boolean>.
+define the potential position<my.domain.com:my_lib:/test> {
+    it may only contain particles where {
+        it has the value</number>.
+        it has the value</text>.
+        it has the value</boolean>.
+    }
+}

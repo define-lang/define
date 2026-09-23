@@ -356,6 +356,19 @@ py_library(
 )
 
 py_test(
+    name = "value_constraint_test",
+    size = "small",
+    srcs = ["value_constraint_test.py"],
+    data = ["//define/testdata/structural/value_constraint"],
+    deps = [
+        "//define/compiler:ast",
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+    ],
+)
+
+py_test(
     name = "value_definition_test",
     size = "small",
     srcs = ["value_definition_test.py"],
@@ -409,6 +422,7 @@ pyright_test(
         ":universe_without_authority_test",
         ":unreferenced_positions_test",
         ":validation_timing_stats_test",
+        ":value_constraint_test",
         ":value_definition_test",
     ],
 )

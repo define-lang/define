@@ -226,10 +226,16 @@ class ExpectedGlobalDefinition(DefineTokenError):
     )
 
 
-class ExpectedNameType(DefineTokenError):
-    """Expected a typed reference kind."""
+class ExpectedPositionOrAction(DefineTokenError):
+    """Expected a position or action reference."""
 
     message_format: ClassVar[str] = "Expected 'position' or 'action'."
+
+
+class ExpectedConstraintNameType(DefineTokenError):
+    """Expected a quality type in a Position Constraint Block."""
+
+    message_format: ClassVar[str] = "Expected 'position', 'action', or 'value'."
 
 
 class ExtraWhitespace(DefineTokenError):

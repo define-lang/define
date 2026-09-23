@@ -1,0 +1,22 @@
+# An interface position may not specify two value types.
+define the potential value<my.domain.com:my_lib:/number>.
+define the potential value<my.domain.com:my_lib:/text>.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<input> {
+        it may only contain particles where {
+            it has the value</number>.
+            it has the value</text>.
+        }
+    }
+    it happens when {
+        the position<input> has a particle.
+    } and it does {
+        define the position<item> {
+            it may only contain particles where {
+                it has the value</text>.
+            }
+        }
+        create a particle in position<item>.
+        destroy the particle in position<item>.
+    }
+}

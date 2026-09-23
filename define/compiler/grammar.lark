@@ -25,7 +25,8 @@ DEFINE_THE_POSITION: "define the position"
 DEFINE_THE_POTENTIAL_POSITION: "define the potential position"
 DEFINE_THE_POTENTIAL_ACTION: "define the potential action"
 DEFINE_THE_POTENTIAL_VALUE: "define the potential value"
-NAME_TYPE: "position" | "action"
+POSITION_OR_ACTION: "position" | "action"
+VALUE: "value"
 IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE: "it may only contain particles where"
 IT_HAS_THE: "it has the"
 IT_HAPPENS_WHEN: "it happens when"
@@ -67,13 +68,14 @@ _block_close: CLOSE_BRACE NEWLINE
 global_name_definition_content: "<" GLOBAL_NAME_CONTENT ">"
 global_name_reference_content: "<" GLOBAL_NAME_CONTENT ">"
 local_name_content: "<" LOCAL_NAME_CONTENT ">"
-typed_global_name_reference: NAME_TYPE global_name_reference_content
-typed_local_name_reference: NAME_TYPE local_name_content
+typed_global_name_reference: POSITION_OR_ACTION global_name_reference_content
+typed_value_name_reference: VALUE global_name_reference_content -> typed_global_name_reference
+typed_local_name_reference: POSITION_OR_ACTION local_name_content
 ?typed_name_reference: typed_local_name_reference | typed_global_name_reference
 
 # Position Constraint Block Syntax
 
-position_requirement_statement: IT_HAS_THE " " typed_global_name_reference terminator
+position_requirement_statement: IT_HAS_THE " " (typed_global_name_reference | typed_value_name_reference) terminator
 _position_constraint_requirements: NEWLINE* (position_requirement_statement NEWLINE*)+
 position_constraint_block: IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE _block_open _position_constraint_requirements _block_close
 

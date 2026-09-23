@@ -390,7 +390,7 @@ def position_definitions(draw: st.DrawFn) -> str:
     requirements: list[tuple[str, str]] = []
     for _ in range(num_requirements):
         child_name = draw(global_names())
-        child_type = draw(st.sampled_from(["position", "action"]))
+        child_type = draw(st.sampled_from(["position", "action", "value"]))
         requirements.append((child_type, child_name))
     lines = [
         f"define the potential position<{name}> {{",
@@ -441,7 +441,7 @@ def action_definitions_with_block(draw: st.DrawFn) -> str:
         if draw(st.booleans()):
             outer_locals.append(_local_position_simple(local_name, indent=outer_indent))
         else:
-            req_type = draw(st.sampled_from(["position", "action"]))
+            req_type = draw(st.sampled_from(["position", "action", "value"]))
             req_name = draw(global_names())
             outer_locals.append(
                 _local_position_with_requirements(
@@ -454,7 +454,7 @@ def action_definitions_with_block(draw: st.DrawFn) -> str:
         if draw(st.booleans()):
             inner_locals.append(_local_position_simple(local_name, indent=inner_indent))
         else:
-            req_type = draw(st.sampled_from(["position", "action"]))
+            req_type = draw(st.sampled_from(["position", "action", "value"]))
             req_name = draw(global_names())
             inner_locals.append(
                 _local_position_with_requirements(
@@ -1562,6 +1562,7 @@ _GLOBAL_NAME_CONTEXTS = [
     "destructor",
     "position_req",
     "action_req",
+    "value_req",
     "create_ref",
     "move_from_ref",
     "move_to_ref",
@@ -1591,6 +1592,10 @@ def _global_name_context_template(context: str) -> str:
     if context == "action_req":
         return _position_with_requirements(
             _PROJECT_FQUN, "test.dfn", [("action", _NAME_MARKER)]
+        )
+    if context == "value_req":
+        return _position_with_requirements(
+            _PROJECT_FQUN, "test.dfn", [("value", _NAME_MARKER)]
         )
     if context == "create_ref":
         return _action_with_block(

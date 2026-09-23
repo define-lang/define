@@ -369,9 +369,13 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
             ),
         )
 
-    def NAME_TYPE(self, token: lark_cython.Token) -> ast.NameType:  # noqa: N802
+    def POSITION_OR_ACTION(self, token: lark_cython.Token) -> ast.NameType:  # noqa: N802
         """Transform a name-type token into a NameType enum."""
         return ast.NameType(token.value)
+
+    def VALUE(self, _token: lark_cython.Token) -> ast.NameType:  # noqa: N802
+        """Transform the value name type."""
+        return ast.NameType.VALUE
 
     @_strip_discard
     def typed_global_name_reference(

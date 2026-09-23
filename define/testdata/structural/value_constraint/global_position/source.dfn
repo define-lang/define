@@ -1,0 +1,9 @@
+# Values and positions may both constrain a position.
+define the potential value<my.domain.com:my_lib:/number>.
+define the potential position<my.domain.com:my_lib:/other>.
+define the potential position<my.domain.com:my_lib:/test> {
+    it may only contain particles where {
+        it has the position</other>.
+        it has the value</number>.
+    }
+}

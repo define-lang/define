@@ -142,6 +142,17 @@ class DuplicatePositionConstraintDiagnostic(Diagnostic):
     )
 
 
+class MultipleValueConstraintsDiagnostic(Diagnostic):
+    """A Position Constraint Block specifies more than one value type."""
+
+    first_value_name: str
+    first_constraint_line: int
+    message_format: ClassVar[str] = (
+        "a position may only have one value constraint; "
+        "'{self.first_value_name}' was already declared on line {self.first_constraint_line}"
+    )
+
+
 class DuplicateQualityImplicationDiagnostic(Diagnostic):
     """Diagnostic for when the same quality implication appears twice in the same definition."""
 

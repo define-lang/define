@@ -608,6 +608,7 @@ class DefinitionStructuralValidator:
         seen_lines: typed_name_dict.TypedNameDict[ast.GlobalTypedNameReference, int] = (
             typed_name_dict.TypedNameDict()
         )
+        first_value: ast.GlobalTypedNameReference | None = None
         for requirement in constraints.requirements:
             reference_diagnostics = name_validators.validate_typed_name(
                 requirement.typed_global_name, self._definition
@@ -628,6 +629,17 @@ class DefinitionStructuralValidator:
             seen_lines[requirement.typed_global_name] = (
                 requirement.typed_global_name.location.line
             )
+            if requirement.typed_global_name.name_type == ast.NameType.VALUE:
+                if first_value is not None:
+                    self._diagnostics.append(
+                        diagnostics.MultipleValueConstraintsDiagnostic(
+                            location=requirement.typed_global_name.location,
+                            first_value_name=first_value.source_typed_name,
+                            first_constraint_line=first_value.location.line,
+                        )
+                    )
+                    continue
+                first_value = requirement.typed_global_name
             self._process_reference(requirement.typed_global_name)
 
     def _validate_quality_implications(

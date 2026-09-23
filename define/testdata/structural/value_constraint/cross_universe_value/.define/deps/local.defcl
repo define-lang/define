@@ -1,0 +1,8 @@
+deps: {
+  local: [
+    {
+      universe_name: "other.org:other_lib"
+      path: "lib"
+    }
+  ]
+}

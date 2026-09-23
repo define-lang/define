@@ -226,7 +226,7 @@ def test_missing_outer_block_close_with_inner_block_message(parse: Parse) -> Non
 
 
 def test_position_constraint_invalid_type_keyword(parse: Parse) -> None:
-    with pytest.raises(parser_exceptions.ExpectedNameType) as exc_info:
+    with pytest.raises(parser_exceptions.ExpectedConstraintNameType) as exc_info:
         parse(
             "define the potential position<my_lib:/path> {\n"
             + "    it may only contain particles where {\n"

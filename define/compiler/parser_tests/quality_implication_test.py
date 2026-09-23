@@ -328,13 +328,13 @@ def test_implication_missing_space_after_keyword(parse: Parse) -> None:
             + "}\n"
         )
     assert exc_info.value.token == "position"
-    assert exc_info.value.token.type == "NAME_TYPE"
+    assert exc_info.value.token.type == "POSITION_OR_ACTION"
     assert exc_info.value.line == 2
     assert exc_info.value.column == 24
 
 
 def test_implication_extra_space_after_keyword(parse: Parse) -> None:
-    with pytest.raises(parser_exceptions.ExpectedNameType) as exc_info:
+    with pytest.raises(parser_exceptions.ExpectedPositionOrAction) as exc_info:
         parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    it also assigns the  position</required>.\n"

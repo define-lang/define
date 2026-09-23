@@ -1,0 +1,6 @@
+# A position definition cannot satisfy a value reference.
+define the potential position<my.domain.com:my_lib:/test> {
+    it may only contain particles where {
+        it has the value</number>.
+    }
+}
