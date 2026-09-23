@@ -9,7 +9,7 @@ import msgspec
 from define.compiler import ast
 
 if TYPE_CHECKING:
-    from define.compiler.graphs import reference_graph_executor
+    from define.compiler.graphs import reference_graph_order
     from define.compiler.validator.reference_graph import destruction_contract
 
 
@@ -54,5 +54,5 @@ class ActionCodegenInput(msgspec.Struct):
 class CodegenInput(msgspec.Struct):
     """Validated definitions and ordered action steps for code generation."""
 
-    definition_order: reference_graph_executor.ReferenceGraphOrder
+    definition_order: reference_graph_order.ReferenceGraphOrder
     actions: dict[str, ActionCodegenInput]

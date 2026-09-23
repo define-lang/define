@@ -18,7 +18,7 @@ if typing.TYPE_CHECKING:
     from collections.abc import Iterator, Sequence
 
     from define.compiler.data_structures import define_path, typed_name_dict
-    from define.compiler.graphs import reference_graph
+    from define.compiler.graphs import reference_graph, reference_graph_order
     from define.compiler.validator import stats
 
 type AnyValidationException = exceptions.DefineError | lark_standalone.UnexpectedInput
@@ -143,7 +143,7 @@ class ProgramValidationResult(msgspec.Struct):
     file_results: list[FileValidationResult]
     entry_action: ast.ActionDefinition | None
     config_loading_time_ns: int
-    reference_graph: reference_graph.ReferenceGraph
+    definition_order: reference_graph_order.ReferenceGraphOrder
     definition_results: typed_name_dict.TypedNameDict[
         ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
         DefinitionValidationResult,

@@ -9,7 +9,7 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         "//define/compiler:ast",
-        "//define/compiler/graphs:reference_graph_executor",
+        "//define/compiler/graphs:reference_graph_order",
         "//define/compiler/validator/reference_graph:destruction_contract",
         "@pypi//msgspec",
     ],
@@ -77,6 +77,7 @@ py_library(
         "//define/compiler/data_structures:define_path",
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/graphs:reference_graph",
+        "//define/compiler/graphs:reference_graph_order",
         "//define/compiler/lark:lark_standalone",
         "@pypi//msgspec",
     ],

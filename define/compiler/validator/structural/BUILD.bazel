@@ -112,6 +112,7 @@ py_library(
         "//define/compiler/data_structures:define_path",
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/graphs:reference_graph",
+        "//define/compiler/graphs:reference_graph_order",
         "//define/compiler/validator:stats",
         "//define/compiler/validator:validation_result",
         "@pypi//msgspec",

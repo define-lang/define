@@ -28,7 +28,7 @@ def _generate(
     entry_action = program_result.entry_action
     assert entry_action is not None
     reference_graph_result = reference_graph_validator.ReferenceGraphValidator(
-        program_result.reference_graph,
+        program_result.definition_order,
         program_result.definition_results,
         entry_action=entry_action,
     ).validate()

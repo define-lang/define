@@ -266,7 +266,7 @@ def _run_reference_graph_validation(
     allow_entry_action_occupied_implied_position_requirements: bool = False,
 ) -> FullValidationResult:
     validator = reference_graph_validator.ReferenceGraphValidator(
-        structural_result.reference_graph,
+        structural_result.definition_order,
         structural_result.definition_results,
         entry_action=structural_result.entry_action,
         allow_entry_action_occupied_implied_position_requirements=(

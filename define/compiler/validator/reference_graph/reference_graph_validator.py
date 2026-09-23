@@ -8,8 +8,8 @@ import msgspec
 
 from define.compiler import ast, diagnostics
 from define.compiler.graphs import (
-    reference_graph,
     reference_graph_executor,
+    reference_graph_order,
 )
 from define.compiler.validator import codegen_input, validation_result
 from define.compiler.validator.reference_graph import (
@@ -42,7 +42,7 @@ class ReferenceGraphValidator:
     and performs validations on each definition for logical correctness.
     """
 
-    _reference_graph: reference_graph.ReferenceGraph
+    _definition_order: reference_graph_order.ReferenceGraphOrder
     _definition_results: typed_name_dict.TypedNameDict[
         ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
         validation_result.DefinitionValidationResult,
@@ -53,7 +53,7 @@ class ReferenceGraphValidator:
 
     def __init__(
         self,
-        graph: reference_graph.ReferenceGraph,
+        definition_order: reference_graph_order.ReferenceGraphOrder,
         definition_results: typed_name_dict.TypedNameDict[
             ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
             validation_result.DefinitionValidationResult,
@@ -62,12 +62,12 @@ class ReferenceGraphValidator:
         entry_action: ast.ActionDefinition | None,
         allow_entry_action_occupied_implied_position_requirements: bool = False,
     ):
-        """Initialize with the reference graph and definition results.
+        """Initialize with the definition order and definition results.
 
         allow_entry_action_occupied_implied_position_requirements exists only
         for validation tests of behavior that requires such a program.
         """
-        self._reference_graph = graph
+        self._definition_order = definition_order
         self._definition_results = definition_results
         self._entry_action = entry_action
         self._validation_state = (
@@ -81,9 +81,7 @@ class ReferenceGraphValidator:
         self, max_workers: int | None = None
     ) -> ReferenceGraphValidationResult:
         """Validate every definition in direct-reference-first order."""
-        definition_order = reference_graph_executor.ReferenceGraphOrder(
-            self._reference_graph
-        )
+        definition_order = self._definition_order
         results = reference_graph_executor.process_definitions(
             definition_order,
             self._validate_definition,

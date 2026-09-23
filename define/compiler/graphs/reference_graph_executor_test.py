@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from define.compiler.graphs import reference_graph_executor
+from define.compiler.graphs import reference_graph_executor, reference_graph_order
 from define.compiler.validator import test_helpers
 from define.compiler.validator.structural import program_validator
 
@@ -34,14 +34,14 @@ define the potential position<my.domain.com:lib:/independent>.
 """
 
 
-def _order() -> reference_graph_executor.ReferenceGraphOrder:
+def _order() -> reference_graph_order.ReferenceGraphOrder:
     result = (
         program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
             _SOURCE, max_workers=1
         )
     )
     test_helpers.assert_no_errors(result)
-    return reference_graph_executor.ReferenceGraphOrder(result.reference_graph)
+    return result.definition_order
 
 
 @pytest.mark.parametrize("max_workers", [1, 4])

@@ -113,7 +113,7 @@ def test_independent_actions_validate_in_parallel():
         side_effect=synchronized_analyze,
     ):
         result = reference_graph_validator.ReferenceGraphValidator(
-            structural_result.reference_graph,
+            structural_result.definition_order,
             structural_result.definition_results,
             entry_action=structural_result.entry_action,
         ).validate(max_workers=2)
@@ -147,7 +147,7 @@ def test_referenced_action_finishes_before_referencing_action_starts():
         side_effect=record_order,
     ):
         reference_graph_validator.ReferenceGraphValidator(
-            structural_result.reference_graph,
+            structural_result.definition_order,
             structural_result.definition_results,
             entry_action=structural_result.entry_action,
         ).validate(max_workers=2)
@@ -180,7 +180,7 @@ def test_shared_referenced_definition_is_validated_once():
         side_effect=count_validation,
     ):
         reference_graph_validator.ReferenceGraphValidator(
-            structural_result.reference_graph,
+            structural_result.definition_order,
             structural_result.definition_results,
             entry_action=structural_result.entry_action,
         ).validate(max_workers=3)
@@ -222,7 +222,7 @@ def test_callers_share_the_completed_callee_contract():
         side_effect=collect_contract,
     ):
         reference_graph_validator.ReferenceGraphValidator(
-            structural_result.reference_graph,
+            structural_result.definition_order,
             structural_result.definition_results,
             entry_action=structural_result.entry_action,
         ).validate(max_workers=1)
@@ -258,7 +258,7 @@ def test_reference_failure_prevents_referencing_action_validation():
         pytest.raises(RuntimeError, match="/callee> validation failed"),
     ):
         reference_graph_validator.ReferenceGraphValidator(
-            structural_result.reference_graph,
+            structural_result.definition_order,
             structural_result.definition_results,
             entry_action=structural_result.entry_action,
         ).validate(max_workers=2)

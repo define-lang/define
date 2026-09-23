@@ -214,7 +214,7 @@ class Driver:
         # TODO: Make ReferenceGraphValidator return diagnostics instead of
         # adding them to definitions itself?
         validator = reference_graph_validator.ReferenceGraphValidator(
-            program_result.reference_graph,
+            program_result.definition_order,
             program_result.definition_results,
             entry_action=program_result.entry_action,
         )

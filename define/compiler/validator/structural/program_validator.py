@@ -26,7 +26,7 @@ from define.compiler import (
     parser,
 )
 from define.compiler.data_structures import define_path, typed_name_dict
-from define.compiler.graphs import reference_graph
+from define.compiler.graphs import reference_graph, reference_graph_order
 from define.compiler.validator import stats, validation_result
 from define.compiler.validator.structural import file_validator, path_tracker
 
@@ -215,14 +215,13 @@ class ProgramStructuralValidator:
             )
             if candidate.is_constructor:
                 entry_action = candidate
-        # TODO: Finalize the ReferenceGraph into a ReferenceGraphOrder here and
-        # retain only that order in ProgramValidationResult. Reference graph
-        # validation and codegen can then share the completed order while the
-        # mutable graph and its cycle-detection state are collected before
-        # reference graph validation begins. ReferenceGraphOrder should move out
-        # of reference_graph_executor as part of that ownership change.
+        definition_order = reference_graph_order.ReferenceGraphOrder(
+            self._reference_graph
+        )
+        # Later stages need only the compact order, not cycle-detection state.
+        del self._reference_graph
 
-        # The completed ReferenceGraph replaces these structural-only edges;
+        # The completed order replaces these structural-only edges;
         # retaining both would duplicate per-reference state during later stages.
         for file_result in file_results:
             for definition_result in file_result.definition_results:
@@ -231,7 +230,7 @@ class ProgramStructuralValidator:
             file_results=file_results,
             entry_action=entry_action,
             config_loading_time_ns=self._config_loading_time_ns,
-            reference_graph=self._reference_graph,
+            definition_order=definition_order,
             definition_results=self._definition_results,
         )
 
