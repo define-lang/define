@@ -199,10 +199,10 @@ def _emit_root(prefix: str, width: int) -> list[str]:
     target_paths = [_action_path(0, index) for index in range(width)]
     lines = [
         f"define the potential action<{name}> {{",
-        *_emit_out_definition(target_paths),
         f"{_OUTER_INDENT}it happens when {{",
         f"{_INNER_INDENT}this particle is created.",
         f"{_OUTER_INDENT}}} and it does {{",
+        *[_OUTER_INDENT + line for line in _emit_out_definition(target_paths)],
         f"{_INNER_INDENT}create a particle in position<out>.",
     ]
     for target_path in target_paths:

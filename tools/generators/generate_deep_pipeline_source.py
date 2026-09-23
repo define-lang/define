@@ -147,25 +147,23 @@ def _emit_processing_stage(
 
 
 def _emit_entry_point(prefix: str, pipelines: int) -> list[str]:
-    lines = [f"define the potential action<{_qualified(prefix, '/test')}> {{"]
+    lines = [
+        f"define the potential action<{_qualified(prefix, '/test')}> {{",
+        f"{_OUTER_INDENT}it happens when {{",
+        f"{_INNER_INDENT}this particle is created.",
+        f"{_OUTER_INDENT}}} and it does {{",
+    ]
     for pipeline in range(pipelines):
         first_action = _action_path("process_stage", pipeline, 0)
         lines.extend(
             [
-                f"{_OUTER_INDENT}define the position<pipeline_{pipeline}> {{",
-                f"{_INNER_INDENT}it may only contain particles where {{",
-                f"{_DEEP_INDENT}it has the action<{first_action}>.",
+                f"{_INNER_INDENT}define the position<pipeline_{pipeline}> {{",
+                f"{_DEEP_INDENT}it may only contain particles where {{",
+                f"{_DEEPEST_INDENT}it has the action<{first_action}>.",
+                f"{_DEEP_INDENT}}}",
                 f"{_INNER_INDENT}}}",
-                f"{_OUTER_INDENT}}}",
             ]
         )
-    lines.extend(
-        [
-            f"{_OUTER_INDENT}it happens when {{",
-            f"{_INNER_INDENT}this particle is created.",
-            f"{_OUTER_INDENT}}} and it does {{",
-        ]
-    )
 
     for pipeline in range(pipelines):
         first_action = _action_path("process_stage", pipeline, 0)

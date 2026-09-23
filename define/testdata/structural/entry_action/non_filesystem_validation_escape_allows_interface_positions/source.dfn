@@ -1,0 +1,11 @@
+# Validation tests can explicitly allow entry action interface positions.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<input>.
+    define the position<other>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        destroy the particle in position<input>.
+        destroy the particle in position<other>.
+    }
+}

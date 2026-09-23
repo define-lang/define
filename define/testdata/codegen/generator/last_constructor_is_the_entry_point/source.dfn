@@ -1,0 +1,27 @@
+# Later non-constructor definitions do not change which constructor starts the program.
+define the potential action<my.domain.com:my_lib:/first> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<item>.
+        create a particle in position<item>.
+    }
+}
+define the potential action<my.domain.com:my_lib:/last> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<item>.
+        create a particle in position<item>.
+    }
+}
+define the potential action<my.domain.com:my_lib:/later> {
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<item>.
+        create a particle in position<item>.
+    }
+}
+define the potential position<my.domain.com:my_lib:/final>.

@@ -9453,23 +9453,23 @@ define the potential action<mv:define-lang.org:compiler_memory:/layer0_a9> {
 }
 
 define the potential action<mv:define-lang.org:compiler_memory:/test> {
-    define the position<out> {
-        it may only contain particles where {
-            it has the action</layer0_a0>.
-            it has the action</layer0_a1>.
-            it has the action</layer0_a2>.
-            it has the action</layer0_a3>.
-            it has the action</layer0_a4>.
-            it has the action</layer0_a5>.
-            it has the action</layer0_a6>.
-            it has the action</layer0_a7>.
-            it has the action</layer0_a8>.
-            it has the action</layer0_a9>.
-        }
-    }
     it happens when {
         this particle is created.
     } and it does {
+        define the position<out> {
+            it may only contain particles where {
+                it has the action</layer0_a0>.
+                it has the action</layer0_a1>.
+                it has the action</layer0_a2>.
+                it has the action</layer0_a3>.
+                it has the action</layer0_a4>.
+                it has the action</layer0_a5>.
+                it has the action</layer0_a6>.
+                it has the action</layer0_a7>.
+                it has the action</layer0_a8>.
+                it has the action</layer0_a9>.
+            }
+        }
         create a particle in position<out>.
         create a particle in position<out>::action</layer0_a0>::position<src>.
         create a particle in position<out>::action</layer0_a0>::position<trigger>.

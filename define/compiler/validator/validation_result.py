@@ -141,25 +141,13 @@ class ProgramValidationResult(msgspec.Struct):
     """Full result of validating a Define program."""
 
     file_results: list[FileValidationResult]
+    entry_action: ast.ActionDefinition | None
     config_loading_time_ns: int
     reference_graph: reference_graph.ReferenceGraph
     definition_results: typed_name_dict.TypedNameDict[
         ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
         DefinitionValidationResult,
     ]
-
-    @property
-    def entry_action(self) -> ast.ActionDefinition | None:
-        """Return the entry file's constructor, if it defines one."""
-        return next(
-            (
-                definition_result.definition
-                for definition_result in self.file_results[0].definition_results
-                if isinstance(definition_result.definition, ast.ActionDefinition)
-                and definition_result.definition.is_constructor
-            ),
-            None,
-        )
 
     @property
     def all_diagnostics(self) -> list[diagnostics.Diagnostic]:

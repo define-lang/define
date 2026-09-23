@@ -72,6 +72,7 @@ py_test(
     srcs = ["generator_test.py"],
     data = ["//define/testdata/codegen/generator"],
     deps = [
+        ":generated_program_runner",
         ":generator",
         ":test_helpers",
         "//define/compiler:conftest",

@@ -168,10 +168,7 @@ class ProgramStructuralValidator:
             pool.submit(initial_context)
             self._run_pool_loop(pool)
 
-        file_results = self._path_tracker.completed_results()
-        if not self._allow_entry_action_interface_positions:
-            self._validate_entry_action_interface_positions(file_results[0])
-        return self._build_program_result(file_results)
+        return self._build_program_result(self._path_tracker.completed_results())
 
     def validate_program_non_filesystem(
         self,
@@ -195,16 +192,29 @@ class ProgramStructuralValidator:
             self._resolve_non_filesystem_references(result, pool)
             self._process_completed_result(result, pool, submit_referenced_files=False)
             self._run_pool_loop(pool)
-        # TODO: Enforce the entry-action interface-position rule here after the
-        # language defines which action is the entry point when non-filesystem
-        # source contains multiple actions.
-        return self._build_program_result(self._path_tracker.completed_results())
+        return self._build_program_result(
+            self._path_tracker.completed_results(), select_last_constructor=True
+        )
 
     def _build_program_result(
         self,
         file_results: list[validation_result.FileValidationResult],
+        *,
+        select_last_constructor: bool = False,
     ) -> validation_result.ProgramValidationResult:
-        """Wrap file results into a ProgramValidationResult."""
+        """Validate the entry action and assemble the program result."""
+        entry_action_result = self._select_entry_action(
+            file_results[0], select_last_constructor=select_last_constructor
+        )
+        entry_action = None
+        if entry_action_result is not None:
+            if not self._allow_entry_action_interface_positions:
+                self._validate_entry_action_interface_positions(entry_action_result)
+            candidate = typing.cast(
+                "ast.ActionDefinition", entry_action_result.definition
+            )
+            if candidate.is_constructor:
+                entry_action = candidate
         # TODO: Finalize the ReferenceGraph into a ReferenceGraphOrder here and
         # retain only that order in ProgramValidationResult. Reference graph
         # validation and codegen can then share the completed order while the
@@ -219,27 +229,41 @@ class ProgramStructuralValidator:
                 definition_result.reference_edges.clear()
         return validation_result.ProgramValidationResult(
             file_results=file_results,
+            entry_action=entry_action,
             config_loading_time_ns=self._config_loading_time_ns,
             reference_graph=self._reference_graph,
             definition_results=self._definition_results,
         )
 
     @staticmethod
-    def _validate_entry_action_interface_positions(
+    def _select_entry_action(
         entry_file_result: validation_result.FileValidationResult,
-    ):
-        for definition_result in entry_file_result.definition_results:
+        *,
+        select_last_constructor: bool = False,
+    ) -> validation_result.DefinitionValidationResult | None:
+        definitions = entry_file_result.definition_results
+        candidates = reversed(definitions) if select_last_constructor else definitions
+        for definition_result in candidates:
             definition = definition_result.definition
             if not isinstance(definition, ast.ActionDefinition):
                 continue
-            for position in definition.interface_positions:
-                definition_result.add_diagnostic(
-                    diagnostics.EntryPointInterfacePositionDiagnostic(
-                        location=position.typed_name.location,
-                        position_name=position.typed_name.source_typed_name,
-                    )
+            if select_last_constructor and not definition.is_constructor:
+                continue
+            return definition_result
+        return None
+
+    @staticmethod
+    def _validate_entry_action_interface_positions(
+        entry_action_result: validation_result.DefinitionValidationResult,
+    ):
+        definition = typing.cast("ast.ActionDefinition", entry_action_result.definition)
+        for position in definition.interface_positions:
+            entry_action_result.add_diagnostic(
+                diagnostics.EntryPointInterfacePositionDiagnostic(
+                    location=position.typed_name.location,
+                    position_name=position.typed_name.source_typed_name,
                 )
-            return
+            )
 
     def _run_pool_loop(
         self,

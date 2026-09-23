@@ -464,10 +464,10 @@ def _emit_entry_constructor(prefix: str) -> list[str]:
     name = _qualified(prefix, "/boot")
     return [
         f"define the potential action<{name}> {{",
-        f"{_OUTER_INDENT}define the position<_noop>.",
         f"{_OUTER_INDENT}it happens when {{",
         f"{_INNER_INDENT}this particle is created.",
         f"{_OUTER_INDENT}}} and it does {{",
+        f"{_INNER_INDENT}define the position<_noop>.",
         f"{_INNER_INDENT}create a particle in position<_noop>.",
         f"{_INNER_INDENT}destroy the particle in position<_noop>.",
         f"{_OUTER_INDENT}}}",

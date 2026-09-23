@@ -5627,49 +5627,49 @@ define the potential action<mv:define-lang.org:compiler_memory:/pipeline_7/proce
 }
 
 define the potential action<mv:define-lang.org:compiler_memory:/test> {
-    define the position<pipeline_0> {
-        it may only contain particles where {
-            it has the action</pipeline_0/process_stage_0>.
-        }
-    }
-    define the position<pipeline_1> {
-        it may only contain particles where {
-            it has the action</pipeline_1/process_stage_0>.
-        }
-    }
-    define the position<pipeline_2> {
-        it may only contain particles where {
-            it has the action</pipeline_2/process_stage_0>.
-        }
-    }
-    define the position<pipeline_3> {
-        it may only contain particles where {
-            it has the action</pipeline_3/process_stage_0>.
-        }
-    }
-    define the position<pipeline_4> {
-        it may only contain particles where {
-            it has the action</pipeline_4/process_stage_0>.
-        }
-    }
-    define the position<pipeline_5> {
-        it may only contain particles where {
-            it has the action</pipeline_5/process_stage_0>.
-        }
-    }
-    define the position<pipeline_6> {
-        it may only contain particles where {
-            it has the action</pipeline_6/process_stage_0>.
-        }
-    }
-    define the position<pipeline_7> {
-        it may only contain particles where {
-            it has the action</pipeline_7/process_stage_0>.
-        }
-    }
     it happens when {
         this particle is created.
     } and it does {
+        define the position<pipeline_0> {
+            it may only contain particles where {
+                it has the action</pipeline_0/process_stage_0>.
+            }
+        }
+        define the position<pipeline_1> {
+            it may only contain particles where {
+                it has the action</pipeline_1/process_stage_0>.
+            }
+        }
+        define the position<pipeline_2> {
+            it may only contain particles where {
+                it has the action</pipeline_2/process_stage_0>.
+            }
+        }
+        define the position<pipeline_3> {
+            it may only contain particles where {
+                it has the action</pipeline_3/process_stage_0>.
+            }
+        }
+        define the position<pipeline_4> {
+            it may only contain particles where {
+                it has the action</pipeline_4/process_stage_0>.
+            }
+        }
+        define the position<pipeline_5> {
+            it may only contain particles where {
+                it has the action</pipeline_5/process_stage_0>.
+            }
+        }
+        define the position<pipeline_6> {
+            it may only contain particles where {
+                it has the action</pipeline_6/process_stage_0>.
+            }
+        }
+        define the position<pipeline_7> {
+            it may only contain particles where {
+                it has the action</pipeline_7/process_stage_0>.
+            }
+        }
         create a particle in position<pipeline_0>.
         create a particle in position<pipeline_0>::action</pipeline_0/process_stage_0>::position<record>.
         create a particle in position<pipeline_0>::action</pipeline_0/process_stage_0>::position<record>::position</temporary_metadata>.

@@ -85,11 +85,10 @@ _TWO_CALLEE_AND_CALLER_SOURCE = _CALLEE_AND_POSITION_SOURCE.replace(
 
 
 def _structural_result(source: str) -> validation_result.ProgramValidationResult:
-    result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            source, max_workers=1
-        )
-    )
+    # These coordinator tests validate callable actions without a program startup.
+    result = program_validator.ProgramStructuralValidator(
+        allow_entry_action_interface_positions=True
+    ).validate_program_non_filesystem(source, max_workers=1)
     assert_no_errors(result)
     return result
 

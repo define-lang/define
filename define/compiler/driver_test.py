@@ -271,10 +271,10 @@ class TestSourceCompilation:
     def test_constructor_entry_point_writes_output(self, tmp_path: Path):
         source = (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
-            "    define the position<output>.\n"
             "    it happens when {\n"
             "        this particle is created.\n"
             "    } and it does {\n"
+            "        define the position<output>.\n"
             "        create a particle in position<output>.\n"
             "    }\n"
             "}\n"

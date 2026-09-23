@@ -1,0 +1,15 @@
+# The supplied entry action calls a constructor loaded from the filesystem.
+define the potential action<my.domain.com:my_lib:/start> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<job> {
+            it may only contain particles where {
+                it has the action</worker>.
+            }
+        }
+        create a particle in position<job>.
+        destroy the particle in position<job>::action</worker>::position<item>.
+        destroy the particle in position<job>.
+    }
+}

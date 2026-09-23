@@ -13001,10 +13001,10 @@ define the potential action<mv:define-lang.org:compiler_memory:/action_649> {
 }
 
 define the potential action<mv:define-lang.org:compiler_memory:/boot> {
-    define the position<_noop>.
     it happens when {
         this particle is created.
     } and it does {
+        define the position<_noop>.
         create a particle in position<_noop>.
         destroy the particle in position<_noop>.
     }
