@@ -1,0 +1,24 @@
+filegroup(
+    name = "codegen_testdata",
+    testonly = True,
+    srcs = glob(
+        ["**"],
+        exclude = [
+            "**/expected_trace/**",
+            "**/operation_trace.txt",
+        ],
+    ),
+    visibility = ["//define/testdata/codegen:__pkg__"],
+)
+
+filegroup(
+    name = "tracing_testdata",
+    testonly = True,
+    srcs = glob(
+        ["**"],
+        exclude = [
+            "**/expected/**",
+        ],
+    ),
+    visibility = ["//define/testdata/codegen:__pkg__"],
+)
