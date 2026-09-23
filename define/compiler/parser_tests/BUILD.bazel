@@ -245,6 +245,18 @@ py_test(
     ],
 )
 
+py_test(
+    name = "value_definition_test",
+    size = "small",
+    srcs = ["value_definition_test.py"],
+    deps = [
+        ":conftest",
+        ":test_helpers",
+        "//define/compiler:parser_exceptions",
+        "@pypi//pytest",
+    ],
+)
+
 # --- Format checking ---
 
 format_test(
@@ -279,5 +291,6 @@ pyright_test(
         ":test_helpers",
         ":trigger_conditions_test",
         ":typed_name_references_test",
+        ":value_definition_test",
     ],
 )

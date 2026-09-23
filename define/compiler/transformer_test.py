@@ -609,6 +609,42 @@ def test_local_position_definition_with_constraints_fields():
 # Quality definitions
 
 
+def test_value_definition_fields():
+    source = "define the potential value<mv:example.com:example:/number/rational>.\n"
+    program = test_helpers.parse_and_transform(source)
+    assert len(program.definitions) == 1
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.ValueDefinition)
+    assert definition.quality_implications == ()
+    assert definition.typed_name.name_type == ast.NameType.VALUE
+    name = definition.typed_name.name_content
+    assert isinstance(name, ast.DefinitionGlobalNameContent)
+    assert name.source_name == "mv:example.com:example:/number/rational"
+    assert definition.location == ast.SourceLocation(
+        line=1, column=1, end_line=1, end_column=len(source)
+    )
+    assert _slice(source, definition.location) == source.rstrip("\n")
+    assert (
+        _slice(source, definition.typed_name.location)
+        == "value<mv:example.com:example:/number/rational>"
+    )
+    assert _slice(source, name.location) == name.source_name
+    assert program.location == definition.location
+
+
+def test_value_definition_between_other_definitions():
+    source = (
+        _SIMPLE_POSITION
+        + "define the potential value<standard:/number/rational>.\n"
+        + _CONSTRUCTOR_ACTION
+    )
+    program = test_helpers.parse_and_transform(source)
+    assert len(program.definitions) == 3
+    assert isinstance(program.definitions[0], ast.PositionDefinition)
+    assert isinstance(program.definitions[1], ast.ValueDefinition)
+    assert isinstance(program.definitions[2], ast.ActionDefinition)
+
+
 def test_position_definition_bare_fields():
     definition = _only_position(_SIMPLE_POSITION)
     assert isinstance(definition.typed_name, ast.GlobalTypedNameInDefinition)

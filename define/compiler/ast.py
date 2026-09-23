@@ -31,6 +31,7 @@ class NameType(enum.StrEnum):
 
     POSITION = "position"
     ACTION = "action"
+    VALUE = "value"
 
 
 class ASTNodeMeta(msgspec.StructMeta, abc.ABCMeta):
@@ -133,10 +134,29 @@ class Program(ASTNode):
 
 
 class QualityDefinition(ASTNode):
-    """Base class for quality definitions (positions and actions)."""
+    """Base class for quality definitions."""
 
     typed_name: GlobalTypedNameInDefinition
     quality_implications: tuple[QualityImplicationStatement, ...]
+
+
+class ValueDefinition(QualityDefinition):
+    """Represents a value type definition."""
+
+    @classmethod
+    def from_name(
+        cls, *, name: DefinitionGlobalNameContent, location: SourceLocation
+    ) -> Self:
+        """Initialize with a global name."""
+        return cls(
+            typed_name=GlobalTypedNameInDefinition(
+                name_type=NameType.VALUE,
+                name_content=name,
+                location=SourceLocation.from_definition_name(name, NameType.VALUE),
+            ),
+            quality_implications=(),
+            location=location,
+        )
 
 
 class PositionDefinition(QualityDefinition):

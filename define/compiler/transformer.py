@@ -157,6 +157,18 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
         return self._location(start=start, end=name, end_column_offset=2)
 
     @_strip_discard
+    def value_definition(
+        self, items: list[lark_cython.Token | ast.DefinitionGlobalNameContent]
+    ) -> ast.ValueDefinition:
+        """Transform a value type definition."""
+        keyword = cast("lark_cython.Token", items[0])
+        name = cast("ast.DefinitionGlobalNameContent", items[1])
+        return ast.ValueDefinition.from_name(
+            name=name,
+            location=self._location_for_bare_definition(start=keyword, name=name),
+        )
+
+    @_strip_discard
     def position_definition(
         self,
         items: list[

@@ -753,6 +753,7 @@ def syntactic_sources(draw: st.DrawFn) -> str:
             st.sampled_from(
                 [
                     "position_simple",
+                    "value",
                     "position",
                     "action_simple",
                     "action_block",
@@ -763,6 +764,8 @@ def syntactic_sources(draw: st.DrawFn) -> str:
         )
         if kind in ["position_simple", "position"]:
             defs.append(draw(position_definitions()))
+        elif kind == "value":
+            defs.append(f"define the potential value<{draw(global_names())}>.\n")
         elif kind == "action_simple":
             defs.append(draw(action_definitions_simple()))
         elif kind == "action_block":
