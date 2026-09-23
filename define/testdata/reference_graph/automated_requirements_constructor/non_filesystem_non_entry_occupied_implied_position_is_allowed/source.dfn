@@ -1,0 +1,18 @@
+# Earlier constructors may infer occupied implied positions without restricting the entry point.
+define the potential position<my.domain.com:my_lib:/implied>.
+define the potential action<my.domain.com:my_lib:/first> {
+    it also assigns the position</implied>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        destroy the particle in position</implied>.
+    }
+}
+define the potential action<my.domain.com:my_lib:/start> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<item>.
+        create a particle in position<item>.
+    }
+}

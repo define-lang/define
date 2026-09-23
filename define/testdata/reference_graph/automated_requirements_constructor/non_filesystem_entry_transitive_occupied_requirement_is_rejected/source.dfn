@@ -1,0 +1,20 @@
+# Occupied implied-position requirements propagate from the called action to the entry point.
+define the potential position<my.domain.com:my_lib:/implied>.
+define the potential action<my.domain.com:my_lib:/worker> {
+    it also assigns the position</implied>.
+    define the position<trigger>.
+    it happens when {
+        the position<trigger> has a particle.
+    } and it does {
+        destroy the particle in position</implied>.
+        destroy the particle in position<trigger>.
+    }
+}
+define the potential action<my.domain.com:my_lib:/start> {
+    it also assigns the action</worker>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in action</worker>::position<trigger>.
+    }
+}

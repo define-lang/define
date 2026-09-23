@@ -18,6 +18,7 @@ from define.compiler.validator.test_helpers import assert_no_errors
 if TYPE_CHECKING:
     from define.compiler.conftest import (
         ValidateProject,
+        ValidateTestdataNonFilesystemWithReferenceGraph,
         ValidateTestdataProjectWithReferenceGraph,
     )
 
@@ -25,6 +26,61 @@ _TEST = "action<my.domain.com:my_lib:/test>"
 _CONSUMER = "action<my.domain.com:my_lib:/consumer>"
 _INITIALIZER = "action<my.domain.com:my_lib:/initializer>"
 _P = "action<my.domain.com:my_lib:/p>"
+
+
+def test_non_filesystem_entry_occupied_implied_position_is_rejected(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
+    assert len(result.all_diagnostics) == 1
+    diagnostic = result.all_diagnostics[0]
+    assert isinstance(
+        diagnostic, diagnostics.EntryPointOccupiedImpliedPositionRequirementDiagnostic
+    )
+    assert diagnostic.position_name == "position</implied>"
+    assert diagnostic.location.line == 16
+    assert diagnostic.location.column == 33
+    assert diagnostic.location.file_path is None
+
+
+def test_non_filesystem_non_entry_occupied_implied_position_is_allowed(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert_no_errors(result)
+
+
+def test_non_filesystem_entry_transitive_occupied_requirement_is_rejected(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
+    assert len(result.all_diagnostics) == 1
+    diagnostic = result.all_diagnostics[0]
+    assert isinstance(
+        diagnostic, diagnostics.EntryPointOccupiedImpliedPositionRequirementDiagnostic
+    )
+    assert diagnostic.position_name == "position</implied>"
+    assert diagnostic.location.line == 18
+    assert diagnostic.location.column == 30
+    assert diagnostic.location.file_path is None
+
+
+def test_non_filesystem_entry_filesystem_occupied_requirement_is_rejected(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
+    assert len(result.all_diagnostics) == 1
+    diagnostic = result.all_diagnostics[0]
+    assert isinstance(
+        diagnostic, diagnostics.EntryPointOccupiedImpliedPositionRequirementDiagnostic
+    )
+    assert diagnostic.position_name == "position</implied>"
+    assert diagnostic.location.line == 7
+    assert diagnostic.location.column == 30
+    assert diagnostic.location.file_path is None
 
 
 def test_entry_point_occupied_implied_position_requirement_reports_diagnostic(

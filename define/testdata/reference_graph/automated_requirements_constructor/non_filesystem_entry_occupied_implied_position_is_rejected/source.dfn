@@ -1,0 +1,19 @@
+# Only the last constructor is the entry point, even with a later position definition.
+define the potential position<my.domain.com:my_lib:/implied>.
+define the potential action<my.domain.com:my_lib:/first> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<item>.
+        create a particle in position<item>.
+    }
+}
+define the potential action<my.domain.com:my_lib:/start> {
+    it also assigns the position</implied>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        destroy the particle in position</implied>.
+    }
+}
+define the potential position<my.domain.com:my_lib:/later>.
