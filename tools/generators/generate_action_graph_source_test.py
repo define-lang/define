@@ -119,3 +119,111 @@ class TestFullDriver:
 
         assert result.all_exceptions == []
         assert result.all_diagnostics == []
+
+
+@pytest.mark.parametrize(("interval", "expected"), [(1, 4), (2, 8), (0, 12)])
+def test_bottleneck_layers(interval: int, expected: int):
+    source = (
+        "\n".join(
+            gen.generate_source_lines(
+                layers=4,
+                width=3,
+                fan_out=3,
+                destructor_fraction=0,
+                bottleneck_every=interval,
+            )
+        )
+        + "\n"
+    )
+    result = driver.Driver().validate_source(source).program_validation
+    assert result.all_exceptions == []
+    assert result.all_diagnostics == []
+    assert len(result.definition_results) == expected + 1
+
+
+def test_negative_bottleneck_interval():
+    with pytest.raises(ValueError, match="bottleneck_every"):
+        gen.generate_source_lines(bottleneck_every=-1)
+
+
+def test_bottleneck_cli(tmp_path: Path):
+    output = tmp_path / "bottlenecks.dfn"
+    result = click.testing.CliRunner().invoke(
+        gen.main,
+        [
+            "--output",
+            str(output),
+            "--layers",
+            "4",
+            "--width",
+            "3",
+            "--fan-out",
+            "3",
+            "--destructor-fraction",
+            "0",
+            "--bottleneck-every",
+            "2",
+        ],
+    )
+    assert result.exit_code == 0
+    assert (
+        output.read_text()
+        == "\n".join(
+            gen.generate_source_lines(
+                layers=4, width=3, fan_out=3, destructor_fraction=0, bottleneck_every=2
+            )
+        )
+        + "\n"
+    )
+
+
+def test_destructor_cascades():
+    source = (
+        "\n".join(
+            gen.generate_source_lines(
+                layers=2, width=1, fan_out=1, destructor_fraction=1, destructor_depth=4
+            )
+        )
+        + "\n"
+    )
+    result = driver.Driver().validate_source(source).program_validation
+    assert result.all_exceptions == []
+    assert result.all_diagnostics == []
+    assert source.count("this particle is being destroyed.") == 4
+    assert len(result.definition_results) == 8
+
+
+def test_invalid_destructor_depth():
+    with pytest.raises(ValueError, match="destructor_depth"):
+        gen.generate_source_lines(destructor_depth=0)
+
+
+def test_destructor_depth_cli(tmp_path: Path):
+    output = tmp_path / "destructors.dfn"
+    result = click.testing.CliRunner().invoke(
+        gen.main,
+        [
+            "--output",
+            str(output),
+            "--layers",
+            "2",
+            "--width",
+            "1",
+            "--fan-out",
+            "1",
+            "--destructor-fraction",
+            "1",
+            "--destructor-depth",
+            "3",
+        ],
+    )
+    assert result.exit_code == 0
+    assert (
+        output.read_text()
+        == "\n".join(
+            gen.generate_source_lines(
+                layers=2, width=1, fan_out=1, destructor_fraction=1, destructor_depth=3
+            )
+        )
+        + "\n"
+    )

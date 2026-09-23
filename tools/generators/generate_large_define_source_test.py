@@ -136,3 +136,25 @@ class TestFullDriver:
 
         assert result.all_exceptions == []
         assert result.all_diagnostics == []
+
+
+def test_malformed_eof_preserves_valid_prefix():
+    valid = gen.generate_source_lines(500)
+    invalid = gen.generate_source_lines(500, malformed_eof=True)
+    assert invalid[:-1] == valid
+    result = parser.Parser().parse_and_transform("\n".join(invalid) + "\n")
+    assert result.exception is not None
+    assert result.diagnostics == []
+    assert result.program is None
+
+
+def test_malformed_eof_cli(tmp_path: Path):
+    output = tmp_path / "unfinished.dfn"
+    result = click.testing.CliRunner().invoke(
+        gen.main, ["--output", str(output), "--lines", "500", "--malformed-eof"]
+    )
+    assert result.exit_code == 0
+    assert (
+        output.read_text()
+        == "\n".join(gen.generate_source_lines(500, malformed_eof=True)) + "\n"
+    )

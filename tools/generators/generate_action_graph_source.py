@@ -96,25 +96,41 @@ def _emit_header() -> list[str]:
     ]
 
 
-def _emit_destructor_definitions(prefix: str) -> list[str]:
+def _emit_destructor_definitions(prefix: str, depth: int) -> list[str]:
     marker = _qualified(prefix, _MARKER_POSITION)
-    destructor = _qualified(prefix, _MARKER_DESTRUCTOR)
-    return [
-        f"define the potential position<{marker}>.",
-        "",
-        f"define the potential action<{destructor}> {{",
-        f"{_OUTER_INDENT}it also assigns the position<{_MARKER_POSITION}>.",
-        f"{_OUTER_INDENT}it happens when {{",
-        f"{_INNER_INDENT}this particle is being destroyed.",
-        f"{_OUTER_INDENT}}} and it does {{",
+    lines = [f"define the potential position<{marker}>.", ""]
+    for index in reversed(range(depth)):
+        path = _MARKER_DESTRUCTOR if index == 0 else f"{_MARKER_DESTRUCTOR}_{index}"
+        lines.extend(
+            [
+                f"define the potential action<{_qualified(prefix, path)}> {{",
+                f"{_OUTER_INDENT}it also assigns the position<{_MARKER_POSITION}>.",
+                f"{_OUTER_INDENT}it happens when {{",
+                f"{_INNER_INDENT}this particle is being destroyed.",
+                f"{_OUTER_INDENT}}} and it does {{",
+            ]
+        )
         # A destructor must leave every contracted position as it found it.
         # Create-then-destroy of the implied marker nets to zero.
-        f"{_INNER_INDENT}create a particle in position<{_MARKER_POSITION}>.",
-        f"{_INNER_INDENT}destroy the particle in position<{_MARKER_POSITION}>.",
-        f"{_OUTER_INDENT}}}",
-        "}",
-        "",
-    ]
+        lines.extend(
+            [
+                f"{_INNER_INDENT}create a particle in position<{_MARKER_POSITION}>.",
+                f"{_INNER_INDENT}destroy the particle in position<{_MARKER_POSITION}>.",
+            ]
+        )
+        if index + 1 < depth:
+            lines.extend(
+                [
+                    f"{_INNER_INDENT}define the position<cleanup> {{",
+                    f"{_DEEP_INDENT}it may only contain particles where {{",
+                    f"{_DEEP_INDENT}    it has the action<{_MARKER_DESTRUCTOR}_{index + 1}>.",
+                    f"{_DEEP_INDENT}}}",
+                    f"{_INNER_INDENT}}}",
+                    f"{_INNER_INDENT}create a particle in position<cleanup>.",
+                ]
+            )
+        lines.extend([f"{_OUTER_INDENT}}}", "}", ""])
+    return lines
 
 
 def _emit_src_definition(*, carries_destructor: bool) -> list[str]:
@@ -225,6 +241,8 @@ def generate_source_lines(
     fan_out: int = DEFAULT_FAN_OUT,
     fqun_prefix: str = DEFAULT_FQUN_PREFIX,
     destructor_fraction: float = DEFAULT_DESTRUCTOR_FRACTION,
+    bottleneck_every: int = 0,
+    destructor_depth: int = 1,
 ) -> list[str]:
     """Return the generated source as a list of lines (no trailing newlines).
 
@@ -243,26 +261,36 @@ def generate_source_lines(
         raise ValueError(
             f"destructor_fraction must be in [0, 1], got {destructor_fraction}"
         )
+    if bottleneck_every < 0:
+        raise ValueError("bottleneck_every must be at least 0")
+    if destructor_depth < 1:
+        raise ValueError("destructor_depth must be at least 1")
 
     stride = _destructor_stride(destructor_fraction)
 
     lines: list[str] = []
     lines.extend(_emit_header())
     if stride > 0:
-        lines.extend(_emit_destructor_definitions(fqun_prefix))
+        lines.extend(_emit_destructor_definitions(fqun_prefix, destructor_depth))
 
     # Emit leaf-layer actions first so every reference is a back-reference
     # to an already-defined name.
     global_index = 0
     for layer in reversed(range(layers)):
         is_leaf = layer == layers - 1
-        for index in range(width):
+        layer_width = (
+            1 if bottleneck_every and (layer + 1) % bottleneck_every == 0 else width
+        )
+        next_width = (
+            1 if bottleneck_every and (layer + 2) % bottleneck_every == 0 else width
+        )
+        for index in range(layer_width):
             if is_leaf:
                 target_paths: list[str] = []
             else:
                 target_paths = [
                     _action_path(layer + 1, target)
-                    for target in _targets(index, width, fan_out)
+                    for target in _targets(index, next_width, min(fan_out, next_width))
                 ]
             lines.extend(
                 _emit_action(
@@ -275,7 +303,7 @@ def generate_source_lines(
             )
             global_index += 1
 
-    lines.extend(_emit_root(fqun_prefix, width))
+    lines.extend(_emit_root(fqun_prefix, 1 if bottleneck_every == 1 else width))
     return lines[:-1]
 
 
@@ -286,6 +314,8 @@ def write_to_path(
     fan_out: int = DEFAULT_FAN_OUT,
     fqun_prefix: str = DEFAULT_FQUN_PREFIX,
     destructor_fraction: float = DEFAULT_DESTRUCTOR_FRACTION,
+    bottleneck_every: int = 0,
+    destructor_depth: int = 1,
 ) -> int:
     """Write generated source to ``output``. Returns the number of lines written."""
     lines = generate_source_lines(
@@ -294,11 +324,27 @@ def write_to_path(
         fan_out=fan_out,
         fqun_prefix=fqun_prefix,
         destructor_fraction=destructor_fraction,
+        bottleneck_every=bottleneck_every,
+        destructor_depth=destructor_depth,
     )
     return generator_io.write_lines(output, lines)
 
 
 @click.command()
+@click.option(
+    "--destructor-depth",
+    type=generator_cli.POSITIVE_INTEGER,
+    default=1,
+    show_default=True,
+    help="Destructors in each automatic destruction cascade.",
+)
+@click.option(
+    "--bottleneck-every",
+    type=generator_cli.NONNEGATIVE_INTEGER,
+    default=0,
+    show_default=True,
+    help="Reduce every Nth layer to one action; zero keeps every layer wide.",
+)
 @click.option(
     "--output", type=generator_cli.OUTPUT_FILE, required=True, help="Generated file."
 )
@@ -343,6 +389,8 @@ def main(
     fan_out: int,
     fqun_prefix: str,
     destructor_fraction: float,
+    bottleneck_every: int,
+    destructor_depth: int,
 ):
     """Generate a Define source file with a dense action call graph.
 
@@ -368,6 +416,8 @@ def main(
             fan_out=fan_out,
             fqun_prefix=fqun_prefix,
             destructor_fraction=destructor_fraction,
+            bottleneck_every=bottleneck_every,
+            destructor_depth=destructor_depth,
         )
     )
     generator_cli.report_written("lines", written, output)

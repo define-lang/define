@@ -453,6 +453,8 @@ def generate_source_lines(
     target_lines: int,
     fqun: str = DEFAULT_FQUN,
     max_chain_length: int = DEFAULT_MAX_CHAIN_LENGTH,
+    *,
+    malformed_eof: bool = False,
 ) -> list[str]:
     """Return the generated source as a list of lines (no trailing newlines).
 
@@ -495,6 +497,8 @@ def generate_source_lines(
         step += 1
 
     lines.extend(close_lines)
+    if malformed_eof:
+        lines.append(f"define the potential action<{fqun_prefix}:/unfinished> {{")
     return lines
 
 
@@ -503,15 +507,25 @@ def write_to_path(
     target_lines: int,
     fqun: str = DEFAULT_FQUN,
     max_chain_length: int = DEFAULT_MAX_CHAIN_LENGTH,
+    *,
+    malformed_eof: bool = False,
 ) -> int:
     """Write generated source to ``output``. Returns the number of lines written."""
     lines = generate_source_lines(
-        target_lines, fqun=fqun, max_chain_length=max_chain_length
+        target_lines,
+        fqun=fqun,
+        max_chain_length=max_chain_length,
+        malformed_eof=malformed_eof,
     )
     return generator_io.write_lines(output, lines)
 
 
 @click.command()
+@click.option(
+    "--malformed-eof",
+    is_flag=True,
+    help="Append an unfinished definition after the valid source.",
+)
 @click.option(
     "--output", type=generator_cli.OUTPUT_FILE, required=True, help="Generated file."
 )
@@ -536,7 +550,14 @@ def write_to_path(
     show_default=True,
     help="Longest chained reference to emit inside the main action.",
 )
-def main(output: Path, target_lines: int, fqun: str, max_chain_length: int):
+def main(
+    output: Path,
+    target_lines: int,
+    fqun: str,
+    max_chain_length: int,
+    *,
+    malformed_eof: bool,
+):
     """Generate a large, syntactically-diverse Define source file.
 
     Emits one .dfn holding a single enormous Action Statements Block plus a pool
@@ -552,6 +573,7 @@ def main(output: Path, target_lines: int, fqun: str, max_chain_length: int):
             target_lines,
             fqun=fqun,
             max_chain_length=max_chain_length,
+            malformed_eof=malformed_eof,
         )
     )
     generator_cli.report_written("lines", written, output)

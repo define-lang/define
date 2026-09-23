@@ -12,21 +12,14 @@ description: >-
 Measure and explain; do not optimize unless asked.
 
 When invoked without any additional instructions, immediately run a general wall
-profile: generate every workload below at its default settings, capture and
-analyze each profile, and report the results. Do not ask what to profile. Treat
-any explicit user instructions as overriding this default.
+profile: generate every valid-source workload in the generator README at its
+default settings, capture and analyze each profile, and report the results. Do
+not ask what to profile. Treat any explicit user instructions as overriding this
+default.
 
-Use fresh inputs from `tools/generators/`:
-
-| Generator                               | Stress                        |
-| --------------------------------------- | ----------------------------- |
-| `generate_large_define_source`          | parsing                       |
-| `generate_action_graph_source`          | reference-graph validation    |
-| `generate_action_codegen_source`        | action code generation        |
-| `generate_particle_operations_source`   | Particle Operation validation |
-| `generate_reference_graph_project`      | cross-file references         |
-| `generate_deep_pipeline_source`         | requirement propagation       |
-| `generate_destruction_contracts_source` | Destruction Contracts         |
+Use fresh inputs from `tools/generators/`. Read
+[the generator README](../../../tools/generators/README.md) to select generators
+and understand their workloads and caveats.
 
 Invoke each generator from the workspace root through its Bazel binary:
 
@@ -34,14 +27,15 @@ Invoke each generator from the workspace root through its Bazel binary:
 bazelisk run --noshow_progress --ui_event_filters=-info //tools/generators:<generator> -- --output <path>
 ```
 
-Replace `<generator>` with a name from the table. Read that generator's `--help`
-for its output requirements and available options. Relative output paths resolve
-from the Bazel workspace.
+Replace `<generator>` with a name from the README. Read that generator's
+`--help` for its output requirements and available options. Relative output
+paths resolve from the Bazel workspace.
 
-For a general profile, run every generator at its default. For focused work,
-inspect the relevant generator's `--help` and choose options that exercise the
-requested code. Regenerate inputs and require no compiler diagnostics or
-profiling errors.
+For a general profile, run every generator that produces valid source at its
+default settings; omit generators that intentionally produce diagnostics. For
+focused work, inspect the relevant generator's `--help` and choose options that
+exercise the requested code. Regenerate inputs and require no compiler
+diagnostics or profiling errors.
 
 Before using the profiling tools, prepare the workspace's local Python
 environment:

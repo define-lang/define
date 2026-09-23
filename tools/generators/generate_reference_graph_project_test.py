@@ -6,7 +6,7 @@ from pathlib import Path
 import click.testing
 import pytest
 
-from define.compiler import driver
+from define.compiler import diagnostics, driver
 from tools.generators import generate_reference_graph_project as gen
 
 
@@ -115,3 +115,174 @@ class TestGeneratedProjectCompiles:
         assert result.all_exceptions == []
         assert result.all_diagnostics == []
         assert (output_dir / "__main__.py").is_file()
+
+
+@pytest.mark.parametrize(
+    "shape",
+    [
+        gen.Shape.INDEPENDENT,
+        gen.Shape.CHAIN,
+        gen.Shape.FAN_IN,
+        gen.Shape.DEPTH_UPDATES,
+        gen.Shape.DIAMONDS,
+        gen.Shape.BOTTLENECKS,
+        gen.Shape.CONFIG_CHAIN,
+    ],
+)
+@pytest.mark.parametrize("modules", [1, 7])
+def test_structured_projects_load_every_definition(
+    shape: gen.Shape, modules: int, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    output = tmp_path / "project"
+    gen.write_project(
+        output,
+        gen.generate_project_files(
+            modules=modules, shape=shape, fan_out=3, path_depth=2
+        ),
+    )
+    monkeypatch.chdir(output)
+    validation = driver.Driver().validate_program(Path("test.dfn"), max_threads=1)
+    assert validation.program_validation.all_exceptions == []
+    assert validation.program_validation.all_diagnostics == []
+    assert len(validation.program_validation.definition_results) == modules + 1
+
+
+@pytest.mark.parametrize(
+    ("shape", "fan_out", "references"),
+    [
+        (gen.Shape.INDEPENDENT, 3, [list[int]() for _ in range(4)]),
+        (gen.Shape.CHAIN, 3, [[1], [2], [3], []]),
+        (gen.Shape.FAN_IN, 3, [[3], [3], [3], []]),
+        (gen.Shape.DEPTH_UPDATES, 3, [[1, 2, 3], [], [1], [2]]),
+        (gen.Shape.CYCLES, 3, [[1, 2, 3], [0], [0], [0]]),
+        (gen.Shape.MISSING, 3, [[4], [4], [4], [4]]),
+        (gen.Shape.DIAMONDS, 3, [[1, 2], [3], [3], [4, 5], [], []]),
+        (gen.Shape.DIAMONDS, 3, [[1, 2], [3], [3], [4], []]),
+        (gen.Shape.BOTTLENECKS, 3, [[1, 2, 3], [4], [4], [4], [5, 6], [], []]),
+        (gen.Shape.BOTTLENECKS, 1, [[1], [2], [3], []]),
+    ],
+)
+def test_structured_reference_patterns(
+    shape: gen.Shape, fan_out: int, references: list[list[int]]
+):
+    files = gen.generate_project_files(
+        modules=len(references), shape=shape, fan_out=fan_out
+    )
+    assert len(files) == len(references) + 2
+    for index, targets in enumerate(references):
+        declaration = f"define the potential position<{gen.DEFAULT_UNIVERSE_NAME}:/lib/pkg{index}/m{index}>"
+        if targets:
+            expected = [
+                f"{declaration} {{",
+                "    it may only contain particles where {",
+            ]
+            for target in targets:
+                expected.append(
+                    f"        it has the position</lib/pkg{target}/m{target}>."
+                )
+            expected.extend(["    }", "}"])
+        else:
+            expected = [f"{declaration}."]
+        assert files[f"lib/pkg{index}/m{index}.dfn"].splitlines() == expected
+
+
+@pytest.mark.parametrize("modules", [4, 8])
+def test_depth_update_shape_references_all_positions_then_predecessors(
+    modules: int, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    output = tmp_path / "project"
+    files = gen.generate_project_files(modules=modules, shape=gen.Shape.DEPTH_UPDATES)
+    assert files["test.dfn"].splitlines() == [
+        f"define the potential action<{gen.DEFAULT_UNIVERSE_NAME}:/test> {{",
+        "    it happens when {",
+        "        this particle is created.",
+        "    } and it does {",
+        "        define the position<references> {",
+        "            it may only contain particles where {",
+        "                it has the position</lib/pkg0/m0>.",
+        "            }",
+        "        }",
+        "        create a particle in position<references>.",
+        "        create a particle in position<references>::position</lib/pkg0/m0>.",
+        "    }",
+        "}",
+    ]
+    for index in range(modules):
+        declaration = f"define the potential position<{gen.DEFAULT_UNIVERSE_NAME}:/lib/pkg{index}/m{index}>"
+        if index == 1:
+            expected = [f"{declaration}."]
+        else:
+            targets = range(1, modules) if index == 0 else [index - 1]
+            expected = [
+                f"{declaration} {{",
+                "    it may only contain particles where {",
+            ]
+            for target in targets:
+                expected.append(
+                    f"        it has the position</lib/pkg{target}/m{target}>."
+                )
+            expected.extend(["    }", "}"])
+        assert files[f"lib/pkg{index}/m{index}.dfn"].splitlines() == expected
+
+    gen.write_project(output, files)
+    monkeypatch.chdir(output)
+    result = (
+        driver.Driver()
+        .validate_program(Path("test.dfn"), max_threads=1)
+        .program_validation
+    )
+    assert result.all_exceptions == []
+    assert result.all_diagnostics == []
+    assert len(result.definition_results) == modules + 1
+
+
+@pytest.mark.parametrize("shape", [gen.Shape.CYCLES, gen.Shape.MISSING])
+def test_invalid_project_shapes(
+    shape: gen.Shape, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    output = tmp_path / "project"
+    gen.write_project(output, gen.generate_project_files(modules=4, shape=shape))
+    monkeypatch.chdir(output)
+    result = (
+        driver.Driver()
+        .validate_program(Path("test.dfn"), max_threads=1)
+        .program_validation
+    )
+    if shape == gen.Shape.CYCLES:
+        assert result.all_exceptions == []
+        assert [type(diagnostic) for diagnostic in result.all_diagnostics] == [
+            diagnostics.CircularGlobalReferenceDiagnostic
+        ] * 3
+    else:
+        assert result.all_exceptions == []
+        assert [type(diagnostic) for diagnostic in result.all_diagnostics] == [
+            diagnostics.ReferencedFileNotFoundDiagnostic
+        ] * 4
+
+
+def test_new_cli_options(tmp_path: Path):
+    output = tmp_path / "project"
+    result = click.testing.CliRunner().invoke(
+        gen.main,
+        [
+            "--output",
+            str(output),
+            "--shape",
+            "depth-updates",
+            "--modules",
+            "4",
+            "--path-depth",
+            "3",
+        ],
+    )
+    assert result.exit_code == 0
+    assert (output / "directory/directory/directory/lib/pkg3/m3.dfn").is_file()
+    assert (output / "test.dfn").is_file()
+
+
+@pytest.mark.parametrize(("modules", "depth"), [(0, 0), (2, -1)])
+def test_invalid_structured_sizes(modules: int, depth: int):
+    with pytest.raises(ValueError, match="must be at least"):
+        gen.generate_project_files(
+            modules=modules, path_depth=depth, shape=gen.Shape.CHAIN
+        )

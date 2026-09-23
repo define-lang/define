@@ -99,6 +99,7 @@ py_library(
     visibility = [
         "//define/compiler:__subpackages__",
         "//tools:__pkg__",
+        "//tools/generators:__pkg__",
     ],
     deps = [
         ":ast",

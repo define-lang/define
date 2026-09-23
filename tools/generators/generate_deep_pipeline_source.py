@@ -146,7 +146,9 @@ def _emit_processing_stage(
     ]
 
 
-def _emit_entry_point(prefix: str, pipelines: int) -> list[str]:
+def _emit_entry_point(
+    prefix: str, pipelines: int, *, satisfy_requirements: bool
+) -> list[str]:
     lines = [
         f"define the potential action<{_qualified(prefix, '/test')}> {{",
         f"{_OUTER_INDENT}it happens when {{",
@@ -172,9 +174,10 @@ def _emit_entry_point(prefix: str, pipelines: int) -> list[str]:
         first_trigger = f"{pipeline_position}::action<{first_action}>::position<start>"
         lines.append(f"{_INNER_INDENT}create a particle in {pipeline_position}.")
         lines.append(f"{_INNER_INDENT}create a particle in {first_record}.")
-        lines.append(
-            f"{_INNER_INDENT}create a particle in {first_record}::position<{_TEMPORARY_METADATA_POSITION}>."
-        )
+        if satisfy_requirements:
+            lines.append(
+                f"{_INNER_INDENT}create a particle in {first_record}::position<{_TEMPORARY_METADATA_POSITION}>."
+            )
         lines.append(f"{_INNER_INDENT}create a particle in {first_trigger}.")
 
     lines.extend([f"{_OUTER_INDENT}}}", "}", ""])
@@ -185,6 +188,8 @@ def generate_source_lines(
     pipelines: int = DEFAULT_PIPELINES,
     processing_stages: int = DEFAULT_PROCESSING_STAGES,
     fqun_prefix: str = DEFAULT_FQUN_PREFIX,
+    *,
+    satisfy_requirements: bool = True,
 ) -> list[str]:
     """Return the generated source as a list of lines without trailing newlines."""
     if pipelines < _MIN_PIPELINES:
@@ -214,7 +219,11 @@ def generate_source_lines(
             )
             next_action = _action_path("process_stage", pipeline, stage)
 
-    lines.extend(_emit_entry_point(fqun_prefix, pipelines))
+    lines.extend(
+        _emit_entry_point(
+            fqun_prefix, pipelines, satisfy_requirements=satisfy_requirements
+        )
+    )
     return lines[:-1]
 
 
@@ -223,17 +232,26 @@ def write_to_path(
     pipelines: int = DEFAULT_PIPELINES,
     processing_stages: int = DEFAULT_PROCESSING_STAGES,
     fqun_prefix: str = DEFAULT_FQUN_PREFIX,
+    *,
+    satisfy_requirements: bool = True,
 ) -> int:
     """Write generated source to ``output`` and return the number of lines."""
     lines = generate_source_lines(
         pipelines=pipelines,
         processing_stages=processing_stages,
         fqun_prefix=fqun_prefix,
+        satisfy_requirements=satisfy_requirements,
     )
     return generator_io.write_lines(output, lines)
 
 
 @click.command()
+@click.option(
+    "--satisfy-requirements/--violate-requirements",
+    default=True,
+    show_default=True,
+    help="Omit required child particles to generate long diagnostic propagation histories.",
+)
 @click.option(
     "--output", type=generator_cli.OUTPUT_FILE, required=True, help="Generated file."
 )
@@ -257,7 +275,14 @@ def write_to_path(
     show_default=True,
     help="Universe prefix for every definition.",
 )
-def main(output: Path, pipelines: int, processing_stages: int, fqun_prefix: str):
+def main(
+    output: Path,
+    pipelines: int,
+    processing_stages: int,
+    fqun_prefix: str,
+    *,
+    satisfy_requirements: bool,
+):
     """Generate a Define source file with deep processing pipelines.
 
     Emits one .dfn holding many independent pipelines, each a chain of specialized
@@ -281,6 +306,7 @@ def main(output: Path, pipelines: int, processing_stages: int, fqun_prefix: str)
             pipelines=pipelines,
             processing_stages=processing_stages,
             fqun_prefix=fqun_prefix,
+            satisfy_requirements=satisfy_requirements,
         )
     )
     generator_cli.report_written("lines", written, output)

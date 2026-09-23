@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 import click.testing
 import pytest
 
-from define.compiler import driver
+from define.compiler import diagnostics, driver
 from tools.generators import generate_deep_pipeline_source as gen
 
 if TYPE_CHECKING:
@@ -100,3 +100,51 @@ class TestFullDriver:
 
         assert result.program_validation.all_exceptions == []
         assert result.program_validation.all_diagnostics == []
+
+
+@pytest.mark.parametrize("stages", [1, 4])
+def test_violations_have_scalable_propagation_histories(stages: int):
+    source = (
+        "\n".join(
+            gen.generate_source_lines(
+                pipelines=2, processing_stages=stages, satisfy_requirements=False
+            )
+        )
+        + "\n"
+    )
+    result = driver.Driver().validate_source(source)
+    assert result.program_validation.all_exceptions == []
+    all_diagnostics = result.program_validation.all_diagnostics
+    assert len(all_diagnostics) == 2
+    for diagnostic in all_diagnostics:
+        assert isinstance(
+            diagnostic, diagnostics.InferredRequirementViolationDiagnostic
+        )
+        assert len(diagnostic.propagation_chain) == stages + 3
+    assert len(result.error_strings()) == 2
+
+
+def test_violation_cli(tmp_path: Path):
+    output = tmp_path / "violations.dfn"
+    result = click.testing.CliRunner().invoke(
+        gen.main,
+        [
+            "--output",
+            str(output),
+            "--pipelines",
+            "2",
+            "--processing-stages",
+            "3",
+            "--violate-requirements",
+        ],
+    )
+    assert result.exit_code == 0
+    assert (
+        output.read_text()
+        == "\n".join(
+            gen.generate_source_lines(
+                pipelines=2, processing_stages=3, satisfy_requirements=False
+            )
+        )
+        + "\n"
+    )
