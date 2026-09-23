@@ -20,6 +20,8 @@ py_test(
         "//define/testdata/compiler_resources:many_substantial_actions",
         "//define/testdata/compiler_resources:particle_operations",
         "//define/testdata/compiler_resources:pending_guarantees",
+        "//define/testdata/compiler_resources:pending_guarantees_growth",
+        "//define/testdata/compiler_resources:pending_guarantees_growth_control",
         "//define/testdata/compiler_resources:quality_implications",
         "//define/testdata/compiler_resources:quality_implications_control",
         "//define/testdata/compiler_resources:reference_depth_updates",
@@ -29,6 +31,8 @@ py_test(
         "//define/testdata/compiler_resources:wide_destruction",
     ],
     env = {
+        "PENDING_GUARANTEES_GROWTH": "$(rlocationpath //define/testdata/compiler_resources:pending_guarantees_growth)",
+        "PENDING_GUARANTEES_GROWTH_CONTROL": "$(rlocationpath //define/testdata/compiler_resources:pending_guarantees_growth_control)",
         "PENDING_GUARANTEES": "$(rlocationpath //define/testdata/compiler_resources:pending_guarantees)",
         "QUALITY_IMPLICATIONS": "$(rlocationpath //define/testdata/compiler_resources:quality_implications)",
         "QUALITY_IMPLICATIONS_CONTROL": "$(rlocationpath //define/testdata/compiler_resources:quality_implications_control)",

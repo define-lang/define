@@ -154,6 +154,15 @@ def test_retained_memory(case: MemoryCase, tmp_path: Path):
     [
         pytest.param(
             CpuGrowthCase(
+                control_variable="PENDING_GUARANTEES_GROWTH_CONTROL",
+                source_variable="PENDING_GUARANTEES_GROWTH",
+                filesystem=False,
+                maximum_ratio=8,
+            ),
+            id="pending_guarantees",
+        ),
+        pytest.param(
+            CpuGrowthCase(
                 control_variable="REFERENCE_DEPTH_UPDATES_CONTROL",
                 source_variable="REFERENCE_DEPTH_UPDATES",
                 filesystem=True,

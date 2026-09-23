@@ -186,3 +186,17 @@ bazelisk run --noshow_progress --ui_event_filters=-info \
   --output define/testdata/compiler_resources/quality_implications_control.dfn \
   --layers 12 --width 2 --fan-out 2 --assignments 1
 ```
+
+## Pending Action Guarantee CPU growth
+
+```sh
+bazelisk run --noshow_progress --ui_event_filters=-info \
+  //tools/generators:generate_pending_guarantees_source -- \
+  --output define/testdata/compiler_resources/pending_guarantees_growth_control.dfn \
+  --pending-positions 1024 --destroyed-positions 102
+
+bazelisk run --noshow_progress --ui_event_filters=-info \
+  //tools/generators:generate_pending_guarantees_source -- \
+  --output define/testdata/compiler_resources/pending_guarantees_growth.dfn \
+  --pending-positions 8192 --destroyed-positions 819
+```

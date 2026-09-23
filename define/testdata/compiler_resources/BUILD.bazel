@@ -9,6 +9,8 @@ filegroup(
         ":many_substantial_actions",
         ":particle_operations",
         ":pending_guarantees",
+        ":pending_guarantees_growth",
+        ":pending_guarantees_growth_control",
         ":project_config",
         ":quality_implications",
         ":quality_implications_control",
@@ -71,6 +73,20 @@ filegroup(
     name = "pending_guarantees",
     testonly = True,
     srcs = ["pending_guarantees.dfn"],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)
+
+filegroup(
+    name = "pending_guarantees_growth",
+    testonly = True,
+    srcs = ["pending_guarantees_growth.dfn"],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)
+
+filegroup(
+    name = "pending_guarantees_growth_control",
+    testonly = True,
+    srcs = ["pending_guarantees_growth_control.dfn"],
     visibility = ["//define/compiler/resource_tests:__pkg__"],
 )
 

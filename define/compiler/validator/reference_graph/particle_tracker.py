@@ -182,23 +182,66 @@ class _PendingNestedGuarantees:
     ones with additional child names, which the drain then picks up.
     """
 
+    # The two drain directions need different lookups. Shortest-first queries
+    # can probe successive prefixes directly in _by_prefix. Queries for child
+    # names would otherwise have to scan every stored prefix, so we also index
+    # each stored prefix under all of its nonempty prefixes.
+    #
+    # For example, _by_prefix[("a", "b")] holds the guarantees stored at that
+    # name. Both _by_requested_prefix[("a",)] and
+    # _by_requested_prefix[("a", "b")] contain the key ("a", "b"). A query
+    # for ("a",) can therefore find those guarantees without examining unrelated
+    # names. The index holds keys rather than guarantees, so adding another
+    # guarantee at an existing name needs only an append to its list.
+
     def __init__(self):
         self._by_prefix: dict[tuple[str, ...], list[_PendingGuarantee]] = {}
+        # Queries must skip unrelated guarantees even when many share a parent name.
+        self._by_requested_prefix: dict[tuple[str, ...], set[tuple[str, ...]]] = {}
+        # Draining several indexed names must preserve their original insertion order.
+        # The sets in _by_requested_prefix do not preserve insertion order, so these
+        # numbers recover the order of keys in _by_prefix. Removing and re-adding a
+        # key gives it a new place in that order.
+        self._prefix_order: dict[tuple[str, ...], int] = {}
+        self._next_prefix_order: int = 0
         self._longest_pending_guarantee_key: int = 0
 
     def add(self, nested_guarantee: _PendingGuarantee):
         """Record a nested guarantee to apply once a query reaches ``prefix`` or one of its child names."""
-        # Store the pending nested guarantee by its parent_position, the
-        # common ancestor of the callee's interface guarantees (which are
-        # prefixed with the trigger position) and its implied guarantees (which
-        # are prefixed with the parent_position itself). Using the trigger
-        # position instead would leave the implied guarantees outside that
-        # subtree, so a query on an implied position would never apply it.
+        # Interface guarantees use action_chain as their prefix; implied-position
+        # guarantees use parent_position. Store both under parent_position so that
+        # queries on implied positions can find the pending guarantee too.
         prefix = nested_guarantee.parent_position
-        self._by_prefix.setdefault(prefix, []).append(nested_guarantee)
+        guarantees = self._by_prefix.get(prefix)
+        if guarantees is None:
+            for length in range(1, len(prefix) + 1):
+                requested_prefix = prefix[:length]
+                matching = self._by_requested_prefix.get(requested_prefix)
+                if matching is None:
+                    self._by_requested_prefix[requested_prefix] = {prefix}
+                else:
+                    matching.add(prefix)
+            self._prefix_order[prefix] = self._next_prefix_order
+            self._next_prefix_order += 1
+            self._by_prefix[prefix] = [nested_guarantee]
+        else:
+            guarantees.append(nested_guarantee)
         self._longest_pending_guarantee_key = max(
             self._longest_pending_guarantee_key, len(prefix)
         )
+
+    def _pop_prefix(self, prefix: tuple[str, ...]) -> list[_PendingGuarantee]:
+        # Every drain must remove the index entries before yielding the guarantees:
+        # applying one can query the index again or add a new list at this same name.
+        guarantees = self._by_prefix.pop(prefix)
+        for length in range(1, len(prefix) + 1):
+            requested_prefix = prefix[:length]
+            matching = self._by_requested_prefix[requested_prefix]
+            matching.remove(prefix)
+            if not matching:
+                del self._by_requested_prefix[requested_prefix]
+        del self._prefix_order[prefix]
+        return guarantees
 
     def drain_shortest_first(self, key: tuple[str, ...]) -> Iterator[_PendingGuarantee]:
         """Yield and remove the pending nested guarantees on the path to ``key``, shortest prefix first."""
@@ -216,7 +259,7 @@ class _PendingNestedGuarantees:
             # Applying a yielded guarantee can re-add one at this same prefix, so
             # drain it fully before moving to a prefix with another child name.
             while prefix in self._by_prefix:
-                yield from self._by_prefix.pop(prefix)
+                yield from self._pop_prefix(prefix)
             length += 1
 
     def drain_shortest_first_for(
@@ -264,7 +307,7 @@ class _PendingNestedGuarantees:
                 # Applying a guarantee can add another pending guarantee at this
                 # same prefix, so do not advance until the prefix stays empty.
                 while prefix in self._by_prefix:
-                    yield from self._by_prefix.pop(prefix)
+                    yield from self._pop_prefix(prefix)
                 # Once no pending guarantees remain, no later path can yield
                 # anything.
                 if not self._by_prefix:
@@ -282,20 +325,27 @@ class _PendingNestedGuarantees:
             return
         # Automatic Destruction can request thousands of locally defined
         # Positions. They all have one name; other callers request just one key.
-        # Matching against a set avoids scanning the pending prefixes separately
-        # for every Position being destroyed.
+        # Combining their indexed matches avoids scanning unrelated pending prefixes.
         length = len(keys[0])
         requested = set(keys)
-        # The reason for this outer while loop is that our caller adds more prefixes
-        # as they are running.
+        # Applying a guarantee can add more pending guarantees, even at
+        # a name just drained. Finish each batch in stored-prefix insertion order,
+        # then query again until none of the requested names have matches.
         while self._by_prefix:
-            matching = [
-                prefix for prefix in self._by_prefix if prefix[:length] in requested
-            ]
+            if length == 0:
+                # An empty prefix matches every name, so indexing it would only
+                # duplicate the complete set of stored keys.
+                matching = list(self._by_prefix)
+            else:
+                matching: list[tuple[str, ...]] = []
+                # Distinct requested names of equal length have disjoint matches.
+                for key in requested:
+                    matching.extend(self._by_requested_prefix.get(key, ()))
+                matching.sort(key=self._prefix_order.__getitem__)
             if not matching:
                 return
             for prefix in matching:
-                yield from self._by_prefix.pop(prefix)
+                yield from self._pop_prefix(prefix)
 
 
 class _GuaranteeApplicationState(msgspec.Struct, frozen=True):
