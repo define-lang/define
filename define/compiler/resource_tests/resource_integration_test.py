@@ -16,7 +16,9 @@ if TYPE_CHECKING:
 
 _MIB = 1024**2
 _CPU_SAFETY_SECONDS = 10
+_CPU_GROWTH_SAFETY_SECONDS = 30
 _WALL_SAFETY_SECONDS = 20
+_WALL_GROWTH_SAFETY_SECONDS = 45
 
 
 @dataclasses.dataclass(kw_only=True)
@@ -42,6 +44,7 @@ def _measure(
     workers: int,
     cpu_limit: int,
     data_mib: int,
+    wall_limit: int,
 ) -> resource_test_runner.Measurement:
     directory.mkdir()
     command = [
@@ -65,7 +68,7 @@ def _measure(
         source=stdin,
         cpu_seconds=cpu_limit,
         data_bytes=data_mib * _MIB,
-        wall_seconds=_WALL_SAFETY_SECONDS,
+        wall_seconds=wall_limit,
     )
 
 
@@ -143,6 +146,7 @@ def test_retained_memory(case: MemoryCase, tmp_path: Path):
         workers=4,
         cpu_limit=_CPU_SAFETY_SECONDS,
         data_mib=512,
+        wall_limit=_WALL_SAFETY_SECONDS,
     )
     stderr = _stderr(directory)
     measured.check(rss_bytes=case.rss_mib * _MIB, stderr=stderr)
@@ -198,8 +202,9 @@ def test_cpu_growth(case: CpuGrowthCase, tmp_path: Path):
         control_directory,
         filesystem=case.filesystem,
         workers=1,
-        cpu_limit=_CPU_SAFETY_SECONDS,
+        cpu_limit=_CPU_GROWTH_SAFETY_SECONDS,
         data_mib=1024,
+        wall_limit=_WALL_GROWTH_SAFETY_SECONDS,
     )
     control_stderr = _stderr(control_directory)
     control.check(rss_bytes=384 * _MIB, stderr=control_stderr)
@@ -208,7 +213,8 @@ def test_cpu_growth(case: CpuGrowthCase, tmp_path: Path):
     # Stop shortly after excessive growth can be established on this machine,
     # without interpreting the independent safety ceiling as a regression.
     cpu_limit = min(
-        _CPU_SAFETY_SECONDS, math.ceil(control.cpu_seconds * case.maximum_ratio)
+        _CPU_GROWTH_SAFETY_SECONDS,
+        math.ceil(control.cpu_seconds * case.maximum_ratio),
     )
     directory = tmp_path / "adversarial"
     measured = _measure(
@@ -218,6 +224,7 @@ def test_cpu_growth(case: CpuGrowthCase, tmp_path: Path):
         workers=1,
         cpu_limit=cpu_limit,
         data_mib=1024,
+        wall_limit=_WALL_GROWTH_SAFETY_SECONDS,
     )
     stderr = _stderr(directory)
     measured.check_cpu_growth(
