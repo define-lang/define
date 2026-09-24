@@ -104,26 +104,12 @@ character, etc.
 
 ### Declaring that a Particle May Have a Value
 
-Developers can indicate that a particle accepts a binary value by adding this as
-a line in the definition of a position:
+Developers can indicate that a particle accepts a binary value via syntax
+specified in later proposals.
 
-`it has a value.`
-
-This is called a Value Declaration.
-
-There is no syntax to add this property to a particle later; it must be assigned
-at the creation of a particle. If a particle moves through a position that does
-not have a value, the particle does not lose its value. However, referring to
-the particle via that position does not allow accessing or interacting with its
-value.
-
-### Initial Values of Particles
-
-Once a particle is placed into a position with a value, it is considered
-logically to always have a default value. If not specified, that value is
-logically a 1-bit 0. However, most often the code the compiler generates will
-actually assume that the first value that the particle gets set to in the
-program is actually its initial value.
+There wil be no syntax to add this property to a particle later; it must be
+assigned at the creation of a particle. If a particle moves through a position
+that does not have a value, the particle does not lose its value.
 
 ### Setting a Value on a Particle
 
@@ -137,8 +123,8 @@ reference to `position<source>` but simply changes the value on
 `position<recipient>` to be identical to the value that is currently on
 `position<source>`.
 
-Both positions must be declared as having values, otherwise the compiler must
-throw an error.
+The particles in both positions must have value constraints assigned to them,
+otherwise the compiler must throw an error.
 
 ### Memory Layout
 
@@ -159,10 +145,10 @@ occupied.)
 ```define
 define the potential action<example.com:example:/set_value> {
     define the position<recipient> {
-        it has a value.
+        it has the value<standard:/number/integer>.
     }
     define the position<has_a_value> {
-        it has a value.
+        it has the value<standard:/number/integer>.
     }
     it happens when {
         the position<has_a_value> has a particle.
