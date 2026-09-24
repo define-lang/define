@@ -33,6 +33,7 @@ IT_HAPPENS_WHEN: "it happens when"
 AND_IT_DOES: " and it does"
 CREATE_A_PARTICLE_IN: "create a particle in "
 MOVE_THE_PARTICLE_IN: "move the particle in "
+SET_THE_VALUE_OF: "set the value of "
 DESTROY_THE_PARTICLE_IN: "destroy the particle in "
 THE: "the "
 HAS_A_PARTICLE: " has a particle"
@@ -91,7 +92,12 @@ local_position_definition_block: _block_open NEWLINE* position_constraint_block 
 
 # Potential Position Definition Syntax
 
-_action_statements: (NEWLINE | local_position_definition | create_particle_statement | move_particle_statement | destroy_particle_statement)*
+_action_statements: (NEWLINE
+    | local_position_definition
+    | create_particle_statement
+    | move_particle_statement
+    | destroy_particle_statement
+    | value_setting_statement)*
 potential_position_definition_block: _block_open NEWLINE* _quality_implications position_constraint_block NEWLINE* _block_close
 position_definition: DEFINE_THE_POTENTIAL_POSITION global_name_definition_content (terminator | potential_position_definition_block)
 
@@ -101,6 +107,8 @@ position_reference: typed_name_reference (CHAIN_SEPARATOR typed_name_reference)*
 create_particle_statement: CREATE_A_PARTICLE_IN position_reference terminator
 move_particle_statement: MOVE_THE_PARTICLE_IN position_reference TO position_reference terminator
 destroy_particle_statement: DESTROY_THE_PARTICLE_IN position_reference terminator
+
+value_setting_statement: SET_THE_VALUE_OF position_reference TO position_reference terminator
 
 # Action Definition Syntax
 

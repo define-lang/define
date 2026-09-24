@@ -810,3 +810,62 @@ def test_enclosing_fqun_on_every_chain_segment():
     for segment in chain:
         assert isinstance(segment, ast.GlobalTypedNameReference)
         assert segment.enclosing_fqun.canonical == "standard"
+
+
+def test_value_setting_statement_fields():
+    source = (
+        "define the potential action<mv:define-lang.org:parser:/set_value> {\n"
+        + "    it happens when {\n"
+        + "        this particle is created.\n"
+        + "    } and it does {\n"
+        + "        set the value of position<dest> to position<src>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    statement = _only_action(source).action_statements.statements[0]
+    assert isinstance(statement, ast.ValueSettingStatement)
+    assert statement.target_position.source_chained_name == "position<dest>"
+    assert statement.source_position.source_chained_name == "position<src>"
+    assert statement.location == ast.SourceLocation(
+        line=5, column=9, end_line=5, end_column=58
+    )
+    assert (
+        _slice(source, statement.location)
+        == "set the value of position<dest> to position<src>."
+    )
+    assert _slice(source, statement.target_position.location) == "position<dest>"
+    assert _slice(source, statement.source_position.location) == "position<src>"
+
+
+def test_value_setting_statement_chained_positions():
+    source = (
+        "define the potential action<mv:define-lang.org:parser:/set_value> {\n"
+        + "    it happens when {\n"
+        + "        this particle is created.\n"
+        + "    } and it does {\n"
+        + "        set the value of position<dest>::action</a>::position<value> to position<mv:define-lang.org:parser:/src>::position<value>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    statement = _only_action(source).action_statements.statements[0]
+    assert isinstance(statement, ast.ValueSettingStatement)
+    assert (
+        statement.target_position.source_chained_name
+        == "position<dest>::action</a>::position<value>"
+    )
+    assert (
+        statement.source_position.source_chained_name
+        == "position<mv:define-lang.org:parser:/src>::position<value>"
+    )
+    assert statement.location == ast.SourceLocation(
+        line=5, column=9, end_line=5, end_column=131
+    )
+    assert _slice(source, statement.location) == source.splitlines()[4].strip()
+    assert (
+        _slice(source, statement.target_position.location)
+        == statement.target_position.source_chained_name
+    )
+    assert (
+        _slice(source, statement.source_position.location)
+        == statement.source_position.source_chained_name
+    )

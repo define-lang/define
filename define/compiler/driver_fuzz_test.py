@@ -476,6 +476,13 @@ def action_definitions_with_block(draw: st.DrawFn) -> str:
         inner_locals.append(
             _move_particle_statement(from_ref, to_ref, indent=inner_indent)
         )
+    value_setting_count = draw(st.integers(min_value=0, max_value=4))
+    for _ in range(value_setting_count):
+        target_position = draw(create_particle_references())
+        source_position = draw(create_particle_references())
+        inner_locals.append(
+            f"{inner_indent}set the value of {target_position} to {source_position}.\n"
+        )
     destroy_count = draw(st.integers(min_value=0, max_value=4))
     for _ in range(destroy_count):
         position_reference = draw(create_particle_references())

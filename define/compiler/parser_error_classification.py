@@ -7,6 +7,8 @@ from __future__ import annotations
 
 import typing
 
+import lark_cython
+
 from define.compiler import parser_exceptions
 from define.compiler.lark import lark_standalone
 
@@ -220,7 +222,21 @@ def raise_token_error(
     # TODO: After changing the priority of the *_NAME_CONTENT terminals, I think
     # we could do better here.
     if e.accepts in ({"CHAIN_SEPARATOR", "TO"}, {"TO"}):
-        raise parser_exceptions.InvalidMoveStatementSyntax(e, source, file_path)
+        # The statement keyword remains on the stack until the statement reduces,
+        # even when token_history is absent or the position has not reduced at EOF.
+        interactive_parser = typing.cast(
+            "lark_standalone.InteractiveParser", e.interactive_parser
+        )
+        for item in reversed(interactive_parser.parser_state.value_stack):
+            if isinstance(item, lark_cython.Token):
+                if item.type == "SET_THE_VALUE_OF":
+                    raise parser_exceptions.InvalidValueSettingStatementSyntax(
+                        e, source, file_path
+                    )
+                if item.type == "MOVE_THE_PARTICLE_IN":
+                    raise parser_exceptions.InvalidMoveStatementSyntax(
+                        e, source, file_path
+                    )
 
     if e.accepts == {"CHAIN_SEPARATOR", "DOT"}:
         raise parser_exceptions.ExpectedChainSeparatorOrTerminator(e, source, file_path)

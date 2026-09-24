@@ -269,6 +269,19 @@ py_test(
     ],
 )
 
+py_test(
+    name = "value_setting_test",
+    size = "small",
+    srcs = ["value_setting_test.py"],
+    deps = [
+        ":conftest",
+        ":test_helpers",
+        "//define/compiler:parser",
+        "//define/compiler:parser_exceptions",
+        "@pypi//pytest",
+    ],
+)
+
 # --- Format checking ---
 
 format_test(
@@ -305,5 +318,6 @@ pyright_test(
         ":typed_name_references_test",
         ":value_constraint_test",
         ":value_definition_test",
+        ":value_setting_test",
     ],
 )

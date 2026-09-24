@@ -594,6 +594,9 @@ class ActionPostorderValidator:
         validity_iter = iter(self._particle_statement_validity)
         for stmt in action_statements.statements:
             match stmt:
+                case ast.ValueSettingStatement():
+                    # TODO: Validate value setting statements once their semantics are implemented.
+                    pass
                 case ast.LocalPositionDefinition():
                     self._steps.append(stmt)
                     scope.add_definition(stmt)

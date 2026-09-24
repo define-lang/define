@@ -63,7 +63,12 @@ class UnexpectedInput(Exception):  # noqa: N818
         use_accepts: bool = True,
     ) -> _Label_T | None: ...
 
+class ParserState:
+    value_stack: list[object]
+
 class InteractiveParser:
+    parser_state: ParserState
+
     def feed_token(self, token: Token) -> None: ...
 
 class UnexpectedCharacters(UnexpectedInput):

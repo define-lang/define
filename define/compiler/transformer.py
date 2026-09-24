@@ -451,6 +451,20 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
         )
 
     @_strip_discard
+    def value_setting_statement(
+        self, items: list[lark_cython.Token | ast.PositionReference]
+    ) -> ast.ValueSettingStatement:
+        """Transform a value setting statement."""
+        keyword = cast("lark_cython.Token", items[0])
+        target = cast("ast.PositionReference", items[1])
+        source = cast("ast.PositionReference", items[2])
+        return ast.ValueSettingStatement(
+            target_position=target,
+            source_position=source,
+            location=self._location_with_terminator(start=keyword, end=source),
+        )
+
+    @_strip_discard
     def destroy_particle_statement(
         self, items: list[lark_cython.Token | ast.PositionReference]
     ) -> ast.DestroyParticleStatement:

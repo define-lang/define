@@ -343,6 +343,7 @@ py_library(
     deps = [
         ":parser_exceptions",
         "//define/compiler/lark:lark_standalone",
+        "@pypi//lark_cython",
     ],
 )
 

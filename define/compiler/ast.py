@@ -660,11 +660,18 @@ class DestroyParticleStatement(ParticleStatement):
     """Represents a 'destroy the particle in' statement."""
 
 
+class ValueSettingStatement(ParticleStatement):
+    """Represents a 'set the value of ... to' statement."""
+
+    source_position: PositionReference
+
+
 type ActionStatement = (
     LocalPositionDefinition
     | CreateParticleStatement
     | MoveParticleStatement
     | DestroyParticleStatement
+    | ValueSettingStatement
 )
 
 

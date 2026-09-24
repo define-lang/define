@@ -356,6 +356,9 @@ class DefinitionStructuralValidator:
             )
         for stmt in action_statements.statements:
             match stmt:
+                case ast.ValueSettingStatement():
+                    # TODO: Validate value setting statements once their semantics are implemented.
+                    pass
                 case ast.LocalPositionDefinition():
                     self._validate_local_position_definition(stmt, scope)
                 case ast.CreateParticleStatement():

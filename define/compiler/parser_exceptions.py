@@ -278,6 +278,16 @@ class InvalidMoveStatementSyntax(DefineTokenError):
     )
 
 
+class InvalidValueSettingStatementSyntax(DefineTokenError):
+    """Expected ' to ' or '::' after a value setting statement's target."""
+
+    message_format: ClassVar[str] = (
+        "The syntax for a value setting statement looks like:"
+        " set the value of position<recipient> to position<source>."
+        " Expected a 'to' or a longer chained name (a '::' followed by another name) here."
+    )
+
+
 class InvalidPositionConstraintBlock(DefineTokenError):
     """Write something nonsensical in a position constraint block."""
 
