@@ -198,10 +198,11 @@ The valid name types are currently:
 
 - `position`
 - `action`
+- `value`
 
 ```ebnf
 typed_name = name_type, "<", name_content, ">" ;
-name_type  = "position" | "action" ;
+name_type  = "position" | "action" | "value";
 ```
 
 Define Language Proposals sometimes sometimes use the term "name" to mean
@@ -832,6 +833,11 @@ typed name and a statement terminator.
 position_requirement_statement = "it has the", " ", typed_global_name, terminator ;
 ```
 
+### Values Only Appear Once
+
+A Position Constraint Block may contain only one Position Requirement Statement
+with the `name_type` of `value`.
+
 ## Position References
 
 Proposals:
@@ -877,9 +883,9 @@ Proposals:
 - [DLP 12: Definitions in the Universe of Reflection](../proposals/00012-definitions-in-the-universe-of-reflection.md)
 - [DLP 22: Atomic Qualities](../proposals/00022-atomic-qualities.md)
 
-Potential positions and potential actions are referred to as "qualities."
-Qualities can be assigned to particles using syntax and semantics described
-later in this spec.
+Potential positions, potential actions, and value types are referred to as
+"qualities." Qualities can be assigned to particles using syntax and semantics
+described later in this spec.
 
 The syntax for defining qualities is: `define the potential` followed by a space
 and a fully-qualified typed global name.
@@ -894,7 +900,7 @@ a quality definition with an empty block is forbidden---the statement terminator
 syntax must be used to express empty definitions.
 
 ```ebnf
-quality_definition = ( action_definition | position_definition ) ;
+quality_definition = ( action_definition | position_definition | value_definition ) ;
 ```
 
 The forms of the definitions are defined in later sections.
@@ -924,6 +930,20 @@ potential_position_definition_block =
     { quality_implication_statement },
     position_constraint_block,
     block_close ;
+```
+
+## Defining Value Types
+
+Proposals:
+
+- [DLP 51: Values](00051-values.md)
+
+A value type is defined by a quality definition statement with the type `value`,
+followed by a terminator.
+
+```ebnf
+fully_qualified_value_name = "value", "<", fully_qualified_global_name, ">" ;
+value_definition = "define the potential", " ", fully_qualified_value_name, terminator ;
 ```
 
 ## Defining Potential Actions
@@ -1043,7 +1063,7 @@ Action statements are:
 - create particle statements
 - move particle statements
 - destroy particle statements
-- quality assignment statements
+- value setting statements
 
 ```ebnf
 action_statements_contents = action_statement, { action_statement } ;
@@ -1052,8 +1072,7 @@ action_statement =
     | create_particle_statement
     | move_particle_statement
     | destroy_particle_statement
-    | quality_assignment_statement
-    | wait_until_statement ;
+    | value_setting_statement ;
 ```
 
 ## Action Contracts
@@ -1184,11 +1203,11 @@ Proposals:
 - [DLP 22: Atomic Qualities](../proposals/00022-atomic-qualities.md)
 
 A Quality Implication Statement starts with `it also assigns the`, followed by
-exactly one space, a typed global name, and a statement terminator.
+exactly one space, a global position or action name, and a statement terminator.
 
 ```ebnf
 quality_implication_statement =
-    "it also assigns the", " ", typed_global_name, terminator ;
+    "it also assigns the", " ", ( global_position_name | action_name ), terminator ;
 ```
 
 ### Assignment Semantics
@@ -1508,6 +1527,24 @@ When the Child State does not provide a required position's state, the action in
 which the destructor is assigned to the particle gains the corresponding
 Automatic Action Requirement. That requirement is propagated through callers
 according to the ordinary rules for Automatic Action Requirements.
+
+## Setting Values
+
+Proposals:
+
+- [DLP 38: Binary Values](00038-binary-values.md)
+
+A value may be set on a particle via a Value Setting Statement. The syntax for
+this statement is `set the value of` followed by a position reference, followed
+by `to`, another position reference, and a terminator.
+
+```ebnf
+value_setting_statement =
+    "set the value of", " ", position_reference, " to ", position_reference, terminator ;
+```
+
+The particles in both positions must have a value type assigned to them, and it
+must be the same value type.
 
 ## Dead Code
 
