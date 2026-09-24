@@ -49,7 +49,7 @@ git_override(
 # --- Python toolchain ---
 
 interpreters = use_extension("@aspect_rules_py//py:extensions.bzl", "python_interpreters")
-interpreters.configure(releases = ["20260901"])
+interpreters.configure(releases = ["20260924"])
 interpreters.toolchain(
     python_version = "3.14",
 )
