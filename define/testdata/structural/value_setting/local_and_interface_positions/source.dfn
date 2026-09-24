@@ -1,0 +1,13 @@
+# Value setting references keep both interface and local positions alive.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<input>.
+    define the position<result>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<temporary>.
+        set the value of position<temporary> to position<input>.
+        set the value of position<result> to position<temporary>.
+    }
+}

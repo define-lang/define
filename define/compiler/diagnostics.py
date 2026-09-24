@@ -649,6 +649,16 @@ class MoveToSamePositionDiagnostic(Diagnostic):
     )
 
 
+class ValueSettingSamePositionDiagnostic(Diagnostic):
+    """Diagnostic for a value setting statement referencing the same position twice."""
+
+    position_name: str
+    message_format: ClassVar[str] = (
+        "the left and right sides of a value setting statement cannot be"
+        " the same position ('{self.position_name}')"
+    )
+
+
 class MoveViolatesConstraintsDiagnostic(Diagnostic):
     """Diagnostic for when a move's destination constraints are not satisfied."""
 

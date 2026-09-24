@@ -1,0 +1,10 @@
+# Defined global positions must still be implied to be referenced directly in an action.
+define the potential position<my.domain.com:my_lib:/target>.
+define the potential position<my.domain.com:my_lib:/source>.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        set the value of position</target> to position</source>.
+    }
+}

@@ -1,0 +1,10 @@
+# Both position references must obey the rules for local names in chains.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<target>.
+        define the position<source>.
+        set the value of position<target>::position<target_child> to position<source>::position<source_child>.
+    }
+}

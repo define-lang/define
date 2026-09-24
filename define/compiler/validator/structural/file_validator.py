@@ -357,8 +357,7 @@ class DefinitionStructuralValidator:
         for stmt in action_statements.statements:
             match stmt:
                 case ast.ValueSettingStatement():
-                    # TODO: Validate value setting statements once their semantics are implemented.
-                    pass
+                    self._validate_value_setting(stmt, scope)
                 case ast.LocalPositionDefinition():
                     self._validate_local_position_definition(stmt, scope)
                 case ast.CreateParticleStatement():
@@ -367,6 +366,24 @@ class DefinitionStructuralValidator:
                     self._validate_move_particle(stmt, scope)
                 case ast.DestroyParticleStatement():
                     self._validate_destroy_particle(stmt, scope)
+
+    def _validate_value_setting(
+        self,
+        stmt: ast.ValueSettingStatement,
+        scope: scope_tracker.ScopeTracker,
+    ):
+        _ = self._validate_full_chained_name(stmt.target_position, scope)
+        _ = self._validate_full_chained_name(stmt.source_position, scope)
+        if (
+            stmt.target_position.canonical_chained_name_tuple
+            == stmt.source_position.canonical_chained_name_tuple
+        ):
+            self._diagnostics.append(
+                diagnostics.ValueSettingSamePositionDiagnostic(
+                    location=stmt.source_position.location,
+                    position_name=stmt.source_position.source_chained_name,
+                )
+            )
 
     def _validate_local_position_definition(
         self,

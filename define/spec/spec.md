@@ -1544,7 +1544,8 @@ value_setting_statement =
 ```
 
 The particles in both positions must have a value type assigned to them, and it
-must be the same value type.
+must be the same value type. The positions on the left and right side of the
+Value Setting Statement may not be the same position.
 
 ## Dead Code
 
