@@ -188,6 +188,7 @@ comment_text = { ? any character allowed per Define parsing rules, excluding U+0
 Proposals:
 
 - [DLP 1: Types of Names](../proposals/00001-types-of-names.md)
+- [DLP 46: Value Encodings](../proposals/00046-value-encodings.md)
 
 Define reserves all words and symbols for its own use in syntax.
 
@@ -199,10 +200,11 @@ The valid name types are currently:
 - `position`
 - `action`
 - `value`
+- `encoding`
 
 ```ebnf
 typed_name = name_type, "<", name_content, ">" ;
-name_type  = "position" | "action" | "value";
+name_type  = "position" | "action" | "value" | "encoding";
 ```
 
 Define Language Proposals sometimes sometimes use the term "name" to mean
@@ -944,6 +946,21 @@ followed by a terminator.
 ```ebnf
 fully_qualified_value_name = "value", "<", fully_qualified_global_name, ">" ;
 value_definition = "define the potential", " ", fully_qualified_value_name, terminator ;
+```
+
+## Defining Encodings
+
+Proposals:
+
+- [DLP 46: Value Encodings](../proposals/00046-value-encodings.md)
+
+An encoding is defined by `define the` followed by a space, a fully-qualified
+encoding name, and a terminator. Encoding names are always global names defined
+in the global context.
+
+```ebnf
+fully_qualified_encoding_name = "encoding", "<", fully_qualified_global_name, ">" ;
+encoding_definition = "define the", " ", fully_qualified_encoding_name, terminator ;
 ```
 
 ## Defining Potential Actions
