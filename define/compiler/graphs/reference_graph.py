@@ -15,7 +15,7 @@ if typing.TYPE_CHECKING:
 class ReferenceEdge(msgspec.Struct, frozen=True):
     """A reference made by one definition to a global name in another file."""
 
-    enclosing_definition: ast.QualityDefinition
+    enclosing_definition: ast.GlobalDefinition
     global_name_reference: ast.GlobalTypedNameReference
 
     @property
@@ -58,9 +58,9 @@ class ReferenceGraph:
         # three references each.
         self._depth_by_name: dict[str, int] = {}
         self._next_definition_depth: int = 0
-        self._definition_by_name: dict[str, ast.QualityDefinition] = {}
+        self._definition_by_name: dict[str, ast.GlobalDefinition] = {}
 
-    def add_definition(self, definition: ast.QualityDefinition):
+    def add_definition(self, definition: ast.GlobalDefinition):
         """Register a definition with the graph."""
         definition_name = definition.typed_name.source_typed_name
         self._add_name(definition_name)
@@ -99,8 +99,8 @@ class ReferenceGraph:
         return None
 
     def dfs_postorder_from(
-        self, starting_definition: ast.QualityDefinition
-    ) -> Iterator[ast.QualityDefinition]:
+        self, starting_definition: ast.GlobalDefinition
+    ) -> Iterator[ast.GlobalDefinition]:
         """Yield referenced definitions before definitions that reference them.
 
         Only definitions reachable from ``starting_definition`` are yielded.
@@ -109,15 +109,15 @@ class ReferenceGraph:
         for definition_name in self._names_in_postorder([starting_name]):
             yield self._definition_by_name[definition_name]
 
-    def dfs_postorder_all(self) -> Iterator[ast.QualityDefinition]:
+    def dfs_postorder_all(self) -> Iterator[ast.GlobalDefinition]:
         """Yield all referenced definitions before definitions that reference them."""
         for definition_name in self._names_in_postorder(self._references_by_name):
             if definition_name in self._definition_by_name:
                 yield self._definition_by_name[definition_name]
 
     def referenced_definitions(
-        self, definition: ast.QualityDefinition
-    ) -> Iterator[ast.QualityDefinition]:
+        self, definition: ast.GlobalDefinition
+    ) -> Iterator[ast.GlobalDefinition]:
         """Yield definitions directly referenced by ``definition``."""
         definition_name = definition.typed_name.source_typed_name
         for referenced_name in self._references_by_name[definition_name]:

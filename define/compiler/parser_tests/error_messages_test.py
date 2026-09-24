@@ -25,7 +25,11 @@ def test_empty_source_error_message(parse: Parse) -> None:
         line 1, column 1
 
         ^
-        Expected a global definition like 'define the potential ...'""")
+        Expected a global definition, one of:
+            - define the potential position
+            - define the potential action
+            - define the potential value
+            - define the encoding""")
 
 
 def test_error_message_without_path(parse: Parse) -> None:

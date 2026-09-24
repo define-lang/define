@@ -27,11 +27,12 @@ if TYPE_CHECKING:
 
 
 class NameType(enum.StrEnum):
-    """The type of a quality definition."""
+    """The type of a name."""
 
     POSITION = "position"
     ACTION = "action"
     VALUE = "value"
+    ENCODING = "encoding"
 
 
 class ASTNodeMeta(msgspec.StructMeta, abc.ABCMeta):
@@ -130,14 +131,37 @@ class ASTNode(msgspec.Struct, metaclass=ASTNodeMeta, eq=False):
 class Program(ASTNode):
     """Represents the entire program."""
 
-    definitions: tuple[QualityDefinition, ...]
+    definitions: tuple[GlobalDefinition, ...]
 
 
-class QualityDefinition(ASTNode):
-    """Base class for quality definitions."""
+class GlobalDefinition(ASTNode):
+    """Base class for definitions in the global context."""
 
     typed_name: GlobalTypedNameInDefinition
+
+
+class QualityDefinition(GlobalDefinition):
+    """Base class for quality definitions."""
+
     quality_implications: tuple[QualityImplicationStatement, ...]
+
+
+class EncodingDefinition(GlobalDefinition):
+    """Represents an encoding definition."""
+
+    @classmethod
+    def from_name(
+        cls, *, name: DefinitionGlobalNameContent, location: SourceLocation
+    ) -> Self:
+        """Initialize with a global name."""
+        return cls(
+            typed_name=GlobalTypedNameInDefinition(
+                name_type=NameType.ENCODING,
+                name_content=name,
+                location=SourceLocation.from_definition_name(name, NameType.ENCODING),
+            ),
+            location=location,
+        )
 
 
 class ValueDefinition(QualityDefinition):

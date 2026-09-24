@@ -29,7 +29,7 @@ def _parse(source: str) -> validation_result.FileValidationResult:
 
 def _first_definition(
     result: validation_result.FileValidationResult,
-) -> ast.QualityDefinition:
+) -> ast.GlobalDefinition:
     return result.definition_results[0].definition
 
 

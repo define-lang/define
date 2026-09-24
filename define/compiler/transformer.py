@@ -96,7 +96,7 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
         return self._context.enclosing_fqun
 
     @_strip_discard
-    def start(self, items: list[ast.QualityDefinition]) -> ast.Program:
+    def start(self, items: list[ast.GlobalDefinition]) -> ast.Program:
         """Assemble the top-level definitions into a Program."""
         location = ast.SourceLocation.from_ast_or_token(
             start=items[0],
@@ -155,6 +155,18 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
         and one for the trailing ``.`` terminator.
         """
         return self._location(start=start, end=name, end_column_offset=2)
+
+    @_strip_discard
+    def encoding_definition(
+        self, items: list[lark_cython.Token | ast.DefinitionGlobalNameContent]
+    ) -> ast.EncodingDefinition:
+        """Transform an encoding definition."""
+        keyword = cast("lark_cython.Token", items[0])
+        name = cast("ast.DefinitionGlobalNameContent", items[1])
+        return ast.EncodingDefinition.from_name(
+            name=name,
+            location=self._location_for_bare_definition(start=keyword, name=name),
+        )
 
     @_strip_discard
     def value_definition(
@@ -591,7 +603,7 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
         )
 
     @_strip_discard
-    def definition(self, items: list[ast.QualityDefinition]) -> ast.QualityDefinition:
+    def definition(self, items: list[ast.GlobalDefinition]) -> ast.GlobalDefinition:
         """Unwrap the definition wrapper rule."""
         return items[0]
 

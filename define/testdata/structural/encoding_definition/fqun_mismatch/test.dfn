@@ -1,0 +1,2 @@
+# An encoding definition must match its project FQUN.
+define the encoding<other.org:my_lib:/test>.

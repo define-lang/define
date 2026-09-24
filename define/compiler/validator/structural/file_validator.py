@@ -146,7 +146,7 @@ class FileStructuralValidator:
         program = parse_result.program
 
         seen_definitions: typed_name_dict.TypedNameDict[
-            ast.GlobalTypedNameInDefinition, ast.QualityDefinition
+            ast.GlobalTypedNameInDefinition, ast.GlobalDefinition
         ] = typed_name_dict.TypedNameDict()
         definition_results: list[validation_result.DefinitionValidationResult] = []
         for definition in program.definitions:
@@ -202,12 +202,12 @@ class DefinitionStructuralValidator:
 
     _context: FileValidationContext
     _diagnostics: list[diagnostics.Diagnostic]
-    _definition: ast.QualityDefinition
+    _definition: ast.GlobalDefinition
     _reference_edges: list[reference_graph.ReferenceEdge]
     _seen_edge_targets: set[str]
     _particle_statement_validity: list[validation_result.ParticleStatementValidity]
     _seen_definitions: typed_name_dict.TypedNameDict[
-        ast.GlobalTypedNameInDefinition, ast.QualityDefinition
+        ast.GlobalTypedNameInDefinition, ast.GlobalDefinition
     ]
     _unknown_fquns: set[str]
     _implied_qualities: typed_name_dict.TypedNameDict[
@@ -220,10 +220,10 @@ class DefinitionStructuralValidator:
 
     def __init__(
         self,
-        definition: ast.QualityDefinition,
+        definition: ast.GlobalDefinition,
         context: FileValidationContext,
         seen_definitions: typed_name_dict.TypedNameDict[
-            ast.GlobalTypedNameInDefinition, ast.QualityDefinition
+            ast.GlobalTypedNameInDefinition, ast.GlobalDefinition
         ],
     ):
         """Initialize per-definition validation state from file-level state."""

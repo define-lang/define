@@ -106,8 +106,8 @@ class ChainedNameValidator:
         self,
         parent: ast.GlobalTypedNameReference,
         chain: ast.PositionReference,
-    ) -> ast.QualityDefinition | None:
-        """Get the QualityDefinition for a chain element, or None on failure (and mark chain error)."""
+    ) -> ast.GlobalDefinition | None:
+        """Get the GlobalDefinition for a chain element, or None on failure (and mark chain error)."""
         parent_result = self._definition_results.get(parent)
         # This means the definition's file did not load or did not parse.
         if parent_result is None:

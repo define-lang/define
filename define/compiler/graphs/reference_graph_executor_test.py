@@ -51,7 +51,7 @@ def test_failed_shared_dependency_prevents_both_paths(max_workers: int):
     lock = threading.Lock()
     failure = RuntimeError("base processing failed")
 
-    def process(definition: ast.QualityDefinition) -> str:
+    def process(definition: ast.GlobalDefinition) -> str:
         name = definition.typed_name.full_typed_name
         with lock:
             processed.add(name)
@@ -88,7 +88,7 @@ def test_order_can_be_reused_for_multiple_passes(max_workers: int):
         processed: set[str] = set()
         lock = threading.Lock()
 
-        def process(definition: ast.QualityDefinition) -> tuple[int, str]:
+        def process(definition: ast.GlobalDefinition) -> tuple[int, str]:
             name = definition.typed_name.full_typed_name
             with lock:
                 assert name not in processed

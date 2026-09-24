@@ -62,7 +62,9 @@ class _DefinitionGenerator:
         )
         return self._entry_definition, set(package_dirs)
 
-    def _generate_definition(self, definition: ast.QualityDefinition) -> Path:
+    def _generate_definition(self, definition: ast.GlobalDefinition) -> Path:
+        if isinstance(definition, ast.EncodingDefinition):
+            raise NotImplementedError("Encoding code generation is not implemented")
         if isinstance(definition, ast.ActionDefinition):
             context = self._generate_action(definition)
             content = _templates.render_action(context)

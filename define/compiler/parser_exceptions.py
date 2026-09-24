@@ -222,7 +222,11 @@ class ExpectedGlobalDefinition(DefineTokenError):
     """Thrown when the parser expected to see a global definition and didn't see one."""
 
     message_format: ClassVar[str] = (
-        "Expected a global definition like 'define the potential ...'"
+        "Expected a global definition, one of:\n"
+        + "    - define the potential position\n"
+        + "    - define the potential action\n"
+        + "    - define the potential value\n"
+        + "    - define the encoding"
     )
 
 

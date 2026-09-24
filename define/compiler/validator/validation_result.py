@@ -35,7 +35,7 @@ class ParticleStatementValidity(msgspec.Struct, frozen=True):
 class DefinitionValidationResult(msgspec.Struct):
     """Validation output for one definition within a file."""
 
-    definition: ast.QualityDefinition
+    definition: ast.GlobalDefinition
     _diagnostics: list[diagnostics.Diagnostic] = msgspec.field(default_factory=list)
 
     reference_edges: list[reference_graph.ReferenceEdge] = msgspec.field(

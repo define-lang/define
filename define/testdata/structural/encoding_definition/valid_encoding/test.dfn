@@ -1,0 +1,2 @@
+# An encoding definition needs no action or constraints.
+define the encoding<my.domain.com:my_lib:/test>.

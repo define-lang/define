@@ -1,0 +1,2 @@
+# An encoding definition must match its file path.
+define the encoding<my.domain.com:my_lib:/number>.

@@ -25,6 +25,7 @@ DEFINE_THE_POSITION: "define the position"
 DEFINE_THE_POTENTIAL_POSITION: "define the potential position"
 DEFINE_THE_POTENTIAL_ACTION: "define the potential action"
 DEFINE_THE_POTENTIAL_VALUE: "define the potential value"
+DEFINE_THE_ENCODING: "define the encoding"
 POSITION_OR_ACTION: "position" | "action"
 VALUE: "value"
 IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE: "it may only contain particles where"
@@ -76,6 +77,8 @@ typed_local_name_reference: POSITION_OR_ACTION local_name_content
 
 # Position Constraint Block Syntax
 
+# TODO: Support encoding names in Position Requirement Statements, as allowed by
+# the spec's typed_global_name production.
 position_requirement_statement: IT_HAS_THE " " (typed_global_name_reference | typed_value_name_reference) terminator
 _position_constraint_requirements: NEWLINE* (position_requirement_statement NEWLINE*)+
 position_constraint_block: IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE _block_open _position_constraint_requirements _block_close
@@ -128,6 +131,7 @@ action_definition_block: _block_open NEWLINE* _quality_implications _action_loca
 # Root Syntax
 
 value_definition: DEFINE_THE_POTENTIAL_VALUE global_name_definition_content terminator
+encoding_definition: DEFINE_THE_ENCODING global_name_definition_content terminator
 
-definition: position_definition | action_definition | value_definition
+definition: position_definition | action_definition | value_definition | encoding_definition
 start: NEWLINE* definition (NEWLINE* definition)* NEWLINE*

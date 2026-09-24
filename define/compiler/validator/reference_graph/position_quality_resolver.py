@@ -132,9 +132,10 @@ class PositionQualityResolver:
             defn_result = self._definition_results.get(typed_name)
             if defn_result is None:
                 return ()
+            definition = typing.cast("ast.QualityDefinition", defn_result.definition)
             return tuple(
                 implication.typed_global_name
-                for implication in defn_result.definition.quality_implications
+                for implication in definition.quality_implications
             )
 
         return quality_assignment.QualityAssignments.expand_implications(

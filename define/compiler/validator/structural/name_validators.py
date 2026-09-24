@@ -502,7 +502,7 @@ def validate_local_name_format(
 
 def validate_typed_name(
     typed_name: ast.TypedNameReference,
-    enclosing_definition: ast.QualityDefinition,
+    enclosing_definition: ast.GlobalDefinition,
 ) -> list[diagnostics.Diagnostic]:
     """Validate any typed name reference (global or local)."""
     enclosing_fqun = enclosing_definition.typed_name.name_content.fqun

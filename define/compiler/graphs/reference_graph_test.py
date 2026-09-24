@@ -57,7 +57,7 @@ def _make_action(path_name: str) -> ast.ActionDefinition:
 
 
 def _make_edge(
-    source: ast.QualityDefinition,
+    source: ast.GlobalDefinition,
     target_path: str,
     target_type: ast.NameType = ast.NameType.POSITION,
 ) -> reference_graph.ReferenceEdge:

@@ -26,7 +26,7 @@ class _WorkPool[ResultT]:
     def __init__(
         self,
         order: reference_graph_order.ReferenceGraphOrder,
-        process_definition: Callable[[ast.QualityDefinition], ResultT],
+        process_definition: Callable[[ast.GlobalDefinition], ResultT],
         max_workers: int | None,
     ):
         if max_workers is None:
@@ -133,7 +133,7 @@ class _WorkPool[ResultT]:
 
 def process_definitions[ResultT](
     order: reference_graph_order.ReferenceGraphOrder,
-    process_definition: Callable[[ast.QualityDefinition], ResultT],
+    process_definition: Callable[[ast.GlobalDefinition], ResultT],
     *,
     max_workers: int | None = None,
 ) -> list[ResultT]:

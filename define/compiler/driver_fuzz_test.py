@@ -761,6 +761,7 @@ def syntactic_sources(draw: st.DrawFn) -> str:
                 [
                     "position_simple",
                     "value",
+                    "encoding",
                     "position",
                     "action_simple",
                     "action_block",
@@ -773,6 +774,8 @@ def syntactic_sources(draw: st.DrawFn) -> str:
             defs.append(draw(position_definitions()))
         elif kind == "value":
             defs.append(f"define the potential value<{draw(global_names())}>.\n")
+        elif kind == "encoding":
+            defs.append(f"define the encoding<{draw(global_names())}>.\n")
         elif kind == "action_simple":
             defs.append(draw(action_definitions_simple()))
         elif kind == "action_block":

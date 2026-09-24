@@ -215,7 +215,7 @@ class TestDefinitionStructuralValidator:
         )
         program = _parse_program(source, lark_parser)
         seen_definitions: typed_name_dict.TypedNameDict[
-            ast.GlobalTypedNameInDefinition, ast.QualityDefinition
+            ast.GlobalTypedNameInDefinition, ast.GlobalDefinition
         ] = typed_name_dict.TypedNameDict()
 
         first_result = file_validator.DefinitionStructuralValidator(
@@ -246,7 +246,7 @@ class TestDefinitionStructuralValidator:
         )
         program = _parse_program(source, lark_parser)
         seen_definitions: typed_name_dict.TypedNameDict[
-            ast.GlobalTypedNameInDefinition, ast.QualityDefinition
+            ast.GlobalTypedNameInDefinition, ast.GlobalDefinition
         ] = typed_name_dict.TypedNameDict()
         results: list[validation_result.DefinitionValidationResult] = []
 

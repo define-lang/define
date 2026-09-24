@@ -111,7 +111,7 @@ class ReferenceGraphValidator:
         )
 
     def _validate_definition(
-        self, definition: ast.QualityDefinition
+        self, definition: ast.GlobalDefinition
     ) -> _PostorderResult:
         if not isinstance(definition, ast.ActionDefinition):
             return None

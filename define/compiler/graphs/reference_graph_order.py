@@ -52,7 +52,7 @@ class ReferenceGraphOrder:
     @staticmethod
     def _collect_references(
         graph: reference_graph.ReferenceGraph,
-        definitions: list[ast.QualityDefinition],
+        definitions: list[ast.GlobalDefinition],
     ) -> tuple[array[int], array[int], array[int], array[int]]:
         """Collect reference counts, reference indexes, dependent counts, and leaves."""
         # Dense 64-bit buffers avoid a separate Python integer per reference.

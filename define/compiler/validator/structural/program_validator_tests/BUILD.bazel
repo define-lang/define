@@ -83,6 +83,20 @@ py_test(
 )
 
 py_test(
+    name = "encoding_definition_test",
+    size = "small",
+    srcs = ["encoding_definition_test.py"],
+    data = ["//define/testdata/structural/encoding_definition"],
+    deps = [
+        "//define/compiler:ast",
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler:parser_exceptions",
+        "//define/compiler/validator:test_helpers",
+    ],
+)
+
+py_test(
     name = "entry_action_test",
     size = "small",
     srcs = ["entry_action_test.py"],
@@ -412,6 +426,7 @@ pyright_test(
         ":diagnostic_collection_test",
         ":duplicate_definitions_test",
         ":duplicate_position_constraint_test",
+        ":encoding_definition_test",
         ":entry_action_test",
         ":error_messages_test",
         ":file_not_found_test",
