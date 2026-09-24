@@ -189,6 +189,7 @@ Proposals:
 
 - [DLP 1: Types of Names](../proposals/00001-types-of-names.md)
 - [DLP 46: Value Encodings](../proposals/00046-value-encodings.md)
+- [DLP 52: Literals](../proposals/00052-literals.md)
 
 Define reserves all words and symbols for its own use in syntax.
 
@@ -201,10 +202,11 @@ The valid name types are currently:
 - `action`
 - `value`
 - `encoding`
+- `literal`
 
 ```ebnf
 typed_name = name_type, "<", name_content, ">" ;
-name_type  = "position" | "action" | "value" | "encoding";
+name_type  = "position" | "action" | "value" | "encoding" | "literal";
 ```
 
 Define Language Proposals sometimes sometimes use the term "name" to mean
@@ -659,6 +661,25 @@ command-line flag or configuration:
 Any path-based restrictions above apply only when needing to resolve global
 names in a filesystem context.
 
+## Program
+
+Proposals:
+
+- [DLP 5: Global Names, Local Names, and Scopes](../proposals/00005-global-names-local-names-and-scopes.md)
+- [DLP 12: Definitions in the Universe of Reflection](../proposals/00012-definitions-in-the-universe-of-reflection.md)
+- [DLP 46: Value Encodings](../proposals/00046-value-encodings.md)
+- [DLP 52: Literals](../proposals/00052-literals.md)
+
+A Define program's source consists of global definitions.
+
+```ebnf
+program = { global_definition } ;
+global_definition =
+    quality_definition
+    | encoding_definition
+    | potential_literal_definition ;
+```
+
 ## Statements
 
 Proposals:
@@ -784,9 +805,9 @@ Proposals:
 A "short global name" is a global name where the FQUN is omitted (thus only the
 path is used).
 
-When a global name definition creates a local scope, references to other global
-names may appear in that scope and its transitive child scopes. The following
-rules apply to those references:
+When a global name definition creates a block, references to other global names
+may appear in that block (and all child blocks). The following rules apply to
+those references:
 
 - If the referenced global name has the same FQUN as the enclosing definition,
   the reference must use the short form. Using the full FQUN is an error.
@@ -961,6 +982,32 @@ in the global context.
 ```ebnf
 fully_qualified_encoding_name = "encoding", "<", fully_qualified_global_name, ">" ;
 encoding_definition = "define the", " ", fully_qualified_encoding_name, terminator ;
+```
+
+## Defining Potential Literals
+
+Proposals:
+
+- [DLP 52: Literals](../proposals/00052-literals.md)
+
+A potential literal is defined by `define the potential` followed by a global
+name with the name type `literal`. It has a block containing
+`it has the encoding` followed by a global name and a terminator.
+
+Potential literals are not qualities that can be assigned to a particle.
+
+```ebnf
+fully_qualified_potential_literal_name = "literal", "<", fully_qualified_global_name, ">" ;
+potential_literal_definition =
+    "define the potential",
+    " ",
+    fully_qualified_potential_literal_name,
+    potential_literal_definition_block ;
+encoding_constraint = "it has the encoding", "<", global_name, ">", terminator ;
+potential_literal_definition_block =
+    block_open,
+    encoding_constraint,
+    block_close ;
 ```
 
 ## Defining Potential Actions
