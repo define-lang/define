@@ -123,6 +123,12 @@ Statements are never dead code.
 Any directly-declared position constraint that is not referenced inside of that
 same action is dead code.
 
+### Dead Value Constraints
+
+Any value constraint on a position whose particle is not passed to some
+statement that requires a value (either a value operation or a Value Setting
+Statement) is dead code.
+
 #### Untriggered Actions
 
 If an action is directly assigned to a particle and it can be triggered but
@@ -131,11 +137,11 @@ never is, it is a dead constraint. For example, `action</foo>` has a trigger on
 
 #### The Move Use Exception
 
-When a child position is directly referenced on a particle, or an action
-assigned to that particle is triggered, the matching constraint is alive both on
-the position currently holding the particle and on the position where the
-particle originated (where it was created or arrived via an Automatic Action
-Requirement).
+When a child position is directly referenced on a particle, a value operation or
+value setting statement acts on a particle, or an action assigned to that
+particle is triggered, the matching constraint is alive both on the position
+currently holding the particle and on the position where the particle originated
+(where it was created or arrived via an Automatic Action Requirement).
 
 This handles cases where you move a particle from A to B and then reference
 children on B only.
@@ -169,6 +175,19 @@ In order for the constraints on B to be alive, they would have to be referenced
 with B as the parent name. So if the constraint is `position</thing>` then the
 code would have to explicitly reference `position<b>::position</thing>` in order
 for that constraint on `position<b>` to be considered alive.
+
+### Dead Value Setting Statements
+
+A Value Setting Statement is dead code unless the particle on the left side (the
+one that was written to) is either:
+
+1. Passed as an input particle to a value operation in the same action.
+2. Passed into a contracted position of a callee that requires the value be set.
+3. Provided as a guarantee of this action in a position with the relevant value
+   constraint.
+
+Points 2 and 3 are essentially the same exception as The Contracted Position
+Exception above, except applied to set values rather than constraints.
 
 ### Untriggered Implied Actions
 
