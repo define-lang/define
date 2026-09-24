@@ -1,0 +1,13 @@
+# Creating a particle in a guaranteed position keeps its value constraint alive.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<result> {
+        it may only contain particles where {
+            it has the value</number>.
+        }
+    }
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position<result>.
+    }
+}

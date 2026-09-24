@@ -17,7 +17,17 @@ class Test(literal.Action):
                 local.my_domain_com.my_lib.number.rational.NumberRational,
             ),
         )
+        copy = literal.LocalPosition(
+            "position<copy>",
+            constraints=(
+                local.my_domain_com.my_lib.number.rational.NumberRational,
+            ),
+        )
         item.create_particle()
         literal.record_operation("test.create(item)")
+        copy.create_particle()
+        literal.record_operation("test.create(copy)")
+        copy.destroy_particle()
+        literal.record_operation("test.destroy(copy)")
         item.destroy_particle()
         literal.record_operation("test.destroy(item)")

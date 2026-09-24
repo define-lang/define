@@ -1146,6 +1146,14 @@ class ParticleTracker:
         self._apply_pending_guarantees_up_to(key)
         return self._store.occupant(key)
 
+    def get_occupant_or_none(
+        self, in_position: ast.PositionReference
+    ) -> particle_info.ParticleInfo | None:
+        """Get the particle at this position, if one exists."""
+        key = in_position.canonical_chained_name_tuple
+        self._apply_pending_guarantees_up_to(key)
+        return self._store.occupant_or_none(key)
+
     def snapshot_child_states(
         self, for_positions: Sequence[ast.PositionReference]
     ) -> list[child_state.ChildState]:

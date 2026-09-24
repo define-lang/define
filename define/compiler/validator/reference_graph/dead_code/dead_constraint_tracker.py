@@ -34,7 +34,7 @@ class DeadConstraintTracker:
     A candidate is registered for each of a local or interface position's
     directly-written constraints that resolves and is not a destructor, and
     removed once the constraint is proven alive by a child-position reference,
-    an action trigger, or an action contract. Whatever remains after a
+    a value use, an action trigger, or an action contract. Whatever remains after a
     definition's body is analyzed is dead code.
 
     Implied actions must be triggered to be alive (which means constructors and
@@ -54,6 +54,9 @@ class DeadConstraintTracker:
         self._action_constraint_candidates: dict[
             tuple[str, str], DeadConstraintCandidate
         ] = {}
+        self._value_constraint_candidates: dict[
+            tuple[str, str], DeadConstraintCandidate
+        ] = {}
         self._implied_action_candidates: dict[str, ast.GlobalTypedNameReference] = {}
 
     def register_constraint(
@@ -65,6 +68,8 @@ class DeadConstraintTracker:
         candidate = DeadConstraintCandidate(position=position, constraint=constraint)
         if constraint.name_type == ast.NameType.ACTION:
             self._action_constraint_candidates[candidate.key] = candidate
+        elif constraint.name_type == ast.NameType.VALUE:
+            self._value_constraint_candidates[candidate.key] = candidate
         else:
             constraint_name = constraint.full_typed_name
             self._position_constraint_candidate_counts[constraint_name] = (
@@ -94,8 +99,6 @@ class DeadConstraintTracker:
         destroyed.
         """
         for constraint in position_definition.constraint_typed_names:
-            if constraint.name_type == ast.NameType.VALUE:
-                continue
             definition_result = definition_results.get(constraint)
             if definition_result is None:
                 continue
@@ -128,9 +131,21 @@ class DeadConstraintTracker:
         )
 
     def has_constraint_candidates(self) -> bool:
-        """Whether there are any remaining position or action constraints to check."""
+        """Whether there are any remaining constraints to check."""
         return bool(
-            self._position_constraint_candidates or self._action_constraint_candidates
+            self._position_constraint_candidates
+            or self._action_constraint_candidates
+            or self._value_constraint_candidates
+        )
+
+    def mark_value_alive(
+        self,
+        origin_position: ast.PositionReference,
+        constraint: ast.GlobalTypedNameReference,
+    ):
+        """Keep a used value constraint alive on the particle's origin position."""
+        _ = self._value_constraint_candidates.pop(
+            (origin_position.canonical_chained_name, constraint.full_typed_name), None
         )
 
     def mark_position_alive(
@@ -202,6 +217,14 @@ class DeadConstraintTracker:
         if not self.has_constraint_candidates():
             return
         for constraint in constraints:
+            if constraint.name_type == ast.NameType.VALUE:
+                self._mark_constraint_alive(
+                    self._value_constraint_candidates,
+                    current_position,
+                    origin_position,
+                    constraint,
+                )
+                continue
             self.mark_position_alive(current_position, origin_position, constraint)
             self._mark_constraint_alive(
                 self._action_constraint_candidates,
@@ -242,6 +265,10 @@ class DeadConstraintTracker:
     def dead_action_constraints(self) -> Iterable[DeadConstraintCandidate]:
         """Return the dead directly-written action constraints (DLP 42)."""
         return self._action_constraint_candidates.values()
+
+    def dead_value_constraints(self) -> Iterable[DeadConstraintCandidate]:
+        """Return unused directly-written value constraints."""
+        return self._value_constraint_candidates.values()
 
     def untriggered_implied_actions(
         self,

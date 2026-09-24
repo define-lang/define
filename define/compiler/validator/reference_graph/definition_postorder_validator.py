@@ -672,6 +672,7 @@ class ActionPostorderValidator:
                 self._requirement_validator.infer_requirements_on_chain(
                     position_occupancy.PositionOccupancyState.OCCUPIED, position, scope
                 )
+                self._dead_constraint_validator.mark_value_constraint_alive(position)
         self._diagnostics.extend(
             self._operation_validator.validate_value_setting(
                 stmt.target_position, stmt.source_position

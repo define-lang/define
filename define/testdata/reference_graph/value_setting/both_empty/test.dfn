@@ -1,4 +1,4 @@
-# Report both empty positions.
+# Report both empty positions even when their value constraints have been used.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.
@@ -13,6 +13,18 @@ define the potential action<my.domain.com:my_lib:/test> {
                 it has the value</number>.
             }
         }
+        define the position<copy> {
+            it may only contain particles where {
+                it has the value</number>.
+            }
+        }
+        create a particle in position<target>.
+        create a particle in position<source>.
+        create a particle in position<copy>.
+        set the value of position<target> to position<copy>.
+        set the value of position<source> to position<copy>.
+        destroy the particle in position<target>.
+        destroy the particle in position<source>.
         set the value of position<target> to position<source>.
     }
 }

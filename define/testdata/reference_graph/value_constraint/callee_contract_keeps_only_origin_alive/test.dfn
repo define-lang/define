@@ -1,0 +1,26 @@
+# A callee requirement keeps the origin value constraint alive through moves.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<worker> {
+            it may only contain particles where {
+                it has the action</consume>.
+            }
+        }
+        define the position<source> {
+            it may only contain particles where {
+                it has the value</number>.
+            }
+        }
+        define the position<middle> {
+            it may only contain particles where {
+                it has the value</number>.
+            }
+        }
+        create a particle in position<worker>.
+        create a particle in position<source>.
+        move the particle in position<source> to position<middle>.
+        move the particle in position<middle> to position<worker>::action</consume>::position<input>.
+    }
+}

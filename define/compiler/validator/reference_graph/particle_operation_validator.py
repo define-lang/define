@@ -32,13 +32,14 @@ class ParticleOperationValidator:
         if parent_diagnostic is not None:
             self._tracker.mark_error(target)
             return parent_diagnostic
-        if self._tracker.is_occupied(target):
+        particle = self._tracker.get_occupant_or_none(target)
+        if particle is not None:
             # Target is genuinely occupied — leave its known state intact so
             # later statements can still reason about the existing particle.
             return diagnostics.CreateInOccupiedPositionDiagnostic(
                 location=target.location,
                 position_name=target.source_chained_name,
-                populated_at=self._tracker.get_occupant(target).last_position.location,
+                populated_at=particle.last_position.location,
             )
         return None
 
@@ -58,10 +59,10 @@ class ParticleOperationValidator:
             self._tracker.mark_error(source)
             self._tracker.mark_error(target)
             return parent_diags
-        from_occupied = self._tracker.is_occupied(source)
-        to_empty = not self._tracker.is_occupied(target)
+        source_particle = self._tracker.get_occupant_or_none(source)
+        target_particle = self._tracker.get_occupant_or_none(target)
         diags: list[diagnostics.Diagnostic] = []
-        if not from_occupied:
+        if source_particle is None:
             from_action = source.get_last_action()
             is_action_interface_position = from_action is not None
             emptied_by = (
@@ -77,20 +78,19 @@ class ParticleOperationValidator:
                     inferred_at=emptied_by.location if emptied_by else None,
                 )
             )
-        if not to_empty:
-            occupant = self._tracker.get_occupant(target)
+        if target_particle is not None:
             diags.append(
                 diagnostics.MoveToOccupiedPositionDiagnostic(
                     location=target.location,
                     position_name=target.source_chained_name,
-                    occupied_at=occupant.last_position.location,
+                    occupied_at=target_particle.last_position.location,
                 )
             )
-        if diags:
+        if source_particle is None or target_particle is not None:
             self._tracker.mark_error(source)
             self._tracker.mark_error(target)
             return diags
-        have = self._tracker.get_occupant(source).qualities
+        have = source_particle.qualities
         missing = [
             name.source_form_in_universe(self._enclosing_fqun)
             for name in target_required_qualities
@@ -150,7 +150,8 @@ class ParticleOperationValidator:
         if parent_diagnostic is not None:
             validation_diagnostics.append(parent_diagnostic)
             return None
-        if not self._tracker.is_occupied(position):
+        particle = self._tracker.get_occupant_or_none(position)
+        if particle is None:
             validation_diagnostics.append(
                 diagnostics.ValueSettingEmptyPositionDiagnostic(
                     location=position.location,
@@ -158,7 +159,6 @@ class ParticleOperationValidator:
                 )
             )
             return None
-        particle = self._tracker.get_occupant(position)
         value_type = particle.qualities.value_type
         if value_type is None:
             validation_diagnostics.append(

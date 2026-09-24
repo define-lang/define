@@ -1,0 +1,26 @@
+# Using a moved value keeps its origin constraint alive, but not the current position constraint.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<source> {
+            it may only contain particles where {
+                it has the value</number>.
+            }
+        }
+        define the position<target> {
+            it may only contain particles where {
+                it has the value</number>.
+            }
+        }
+        define the position<copy> {
+            it may only contain particles where {
+                it has the value</number>.
+            }
+        }
+        create a particle in position<source>.
+        create a particle in position<copy>.
+        move the particle in position<source> to position<target>.
+        set the value of position<copy> to position<target>.
+    }
+}

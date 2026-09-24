@@ -9,6 +9,16 @@ define the potential action<my.domain.com:my_lib:/test> {
                 it has the value</number>.
             }
         }
+        create a particle in position<target>.
+        define the position<copy> {
+            it may only contain particles where {
+                it has the value</number>.
+            }
+        }
+        create a particle in position<copy>.
+        set the value of position<copy> to position<target>.
+        destroy the particle in position<copy>.
+        destroy the particle in position<target>.
         create a particle in position<source>.
         move the particle in position<source> to position<target>.
         destroy the particle in position<target>.

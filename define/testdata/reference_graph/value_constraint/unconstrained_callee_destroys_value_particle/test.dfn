@@ -15,6 +15,14 @@ define the potential action<my.domain.com:my_lib:/test> {
         }
         create a particle in position<worker>.
         create a particle in position<source>.
+        define the position<copy> {
+            it may only contain particles where {
+                it has the value</number>.
+            }
+        }
+        create a particle in position<copy>.
+        set the value of position<copy> to position<source>.
+        destroy the particle in position<copy>.
         move the particle in position<source> to position<worker>::action</consume>::position<input>.
         destroy the particle in position<worker>.
     }

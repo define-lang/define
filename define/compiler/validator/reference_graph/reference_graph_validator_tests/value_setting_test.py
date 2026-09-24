@@ -60,7 +60,7 @@ def test_target_empty(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ValueSettingEmptyPositionDiagnostic)
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert diagnostic.location.line == 17
+    assert diagnostic.location.line == 20
     assert diagnostic.location.column == 26
 
 
@@ -88,7 +88,7 @@ def test_source_empty(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ValueSettingEmptyPositionDiagnostic)
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert diagnostic.location.line == 17
+    assert diagnostic.location.line == 20
     assert diagnostic.location.column == 46
 
 
@@ -123,12 +123,12 @@ def test_both_empty(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ValueSettingEmptyPositionDiagnostic)
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert diagnostic.location.line == 16
+    assert diagnostic.location.line == 28
     assert diagnostic.location.column == 26
     diagnostic = result.all_diagnostics[1]
     assert isinstance(diagnostic, diagnostics.ValueSettingEmptyPositionDiagnostic)
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert diagnostic.location.line == 16
+    assert diagnostic.location.line == 28
     assert diagnostic.location.column == 46
 
 
@@ -161,7 +161,7 @@ def test_undefined_position(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.UndefinedLocalNameDiagnostic)
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert diagnostic.location.line == 12
+    assert diagnostic.location.line == 19
     assert diagnostic.location.column == 46
 
 
@@ -174,7 +174,7 @@ def test_prior_error(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.MoveFromEmptyPositionDiagnostic)
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert diagnostic.location.line == 18
+    assert diagnostic.location.line == 21
     assert diagnostic.location.column == 30
 
 

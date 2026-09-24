@@ -1,0 +1,25 @@
+# A final guarantee keeps origin and final constraints alive, but not an intermediate constraint.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<result> {
+        it may only contain particles where {
+            it has the value</number>.
+        }
+    }
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<source> {
+            it may only contain particles where {
+                it has the value</number>.
+            }
+        }
+        define the position<middle> {
+            it may only contain particles where {
+                it has the value</number>.
+            }
+        }
+        create a particle in position<source>.
+        move the particle in position<source> to position<middle>.
+        move the particle in position<middle> to position<result>.
+    }
+}

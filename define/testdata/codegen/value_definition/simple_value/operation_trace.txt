@@ -1,2 +1,4 @@
 test.create(item)
+test.create(copy)
+test.destroy(copy)
 test.destroy(item)

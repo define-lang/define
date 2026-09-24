@@ -74,6 +74,14 @@ class DeadConstraintValidator:
             parent_particle.origin_position if parent_particle is not None else None,
         )
 
+    def mark_value_constraint_alive(self, position: ast.PositionReference):
+        """Keep the value constraint on a used particle's origin position alive."""
+        particle = self._tracker.get_occupant_or_none(position)
+        if particle is not None and particle.qualities.value_type is not None:
+            self._dead_constraint_tracker.mark_value_alive(
+                particle.origin_position, particle.qualities.value_type
+            )
+
     def _particle_origin_position(
         self, position: ast.PositionReference
     ) -> ast.PositionReference | None:
@@ -154,6 +162,14 @@ class DeadConstraintValidator:
         """Check dead constraints and untriggered Actions after accounting for final guarantees."""
         self._mark_own_contract_guarantees_alive(own_guarantees, scope)
         validation_diagnostics: list[diagnostics.Diagnostic] = []
+        for candidate in self._dead_constraint_tracker.dead_value_constraints():
+            validation_diagnostics.append(
+                diagnostics.DeadValueConstraintDiagnostic(
+                    location=candidate.constraint.location,
+                    constraint_name=candidate.constraint.source_typed_name,
+                    position_name=candidate.position.source_typed_name,
+                )
+            )
         for candidate in self._dead_constraint_tracker.dead_position_constraints():
             validation_diagnostics.append(
                 diagnostics.DeadChildPositionDiagnostic(
@@ -197,7 +213,7 @@ class DeadConstraintValidator:
         own_guarantees: dict[ast.ChainedNameTuple, action_contract.PositionGuarantee],
         scope: scope_tracker.ScopeTracker,
     ):
-        """Keep origin position constraints alive through this action's final guarantees."""
+        """Keep origin and final position constraints alive through this action's guarantees."""
         if not self._dead_constraint_tracker.has_constraint_candidates():
             return
         for guarantee in own_guarantees.values():

@@ -205,6 +205,16 @@ class DeadChildPositionDiagnostic(DeadConstraintDiagnostic):
     )
 
 
+class DeadValueConstraintDiagnostic(DeadConstraintDiagnostic):
+    """Diagnostic for a value constraint that is never used."""
+
+    message_format: ClassVar[str] = (
+        "'{self.constraint_name}' is a constraint of '{self.position_name}' here, "
+        " but the value is never actually used on any particle created in this position. "
+        " Either use the value or remove the constraint."
+    )
+
+
 class UntriggeredActionDiagnostic(DeadConstraintDiagnostic):
     """Diagnostic for an action constraint on a local or interface position that is never triggered."""
 

@@ -1583,7 +1583,8 @@ position of the particle.
 #### Used Values
 
 Any use of a particle in a Value Setting Statement or value operation causes
-that position constraint to be alive in the origin position of the particle.
+that particle's value constraint to be alive in the origin position of the
+particle.
 
 #### Triggering a Child Action
 
@@ -1602,7 +1603,8 @@ particle.
 
 At the end of an action, if a particle is in a position on which the current
 action guarantees to be occupied upon its completion, all constraints on that
-final position are marked as alive on the origin position of the particle.
+final position are marked as alive on both that final position and the origin
+position of the particle.
 
 #### Destructors
 
