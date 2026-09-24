@@ -5,10 +5,10 @@ from __future__ import annotations
 import typing
 from functools import cached_property
 
+from define.compiler import ast
+
 if typing.TYPE_CHECKING:
     from collections.abc import Callable, Iterator
-
-    from define.compiler import ast
 
     type _ImplicationsFor = Callable[
         [ast.GlobalTypedNameReference],
@@ -37,7 +37,6 @@ class QualityAssignments:
             return EMPTY_QUALITY_ASSIGNMENTS
         seen: set[str] = set()
         assignments: list[ast.GlobalTypedNameReference] = []
-
         for direct_quality in direct:
             if direct_quality.full_typed_name in seen:
                 continue
@@ -70,6 +69,14 @@ class QualityAssignments:
     def has_quality(self, quality: ast.GlobalTypedNameReference) -> bool:
         """Return whether the quality is assigned."""
         return quality.full_typed_name in self._quality_names
+
+    @cached_property
+    def value_type(self) -> ast.GlobalTypedNameReference | None:
+        """The value type assigned to the particle."""
+        for quality in self.assignments:
+            if quality.name_type == ast.NameType.VALUE:
+                return quality
+        return None
 
     def __iter__(self) -> Iterator[ast.GlobalTypedNameReference]:
         """Iterate over assigned qualities in semantic assignment order."""

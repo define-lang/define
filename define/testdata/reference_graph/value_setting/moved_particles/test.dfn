@@ -1,0 +1,26 @@
+# Assigned value types survive moves to unconstrained positions.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<target> {
+            it may only contain particles where {
+                it has the position</child>.
+                it has the value</number>.
+            }
+        }
+        define the position<source> {
+            it may only contain particles where {
+                it has the value</number>.
+            }
+        }
+        create a particle in position<target>.
+        create a particle in position<target>::position</child>.
+        create a particle in position<source>.
+        define the position<left>.
+        define the position<right>.
+        move the particle in position<target> to position<left>.
+        move the particle in position<source> to position<right>.
+        set the value of position<left> to position<right>.
+    }
+}

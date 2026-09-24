@@ -12,9 +12,11 @@ _FQUN = ast.Fqun(
 )
 
 
-def _quality(name: str) -> ast.GlobalTypedNameReference:
+def _quality(
+    name: str, name_type: ast.NameType = ast.NameType.POSITION
+) -> ast.GlobalTypedNameReference:
     return ast.GlobalTypedNameReference(
-        name_type=ast.NameType.POSITION,
+        name_type=name_type,
         name_content=ast.ReferenceGlobalNameContent(
             fqun=None,
             path=ast.GlobalPathName(name=f"/{name}", location=_LOCATION),
@@ -67,10 +69,35 @@ def test_quality_membership():
 
     assert assignments.has_quality(quality) is True
     assert assignments.has_quality(_quality("other")) is False
+    assert assignments.value_type is None
+
+
+def test_value_type_with_other_qualities():
+    first = _quality("first")
+    value = _quality("number", ast.NameType.VALUE)
+    last = _quality("last")
+    implied = _quality("implied")
+    assignments = _build((first, value, last), {last.full_typed_name: (implied,)})
+
+    assert tuple(assignments) == (first, value, implied, last)
+    assert assignments.value_type is value
+    assert assignments.has_quality(value) is True
 
 
 def test_shared_empty_collection_is_reused():
     assert _build((), {}) is quality_assignment.EMPTY_QUALITY_ASSIGNMENTS
+    assert quality_assignment.EMPTY_QUALITY_ASSIGNMENTS.value_type is None
+
+
+def test_direct_assignment_value_type():
+    position = _quality("position")
+    value = _quality("number", ast.NameType.VALUE)
+    assignments = quality_assignment.QualityAssignments((position, value))
+
+    assert tuple(assignments) == (position, value)
+    assert assignments.value_type is value
+    assert assignments.has_quality(position) is True
+    assert assignments.has_quality(value) is True
 
 
 def test_sixty_four_element_chain_is_iterative():

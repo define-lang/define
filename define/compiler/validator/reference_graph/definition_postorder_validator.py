@@ -595,8 +595,8 @@ class ActionPostorderValidator:
         for stmt in action_statements.statements:
             match stmt:
                 case ast.ValueSettingStatement():
-                    # TODO: Validate value setting statements once their semantics are implemented.
-                    pass
+                    validity = next(validity_iter)
+                    self._analyze_value_setting(stmt, validity, scope)
                 case ast.LocalPositionDefinition():
                     self._steps.append(stmt)
                     scope.add_definition(stmt)
@@ -646,6 +646,37 @@ class ActionPostorderValidator:
                 )
             )
         self._destroy_particles(targets, scope)
+
+    def _analyze_value_setting(
+        self,
+        stmt: ast.ValueSettingStatement,
+        validity: validation_result.ParticleStatementValidity,
+        scope: scope_tracker.ScopeTracker,
+    ):
+        if not (validity.target_ok and validity.source_ok):
+            return
+        for position in (stmt.target_position, stmt.source_position):
+            self._dead_constraint_validator.mark_referenced_position_constraints_alive(
+                position
+            )
+            self._diagnostics.extend(
+                self._chained_name_validator.validate(position, scope)
+            )
+        if (
+            stmt.target_position.canonical_chained_name_tuple
+            == stmt.source_position.canonical_chained_name_tuple
+        ):
+            return
+        for position in (stmt.target_position, stmt.source_position):
+            if not self._tracker.has_error_state(position):
+                self._requirement_validator.infer_requirements_on_chain(
+                    position_occupancy.PositionOccupancyState.OCCUPIED, position, scope
+                )
+        self._diagnostics.extend(
+            self._operation_validator.validate_value_setting(
+                stmt.target_position, stmt.source_position
+            )
+        )
 
     def _analyze_create(
         self,

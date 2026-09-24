@@ -1,0 +1,10 @@
+# Both chained names are validated even when they refer to the same position.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<parent>.
+        create a particle in position<parent>.
+        set the value of position<parent>::position</child> to position<parent>::position</child>.
+    }
+}

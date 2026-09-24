@@ -372,8 +372,13 @@ class DefinitionStructuralValidator:
         stmt: ast.ValueSettingStatement,
         scope: scope_tracker.ScopeTracker,
     ):
-        _ = self._validate_full_chained_name(stmt.target_position, scope)
-        _ = self._validate_full_chained_name(stmt.source_position, scope)
+        target_ok = self._validate_full_chained_name(stmt.target_position, scope)
+        source_ok = self._validate_full_chained_name(stmt.source_position, scope)
+        self._particle_statement_validity.append(
+            validation_result.ParticleStatementValidity(
+                target_ok=target_ok, source_ok=source_ok
+            )
+        )
         if (
             stmt.target_position.canonical_chained_name_tuple
             == stmt.source_position.canonical_chained_name_tuple

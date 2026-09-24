@@ -1,0 +1,16 @@
+# Chained names must satisfy the parent position constraints.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<parent>.
+        define the position<source> {
+            it may only contain particles where {
+                it has the value</number>.
+            }
+        }
+        create a particle in position<parent>.
+        create a particle in position<source>.
+        set the value of position<parent>::position</child> to position<source>.
+    }
+}

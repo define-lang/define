@@ -659,6 +659,42 @@ class ValueSettingSamePositionDiagnostic(Diagnostic):
     )
 
 
+class ValueSettingEmptyPositionDiagnostic(Diagnostic):
+    """A Value Setting Statement references an empty position."""
+
+    position_name: str
+    message_format: ClassVar[str] = (
+        "'{self.position_name}' has no particle in it, so it"
+        " cannot be used in a value setting statement."
+    )
+
+
+class ValueSettingMissingValueTypeDiagnostic(Diagnostic):
+    """A particle in a Value Setting Statement has no assigned value type."""
+
+    position_name: str
+    origin_position_name: str
+    message_format: ClassVar[str] = (
+        "the particle in '{self.position_name}' has no assigned value type."
+        " Set a value constraint on the position where it originated:"
+        " '{self.origin_position_name}'."
+    )
+
+
+class ValueSettingTypeMismatchDiagnostic(Diagnostic):
+    """A Value Setting Statement uses particles with different value types."""
+
+    target_position: str
+    source_position: str
+    target_value_type: str
+    source_value_type: str
+    message_format: ClassVar[str] = (
+        "this value setting statement has particles with two different value types,"
+        " which is not allowed. {self.target_position} has {self.target_value_type}"
+        " and {self.source_position} has {self.source_value_type}."
+    )
+
+
 class MoveViolatesConstraintsDiagnostic(Diagnostic):
     """Diagnostic for when a move's destination constraints are not satisfied."""
 

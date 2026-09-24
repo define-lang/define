@@ -25,7 +25,7 @@ type AnyValidationException = exceptions.DefineError | lark_standalone.Unexpecte
 
 
 class ParticleStatementValidity(msgspec.Struct, frozen=True):
-    """Name validation results for a create or move statement."""
+    """Name validation results for a Particle Statement."""
 
     target_ok: bool
     source_ok: bool = True

@@ -1,0 +1,18 @@
+# Report both empty positions.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<target> {
+            it may only contain particles where {
+                it has the value</number>.
+            }
+        }
+        define the position<source> {
+            it may only contain particles where {
+                it has the value</number>.
+            }
+        }
+        set the value of position<target> to position<source>.
+    }
+}

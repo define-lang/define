@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import textwrap
+from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.data_structures import define_path
@@ -627,6 +628,55 @@ def test_requirement_carried_through_actions_on_locals_format(
         (_OUTER, _MIDDLE),
         (_TEST, _OUTER),
     ]
+
+
+def test_value_setting_type_mismatch_format(
+    validate_project: ValidateProject,
+):
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    it happens when {\n"
+        "        this particle is created.\n"
+        "    } and it does {\n"
+        "        define the position<x> {\n"
+        "            it may only contain particles where {\n"
+        "                it has the value</foo/bar>.\n"
+        "            }\n"
+        "        }\n"
+        "        define the position<y> {\n"
+        "            it may only contain particles where {\n"
+        "                it has the value</bar/baz>.\n"
+        "            }\n"
+        "        }\n"
+        "        create a particle in position<x>.\n"
+        "        create a particle in position<y>.\n"
+        "        set the value of position<x> to position<y>.\n"
+        "    }\n"
+        "}\n"
+    )
+    result = validate_project(
+        {
+            "test.dfn": source,
+            "foo/bar.dfn": "define the potential value<my.domain.com:my_lib:/foo/bar>.\n",
+            "bar/baz.dfn": "define the potential value<my.domain.com:my_lib:/bar/baz>.\n",
+        },
+    )
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    diagnostic = all_diags[0]
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.line == 17
+    assert diagnostic.location.column == 41
+    formatted = diagnostic.format(source.splitlines())
+    assert (
+        formatted
+        == textwrap.dedent("""\
+        File "test.dfn", line 17, column 41
+                set the value of position<x> to position<y>.
+                                                ^
+        this value setting statement has particles with two different value types, which is not allowed. position<x> has value</foo/bar> and position<y> has value</bar/baz>.""")
+    )
 
 
 def test_move_violates_constraints_error_message(

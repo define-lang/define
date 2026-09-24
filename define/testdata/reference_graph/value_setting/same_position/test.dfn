@@ -1,0 +1,9 @@
+# Structural rejection of the same position does not cause extra errors.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<target>.
+        set the value of position<target> to position<target>.
+    }
+}

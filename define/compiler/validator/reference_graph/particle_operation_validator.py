@@ -109,6 +109,69 @@ class ParticleOperationValidator:
             ]
         return []
 
+    def validate_value_setting(
+        self, target: ast.PositionReference, source: ast.PositionReference
+    ) -> list[diagnostics.Diagnostic]:
+        """Validate occupancy and assigned value types for a Value Setting Statement."""
+        validation_diagnostics: list[diagnostics.Diagnostic] = []
+        target_type = self._validate_value_setting_position(
+            target, validation_diagnostics
+        )
+        source_type = self._validate_value_setting_position(
+            source, validation_diagnostics
+        )
+        if target_type is None or source_type is None:
+            return validation_diagnostics
+        if target_type.full_typed_name != source_type.full_typed_name:
+            validation_diagnostics.append(
+                diagnostics.ValueSettingTypeMismatchDiagnostic(
+                    location=source.location,
+                    target_position=target.source_chained_name,
+                    source_position=source.source_chained_name,
+                    target_value_type=target_type.source_form_in_universe(
+                        self._enclosing_fqun
+                    ),
+                    source_value_type=source_type.source_form_in_universe(
+                        self._enclosing_fqun
+                    ),
+                )
+            )
+        return validation_diagnostics
+
+    def _validate_value_setting_position(
+        self,
+        position: ast.PositionReference,
+        validation_diagnostics: list[diagnostics.Diagnostic],
+    ) -> ast.GlobalTypedNameReference | None:
+        """Validate a position used in a Value Setting Statement."""
+        if self._tracker.has_error_state(position):
+            return None
+        parent_diagnostic = self._check_parents_occupied(position)
+        if parent_diagnostic is not None:
+            validation_diagnostics.append(parent_diagnostic)
+            return None
+        if not self._tracker.is_occupied(position):
+            validation_diagnostics.append(
+                diagnostics.ValueSettingEmptyPositionDiagnostic(
+                    location=position.location,
+                    position_name=position.source_chained_name,
+                )
+            )
+            return None
+        particle = self._tracker.get_occupant(position)
+        value_type = particle.qualities.value_type
+        if value_type is None:
+            validation_diagnostics.append(
+                diagnostics.ValueSettingMissingValueTypeDiagnostic(
+                    location=position.location,
+                    position_name=position.source_chained_name,
+                    origin_position_name=particle.origin_position.source_form_in_universe(
+                        self._enclosing_fqun
+                    ),
+                )
+            )
+        return value_type
+
     def validate_destroy(
         self,
         target: ast.PositionReference,
