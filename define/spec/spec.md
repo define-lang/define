@@ -936,7 +936,7 @@ potential_position_definition_block =
 
 Proposals:
 
-- [DLP 51: Values](00051-values.md)
+- [DLP 51: Values](../proposals/00051-values.md)
 
 A value type is defined by a quality definition statement with the type `value`,
 followed by a terminator.
@@ -1532,7 +1532,7 @@ according to the ordinary rules for Automatic Action Requirements.
 
 Proposals:
 
-- [DLP 38: Binary Values](00038-binary-values.md)
+- [DLP 38: Binary Values](../proposals/00038-binary-values.md)
 
 A value may be set on a particle via a Value Setting Statement. The syntax for
 this statement is `set the value of` followed by a position reference, followed
