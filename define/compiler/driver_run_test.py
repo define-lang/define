@@ -161,7 +161,12 @@ def test_syntax_error_returns_error_and_prints_to_stream(
         'File "test.dfn", line 1, column 1\n'
         "defin the potential position<mv:define-l\n"
         "^\n"
-        "Expected a global definition like 'define the potential ...'\n"
+        "Expected a global definition, one of:\n"
+        "    - define the potential position\n"
+        "    - define the potential action\n"
+        "    - define the potential value\n"
+        "    - define the potential literal\n"
+        "    - define the encoding\n"
     )
 
 

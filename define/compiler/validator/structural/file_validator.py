@@ -250,10 +250,21 @@ class DefinitionStructuralValidator:
         self._validate_fqun_matches_expected()
         self._validate_not_duplicate_in_file()
 
-        if isinstance(self._definition, ast.ActionDefinition):
-            self._validate_action_definition(self._definition)
-        if isinstance(self._definition, ast.PositionDefinition):
-            self._validate_global_position_definition_block(self._definition)
+        match self._definition:
+            case ast.ActionDefinition():
+                self._validate_action_definition(self._definition)
+            case ast.PositionDefinition():
+                self._validate_global_position_definition_block(self._definition)
+            case ast.PotentialLiteralDefinition():
+                encoding = self._definition.encoding
+                encoding_diagnostics = name_validators.validate_typed_name(
+                    encoding, self._definition
+                )
+                self._diagnostics.extend(encoding_diagnostics)
+                if not encoding_diagnostics:
+                    self._process_reference(encoding)
+            case _:
+                pass
         return self.build_result()
 
     def build_result(self) -> validation_result.DefinitionValidationResult:

@@ -66,6 +66,11 @@ class _LocalPositionBlockData(msgspec.Struct, frozen=True):
     block_close: lark_cython.Token
 
 
+class _PotentialLiteralBlockData(msgspec.Struct, frozen=True):
+    encoding: ast.GlobalTypedNameReference
+    block_close: lark_cython.Token
+
+
 class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Program]):
     """Builds an AST inline as the Lark parser reduces each rule."""
 
@@ -167,6 +172,42 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
             name=name,
             location=self._location_for_bare_definition(start=keyword, name=name),
         )
+
+    @_strip_discard
+    def potential_literal_definition(
+        self,
+        items: list[
+            lark_cython.Token
+            | ast.DefinitionGlobalNameContent
+            | _PotentialLiteralBlockData
+        ],
+    ) -> ast.PotentialLiteralDefinition:
+        """Transform a potential literal definition."""
+        keyword = cast("lark_cython.Token", items[0])
+        name = cast("ast.DefinitionGlobalNameContent", items[1])
+        block = cast("_PotentialLiteralBlockData", items[2])
+        return ast.PotentialLiteralDefinition.from_name(
+            name=name,
+            encoding=block.encoding,
+            location=self._location(start=keyword, end=block.block_close),
+        )
+
+    @_strip_discard
+    def potential_literal_definition_block(
+        self, items: list[ast.GlobalTypedNameReference | lark_cython.Token]
+    ) -> _PotentialLiteralBlockData:
+        """Transform a potential literal definition block."""
+        return _PotentialLiteralBlockData(
+            encoding=cast("ast.GlobalTypedNameReference", items[0]),
+            block_close=cast("lark_cython.Token", items[1]),
+        )
+
+    @_strip_discard
+    def encoding_constraint(
+        self, items: list[lark_cython.Token | ast.GlobalTypedNameReference]
+    ) -> ast.GlobalTypedNameReference:
+        """Transform the encoding reference of a potential literal."""
+        return cast("ast.GlobalTypedNameReference", items[1])
 
     @_strip_discard
     def value_definition(
@@ -388,6 +429,10 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
     def VALUE(self, _token: lark_cython.Token) -> ast.NameType:  # noqa: N802
         """Transform the value name type."""
         return ast.NameType.VALUE
+
+    def ENCODING(self, _token: lark_cython.Token) -> ast.NameType:  # noqa: N802
+        """Transform the encoding name type."""
+        return ast.NameType.ENCODING
 
     @_strip_discard
     def typed_global_name_reference(

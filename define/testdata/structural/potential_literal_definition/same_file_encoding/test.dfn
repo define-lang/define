@@ -1,0 +1,5 @@
+# The encoding is defined before the potential literal references it.
+define the encoding<my.domain.com:my_lib:/test>.
+define the potential literal<my.domain.com:my_lib:/test> {
+    it has the encoding</test>.
+}

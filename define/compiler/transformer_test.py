@@ -905,3 +905,63 @@ def test_value_setting_statement_chained_positions():
         _slice(source, statement.source_position.location)
         == statement.source_position.source_chained_name
     )
+
+
+def test_potential_literal_definition_fields():
+    source = (
+        "define the potential literal<mv:example.com:example:/decimal> {\n"
+        + "    it has the encoding</decimal_text>.\n"
+        + "}\n"
+    )
+    program = test_helpers.parse_and_transform(source)
+    assert len(program.definitions) == 1
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.PotentialLiteralDefinition)
+    assert not isinstance(definition, ast.QualityDefinition)
+    assert definition.typed_name.name_type == ast.NameType.LITERAL
+    assert (
+        definition.typed_name.name_content.source_name
+        == "mv:example.com:example:/decimal"
+    )
+    assert definition.location == ast.SourceLocation(
+        line=1, column=1, end_line=3, end_column=2
+    )
+    assert _slice(source, definition.location) == source.rstrip("\n")
+    assert (
+        _slice(source, definition.typed_name.location)
+        == "literal<mv:example.com:example:/decimal>"
+    )
+    encoding = definition.encoding
+    assert encoding.name_type == ast.NameType.ENCODING
+    assert encoding.source_typed_name == "encoding</decimal_text>"
+    assert encoding.full_typed_name == "encoding<mv:example.com:example:/decimal_text>"
+    assert _slice(source, encoding.location) == "encoding</decimal_text>"
+    assert _slice(source, encoding.name_content.location) == "/decimal_text"
+    assert program.location == definition.location
+
+
+def test_potential_literal_definitions_update_reference_fqun():
+    source = (
+        "define the potential literal<mv:example.com:first:/decimal> {\n"
+        + "    it has the encoding</decimal_text>.\n"
+        + "}\n"
+        + "define the potential literal<mv:example.com:second:/decimal> {\n"
+        + "    it has the encoding</decimal_text>.\n"
+        + "}\n"
+        + "define the potential literal<mv:example.com:third:/decimal> {\n"
+        + "    it has the encoding<standard:/decimal_text>.\n"
+        + "}\n"
+    )
+    program = test_helpers.parse_and_transform(source)
+    first, second, third = program.definitions
+    assert isinstance(first, ast.PotentialLiteralDefinition)
+    assert isinstance(second, ast.PotentialLiteralDefinition)
+    assert isinstance(third, ast.PotentialLiteralDefinition)
+    assert (
+        first.encoding.full_typed_name == "encoding<mv:example.com:first:/decimal_text>"
+    )
+    assert (
+        second.encoding.full_typed_name
+        == "encoding<mv:example.com:second:/decimal_text>"
+    )
+    assert third.encoding.full_typed_name == "encoding<standard:/decimal_text>"

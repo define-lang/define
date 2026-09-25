@@ -1,0 +1,10 @@
+# An action cannot reference a position defined later in the same file.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</test>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</test>.
+    }
+}
+define the potential position<my.domain.com:my_lib:/test>.

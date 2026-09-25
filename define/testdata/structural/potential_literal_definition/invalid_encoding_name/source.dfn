@@ -1,0 +1,4 @@
+# Invalid encoding name.
+define the potential literal<my.domain.com:my_lib:/decimal> {
+    it has the encoding</bad-name>.
+}

@@ -1,0 +1,5 @@
+# A later non-filesystem definition does not satisfy an earlier reference.
+define the potential literal<my.domain.com:my_lib:/decimal> {
+    it has the encoding</decimal_text>.
+}
+define the encoding<my.domain.com:my_lib:/decimal_text>.

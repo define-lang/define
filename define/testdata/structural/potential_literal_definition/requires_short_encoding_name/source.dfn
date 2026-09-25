@@ -1,0 +1,5 @@
+# Requires short encoding name.
+define the encoding<my.domain.com:my_lib:/decimal_text>.
+define the potential literal<my.domain.com:my_lib:/decimal> {
+    it has the encoding<my.domain.com:my_lib:/decimal_text>.
+}

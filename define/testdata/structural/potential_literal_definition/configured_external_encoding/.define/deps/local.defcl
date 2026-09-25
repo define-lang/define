@@ -1,0 +1,3 @@
+deps: {
+  local: [{ universe_name: "encodings.org:encodings" path: "encodings" }]
+}

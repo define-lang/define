@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Literal, cast
 
 import msgspec
 import pytest
-from hypothesis import HealthCheck, example, given, settings
+from hypothesis import HealthCheck, event, example, given, settings
 from hypothesis import strategies as st
 
 from define.compiler import driver, exceptions, parser, parser_exceptions
@@ -656,6 +656,15 @@ def particle_operation_sequences(draw: st.DrawFn) -> list[str]:
 @st.composite
 def valid_sources(draw: st.DrawFn) -> str:
     fragments: list[str] = []
+    include_literal = draw(st.booleans())
+    event(f"Single-file potential literal: {include_literal}")
+    if include_literal:
+        fragments.append(f"define the encoding<{_PROJECT_FQUN}:/test>.\n")
+        fragments.append(
+            f"define the potential literal<{_PROJECT_FQUN}:/test> {{\n"
+            + "    it has the encoding</test>.\n"
+            + "}\n"
+        )
     if draw(st.booleans()):
         requirements = draw(_valid_reference_options())
         fragments.append(
@@ -762,6 +771,7 @@ def syntactic_sources(draw: st.DrawFn) -> str:
                     "position_simple",
                     "value",
                     "encoding",
+                    "potential_literal",
                     "position",
                     "action_simple",
                     "action_block",
@@ -770,12 +780,19 @@ def syntactic_sources(draw: st.DrawFn) -> str:
                 ]
             )
         )
+        event(f"Definition kind: {kind}")
         if kind in ["position_simple", "position"]:
             defs.append(draw(position_definitions()))
         elif kind == "value":
             defs.append(f"define the potential value<{draw(global_names())}>.\n")
         elif kind == "encoding":
             defs.append(f"define the encoding<{draw(global_names())}>.\n")
+        elif kind == "potential_literal":
+            defs.append(
+                f"define the potential literal<{draw(global_names())}> {{\n"
+                + f"    it has the encoding<{draw(global_names())}>.\n"
+                + "}\n"
+            )
         elif kind == "action_simple":
             defs.append(draw(action_definitions_simple()))
         elif kind == "action_block":
@@ -810,6 +827,9 @@ _MUTATIONS = [
 
 _SYNTAX_FRAGMENTS = [
     "define the potential position</p>.\n",
+    "define the potential literal</literal> {\n",
+    "define the encoding</encoding>.\n",
+    "it has the encoding</encoding>.\n",
     "define the potential action</a> {\n",
     "define the position<p>.\n",
     "it also assigns the action</a>.\n",
@@ -836,6 +856,17 @@ _SYNTAX_FRAGMENTS = [
 
 def _mutate_source(source: str, draw: st.DrawFn) -> str:
     mutation = draw(st.sampled_from(_MUTATIONS))
+    event(f"Selected mutation: {mutation}")
+    mutated = _apply_source_mutation(source, draw, mutation)
+    if mutated != source:
+        event(f"Changed source with mutation: {mutation}")
+    event(
+        f"Mutation target has potential literal: {'define the potential literal<' in source}"
+    )
+    return mutated
+
+
+def _apply_source_mutation(source: str, draw: st.DrawFn, mutation: str) -> str:
 
     if mutation in ("insert_fragment", "replace_span", "truncate"):
         start = draw(st.integers(min_value=0, max_value=len(source)))
@@ -904,6 +935,8 @@ def _mutate_source(source: str, draw: st.DrawFn) -> str:
             "potential",
             "position",
             "action",
+            "literal",
+            "encoding",
             "create a particle in",
             "move the particle in",
             "destroy the particle in",
@@ -1358,6 +1391,56 @@ def _build_lifecycle_project(
     )
 
 
+def _build_potential_literal_project(
+    draw: st.DrawFn,
+    root_universe: str,
+    child_universe: str,
+    project_kind: str,
+) -> ProjectCase:
+    encoding_file = draw(st.sampled_from(["decimal.dfn", "encodings/text.dfn"]))
+    encoding_universe = root_universe
+    if project_kind == "literal_same_file":
+        encoding_file = "test.dfn"
+    elif project_kind == "literal_cross_fqun":
+        encoding_universe = child_universe
+    encoding_name = _definition_path(encoding_file)
+    if project_kind == "literal_cross_fqun":
+        encoding_name = _global_name(child_universe, encoding_file)
+    literal_source = (
+        f"define the potential literal<{root_universe}:/test> {{\n"
+        + f"    it has the encoding<{encoding_name}>.\n"
+        + "}\n"
+    )
+    encoding_source = (
+        f"define the encoding<{_global_name(encoding_universe, encoding_file)}>.\n"
+    )
+    files = {"test.dfn": literal_source}
+    if project_kind == "literal_same_file":
+        files["test.dfn"] = encoding_source + literal_source
+    elif project_kind == "literal_cross_fqun":
+        dependency_path = draw(st.sampled_from(["encodings", "deps/encodings"]))
+        return ProjectCase(
+            entrypoint="test.dfn",
+            roots=(
+                ProjectRootCase(
+                    "", root_universe, files, {child_universe: dependency_path}
+                ),
+                ProjectRootCase(
+                    dependency_path,
+                    child_universe,
+                    {encoding_file: encoding_source},
+                    {},
+                ),
+            ),
+        )
+    else:
+        files[encoding_file] = encoding_source
+    return ProjectCase(
+        entrypoint="test.dfn",
+        roots=(ProjectRootCase("", root_universe, files, {}),),
+    )
+
+
 @st.composite
 def valid_project_cases(draw: st.DrawFn) -> ProjectCase:
     root_universe = draw(st.sampled_from(_VALID_ROOT_UNIVERSES))
@@ -1376,9 +1459,13 @@ def valid_project_cases(draw: st.DrawFn) -> ProjectCase:
                 "action_quality_implication",
                 "destroy_local",
                 "lifecycle",
+                "literal_same_file",
+                "literal_same_universe",
+                "literal_cross_fqun",
             ]
         )
     )
+    event(f"Project kind: {project_kind}")
     if project_kind == "same_universe_chain":
         project_case = _build_same_universe_chain_project(
             root_universe, use_nested_entrypoint=False
@@ -1414,6 +1501,14 @@ def valid_project_cases(draw: st.DrawFn) -> ProjectCase:
             root_universe,
             repetitions=draw(st.integers(min_value=1, max_value=8)),
             explicit_destruction=draw(st.booleans()),
+        )
+    elif project_kind in (
+        "literal_same_file",
+        "literal_same_universe",
+        "literal_cross_fqun",
+    ):
+        project_case = _build_potential_literal_project(
+            draw, root_universe, child_universe, project_kind
         )
     else:
         project_case = _build_destroy_particle_project(root_universe)
@@ -1568,6 +1663,8 @@ def _random_path_segment_bytes(draw: st.DrawFn) -> bytes:
 _GLOBAL_NAME_CONTEXTS = [
     "position_def",
     "action_def",
+    "potential_literal_def",
+    "literal_encoding_constraint",
     "constructor",
     "destructor",
     "position_req",
@@ -1584,6 +1681,19 @@ _GLOBAL_NAME_CONTEXTS = [
 
 
 def _global_name_context_template(context: str) -> str:
+    if context == "potential_literal_def":
+        return (
+            f"define the encoding<{_PROJECT_FQUN}:/test>.\n"
+            + f"define the potential literal<{_NAME_MARKER}> {{\n"
+            + "    it has the encoding</test>.\n"
+            + "}\n"
+        )
+    if context == "literal_encoding_constraint":
+        return (
+            f"define the potential literal<{_PROJECT_FQUN}:/test> {{\n"
+            + f"    it has the encoding<{_NAME_MARKER}>.\n"
+            + "}\n"
+        )
     if context in ("constructor", "destructor"):
         return _action_block_with_name(
             _NAME_MARKER,
@@ -1937,6 +2047,7 @@ def test_random_bytes_no_unclassified_errors(fuzz_project: Path, data: bytes):
 def test_random_local_name_bytes_no_unclassified_errors(
     fuzz_project: Path, name_bytes: bytes, context: str
 ):
+    event(f"Name context: {context}")
     template = _local_name_context_template(context)
     (fuzz_project / "test.dfn").write_bytes(_splice_name_bytes(template, name_bytes))
     d = driver.Driver(_PARSER)
@@ -1957,6 +2068,7 @@ def test_random_local_name_bytes_no_unclassified_errors(
 def test_random_global_name_raw_bytes_no_unclassified_errors(
     fuzz_project: Path, name_bytes: bytes, context: str
 ):
+    event(f"Name context: {context}")
     template = _global_name_context_template(context)
     (fuzz_project / "test.dfn").write_bytes(_splice_name_bytes(template, name_bytes))
     d = driver.Driver(_PARSER)
@@ -1977,6 +2089,7 @@ def test_random_global_name_raw_bytes_no_unclassified_errors(
 def test_random_global_name_structured_bytes_no_unclassified_errors(
     fuzz_project: Path, name_bytes: bytes, context: str
 ):
+    event(f"Name context: {context}")
     template = _global_name_context_template(context)
     (fuzz_project / "test.dfn").write_bytes(_splice_name_bytes(template, name_bytes))
     d = driver.Driver(_PARSER)

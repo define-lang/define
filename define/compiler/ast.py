@@ -33,6 +33,7 @@ class NameType(enum.StrEnum):
     ACTION = "action"
     VALUE = "value"
     ENCODING = "encoding"
+    LITERAL = "literal"
 
 
 class ASTNodeMeta(msgspec.StructMeta, abc.ABCMeta):
@@ -160,6 +161,31 @@ class EncodingDefinition(GlobalDefinition):
                 name_content=name,
                 location=SourceLocation.from_definition_name(name, NameType.ENCODING),
             ),
+            location=location,
+        )
+
+
+class PotentialLiteralDefinition(GlobalDefinition):
+    """Represents a potential literal definition."""
+
+    encoding: GlobalTypedNameReference
+
+    @classmethod
+    def from_name(
+        cls,
+        *,
+        name: DefinitionGlobalNameContent,
+        encoding: GlobalTypedNameReference,
+        location: SourceLocation,
+    ) -> Self:
+        """Initialize with a global name and its encoding."""
+        return cls(
+            typed_name=GlobalTypedNameInDefinition(
+                name_type=NameType.LITERAL,
+                name_content=name,
+                location=SourceLocation.from_definition_name(name, NameType.LITERAL),
+            ),
+            encoding=encoding,
             location=location,
         )
 

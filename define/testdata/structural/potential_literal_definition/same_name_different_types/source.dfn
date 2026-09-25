@@ -1,0 +1,6 @@
+# Same name different types.
+define the encoding<my.domain.com:my_lib:/decimal>.
+define the potential value<my.domain.com:my_lib:/decimal>.
+define the potential literal<my.domain.com:my_lib:/decimal> {
+    it has the encoding</decimal>.
+}

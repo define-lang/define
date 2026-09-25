@@ -25,7 +25,9 @@ DEFINE_THE_POSITION: "define the position"
 DEFINE_THE_POTENTIAL_POSITION: "define the potential position"
 DEFINE_THE_POTENTIAL_ACTION: "define the potential action"
 DEFINE_THE_POTENTIAL_VALUE: "define the potential value"
+DEFINE_THE_POTENTIAL_LITERAL: "define the potential literal"
 DEFINE_THE_ENCODING: "define the encoding"
+ENCODING: "encoding"
 POSITION_OR_ACTION: "position" | "action"
 VALUE: "value"
 IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE: "it may only contain particles where"
@@ -72,6 +74,7 @@ global_name_reference_content: "<" GLOBAL_NAME_CONTENT ">"
 local_name_content: "<" LOCAL_NAME_CONTENT ">"
 typed_global_name_reference: POSITION_OR_ACTION global_name_reference_content
 typed_value_name_reference: VALUE global_name_reference_content -> typed_global_name_reference
+typed_encoding_name_reference: ENCODING global_name_reference_content -> typed_global_name_reference
 typed_local_name_reference: POSITION_OR_ACTION local_name_content
 ?typed_name_reference: typed_local_name_reference | typed_global_name_reference
 
@@ -132,6 +135,9 @@ action_definition_block: _block_open NEWLINE* _quality_implications _action_loca
 
 value_definition: DEFINE_THE_POTENTIAL_VALUE global_name_definition_content terminator
 encoding_definition: DEFINE_THE_ENCODING global_name_definition_content terminator
+encoding_constraint: IT_HAS_THE " " typed_encoding_name_reference terminator
+potential_literal_definition_block: _block_open NEWLINE* encoding_constraint NEWLINE* _block_close
+potential_literal_definition: DEFINE_THE_POTENTIAL_LITERAL global_name_definition_content potential_literal_definition_block
 
-definition: position_definition | action_definition | value_definition | encoding_definition
+definition: position_definition | action_definition | value_definition | encoding_definition | potential_literal_definition
 start: NEWLINE* definition (NEWLINE* definition)* NEWLINE*

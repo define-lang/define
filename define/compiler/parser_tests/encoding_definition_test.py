@@ -81,4 +81,4 @@ def test_encoding_disallowed_in_constraints(parse: Parse):
         )
     assert error.value.line == 3
     assert error.value.column == 20
-    assert error.value.token == "encoding<"
+    assert error.value.token == "encoding"

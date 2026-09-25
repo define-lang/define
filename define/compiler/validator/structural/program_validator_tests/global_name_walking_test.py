@@ -114,6 +114,21 @@ def test_back_reference_to_earlier_definition_does_not_load_its_file(
     assert diags[0].location.column == 52
 
 
+def test_same_file_position_must_precede_referencing_action(
+    validate_testdata_structural: ValidateTestdataStructural,
+):
+    result = validate_testdata_structural()
+    assert result.all_exceptions == []
+    assert len(result.all_diagnostics) == 1
+    diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.ReferencedDefinitionNotFoundDiagnostic)
+    assert diagnostic.file_path == "test.dfn"
+    assert diagnostic.definition_name == "position<my.domain.com:my_lib:/test>"
+    assert diagnostic.location.line == 3
+    assert diagnostic.location.column == 34
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+
+
 def test_same_target_file_referenced_as_two_types_loads_once(
     validate_testdata_structural: ValidateTestdataStructural,
 ):

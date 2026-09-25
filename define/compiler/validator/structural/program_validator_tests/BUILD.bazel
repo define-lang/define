@@ -268,6 +268,20 @@ py_test(
 )
 
 py_test(
+    name = "potential_literal_definition_test",
+    size = "small",
+    srcs = ["potential_literal_definition_test.py"],
+    data = ["//define/testdata/structural/potential_literal_definition"],
+    deps = [
+        "//define/compiler:ast",
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler:parser_exceptions",
+        "//define/compiler/validator:test_helpers",
+    ],
+)
+
+py_test(
     name = "program_config_test",
     size = "small",
     srcs = ["program_config_test.py"],
@@ -440,6 +454,7 @@ pyright_test(
         ":parallel_test",
         ":path_mismatch_test",
         ":position_constraint_references_test",
+        ":potential_literal_definition_test",
         ":program_config_test",
         ":program_validator_tests",
         ":quality_implication_test",

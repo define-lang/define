@@ -201,6 +201,18 @@ py_test(
 )
 
 py_test(
+    name = "potential_literal_definition_test",
+    size = "small",
+    srcs = ["potential_literal_definition_test.py"],
+    deps = [
+        ":conftest",
+        ":test_helpers",
+        "//define/compiler:parser_exceptions",
+        "@pypi//pytest",
+    ],
+)
+
+py_test(
     name = "quality_implication_test",
     size = "small",
     srcs = ["quality_implication_test.py"],
@@ -324,6 +336,7 @@ pyright_test(
         ":multiple_definitions_test",
         ":parser_tests",
         ":position_definition_test",
+        ":potential_literal_definition_test",
         ":quality_implication_test",
         ":statement_terminators_test",
         ":test_helpers",

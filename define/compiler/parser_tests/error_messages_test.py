@@ -29,6 +29,7 @@ def test_empty_source_error_message(parse: Parse) -> None:
             - define the potential position
             - define the potential action
             - define the potential value
+            - define the potential literal
             - define the encoding""")
 
 

@@ -226,7 +226,16 @@ class ExpectedGlobalDefinition(DefineTokenError):
         + "    - define the potential position\n"
         + "    - define the potential action\n"
         + "    - define the potential value\n"
+        + "    - define the potential literal\n"
         + "    - define the encoding"
+    )
+
+
+class InvalidPotentialLiteralDefinitionBlock(DefineTokenError):
+    """Expected the encoding constraint of a potential literal."""
+
+    message_format: ClassVar[str] = (
+        "A potential literal definition requires exactly one 'it has the encoding<...>.' statement."
     )
 
 

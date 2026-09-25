@@ -219,6 +219,11 @@ def raise_token_error(
     if e.accepts == {"POSITION_OR_ACTION", "VALUE"}:
         raise parser_exceptions.ExpectedConstraintNameType(e, source, file_path)
 
+    if e.accepts == {"ENCODING"}:
+        raise parser_exceptions.InvalidPotentialLiteralDefinitionBlock(
+            e, source, file_path
+        )
+
     # TODO: After changing the priority of the *_NAME_CONTENT terminals, I think
     # we could do better here.
     if e.accepts in ({"CHAIN_SEPARATOR", "TO"}, {"TO"}):
@@ -324,6 +329,17 @@ def raise_token_error(
 
     # We are in a position constraint block.
     if "IT_HAS_THE" in e.accepts:
+        interactive_parser = typing.cast(
+            "lark_standalone.InteractiveParser", e.interactive_parser
+        )
+        for item in interactive_parser.parser_state.value_stack:
+            if (
+                isinstance(item, lark_cython.Token)
+                and item.type == "DEFINE_THE_POTENTIAL_LITERAL"
+            ):
+                raise parser_exceptions.InvalidPotentialLiteralDefinitionBlock(
+                    e, source, file_path
+                )
         if e.token.value == "}":
             raise parser_exceptions.MissingPositionConstraintContent(
                 e, source, file_path

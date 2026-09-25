@@ -1,0 +1,5 @@
+# Cross universe encoding.
+define the encoding<other.org:other_lib:/decimal_text>.
+define the potential literal<my.domain.com:my_lib:/decimal> {
+    it has the encoding<other.org:other_lib:/decimal_text>.
+}
