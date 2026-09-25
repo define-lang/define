@@ -174,7 +174,7 @@ Comments are text that are ignored by Define.
 
 A `#` character starts a comment; everything from that `#` to the end of any
 line is ignored by the parser. A comment may be preceded by any number of
-spaces. A `#` inside a string literal does not start a comment.
+spaces. A `#` inside a literal does not start a comment.
 
 ```ebnf
 comment      = { " " }, "#", comment_text, newline ;
@@ -1592,19 +1592,58 @@ which the destructor is assigned to the particle gains the corresponding
 Automatic Action Requirement. That requirement is propagated through callers
 according to the ordinary rules for Automatic Action Requirements.
 
+## Literals
+
+Proposals:
+
+- [DLP 52: Literals](../proposals/00052-literals.md)
+
+A literal is a name-like construct wrapped in `literal` and angle brackets. The
+contents inside the angle brackets start with a global name followed by a colon,
+followed by any characters that are valid in a Define file except for a newline.
+
+The global name must refer to a valid Potential Literal.
+
+```ebnf
+literal_content = { ? any valid file character except newlines ? } ;
+literal = "literal", "<", global_name, ":", literal_content, ">" ;
+```
+
+### Escapes in Literals
+
+The characters `>`, `:`, and `\` may only be written inside the literal content
+if they are prefixed by `\`.
+
+The character sequence `\n` is interpreted as a newline (ASCII LF) unless the
+`\` is escaped.
+
+Other escapes are not valid, and instead are treated as an error.
+
+### How Literals Work
+
+Wherever a literal is used, it is logically identical to:
+
+1. Defining a position with the value constraint needed in order to make the
+   line of code where the literal is specified be valid.
+2. Creating a particle in that position.
+3. Setting the value on that particle to the literal's value directly (not via a
+   Value Setting Statement).
+4. Destroying the particle as soon as its value is no longer needed.
+
 ## Setting Values
 
 Proposals:
 
 - [DLP 38: Binary Values](../proposals/00038-binary-values.md)
+- [DLP 52: Literals](../proposals/00052-literals.md)
 
 A value may be set on a particle via a Value Setting Statement. The syntax for
 this statement is `set the value of` followed by a position reference, followed
-by `to`, another position reference, and a terminator.
+by `to`, another position reference or a literal, and a terminator.
 
 ```ebnf
 value_setting_statement =
-    "set the value of", " ", position_reference, " to ", position_reference, terminator ;
+    "set the value of", " ", position_reference, " to ", ( position_reference | literal ), terminator ;
 ```
 
 The particles in both positions must have a value type assigned to them, and it
