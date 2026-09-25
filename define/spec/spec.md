@@ -130,7 +130,7 @@ Syntax with semantics may use only these Unicode codepoints:
 
 Exceptions:
 
-- Names have their own rules.
+- Names and literal content have their own rules.
 - Comments allow all characters except those restricted elsewhere; UTS #55
   applies to comments.
 
@@ -1598,26 +1598,29 @@ Proposals:
 
 - [DLP 52: Literals](../proposals/00052-literals.md)
 
-A literal is a name-like construct wrapped in `literal` and angle brackets. The
-contents inside the angle brackets start with a global name followed by a colon,
-followed by any characters that are valid in a Define file except for a newline.
+A literal starts with a typed global name with the name type `literal`. It is
+immediately followed by a `"`, followed by any sequence of characters that are
+valid in a Define file (other than a newline), and ending with a `"`.
 
-The global name must refer to a valid Potential Literal.
+The typed global name must refer to a valid Potential Literal.
 
 ```ebnf
 literal_content = { ? any valid file character except newlines ? } ;
-literal = "literal", "<", global_name, ":", literal_content, ">" ;
+literal = "literal", "<", global_name, ">", '"', literal_content, '"' ;
 ```
 
 ### Escapes in Literals
 
-The characters `>`, `:`, and `\` may only be written inside the literal content
-if they are prefixed by `\`.
+The characters `"` and `\` may only be written inside the literal content if
+they are prefixed by `\`.
 
 The character sequence `\n` is interpreted as a newline (ASCII LF) unless the
 `\` is escaped.
 
 Other escapes are not valid, and instead are treated as an error.
+
+The compiler decodes these escapes before passing the literal content to any
+Literal Parser.
 
 ### How Literals Work
 
