@@ -399,6 +399,7 @@ py_test(
     srcs = ["transformer_test.py"],
     deps = [
         ":ast",
+        ":parser",
         ":test_helpers",
     ],
 )

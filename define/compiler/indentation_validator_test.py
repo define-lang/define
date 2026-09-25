@@ -455,3 +455,21 @@ class TestDiagnosticMessage:
 )
 def test_valid_source_has_no_diagnostics(source: str):
     assert indentation_validator.validate_indentation(source) == []
+
+
+def test_comment_after_literal_with_escaped_quotes():
+    assert (
+        indentation_validator._remove_comment(
+            r'set the value of position<dest> to literal</text>"a\" {#b\\". # comment'
+        )
+        == r'set the value of position<dest> to literal</text>"a\" {#b\\".'
+    )
+
+
+def test_comment_after_literal_containing_angle_brackets():
+    assert (
+        indentation_validator._remove_comment(
+            'set the value of position<dest> to literal</text>"< # >". # comment'
+        )
+        == 'set the value of position<dest> to literal</text>"< # >".'
+    )

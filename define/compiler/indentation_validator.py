@@ -16,8 +16,11 @@ if TYPE_CHECKING:
     from pathlib import PurePosixPath
 
 
+# TODO: Use Lark lexer callbacks to collect line numbers of SPACE_AND_OPEN_BRACE
+# and CLOSE_BRACE tokens for indentation validation, so this module does not need
+# to scan names, literal content, and comments to identify block boundaries.
 def _remove_comment(line: str) -> str:
-    """Strip trailing comment respecting angle brackets."""
+    """Strip trailing comments while preserving names and literal content."""
     # Native string search avoids a Python loop on lines without '#'. On 50,000
     # generated source lines (305 with '#'), this cut this function's benchmark
     # time from 0.306 s to 0.0052 s (~59x); this is not a whole-compiler speedup.
@@ -25,8 +28,19 @@ def _remove_comment(line: str) -> str:
         return line
 
     inside_angles = False
+    in_literal = False
+    escaped = False
     for i, ch in enumerate(line):
-        if ch == "<":
+        if in_literal:
+            if escaped:
+                escaped = False
+            elif ch == "\\":
+                escaped = True
+            elif ch == '"':
+                in_literal = False
+        elif ch == '"' and not inside_angles:
+            in_literal = True
+        elif ch == "<":
             inside_angles = True
         elif ch == ">":
             inside_angles = False

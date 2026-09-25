@@ -710,10 +710,17 @@ class DestroyParticleStatement(ParticleStatement):
     """Represents a 'destroy the particle in' statement."""
 
 
+class Literal(ASTNode):
+    """A literal's Potential Literal reference and decoded content."""
+
+    potential_literal: GlobalTypedNameReference
+    content: str
+
+
 class ValueSettingStatement(ParticleStatement):
     """Represents a 'set the value of ... to' statement."""
 
-    source_position: PositionReference
+    source: PositionReference | Literal
 
 
 type ActionStatement = (

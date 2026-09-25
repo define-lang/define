@@ -1,5 +1,8 @@
 """Human-readable parser error messages for the Define language."""
 
+# Add concrete errors to the section for their base class below.
+# Keep error classes alphabetical within each section.
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, ClassVar, Self, override
@@ -189,6 +192,20 @@ class InvalidEncodingError(DefineCharError):
     message_format: ClassVar[str] = "Invalid UTF-8 byte sequence: ({escaped_char})."
 
 
+class InvalidLiteralEscape(DefineCharError):
+    """An unsupported escape in literal content."""
+
+    message_format: ClassVar[str] = (
+        'Invalid escape sequence in this literal. Only \\", \\\\, and \\n are allowed.'
+    )
+
+
+class InvalidLiteralCharacter(DefineCharError):
+    """A forbidden file character in literal content."""
+
+    message_format: ClassVar[str] = "Invalid character in literal content."
+
+
 # --- Token error subclasses ---
 
 # The token error subclasses don't use the suffix "Error." Instead, they are expressed
@@ -218,6 +235,12 @@ class ExpectedChainSeparatorOrTerminator(DefineTokenError):
     message_format: ClassVar[str] = "Expected '::' or '.' here."
 
 
+class ExpectedConstraintNameType(DefineTokenError):
+    """Expected a quality type in a Position Constraint Block."""
+
+    message_format: ClassVar[str] = "Expected 'position', 'action', or 'value'."
+
+
 class ExpectedGlobalDefinition(DefineTokenError):
     """Thrown when the parser expected to see a global definition and didn't see one."""
 
@@ -231,24 +254,16 @@ class ExpectedGlobalDefinition(DefineTokenError):
     )
 
 
-class InvalidPotentialLiteralDefinitionBlock(DefineTokenError):
-    """Expected the encoding constraint of a potential literal."""
-
-    message_format: ClassVar[str] = (
-        "A potential literal definition requires exactly one 'it has the encoding<...>.' statement."
-    )
-
-
 class ExpectedPositionOrAction(DefineTokenError):
     """Expected a position or action reference."""
 
     message_format: ClassVar[str] = "Expected 'position' or 'action'."
 
 
-class ExpectedConstraintNameType(DefineTokenError):
-    """Expected a quality type in a Position Constraint Block."""
+class ExpectedPositionOrActionOrLiteral(DefineTokenError):
+    """Expected a position reference or literal as a Value Setting Statement source."""
 
-    message_format: ClassVar[str] = "Expected 'position', 'action', or 'value'."
+    message_format: ClassVar[str] = "Expected 'position', 'action', or 'literal'."
 
 
 class ExtraWhitespace(DefineTokenError):
@@ -257,6 +272,14 @@ class ExtraWhitespace(DefineTokenError):
     message_format: ClassVar[str] = (
         "Line looks like it contains too many spaces between words."
         + " All words in Define require exactly one space between them."
+    )
+
+
+class GlobalNameWhereLocalNameExpected(DefineTokenError):
+    """Wrote something with : and / where a local name was expected."""
+
+    message_format: ClassVar[str] = (
+        "This is a global name, but a local name is expected here."
     )
 
 
@@ -269,16 +292,42 @@ class GlobalPositionDefinitionInLocalContext(DefineTokenError):
     )
 
 
+class InvalidActionDefinitionsBlock(DefineTokenError):
+    """Wrote something totally invalid in an Action Definition Block."""
+
+    message_format: ClassVar[str] = "Invalid syntax in a potential action definition."
+
+
 class InvalidActionStatementsBlock(DefineTokenError):
     """Nonsense in an Action Statements Block."""
 
     message_format: ClassVar[str] = "Not a valid action statement or local definition."
 
 
-class InvalidActionDefinitionsBlock(DefineTokenError):
-    """Wrote something totally invalid in an Action Definition Block."""
+class InvalidGlobalName(DefineTokenError):
+    """Wrote something that isn't a global name where only a global name is accepted."""
 
-    message_format: ClassVar[str] = "Invalid syntax in a potential action definition."
+    message_format: ClassVar[str] = (
+        "This is not a valid global name (like 'multiverse:authority:universe:/name')."
+    )
+
+
+class InvalidHasAParticleSyntax(DefineTokenError):
+    """Expected ' has a particle' after a local name in a trigger condition."""
+
+    message_format: ClassVar[str] = (
+        "The syntax for a particle presence check looks like:"
+        " the position<foo> has a particle."
+        " Expected ' has a particle' here."
+    )
+
+
+class InvalidLiteralSyntax(DefineTokenError):
+    """Literal content is missing double quotes or contains a raw newline."""
+
+    message_format: ClassVar[str] = (
+        "Invalid literal. Expected double-quoted content without raw newlines."
+    )
 
 
 class InvalidMoveStatementSyntax(DefineTokenError):
@@ -291,13 +340,11 @@ class InvalidMoveStatementSyntax(DefineTokenError):
     )
 
 
-class InvalidValueSettingStatementSyntax(DefineTokenError):
-    """Expected ' to ' or '::' after a value setting statement's target."""
+class InvalidName(DefineTokenError):
+    """Wrote something invalid where either a local or global name is accepted."""
 
     message_format: ClassVar[str] = (
-        "The syntax for a value setting statement looks like:"
-        " set the value of position<recipient> to position<source>."
-        " Expected a 'to' or a longer chained name (a '::' followed by another name) here."
+        "'{token}' is not valid inside of a local or global name."
     )
 
 
@@ -305,12 +352,6 @@ class InvalidPositionConstraintBlock(DefineTokenError):
     """Write something nonsensical in a position constraint block."""
 
     message_format: ClassVar[str] = "Invalid syntax in a position constraint block."
-
-
-class InvalidTriggerConditionsBlock(DefineTokenError):
-    """Nonsense in a Trigger Conditions Block."""
-
-    message_format: ClassVar[str] = "Not a valid trigger condition statement."
 
 
 class InvalidPositionDefinitionBlock(DefineTokenError):
@@ -324,6 +365,36 @@ class InvalidPositionDefinitionLocationInAction(DefineTokenError):
 
     message_format: ClassVar[str] = (
         "'define the position' statements in an action must go above the 'it happens when' block."
+    )
+
+
+class InvalidPotentialLiteralDefinitionBlock(DefineTokenError):
+    """Expected the encoding constraint of a potential literal."""
+
+    message_format: ClassVar[str] = (
+        "A potential literal definition requires exactly one 'it has the encoding<...>.' statement."
+    )
+
+
+class InvalidPotentialPositionDefinitionBlock(DefineTokenError):
+    """Write something nonsensical in a Potential Position Definition Block."""
+
+    message_format: ClassVar[str] = "Invalid syntax in a potential position definition."
+
+
+class InvalidTriggerConditionsBlock(DefineTokenError):
+    """Nonsense in a Trigger Conditions Block."""
+
+    message_format: ClassVar[str] = "Not a valid trigger condition statement."
+
+
+class InvalidValueSettingStatementSyntax(DefineTokenError):
+    """Invalid target or source syntax in a Value Setting Statement."""
+
+    message_format: ClassVar[str] = (
+        "The syntax for a value setting statement looks like:"
+        " set the value of position<recipient> to position<source>."
+        ' The source may also be a literal, such as literal</decimal>"123".'
     )
 
 
@@ -363,16 +434,6 @@ class MissingCloseBrace(DefineTokenError):
     """Forgot to write } at the end of a block."""
 
     message_format: ClassVar[str] = "Missing a closing '}}' somewhere in this block."
-
-
-class InvalidHasAParticleSyntax(DefineTokenError):
-    """Expected ' has a particle' after a local name in a trigger condition."""
-
-    message_format: ClassVar[str] = (
-        "The syntax for a particle presence check looks like:"
-        " the position<foo> has a particle."
-        " Expected ' has a particle' here."
-    )
 
 
 class MissingNewlineAfterCloseBrace(DefineTokenError):
@@ -452,24 +513,10 @@ class MissingPotentialPositionDefinitionContent(DefineTokenError):
     )
 
 
-class InvalidPotentialPositionDefinitionBlock(DefineTokenError):
-    """Write something nonsensical in a Potential Position Definition Block."""
-
-    message_format: ClassVar[str] = "Invalid syntax in a potential position definition."
-
-
 class MissingTerminator(DefineTokenError):
     """Forgot ."""
 
     message_format: ClassVar[str] = "This statement must end with a '.'."
-
-
-class MissingTriggerConditionContent(DefineTokenError):
-    """Left out content from a trigger conditions block."""
-
-    message_format: ClassVar[str] = (
-        "Trigger conditions blocks must contain at least one 'the ... has a particle.' statement."
-    )
 
 
 class MissingTerminatorOrBrace(DefineTokenError):
@@ -477,6 +524,14 @@ class MissingTerminatorOrBrace(DefineTokenError):
 
     message_format: ClassVar[str] = (
         "This statement must end with a '.' or a single space followed by '{{'"
+    )
+
+
+class MissingTriggerConditionContent(DefineTokenError):
+    """Left out content from a trigger conditions block."""
+
+    message_format: ClassVar[str] = (
+        "Trigger conditions blocks must contain at least one 'the ... has a particle.' statement."
     )
 
 
@@ -520,28 +575,4 @@ class GlobalNameInvalidFqunFormat(DefineNameSyntaxError):
         "Fully qualified universe name format is invalid. "
         "Use '<multiverse:authority:universe:/path>' or "
         "'<authority:universe:/path>' or '<standard:/path>'."
-    )
-
-
-class GlobalNameWhereLocalNameExpected(DefineTokenError):
-    """Wrote something with : and / where a local name was expected."""
-
-    message_format: ClassVar[str] = (
-        "This is a global name, but a local name is expected here."
-    )
-
-
-class InvalidGlobalName(DefineTokenError):
-    """Wrote something that isn't a global name where only a global name is accepted."""
-
-    message_format: ClassVar[str] = (
-        "This is not a valid global name (like 'multiverse:authority:universe:/name')."
-    )
-
-
-class InvalidName(DefineTokenError):
-    """Wrote something invalid where either a local or global name is accepted."""
-
-    message_format: ClassVar[str] = (
-        "'{token}' is not valid inside of a local or global name."
     )

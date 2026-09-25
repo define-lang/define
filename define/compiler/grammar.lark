@@ -30,6 +30,7 @@ DEFINE_THE_ENCODING: "define the encoding"
 ENCODING: "encoding"
 POSITION_OR_ACTION: "position" | "action"
 VALUE: "value"
+LITERAL: "literal"
 IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE: "it may only contain particles where"
 IT_HAS_THE: "it has the"
 IT_HAPPENS_WHEN: "it happens when"
@@ -58,7 +59,8 @@ IT_ALSO_ASSIGNS_THE: "it also assigns the"
 
 # Allow only visible characters in comments.
 # TODO: Disallow invisible Unicode characters per spec.
-COMMENT: / *#(?:[^\x00-\x1F\x7F]*[^\x00-\x1F\x7F ])?/
+# Literal content must win over a comment when both can match.
+COMMENT.-4: / *#(?:[^\x00-\x1F\x7F]*[^\x00-\x1F\x7F ])?/
 %ignore COMMENT
 
 terminator: "." NEWLINE
@@ -114,7 +116,10 @@ create_particle_statement: CREATE_A_PARTICLE_IN position_reference terminator
 move_particle_statement: MOVE_THE_PARTICLE_IN position_reference TO position_reference terminator
 destroy_particle_statement: DESTROY_THE_PARTICLE_IN position_reference terminator
 
-value_setting_statement: SET_THE_VALUE_OF position_reference TO position_reference terminator
+LITERAL_CONTENT.-3: /(?:[^"\\\n]|\\[^\n])+/
+literal: LITERAL global_name_reference_content "\"" LITERAL_CONTENT? "\""
+
+value_setting_statement: SET_THE_VALUE_OF position_reference TO (position_reference | literal) terminator
 
 # Action Definition Syntax
 

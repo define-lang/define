@@ -8,7 +8,9 @@ that location addresses.
 
 from __future__ import annotations
 
-from define.compiler import ast, test_helpers
+from pathlib import PurePosixPath
+
+from define.compiler import ast, parser, test_helpers
 
 
 def _require_fqun(name: ast.GlobalNameContent[ast.Fqun | None]) -> ast.Fqun:
@@ -861,7 +863,8 @@ def test_value_setting_statement_fields():
     statement = _only_action(source).action_statements.statements[0]
     assert isinstance(statement, ast.ValueSettingStatement)
     assert statement.target_position.source_chained_name == "position<dest>"
-    assert statement.source_position.source_chained_name == "position<src>"
+    assert isinstance(statement.source, ast.PositionReference)
+    assert statement.source.source_chained_name == "position<src>"
     assert statement.location == ast.SourceLocation(
         line=5, column=9, end_line=5, end_column=58
     )
@@ -870,7 +873,7 @@ def test_value_setting_statement_fields():
         == "set the value of position<dest> to position<src>."
     )
     assert _slice(source, statement.target_position.location) == "position<dest>"
-    assert _slice(source, statement.source_position.location) == "position<src>"
+    assert _slice(source, statement.source.location) == "position<src>"
 
 
 def test_value_setting_statement_chained_positions():
@@ -885,12 +888,13 @@ def test_value_setting_statement_chained_positions():
     )
     statement = _only_action(source).action_statements.statements[0]
     assert isinstance(statement, ast.ValueSettingStatement)
+    assert isinstance(statement.source, ast.PositionReference)
     assert (
         statement.target_position.source_chained_name
         == "position<dest>::action</a>::position<value>"
     )
     assert (
-        statement.source_position.source_chained_name
+        statement.source.source_chained_name
         == "position<mv:define-lang.org:parser:/src>::position<value>"
     )
     assert statement.location == ast.SourceLocation(
@@ -902,8 +906,8 @@ def test_value_setting_statement_chained_positions():
         == statement.target_position.source_chained_name
     )
     assert (
-        _slice(source, statement.source_position.location)
-        == statement.source_position.source_chained_name
+        _slice(source, statement.source.location)
+        == statement.source.source_chained_name
     )
 
 
@@ -965,3 +969,99 @@ def test_potential_literal_definitions_update_reference_fqun():
         == "encoding<mv:example.com:second:/decimal_text>"
     )
     assert third.encoding.full_typed_name == "encoding<standard:/decimal_text>"
+
+
+def test_value_setting_literal_fields():
+    source = (
+        "define the potential action<mv:define-lang.org:parser:/set_value> {\n"
+        + "    it happens when {\n"
+        + "        this particle is created.\n"
+        + "    } and it does {\n"
+        + '        set the value of position<dest> to literal</text>" # Hello 世界 > : \\" \\\\ \\n \\\\n ".\n'
+        + "    }\n}\n"
+    )
+    statement = _only_action(source).action_statements.statements[0]
+    assert isinstance(statement, ast.ValueSettingStatement)
+    assert statement.target_position.source_chained_name == "position<dest>"
+    literal = statement.source
+    assert isinstance(literal, ast.Literal)
+    assert literal.content == ' # Hello 世界 > : " \\ \n \\n '
+    assert literal.potential_literal.name_type == ast.NameType.LITERAL
+    assert literal.potential_literal.name_content.fqun is None
+    assert literal.potential_literal.name_content.path.name == "/text"
+    assert (
+        literal.potential_literal.full_typed_name
+        == "literal<mv:define-lang.org:parser:/text>"
+    )
+    assert literal.location == ast.SourceLocation(
+        line=5, column=44, end_line=5, end_column=89
+    )
+    assert (
+        _slice(source, literal.location)
+        == 'literal</text>" # Hello 世界 > : \\" \\\\ \\n \\\\n "'
+    )
+    assert _slice(source, literal.potential_literal.location) == "literal</text>"
+    assert _slice(source, literal.potential_literal.name_content.location) == "/text"
+    assert _slice(source, statement.location) == source.splitlines()[4].strip()
+
+
+def test_value_setting_literal_empty_and_explicit_fqun():
+    source = (
+        "define the potential action<mv:define-lang.org:parser:/set_value> {\n"
+        + "    it happens when {\n"
+        + "        this particle is created.\n"
+        + "    } and it does {\n"
+        + '        set the value of position<dest> to literal<mv:example.com:other:/text>"".\n'
+        + "    }\n}\n"
+    )
+    statement = _only_action(source).action_statements.statements[0]
+    assert isinstance(statement, ast.ValueSettingStatement)
+    literal = statement.source
+    assert isinstance(literal, ast.Literal)
+    assert literal.content == ""
+    assert literal.potential_literal.effective_fqun.canonical == "mv:example.com:other"
+    assert (
+        literal.potential_literal.enclosing_fqun.canonical
+        == "mv:define-lang.org:parser"
+    )
+    assert literal.location == ast.SourceLocation(
+        line=5, column=44, end_line=5, end_column=81
+    )
+    assert _slice(source, literal.location) == 'literal<mv:example.com:other:/text>""'
+    assert _slice(source, statement.location) == source.splitlines()[4].strip()
+
+
+def test_literal_file_path_and_following_statement():
+    source = (
+        "define the potential action<mv:define-lang.org:parser:/set_value> {\n"
+        + "    it happens when {\n"
+        + "        this particle is created.\n"
+        + "    } and it does {\n"
+        + '        set the value of position<dest> to literal</text>"first".\n'
+        + '        set the value of position<dest> to literal</text>"".\n'
+        + "    }\n}\n"
+    )
+    file_path = PurePosixPath("set_value.dfn")
+    result = parser.Parser().parse_and_transform(source, file_path)
+    assert result.exception is None
+    assert result.diagnostics == []
+    assert result.program is not None
+    definition = result.program.definitions[0]
+    assert isinstance(definition, ast.ActionDefinition)
+    for statement in definition.action_statements.statements:
+        assert isinstance(statement, ast.ValueSettingStatement)
+        assert isinstance(statement.source, ast.Literal)
+        assert statement.location.file_path == file_path
+        assert statement.source.location.file_path == file_path
+        assert statement.source.potential_literal.location.file_path == file_path
+        assert (
+            statement.source.potential_literal.name_content.location.file_path
+            == file_path
+        )
+    first, second = definition.action_statements.statements
+    assert isinstance(first, ast.ValueSettingStatement)
+    assert isinstance(first.source, ast.Literal)
+    assert first.source.content == "first"
+    assert isinstance(second, ast.ValueSettingStatement)
+    assert isinstance(second.source, ast.Literal)
+    assert second.source.content == ""

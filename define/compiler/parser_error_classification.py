@@ -10,10 +10,11 @@ import typing
 import lark_cython
 
 from define.compiler import parser_exceptions
-from define.compiler.lark import lark_standalone
 
 if typing.TYPE_CHECKING:
     import pathlib
+
+    from define.compiler.lark import lark_standalone
 
 _CHAR_ERRORS: dict[str, type[parser_exceptions.DefineCharError]] = {
     "\ufeff": parser_exceptions.ByteOrderMarkError,
@@ -45,43 +46,6 @@ def _stripped_context(source: str, line: int, column: int) -> str:
     return error_line[column:].strip()
 
 
-def raise_character_error(
-    e: lark_standalone.UnexpectedCharacters,
-    source: str,
-    file_path: pathlib.PurePosixPath | None,
-):
-    """Classify a character error into a specific exception type."""
-    # Presently this error can only occur when an invalid name parse occurs.
-    # TODO: Handle escaping invalid characters.
-    if e.allowed == {"MORETHAN"}:
-        # MORETHAN happens when we encounter an invalid character
-        # after some valid LOCAL_NAME_CONTENT characters.
-        raise parser_exceptions.InvalidLocalNameCharacter.from_lark_exception(
-            e, source, e.char, file_path
-        )
-
-    # : and / require special handling because they are excluded from our
-    #  broadest terminal (LOCAL_NAME_CONTENT), and so match no terminals at all.
-    if e.char in (":", "/"):
-        # We have to do something special here to get the right error
-        # messages: we have to force the parser to produce an UnexpectedToken
-        # and then feed the context back into raise_token_error. That's the
-        # only way to get the right error for the context in which the wrong
-        # character was written.
-        ip = e.interactive_parser
-        fake_token = lark_standalone.Token("INVALID", e.char)
-        fake_token.line = e.line
-        fake_token.column = e.column
-        try:
-            ip.feed_token(fake_token)
-        except lark_standalone.UnexpectedToken as token_error:
-            token_error.interactive_parser = ip
-            # The interative_parser will never set the token history
-            # correctly, but we have it from UnexpectedCharacters.
-            token_error.token_history = e.token_history
-            raise_token_error(token_error, source, file_path)
-
-
 def raise_token_error(
     e: lark_standalone.UnexpectedToken,
     source: str,
@@ -111,7 +75,10 @@ def raise_token_error(
     ## e.accepts Classification ##
     ###############################
 
-    # Same for <, which means the previous token was the start of a definition
+    if e.accepts in ({"DBLQUOTE"}, {"LITERAL_CONTENT", "DBLQUOTE"}):
+        raise parser_exceptions.InvalidLiteralSyntax(e, source, file_path)
+
+    # < means the previous token was the start of a definition
     # and we expect a name and didn't get <.
     if e.accepts == {"LESSTHAN"}:
         raise parser_exceptions.MissingOpenAngleBracket(
@@ -136,8 +103,13 @@ def raise_token_error(
         raise parser_exceptions.InvalidName(e, source, file_path)
 
     if e.accepts == {"MORETHAN"}:
-        # This happens when you write something like "standard:/foo" in a local name
-        # position.
+        # Literal content makes ':' lexable even when it occurs in a local name.
+        if e.token.type == "LITERAL_CONTENT":
+            raise parser_exceptions.InvalidLocalNameCharacter.from_lark_exception(
+                e, source, e.token.value[0], file_path
+            )
+        # In a local name like "my/pos", "my" has already been consumed and
+        # "/pos" matches global name content.
         if e.token.type == "GLOBAL_NAME_CONTENT":
             raise parser_exceptions.GlobalNameWhereLocalNameExpected(
                 e, source, file_path
@@ -215,6 +187,9 @@ def raise_token_error(
 
     if e.accepts == {"POSITION_OR_ACTION"}:
         raise parser_exceptions.ExpectedPositionOrAction(e, source, file_path)
+
+    if e.accepts == {"POSITION_OR_ACTION", "LITERAL"}:
+        raise parser_exceptions.ExpectedPositionOrActionOrLiteral(e, source, file_path)
 
     if e.accepts == {"POSITION_OR_ACTION", "VALUE"}:
         raise parser_exceptions.ExpectedConstraintNameType(e, source, file_path)

@@ -1,6 +1,8 @@
 # pyright: reportUnusedCallResult=false
 from __future__ import annotations
 
+from pathlib import PurePosixPath
+
 import lark_cython
 import pytest
 
@@ -193,6 +195,19 @@ def test_global_name_definition_rejects_too_many_fqun_parts():
     assert error.value.column == 1
 
 
+def test_global_name_reference_rejects_too_many_fqun_parts():
+    token = _make_name_content_token(
+        "mv:define-lang.org:parser:extra:/text", line=5, column=52
+    )
+    file_path = PurePosixPath("set_value.dfn")
+    with pytest.raises(parser_exceptions.GlobalNameInvalidFqunFormat) as error:
+        name_parser.parse_global_name_reference(token, file_path)
+    assert error.value.line == 5
+    assert error.value.column == 52
+    assert error.value.context == "mv:define-lang.org:parser:extra:/text"
+    assert error.value.file_path == file_path
+
+
 def test_positions_for_fqun_and_path():
     token = _make_name_content_token(
         "mv:define-lang.org:runtime:/alpha/beta",
@@ -206,3 +221,55 @@ def test_positions_for_fqun_and_path():
     assert fqun.universe.location.column > token.column
     assert name.path.location.line == 9
     assert name.path.location.column > token.column
+
+
+def test_parse_literal_content():
+    token = _make_name_content_token(' Hello 世界 # <>:{} \\" \\\\ \\n \\\\n ', 3, 20)
+    assert (
+        name_parser.parse_literal_content(token) == ' Hello 世界 # <>:{} " \\ \n \\n '
+    )
+
+
+def test_parse_literal_content_invalid_escape():
+    token = _make_name_content_token(r"hello\tworld", 3, 20)
+    file_path = PurePosixPath("set_value.dfn")
+    with pytest.raises(parser_exceptions.InvalidLiteralEscape) as error:
+        name_parser.parse_literal_content(token, file_path)
+    assert error.value.line == 3
+    assert error.value.column == 26
+    assert error.value.char == "t"
+    assert error.value.file_path == file_path
+
+
+@pytest.mark.parametrize("escape", [r"\>", r"\:"])
+def test_parse_literal_content_invalid_punctuation_escapes(escape: str):
+    token = _make_name_content_token(escape, 2, 10)
+    with pytest.raises(parser_exceptions.InvalidLiteralEscape) as error:
+        name_parser.parse_literal_content(token)
+    assert error.value.line == 2
+    assert error.value.column == 11
+    assert error.value.char == escape[1]
+
+
+@pytest.mark.parametrize(
+    "char",
+    [
+        "\x00",
+        "\t",
+        "\r",
+        "\x7f",
+        "\x85",
+        "\xa0",
+        "\u2028",
+        "\u2029",
+        "\ud800",
+        "\ufeff",
+    ],
+)
+def test_parse_literal_content_invalid_file_characters(char: str):
+    token = _make_name_content_token("before" + char + "after", 4, 10)
+    with pytest.raises(parser_exceptions.InvalidLiteralCharacter) as error:
+        name_parser.parse_literal_content(token)
+    assert error.value.line == 4
+    assert error.value.column == 16
+    assert error.value.char == char

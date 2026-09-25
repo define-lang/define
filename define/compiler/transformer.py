@@ -509,16 +509,47 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
 
     @_strip_discard
     def value_setting_statement(
-        self, items: list[lark_cython.Token | ast.PositionReference]
+        self, items: list[lark_cython.Token | ast.PositionReference | ast.Literal]
     ) -> ast.ValueSettingStatement:
         """Transform a value setting statement."""
         keyword = cast("lark_cython.Token", items[0])
         target = cast("ast.PositionReference", items[1])
-        source = cast("ast.PositionReference", items[2])
+        source = cast("ast.PositionReference | ast.Literal", items[2])
         return ast.ValueSettingStatement(
             target_position=target,
-            source_position=source,
+            source=source,
             location=self._location_with_terminator(start=keyword, end=source),
+        )
+
+    def literal(
+        self, items: list[lark_cython.Token | ast.ReferenceGlobalNameContent]
+    ) -> ast.Literal:
+        """Transform a literal and decode its content."""
+        keyword = cast("lark_cython.Token", items[0])
+        name = cast("ast.ReferenceGlobalNameContent", items[1])
+        potential_literal = ast.GlobalTypedNameReference(
+            name_type=ast.NameType.LITERAL,
+            name_content=name,
+            enclosing_fqun=self._enclosing_fqun,
+            location=self._location(start=keyword, end=name, end_column_offset=1),
+        )
+        if len(items) == 3:
+            content_token = cast("lark_cython.Token", items[2])
+            content = name_parser.parse_literal_content(
+                content_token, self._context.file_path
+            )
+            location = self._location(
+                start=keyword, end=content_token, end_column_offset=1
+            )
+        else:
+            content = ""
+            location = self._location(
+                start=keyword, end=potential_literal, end_column_offset=2
+            )
+        return ast.Literal(
+            potential_literal=potential_literal,
+            content=content,
+            location=location,
         )
 
     @_strip_discard

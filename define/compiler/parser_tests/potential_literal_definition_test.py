@@ -148,7 +148,7 @@ def test_disallows_particle_constraint(parse: Parse):
         )
     assert error.value.line == 3
     assert error.value.column == 20
-    assert error.value.token == "literal<"
+    assert error.value.token == "literal"
 
 
 def test_disallows_quality_implication(parse: Parse):
@@ -160,4 +160,4 @@ def test_disallows_quality_implication(parse: Parse):
         )
     assert error.value.line == 2
     assert error.value.column == 25
-    assert error.value.token == "literal<"
+    assert error.value.token == "literal"

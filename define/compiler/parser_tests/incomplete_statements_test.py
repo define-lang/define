@@ -107,7 +107,7 @@ def test_bare_colon_at_top_level(parse: Parse) -> None:
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
         parse(":\n")
     assert exc_info.value.token == ":"
-    assert exc_info.value.token.type == "INVALID"
+    assert exc_info.value.token.type == "LITERAL_CONTENT"
     assert exc_info.value.line == 1
     assert exc_info.value.column == 1
 
@@ -116,7 +116,7 @@ def test_bare_slash_at_top_level(parse: Parse) -> None:
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
         parse("/\n")
     assert exc_info.value.token == "/"
-    assert exc_info.value.token.type == "INVALID"
+    assert exc_info.value.token.type == "LITERAL_CONTENT"
     assert exc_info.value.line == 1
     assert exc_info.value.column == 1
 
@@ -125,7 +125,7 @@ def test_bare_colon_between_definitions(parse: Parse) -> None:
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
         parse("define the potential position<standard:/path>.\n" + ":\n")
     assert exc_info.value.token == ":"
-    assert exc_info.value.token.type == "INVALID"
+    assert exc_info.value.token.type == "LITERAL_CONTENT"
     assert exc_info.value.line == 2
     assert exc_info.value.column == 1
 
@@ -134,7 +134,7 @@ def test_bare_slash_between_definitions(parse: Parse) -> None:
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
         parse("define the potential position<standard:/path>.\n" + "/\n")
     assert exc_info.value.token == "/"
-    assert exc_info.value.token.type == "INVALID"
+    assert exc_info.value.token.type == "LITERAL_CONTENT"
     assert exc_info.value.line == 2
     assert exc_info.value.column == 1
 
@@ -550,7 +550,7 @@ def test_create_particle_reference_single_colon_then_newline(
             + "}\n"
         )
     assert exc_info.value.token == ":"
-    assert exc_info.value.token.type == "INVALID"
+    assert exc_info.value.token.type == "LITERAL_CONTENT"
     assert exc_info.value.line == 6
     assert exc_info.value.column == 43
 
@@ -572,7 +572,7 @@ def test_create_particle_reference_single_slash_then_newline(
             + "}\n"
         )
     assert exc_info.value.token == "/"
-    assert exc_info.value.token.type == "INVALID"
+    assert exc_info.value.token.type == "LITERAL_CONTENT"
     assert exc_info.value.line == 6
     assert exc_info.value.column == 43
 
@@ -669,7 +669,7 @@ def test_destroy_particle_reference_single_colon_then_newline(
             + "}\n"
         )
     assert exc_info.value.token == ":"
-    assert exc_info.value.token.type == "INVALID"
+    assert exc_info.value.token.type == "LITERAL_CONTENT"
     assert exc_info.value.line == 6
     assert exc_info.value.column == 46
 
@@ -867,7 +867,7 @@ def test_move_particle_single_colon_after_source(
             + "}\n"
         )
     assert exc_info.value.token == ":"
-    assert exc_info.value.token.type == "INVALID"
+    assert exc_info.value.token.type == "LITERAL_CONTENT"
     assert exc_info.value.line == 6
     assert exc_info.value.column == 43
 
@@ -889,7 +889,7 @@ def test_move_particle_single_colon_after_destination(
             + "}\n"
         )
     assert exc_info.value.token == ":"
-    assert exc_info.value.token.type == "INVALID"
+    assert exc_info.value.token.type == "LITERAL_CONTENT"
     assert exc_info.value.line == 6
     assert exc_info.value.column == 61
 

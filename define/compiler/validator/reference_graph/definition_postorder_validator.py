@@ -653,9 +653,13 @@ class ActionPostorderValidator:
         validity: validation_result.ParticleStatementValidity,
         scope: scope_tracker.ScopeTracker,
     ):
+        if isinstance(stmt.source, ast.Literal):
+            raise NotImplementedError(
+                "Literal value setting validation is not implemented"
+            )
         if not (validity.target_ok and validity.source_ok):
             return
-        for position in (stmt.target_position, stmt.source_position):
+        for position in (stmt.target_position, stmt.source):
             self._dead_constraint_validator.mark_referenced_position_constraints_alive(
                 position
             )
@@ -664,10 +668,10 @@ class ActionPostorderValidator:
             )
         if (
             stmt.target_position.canonical_chained_name_tuple
-            == stmt.source_position.canonical_chained_name_tuple
+            == stmt.source.canonical_chained_name_tuple
         ):
             return
-        for position in (stmt.target_position, stmt.source_position):
+        for position in (stmt.target_position, stmt.source):
             if not self._tracker.has_error_state(position):
                 self._requirement_validator.infer_requirements_on_chain(
                     position_occupancy.PositionOccupancyState.OCCUPIED, position, scope
@@ -675,7 +679,7 @@ class ActionPostorderValidator:
                 self._dead_constraint_validator.mark_value_constraint_alive(position)
         self._diagnostics.extend(
             self._operation_validator.validate_value_setting(
-                stmt.target_position, stmt.source_position
+                stmt.target_position, stmt.source
             )
         )
 

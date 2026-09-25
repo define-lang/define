@@ -231,7 +231,7 @@ def test_missing_to(parse: Parse):
 
 
 def test_missing_source(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedPositionOrAction) as error:
+    with pytest.raises(parser_exceptions.ExpectedPositionOrActionOrLiteral) as error:
         parse(
             _ACTION_PREFIX
             + "        set the value of position<dest> to .\n"

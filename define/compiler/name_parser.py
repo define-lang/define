@@ -1,7 +1,8 @@
-"""Parse name content strings into AST name nodes."""
+"""Parse name content into AST nodes and decode literal content."""
 
 from __future__ import annotations
 
+import re
 from typing import TYPE_CHECKING
 
 import msgspec
@@ -12,6 +13,42 @@ if TYPE_CHECKING:
     from pathlib import PurePosixPath
 
     import lark_cython
+
+
+_LITERAL_SPECIAL_CHARACTERS = re.compile(
+    r"\\([^\n])|[\x00-\x1f\x7f-\x9f\u00a0\u2028\u2029\ud800-\udfff\ufeff]"
+)
+
+
+def parse_literal_content(
+    token: lark_cython.Token, file_path: PurePosixPath | None = None
+) -> str:
+    """Validate and decode the content of a literal."""
+
+    def decode(match: re.Match[str]) -> str:
+        escaped = match[1]
+        if escaped is None:
+            raise parser_exceptions.InvalidLiteralCharacter(
+                token.value,
+                _line(token),
+                _column(token) + match.start(),
+                match[0],
+                file_path,
+            )
+        if escaped == "n":
+            return "\n"
+        if escaped not in ('"', "\\"):
+            raise parser_exceptions.InvalidLiteralEscape(
+                token.value,
+                _line(token),
+                _column(token) + match.start() + 1,
+                escaped,
+                file_path,
+            )
+        return escaped
+
+    # TODO: Benchmark alternatives to regex substitution for validating and decoding literal content.
+    return _LITERAL_SPECIAL_CHARACTERS.sub(decode, token.value)
 
 
 def parse_local_name(
