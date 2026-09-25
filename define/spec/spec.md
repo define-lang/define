@@ -1141,6 +1141,11 @@ action_statement =
 
 ## Action Contracts
 
+Proposals:
+
+- [DLP 37: Automatic Position Presence Constraints](../proposals/00037-automatic-position-presence-constraints.md)
+- [DLP 53: Unset Values](../proposals/00053-unset-values.md)
+
 Actions provide a "contract" indicating what state must be true before they are
 run and what state will be true when they complete.
 
@@ -1151,14 +1156,10 @@ positions.
 
 ### Automatic Action Requirements
 
-Proposals:
-
-- [DLP 37: Automatic Position Presence Constraints](../proposals/00037-automatic-position-presence-constraints.md)
-
-For each contracted position that is not a trigger position, the compiler
-automatically infers occupancy requirements for that position from the first
-time an Action Statements Block statement references that position. These
-inferred requirements are referred to as Action Requirements.
+For each contracted position, the compiler automatically infers occupancy and
+set-value requirements for that position from the first time an Action
+Statements Block statement references that position. These inferred requirements
+are referred to as Action Requirements.
 
 Callers must satisfy the Action Requirements of an action before triggering it,
 or the compiler will throw an error.
@@ -1168,18 +1169,31 @@ the Action Statements Block of an action that defines them.
 
 #### How Requirements Are Inferred
 
-If the first reference to the final position in a chained name of a contracted
-position is a Create Particle Statement target or a Move Particle Statement
-destination, that position is required to be empty.
+Occupancy requirements are inferred based on what operation is performed on the
+first reference inside of an Action Statements Block to the final position of a
+chained name of a contracted position:
 
-If the first reference to the final position in a chain of a contracted position
-is a Move Particle Statement source or a Destroy Particle Statement target, that
-position is required to contain a particle.
+- If that first reference is a Create Particle Statement target or a Move
+  Particle Statement destination, that position is required to be empty.
+- If that first reference is a Move Particle Statement source, a Destroy
+  Particle Statement target, a Value Setting Statement, or a Value Operation,
+  that position is required to contain a particle.
+
+Value requirements are determined by the first Value Setting Statement or Value
+Operation performed on the final position of a chained name of a contracted
+position. If that first reference is the right side of a Value Setting Statement
+or an input view of a Value Operation, that position is required to have a set
+value.
+
+The trigger position of an action is always assumed to be occupied.
 
 Every intermediate position in a chained name of a contracted position is also
 implicitly required to contain a particle, if it is the first time that
 intermediate position is referenced in any chain (either within a chain or as
 the final position) in the Action Statements Block.
+
+Inference is not performed when an occupancy or value state has already been
+determined for a position, such as by an Automatic Action Guarantee.
 
 #### Interfaces Stop Inference
 
@@ -1218,12 +1232,16 @@ The compiler also determines a set of Action Particle Identity Guarantees. Upon
 completion of an action, each particle in each position is in one of two
 possible states:
 
-- It is a particle was in one of the contracted positions at the start of the
-  action, and thus has the same qualities as that particle had when it was
+- It is a particle that was in one of the contracted positions at the start of
+  the action, and thus has the same qualities as that particle had when it was
   passed in.
 - It is a new particle created by this action or one of this action's callees,
   and thus has the qualities defined by the contracted position in which it was
   created.
+
+The compiler also determines a set of Action Particle Value Guarantees. Upon
+completion of an action, a particle either has a new set value, a new unset
+value, or we know that its value was unchanged.
 
 The compiler uses these guarantees to reason about particle occupancy and
 particle qualities in a fully modular way without having to do whole-program
@@ -1354,6 +1372,15 @@ only after all required quality assignments for that creation are complete.
 The compiler may choose to re-order quality assignments or perform them
 concurrently if doing so is guaranteed to produce the same result as assigning
 them in sequence.
+
+### Initial Value
+
+Proposals:
+
+- [DLP 53: Unset Values](../proposals/00053-unset-values.md)
+
+If the position in which the particle is created has a `value` constraint, the
+initial value is unset on the particle.
 
 ## Constructors
 
@@ -1569,9 +1596,13 @@ has its own Destruction Fact.
 
 #### Child State
 
-For each Destruction Fact, the compiler records the known occupancy state of the
-destroyed particle's transitive child positions immediately before destruction
-begins. This is called the Child State.
+Proposals:
+
+- [DLP 53: Unset Values](../proposals/00053-unset-values.md)
+
+For each Destruction Fact, the compiler records the known occupancy and value
+state of the destroyed particle's transitive child positions immediately before
+destruction begins. This is called the Child State.
 
 An action may not know the full state of every transitive child position,
 because it may not be aware of every quality on the destroyed particle. Each
@@ -1649,9 +1680,20 @@ value_setting_statement =
     "set the value of", " ", position_reference, " to ", ( position_reference | literal ), terminator ;
 ```
 
+### Value Setting Statement Requirements
+
+Proposals:
+
+- [DLP 53: Unset Values](../proposals/00053-unset-values.md)
+
 The particles in both positions must have a value type assigned to them, and it
-must be the same value type. The positions on the left and right side of the
-Value Setting Statement may not be the same position.
+must be the same value type.
+
+The particle on the right side of a Value Setting Statement must have a set
+value.
+
+The positions on the left and right side of the Value Setting Statement may not
+be the same position.
 
 ## Dead Code
 
