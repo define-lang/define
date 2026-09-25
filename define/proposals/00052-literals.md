@@ -114,10 +114,10 @@ some types is likely to get rounded, depending on the available precision.
 
 Literals in Define are written by the programmer like this:
 
-`literal<mv:example.com:example:/some/type:5>`
+`literal<mv:example.com:example:/some/type>"5"`
 
-This creates a new name type, `literal`. The value at the very end, after the
-final colon, is the actual literal value.
+This creates a new name type, `literal`. The value at the very end, inside of
+the quotes, is the actual literal value.
 
 ### Potential Literals
 
@@ -135,16 +135,32 @@ literal will be treated as having the specified encoding. The encodings will
 probably always be some form of string encoding, but theoretically there could
 be a future in which non-string encodings are allowed somehow.
 
-### Escaping
+### Literal Values
 
-The characters `>`, `:`, and `\` must be escaped by a `\` in literals.
+The contents inside of a literal value can be any character that is valid in a
+Define file per [DLP 35 (Parsing Define Files)](00035-parsing-define-files.md).
+That includes whitespace, Unicode, and the `#` character (which does not start a
+comment inside of a literal).
 
-Unlike all other typed names, literals _may_ contain whitespace. However, at
-this time, they may not contain raw newlines (LF). Newlines can be specified
-with `\n`.
+It is valid for there to be an empty literal value (`""`), though any given
+literal parser may choose to reject that value as invalid.
+
+#### Escaping
+
+Inside a literal value, the characters `"` and `\` must be escaped by being
+prefixed with `\` in literals.
+
+At this time, literals may not contain raw newlines (LF). Newlines can be
+specified with `\n`.
 
 Escaping any other character is not currently supported and will be treated as
 an error.
+
+The compiler decodes these escapes before passing them to any literal parser, so
+literal parsers do not have to deal with these escapes.
+
+<!-- TODO: Allow other escape sequences for other characters that
+     are not valid in files but need to be in literals. -->
 
 ### Valid Locations
 
@@ -217,7 +233,7 @@ You could think of this:
 
 ```define
 execute the operation<standard:/number/rational/add> {
-    with view<a> looking at literal<standard:/number:5>.
+    with view<a> looking at literal<standard:/number>"5".
     with view<b> looking at position<second_input>.
     with view<result> looking at position<result>.
 }
@@ -232,7 +248,7 @@ define the position<temporary> {
     }
 }
 create a particle in position<temporary>.
-set the value of position<temporary> to literal<standard:/number:5>.
+set the value of position<temporary> to literal<standard:/number>"5".
 execute the operation<standard:/number/rational/add> {
     with view<a> looking at position<temporary>.
     with view<b> looking at position<second_input>.
@@ -267,7 +283,7 @@ define the potential action<mv:example.com:example:/set_price> {
     it happens when {
         the position<price> has a particle.
     } and it does {
-        set the value of position<price> to literal<standard:/decimal:12.50>.
+        set the value of position<price> to literal<standard:/decimal>"12.50".
     }
 }
 ```
@@ -289,7 +305,7 @@ define the potential action<mv:example.com:example:/set_greeting> {
     it happens when {
         the position<greeting> has a particle.
     } and it does {
-        set the value of position<greeting> to literal<standard:/string:Hello, world!>.
+        set the value of position<greeting> to literal<standard:/string>"Hello, world!".
     }
 }
 ```
@@ -298,10 +314,11 @@ define the potential action<mv:example.com:example:/set_greeting> {
 
 The first and most important thing this does is protect our "all words are
 reserved" policy for Define and avoid having arbitrary syntax just show up in
-some location. Having `literal<>` delimit all literals solves those problems. It
-actually simplifies our parser a fair bit in general, because all you're doing
-is taking the whole string at the end of the literal expression and passing it
-to some other parser, which will decide what to do with it.
+some location. Having `literal<>` prefix all literals and _always_ wrapping
+literals in `"` solves those problems. It actually simplifies our parser a fair
+bit in general, because all you're doing is taking the whole string at the end
+of the literal expression and passing it to some other parser, which will decide
+what to do with it.
 
 Specifying a global name to give a literal a "type" allows us to know how to
 parse the literal and get more specific and helpful about errors.
@@ -309,6 +326,36 @@ parse the literal and get more specific and helpful about errors.
 The system of destination encodings prevents "you can assign a string to an
 integer" or "this literal is too large for this number type" or other validity
 issues.
+
+### Why Not Inside the Angle Brackets
+
+When I originally wrote this proposal, the syntax looked like:
+
+`literal<example.com:example:/decimal:5>`
+
+My original thought was that was cleaner: everything that is "random stuff" to
+the parser would always be inside angle brackets. However, when I went to
+implement it, it created an unusual complexity in the parser: global names can
+be variable widths split by between 0 and 3 colons. It added significant
+complexity to the parser to distinguish things like `standard:/decimal:5` from
+`define-lang.org:standard:/decimal`. That's solvable, but complex and was
+potentially going to impact the clarity of the parser's errors.
+
+A more significant problem was a forward compatibility issue: what if some day
+we wanted to allow an authority to just start with a `/`? That is a valid
+character in authorities today, too, but only as a path at the end. But if we
+allowed path-only authorities (which I can imagine allowing other multiverses to
+do) it would become _very_ hard to distinguish `/foo:/bar`---is that a global
+name or a short global name followed by a literal value?
+
+Quotes weren't being used anywhere, and are generally only used for literal
+values in programming languages anyway.
+
+I also considered backticks, but upon investigation, `"` was easier for more
+international keyboard layouts to produce than a backtick. (For example, a
+backtick is awkward on German QWERTZ layouts, where you have to hit Space after
+hitting a backtick in order for the character to appear, because otherwise it
+will combine with later characters.)
 
 ### Ephemeral Particles
 
