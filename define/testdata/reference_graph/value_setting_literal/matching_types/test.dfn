@@ -1,0 +1,15 @@
+# Setting a literal keeps the value constraint alive and preserves occupancy.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<target> {
+            it may only contain particles where {
+                it has the value</number>.
+            }
+        }
+        create a particle in position<target>.
+        set the value of position<target> to literal</decimal>"5".
+        destroy the particle in position<target>.
+    }
+}

@@ -1,0 +1,12 @@
+# A missing value type must be fixed on the origin position even after a move.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<target>.
+        define the position<original>.
+        create a particle in position<original>.
+        move the particle in position<original> to position<target>.
+        set the value of position<target> to literal</decimal>"5".
+    }
+}

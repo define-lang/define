@@ -885,6 +885,18 @@ py_test(
 )
 
 py_test(
+    name = "value_setting_literal_test",
+    size = "small",
+    srcs = ["value_setting_literal_test.py"],
+    data = ["//define/testdata/reference_graph/value_setting_literal"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+    ],
+)
+
+py_test(
     name = "value_setting_test",
     size = "small",
     srcs = ["value_setting_test.py"],
@@ -975,6 +987,7 @@ pyright_test(
         ":test_helpers",
         ":trigger_conditions_test",
         ":value_constraint_test",
+        ":value_setting_literal_test",
         ":value_setting_test",
     ],
 )

@@ -1,0 +1,30 @@
+# The callee requires a value constraint even when its caller supplies a particle with a value type.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<worker> {
+            it may only contain particles where {
+                it has the action</assign>.
+            }
+        }
+        define the position<item> {
+            it may only contain particles where {
+                it has the value</number>.
+            }
+        }
+        create a particle in position<item>.
+        define the position<copy> {
+            it may only contain particles where {
+                it has the value</number>.
+            }
+        }
+        create a particle in position<copy>.
+        set the value of position<copy> to position<item>.
+        destroy the particle in position<copy>.
+        create a particle in position<worker>.
+        move the particle in position<item> to position<worker>::action</assign>::position<target>.
+        create a particle in position<worker>::action</assign>::position<trigger>.
+        destroy the particle in position<worker>::action</assign>::position<target>.
+    }
+}

@@ -1,0 +1,21 @@
+# Invalid structural references do not reach particle tracking.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<target> {
+            it may only contain particles where {
+                it has the value</number>.
+            }
+        }
+        create a particle in position<target>.
+        define the position<copy> {
+            it may only contain particles where {
+                it has the value</number>.
+            }
+        }
+        create a particle in position<copy>.
+        set the value of position<target> to position<copy>.
+        set the value of position<missing> to literal</decimal>"5".
+    }
+}

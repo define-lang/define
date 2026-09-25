@@ -4,10 +4,9 @@ from __future__ import annotations
 
 import typing
 
-from define.compiler import diagnostics
+from define.compiler import ast, diagnostics
 
 if typing.TYPE_CHECKING:
-    from define.compiler import ast
     from define.compiler.validator.reference_graph import particle_tracker
 
 
@@ -110,13 +109,15 @@ class ParticleOperationValidator:
         return []
 
     def validate_value_setting(
-        self, target: ast.PositionReference, source: ast.PositionReference
+        self, target: ast.PositionReference, source: ast.PositionReference | ast.Literal
     ) -> list[diagnostics.Diagnostic]:
         """Validate occupancy and assigned value types for a Value Setting Statement."""
         validation_diagnostics: list[diagnostics.Diagnostic] = []
         target_type = self._validate_value_setting_position(
             target, validation_diagnostics
         )
+        if isinstance(source, ast.Literal):
+            return validation_diagnostics
         source_type = self._validate_value_setting_position(
             source, validation_diagnostics
         )

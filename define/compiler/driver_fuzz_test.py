@@ -420,9 +420,7 @@ def action_definitions_simple(draw: st.DrawFn) -> str:
 
 
 @st.composite
-def action_definitions_with_block(
-    draw: st.DrawFn, *, include_literal_sources: bool = False
-) -> str:
+def action_definitions_with_block(draw: st.DrawFn) -> str:
     name = draw(global_names())
     outer_indent = "    "
     inner_indent = "        "
@@ -484,7 +482,7 @@ def action_definitions_with_block(
     value_setting_count = draw(st.integers(min_value=0, max_value=4))
     for _ in range(value_setting_count):
         target_position = draw(create_particle_references())
-        if include_literal_sources and draw(st.booleans()):
+        if draw(st.booleans()):
             literal_name = draw(global_names())
             content = draw(
                 st.text(alphabet='abc ABC0123 #<>:{}./"\\\n世界', max_size=100)
@@ -811,8 +809,6 @@ def syntactic_sources(draw: st.DrawFn) -> str:
         elif kind == "action_simple":
             defs.append(draw(action_definitions_simple()))
         elif kind == "action_block":
-            # TODO: Remove the include_literal_sources option and always allow
-            # generating literal sources once literal validation is implemented.
             defs.append(draw(action_definitions_with_block()))
         elif kind == "position_implication":
             defs.append(draw(position_definitions_with_implications()))
