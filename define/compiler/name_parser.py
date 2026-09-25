@@ -47,7 +47,6 @@ def parse_literal_content(
             )
         return escaped
 
-    # TODO: Benchmark alternatives to regex substitution for validating and decoding literal content.
     return _LITERAL_SPECIAL_CHARACTERS.sub(decode, token.value)
 
 

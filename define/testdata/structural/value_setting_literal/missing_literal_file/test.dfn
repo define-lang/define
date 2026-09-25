@@ -1,0 +1,9 @@
+# Resolve a literal through the ordinary referenced-file checks.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<dest>.
+        set the value of position<dest> to literal</missing>"hello".
+    }
+}

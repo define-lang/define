@@ -383,27 +383,34 @@ class DefinitionStructuralValidator:
         stmt: ast.ValueSettingStatement,
         scope: scope_tracker.ScopeTracker,
     ):
-        if isinstance(stmt.source, ast.Literal):
-            raise NotImplementedError(
-                "Literal value setting validation is not implemented"
-            )
         target_ok = self._validate_full_chained_name(stmt.target_position, scope)
-        source_ok = self._validate_full_chained_name(stmt.source, scope)
+        match stmt.source:
+            case ast.Literal():
+                potential_literal = stmt.source.potential_literal
+                name_diagnostics = name_validators.validate_typed_name(
+                    potential_literal, self._definition
+                )
+                self._diagnostics.extend(name_diagnostics)
+                source_ok = not name_diagnostics
+                if source_ok:
+                    self._process_reference(potential_literal)
+            case ast.PositionReference():
+                source_ok = self._validate_full_chained_name(stmt.source, scope)
+                if (
+                    stmt.target_position.canonical_chained_name_tuple
+                    == stmt.source.canonical_chained_name_tuple
+                ):
+                    self._diagnostics.append(
+                        diagnostics.ValueSettingSamePositionDiagnostic(
+                            location=stmt.source.location,
+                            position_name=stmt.source.source_chained_name,
+                        )
+                    )
         self._particle_statement_validity.append(
             validation_result.ParticleStatementValidity(
                 target_ok=target_ok, source_ok=source_ok
             )
         )
-        if (
-            stmt.target_position.canonical_chained_name_tuple
-            == stmt.source.canonical_chained_name_tuple
-        ):
-            self._diagnostics.append(
-                diagnostics.ValueSettingSamePositionDiagnostic(
-                    location=stmt.source.location,
-                    position_name=stmt.source.source_chained_name,
-                )
-            )
 
     def _validate_local_position_definition(
         self,

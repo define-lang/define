@@ -1,0 +1,10 @@
+# An encoding cannot satisfy a Potential Literal reference.
+define the encoding<my.domain.com:my_lib:/test>.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<dest>.
+        set the value of position<dest> to literal</test>"hello".
+    }
+}

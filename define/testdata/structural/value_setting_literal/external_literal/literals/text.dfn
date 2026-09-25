@@ -1,0 +1,4 @@
+define the encoding<literals.org:literals:/text>.
+define the potential literal<literals.org:literals:/text> {
+    it has the encoding</text>.
+}
