@@ -22,6 +22,7 @@ def test_standard_without_authority_ok(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ReservedUniverseNameDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].reserved_name == "standard"
     assert diags[0].location.line == 1
     assert diags[0].location.column == 31
@@ -59,11 +60,13 @@ def test_case_insensitive_standard(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.UniverseNameInvalidCharDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].universe_name == "STANDARD"
     assert diags[0].char == "S"
     assert diags[0].location.line == 1
     assert diags[0].location.column == 31
     assert isinstance(diags[1], diagnostics.ReservedUniverseNameDiagnostic)
+    assert diags[1].location.file_path is None
     assert diags[1].reserved_name == "STANDARD"
     assert diags[1].location.line == 1
     assert diags[1].location.column == 31

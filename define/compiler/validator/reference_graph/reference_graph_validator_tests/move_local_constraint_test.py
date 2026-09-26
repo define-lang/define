@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import PurePosixPath
+
 from define.compiler import conftest, diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -14,6 +16,7 @@ def test_move_violates_dest_constraints(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 52
     assert all_diags[0].source_position == "position<from_pos>"
@@ -31,6 +34,7 @@ def test_move_from_unconstrained_to_constrained(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 52
     assert all_diags[0].source_position == "position<from_pos>"
@@ -62,6 +66,7 @@ def test_local_move_violates_constraints_marks_error(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 52
     assert all_diags[0].source_position == "position<from_pos>"
@@ -88,6 +93,7 @@ def test_definition_local_to_statement_local_violates(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 51
     assert all_diags[0].source_position == "position<def_pos>"
@@ -116,6 +122,11 @@ def test_statement_local_to_definition_local_violates(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert all_diags[0].location.line == 16
+    assert all_diags[0].location.column == 52
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].source_position == "position<stmt_pos>"
+    assert all_diags[0].target_position == "position<def_pos>"
     assert all_diags[0].missing_qualities == [
         "position</y>",
     ]
@@ -140,6 +151,11 @@ def test_definition_local_to_definition_local_violates(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert all_diags[0].location.line == 15
+    assert all_diags[0].location.column == 52
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].source_position == "position<from_pos>"
+    assert all_diags[0].target_position == "position<to_pos>"
     assert all_diags[0].missing_qualities == [
         "position</y>",
     ]

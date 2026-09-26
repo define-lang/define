@@ -6,6 +6,10 @@ from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler import diagnostics
+from define.compiler.validator.reference_graph import action_contract
+from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
+    assert_propagation_chain,
+)
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -59,6 +63,7 @@ def test_target_empty(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ValueSettingEmptyPositionDiagnostic)
+    assert diagnostic.position_name == "position<target>"
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 20
     assert diagnostic.location.column == 26
@@ -87,6 +92,7 @@ def test_source_empty(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ValueSettingEmptyPositionDiagnostic)
+    assert diagnostic.position_name == "position<source>"
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 20
     assert diagnostic.location.column == 46
@@ -122,11 +128,13 @@ def test_both_empty(
     assert len(result.all_diagnostics) == 2
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ValueSettingEmptyPositionDiagnostic)
+    assert diagnostic.position_name == "position<target>"
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 28
     assert diagnostic.location.column == 26
     diagnostic = result.all_diagnostics[1]
     assert isinstance(diagnostic, diagnostics.ValueSettingEmptyPositionDiagnostic)
+    assert diagnostic.position_name == "position<source>"
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 28
     assert diagnostic.location.column == 46
@@ -147,6 +155,7 @@ def test_same_position(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ValueSettingSamePositionDiagnostic)
+    assert diagnostic.position_name == "position<target>"
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 7
     assert diagnostic.location.column == 46
@@ -160,6 +169,7 @@ def test_undefined_position(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.UndefinedLocalNameDiagnostic)
+    assert diagnostic.local_name == "position<source>"
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 19
     assert diagnostic.location.column == 46
@@ -173,6 +183,9 @@ def test_prior_error(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert diagnostic.position_name == "position<empty>"
+    assert diagnostic.is_action_interface_position is False
+    assert diagnostic.inferred_at is None
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 21
     assert diagnostic.location.column == 30
@@ -193,6 +206,8 @@ def test_empty_parent(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ParentPositionNotOccupiedDiagnostic)
+    assert diagnostic.position_name == "position<parent>::position</child>"
+    assert diagnostic.parent_position_name == "position<parent>"
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 17
     assert diagnostic.location.column == 26
@@ -206,6 +221,8 @@ def test_invalid_child(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ChainElementNotInConstraintsDiagnostic)
+    assert diagnostic.element_name == "position<my.domain.com:my_lib:/child>"
+    assert diagnostic.parent_name == "position<parent>"
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 14
     assert diagnostic.location.column == 44
@@ -226,6 +243,26 @@ def test_callee_requires_target(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
+    assert_propagation_chain(
+        diagnostic,
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/assign>",
+            "line": 13,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/assign>",
+            "triggered_quality_name": None,
+            "line": 16,
+            "column": 26,
+            "file_path": "assign.dfn",
+        },
+    )
+    assert diagnostic.action_name == "action<my.domain.com:my_lib:/assign>"
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 13
     assert diagnostic.location.column == 30
@@ -244,6 +281,26 @@ def test_callee_requires_source(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
+    assert_propagation_chain(
+        diagnostic,
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/assign>",
+            "line": 13,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/assign>",
+            "triggered_quality_name": None,
+            "line": 16,
+            "column": 46,
+            "file_path": "assign.dfn",
+        },
+    )
+    assert diagnostic.action_name == "action<my.domain.com:my_lib:/assign>"
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 13
     assert diagnostic.location.column == 30
@@ -292,6 +349,7 @@ def test_same_child_position_keeps_constraint_alive(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ValueSettingSamePositionDiagnostic)
+    assert diagnostic.position_name == "position<parent>::position</child>"
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 64
@@ -305,16 +363,21 @@ def test_same_position_still_validates_both_chained_names(
     assert len(result.all_diagnostics) == 3
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ChainElementNotInConstraintsDiagnostic)
+    assert diagnostic.element_name == "position<my.domain.com:my_lib:/child>"
+    assert diagnostic.parent_name == "position<parent>"
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 8
     assert diagnostic.location.column == 44
     diagnostic = result.all_diagnostics[1]
     assert isinstance(diagnostic, diagnostics.ValueSettingSamePositionDiagnostic)
+    assert diagnostic.position_name == "position<parent>::position</child>"
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 8
     assert diagnostic.location.column == 64
     diagnostic = result.all_diagnostics[2]
     assert isinstance(diagnostic, diagnostics.ChainElementNotInConstraintsDiagnostic)
+    assert diagnostic.element_name == "position<my.domain.com:my_lib:/child>"
+    assert diagnostic.parent_name == "position<parent>"
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 8
     assert diagnostic.location.column == 82

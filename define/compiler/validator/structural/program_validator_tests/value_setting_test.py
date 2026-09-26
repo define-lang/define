@@ -95,11 +95,13 @@ def test_invalid_local_chains(
     assert len(result.all_diagnostics) == 2
     target, source = result.all_diagnostics
     assert isinstance(target, diagnostics.ChainedLocalNameRequiresActionDiagnostic)
+    assert target.preceding_name == "position<target>"
     assert target.local_name == "position<target_child>"
     assert target.location.file_path is None
     assert target.location.line == 8
     assert target.location.column == 44
     assert isinstance(source, diagnostics.ChainedLocalNameRequiresActionDiagnostic)
+    assert source.preceding_name == "position<source>"
     assert source.local_name == "position<source_child>"
     assert source.location.file_path is None
     assert source.location.line == 8
@@ -114,11 +116,13 @@ def test_unknown_global_positions(
     assert len(result.all_diagnostics) == 2
     target, source = result.all_diagnostics
     assert isinstance(target, diagnostics.UnknownGlobalNameDiagnostic)
+    assert target.full_global_name == "position<my.domain.com:my_lib:/target>"
     assert target.source_global_name == "position</target>"
     assert target.location.file_path is None
     assert target.location.line == 8
     assert target.location.column == 26
     assert isinstance(source, diagnostics.UnknownGlobalNameDiagnostic)
+    assert source.full_global_name == "position<my.domain.com:my_lib:/source>"
     assert source.source_global_name == "position</source>"
     assert source.location.file_path is None
     assert source.location.line == 8

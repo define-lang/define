@@ -105,6 +105,10 @@ def test_occupied_requirement_is_not_inferred_after_action_in_chain(
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
     assert isinstance(diagnostic, diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert diagnostic.location.line == 7
+    assert diagnostic.location.column == 30
+    assert diagnostic.is_action_interface_position is True
+    assert diagnostic.inferred_at is None
     assert diagnostic.position_name == "action</parent>::position<input>"
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert action_graph(result.reference_graph_result) == [
@@ -123,6 +127,10 @@ def test_occupied_requirement_is_not_inferred_after_action_on_local_position(
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
     assert isinstance(diagnostic, diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert diagnostic.location.line == 17
+    assert diagnostic.location.column == 30
+    assert diagnostic.is_action_interface_position is True
+    assert diagnostic.inferred_at is None
     assert diagnostic.position_name == "position<box>::action</parent>::position<input>"
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert action_graph(result.reference_graph_result) == [
@@ -141,6 +149,10 @@ def test_occupied_requirement_is_not_inferred_after_action_on_interface_position
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
     assert isinstance(diagnostic, diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert diagnostic.location.line == 11
+    assert diagnostic.location.column == 30
+    assert diagnostic.is_action_interface_position is True
+    assert diagnostic.inferred_at is None
     assert diagnostic.position_name == "position<box>::action</parent>::position<input>"
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert action_graph(result.reference_graph_result) == [
@@ -159,6 +171,8 @@ def test_requirement_inference_stops_at_first_empty_interface_in_long_chain(
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
     assert isinstance(diagnostic, diagnostics.ParentPositionNotOccupiedDiagnostic)
+    assert diagnostic.location.line == 10
+    assert diagnostic.location.column == 30
     assert diagnostic.position_name == (
         "position<box>::action</parent>::position<input>::position</child>::position</grandchild>"
     )
@@ -332,10 +346,20 @@ def test_empty_requirement_with_error_state_is_silent(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert all_diags[0].location.line == 15
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].position_name == "position<spare>"
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].is_action_interface_position is False
     assert all_diags[0].inferred_at is None
     assert isinstance(all_diags[1], diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert all_diags[1].location.line == 15
+    assert all_diags[1].location.column == 49
+    assert all_diags[1].position_name == "position<box>::action</other>::position<item>"
+    assert all_diags[1].occupied_at is not None
+    assert all_diags[1].occupied_at.line == 14
+    assert all_diags[1].occupied_at.column == 49
+    assert all_diags[1].occupied_at.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert action_graph(result.reference_graph_result) == [
         (_TEST, _OTHER),
@@ -350,10 +374,20 @@ def test_occupied_requirement_with_error_state_is_silent(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert all_diags[0].location.line == 15
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].position_name == "position<spare>"
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].is_action_interface_position is False
     assert all_diags[0].inferred_at is None
     assert isinstance(all_diags[1], diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert all_diags[1].location.line == 15
+    assert all_diags[1].location.column == 49
+    assert all_diags[1].position_name == "position<box>::action</other>::position<item>"
+    assert all_diags[1].occupied_at is not None
+    assert all_diags[1].occupied_at.line == 14
+    assert all_diags[1].occupied_at.column == 49
+    assert all_diags[1].occupied_at.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert action_graph(result.reference_graph_result) == [
         (_TEST, _OTHER),
@@ -639,6 +673,9 @@ def test_no_requirement_check_on_unknown_global_chain_start(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
+    assert all_diags[0].location.line == 6
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].source_global_name == "action</other>"
     assert all_diags[0].full_global_name == "action<my.domain.com:my_lib:/other>"
 

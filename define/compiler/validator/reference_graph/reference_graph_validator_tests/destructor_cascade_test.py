@@ -39,10 +39,12 @@ def test_invalid_destructor_child_guarantee_during_auto_destruction(
     assert isinstance(
         all_diags[0], diagnostics.DestructorProducesEmptyGuaranteeDiagnostic
     )
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("cleanup.dfn")
     assert all_diags[0].location.line == 7
     assert all_diags[0].position_name == "position</child>"
     assert isinstance(all_diags[1], diagnostics.UndefinedLocalNameDiagnostic)
+    assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == PurePosixPath("cleanup.dfn")
     assert all_diags[1].location.line == 8
     assert all_diags[1].local_name == "position<emporary>"

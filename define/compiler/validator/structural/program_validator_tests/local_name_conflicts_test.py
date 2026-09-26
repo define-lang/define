@@ -30,6 +30,7 @@ def test_duplicate_name_error(
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.LocalNameConflictDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].local_name == "alpha"
     assert diags[0].first_definition_line == 2
     assert diags[0].location.line == 3
@@ -44,6 +45,7 @@ def test_three_locals_two_same_one_diagnostic(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.LocalNameConflictDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].local_name == "alpha"
     assert diags[0].first_definition_line == 2
     assert diags[0].location.line == 4
@@ -58,7 +60,9 @@ def test_three_same_name_two_diagnostics(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.LocalNameConflictDiagnostic)
+    assert diags[0].location.file_path is None
     assert isinstance(diags[1], diagnostics.LocalNameConflictDiagnostic)
+    assert diags[1].location.file_path is None
     assert diags[0].local_name == "alpha"
     assert diags[0].first_definition_line == 2
     assert diags[0].location.line == 3
@@ -106,6 +110,7 @@ def test_action_statements_duplicate_name_error(
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.LocalNameConflictDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].local_name == "alpha"
     assert diags[0].first_definition_line == 6
     assert diags[0].location.line == 7
@@ -121,6 +126,7 @@ def test_action_statements_name_conflicts_with_parent_scope(
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.LocalNameConflictDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].local_name == "alpha"
     assert diags[0].first_definition_line == 2
     assert diags[0].location.line == 6
@@ -135,7 +141,9 @@ def test_action_statements_two_duplicates_point_to_parent_scope_definition(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.LocalNameConflictDiagnostic)
+    assert diags[0].location.file_path is None
     assert isinstance(diags[1], diagnostics.LocalNameConflictDiagnostic)
+    assert diags[1].location.file_path is None
     assert diags[0].local_name == "alpha"
     assert diags[1].local_name == "alpha"
     assert diags[0].first_definition_line == 2

@@ -99,6 +99,7 @@ py_library(
     srcs = ["diagnostics.py"],
     visibility = [
         "//define/compiler:__subpackages__",
+        "//define/testdata:__pkg__",
         "//tools:__pkg__",
         "//tools/generators:__pkg__",
     ],

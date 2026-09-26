@@ -83,6 +83,7 @@ def test_position_constraint_reference_with_invalid_path(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].segment == "Bad"
     assert diags[0].char == "B"
     assert diags[0].location.line == 3
@@ -97,6 +98,7 @@ def test_same_fqun_constraint_reference_must_use_short_form(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].fqun == "my.domain.com:my_lib"
     assert diags[0].location.line == 3
     assert diags[0].location.column == 29
@@ -110,6 +112,7 @@ def test_same_fqun_constraint_reference_in_local_position_must_use_short_form(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].fqun == "my.domain.com:my_lib"
     assert diags[0].location.line == 4
     assert diags[0].location.column == 33
@@ -125,6 +128,7 @@ def test_invalid_constraint_does_not_skip_remaining_constraints(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
+    assert diags[0].location.file_path == PurePosixPath("test.dfn")
     assert diags[0].segment == "Bad"
     assert diags[0].char == "B"
     assert diags[0].location.line == 3
@@ -143,6 +147,7 @@ def test_referenced_global_name_wrong_type_position(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ReferencedDefinitionNotFoundDiagnostic)
+    assert diags[0].location.file_path == PurePosixPath("test.dfn")
     assert diags[0].file_path == "target.dfn"
     assert (
         diags[0].definition_name
@@ -162,7 +167,9 @@ def test_referenced_global_name_wrong_type_for_two_definitions_in_same_file(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.ReferencedDefinitionNotFoundDiagnostic)
+    assert diags[0].location.file_path == PurePosixPath("test.dfn")
     assert isinstance(diags[1], diagnostics.ReferencedDefinitionNotFoundDiagnostic)
+    assert diags[1].location.file_path == PurePosixPath("test.dfn")
     assert diags[0].file_path == "target.dfn"
     assert (
         diags[0].definition_name

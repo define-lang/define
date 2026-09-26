@@ -85,11 +85,13 @@ class TestCreateParticle:
         assert isinstance(
             diags[0], diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
+        assert diags[0].location.file_path is None
         assert diags[0].local_name == "position<Bad>"
         assert diags[0].preceding_name == "position<inner_pos>"
         assert diags[0].location.line == 6
         assert diags[0].location.column == 51
         assert isinstance(diags[1], diagnostics.InvalidLocalNameFormatDiagnostic)
+        assert diags[1].location.file_path is None
         assert diags[1].local_name == "Bad"
         assert diags[1].char == "B"
         assert diags[1].location.line == 6
@@ -105,32 +107,38 @@ class TestCreateParticle:
         diags = results[0].diagnostics
         assert len(diags) == 6
         assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
+        assert diags[0].location.file_path is None
         assert diags[0].local_name == "action<act_a>"
         assert diags[0].location.line == 6
         assert diags[0].location.column == 30
         assert isinstance(diags[1], diagnostics.LocalActionNameDiagnostic)
+        assert diags[1].location.file_path is None
         assert diags[1].local_name == "act_a"
         assert diags[1].location.line == 6
         assert diags[1].location.column == 30
         assert isinstance(
             diags[2], diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
+        assert diags[2].location.file_path is None
         assert diags[2].local_name == "position<pos_mid>"
         assert diags[2].preceding_name == "action<act_a>"
         assert diags[2].location.line == 6
         assert diags[2].location.column == 45
         assert isinstance(diags[3], diagnostics.LocalActionNameDiagnostic)
+        assert diags[3].location.file_path is None
         assert diags[3].local_name == "act_b"
         assert diags[3].location.line == 6
         assert diags[3].location.column == 64
         assert isinstance(
             diags[4], diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
+        assert diags[4].location.file_path is None
         assert diags[4].local_name == "action<act_b>"
         assert diags[4].preceding_name == "position<pos_mid>"
         assert diags[4].location.line == 6
         assert diags[4].location.column == 64
         assert isinstance(diags[5], diagnostics.PositionReferenceChainEndDiagnostic)
+        assert diags[5].location.file_path is None
         assert diags[5].location.line == 6
         assert diags[5].location.column == 64
 
@@ -144,17 +152,20 @@ class TestCreateParticle:
         diags = results[0].diagnostics
         assert len(diags) == 3
         assert isinstance(diags[0], diagnostics.LocalActionNameDiagnostic)
+        assert diags[0].location.file_path is None
         assert diags[0].local_name == "act_b"
         assert diags[0].location.line == 6
         assert diags[0].location.column == 47
         assert isinstance(
             diags[1], diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
+        assert diags[1].location.file_path is None
         assert diags[1].local_name == "action<act_b>"
         assert diags[1].preceding_name == "position<pos_a>"
         assert diags[1].location.line == 6
         assert diags[1].location.column == 47
         assert isinstance(diags[2], diagnostics.PositionReferenceChainEndDiagnostic)
+        assert diags[2].location.file_path is None
         assert diags[2].location.line == 6
         assert diags[2].location.column == 47
 
@@ -168,16 +179,19 @@ class TestCreateParticle:
         diags = results[0].diagnostics
         assert len(diags) == 3
         assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
+        assert diags[0].location.file_path is None
         assert diags[0].local_name == "action<act_a>"
         assert diags[0].location.line == 6
         assert diags[0].location.column == 30
         assert isinstance(diags[1], diagnostics.LocalActionNameDiagnostic)
+        assert diags[1].location.file_path is None
         assert diags[1].local_name == "act_a"
         assert diags[1].location.line == 6
         assert diags[1].location.column == 30
         assert isinstance(
             diags[2], diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
+        assert diags[2].location.file_path is None
         assert diags[2].local_name == "position<pos_b>"
         assert diags[2].preceding_name == "action<act_a>"
         assert diags[2].location.line == 6
@@ -193,16 +207,19 @@ class TestCreateParticle:
         diags = results[0].diagnostics
         assert len(diags) == 3
         assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
+        assert diags[0].location.file_path is None
         assert diags[0].local_name == "action<a>"
         assert diags[0].location.line == 6
         assert diags[0].location.column == 30
         assert isinstance(diags[1], diagnostics.LocalActionNameDiagnostic)
+        assert diags[1].location.file_path is None
         assert diags[1].local_name == "a"
         assert diags[1].location.line == 6
         assert diags[1].location.column == 30
         assert isinstance(
             diags[2], diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
+        assert diags[2].location.file_path is None
         assert diags[2].local_name == "position<pos_b>"
         assert diags[2].preceding_name == "action<a>"
         assert diags[2].location.line == 6
@@ -218,10 +235,12 @@ class TestCreateParticle:
         diags = results[0].diagnostics
         assert len(diags) == 3
         assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
+        assert diags[0].location.file_path is None
         assert diags[0].local_name == "action<Bad>"
         assert diags[0].location.line == 6
         assert diags[0].location.column == 30
         assert isinstance(diags[1], diagnostics.InvalidLocalNameFormatDiagnostic)
+        assert diags[1].location.file_path is None
         assert diags[1].local_name == "Bad"
         assert diags[1].char == "B"
         assert diags[1].location.line == 6
@@ -229,6 +248,7 @@ class TestCreateParticle:
         assert isinstance(
             diags[2], diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
+        assert diags[2].location.file_path is None
         assert diags[2].local_name == "position<pos_other>"
         assert diags[2].preceding_name == "action<Bad>"
         assert diags[2].location.line == 6
@@ -278,16 +298,19 @@ class TestCreateParticle:
         diags = results[0].diagnostics
         assert len(diags) == 4
         assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
+        assert diags[0].location.file_path is None
         assert diags[0].local_name == "position<no_pos>"
         assert diags[0].location.line == 6
         assert diags[0].location.column == 30
         assert isinstance(diags[1], diagnostics.LocalActionNameDiagnostic)
+        assert diags[1].location.file_path is None
         assert diags[1].local_name == "act_b"
         assert diags[1].location.line == 6
         assert diags[1].location.column == 48
         assert isinstance(
             diags[2], diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
+        assert diags[2].location.file_path is None
         assert diags[2].local_name == "action<act_b>"
         assert diags[2].preceding_name == "position<no_pos>"
         assert diags[2].location.line == 6
@@ -295,6 +318,7 @@ class TestCreateParticle:
         assert isinstance(
             diags[3], diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
+        assert diags[3].location.file_path is None
         assert diags[3].local_name == "position<pos_c>"
         assert diags[3].preceding_name == "action<act_b>"
         assert diags[3].location.line == 6

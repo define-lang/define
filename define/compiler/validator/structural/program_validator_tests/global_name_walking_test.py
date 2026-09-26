@@ -56,6 +56,9 @@ def test_duplicate_does_not_corrupt_reference_resolution(
     assert isinstance(
         result.file_results[2].diagnostics[0], diagnostics.PathMismatchDiagnostic
     )
+    assert result.file_results[2].diagnostics[0].location.file_path == PurePosixPath(
+        "dup.dfn"
+    )
     assert result.file_results[2].diagnostics[0].location.line == 1
     assert result.file_results[2].diagnostics[0].location.column == 52
     assert result.file_results[2].diagnostics[0].expected_path == "/dup"
@@ -70,6 +73,7 @@ def test_duplicate_source_definition_does_not_add_reference_edges(
     all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DuplicateDefinitionDiagnostic)
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].definition_type == "position"
     assert all_diags[0].path == "/test"
     assert all_diags[0].first_definition_line == 1
@@ -108,6 +112,7 @@ def test_back_reference_to_earlier_definition_does_not_load_its_file(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.PathMismatchDiagnostic)
+    assert diags[0].location.file_path == PurePosixPath("test.dfn")
     assert diags[0].expected_path == "/test"
     assert diags[0].actual_path == "/other"
     assert diags[0].location.line == 1
@@ -156,6 +161,7 @@ def test_same_target_file_referenced_as_two_types_loads_once(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ReferencedDefinitionNotFoundDiagnostic)
+    assert diags[0].location.file_path == PurePosixPath("test.dfn")
     assert diags[0].file_path == "target.dfn"
     assert diags[0].definition_name == "action<my.domain.com:my_lib:/target>"
     assert diags[0].location.line == 4
@@ -172,6 +178,7 @@ def test_self_cycle_emits_diagnostic(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
+    assert diags[0].location.file_path == PurePosixPath("test.dfn")
     assert diags[0].cycle == [
         "position<my.domain.com:my_lib:/test>",
         "position<my.domain.com:my_lib:/test>",
@@ -194,6 +201,7 @@ def test_two_file_cycle_emits_diagnostic(
     diags = result.file_results[1].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
+    assert diags[0].location.file_path == PurePosixPath("loop.dfn")
     assert diags[0].cycle == [
         "position<mv:define-lang.org:test_walk_cycle:/test>",
         "position<mv:define-lang.org:test_walk_cycle:/loop>",
@@ -218,6 +226,9 @@ def test_cycle_path_search_skips_a_shared_definition_already_seen(
     diags = result.all_diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
+    assert diags[0].location.line == 3
+    assert diags[0].location.column == 20
+    assert diags[0].location.file_path == PurePosixPath("end.dfn")
     assert diags[0].cycle == [
         "position<mv:define-lang.org:coverage_cycle:/start>",
         "position<mv:define-lang.org:coverage_cycle:/left>",
@@ -235,6 +246,7 @@ def test_unknown_universe_emits_diagnostic(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert diags[0].location.file_path == PurePosixPath("test.dfn")
     assert diags[0].location.line == 3
     assert diags[0].location.column == 29
     assert diags[0].universe == "other.example.com:other_universe"
@@ -249,6 +261,7 @@ def test_duplicate_unknown_universe_emits_one_diagnostic(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert diags[0].location.file_path == PurePosixPath("test.dfn")
     assert diags[0].location.line == 3
     assert diags[0].location.column == 29
     assert diags[0].universe == "other.example.com:other_universe"
@@ -262,12 +275,18 @@ def test_unknown_universe_across_files_reported_per_file(
     assert result.all_exceptions == []
     all_diags = result.all_diagnostics
     assert len(all_diags) == 2
-    for diag in all_diags:
-        assert isinstance(diag, diagnostics.ExternalUniverseNotConfiguredDiagnostic)
-        assert diag.location.line == 3
-        assert diag.location.column == 29
-        assert diag.universe == "other.example.com:other_universe"
-        assert diag.current_universe_name == "my.domain.com:my_lib"
+    assert isinstance(all_diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert all_diags[0].location.line == 3
+    assert all_diags[0].location.column == 29
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].universe == "other.example.com:other_universe"
+    assert all_diags[0].current_universe_name == "my.domain.com:my_lib"
+    assert isinstance(all_diags[1], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert all_diags[1].location.line == 3
+    assert all_diags[1].location.column == 29
+    assert all_diags[1].location.file_path == PurePosixPath("other.dfn")
+    assert all_diags[1].universe == "other.example.com:other_universe"
+    assert all_diags[1].current_universe_name == "my.domain.com:my_lib"
 
 
 def test_already_tracked_discovery_does_not_skip_remaining_files(
@@ -294,6 +313,7 @@ def test_circular_reference_does_not_skip_remaining_edge_validation(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
+    assert diags[0].location.file_path == PurePosixPath("test.dfn")
     assert diags[0].cycle == [
         "position<my.domain.com:my_lib:/test>",
         "position<my.domain.com:my_lib:/test>",
@@ -301,6 +321,7 @@ def test_circular_reference_does_not_skip_remaining_edge_validation(
     assert diags[0].location.line == 3
     assert diags[0].location.column == 20
     assert isinstance(diags[1], diagnostics.ReferencedDefinitionNotFoundDiagnostic)
+    assert diags[1].location.file_path == PurePosixPath("test.dfn")
     assert diags[1].file_path == "wrong_type.dfn"
     assert diags[1].definition_name == "position<my.domain.com:my_lib:/wrong_type>"
     assert diags[1].location.line == 4

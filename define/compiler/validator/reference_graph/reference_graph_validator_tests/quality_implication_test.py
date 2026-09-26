@@ -82,6 +82,11 @@ def test_single_level_transitivity_does_not_include_unrelated(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert all_diags[0].location.line == 16
+    assert all_diags[0].location.column == 50
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].source_position == "position<source>"
+    assert all_diags[0].target_position == "position<dest>"
     assert all_diags[0].missing_qualities == [
         "position</unrelated>",
     ]
@@ -176,6 +181,11 @@ def test_matching_implied_but_not_matching_impliers_for_move(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert all_diags[0].location.line == 16
+    assert all_diags[0].location.column == 50
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].source_position == "position<source>"
+    assert all_diags[0].target_position == "position<dest>"
     assert all_diags[0].missing_qualities == [
         "position</independent>",
     ]
@@ -231,6 +241,11 @@ def test_same_path_in_different_fquns_are_distinct_qualities(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert all_diags[0].location.line == 16
+    assert all_diags[0].location.column == 50
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].source_position == "position<source>"
+    assert all_diags[0].target_position == "position<dest>"
     assert all_diags[0].missing_qualities == [
         f"position<{b_fqun}:/foo>",
     ]
@@ -272,6 +287,7 @@ def test_unresolved_implication_target_is_skipped(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert all_diags[0].location.file_path == PurePosixPath("implier.dfn")
     assert all_diags[0].file_path == "missing.dfn"
     assert all_diags[0].location.line == 2
     assert all_diags[0].location.column == 34

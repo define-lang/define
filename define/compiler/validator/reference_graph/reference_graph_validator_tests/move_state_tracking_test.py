@@ -22,6 +22,7 @@ def test_move_from_empty_position(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].location.line == 8
     assert diags[0].location.column == 30
     assert diags[0].position_name == "position<from_pos>"
@@ -37,10 +38,12 @@ def test_move_to_occupied_position(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert diags[0].location.file_path is None
+    assert diags[0].occupied_at is not None
+    assert diags[0].occupied_at.file_path is None
     assert diags[0].location.line == 10
     assert diags[0].location.column == 52
     assert diags[0].position_name == "position<to_pos>"
-    assert diags[0].occupied_at is not None
     assert diags[0].occupied_at.column == 30
     assert diags[0].occupied_at.line == 9
 
@@ -60,6 +63,9 @@ def test_cannot_create_in_position_that_was_moved_into(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert diags[0].location.file_path is None
+    assert diags[0].populated_at.column == 45
+    assert diags[0].populated_at.file_path is None
     assert diags[0].location.line == 10
     assert diags[0].location.column == 30
     assert diags[0].position_name == "position<b>"
@@ -81,16 +87,19 @@ def test_same_move_twice_in_a_row(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].location.line == 10
     assert diags[0].location.column == 30
     assert diags[0].position_name == "position<a>"
     assert diags[0].is_action_interface_position is False
     assert diags[0].inferred_at is None
     assert isinstance(diags[1], diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert diags[1].location.file_path is None
+    assert diags[1].occupied_at is not None
+    assert diags[1].occupied_at.file_path is None
     assert diags[1].location.line == 10
     assert diags[1].location.column == 45
     assert diags[1].position_name == "position<b>"
-    assert diags[1].occupied_at is not None
     assert diags[1].occupied_at.column == 45
     assert diags[1].occupied_at.line == 9
 
@@ -103,16 +112,19 @@ def test_round_trip_move_fails_second_return(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].location.line == 11
     assert diags[0].location.column == 30
     assert diags[0].position_name == "position<b>"
     assert diags[0].is_action_interface_position is False
     assert diags[0].inferred_at is None
     assert isinstance(diags[1], diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert diags[1].location.file_path is None
+    assert diags[1].occupied_at is not None
+    assert diags[1].occupied_at.file_path is None
     assert diags[1].location.line == 11
     assert diags[1].location.column == 45
     assert diags[1].position_name == "position<a>"
-    assert diags[1].occupied_at is not None
     assert diags[1].occupied_at.column == 45
     assert diags[1].occupied_at.line == 10
 
@@ -125,6 +137,7 @@ def test_two_actions_same_name_one_empty_error_one_clean(
     all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert all_diags[0].location.file_path is None
     assert all_diags[0].position_name == "position<from_pos>"
     assert all_diags[0].location.line == 8
     assert all_diags[0].location.column == 30
@@ -140,10 +153,12 @@ def test_two_actions_same_name_one_occupied_error_one_clean(
     all_diags = result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert all_diags[0].location.file_path is None
+    assert all_diags[0].occupied_at is not None
+    assert all_diags[0].occupied_at.file_path is None
     assert all_diags[0].location.line == 10
     assert all_diags[0].location.column == 52
     assert all_diags[0].position_name == "position<to_pos>"
-    assert all_diags[0].occupied_at is not None
     assert all_diags[0].occupied_at.column == 30
     assert all_diags[0].occupied_at.line == 9
 
@@ -163,6 +178,7 @@ def test_move_from_empty_marks_both_positions_error(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].location.line == 8
     assert diags[0].location.column == 30
     assert diags[0].position_name == "position<a>"
@@ -178,10 +194,12 @@ def test_move_to_occupied_marks_both_positions_error(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert diags[0].location.file_path is None
+    assert diags[0].occupied_at is not None
+    assert diags[0].occupied_at.file_path is None
     assert diags[0].location.line == 10
     assert diags[0].location.column == 45
     assert diags[0].position_name == "position<b>"
-    assert diags[0].occupied_at is not None
     assert diags[0].occupied_at.column == 30
     assert diags[0].occupied_at.line == 9
 
@@ -194,16 +212,19 @@ def test_both_from_empty_and_to_occupied_marks_error(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].location.line == 9
     assert diags[0].location.column == 30
     assert diags[0].position_name == "position<a>"
     assert diags[0].is_action_interface_position is False
     assert diags[0].inferred_at is None
     assert isinstance(diags[1], diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert diags[1].location.file_path is None
+    assert diags[1].occupied_at is not None
+    assert diags[1].occupied_at.file_path is None
     assert diags[1].location.line == 9
     assert diags[1].location.column == 45
     assert diags[1].position_name == "position<b>"
-    assert diags[1].occupied_at is not None
     assert diags[1].occupied_at.column == 30
     assert diags[1].occupied_at.line == 8
 
@@ -216,16 +237,19 @@ def test_error_state_does_not_affect_other_positions(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].location.line == 11
     assert diags[0].location.column == 30
     assert diags[0].position_name == "position<a>"
     assert diags[0].is_action_interface_position is False
     assert diags[0].inferred_at is None
     assert isinstance(diags[1], diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert diags[1].location.file_path is None
+    assert diags[1].occupied_at is not None
+    assert diags[1].occupied_at.file_path is None
     assert diags[1].location.line == 11
     assert diags[1].location.column == 45
     assert diags[1].position_name == "position<b>"
-    assert diags[1].occupied_at is not None
     assert diags[1].occupied_at.column == 45
     assert diags[1].occupied_at.line == 10
 
@@ -238,10 +262,12 @@ def test_single_error_position_marks_both_error(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert diags[0].location.file_path is None
+    assert diags[0].occupied_at is not None
+    assert diags[0].occupied_at.file_path is None
     assert diags[0].location.line == 11
     assert diags[0].location.column == 45
     assert diags[0].position_name == "position<b>"
-    assert diags[0].occupied_at is not None
     assert diags[0].occupied_at.column == 30
     assert diags[0].occupied_at.line == 10
 
@@ -254,10 +280,12 @@ def test_move_from_chained_to_occupied_local_position(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].occupied_at is not None
+    assert all_diags[0].occupied_at.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 61
     assert all_diags[0].position_name == "position<dest>"
-    assert all_diags[0].occupied_at is not None
     assert all_diags[0].occupied_at.column == 30
     assert all_diags[0].occupied_at.line == 13
 

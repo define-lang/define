@@ -172,6 +172,9 @@ def test_move_guarantee_creates_occupied_in_distant_caller(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert all_diags[0].populated_at.line == 15
+    assert all_diags[0].populated_at.column == 83
+    assert all_diags[0].populated_at.file_path == PurePosixPath("outer.dfn")
     assert (
         all_diags[0].position_name
         == "position<box>::action</outer>::position<iface>::position</output>"
@@ -193,6 +196,9 @@ def test_transitive_child_guarantee_follows_particle_through_move(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert all_diags[0].populated_at.line == 27
+    assert all_diags[0].populated_at.column == 57
+    assert all_diags[0].populated_at.file_path == PurePosixPath("outer.dfn")
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")

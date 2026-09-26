@@ -1,6 +1,8 @@
-"""Ensure every convention-organized testdata directory has a Python test owner.
+"""Check convention-organized testdata and the tests that own it.
 
-This prevents renaming or removing a test from leaving unused testdata behind.
+Every testdata directory must have a Python test owner, so that renaming or
+removing a test does not leave unused testdata behind. Every diagnostic that a
+testdata test checks must have all of its fields asserted.
 """
 
 from __future__ import annotations
@@ -9,7 +11,7 @@ import ast
 import functools
 from pathlib import Path
 
-from define.testdata import path_resolver
+from define.testdata import diagnostic_assertions, path_resolver
 
 _TESTDATA_ROOT = Path("define/testdata")
 _TEST_SOURCE_ROOTS = {
@@ -120,3 +122,17 @@ def test_testdata_directories_have_consumers():
             assert not source_path.exists(), (
                 f"filesystem testdata cannot contain source.dfn: {source_path}"
             )
+
+
+def test_testdata_tests_assert_every_diagnostic_field():
+    problems: list[str] = []
+    for source_root in sorted(set(_TEST_SOURCE_ROOTS.values())):
+        for test_file in sorted(source_root.glob("*_test.py")):
+            for _, function in _test_functions(test_file):
+                if not _fixture_arguments(function):
+                    continue
+                for problem in diagnostic_assertions.unasserted_diagnostic_fields(
+                    function
+                ):
+                    problems.append(f"{test_file} {function.name} {problem}")
+    assert problems == []

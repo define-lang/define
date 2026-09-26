@@ -53,6 +53,7 @@ def test_destroy_empty_local_position(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.DestroyInEmptyPositionDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].location.line == 7
     assert diags[0].location.column == 33
     assert diags[0].position_name == "position<target>"

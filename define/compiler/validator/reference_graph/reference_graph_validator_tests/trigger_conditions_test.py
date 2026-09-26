@@ -29,6 +29,7 @@ class TestTriggerConditionValidation:
         diags = result.file_results[0].diagnostics
         assert len(diags) == 1
         assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
+        assert diags[0].location.file_path is None
         assert diags[0].local_name == "position<unknown>"
         assert diags[0].location.line == 3
         assert diags[0].location.column == 13
@@ -42,10 +43,12 @@ class TestTriggerConditionValidation:
         diags = result.file_results[0].diagnostics
         assert len(diags) == 2
         assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
+        assert diags[0].location.file_path is None
         assert diags[0].local_name == "position<BAD>"
         assert diags[0].location.line == 3
         assert diags[0].location.column == 13
         assert isinstance(diags[1], diagnostics.InvalidLocalNameFormatDiagnostic)
+        assert diags[1].location.file_path is None
         assert diags[1].local_name == "BAD"
         assert diags[1].char == "B"
         assert diags[1].location.line == 3

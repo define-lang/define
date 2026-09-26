@@ -27,6 +27,7 @@ def test_unreferenced_child_position_on_local_is_dead(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].constraint_name == "position</thing>"
     assert all_diags[0].position_name == "position<box>"
     assert all_diags[0].location.line == 7
@@ -43,6 +44,7 @@ def test_unreferenced_child_position_on_interface_is_dead(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].constraint_name == "position</thing>"
     assert all_diags[0].position_name == "position<run>"
     assert all_diags[0].location.line == 4
@@ -126,6 +128,7 @@ def test_redundant_destination_constraint_on_move_filled_position_is_dead(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].constraint_name == "position</thing>"
     assert all_diags[0].position_name == "position<dest>"
     assert all_diags[0].location.line == 12
@@ -191,6 +194,7 @@ def test_constraint_on_interface_position_filled_then_destroyed_is_dead(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].constraint_name == "position</thing>"
     assert all_diags[0].position_name == "position<iface>"
     assert all_diags[0].location.line == 4
@@ -225,6 +229,7 @@ def test_unused_constraint_on_interface_position_with_inferred_occupied_requirem
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].constraint_name == "position</c>"
     assert all_diags[0].position_name == "position<iface>"
     assert all_diags[0].location.line == 5
@@ -241,6 +246,7 @@ def test_unused_constraint_on_interface_position_with_inferred_occupied_requirem
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].constraint_name == "position</c>"
     assert all_diags[0].position_name == "position<iface>"
     assert all_diags[0].location.line == 5
@@ -257,6 +263,7 @@ def test_unused_constraint_on_interface_position_with_inferred_occupied_requirem
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].constraint_name == "position</c>"
     assert all_diags[0].position_name == "position<iface>"
     assert all_diags[0].location.line == 6
@@ -271,6 +278,7 @@ def test_dead_child_position_inside_constructor(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].constraint_name == "position</thing>"
     assert all_diags[0].position_name == "position<box>"
     assert all_diags[0].location.line == 7
@@ -285,6 +293,7 @@ def test_one_child_position_dead_while_a_sibling_is_referenced(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].constraint_name == "position</b>"
     assert all_diags[0].position_name == "position<box>"
     assert all_diags[0].location.line == 8
@@ -299,6 +308,7 @@ def test_constraint_that_only_provides_a_moved_quality_by_implication_is_dead(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].constraint_name == "action</construct>"
     assert all_diags[0].position_name == "position<box2>"
     assert all_diags[0].location.line == 12
@@ -323,6 +333,7 @@ def test_untriggered_action_on_local_is_dead(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].constraint_name == "action</coin>"
     assert all_diags[0].position_name == "position<box>"
     assert all_diags[0].location.line == 7
@@ -339,6 +350,7 @@ def test_untriggered_action_on_interface_is_dead(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].constraint_name == "action</coin>"
     assert all_diags[0].position_name == "position<run>"
     assert all_diags[0].location.line == 4
@@ -367,6 +379,7 @@ def test_action_interface_filled_but_never_triggered_is_dead(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].constraint_name == "action</twoport>"
     assert all_diags[0].position_name == "position<box>"
     assert all_diags[0].location.line == 7
@@ -1042,11 +1055,13 @@ def test_destructor_constraint_is_never_dead(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].constraint_name == "position</thing>"
     assert all_diags[0].position_name == "position<box>"
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 28
     assert isinstance(all_diags[1], diagnostics.UntriggeredActionDiagnostic)
+    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].constraint_name == "action</coin>"
     assert all_diags[1].position_name == "position<box>"
     assert all_diags[1].location.line == 9
@@ -1061,6 +1076,7 @@ def test_constructor_constraint_reached_only_by_move_is_dead(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].constraint_name == "action</construct>"
     assert all_diags[0].position_name == "position<box2>"
     assert all_diags[0].location.line == 16
@@ -1093,6 +1109,7 @@ def test_constructor_on_interface_position_dead_when_never_created(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].constraint_name == "action</construct>"
     assert all_diags[0].position_name == "position<run>"
     assert all_diags[0].location.line == 9
@@ -1110,11 +1127,13 @@ def test_dead_child_position_and_untriggered_action_on_same_position(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].constraint_name == "position</thing>"
     assert all_diags[0].position_name == "position<box>"
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 28
     assert isinstance(all_diags[1], diagnostics.UntriggeredActionDiagnostic)
+    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].constraint_name == "action</coin>"
     assert all_diags[1].position_name == "position<box>"
     assert all_diags[1].location.line == 8
@@ -1129,6 +1148,7 @@ def test_interface_constraint_referenced_only_in_another_definition_is_dead(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
+    assert all_diags[0].location.file_path == PurePosixPath("consumer.dfn")
     assert all_diags[0].constraint_name == "position</thing>"
     assert all_diags[0].position_name == "position<run>"
     assert all_diags[0].location.line == 4
@@ -1161,11 +1181,13 @@ def test_two_child_positions_on_one_position_are_both_dead(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].constraint_name == "position</a>"
     assert all_diags[0].position_name == "position<box>"
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 28
     assert isinstance(all_diags[1], diagnostics.DeadChildPositionDiagnostic)
+    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].constraint_name == "position</b>"
     assert all_diags[1].position_name == "position<box>"
     assert all_diags[1].location.line == 8

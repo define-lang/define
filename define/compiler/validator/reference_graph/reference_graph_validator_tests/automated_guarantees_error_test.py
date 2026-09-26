@@ -43,11 +43,12 @@ def test_error_interface_position_stays_error_after_trigger(
     assert all_diags[0].is_action_interface_position is False
     assert all_diags[0].inferred_at is None
     assert isinstance(all_diags[1], diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert all_diags[1].occupied_at is not None
+    assert all_diags[1].occupied_at.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].location.line == 15
     assert all_diags[1].location.column == 47
     assert all_diags[1].position_name == "position<box>::action</other>::position<item>"
-    assert all_diags[1].occupied_at is not None
     assert all_diags[1].occupied_at.line == 14
     assert all_diags[1].occupied_at.column == 47
     assert action_graph(result.reference_graph_result) == [
@@ -63,6 +64,7 @@ def test_post_trigger_error_guarantee_suppresses_create_diagnostic(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert all_diags[0].position_name == "position<item>"
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 30
@@ -81,6 +83,7 @@ def test_post_trigger_error_guarantee_suppresses_move_from_diagnostic(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert all_diags[0].position_name == "position<item>"
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 30
@@ -99,6 +102,7 @@ def test_post_trigger_error_guarantee_suppresses_move_to_diagnostic(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert all_diags[0].position_name == "position<item>"
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 30
@@ -117,6 +121,7 @@ def test_post_trigger_error_chain_guarantee_suppresses_create_diagnostic(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert all_diags[0].position_name == "position<trigger_pos>::position</x>"
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
@@ -135,6 +140,7 @@ def test_post_trigger_error_chain_guarantee_suppresses_move_from_diagnostic(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert all_diags[0].position_name == "position<trigger_pos>::position</x>"
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
@@ -153,6 +159,7 @@ def test_post_trigger_error_chain_guarantee_suppresses_move_to_diagnostic(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert all_diags[0].position_name == "position<trigger_pos>::position</x>"
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
@@ -171,6 +178,11 @@ def test_error_from_move_to_occupied_interface_position(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert all_diags[0].position_name == "position<item>"
+    assert all_diags[0].occupied_at is not None
+    assert all_diags[0].occupied_at.line == 7
+    assert all_diags[0].occupied_at.column == 30
+    assert all_diags[0].occupied_at.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 10
     assert all_diags[0].location.column == 49
@@ -187,6 +199,9 @@ def test_error_from_constraint_violation_on_interface_position(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert all_diags[0].source_position == "position<unconstrained>"
+    assert all_diags[0].target_position == "position<item>"
+    assert all_diags[0].missing_qualities == ["position</quality_a>"]
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 57
@@ -203,6 +218,7 @@ def test_error_propagation_from_local_to_interface_position(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert all_diags[0].position_name == "position<local>"
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 30
@@ -221,6 +237,11 @@ def test_error_from_prefix_move_on_interface_position(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveIntoDefiningPositionDiagnostic)
+    assert all_diags[0].source_position == "position<iface>"
+    assert (
+        all_diags[0].target_position
+        == "position<iface>::position</mid>::action</inner>::position<tp>"
+    )
     assert all_diags[0].location.file_path == PurePosixPath("outer.dfn")
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 66
@@ -237,11 +258,13 @@ def test_unknown_global_chain_start_treats_action_guarantees_as_error(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].source_global_name == "action</other>"
     assert all_diags[0].full_global_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].location.line == 6
     assert isinstance(all_diags[1], diagnostics.UnknownGlobalNameDiagnostic)
+    assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].source_global_name == "action</other>"
     assert all_diags[1].full_global_name == "action<my.domain.com:my_lib:/other>"
@@ -256,6 +279,7 @@ def test_post_trigger_error_guarantee_on_child_position(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert all_diags[0].position_name == "position<item>::position</child_q>"
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
@@ -274,6 +298,7 @@ def test_post_trigger_existing_guarantee_error_origin_with_children(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert all_diags[0].position_name == "position<item>"
     assert all_diags[0].location.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 19
     assert all_diags[0].location.column == 30

@@ -97,6 +97,9 @@ def test_create_does_not_fire_non_constructor_action_quality(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
+    assert all_diags[0].location.line == 7
+    assert all_diags[0].location.column == 28
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].constraint_name == "action</worker>"
     assert all_diags[0].position_name == "position<box>"
     assert action_graph(result.reference_graph_result) == []
@@ -118,6 +121,8 @@ def test_missing_constructor_file_is_reported_and_skipped(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert all_diags[0].location.line == 7
+    assert all_diags[0].location.column == 35
     assert all_diags[0].file_path == "construct.dfn"
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert action_graph(result.reference_graph_result) == []
@@ -131,9 +136,15 @@ def test_create_parent_not_occupied_does_not_fire_constructor(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
+    assert all_diags[0].location.line == 9
+    assert all_diags[0].location.column == 28
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].constraint_name == "action</inner>"
     assert all_diags[0].position_name == "position<box>"
     assert isinstance(all_diags[1], diagnostics.ParentPositionNotOccupiedDiagnostic)
+    assert all_diags[1].location.line == 12
+    assert all_diags[1].location.column == 30
+    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].position_name == "position<box>::action</inner>::position<slot>"
     assert all_diags[1].parent_position_name == "position<box>"
     assert action_graph(result.reference_graph_result) == [(_INNER, _CONSTRUCT)]

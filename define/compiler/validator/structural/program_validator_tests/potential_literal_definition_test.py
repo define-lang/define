@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler import ast, diagnostics, parser_exceptions
@@ -60,6 +61,8 @@ def test_duplicate_literal(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.DuplicateDefinitionDiagnostic)
+    assert diagnostic.location.column == 1
+    assert diagnostic.location.file_path is None
     assert diagnostic.definition_type == "literal"
     assert diagnostic.path == "/decimal"
     assert diagnostic.first_definition_line == 3
@@ -74,6 +77,9 @@ def test_invalid_name(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
+    assert diagnostic.location.line == 3
+    assert diagnostic.location.column == 55
+    assert diagnostic.location.file_path is None
     assert diagnostic.segment == "bad-name"
     assert diagnostic.char == "-"
 
@@ -86,6 +92,8 @@ def test_invalid_encoding_name(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
+    assert diagnostic.location.column == 29
+    assert diagnostic.location.file_path is None
     assert diagnostic.segment == "bad-name"
     assert diagnostic.char == "-"
     assert diagnostic.location.line == 3
@@ -99,6 +107,9 @@ def test_requires_short_encoding_name(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
+    assert diagnostic.location.line == 4
+    assert diagnostic.location.column == 25
+    assert diagnostic.location.file_path is None
     assert diagnostic.fqun == "my.domain.com:my_lib"
 
 
@@ -122,6 +133,9 @@ def test_path_mismatch(validate_testdata_structural: ValidateTestdataStructural)
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.PathMismatchDiagnostic)
+    assert diagnostic.location.line == 2
+    assert diagnostic.location.column == 51
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.expected_path == "/test"
     assert diagnostic.actual_path == "/decimal"
 
@@ -134,6 +148,9 @@ def test_missing_encoding_file(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert diagnostic.location.line == 3
+    assert diagnostic.location.column == 25
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.file_path == "decimal_text.dfn"
 
 
@@ -145,6 +162,9 @@ def test_wrong_encoding_definition_type(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ReferencedDefinitionNotFoundDiagnostic)
+    assert diagnostic.location.line == 3
+    assert diagnostic.location.column == 25
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.definition_name == "encoding<my.domain.com:my_lib:/decimal_text>"
     assert diagnostic.file_path == "decimal_text.dfn"
 
@@ -164,6 +184,7 @@ def test_same_file_encoding_must_precede_reference(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ReferencedDefinitionNotFoundDiagnostic)
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.definition_name == "encoding<my.domain.com:my_lib:/test>"
     assert diagnostic.file_path == "test.dfn"
     assert diagnostic.location.line == 3
@@ -187,6 +208,10 @@ def test_unconfigured_external_encoding(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert diagnostic.location.line == 3
+    assert diagnostic.location.column == 25
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.current_universe_name == "my.domain.com:my_lib"
     assert diagnostic.universe == "encodings.org:encodings"
 
 
@@ -198,4 +223,7 @@ def test_non_filesystem_encoding_must_precede_reference(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert diagnostic.location.line == 3
+    assert diagnostic.location.column == 25
+    assert diagnostic.location.file_path is None
     assert diagnostic.file_path == "decimal_text.dfn"

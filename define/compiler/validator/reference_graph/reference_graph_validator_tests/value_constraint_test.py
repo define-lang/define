@@ -32,6 +32,9 @@ def test_move_mismatched_value(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert diagnostic.location.line == 35
+    assert diagnostic.location.column == 50
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.source_position == "position<source>"
     assert diagnostic.target_position == "position<target>"
     assert diagnostic.missing_qualities == ["value</text>"]
@@ -45,6 +48,9 @@ def test_move_without_value(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert diagnostic.location.line == 23
+    assert diagnostic.location.column == 50
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.source_position == "position<source>"
     assert diagnostic.target_position == "position<target>"
     assert diagnostic.missing_qualities == ["value</number>"]
@@ -70,10 +76,16 @@ def test_action_mismatched_value(
     assert len(result.all_diagnostics) == 2
     untriggered = result.all_diagnostics[0]
     assert isinstance(untriggered, diagnostics.UntriggeredActionDiagnostic)
+    assert untriggered.location.line == 8
+    assert untriggered.location.column == 28
+    assert untriggered.location.file_path == PurePosixPath("test.dfn")
     assert untriggered.position_name == "position<worker>"
     assert untriggered.constraint_name == "action</consume>"
     diagnostic = result.all_diagnostics[1]
     assert isinstance(diagnostic, diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert diagnostic.location.line == 26
+    assert diagnostic.location.column == 50
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.source_position == "position<source>"
     assert (
         diagnostic.target_position
@@ -102,6 +114,7 @@ def test_value_use_keeps_only_origin_alive(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.DeadValueConstraintDiagnostic)
+    assert diagnostic.location.column == 28
     assert diagnostic.position_name == "position<target>"
     assert diagnostic.constraint_name == "value</number>"
     assert diagnostic.location.line == 13
@@ -116,6 +129,7 @@ def test_value_setting_target_keeps_only_origin_alive(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.DeadValueConstraintDiagnostic)
+    assert diagnostic.location.column == 28
     assert diagnostic.position_name == "position<target>"
     assert diagnostic.constraint_name == "value</number>"
     assert diagnostic.location.line == 13
@@ -150,6 +164,7 @@ def test_guaranteed_value_through_local(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.DeadValueConstraintDiagnostic)
+    assert diagnostic.location.column == 28
     assert diagnostic.position_name == "position<middle>"
     assert diagnostic.constraint_name == "value</number>"
     assert diagnostic.location.line == 18
@@ -173,6 +188,7 @@ def test_callee_contract_keeps_only_origin_alive(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.DeadValueConstraintDiagnostic)
+    assert diagnostic.location.column == 28
     assert diagnostic.position_name == "position<middle>"
     assert diagnostic.constraint_name == "value</number>"
     assert diagnostic.location.line == 18

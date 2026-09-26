@@ -27,6 +27,7 @@ def test_short_form_global_reference(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].source_global_name == "position</other>"
     assert all_diags[0].full_global_name == "position<my.domain.com:my_lib:/other>"
     assert all_diags[0].location.line == 5
@@ -41,6 +42,8 @@ def test_create_in_interface_of_missing_action_reports_reference_error(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert all_diags[0].location.line == 7
+    assert all_diags[0].location.column == 35
     assert all_diags[0].file_path == "missing.dfn"
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
 
@@ -59,6 +62,8 @@ def test_create_in_missing_global_position_reports_reference_errors(
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert isinstance(all_diags[1], diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert all_diags[1].location.line == 5
+    assert all_diags[1].location.column == 39
     assert all_diags[1].file_path == "missing.dfn"
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
 
@@ -71,11 +76,13 @@ def test_same_fqun_reference_must_use_short_form(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.UnknownGlobalNameDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].source_global_name == "position<my.domain.com:my_lib:/other>"
     assert diags[0].full_global_name == "position<my.domain.com:my_lib:/other>"
     assert diags[0].location.line == 6
     assert diags[0].location.column == 30
     assert isinstance(diags[1], diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
+    assert diags[1].location.file_path is None
     assert diags[1].fqun == "my.domain.com:my_lib"
     assert diags[1].location.line == 6
     assert diags[1].location.column == 39
@@ -96,11 +103,13 @@ def test_cross_universe_not_configured(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.UnknownGlobalNameDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].source_global_name == "position<other.domain.com:other_lib:/dep>"
     assert diags[0].full_global_name == "position<other.domain.com:other_lib:/dep>"
     assert diags[0].location.line == 6
     assert diags[0].location.column == 30
     assert isinstance(diags[1], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert diags[1].location.file_path is None
     assert diags[1].universe == "other.domain.com:other_lib"
     assert diags[1].current_universe_name == "my.domain.com:my_lib"
     assert diags[1].location.line == 6
@@ -115,6 +124,7 @@ def test_undefined_local_position(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].local_name == "position<no_such_pos>"
     assert diags[0].location.line == 6
     assert diags[0].location.column == 30
@@ -128,6 +138,7 @@ def test_local_position_defined_after_use(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].local_name == "position<later_pos>"
     assert diags[0].location.line == 6
     assert diags[0].location.column == 30
@@ -155,14 +166,17 @@ def test_single_action_in_position_reference(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 3
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].local_name == "action<act_other>"
     assert diags[0].location.line == 6
     assert diags[0].location.column == 30
     assert isinstance(diags[1], diagnostics.LocalActionNameDiagnostic)
+    assert diags[1].location.file_path is None
     assert diags[1].local_name == "act_other"
     assert diags[1].location.line == 6
     assert diags[1].location.column == 30
     assert isinstance(diags[2], diagnostics.PositionReferenceChainEndDiagnostic)
+    assert diags[2].location.file_path is None
     assert diags[2].location.line == 6
     assert diags[2].location.column == 30
 

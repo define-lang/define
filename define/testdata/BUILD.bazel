@@ -22,6 +22,20 @@ _TESTDATA_TARGETS = [
 ]
 
 py_library(
+    name = "diagnostic_assertions",
+    testonly = True,
+    srcs = ["diagnostic_assertions.py"],
+    deps = ["//define/compiler:diagnostics"],
+)
+
+py_test(
+    name = "diagnostic_assertions_test",
+    size = "small",
+    srcs = ["diagnostic_assertions_test.py"],
+    deps = [":diagnostic_assertions"],
+)
+
+py_library(
     name = "path_resolver",
     testonly = True,
     srcs = ["path_resolver.py"],
@@ -50,7 +64,10 @@ py_test(
         "//define/compiler/validator/reference_graph/reference_graph_validator_tests:test_sources",
         "//define/compiler/validator/structural/program_validator_tests:test_sources",
     ],
-    deps = [":path_resolver"],
+    deps = [
+        ":diagnostic_assertions",
+        ":path_resolver",
+    ],
 )
 
 format_test(
@@ -62,6 +79,8 @@ format_test(
 pyright_test(
     name = "pyright_test",
     deps = [
+        ":diagnostic_assertions",
+        ":diagnostic_assertions_test",
         ":path_resolver",
         ":path_resolver_test",
         ":testdata_test",

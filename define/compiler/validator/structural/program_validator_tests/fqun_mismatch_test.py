@@ -47,6 +47,7 @@ def test_mismatched_authority(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.FqunMismatchDiagnostic)
+    assert diags[0].location.file_path == PurePosixPath("test.dfn")
     assert diags[0].expected == "my.domain.com:my_lib"
     assert diags[0].actual == "other.org:my_lib"
     assert diags[0].location.line == 1
@@ -61,6 +62,7 @@ def test_mismatched_multiverse(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.FqunMismatchDiagnostic)
+    assert diags[0].location.file_path == PurePosixPath("test.dfn")
     assert diags[0].expected == "mv:my.domain.com:my_lib"
     assert diags[0].actual == "other_mv:my.domain.com:my_lib"
     assert diags[0].location.line == 1
@@ -84,6 +86,7 @@ def test_standard_universe_matching(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ReservedUniverseNameDiagnostic)
+    assert diags[0].location.file_path == PurePosixPath("test.dfn")
     assert diags[0].reserved_name == "standard"
     assert diags[0].location.line == 1
     assert diags[0].location.column == 31
@@ -106,6 +109,7 @@ def test_authority_with_path_mismatch(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.FqunMismatchDiagnostic)
+    assert diags[0].location.file_path == PurePosixPath("test.dfn")
     assert diags[0].expected == "my.domain.com:my_lib"
     assert diags[0].actual == "my.domain.com/org:my_lib"
     assert diags[0].location.line == 1

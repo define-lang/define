@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler import ast, diagnostics
@@ -36,6 +37,8 @@ def test_duplicate_value(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.DuplicatePositionConstraintDiagnostic)
+    assert diagnostic.location.column == 20
+    assert diagnostic.location.file_path is None
     assert diagnostic.constraint_name == "value</number>"
     assert diagnostic.first_constraint_line == 5
     assert diagnostic.location.line == 6
@@ -49,7 +52,10 @@ def test_multiple_values(
     assert len(result.all_diagnostics) == 2
     first, second = result.all_diagnostics
     assert isinstance(first, diagnostics.MultipleValueConstraintsDiagnostic)
+    assert first.location.file_path is None
     assert isinstance(second, diagnostics.MultipleValueConstraintsDiagnostic)
+    assert second.location.column == 20
+    assert second.location.file_path is None
     assert first.first_value_name == "value</number>"
     assert second.first_value_name == "value</number>"
     assert first.first_constraint_line == 7
@@ -67,6 +73,7 @@ def test_multiple_values_in_local_position(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.MultipleValueConstraintsDiagnostic)
+    assert diagnostic.location.file_path is None
     assert diagnostic.first_value_name == "value</number>"
     assert diagnostic.first_constraint_line == 7
     assert diagnostic.location.line == 8
@@ -81,6 +88,9 @@ def test_invalid_name_does_not_count_as_value_constraint(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
+    assert diagnostic.location.line == 5
+    assert diagnostic.location.column == 27
+    assert diagnostic.location.file_path is None
     assert diagnostic.segment == "Bad"
     assert diagnostic.char == "B"
 
@@ -93,6 +103,9 @@ def test_same_fqun_requires_short_form(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
+    assert diagnostic.location.line == 5
+    assert diagnostic.location.column == 26
+    assert diagnostic.location.file_path is None
     assert diagnostic.fqun == "my.domain.com:my_lib"
 
 
@@ -115,6 +128,9 @@ def test_reference_to_wrong_type(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ReferencedDefinitionNotFoundDiagnostic)
+    assert diagnostic.location.line == 4
+    assert diagnostic.location.column == 26
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.definition_name == "value<my.domain.com:my_lib:/number>"
     assert diagnostic.file_path == "number.dfn"
 

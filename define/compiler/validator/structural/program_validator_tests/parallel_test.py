@@ -7,6 +7,7 @@ Follow program validator test authoring rules in program_validator_tests/AGENTS.
 from __future__ import annotations
 
 import threading
+from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 from unittest import mock
 
@@ -55,6 +56,7 @@ def test_wrong_type_detected_without_deferral(
     assert len(result.file_results[3].diagnostics) == 1
     diag = result.file_results[3].diagnostics[0]
     assert isinstance(diag, diagnostics.ReferencedDefinitionNotFoundDiagnostic)
+    assert diag.location.file_path == PurePosixPath("checker.dfn")
     assert diag.location.line == 3
     assert diag.location.column == 29
     assert diag.file_path == "target.dfn"
@@ -99,6 +101,7 @@ def test_reference_edges_resolve_by_file_completion_order(
     assert len(result.file_results[0].diagnostics) == 2
     diag0 = result.file_results[0].diagnostics[0]
     assert isinstance(diag0, diagnostics.ReferencedDefinitionNotFoundDiagnostic)
+    assert diag0.location.file_path == PurePosixPath("test.dfn")
     assert diag0.location.line == 3
     assert diag0.location.column == 29
     assert diag0.file_path == "lib/target.dfn"
@@ -107,6 +110,7 @@ def test_reference_edges_resolve_by_file_completion_order(
     )
     diag1 = result.file_results[0].diagnostics[1]
     assert isinstance(diag1, diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert diag1.location.file_path == PurePosixPath("test.dfn")
     assert diag1.location.line == 4
     assert diag1.location.column == 29
     assert diag1.file_path == "target.dfn"
@@ -114,6 +118,7 @@ def test_reference_edges_resolve_by_file_completion_order(
     assert len(result.file_results[1].diagnostics) == 1
     diag2 = result.file_results[1].diagnostics[0]
     assert isinstance(diag2, diagnostics.PathMismatchDiagnostic)
+    assert diag2.location.file_path == PurePosixPath("lib/target.dfn")
     assert diag2.location.line == 1
     assert diag2.location.column == 62
     assert diag2.expected_path == "/lib/target"

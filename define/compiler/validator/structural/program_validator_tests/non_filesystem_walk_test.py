@@ -6,6 +6,7 @@ Follow program validator test authoring rules in program_validator_tests/AGENTS.
 
 from __future__ import annotations
 
+from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler import config, diagnostics
@@ -27,6 +28,7 @@ def test_external_universe_no_project_config(
     assert isinstance(
         diags[0], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
     )
+    assert diags[0].location.file_path is None
     assert diags[0].location.line == 3
     assert diags[0].location.column == 29
     assert diags[0].universe == "other.example.com:other_universe"
@@ -42,6 +44,7 @@ def test_config_failure_still_validates_same_file_cycles(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].location.line == 9
     assert diags[0].location.column == 20
     assert diags[0].cycle == [
@@ -52,6 +55,8 @@ def test_config_failure_still_validates_same_file_cycles(
     assert isinstance(
         diags[1], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
     )
+    assert diags[1].location.file_path is None
+    assert diags[1].config_path == ".define/project/config.defcl"
     assert diags[1].location.line == 3
     assert diags[1].location.column == 29
     assert diags[1].universe == "other.example.com:other_universe"
@@ -66,6 +71,7 @@ def test_external_universe_without_local_deps(
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].location.line == 3
     assert diags[0].location.column == 29
     assert diags[0].universe == "other.example.com:other_universe"
@@ -81,6 +87,7 @@ def test_external_universe_not_in_local_deps(
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].location.line == 3
     assert diags[0].location.column == 29
     assert diags[0].universe == "other.example.com:other_universe"
@@ -96,6 +103,7 @@ def test_external_universe_invalid_local_deps(
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].location.line == 3
     assert diags[0].location.column == 29
     assert isinstance(diags[0].error, config.ConfigValidationError)
@@ -110,6 +118,7 @@ def test_external_universe_configured_but_no_sub_root_config(
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].location.line == 3
     assert diags[0].location.column == 29
     assert isinstance(diags[0].error, config.NotProjectRootError)
@@ -126,6 +135,7 @@ def test_partial_local_deps_missing_still_validates_configured_sub_roots_non_fil
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].location.line == 4
     assert diags[0].location.column == 29
     assert diags[0].universe == child_b
@@ -144,10 +154,14 @@ def test_duplicate_unknown_universe_non_filesystem_does_not_skip_remaining(
     diags = results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert diags[0].location.file_path is None
+    assert diags[0].current_universe_name == "my.domain.com:my_lib"
     assert diags[0].universe == "unknown.com:lib_a"
     assert diags[0].location.line == 3
     assert diags[0].location.column == 29
     assert isinstance(diags[1], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert diags[1].location.file_path is None
+    assert diags[1].current_universe_name == "my.domain.com:my_lib"
     assert diags[1].universe == "unknown.com:lib_b"
     assert diags[1].location.line == 5
     assert diags[1].location.column == 29
@@ -186,6 +200,7 @@ def test_same_target_file_referenced_as_two_types_loads_once_non_filesystem(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ReferencedDefinitionNotFoundDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].file_path == "lib/target.dfn"
     assert diags[0].definition_name == (
         "action<mv:define-lang.org:child_universe:/target>"
@@ -207,6 +222,7 @@ def test_non_filesystem_cross_universe_reference(
     assert len(result.file_results[0].diagnostics) == 1
     diag = result.file_results[0].diagnostics[0]
     assert isinstance(diag, diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert diag.location.file_path is None
     assert diag.file_path == "lib/missing.dfn"
     assert diag.location.line == 4
     assert diag.location.column == 29
@@ -226,6 +242,7 @@ def test_unknown_universe_does_not_block_known_universe_for_same_path(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].universe == "unknown.com:other_lib"
     assert diags[0].current_universe_name == "my.domain.com:my_lib"
     assert diags[0].location.line == 3
@@ -244,10 +261,12 @@ def test_unknown_universe_and_sub_root_config_errors_in_source_order(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
+    assert diags[0].location.file_path is None
     assert isinstance(diags[0].error, config.NotProjectRootError)
     assert diags[0].location.line == 3
     assert diags[0].location.column == 29
     assert isinstance(diags[1], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert diags[1].location.file_path is None
     assert diags[1].universe == "unknown.com:other_lib"
     assert diags[1].current_universe_name == "my.domain.com:my_lib"
     assert diags[1].location.line == 4
@@ -263,11 +282,13 @@ def test_two_unknown_universes_for_same_path_each_diagnosed(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].universe == "unknown.com:lib_a"
     assert diags[0].current_universe_name == "my.domain.com:my_lib"
     assert diags[0].location.line == 3
     assert diags[0].location.column == 29
     assert isinstance(diags[1], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert diags[1].location.file_path is None
     assert diags[1].universe == "unknown.com:lib_b"
     assert diags[1].current_universe_name == "my.domain.com:my_lib"
     assert diags[1].location.line == 4
@@ -321,6 +342,7 @@ def test_forward_reference_within_non_filesystem_source_reports_missing_file(
     assert len(diags) == 1
     diag = diags[0]
     assert isinstance(diag, diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert diag.location.file_path is None
     assert diag.file_path == "b.dfn"
     assert diag.location.line == 5
     assert diag.location.column == 29
@@ -349,6 +371,7 @@ def test_non_filesystem_file_back_reference_reports_cycle(
     assert len(diags) == 1
     diag = diags[0]
     assert isinstance(diag, diagnostics.CircularGlobalReferenceDiagnostic)
+    assert diag.location.file_path == PurePosixPath("target.dfn")
     assert diag.location.line == 3
     assert diag.location.column == 20
     assert diag.cycle == [

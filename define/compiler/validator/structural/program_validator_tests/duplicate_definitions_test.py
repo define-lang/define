@@ -29,6 +29,7 @@ def test_duplicate_position_error(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.DuplicateDefinitionDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].definition_type == "position"
     assert diags[0].path == "/same"
     assert diags[0].first_definition_line == 1
@@ -44,6 +45,7 @@ def test_duplicate_action_error(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.DuplicateDefinitionDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].definition_type == "action"
     assert diags[0].path == "/same"
     assert diags[0].first_definition_line == 1
@@ -66,7 +68,9 @@ def test_three_duplicates_two_errors(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.DuplicateDefinitionDiagnostic)
+    assert diags[0].location.file_path is None
     assert isinstance(diags[1], diagnostics.DuplicateDefinitionDiagnostic)
+    assert diags[1].location.file_path is None
     assert diags[0].definition_type == "position"
     assert diags[0].path == "/same"
     assert diags[0].first_definition_line == 1

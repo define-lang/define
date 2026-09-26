@@ -18,6 +18,7 @@ def test_undefined_local_position_in_create(
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].local_name == "position<undefined>"
     assert diags[0].location.line == 5
     assert diags[0].location.column == 30
@@ -32,3 +33,6 @@ def test_empty_action_statements_block(
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.EmptyActionStatementsBlockDiagnostic)
+    assert diags[0].location.line == 4
+    assert diags[0].location.column == 6
+    assert diags[0].location.file_path is None

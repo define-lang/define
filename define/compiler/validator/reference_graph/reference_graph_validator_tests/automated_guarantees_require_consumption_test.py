@@ -6,6 +6,10 @@ from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler import diagnostics
+from define.compiler.validator.reference_graph import action_contract
+from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
+    assert_propagation_chain,
+)
 from define.compiler.validator.reference_graph.test_helpers import (
     action_graph,
 )
@@ -368,6 +372,41 @@ def test_child_guarantee_after_parent_move_is_diagnostic_source(
     assert isinstance(
         requirement_diagnostic,
         diagnostics.InferredRequirementViolationDiagnostic,
+    )
+    assert_propagation_chain(
+        requirement_diagnostic,
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<box>::action</parent>::position<iface>::position</branch>::action</child>::position<result>",
+            "triggered_quality_name": None,
+            "line": 7,
+            "column": 30,
+            "file_path": "child.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/parent>",
+            "line": 20,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/parent>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/child>",
+            "line": 11,
+            "column": 30,
+            "file_path": "parent.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/child>",
+            "triggered_quality_name": None,
+            "line": 7,
+            "column": 30,
+            "file_path": "child.dfn",
+        },
     )
     assert requirement_diagnostic.action_name == "action<my.domain.com:my_lib:/parent>"
     assert requirement_diagnostic.required_empty is True

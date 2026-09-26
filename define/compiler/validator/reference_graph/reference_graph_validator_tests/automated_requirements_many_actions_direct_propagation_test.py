@@ -543,6 +543,7 @@ def test_both_requirements_propagate_when_inner_has_both(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/outer>"
     assert all_diags[0].location.line == 26
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")

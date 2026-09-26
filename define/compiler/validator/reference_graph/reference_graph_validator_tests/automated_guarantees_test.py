@@ -609,6 +609,9 @@ def test_post_trigger_existing_guarantee_on_child_position(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert all_diags[0].populated_at.line == 17
+    assert all_diags[0].populated_at.column == 68
+    assert all_diags[0].populated_at.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 23
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
@@ -651,6 +654,9 @@ def test_post_trigger_new_guarantee_on_child_position(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert all_diags[0].populated_at.line == 12
+    assert all_diags[0].populated_at.column == 30
+    assert all_diags[0].populated_at.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
@@ -727,6 +733,9 @@ def test_post_trigger_parent_and_child_both_have_guarantees(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert all_diags[0].populated_at.line == 17
+    assert all_diags[0].populated_at.column == 30
+    assert all_diags[0].populated_at.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 20
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
@@ -747,6 +756,9 @@ def test_post_trigger_child_guarantee_follows_parent_move(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert all_diags[0].populated_at.line == 16
+    assert all_diags[0].populated_at.column == 30
+    assert all_diags[0].populated_at.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 20
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
@@ -909,6 +921,9 @@ def test_retriggering_same_action_reapplies_its_guarantee_over_a_later_body_chan
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert diag.populated_at.line == 7
+    assert diag.populated_at.column == 30
+    assert diag.populated_at.file_path == PurePosixPath("inner.dfn")
     assert diag.position_name == "position<box>::action</inner>::position<out>"
     assert diag.location.line == 16
     assert diag.location.column == 30
@@ -924,6 +939,9 @@ def test_two_actions_with_opposite_guarantees_on_a_shared_position_later_wins(
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert diag.populated_at.line == 7
+    assert diag.populated_at.column == 30
+    assert diag.populated_at.file_path == PurePosixPath("filler.dfn")
     assert diag.position_name == "position<box>::position</shared>"
     assert diag.location.line == 17
     assert diag.location.column == 30
@@ -938,6 +956,9 @@ def test_existing_guarantee_on_child_survives_destroying_original_parent(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert all_diags[0].populated_at.line == 17
+    assert all_diags[0].populated_at.column == 68
+    assert all_diags[0].populated_at.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
@@ -955,6 +976,9 @@ def test_existing_guarantee_on_child_survives_recreating_original_parent(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert all_diags[0].populated_at.line == 17
+    assert all_diags[0].populated_at.column == 68
+    assert all_diags[0].populated_at.file_path == PurePosixPath("other.dfn")
     assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")

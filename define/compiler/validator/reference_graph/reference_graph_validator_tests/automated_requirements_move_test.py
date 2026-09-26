@@ -150,6 +150,9 @@ def test_requirement_inferred_when_trigger_moved_to_local(
     assert len(all_diags) == 2
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diag.location.line == 25
+    assert diag.location.column == 49
+    assert diag.location.file_path == PurePosixPath("test.dfn")
     assert diag.action_name == _OUTER
     assert diag.required_empty is True
     assert (

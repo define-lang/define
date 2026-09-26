@@ -46,6 +46,7 @@ class TestUnnecessarySelfReference:
         diags = results[0].diagnostics
         assert len(diags) == 1
         assert isinstance(diags[0], diagnostics.UnnecessarySelfReferenceDiagnostic)
+        assert diags[0].location.file_path is None
         assert diags[0].definition_name == "action<my.domain.com:my_lib:/test>"
         assert diags[0].location.line == 7
         assert diags[0].location.column == 30
@@ -60,6 +61,7 @@ class TestUnnecessarySelfReference:
         diags = results[0].diagnostics
         assert len(diags) == 1
         assert isinstance(diags[0], diagnostics.UnnecessarySelfReferenceDiagnostic)
+        assert diags[0].location.file_path is None
         assert diags[0].definition_name == "action<my.domain.com:my_lib:/test>"
         assert diags[0].location.line == 6
         assert diags[0].location.column == 30
@@ -74,6 +76,7 @@ class TestUnnecessarySelfReference:
         diags = results[0].diagnostics
         assert len(diags) == 1
         assert isinstance(diags[0], diagnostics.UnnecessarySelfReferenceDiagnostic)
+        assert diags[0].location.file_path is None
         assert diags[0].definition_name == "action<my.domain.com:my_lib:/test>"
         assert diags[0].location.line == 7
         assert diags[0].location.column == 30
@@ -88,9 +91,11 @@ class TestUnnecessarySelfReference:
         diags = results[0].diagnostics
         assert len(diags) == 2
         assert isinstance(diags[0], diagnostics.PositionReferenceChainEndDiagnostic)
+        assert diags[0].location.file_path is None
         assert diags[0].location.line == 6
         assert diags[0].location.column == 30
         assert isinstance(diags[1], diagnostics.CircularGlobalReferenceDiagnostic)
+        assert diags[1].location.file_path is None
         assert diags[1].location.line == 6
         assert diags[1].location.column == 30
         assert diags[1].cycle == [

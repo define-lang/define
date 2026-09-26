@@ -107,6 +107,43 @@ def test_diamond_one_path_violates_empty_requirement(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].location.line == 24
+    assert all_diags[0].location.column == 30
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<box_b>::action</act_b>::position<gateway>::position</value>",
+            "triggered_quality_name": None,
+            "line": 23,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/act_b>",
+            "line": 24,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/act_b>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/shared>",
+            "line": 18,
+            "column": 30,
+            "file_path": "act_b.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/shared>",
+            "triggered_quality_name": None,
+            "line": 11,
+            "column": 30,
+            "file_path": "shared.dfn",
+        },
+    )
     assert all_diags[0].action_name == _ACT_B
     assert all_diags[0].required_empty is True
     assert (
@@ -130,6 +167,43 @@ def test_diamond_other_path_violates_empty_requirement(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].location.line == 26
+    assert all_diags[0].location.column == 30
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<box_c>::action</act_c>::position<gateway>::position</value>",
+            "triggered_quality_name": None,
+            "line": 25,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/act_c>",
+            "line": 26,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/act_c>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/shared>",
+            "line": 18,
+            "column": 30,
+            "file_path": "act_c.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/shared>",
+            "triggered_quality_name": None,
+            "line": 11,
+            "column": 30,
+            "file_path": "shared.dfn",
+        },
+    )
     assert all_diags[0].action_name == _ACT_C
     assert all_diags[0].required_empty is True
     assert (

@@ -27,6 +27,10 @@ def test_undefined_local_position_in_destroy(
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
+    assert diags[0].location.line == 5
+    assert diags[0].location.column == 33
+    assert diags[0].location.file_path is None
+    assert diags[0].local_name == "position<undefined>"
 
 
 def test_non_self_ref_global_in_action_body(
@@ -39,6 +43,7 @@ def test_non_self_ref_global_in_action_body(
     diags = results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.UnknownGlobalNameDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].source_global_name == "action</other>"
     assert diags[0].full_global_name == "action<my.domain.com:my_lib:/other>"
     assert diags[0].location.line == 5
@@ -46,5 +51,8 @@ def test_non_self_ref_global_in_action_body(
     assert isinstance(
         diags[1], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
     )
+    assert diags[1].location.file_path is None
+    assert diags[1].universe == "my.domain.com:my_lib"
+    assert diags[1].config_path == ".define/project/config.defcl"
     assert diags[1].location.line == 5
     assert diags[1].location.column == 40

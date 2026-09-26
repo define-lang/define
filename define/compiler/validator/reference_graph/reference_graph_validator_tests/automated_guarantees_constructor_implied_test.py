@@ -25,8 +25,20 @@ def test_nested_constructor_guarantees(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert all_diags[0].location.line == 14
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].populated_at.line == 6
+    assert all_diags[0].populated_at.column == 30
+    assert all_diags[0].populated_at.file_path == PurePosixPath("construct_a.dfn")
     assert all_diags[0].position_name == "position<box>::position</a>"
     assert isinstance(all_diags[1], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert all_diags[1].location.line == 15
+    assert all_diags[1].location.column == 30
+    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[1].populated_at.line == 6
+    assert all_diags[1].populated_at.column == 30
+    assert all_diags[1].populated_at.file_path == PurePosixPath("construct_dep.dfn")
     assert all_diags[1].position_name == "position<box>::position</a>::position</dep>"
 
 
@@ -54,6 +66,9 @@ def test_inferred_occupied_does_not_apply_constructor_guarantees(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
+    assert all_diags[0].location.line == 10
+    assert all_diags[0].location.column == 24
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].constraint_name == "action</construct_a>"
     assert all_diags[0].position_name == "position<item>"
 
@@ -66,6 +81,12 @@ def test_caller_sees_constructor_child_guarantees_through_action(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert all_diags[0].location.line == 16
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].populated_at.line == 6
+    assert all_diags[0].populated_at.column == 30
+    assert all_diags[0].populated_at.file_path == PurePosixPath("construct_a.dfn")
     assert (
         all_diags[0].position_name
         == "position<box>::action</inner>::position<item>::position</a>"
@@ -80,6 +101,12 @@ def test_nested_quality_guarantees_visible_through_action_chain(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert all_diags[0].location.line == 17
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].populated_at.line == 6
+    assert all_diags[0].populated_at.column == 30
+    assert all_diags[0].populated_at.file_path == PurePosixPath("construct_dep.dfn")
     assert (
         all_diags[0].position_name
         == "position<box>::action</inner>::position<item>::position</a>::position</dep>"

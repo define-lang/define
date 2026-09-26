@@ -31,6 +31,7 @@ def test_duplicate_constraint_in_global_position_error(
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.DuplicatePositionConstraintDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].constraint_name == "position</foo>"
     assert diags[0].first_constraint_line == 4
     assert diags[0].location.line == 5
@@ -45,6 +46,7 @@ def test_duplicate_constraint_in_local_position_error(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.DuplicatePositionConstraintDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].constraint_name == "position</foo>"
     assert diags[0].first_constraint_line == 5
     assert diags[0].location.line == 6
@@ -59,7 +61,9 @@ def test_three_duplicates_two_errors(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.DuplicatePositionConstraintDiagnostic)
+    assert diags[0].location.file_path is None
     assert isinstance(diags[1], diagnostics.DuplicatePositionConstraintDiagnostic)
+    assert diags[1].location.file_path is None
     assert diags[0].constraint_name == "position</foo>"
     assert diags[0].first_constraint_line == 4
     assert diags[0].location.line == 5
@@ -78,6 +82,8 @@ def test_duplicate_via_full_form_and_short_form(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
+    assert diags[0].location.column == 29
+    assert diags[0].location.file_path is None
     assert diags[0].fqun == "my.domain.com:my_lib"
     assert diags[0].location.line == 5
 
@@ -90,6 +96,7 @@ def test_duplicate_full_fqun_cross_universe_error(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.DuplicatePositionConstraintDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].constraint_name == "position<other.example.com:other_lib:/foo>"
     assert diags[0].first_constraint_line == 3
     assert diags[0].location.line == 4
@@ -97,4 +104,8 @@ def test_duplicate_full_fqun_cross_universe_error(
     assert isinstance(
         diags[1], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
     )
+    assert diags[1].location.line == 3
+    assert diags[1].location.column == 29
+    assert diags[1].location.file_path is None
+    assert diags[1].config_path == ".define/project/config.defcl"
     assert diags[1].universe == "other.example.com:other_lib"

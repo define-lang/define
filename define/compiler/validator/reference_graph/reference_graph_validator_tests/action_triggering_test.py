@@ -26,6 +26,8 @@ def test_self_constructor_reference_reports_circular_reference(
     all_diagnostics = result.all_diagnostics
     assert len(all_diagnostics) == 1
     assert isinstance(all_diagnostics[0], diagnostics.CircularGlobalReferenceDiagnostic)
+    assert all_diagnostics[0].location.column == 28
+    assert all_diagnostics[0].location.file_path is None
     assert all_diagnostics[0].cycle == [_TEST, _TEST]
     assert all_diagnostics[0].location.line == 8
 
@@ -40,6 +42,9 @@ def test_destroy_with_unresolved_action_quality_reports_reference_error(
     assert isinstance(
         all_diagnostics[0], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
     )
+    assert all_diagnostics[0].location.column == 31
+    assert all_diagnostics[0].location.file_path is None
+    assert all_diagnostics[0].config_path == ".define/project/config.defcl"
     assert all_diagnostics[0].universe == "my.domain.com:my_lib"
     assert all_diagnostics[0].location.line == 5
 
@@ -182,6 +187,16 @@ def test_self_trigger(
         result.program_result.all_diagnostics[0],
         diagnostics.ActionSelfTriggerDiagnostic,
     )
+    assert result.program_result.all_diagnostics[0].location.line == 8
+    assert result.program_result.all_diagnostics[0].location.column == 30
+    assert result.program_result.all_diagnostics[0].location.file_path == PurePosixPath(
+        "test.dfn"
+    )
+    assert (
+        result.program_result.all_diagnostics[0].action_name
+        == "action<my.domain.com:my_lib:/test>"
+    )
+    assert result.program_result.all_diagnostics[0].position_name == "position<my_pos>"
     assert action_graph(result.reference_graph_result) == []
 
 
@@ -194,6 +209,9 @@ def test_duplicate_action_does_not_add_trigger_edges(
     assert isinstance(
         result.program_result.all_diagnostics[0],
         diagnostics.DuplicateDefinitionDiagnostic,
+    )
+    assert result.program_result.all_diagnostics[0].location.file_path == PurePosixPath(
+        "test.dfn"
     )
     assert result.program_result.all_diagnostics[0].definition_type == "action"
     assert result.program_result.all_diagnostics[0].path == "/test"
@@ -221,6 +239,9 @@ def test_no_body_effect_when_create_target_has_error_state(
         result.program_result.all_diagnostics[0],
         diagnostics.MoveFromEmptyPositionDiagnostic,
     )
+    assert result.program_result.all_diagnostics[0].location.file_path == PurePosixPath(
+        "test.dfn"
+    )
     assert result.program_result.all_diagnostics[0].position_name == "position<a>"
     assert result.program_result.all_diagnostics[0].location.line == 7
     assert result.program_result.all_diagnostics[0].location.column == 30
@@ -240,6 +261,9 @@ def test_no_body_effect_when_move_target_has_error_state(
         result.program_result.all_diagnostics[0],
         diagnostics.MoveFromEmptyPositionDiagnostic,
     )
+    assert result.program_result.all_diagnostics[0].location.file_path == PurePosixPath(
+        "test.dfn"
+    )
     assert result.program_result.all_diagnostics[0].position_name == "position<a>"
     assert result.program_result.all_diagnostics[0].location.line == 7
     assert result.program_result.all_diagnostics[0].location.column == 30
@@ -257,6 +281,9 @@ def test_no_trigger_edge_on_unknown_global_chain_start(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
+    assert all_diags[0].location.line == 5
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].source_global_name == "action</other>"
     assert all_diags[0].full_global_name == "action<my.domain.com:my_lib:/other>"
     assert action_graph(result.reference_graph_result) == []
@@ -298,6 +325,10 @@ def test_action_interface_reference_with_circular_contract_reports_circular_refe
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 3
     assert isinstance(all_diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
+    assert all_diags[0].cycle == [
+        "action<my.domain.com:my_lib:/test>",
+        "action<my.domain.com:my_lib:/test>",
+    ]
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 61
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
@@ -311,6 +342,11 @@ def test_action_interface_reference_with_circular_contract_reports_circular_refe
     assert all_diags[1].location.column == 61
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert isinstance(all_diags[2], diagnostics.CircularGlobalReferenceDiagnostic)
+    assert all_diags[2].cycle == [
+        "action<my.domain.com:my_lib:/test>",
+        "position<my.domain.com:my_lib:/pos>",
+        "action<my.domain.com:my_lib:/test>",
+    ]
     assert all_diags[2].location.line == 3
     assert all_diags[2].location.column == 20
     assert all_diags[2].location.file_path == PurePosixPath("pos.dfn")
@@ -335,11 +371,22 @@ def test_action_requirement_for_unparseable_child_position_reports_errors(
     result = validate_testdata_project_with_reference_graph()
     all_diagnostics = result.program_result.all_diagnostics
     assert len(all_diagnostics) == 2
-    for diagnostic in all_diagnostics:
-        assert isinstance(
-            diagnostic, diagnostics.ReferencedDefinitionNotFoundDiagnostic
-        )
-        assert diagnostic.file_path == "child.dfn"
+    assert isinstance(
+        all_diagnostics[0], diagnostics.ReferencedDefinitionNotFoundDiagnostic
+    )
+    assert all_diagnostics[0].location.line == 2
+    assert all_diagnostics[0].location.column == 34
+    assert all_diagnostics[0].location.file_path == PurePosixPath("initialize.dfn")
+    assert all_diagnostics[0].file_path == "child.dfn"
+    assert all_diagnostics[0].definition_name == "position<my.domain.com:my_lib:/child>"
+    assert isinstance(
+        all_diagnostics[1], diagnostics.ReferencedDefinitionNotFoundDiagnostic
+    )
+    assert all_diagnostics[1].location.line == 2
+    assert all_diagnostics[1].location.column == 34
+    assert all_diagnostics[1].location.file_path == PurePosixPath("cleanup.dfn")
+    assert all_diagnostics[1].file_path == "child.dfn"
+    assert all_diagnostics[1].definition_name == "position<my.domain.com:my_lib:/child>"
     all_exceptions = result.program_result.all_exceptions
     assert len(all_exceptions) == 1
     assert isinstance(all_exceptions[0], parser_exceptions.ExpectedGlobalDefinition)

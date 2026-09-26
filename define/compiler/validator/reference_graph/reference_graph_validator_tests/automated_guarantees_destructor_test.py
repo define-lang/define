@@ -21,6 +21,9 @@ def test_body_error_does_not_add_a_destructor_guarantee_error(
     assert result.program_result.all_exceptions == []
     (diagnostic,) = result.program_result.all_diagnostics
     assert isinstance(diagnostic, diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert diagnostic.location.column == 30
+    assert diagnostic.is_action_interface_position is False
+    assert diagnostic.inferred_at is None
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 11
     assert diagnostic.position_name == "position</item>"

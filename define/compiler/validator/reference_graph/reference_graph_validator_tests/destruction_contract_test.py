@@ -337,6 +337,9 @@ def test_three_destructors_with_two_violated(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].location.line == 25
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].required_empty is False
     assert all_diags[0].action_name == _CLOSE_FILE
     assert (
@@ -387,6 +390,9 @@ def test_three_destructors_with_two_violated(
         },
     )
     assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[1].location.line == 25
+    assert all_diags[1].location.column == 30
+    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[1].required_empty is False
     assert all_diags[1].action_name == _CLOSE_FILE
     assert (

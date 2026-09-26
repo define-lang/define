@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler import conftest, diagnostics
@@ -21,6 +22,11 @@ def test_move_to_chained_dest_violates_constraints(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert all_diags[0].location.line == 13
+    assert all_diags[0].location.column == 52
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].source_position == "position<from_pos>"
+    assert all_diags[0].target_position == "position<dest>::position</y>"
     assert all_diags[0].missing_qualities == [
         "position</x>",
     ]
@@ -48,6 +54,11 @@ def test_move_from_chained_to_local_violates_constraints(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert all_diags[0].location.line == 23
+    assert all_diags[0].location.column == 59
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].source_position == "position<b>::position</x>"
+    assert all_diags[0].target_position == "position<c>"
     assert all_diags[0].missing_qualities == [
         "position</y>",
     ]
@@ -68,6 +79,11 @@ def test_move_from_unconstrained_local_to_chained_constrained(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert all_diags[0].location.line == 13
+    assert all_diags[0].location.column == 52
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].source_position == "position<from_pos>"
+    assert all_diags[0].target_position == "position<dest>::position</y>"
     assert all_diags[0].missing_qualities == [
         "position</x>",
     ]
@@ -83,6 +99,11 @@ def test_definition_local_to_chained_violates(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert all_diags[0].location.line == 12
+    assert all_diags[0].location.column == 52
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].source_position == "position<from_pos>"
+    assert all_diags[0].target_position == "position<dest>::position</y>"
     assert all_diags[0].missing_qualities == [
         "position</x>",
     ]
@@ -107,6 +128,11 @@ def test_chained_to_definition_local_violates(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert all_diags[0].location.line == 23
+    assert all_diags[0].location.column == 59
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].source_position == "position<b>::position</x>"
+    assert all_diags[0].target_position == "position<dest>"
     assert all_diags[0].missing_qualities == [
         "position</y>",
     ]
@@ -150,6 +176,9 @@ def test_move_three_element_chain_to_three_element_chain_violates(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveViolatesConstraintsDiagnostic)
+    assert all_diags[0].location.line == 20
+    assert all_diags[0].location.column == 73
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].source_position == "position<a>::position</x>::position</y>"
     assert all_diags[0].target_position == "position<b>::position</z>::position</w>"
     assert all_diags[0].missing_qualities == [
@@ -168,6 +197,11 @@ def test_move_from_local_local_chain(
         results[0].diagnostics[0],
         diagnostics.ChainedLocalNameRequiresActionDiagnostic,
     )
+    assert results[0].diagnostics[0].location.line == 9
+    assert results[0].diagnostics[0].location.column == 43
+    assert results[0].diagnostics[0].location.file_path is None
+    assert results[0].diagnostics[0].local_name == "position<b>"
+    assert results[0].diagnostics[0].preceding_name == "position<a>"
 
 
 def test_move_from_local_local_local_chain(
@@ -181,7 +215,17 @@ def test_move_from_local_local_local_chain(
         results[0].diagnostics[0],
         diagnostics.ChainedLocalNameRequiresActionDiagnostic,
     )
+    assert results[0].diagnostics[0].location.line == 11
+    assert results[0].diagnostics[0].location.column == 43
+    assert results[0].diagnostics[0].location.file_path is None
+    assert results[0].diagnostics[0].local_name == "position<b>"
+    assert results[0].diagnostics[0].preceding_name == "position<a>"
     assert isinstance(
         results[0].diagnostics[1],
         diagnostics.ChainedLocalNameRequiresActionDiagnostic,
     )
+    assert results[0].diagnostics[1].location.line == 11
+    assert results[0].diagnostics[1].location.column == 56
+    assert results[0].diagnostics[1].location.file_path is None
+    assert results[0].diagnostics[1].local_name == "position<c>"
+    assert results[0].diagnostics[1].preceding_name == "position<b>"

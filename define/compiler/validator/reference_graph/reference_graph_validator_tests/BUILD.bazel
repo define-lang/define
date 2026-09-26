@@ -114,9 +114,11 @@ py_test(
     srcs = ["automated_guarantees_require_consumption_test.py"],
     data = ["//define/testdata/reference_graph/automated_guarantees_require_consumption"],
     deps = [
+        ":test_helpers",
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:test_helpers",
+        "//define/compiler/validator/reference_graph:action_contract",
         "//define/compiler/validator/reference_graph:test_helpers",
     ],
 )
@@ -155,9 +157,11 @@ py_test(
     srcs = ["automated_guarantees_transitive_implied_occupancy_test.py"],
     data = ["//define/testdata/reference_graph/automated_guarantees_transitive_implied_occupancy"],
     deps = [
+        ":test_helpers",
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:test_helpers",
+        "//define/compiler/validator/reference_graph:action_contract",
         "//define/compiler/validator/reference_graph:test_helpers",
     ],
 )
@@ -891,9 +895,11 @@ py_test(
     srcs = ["value_setting_literal_test.py"],
     data = ["//define/testdata/reference_graph/value_setting_literal"],
     deps = [
+        ":test_helpers",
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:test_helpers",
+        "//define/compiler/validator/reference_graph:action_contract",
     ],
 )
 
@@ -903,9 +909,11 @@ py_test(
     srcs = ["value_setting_test.py"],
     data = ["//define/testdata/reference_graph/value_setting"],
     deps = [
+        ":test_helpers",
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:test_helpers",
+        "//define/compiler/validator/reference_graph:action_contract",
     ],
 )
 

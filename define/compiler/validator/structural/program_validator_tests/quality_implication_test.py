@@ -29,6 +29,7 @@ def test_non_self_ref_global_in_action_body(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].source_global_name == "action</other>"
     assert all_diags[0].full_global_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].location.line == 5
@@ -64,6 +65,7 @@ def test_global_used_without_implication_is_unknown(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UnknownGlobalNameDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].source_global_name == "position</foo>"
     assert diags[0].full_global_name == "position<my.domain.com:my_lib:/foo>"
     assert diags[0].location.line == 6
@@ -78,6 +80,7 @@ def test_duplicate_implication_in_action_error(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.DuplicateQualityImplicationDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].implication_name == "position</foo>"
     assert diags[0].first_implication_line == 3
     assert diags[0].location.line == 4
@@ -93,7 +96,9 @@ def test_three_duplicate_implication_two_errors(
     diags = results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.DuplicateQualityImplicationDiagnostic)
+    assert diags[0].location.file_path is None
     assert isinstance(diags[1], diagnostics.DuplicateQualityImplicationDiagnostic)
+    assert diags[1].location.file_path is None
     assert diags[0].implication_name == "position</foo>"
     assert diags[0].first_implication_line == 3
     assert diags[0].location.line == 4
@@ -115,6 +120,7 @@ def test_duplicate_implication_full_fqun_cross_universe(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.DuplicateQualityImplicationDiagnostic)
+    assert diags[0].location.file_path == PurePosixPath("test.dfn")
     assert diags[0].implication_name == f"position<{implied_fqun}:/foo>"
     assert diags[0].first_implication_line == 2
     assert diags[0].location.line == 3
@@ -138,6 +144,7 @@ def test_duplicate_via_full_form_and_short_form_implication(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].fqun == "my.domain.com:my_lib"
     assert diags[0].location.line == 4
     assert diags[0].location.column == 34
@@ -151,6 +158,7 @@ def test_implication_with_invalid_path_format_error(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.GlobalNamePathTrailingSlashDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].path == "/bad/"
     assert diags[0].location.line == 2
     assert diags[0].location.column == 38
@@ -164,10 +172,12 @@ def test_implication_invalid_name_does_not_become_duplicate(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.GlobalNamePathTrailingSlashDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].path == "/bad/"
     assert diags[0].location.line == 2
     assert diags[0].location.column == 38
     assert isinstance(diags[1], diagnostics.GlobalNamePathTrailingSlashDiagnostic)
+    assert diags[1].location.file_path is None
     assert diags[1].path == "/bad/"
     assert diags[1].location.line == 3
     assert diags[1].location.column == 38
@@ -181,15 +191,18 @@ def test_invalid_implication_name_used_in_body_does_not_satisfy_chain_start(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 3
     assert isinstance(diags[0], diagnostics.GlobalNamePathTrailingSlashDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].path == "/bad/"
     assert diags[0].location.line == 2
     assert diags[0].location.column == 38
     assert isinstance(diags[1], diagnostics.UnknownGlobalNameDiagnostic)
+    assert diags[1].location.file_path is None
     assert diags[1].source_global_name == "position</bad/>"
     assert diags[1].full_global_name == "position<my.domain.com:my_lib:/bad/>"
     assert diags[1].location.line == 6
     assert diags[1].location.column == 30
     assert isinstance(diags[2], diagnostics.GlobalNamePathTrailingSlashDiagnostic)
+    assert diags[2].location.file_path is None
     assert diags[2].path == "/bad/"
     assert diags[2].location.line == 6
     assert diags[2].location.column == 43
@@ -207,6 +220,7 @@ def test_circular_implication_emits_diagnostic(
     diags = result.file_results[1].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
+    assert diags[0].location.file_path == PurePosixPath("bar.dfn")
     assert diags[0].cycle == [
         "action<my.domain.com:my_lib:/test>",
         "action<my.domain.com:my_lib:/bar>",
@@ -240,6 +254,7 @@ def test_unused_implication_on_action_error(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UnusedQualityImplicationDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].implication_name == "position</foo>"
     assert diags[0].location.line == 3
     assert diags[0].location.column == 25
@@ -253,6 +268,7 @@ def test_implication_used_only_in_constraint_block_is_unused(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UnusedQualityImplicationDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].implication_name == "position</foo>"
     assert diags[0].location.line == 3
     assert diags[0].location.column == 25
@@ -266,6 +282,7 @@ def test_two_implication_one_used_one_unused(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UnusedQualityImplicationDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].implication_name == "position</bar>"
     assert diags[0].location.line == 5
     assert diags[0].location.column == 25
@@ -281,6 +298,7 @@ def test_implication_for_nonexistent_quality_used_in_body(
     diags = result.file_results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert diags[0].location.file_path == PurePosixPath("test.dfn")
     assert diags[0].file_path == "nonexistent.dfn"
     assert diags[0].location.line == 2
     assert diags[0].location.column == 34

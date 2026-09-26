@@ -339,6 +339,7 @@ def test_multiverse_name_position(
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.MultiverseNameInvalidCharDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].multiverse_name == "_mv"
     assert diags[0].char == "_"
     assert diags[0].location.line == 1
@@ -356,8 +357,15 @@ def test_multiverse_name_too_short(
     diags = results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.MultiverseNameTooShortDiagnostic)
+    assert diags[0].location.line == 1
+    assert diags[0].location.column == 31
+    assert diags[0].location.file_path is None
     assert diags[0].multiverse_name == "m"
     assert isinstance(diags[1], diagnostics.ReservedMultiverseNameDiagnostic)
+    assert diags[1].location.line == 1
+    assert diags[1].location.column == 31
+    assert diags[1].location.file_path is None
+    assert diags[1].reserved_name == "m"
 
 
 def test_authority_domain_position(
@@ -369,6 +377,7 @@ def test_authority_domain_position(
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.AuthorityDomainInvalidCharDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].domain == "-example.com"
     assert diags[0].char == "-"
     assert diags[0].location.line == 1
@@ -386,8 +395,16 @@ def test_authority_domain_too_short(
     diags = results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.AuthorityDomainTooShortDiagnostic)
+    assert diags[0].location.line == 1
+    assert diags[0].location.column == 34
+    assert diags[0].location.file_path is None
     assert diags[0].domain == "a"
     assert isinstance(diags[1], diagnostics.DotlessAuthorityDomainDiagnostic)
+    assert diags[1].location.line == 1
+    assert diags[1].location.column == 34
+    assert diags[1].location.file_path is None
+    assert diags[1].reserved_name == "a"
+    assert diags[1].multiverse_name == "mv"
 
 
 def test_authority_path_position(
@@ -399,6 +416,7 @@ def test_authority_path_position(
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.InvalidAuthorityPathSegmentDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].segment == ".hidden"
     assert diags[0].char == "."
     assert diags[0].location.line == 1
@@ -416,6 +434,9 @@ def test_authority_path_empty_segment(
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.AuthorityPathEmptySegmentDiagnostic)
+    assert diags[0].location.line == 1
+    assert diags[0].location.column == 47
+    assert diags[0].location.file_path is None
     assert diags[0].authority == "my.domain.com//team"
 
 
@@ -428,6 +449,7 @@ def test_universe_name_position(
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UniverseNameInvalidCharDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].universe_name == "_my_lib"
     assert diags[0].char == "_"
     assert diags[0].location.line == 1
@@ -445,6 +467,9 @@ def test_universe_name_too_short(
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UniverseNameTooShortDiagnostic)
+    assert diags[0].location.line == 1
+    assert diags[0].location.column == 48
+    assert diags[0].location.file_path is None
     assert diags[0].universe_name == "t"
 
 
@@ -457,6 +482,7 @@ def test_path_segment_position(
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].segment == "2bad"
     assert diags[0].char == "2"
     assert diags[0].location.line == 1
@@ -474,6 +500,9 @@ def test_global_name_path_empty_segment(
     diags = results[0].diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.GlobalNamePathEmptySegmentDiagnostic)
+    assert diags[0].location.line == 1
+    assert diags[0].location.column == 59
+    assert diags[0].location.file_path is None
     assert diags[0].path == "/foo//bar"
 
 
@@ -486,11 +515,13 @@ def test_local_name_position(
     diags = results[0].diagnostics
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.InvalidLocalNameFormatDiagnostic)
+    assert diags[0].location.file_path is None
     assert diags[0].local_name == "my-pos"
     assert diags[0].char == "-"
     assert diags[0].location.line == 2
     assert diags[0].location.column == 27
     assert isinstance(diags[1], diagnostics.InvalidLocalNameFormatDiagnostic)
+    assert diags[1].location.file_path is None
     assert diags[1].local_name == "my-pos"
     assert diags[1].char == "-"
     assert diags[1].location.line == 4
