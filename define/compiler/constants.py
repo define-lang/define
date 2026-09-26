@@ -16,11 +16,19 @@ NON_FILESYSTEM_PATH: Final = define_path.InvalidDefinePath("<string>")
 DEFAULT_MULTIVERSE: Final = "local"
 DEFAULT_OUTPUT_DIR: Final = pathlib.Path("define-out")
 # The compiler provides these standard universe names itself until the Define
-# Standard Library exists.
+# Standard Library exists. They have no definitions, so code that looks up
+# definitions has special cases for them.
+# TODO: Remove these, and every special case marked with a TODO that refers to
+# them, once the Define Standard Library defines these names.
 DECIMAL_ASCII_ENCODING: Final = "encoding<standard:/number/decimal/ascii>"
 BUILT_IN_LITERAL_ENCODINGS: Final = {
     "literal<standard:/number>": DECIMAL_ASCII_ENCODING
 }
+# TODO: Read value encodings from encodings configuration (DLP 47) once it
+# exists.
+BUILT_IN_VALUE_ENCODINGS: Final = {
+    "value<standard:/number/rational>": DECIMAL_ASCII_ENCODING
+}
 BUILT_IN_GLOBAL_NAMES: Final = frozenset(
-    {DECIMAL_ASCII_ENCODING, *BUILT_IN_LITERAL_ENCODINGS}
+    {DECIMAL_ASCII_ENCODING, *BUILT_IN_LITERAL_ENCODINGS, *BUILT_IN_VALUE_ENCODINGS}
 )

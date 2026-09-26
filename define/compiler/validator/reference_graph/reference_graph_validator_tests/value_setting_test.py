@@ -36,8 +36,8 @@ def test_mismatched_types(
     assert diagnostic.location.column == 46
     assert diagnostic.target_position == "position<target>"
     assert diagnostic.source_position == "position<source>"
-    assert diagnostic.target_value_type == "value</number>"
-    assert diagnostic.source_value_type == "value</text>"
+    assert diagnostic.target_value_type == "value</text>"
+    assert diagnostic.source_value_type == "value<standard:/number/rational>"
 
 
 def test_target_missing_type(

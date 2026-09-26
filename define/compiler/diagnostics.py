@@ -722,24 +722,26 @@ class LiteralCannotSetValueDiagnostic(Diagnostic):
     literal_encoding: str
     value_type: str
     supported_encodings: Sequence[str]
-    example_literals: Sequence[str]
 
     @property
     def supported_encoding_list(self) -> str:
         """Format the supported encodings as an indented list."""
         return "\n    ".join(self.supported_encodings)
 
-    @property
-    def example_literal_list(self) -> str:
-        """Format the example literals as a comma-separated list."""
-        return ", ".join(self.example_literals)
-
     message_format: ClassVar[str] = (
         "{self.potential_literal} cannot set a {self.value_type}, because literals"
         " with the {self.literal_encoding} cannot be read as {self.value_type}.\n"
         "To set a {self.value_type}, use a literal with one of these encodings:\n"
-        "    {self.supported_encoding_list}\n"
-        "For example: {self.example_literal_list}"
+        "    {self.supported_encoding_list}"
+    )
+
+
+class ValueHasNoEncodingDiagnostic(Diagnostic):
+    """A value type has no encoding, so it can never be set."""
+
+    value_type: str
+    message_format: ClassVar[str] = (
+        "{self.value_type} has no encoding, so no value of this type can be set."
     )
 
 

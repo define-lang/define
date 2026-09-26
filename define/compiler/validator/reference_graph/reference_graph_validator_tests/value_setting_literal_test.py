@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
-from define.compiler import constants, diagnostics, literal_parsers
+from define.compiler import diagnostics, literal_parsers
 from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
@@ -30,7 +30,7 @@ def test_built_in_literal(
 ):
     result = validate_testdata_project_with_reference_graph().program_result
     assert_no_errors(result)
-    assert len(result.file_results) == 2
+    assert len(result.file_results) == 1
 
 
 def test_defined_literal_with_built_in_encoding(
@@ -38,7 +38,7 @@ def test_defined_literal_with_built_in_encoding(
 ):
     result = validate_testdata_project_with_reference_graph().program_result
     assert_no_errors(result)
-    assert len(result.file_results) == 3
+    assert len(result.file_results) == 2
 
 
 def test_empty_literal_content(
@@ -100,11 +100,10 @@ def test_no_literal_parser(
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.potential_literal == "literal</text>"
     assert diagnostic.literal_encoding == "encoding</text_encoding>"
-    assert diagnostic.value_type == "value</number>"
+    assert diagnostic.value_type == "value<standard:/number/rational>"
     assert diagnostic.supported_encodings == [
         "encoding<standard:/number/decimal/ascii>"
     ]
-    assert diagnostic.example_literals == ["literal<standard:/number>"]
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 46
 
@@ -117,9 +116,6 @@ def test_only_matching_encodings_suggested(
     monkeypatch.setitem(
         literal_parsers.LITERAL_PARSERS, (text_encoding, text_encoding), str
     )
-    monkeypatch.setitem(
-        constants.BUILT_IN_LITERAL_ENCODINGS, "literal<standard:/text>", text_encoding
-    )
     result = validate_testdata_project_with_reference_graph().program_result
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
@@ -128,11 +124,24 @@ def test_only_matching_encodings_suggested(
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.potential_literal == "literal</text>"
     assert diagnostic.literal_encoding == "encoding</text_encoding>"
-    assert diagnostic.value_type == "value</number>"
+    assert diagnostic.value_type == "value<standard:/number/rational>"
     assert diagnostic.supported_encodings == [
         "encoding<standard:/number/decimal/ascii>"
     ]
-    assert diagnostic.example_literals == ["literal<standard:/number>"]
+    assert diagnostic.location.line == 12
+    assert diagnostic.location.column == 46
+
+
+def test_value_has_no_encoding(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph().program_result
+    assert result.all_exceptions == []
+    assert len(result.all_diagnostics) == 1
+    diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.ValueHasNoEncodingDiagnostic)
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.value_type == "value</number>"
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 46
 

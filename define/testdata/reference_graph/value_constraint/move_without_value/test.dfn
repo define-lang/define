@@ -6,13 +6,13 @@ define the potential action<my.domain.com:my_lib:/test> {
         define the position<source>.
         define the position<target> {
             it may only contain particles where {
-                it has the value</number>.
+                it has the value<standard:/number/rational>.
             }
         }
         create a particle in position<target>.
         define the position<copy> {
             it may only contain particles where {
-                it has the value</number>.
+                it has the value<standard:/number/rational>.
             }
         }
         create a particle in position<copy>.

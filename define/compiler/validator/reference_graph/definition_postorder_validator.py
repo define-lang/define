@@ -723,6 +723,8 @@ class ActionPostorderValidator:
         self, literal: ast.Literal, value_type: ast.GlobalTypedNameReference
     ) -> list[diagnostics.Diagnostic]:
         potential_literal = literal.potential_literal
+        # TODO: Remove this special case once the Define Standard Library
+        # defines the built-in names.
         literal_encoding = constants.BUILT_IN_LITERAL_ENCODINGS.get(
             potential_literal.full_typed_name
         )
@@ -741,9 +743,16 @@ class ActionPostorderValidator:
             )
         else:
             literal_encoding_name = literal_encoding
-        # TODO: Use the value type's encoding once value types have encodings.
-        # Until then, every value type uses this encoding.
-        value_encoding = constants.DECIMAL_ASCII_ENCODING
+        value_encoding = constants.BUILT_IN_VALUE_ENCODINGS.get(
+            value_type.full_typed_name
+        )
+        if value_encoding is None:
+            return [
+                diagnostics.ValueHasNoEncodingDiagnostic(
+                    location=potential_literal.location,
+                    value_type=value_type.source_form_in_universe(self._enclosing_fqun),
+                )
+            ]
         parser = literal_parsers.LITERAL_PARSERS.get((literal_encoding, value_encoding))
         if parser is None:
             return [
@@ -778,10 +787,6 @@ class ActionPostorderValidator:
         for source_encoding, destination_encoding in literal_parsers.LITERAL_PARSERS:
             if destination_encoding == value_encoding:
                 supported_encodings.append(source_encoding)
-        example_literals: list[str] = []
-        for built_in_literal, encoding in constants.BUILT_IN_LITERAL_ENCODINGS.items():
-            if encoding in supported_encodings:
-                example_literals.append(built_in_literal)
         return diagnostics.LiteralCannotSetValueDiagnostic(
             location=potential_literal.location,
             potential_literal=potential_literal.source_form_in_universe(
@@ -790,7 +795,6 @@ class ActionPostorderValidator:
             literal_encoding=literal_encoding_name,
             value_type=value_type.source_form_in_universe(self._enclosing_fqun),
             supported_encodings=supported_encodings,
-            example_literals=example_literals,
         )
 
     def _analyze_create(

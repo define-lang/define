@@ -899,8 +899,10 @@ py_test(
     data = ["//define/testdata/reference_graph/value_constraint"],
     deps = [
         "//define/compiler:conftest",
+        "//define/compiler:constants",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:test_helpers",
+        "@pypi//pytest",
     ],
 )
 
@@ -912,7 +914,6 @@ py_test(
     deps = [
         ":test_helpers",
         "//define/compiler:conftest",
-        "//define/compiler:constants",
         "//define/compiler:diagnostics",
         "//define/compiler:literal_parsers",
         "//define/compiler/validator:test_helpers",

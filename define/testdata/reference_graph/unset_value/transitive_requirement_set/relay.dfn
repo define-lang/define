@@ -1,7 +1,7 @@
 define the potential action<my.domain.com:my_lib:/relay> {
     define the position<input> {
         it may only contain particles where {
-            it has the value</number>.
+            it has the value<standard:/number/rational>.
         }
     }
     it happens when {

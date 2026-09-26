@@ -1,7 +1,7 @@
 define the potential action<my.domain.com:my_lib:/consume> {
     define the position<input> {
         it may only contain particles where {
-            it has the value</number>.
+            it has the value</text>.
         }
     }
     it happens when {
@@ -9,7 +9,7 @@ define the potential action<my.domain.com:my_lib:/consume> {
     } and it does {
         define the position<copy> {
             it may only contain particles where {
-                it has the value</number>.
+                it has the value</text>.
             }
         }
         create a particle in position<copy>.

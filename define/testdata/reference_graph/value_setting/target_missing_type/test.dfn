@@ -7,7 +7,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         define the position<original>.
         define the position<source> {
             it may only contain particles where {
-                it has the value</number>.
+                it has the value<standard:/number/rational>.
             }
         }
         create a particle in position<original>.

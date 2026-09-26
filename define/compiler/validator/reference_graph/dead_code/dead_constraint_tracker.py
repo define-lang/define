@@ -6,7 +6,7 @@ import typing
 
 import msgspec
 
-from define.compiler import ast
+from define.compiler import ast, constants
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterable
@@ -99,14 +99,18 @@ class DeadConstraintTracker:
         destroyed.
         """
         for constraint in position_definition.constraint_typed_names:
-            definition_result = definition_results.get(constraint)
-            if definition_result is None:
-                continue
-            if (
-                isinstance(definition_result.definition, ast.ActionDefinition)
-                and definition_result.definition.is_destructor
-            ):
-                continue
+            # Built-in names have no definition, but they are never destructors.
+            # TODO: Remove this special case once the Define Standard Library
+            # defines the built-in names.
+            if constraint.full_typed_name not in constants.BUILT_IN_GLOBAL_NAMES:
+                definition_result = definition_results.get(constraint)
+                if definition_result is None:
+                    continue
+                if (
+                    isinstance(definition_result.definition, ast.ActionDefinition)
+                    and definition_result.definition.is_destructor
+                ):
+                    continue
             self.register_constraint(position_definition.typed_name, constraint)
 
     def has_position_constraint_candidates(self) -> bool:

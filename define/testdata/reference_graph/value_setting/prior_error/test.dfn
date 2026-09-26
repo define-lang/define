@@ -5,12 +5,12 @@ define the potential action<my.domain.com:my_lib:/test> {
     } and it does {
         define the position<target> {
             it may only contain particles where {
-                it has the value</number>.
+                it has the value<standard:/number/rational>.
             }
         }
         define the position<source> {
             it may only contain particles where {
-                it has the value</number>.
+                it has the value<standard:/number/rational>.
             }
         }
         define the position<empty>.

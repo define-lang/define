@@ -6,7 +6,7 @@ define the potential action<my.domain.com:my_lib:/close> {
     }
     define the position<replacement> {
         it may only contain particles where {
-            it has the value</number>.
+            it has the value<standard:/number/rational>.
         }
     }
     it happens when {

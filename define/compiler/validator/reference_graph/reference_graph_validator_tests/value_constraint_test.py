@@ -5,10 +5,12 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
-from define.compiler import diagnostics
+from define.compiler import constants, diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
+    import pytest
+
     from define.compiler.conftest import ValidateTestdataProjectWithReferenceGraph
 
 
@@ -26,7 +28,14 @@ def test_move_matching_value(
 
 def test_move_mismatched_value(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+    monkeypatch: pytest.MonkeyPatch,
 ):
+    # The target's value constraint only stays alive if a literal can set it.
+    monkeypatch.setitem(
+        constants.BUILT_IN_VALUE_ENCODINGS,
+        "value<my.domain.com:my_lib:/text>",
+        constants.DECIMAL_ASCII_ENCODING,
+    )
     result = validate_testdata_project_with_reference_graph().program_result
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
@@ -53,7 +62,7 @@ def test_move_without_value(
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.source_position == "position<source>"
     assert diagnostic.target_position == "position<target>"
-    assert diagnostic.missing_qualities == ["value</number>"]
+    assert diagnostic.missing_qualities == ["value<standard:/number/rational>"]
 
 
 def test_move_through_unconstrained_position(
@@ -91,7 +100,7 @@ def test_action_mismatched_value(
         diagnostic.target_position
         == "position<worker>::action</consume>::position<input>"
     )
-    assert diagnostic.missing_qualities == ["value</number>"]
+    assert diagnostic.missing_qualities == ["value</text>"]
 
 
 def test_action_preserves_value_through_unconstrained_positions(
@@ -116,7 +125,7 @@ def test_value_use_keeps_only_origin_alive(
     assert isinstance(diagnostic, diagnostics.DeadValueConstraintDiagnostic)
     assert diagnostic.location.column == 28
     assert diagnostic.position_name == "position<target>"
-    assert diagnostic.constraint_name == "value</number>"
+    assert diagnostic.constraint_name == "value<standard:/number/rational>"
     assert diagnostic.location.line == 13
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
 
@@ -131,7 +140,7 @@ def test_value_setting_target_keeps_only_origin_alive(
     assert isinstance(diagnostic, diagnostics.DeadValueConstraintDiagnostic)
     assert diagnostic.location.column == 28
     assert diagnostic.position_name == "position<target>"
-    assert diagnostic.constraint_name == "value</number>"
+    assert diagnostic.constraint_name == "value<standard:/number/rational>"
     assert diagnostic.location.line == 13
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
 
@@ -190,7 +199,7 @@ def test_callee_contract_keeps_only_origin_alive(
     assert isinstance(diagnostic, diagnostics.DeadValueConstraintDiagnostic)
     assert diagnostic.location.column == 28
     assert diagnostic.position_name == "position<middle>"
-    assert diagnostic.constraint_name == "value</number>"
+    assert diagnostic.constraint_name == "value<standard:/number/rational>"
     assert diagnostic.location.line == 18
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
 

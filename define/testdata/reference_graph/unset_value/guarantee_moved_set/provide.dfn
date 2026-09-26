@@ -2,12 +2,12 @@ define the potential action<my.domain.com:my_lib:/provide> {
     define the position<trigger>.
     define the position<item> {
         it may only contain particles where {
-            it has the value</number>.
+            it has the value<standard:/number/rational>.
         }
     }
     define the position<input> {
         it may only contain particles where {
-            it has the value</number>.
+            it has the value<standard:/number/rational>.
         }
     }
     it happens when {

@@ -744,6 +744,8 @@ class DefinitionStructuralValidator:
     ):
         """Record a reference edge for a global name reference."""
         # Built-in names have no definition file to load or depend on.
+        # TODO: Remove this special case once the Define Standard Library
+        # defines the built-in names.
         if typed_global_name.full_typed_name in constants.BUILT_IN_GLOBAL_NAMES:
             return
         global_name = typed_global_name.name_content

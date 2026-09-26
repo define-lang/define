@@ -1,11 +1,11 @@
-# Only encodings that can be read as the value type, and built-in literals using them, are suggested.
+# Only encodings that can be read as the value type are suggested.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.
     } and it does {
         define the position<target> {
             it may only contain particles where {
-                it has the value</number>.
+                it has the value<standard:/number/rational>.
             }
         }
         create a particle in position<target>.
