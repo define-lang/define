@@ -40,6 +40,7 @@ def test_duplicate_direct_constraint_triggers_action_once(
     assert all_diags[0].location.column == 28
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[1].required_value is False
     assert all_diags[1].required_empty is False
     assert all_diags[1].action_name == "action<my.domain.com:my_lib:/requirer>"
     assert all_diags[1].position_name == "position<box>::position</slot>"
@@ -230,6 +231,7 @@ def test_two_different_implier_constructors_conflict(
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diag.required_value is False
     assert diag.required_empty is True
     assert diag.action_name == "action<my.domain.com:my_lib:/second_implier>"
     assert diag.position_name == "position<box>::position</implied>"
@@ -291,6 +293,7 @@ def test_sibling_constructor_empty_guarantee_violates_later_occupied_requirement
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diag.required_value is False
     assert diag.required_empty is False
     assert diag.action_name == "action<my.domain.com:my_lib:/requirer>"
     assert diag.position_name == "position<box>::position</slot>"

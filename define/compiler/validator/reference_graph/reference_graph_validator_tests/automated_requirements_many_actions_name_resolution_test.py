@@ -38,6 +38,7 @@ def test_cross_fqun_inner_requirement_renders_correctly(
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diag.required_value is False
     assert diag.location.line == 20
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
@@ -107,6 +108,7 @@ def test_cross_fqun_occupied_requirement_violated(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 17
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
@@ -157,6 +159,7 @@ def test_complex_chain_same_fqun_position_name(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 22
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
@@ -225,6 +228,7 @@ def test_complex_chain_cross_fqun_position_name(
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diag.required_value is False
     assert diag.location.line == 22
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")

@@ -35,6 +35,7 @@ def test_action_occupied_requirement_for_interface_position_propagates_via_const
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 10
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 10
@@ -91,6 +92,7 @@ def test_action_occupied_requirement_on_implied_position_propagates_via_construc
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 10
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 10

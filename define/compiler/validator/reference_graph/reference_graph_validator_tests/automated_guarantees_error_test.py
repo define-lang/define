@@ -351,6 +351,7 @@ def test_swap_guarantee_both_positions_unfilled(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 17
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
@@ -377,6 +378,7 @@ def test_swap_guarantee_both_positions_unfilled(
         },
     )
     assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[1].required_value is False
     assert all_diags[1].location.line == 17
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
@@ -415,6 +417,7 @@ def test_swap_guarantee_one_position_unfilled(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 20
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 20
@@ -468,6 +471,7 @@ def test_each_unfilled_required_parent_independently_makes_caller_position_error
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 4
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 15
@@ -496,6 +500,7 @@ def test_each_unfilled_required_parent_independently_makes_caller_position_error
         },
     )
     assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[1].required_value is False
     assert all_diags[1].location.line == 15
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.end_line == 15
@@ -527,6 +532,7 @@ def test_each_unfilled_required_parent_independently_makes_caller_position_error
         },
     )
     assert isinstance(all_diags[2], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[2].required_value is False
     assert all_diags[2].location.line == 15
     assert all_diags[2].location.column == 30
     assert all_diags[2].location.end_line == 15
@@ -555,6 +561,7 @@ def test_each_unfilled_required_parent_independently_makes_caller_position_error
         },
     )
     assert isinstance(all_diags[3], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[3].required_value is False
     assert all_diags[3].location.line == 15
     assert all_diags[3].location.column == 30
     assert all_diags[3].location.end_line == 15
@@ -595,6 +602,7 @@ def test_move_from_emptied_origin_leaves_destination_error_in_caller(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 29
     assert all_diags[0].location.column == 51
     assert all_diags[0].location.end_line == 29
@@ -636,6 +644,7 @@ def test_occupied_by_existing_destination_the_caller_filled_becomes_error(
     assert len(all_diags) == 2
 
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 13
@@ -665,6 +674,7 @@ def test_occupied_by_existing_destination_the_caller_filled_becomes_error(
     )
 
     assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[1].required_value is False
     assert all_diags[1].location.line == 13
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.end_line == 13

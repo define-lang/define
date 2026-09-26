@@ -37,6 +37,7 @@ def test_shared_position_on_callee_does_not_satisfy_same_position_on_caller(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert_propagation_chain(
         all_diags[0],
         {

@@ -48,7 +48,7 @@ def _get_create_ref(
     return creates[index].target_position
 
 
-def _resolved(req: action_contract.PositionRequirement, fqun: ast.Fqun) -> str:
+def _resolved(req: action_contract.PositionOccupancyRequirement, fqun: ast.Fqun) -> str:
     return req.position.source_form_in_universe(fqun)
 
 
@@ -357,10 +357,10 @@ def _make_chain(
 
 def _direct_requirement(
     action: ast.ActionDefinition,
-) -> action_contract.PositionRequirement:
+) -> action_contract.PositionOccupancyRequirement:
     """Build the requirement ``action``'s first create statement imposes directly."""
     create_target = _get_create_ref(action)
-    return action_contract.PositionRequirement(
+    return action_contract.PositionOccupancyRequirement(
         required_state=_EMPTY,
         position=create_target,
         inferred_at=create_target.location,
@@ -369,12 +369,12 @@ def _direct_requirement(
 
 
 def _propagated_requirement(
-    inner: action_contract.PositionRequirement,
+    inner: action_contract.PositionOccupancyRequirement,
     caller_path: ast.ChainedName,
     enclosing_action: ast.ActionDefinition,
-) -> action_contract.PositionRequirement:
+) -> action_contract.PositionOccupancyRequirement:
     """Build ``inner`` propagated through ``caller_path``, as _record_requirement does."""
-    return action_contract.PositionRequirement(
+    return action_contract.PositionOccupancyRequirement(
         required_state=inner.required_state,
         position=inner.position.in_caller(caller_path),
         inferred_at=caller_path.location,

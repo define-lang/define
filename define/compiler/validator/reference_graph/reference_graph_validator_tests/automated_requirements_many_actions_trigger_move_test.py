@@ -37,6 +37,7 @@ def test_outer_move_into_inner_trigger_propagates_occupied_requirement(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 18
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 18
@@ -89,6 +90,7 @@ def test_inner_action_requirement_propagates_after_move(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 18
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
@@ -148,6 +150,7 @@ def test_three_deep_action_requirement_propagates_after_move(
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diag.required_value is False
     assert diag.location.line == 18
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
@@ -222,6 +225,7 @@ def test_two_moves_without_the_input_violate_the_triggered_inner(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 23
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 23
@@ -290,6 +294,7 @@ def test_carrying_no_input_into_the_implied_middle_violates_the_triggered_inner(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 19
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 19
@@ -359,6 +364,7 @@ def test_replacement_child_does_not_satisfy_requirement_on_moved_particle(
     assert len(all_diagnostics) == 1
     diagnostic = all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diagnostic.required_value is False
     assert diagnostic.location.line == 15
     assert diagnostic.location.column == 30
     assert diagnostic.location.end_line == 15
@@ -412,6 +418,7 @@ def test_missing_middle_child_violates_inner_requirement_after_move(
     assert len(all_diagnostics) == 1
     diagnostic = all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diagnostic.required_value is False
     assert diagnostic.location.line == 15
     assert diagnostic.location.column == 30
     assert diagnostic.location.end_line == 15

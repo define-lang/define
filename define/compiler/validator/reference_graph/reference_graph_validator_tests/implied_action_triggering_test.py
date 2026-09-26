@@ -67,6 +67,7 @@ def test_implied_action_iface_requirement_propagates_to_caller(
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diag.required_value is False
     assert diag.location.line == 11
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
@@ -117,6 +118,7 @@ def test_implied_action_with_iface_routing_to_inner_action_propagates(
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diag.required_value is False
     assert diag.location.line == 20
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")

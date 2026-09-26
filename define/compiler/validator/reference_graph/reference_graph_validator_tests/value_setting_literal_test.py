@@ -62,7 +62,7 @@ def test_undefined_position(
     assert isinstance(diagnostic, diagnostics.UndefinedLocalNameDiagnostic)
     assert diagnostic.local_name == "position<missing>"
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert diagnostic.location.line == 19
+    assert diagnostic.location.line == 20
     assert diagnostic.location.column == 26
 
 
@@ -134,6 +134,7 @@ def test_callee_requires_target(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diagnostic.required_value is False
     assert_propagation_chain(
         diagnostic,
         {

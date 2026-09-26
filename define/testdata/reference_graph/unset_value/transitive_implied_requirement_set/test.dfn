@@ -1,0 +1,17 @@
+# An implied value requirement propagates through an ordinary action to its caller.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<worker> {
+            it may only contain particles where {
+                it has the action</relay>.
+                it has the position</value>.
+            }
+        }
+        create a particle in position<worker>.
+        create a particle in position<worker>::position</value>.
+        set the value of position<worker>::position</value> to literal</decimal>"5".
+        create a particle in position<worker>::action</relay>::position<trigger>.
+    }
+}

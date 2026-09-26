@@ -1,0 +1,15 @@
+# An empty target must not suppress the unset source diagnostic.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<target>.
+        define the position<source> {
+            it may only contain particles where {
+                it has the value</number>.
+            }
+        }
+        create a particle in position<source>.
+        set the value of position<target> to position<source>.
+    }
+}

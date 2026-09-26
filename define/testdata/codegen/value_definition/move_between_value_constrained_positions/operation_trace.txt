@@ -1,0 +1,7 @@
+test.create(item)
+test.create(worker)
+test.move(item, worker::/provide::input)
+provide.move(input, result)
+test.move(worker::/provide::result, item)
+test.destroy(item)
+test.destroy(worker)

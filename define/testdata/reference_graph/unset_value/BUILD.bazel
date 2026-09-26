@@ -1,0 +1,13 @@
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+
+filegroup(
+    name = "unset_value",
+    testonly = True,
+    srcs = glob(["**"]),
+    visibility = [
+        "//define/compiler/validator/reference_graph/reference_graph_validator_tests:__pkg__",
+        "//define/testdata:__pkg__",
+    ],
+)
+
+check_build_file()

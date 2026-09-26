@@ -6,6 +6,8 @@ import textwrap
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
+import pytest
+
 from define.compiler.data_structures import define_path
 from define.compiler.validator.reference_graph.test_helpers import (
     action_graph,
@@ -220,7 +222,7 @@ def test_action_requires_empty_position_format(
         File "test.dfn", line 12, column 30
                 create a particle in position<box>::action</other>::position<trigger_pos>.
                                      ^
-        'position<box>::action</other>::position<item>' must be empty before 'action<my.domain.com:my_lib:/other>' runs, and it is not empty.
+        'position<box>::action</other>::position<item>' must be empty before 'action<my.domain.com:my_lib:/other>' runs.
 
         This error happens because:
           'position<box>::action</other>::position<item>' is filled here:
@@ -274,7 +276,7 @@ def test_action_requires_occupied_position_format(
         File "test.dfn", line 11, column 30
                 create a particle in position<box>::action</other>::position<trigger_pos>.
                                      ^
-        'position<box>::action</other>::position<item>' must be occupied before 'action<my.domain.com:my_lib:/other>' runs, and it is not occupied.
+        'position<box>::action</other>::position<item>' must be occupied before 'action<my.domain.com:my_lib:/other>' runs.
 
         This error happens because:
           'action<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/other>':
@@ -397,7 +399,7 @@ def test_propagated_action_requires_empty_position_format(
         File "test.dfn", line 16, column 30
                 create a particle in position<box>::action</outer>::position<trigger_pos>.
                                      ^
-        'position<box>::action</outer>::position<out_iface>::position</middle_particle>::position</inner_particle>::position</item_parent>::position</item>' must be empty before 'action<my.domain.com:my_lib:/outer>' runs, and it is not empty.
+        'position<box>::action</outer>::position<out_iface>::position</middle_particle>::position</inner_particle>::position</item_parent>::position</item>' must be empty before 'action<my.domain.com:my_lib:/outer>' runs.
 
         This error happens because:
           'position<box>::action</outer>::position<out_iface>::position</middle_particle>::position</inner_particle>::position</item_parent>::position</item>' is filled here:
@@ -498,7 +500,7 @@ def test_requirement_carried_through_two_moves_format(
         File "test.dfn", line 18, column 30
                 create a particle in position<outer_holder>::action</outer>::position<run>.
                                      ^
-        'position<outer_holder>::action</outer>::position<input>::position</required>' must be occupied before 'action<my.domain.com:my_lib:/outer>' runs, and it is not occupied.
+        'position<outer_holder>::action</outer>::position<input>::position</required>' must be occupied before 'action<my.domain.com:my_lib:/outer>' runs.
 
         This error happens because:
           'action<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/outer>':
@@ -612,7 +614,7 @@ def test_requirement_carried_through_actions_on_locals_format(
         File "test.dfn", line 18, column 30
                 create a particle in position<outer_holder>::action</outer>::position<run>.
                                      ^
-        'position<outer_holder>::action</outer>::position<input>::position</marker>' must be occupied before 'action<my.domain.com:my_lib:/outer>' runs, and it is not occupied.
+        'position<outer_holder>::action</outer>::position<input>::position</marker>' must be occupied before 'action<my.domain.com:my_lib:/outer>' runs.
 
         This error happens because:
           'action<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/outer>':
@@ -650,6 +652,7 @@ def test_value_setting_type_mismatch_format(
         "        }\n"
         "        create a particle in position<x>.\n"
         "        create a particle in position<y>.\n"
+        '        set the value of position<y> to literal</decimal>"5".\n'
         "        set the value of position<x> to position<y>.\n"
         "    }\n"
         "}\n"
@@ -659,6 +662,8 @@ def test_value_setting_type_mismatch_format(
             "test.dfn": source,
             "foo/bar.dfn": "define the potential value<my.domain.com:my_lib:/foo/bar>.\n",
             "bar/baz.dfn": "define the potential value<my.domain.com:my_lib:/bar/baz>.\n",
+            "decimal.dfn": "define the potential literal<my.domain.com:my_lib:/decimal> {\n    it has the encoding</decimal_encoding>.\n}\n",
+            "decimal_encoding.dfn": "define the encoding<my.domain.com:my_lib:/decimal_encoding>.\n",
         },
     )
     assert result.program_result.all_exceptions == []
@@ -666,13 +671,13 @@ def test_value_setting_type_mismatch_format(
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert diagnostic.location.line == 17
+    assert diagnostic.location.line == 18
     assert diagnostic.location.column == 41
     formatted = diagnostic.format(source.splitlines())
     assert (
         formatted
         == textwrap.dedent("""\
-        File "test.dfn", line 17, column 41
+        File "test.dfn", line 18, column 41
                 set the value of position<x> to position<y>.
                                                 ^
         this value setting statement has particles with two different value types, which is not allowed. position<x> has value</foo/bar> and position<y> has value</bar/baz>.""")
@@ -831,7 +836,7 @@ def test_constructor_requires_empty_position_format(
         File "test.dfn", line 11, column 30
                 create a particle in position<box>.
                                      ^
-        'position<box>::position</q>' must be empty before 'action<my.domain.com:my_lib:/create_q>' runs, and it is not empty.
+        'position<box>::position</q>' must be empty before 'action<my.domain.com:my_lib:/create_q>' runs.
 
         This error happens because:
           'action<my.domain.com:my_lib:/create_q>' is assigned to 'position<box>':
@@ -882,7 +887,7 @@ def test_constructor_requires_occupied_position_format(
         File "test.dfn", line 10, column 30
                 create a particle in position<box>.
                                      ^
-        'position<box>::position</q>' must be occupied before 'action<my.domain.com:my_lib:/destroy_q>' runs, and it is not occupied.
+        'position<box>::position</q>' must be occupied before 'action<my.domain.com:my_lib:/destroy_q>' runs.
 
         This error happens because:
           'action<my.domain.com:my_lib:/destroy_q>' is assigned to 'position<box>':
@@ -1094,3 +1099,157 @@ def test_move_from_default_empty_interface_position_format(
                                      ^
         cannot move a particle from 'position<box>::action</other>::position<item>' because it does not contain one; action interface positions are empty by default""")
     )
+
+
+def test_propagated_value_requirement_format(validate_project: ValidateProject):
+    files = {
+        "test.dfn": (
+            "# Set-value requirements propagate through calls after a move.\n"
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    it happens when {\n"
+            "        this particle is created.\n"
+            "    } and it does {\n"
+            "        define the position<source> {\n"
+            "            it may only contain particles where {\n"
+            "                it has the value</number>.\n"
+            "            }\n"
+            "        }\n"
+            "        create a particle in position<source>.\n"
+            "        define the position<worker> {\n"
+            "            it may only contain particles where {\n"
+            "                it has the action</relay>.\n"
+            "            }\n"
+            "        }\n"
+            "        create a particle in position<worker>.\n"
+            "        move the particle in position<source> to position<worker>::action</relay>::position<input>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "relay.dfn": (
+            "define the potential action<my.domain.com:my_lib:/relay> {\n"
+            "    define the position<input> {\n"
+            "        it may only contain particles where {\n"
+            "            it has the value</number>.\n"
+            "        }\n"
+            "    }\n"
+            "    it happens when {\n"
+            "        the position<input> has a particle.\n"
+            "    } and it does {\n"
+            "        define the position<moved> {\n"
+            "            it may only contain particles where {\n"
+            "                it has the action</consume>.\n"
+            "            }\n"
+            "        }\n"
+            "        create a particle in position<moved>.\n"
+            "        move the particle in position<input> to position<moved>::action</consume>::position<input>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "consume.dfn": (
+            "define the potential action<my.domain.com:my_lib:/consume> {\n"
+            "    define the position<input> {\n"
+            "        it may only contain particles where {\n"
+            "            it has the value</number>.\n"
+            "        }\n"
+            "    }\n"
+            "    it happens when {\n"
+            "        the position<input> has a particle.\n"
+            "    } and it does {\n"
+            "        define the position<copy> {\n"
+            "            it may only contain particles where {\n"
+            "                it has the value</number>.\n"
+            "            }\n"
+            "        }\n"
+            "        create a particle in position<copy>.\n"
+            "        set the value of position<copy> to position<input>.\n"
+            "        destroy the particle in position<input>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "number.dfn": ("define the potential value<my.domain.com:my_lib:/number>.\n"),
+    }
+    result = validate_project(files)
+    assert result.program_result.all_exceptions == []
+    all_diagnostics = result.program_result.all_diagnostics
+    assert len(all_diagnostics) == 1
+    formatted = all_diagnostics[0].format(files["test.dfn"].splitlines())
+    assert formatted == textwrap.dedent("""\
+        File "test.dfn", line 18, column 50
+                move the particle in position<source> to position<worker>::action</relay>::position<input>.
+                                                         ^
+        'position<worker>::action</relay>::position<input>' must be occupied by a particle with a set value before 'action<my.domain.com:my_lib:/relay>' runs.
+
+        This error happens because:
+          'position<worker>::action</relay>::position<input>' is filled here:
+            File "test.dfn", line 18, column 50
+          'action<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/relay>':
+            File "test.dfn", line 18, column 50
+          'action<my.domain.com:my_lib:/relay>' triggers 'action<my.domain.com:my_lib:/consume>':
+            File "relay.dfn", line 16, column 49
+          'action<my.domain.com:my_lib:/consume>' infers this requirement:
+            File "consume.dfn", line 16, column 44""")
+
+
+@pytest.mark.xfail(
+    strict=True,
+    raises=AssertionError,
+    reason="DestructorChangesValueDiagnostic uses the last particle placement instead of the value-changing statement.",
+)
+def test_destructor_changes_value_after_move_format(validate_project: ValidateProject):
+    files = {
+        "test.dfn": (
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    it happens when {\n"
+            "        this particle is created.\n"
+            "    } and it does {\n"
+            "        define the position<box> {\n"
+            "            it may only contain particles where {\n"
+            "                it has the action</cleanup>.\n"
+            "                it has the position</value>.\n"
+            "            }\n"
+            "        }\n"
+            "        create a particle in position<box>.\n"
+            "        create a particle in position<box>::position</value>.\n"
+            "        destroy the particle in position<box>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "cleanup.dfn": (
+            "define the potential action<my.domain.com:my_lib:/cleanup> {\n"
+            "    it also assigns the position</value>.\n"
+            "    it happens when {\n"
+            "        this particle is being destroyed.\n"
+            "    } and it does {\n"
+            "        define the position<temporary>.\n"
+            "        move the particle in position</value> to position<temporary>.\n"
+            "        move the particle in position<temporary> to position</value>.\n"
+            '        set the value of position</value> to literal</decimal>"5".\n'
+            "    }\n"
+            "}\n"
+        ),
+        "value.dfn": (
+            "define the potential position<my.domain.com:my_lib:/value> {\n"
+            "    it may only contain particles where {\n"
+            "        it has the value</number>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "number.dfn": "define the potential value<my.domain.com:my_lib:/number>.\n",
+        "decimal.dfn": (
+            "define the potential literal<my.domain.com:my_lib:/decimal> {\n"
+            "    it has the encoding</decimal_encoding>.\n"
+            "}\n"
+        ),
+        "decimal_encoding.dfn": "define the encoding<my.domain.com:my_lib:/decimal_encoding>.\n",
+    }
+    result = validate_project(files)
+    assert result.program_result.all_exceptions == []
+    all_diagnostics = result.program_result.all_diagnostics
+    assert len(all_diagnostics) == 1
+    formatted = all_diagnostics[0].format(files["cleanup.dfn"].splitlines())
+    assert formatted == textwrap.dedent("""\
+        File "cleanup.dfn", line 9, column 26
+                set the value of position</value> to literal</decimal>"5".
+                                 ^
+        a destructor must leave every contracted position in the state it was in when it started.
+        However, this line changes the value of the particle in 'position</value>'.""")

@@ -115,7 +115,11 @@ class DeadConstraintValidator:
 
     def mark_callee_contract_constraints_alive(
         self,
-        requirements_in_caller: list[action_contract.PositionRequirementInCaller],
+        requirements_in_caller: list[
+            action_contract.PositionRequirementInCaller[
+                action_contract.PositionOccupancyRequirement
+            ]
+        ],
         scope: scope_tracker.ScopeTracker,
     ):
         """Keep constraints alive through occupied callee requirements."""

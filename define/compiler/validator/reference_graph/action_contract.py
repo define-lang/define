@@ -8,13 +8,14 @@ from dataclasses import dataclass, field
 
 import msgspec
 
+from define.compiler.validator.reference_graph import particle_info, position_occupancy
+
 if typing.TYPE_CHECKING:
     from collections.abc import Iterator
 
     from define.compiler import ast
     from define.compiler.validator.reference_graph import (
         child_state,
-        position_occupancy,
         quality_assignment,
     )
     from define.compiler.validator.reference_graph import (
@@ -92,14 +93,13 @@ class ActionAssignment(msgspec.Struct, frozen=True):
         )
 
 
-class PositionRequirement(msgspec.Struct, frozen=True):
+class PositionRequirement(msgspec.Struct, frozen=True, kw_only=True):
     """An automatically inferred requirement on a contracted position.
 
     A contracted position is an interface position, a child of an interface
     position, an implied quality, or a child of an implied quality.
     """
 
-    required_state: position_occupancy.PositionOccupancyState
     # The position this requirement is on. Contains the full chained name
     # that this requirement is on, starting from the contracted position.
     position: ast.PositionReference
@@ -166,10 +166,27 @@ class PositionRequirement(msgspec.Struct, frozen=True):
         )
 
 
-class PositionRequirementInCaller(msgspec.Struct, frozen=True):
+class PositionOccupancyRequirement(PositionRequirement, frozen=True):
+    """An automatically inferred occupancy requirement."""
+
+    required_state: position_occupancy.PositionOccupancyState
+
+    @property
+    def requires_occupied(self) -> bool:
+        """Whether this requirement requires an occupied position."""
+        return self.required_state == position_occupancy.PositionOccupancyState.OCCUPIED
+
+
+class ValueRequirement(PositionRequirement, frozen=True):
+    """A contracted position must have a particle with a set value."""
+
+
+class PositionRequirementInCaller[Requirement: PositionRequirement](
+    msgspec.Struct, frozen=True
+):
     """A callee's Position Requirement expressed from its caller's perspective."""
 
-    requirement: PositionRequirement
+    requirement: Requirement
     caller_position: ast.PositionReference
 
 
@@ -184,9 +201,13 @@ class EmptyGuarantee(PositionGuarantee, frozen=True):
 
 
 class OccupiedByExistingGuarantee(PositionGuarantee, frozen=True):
-    """The position contains the same particle that was passed into another interface position."""
+    """The position contains a particle passed into a contracted position.
+
+    A None value_effect leaves the caller's value unchanged.
+    """
 
     origin_position: ast.PositionReference
+    value_effect: particle_info.ParticleValueState | None = None
 
 
 class OccupiedByNewGuarantee(PositionGuarantee, frozen=True):
@@ -194,6 +215,9 @@ class OccupiedByNewGuarantee(PositionGuarantee, frozen=True):
 
     qualities: quality_assignment.QualityAssignments
     origin_position: ast.PositionReference
+    value_effect: particle_info.ParticleValueState = (
+        particle_info.ParticleValueState.UNSET
+    )
 
 
 class UnchangedGuarantee(PositionGuarantee, frozen=True):
@@ -249,8 +273,10 @@ class DestructionContracts:
     def child_occupancy(
         self, contract: DestructionContract, position: tuple[str, ...]
     ) -> position_occupancy.ChildOccupancy | None:
-        """Look up occupancy relative to this contract's destroyed particle."""
-        return self.child_state.get((*contract.position_in_child_state, *position))
+        """Look up child state relative to this contract's destroyed particle."""
+        return self.child_state.occupancy.get(
+            contract.position_in_child_state + position
+        )
 
     def propagation_steps(self) -> Iterator[PropagationStep]:
         """Iterate from the immediate callee to the destroying action."""
@@ -276,7 +302,8 @@ class Destructor(msgspec.Struct, frozen=True):
 class ActionContract(msgspec.Struct, frozen=True):
     """The automatically inferred requirements and guarantees for an action."""
 
-    requirements: list[PositionRequirement]
+    occupancy_requirements: list[PositionOccupancyRequirement]
+    value_requirements: list[ValueRequirement]
     guarantees: dict[ast.ChainedNameTuple, PositionGuarantee]
     # Callee contracts are referenced rather than folded in so that we don't
     # get unbounded memory growth from re-copying guarantees as we walk up a
@@ -287,16 +314,28 @@ class ActionContract(msgspec.Struct, frozen=True):
     # TODO: Support triggering on chained names?
     trigger_position_name: str
 
-    def requirements_in_caller(
+    def occupancy_requirements_in_caller(
         self, action_chain: ast.ActionReference
-    ) -> list[PositionRequirementInCaller]:
-        """Express every Position Requirement from the caller's perspective."""
-        requirements: list[PositionRequirementInCaller] = []
-        for requirement in self.requirements:
-            requirements.append(
+    ) -> list[PositionRequirementInCaller[PositionOccupancyRequirement]]:
+        """Express occupancy requirements from the caller's perspective."""
+        return self._requirements_in_caller(self.occupancy_requirements, action_chain)
+
+    def value_requirements_in_caller(
+        self, action_chain: ast.ActionReference
+    ) -> list[PositionRequirementInCaller[ValueRequirement]]:
+        """Express value requirements from the caller's perspective."""
+        return self._requirements_in_caller(self.value_requirements, action_chain)
+
+    @staticmethod
+    def _requirements_in_caller[Requirement: PositionRequirement](
+        requirements: list[Requirement], action_chain: ast.ActionReference
+    ) -> list[PositionRequirementInCaller[Requirement]]:
+        result: list[PositionRequirementInCaller[Requirement]] = []
+        for requirement in requirements:
+            result.append(
                 PositionRequirementInCaller(
                     requirement=requirement,
                     caller_position=requirement.position.in_caller(action_chain),
                 )
             )
-        return requirements
+        return result

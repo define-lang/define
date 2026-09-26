@@ -1,0 +1,10 @@
+define the potential action<my.domain.com:my_lib:/relay> {
+    it also assigns the action</initialize>.
+    define the position<trigger>.
+    it happens when {
+        the position<trigger> has a particle.
+    } and it does {
+        create a particle in action</initialize>::position<trigger>.
+        destroy the particle in position<trigger>.
+    }
+}

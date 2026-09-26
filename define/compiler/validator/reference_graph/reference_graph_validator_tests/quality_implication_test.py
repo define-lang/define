@@ -112,6 +112,7 @@ def test_diamond_transitivity_create_conflict_detected(
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diag.required_value is False
     assert diag.required_empty is True
     assert diag.action_name == "action<my.domain.com:my_lib:/implier_two>"
     assert diag.position_name == "position<source>::position</implied>"

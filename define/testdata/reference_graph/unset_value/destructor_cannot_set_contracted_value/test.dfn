@@ -1,0 +1,16 @@
+# Destructors read the value state immediately before destruction.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</cleanup>.
+                it has the position</value>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<box>::position</value>.
+        destroy the particle in position<box>.
+    }
+}

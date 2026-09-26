@@ -107,6 +107,7 @@ def test_diamond_one_path_violates_empty_requirement(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 24
     assert all_diags[0].location.column == 30
     assert_propagation_chain(
@@ -167,6 +168,7 @@ def test_diamond_other_path_violates_empty_requirement(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 26
     assert all_diags[0].location.column == 30
     assert_propagation_chain(
@@ -227,6 +229,7 @@ def test_diamond_occupied_requirement_independent_per_path(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].action_name == _ACT_C
     assert all_diags[0].required_empty is False
     assert (
@@ -292,6 +295,7 @@ def test_diamond_one_path_violates_occupied_requirement(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].action_name == _ACT_C
     assert all_diags[0].required_empty is False
     assert (
@@ -344,6 +348,7 @@ def test_diamond_neither_path_satisfies_occupied_requirement(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].action_name == _ACT_B
     assert all_diags[0].required_empty is False
     assert (
@@ -381,6 +386,7 @@ def test_diamond_neither_path_satisfies_occupied_requirement(
         },
     )
     assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[1].required_value is False
     assert all_diags[1].action_name == _ACT_C
     assert all_diags[1].required_empty is False
     assert (

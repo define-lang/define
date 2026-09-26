@@ -1,0 +1,8 @@
+define the potential action<my.domain.com:my_lib:/cleanup> {
+    it also assigns the position</value>.
+    it happens when {
+        this particle is being destroyed.
+    } and it does {
+        set the value of position</value> to literal</decimal>"5".
+    }
+}

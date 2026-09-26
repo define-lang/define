@@ -1,0 +1,25 @@
+define the potential action<my.domain.com:my_lib:/relay> {
+    define the position<input> {
+        it may only contain particles where {
+            it has the action</cleanup>.
+            it has the position</value>.
+        }
+    }
+    define the position<replacement> {
+        it may only contain particles where {
+            it has the value</number>.
+        }
+    }
+    it happens when {
+        the position<input> has a particle.
+    } and it does {
+        define the position<worker> {
+            it may only contain particles where {
+                it has the action</close>.
+            }
+        }
+        create a particle in position<worker>.
+        move the particle in position<replacement> to position<worker>::action</close>::position<replacement>.
+        move the particle in position<input> to position<worker>::action</close>::position<input>.
+    }
+}

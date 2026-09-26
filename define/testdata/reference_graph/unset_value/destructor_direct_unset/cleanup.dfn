@@ -1,0 +1,14 @@
+define the potential action<my.domain.com:my_lib:/cleanup> {
+    it also assigns the position</value>.
+    it happens when {
+        this particle is being destroyed.
+    } and it does {
+        define the position<copy> {
+            it may only contain particles where {
+                it has the value</number>.
+            }
+        }
+        create a particle in position<copy>.
+        set the value of position<copy> to position</value>.
+    }
+}

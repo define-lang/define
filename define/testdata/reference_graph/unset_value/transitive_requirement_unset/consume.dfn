@@ -1,0 +1,19 @@
+define the potential action<my.domain.com:my_lib:/consume> {
+    define the position<input> {
+        it may only contain particles where {
+            it has the value</number>.
+        }
+    }
+    it happens when {
+        the position<input> has a particle.
+    } and it does {
+        define the position<copy> {
+            it may only contain particles where {
+                it has the value</number>.
+            }
+        }
+        create a particle in position<copy>.
+        set the value of position<copy> to position<input>.
+        destroy the particle in position<input>.
+    }
+}

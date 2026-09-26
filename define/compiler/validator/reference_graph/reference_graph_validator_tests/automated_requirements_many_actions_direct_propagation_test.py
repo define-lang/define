@@ -47,6 +47,7 @@ def test_inner_chained_action_empty_requirement_propagates(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 23
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
@@ -116,6 +117,7 @@ def test_inner_chained_action_occupied_requirement_propagates(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
@@ -237,6 +239,7 @@ def test_pending_guarantees_on_shared_and_separate_position_chains_violate_later
         parent_marker_diagnostic,
         diagnostics.InferredRequirementViolationDiagnostic,
     )
+    assert parent_marker_diagnostic.required_value is False
     assert parent_marker_diagnostic.location.line == 33
     assert parent_marker_diagnostic.location.column == 30
     assert parent_marker_diagnostic.location.end_line == 33
@@ -287,6 +290,7 @@ def test_pending_guarantees_on_shared_and_separate_position_chains_violate_later
         child_marker_diagnostic,
         diagnostics.InferredRequirementViolationDiagnostic,
     )
+    assert child_marker_diagnostic.required_value is False
     assert child_marker_diagnostic.location.line == 33
     assert child_marker_diagnostic.location.column == 30
     assert child_marker_diagnostic.location.end_line == 33
@@ -336,6 +340,7 @@ def test_pending_guarantees_on_shared_and_separate_position_chains_violate_later
     assert isinstance(
         item_diagnostic, diagnostics.InferredRequirementViolationDiagnostic
     )
+    assert item_diagnostic.required_value is False
     assert item_diagnostic.location.line == 33
     assert item_diagnostic.location.column == 30
     assert item_diagnostic.location.end_line == 33
@@ -400,6 +405,7 @@ def test_three_deep_action_chain_requirement_propagates(
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diag.required_value is False
     assert diag.location.line == 23
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
@@ -467,6 +473,7 @@ def test_four_deep_action_chain_requirement_propagates(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 23
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
@@ -543,6 +550,7 @@ def test_both_requirements_propagate_when_inner_has_both(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/outer>"
     assert all_diags[0].location.line == 26
     assert all_diags[0].location.column == 30
@@ -602,6 +610,7 @@ def test_trigger_position_child_empty_requirement_propagates(
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diag.required_value is False
     assert diag.location.line == 23
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
@@ -660,6 +669,7 @@ def test_trigger_position_child_occupied_requirement_propagates(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")

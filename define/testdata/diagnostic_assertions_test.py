@@ -144,6 +144,7 @@ def test_case(validate_testdata_project_with_reference_graph):
     assert diag.location == location
     assert diag.position_name == "position<box>" and diag.action_name == action_name
     assert not diag.required_empty
+    assert not diag.required_value
     assert_propagation_chain(diag, step)
 """)
         == []

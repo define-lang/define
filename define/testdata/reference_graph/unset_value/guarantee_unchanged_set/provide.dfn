@@ -1,0 +1,16 @@
+define the potential action<my.domain.com:my_lib:/provide> {
+    define the position<trigger>.
+    define the position<item> {
+        it may only contain particles where {
+            it has the value</number>.
+        }
+    }
+    it happens when {
+        the position<trigger> has a particle.
+    } and it does {
+        define the position<temporary>.
+        move the particle in position<item> to position<temporary>.
+        move the particle in position<temporary> to position<item>.
+        destroy the particle in position<trigger>.
+    }
+}

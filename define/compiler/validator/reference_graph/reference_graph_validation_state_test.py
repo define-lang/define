@@ -36,7 +36,8 @@ def test_contract_access():
     state = reference_graph_validation_state.ReferenceGraphValidationState()
     action_name = _action("published")
     contract = action_contract.ActionContract(
-        requirements=[],
+        occupancy_requirements=[],
+        value_requirements=[],
         guarantees={},
         callees=[],
         destruction_contracts=[],

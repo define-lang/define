@@ -36,6 +36,7 @@ def test_caller_sees_requirement_when_interface_moved_to_local(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
@@ -94,6 +95,7 @@ def test_caller_sees_requirement_on_unused_position_when_interface_moved_to_loca
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 24
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
@@ -150,6 +152,7 @@ def test_requirement_inferred_when_trigger_moved_to_local(
     assert len(all_diags) == 2
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diag.required_value is False
     assert diag.location.line == 25
     assert diag.location.column == 49
     assert diag.location.file_path == PurePosixPath("test.dfn")
@@ -206,6 +209,7 @@ def test_caller_sees_requirement_when_iface_with_child_moved_to_local(
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diag.required_value is False
     assert diag.location.line == 14
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
@@ -265,6 +269,7 @@ def test_caller_sees_requirement_when_iface_intermediate_with_child_moved_to_loc
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diag.required_value is False
     assert diag.location.line == 15
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
@@ -324,6 +329,7 @@ def test_complex_chain_interaction_iface(
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diag.required_value is False
     assert diag.location.line == 17
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
@@ -382,6 +388,7 @@ def test_caller_sees_requirement_when_implied_moved_to_local(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
@@ -441,6 +448,7 @@ def test_caller_sees_requirement_when_implied_moved_to_interface(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
@@ -500,6 +508,7 @@ def test_caller_sees_requirement_when_implied_with_child_moved_to_local(
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diag.required_value is False
     assert diag.location.line == 15
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
@@ -559,6 +568,7 @@ def test_caller_sees_requirement_when_implied_intermediate_with_child_moved_to_l
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diag.required_value is False
     assert diag.location.line == 16
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
@@ -618,6 +628,7 @@ def test_complex_chain_interaction_implied(
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diag.required_value is False
     assert diag.location.line == 18
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
@@ -687,6 +698,7 @@ def test_diagnostic_when_interface_moved_to_sibling_interface_source_unfilled(
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diag.required_value is False
     assert diag.location.line == 12
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
@@ -728,6 +740,7 @@ def test_caller_sees_requirement_when_interface_moved_to_implied(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
@@ -797,6 +810,7 @@ def test_diagnostic_when_implied_moved_to_implied_source_unfilled(
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diag.required_value is False
     assert diag.location.line == 13
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")

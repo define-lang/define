@@ -6,6 +6,7 @@ import typing
 
 from define.compiler.validator.reference_graph import (
     action_contract,
+    particle_info,
     position_occupancy,
     requirement_violation,
 )
@@ -14,7 +15,6 @@ if typing.TYPE_CHECKING:
     from define.compiler import ast, diagnostics
     from define.compiler.validator import scope_tracker
     from define.compiler.validator.reference_graph import (
-        particle_info,
         particle_tracker,
         position_quality_resolver,
     )
@@ -26,7 +26,9 @@ class ActionRequirementValidator:
     _definition: ast.ActionDefinition
     _tracker: particle_tracker.ParticleTracker
     _position_quality_resolver: position_quality_resolver.PositionQualityResolver
-    _inferred_requirements: dict[tuple[str, ...], action_contract.PositionRequirement]
+    _inferred_occupancy_requirements: dict[
+        tuple[str, ...], action_contract.PositionOccupancyRequirement
+    ]
 
     def __init__(
         self,
@@ -38,14 +40,17 @@ class ActionRequirementValidator:
         self._definition = definition
         self._tracker = tracker
         self._position_quality_resolver = quality_resolver
-        self._inferred_requirements = {}
+        self._inferred_occupancy_requirements = {}
+        self.value_requirements: dict[
+            tuple[str, ...], action_contract.ValueRequirement
+        ] = {}
 
     @property
-    def requirements(
+    def occupancy_requirements(
         self,
-    ) -> dict[tuple[str, ...], action_contract.PositionRequirement]:
+    ) -> dict[tuple[str, ...], action_contract.PositionOccupancyRequirement]:
         """The requirements inferred for this Action's contract."""
-        return self._inferred_requirements
+        return self._inferred_occupancy_requirements
 
     def _record_requirement(
         self,
@@ -54,7 +59,7 @@ class ActionRequirementValidator:
         contracted_position: ast.PositionReference,
         local_position: ast.PositionReference,
         inferred_at: ast.SourceLocation,
-        propagated_from: action_contract.PositionRequirement | None,
+        propagated_from: action_contract.PositionOccupancyRequirement | None,
         scope: scope_tracker.ScopeTracker,
         action_assignment: action_contract.ActionAssignment | None = None,
     ):
@@ -94,8 +99,8 @@ class ActionRequirementValidator:
         # Revisit only if those consumers or the propagation pipeline change
         # substantially.
         requirement_key = contracted_position.canonical_chained_name_tuple
-        self._inferred_requirements[requirement_key] = (
-            action_contract.PositionRequirement(
+        self._inferred_occupancy_requirements[requirement_key] = (
+            action_contract.PositionOccupancyRequirement(
                 required_state=required_state,
                 position=contracted_position,
                 inferred_at=inferred_at,
@@ -138,7 +143,11 @@ class ActionRequirementValidator:
         self,
         action_chain: ast.ActionReference,
         scope: scope_tracker.ScopeTracker,
-        requirements_in_caller: list[action_contract.PositionRequirementInCaller],
+        requirements_in_caller: list[
+            action_contract.PositionRequirementInCaller[
+                action_contract.PositionOccupancyRequirement
+            ]
+        ],
         action_assignment: action_contract.ActionAssignment | None,
     ):
         """Propagate the triggered action's requirements into this definition's contract."""
@@ -189,7 +198,11 @@ class ActionRequirementValidator:
     def check_requirements(
         self,
         acting_on_position: ast.PositionReference,
-        requirements_in_caller: list[action_contract.PositionRequirementInCaller],
+        requirements_in_caller: list[
+            action_contract.PositionRequirementInCaller[
+                action_contract.PositionOccupancyRequirement
+            ]
+        ],
         *,
         action_assignment: action_contract.ActionAssignment | None,
     ) -> list[diagnostics.Diagnostic]:
@@ -230,26 +243,27 @@ class ActionRequirementValidator:
     def _requirement_violation_occupant(
         self,
         full_caller_chain: ast.PositionReference,
-        req: action_contract.PositionRequirement,
+        req: action_contract.PositionOccupancyRequirement,
     ) -> tuple[bool, particle_info.ParticleInfo | None]:
         occupancy = self._tracker.get_occupancy_info(full_caller_chain)
         if occupancy.has_error:
             return False, None
         occupant = occupancy.occupant
-        empty_violation = (
-            req.required_state == position_occupancy.PositionOccupancyState.EMPTY
-            and occupant is not None
+        state = (
+            position_occupancy.PositionOccupancyState.OCCUPIED
+            if occupant is not None
+            else position_occupancy.PositionOccupancyState.EMPTY
         )
-        occupied_violation = (
-            req.required_state == position_occupancy.PositionOccupancyState.OCCUPIED
-            and occupant is None
-        )
-        return (empty_violation or occupied_violation, occupant)
+        return requirement_violation.is_violated(req, state, None), occupant
 
     def check_destructor_requirements(
         self,
         destructor: action_contract.Destructor,
-        requirements_in_caller: list[action_contract.PositionRequirementInCaller],
+        requirements_in_caller: list[
+            action_contract.PositionRequirementInCaller[
+                action_contract.PositionOccupancyRequirement
+            ]
+        ],
         *,
         auto_destruction_target: ast.PositionReference | None,
     ) -> list[diagnostics.Diagnostic]:
@@ -272,4 +286,104 @@ class ActionRequirementValidator:
                         auto_destruction_target=auto_destruction_target,
                     )
                 )
+        return validation_diagnostics
+
+    def infer_value_requirement(
+        self,
+        position: ast.PositionReference,
+        *,
+        inferred_at: ast.SourceLocation,
+        propagated_from: action_contract.ValueRequirement | None = None,
+        action_assignment: action_contract.ActionAssignment | None = None,
+    ):
+        """Require a caller-provided particle's value when it is still unknown."""
+        occupancy = self._tracker.get_occupancy_info(position)
+        particle = occupancy.occupant
+        if occupancy.has_error or particle is None:
+            return
+        if particle.qualities.value_type is None:
+            return
+        if particle.value_state is not None:
+            return
+        contracted_position = particle.origin_position
+        # Interfaces stop direct inference, including reads after a particle moves.
+        if contracted_position.get_last_action() is not None:
+            return
+        self.value_requirements[contracted_position.canonical_chained_name_tuple] = (
+            action_contract.ValueRequirement(
+                position=contracted_position,
+                inferred_at=inferred_at,
+                enclosing_action=self._definition,
+                propagated_from=propagated_from,
+                action_assignment=action_assignment,
+            )
+        )
+        particle.value_state = particle_info.ParticleValueState.SET
+
+    def propagate_value_requirements(
+        self,
+        action_chain: ast.ActionReference,
+        requirements: list[
+            action_contract.PositionRequirementInCaller[
+                action_contract.ValueRequirement
+            ]
+        ],
+        action_assignment: action_contract.ActionAssignment | None,
+    ):
+        """Propagate value requirements after occupancy requirements are resolved."""
+        for requirement in requirements:
+            self.infer_value_requirement(
+                requirement.caller_position,
+                inferred_at=action_chain.location,
+                propagated_from=requirement.requirement,
+                action_assignment=action_assignment,
+            )
+
+    def check_value_requirements(
+        self,
+        requirements: list[
+            action_contract.PositionRequirementInCaller[
+                action_contract.ValueRequirement
+            ]
+        ],
+        *,
+        acting_on_position: ast.PositionReference,
+        action_assignment: action_contract.ActionAssignment | None,
+        destructor: action_contract.Destructor | None = None,
+        auto_destruction_target: ast.PositionReference | None = None,
+    ) -> list[diagnostics.Diagnostic]:
+        """Check value requirements using the state immediately before triggering."""
+        validation_diagnostics: list[diagnostics.Diagnostic] = []
+        for requirement in requirements:
+            occupancy = self._tracker.get_occupancy_info(requirement.caller_position)
+            particle = occupancy.occupant
+            # Occupancy failures already have their own diagnostic.
+            if occupancy.has_error or particle is None:
+                continue
+            if not requirement_violation.is_violated(
+                requirement.requirement,
+                position_occupancy.PositionOccupancyState.OCCUPIED,
+                particle.value_state,
+            ):
+                continue
+            if destructor is None:
+                diagnostic = requirement_violation.trigger_violation(
+                    req=requirement.requirement,
+                    definition=self._definition,
+                    full_caller_chain=requirement.caller_position,
+                    acting_on_position=acting_on_position,
+                    occupant=particle,
+                    action_assignment=action_assignment,
+                )
+            else:
+                diagnostic = requirement_violation.direct_destructor(
+                    req=requirement.requirement,
+                    definition=self._definition,
+                    full_caller_chain=requirement.caller_position,
+                    occupant=particle,
+                    destructor=destructor,
+                    auto_destruction_target=auto_destruction_target,
+                )
+            validation_diagnostics.append(diagnostic)
+            self._tracker.mark_value_error(requirement.caller_position)
         return validation_diagnostics

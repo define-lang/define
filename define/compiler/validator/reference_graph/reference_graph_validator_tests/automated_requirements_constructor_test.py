@@ -167,6 +167,7 @@ def test_occupied_interface_requirement_always_violated(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
@@ -233,6 +234,7 @@ def test_constructor_empty_violation_via_create_in_implied(
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diag.required_value is False
     assert diag.action_name == _P
     assert diag.required_empty is True
     assert diag.position_name == "position<box>::position</q>"
@@ -287,6 +289,7 @@ def test_constructor_empty_violation_via_create_in_child_of_implied(
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diag.required_value is False
     assert diag.action_name == _P
     assert diag.required_empty is True
     assert diag.position_name == "position<box>::position</q>::position</child>"

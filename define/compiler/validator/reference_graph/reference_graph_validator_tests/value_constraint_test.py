@@ -32,7 +32,7 @@ def test_move_mismatched_value(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.MoveViolatesConstraintsDiagnostic)
-    assert diagnostic.location.line == 35
+    assert diagnostic.location.line == 37
     assert diagnostic.location.column == 50
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.source_position == "position<source>"
@@ -48,7 +48,7 @@ def test_move_without_value(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.MoveViolatesConstraintsDiagnostic)
-    assert diagnostic.location.line == 23
+    assert diagnostic.location.line == 24
     assert diagnostic.location.column == 50
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.source_position == "position<source>"
@@ -83,7 +83,7 @@ def test_action_mismatched_value(
     assert untriggered.constraint_name == "action</consume>"
     diagnostic = result.all_diagnostics[1]
     assert isinstance(diagnostic, diagnostics.MoveViolatesConstraintsDiagnostic)
-    assert diagnostic.location.line == 26
+    assert diagnostic.location.line == 27
     assert diagnostic.location.column == 50
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.source_position == "position<source>"
@@ -252,3 +252,37 @@ def test_unconstrained_callee_does_not_keep_value_alive(
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 13
     assert diagnostic.location.column == 28
+
+
+def test_value_read_keeps_only_interface_origin_alive(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    ).program_result
+    assert result.all_exceptions == []
+    assert len(result.all_diagnostics) == 1
+    diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.DeadValueConstraintDiagnostic)
+    assert diagnostic.position_name == "position<moved>"
+    assert diagnostic.constraint_name == "value</number>"
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.line == 13
+    assert diagnostic.location.column == 28
+
+
+def test_unused_interface_value_is_dead(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    ).program_result
+    assert result.all_exceptions == []
+    assert len(result.all_diagnostics) == 1
+    diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.DeadValueConstraintDiagnostic)
+    assert diagnostic.position_name == "position<input>"
+    assert diagnostic.constraint_name == "value</number>"
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.line == 5
+    assert diagnostic.location.column == 24

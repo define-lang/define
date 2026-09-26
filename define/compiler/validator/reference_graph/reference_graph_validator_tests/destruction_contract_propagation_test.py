@@ -50,6 +50,7 @@ def test_inner_emptied_child_overrides_caller_knowledge_violated(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].action_name == _CLOSE_FILE
     assert all_diags[0].required_empty is False
     assert all_diags[0].location.line == 22
@@ -128,6 +129,7 @@ def test_cascade_verifies_child_destructor_requirement_violated(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].action_name == _CLOSE_FILE
     assert all_diags[0].required_empty is False
     assert all_diags[0].location.line == 20
@@ -206,6 +208,7 @@ def test_contract_re_records_through_unknowing_middle_and_top_violates(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].action_name == _MID
     assert all_diags[0].required_empty is False
     assert all_diags[0].location.line == 19
@@ -281,6 +284,7 @@ def test_constructor_attaches_destructor_and_verifies_via_contract(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].action_name == _CLOSE_FILE
     assert all_diags[0].required_empty is False
     assert all_diags[0].location.line == 16
@@ -358,6 +362,7 @@ def test_constructor_resolves_implied_action_destruction_contract(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].action_name == _CALLEE
     assert all_diags[0].required_empty is False
     assert all_diags[0].location.line == 13
@@ -436,6 +441,7 @@ def test_middle_knows_destructor_but_not_child_state_defers_to_owner_violated(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].action_name == _MID
     assert all_diags[0].required_empty is False
     assert all_diags[0].location.line == 22
@@ -531,6 +537,7 @@ def test_auto_destruction_re_records_through_middle_and_owner_verifies(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].action_name == _MID
     assert all_diags[0].required_empty is False
     assert all_diags[0].location.line == 21
@@ -614,6 +621,7 @@ def test_cascade_re_records_through_middle_and_owner_verifies_child_then_parent(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].action_name == _MID
     assert all_diags[0].required_empty is False
     assert all_diags[0].location.line == 22
@@ -675,6 +683,7 @@ def test_cascade_re_records_through_middle_and_owner_verifies_child_then_parent(
         },
     )
     assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[1].required_value is False
     assert all_diags[1].action_name == _MID
     assert all_diags[1].required_empty is False
     assert all_diags[1].location.line == 22
@@ -751,6 +760,7 @@ def test_emptied_child_not_re_destroyed_by_parent_cascade(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].action_name == _CLOSE_FILE
     assert all_diags[0].required_empty is False
     assert all_diags[0].location.line == 23

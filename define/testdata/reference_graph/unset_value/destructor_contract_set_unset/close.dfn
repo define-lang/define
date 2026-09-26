@@ -1,0 +1,13 @@
+define the potential action<my.domain.com:my_lib:/close> {
+    define the position<input> {
+        it may only contain particles where {
+            it has the position</value>.
+        }
+    }
+    it happens when {
+        the position<input> has a particle.
+    } and it does {
+        set the value of position<input>::position</value> to literal</decimal>"5".
+        destroy the particle in position<input>.
+    }
+}

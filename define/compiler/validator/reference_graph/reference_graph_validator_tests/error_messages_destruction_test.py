@@ -66,7 +66,7 @@ def test_destructor_requires_occupied_position_format(
         File "test.dfn", line 14, column 33
                 destroy the particle in position<box>.
                                         ^
-        'position<box>::position</child_q>::action</destructor>::position<item>' must be occupied before 'action<my.domain.com:my_lib:/destructor>' runs, and it is not occupied.
+        'position<box>::position</child_q>::action</destructor>::position<item>' must be occupied before 'action<my.domain.com:my_lib:/destructor>' runs.
 
         This error happens because:
           'action<my.domain.com:my_lib:/destructor>' is assigned to 'position<my.domain.com:my_lib:/child_q>':
@@ -142,7 +142,7 @@ def test_destructor_on_particle_created_in_callee_local_position_format(
         File "test.dfn", line 12, column 33
                 destroy the particle in position<box>::action</producer>::position<result>.
                                         ^
-        'position<box>::action</producer>::position<result>::action</destructor>::position<item>' must be occupied before 'action<my.domain.com:my_lib:/destructor>' runs, and it is not occupied.
+        'position<box>::action</producer>::position<result>::action</destructor>::position<item>' must be occupied before 'action<my.domain.com:my_lib:/destructor>' runs.
 
         This error happens because:
           'action<my.domain.com:my_lib:/destructor>' is assigned to 'position<created>':
@@ -209,7 +209,7 @@ def test_destructor_requires_empty_position_format(
         File "test.dfn", line 19, column 33
                 destroy the particle in position<box>.
                                         ^
-        'position<box>::position</child_q>::action</destructor_empty>::position<item>' must be empty before 'action<my.domain.com:my_lib:/destructor_empty>' runs, and it is not empty.
+        'position<box>::position</child_q>::action</destructor_empty>::position<item>' must be empty before 'action<my.domain.com:my_lib:/destructor_empty>' runs.
 
         This error happens because:
           'action<my.domain.com:my_lib:/destructor_empty>' is assigned to 'position<my.domain.com:my_lib:/child_q>':
@@ -282,7 +282,7 @@ def test_aware_destructor_requirement_surfaces_as_action_requires_format(
         File "test.dfn", line 12, column 30
                 create a particle in position<box>::action</close_file>::position<run>.
                                      ^
-        'position<box>::action</close_file>::position<target>::position</file>' must be occupied before 'action<my.domain.com:my_lib:/close_file>' runs, and it is not occupied.
+        'position<box>::action</close_file>::position<target>::position</file>' must be occupied before 'action<my.domain.com:my_lib:/close_file>' runs.
 
         This error happens because:
           'action<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/close_file>':
@@ -432,7 +432,7 @@ def test_auto_destruction_destructor_requires_empty_position_format(
         File "test.dfn", line 17, column 51
                 move the particle in position<staging> to position<box>.
                                                           ^
-        'position<box>::position</child_q>::action</destructor_empty>::position<item>' must be empty before 'action<my.domain.com:my_lib:/destructor_empty>' runs, and it is not empty.
+        'position<box>::position</child_q>::action</destructor_empty>::position<item>' must be empty before 'action<my.domain.com:my_lib:/destructor_empty>' runs.
 
         This error happens because:
           'action<my.domain.com:my_lib:/destructor_empty>' is assigned to 'position<my.domain.com:my_lib:/child_q>':
@@ -498,7 +498,7 @@ def test_auto_destruction_destructor_requires_occupied_position_format(
         File "test.dfn", line 13, column 51
                 move the particle in position<staging> to position<box>.
                                                           ^
-        'position<box>::position</child_q>::action</destructor>::position<item>' must be occupied before 'action<my.domain.com:my_lib:/destructor>' runs, and it is not occupied.
+        'position<box>::position</child_q>::action</destructor>::position<item>' must be occupied before 'action<my.domain.com:my_lib:/destructor>' runs.
 
         This error happens because:
           'action<my.domain.com:my_lib:/destructor>' is assigned to 'position<my.domain.com:my_lib:/child_q>':
@@ -579,7 +579,7 @@ def test_destructor_cascade_through_action_format(
         File "inner.dfn", line 19, column 52
                 move the particle in position<incoming> to position<local>.
                                                            ^
-        'position<local>::action</destructor_empty>::position<item>' must be empty before 'action<my.domain.com:my_lib:/destructor_empty>' runs, and it is not empty.
+        'position<local>::action</destructor_empty>::position<item>' must be empty before 'action<my.domain.com:my_lib:/destructor_empty>' runs.
 
         This error happens because:
           'action<my.domain.com:my_lib:/destructor_empty>' is assigned to 'position<incoming>':
@@ -663,7 +663,7 @@ def test_destruction_contract_requires_occupied_format(
         File "test.dfn", line 18, column 30
                 create a particle in position<box>::action</close_file>::position<run>.
                                      ^
-        'position<box>::action</close_file>::position<target>::position</file>' must be occupied before 'action<my.domain.com:my_lib:/close_file>' runs, and it is not occupied.
+        'position<box>::action</close_file>::position<target>::position</file>' must be occupied before 'action<my.domain.com:my_lib:/close_file>' runs.
 
         This error happens because:
           'action<my.domain.com:my_lib:/delete_file_destructor>' is assigned to 'position<my_file>':
@@ -760,7 +760,7 @@ def test_destruction_contract_requires_empty_format(
         File "test.dfn", line 18, column 30
                 create a particle in position<box>::action</filler>::position<run>.
                                      ^
-        'position<box>::action</filler>::position<incoming>::position</p2>' must be empty before 'action<my.domain.com:my_lib:/filler>' runs, and it is not empty.
+        'position<box>::action</filler>::position<incoming>::position</p2>' must be empty before 'action<my.domain.com:my_lib:/filler>' runs.
 
         This error happens because:
           'action<my.domain.com:my_lib:/d>' is assigned to 'position<my_file>':
@@ -843,7 +843,7 @@ def test_destruction_contract_auto_destruction_format(
         File "test.dfn", line 18, column 30
                 create a particle in position<box>::action</mid>::position<run>.
                                      ^
-        'position<box>::action</mid>::position<incoming>::position</file>' must be occupied before 'action<my.domain.com:my_lib:/mid>' runs, and it is not occupied.
+        'position<box>::action</mid>::position<incoming>::position</file>' must be occupied before 'action<my.domain.com:my_lib:/mid>' runs.
 
         This error happens because:
           'action<my.domain.com:my_lib:/delete_destructor>' is assigned to 'position<my_file>':
@@ -923,7 +923,7 @@ def test_destruction_contract_constructor_attacher_format(
         File "test.dfn", line 14, column 30
                 create a particle in position<box>::action</close_file>::position<run>.
                                      ^
-        'position<box>::action</close_file>::position<target>::position</file>' must be occupied before 'action<my.domain.com:my_lib:/close_file>' runs, and it is not occupied.
+        'position<box>::action</close_file>::position<target>::position</file>' must be occupied before 'action<my.domain.com:my_lib:/close_file>' runs.
 
         This error happens because:
           'action<my.domain.com:my_lib:/delete_destructor>' is assigned to 'position<my.domain.com:my_lib:/carrier>':
@@ -1005,7 +1005,7 @@ def test_destruction_contract_cascade_child_format(
         File "test.dfn", line 19, column 30
                 create a particle in position<box>::action</close_file>::position<run>.
                                      ^
-        'position<box>::action</close_file>::position<target>::position</child>::position</file>' must be occupied before 'action<my.domain.com:my_lib:/close_file>' runs, and it is not occupied.
+        'position<box>::action</close_file>::position<target>::position</child>::position</file>' must be occupied before 'action<my.domain.com:my_lib:/close_file>' runs.
 
         This error happens because:
           'action<my.domain.com:my_lib:/child_destructor>' is assigned to 'position<my.domain.com:my_lib:/child>':

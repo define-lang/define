@@ -29,6 +29,7 @@ def test_constructor_occupied_requirement_via_destroy_of_child_of_moved_implied(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 10
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
@@ -63,6 +64,7 @@ def test_constructor_occupied_requirement_via_destroy_of_child_of_moved_implied(
         },
     )
     assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[1].required_value is False
     assert all_diags[1].location.line == 10
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
@@ -113,6 +115,7 @@ def test_constructor_empty_requirement_via_create_in_child_of_moved_implied(
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diag.required_value is False
     assert diag.required_empty is True
     assert diag.action_name == _P
     assert diag.position_name == "position<box>::position</q>::position</q_child>"
@@ -165,6 +168,7 @@ def test_constructor_occupied_requirement_via_destroy_of_child_of_moved_to_impli
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diag.required_value is False
     assert diag.required_empty is False
     assert diag.action_name == _P
     assert diag.position_name == "position<box>::position</q>::position</q_child>"
@@ -209,6 +213,7 @@ def test_constructor_empty_requirement_via_create_in_child_of_moved_to_implied(
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diag.required_value is False
     assert diag.required_empty is True
     assert diag.action_name == _P
     assert diag.position_name == "position<box>::position</q>::position</q_child>"

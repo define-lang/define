@@ -1,22 +1,9 @@
-# Value definitions generate empty classes with the same names used by constraints.
+# A position can require a value type.
 define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</item>.
     it happens when {
         this particle is created.
     } and it does {
-        define the position<item> {
-            it may only contain particles where {
-                it has the value</number/rational>.
-            }
-        }
-        define the position<copy> {
-            it may only contain particles where {
-                it has the value</number/rational>.
-            }
-        }
-        create a particle in position<item>.
-        create a particle in position<copy>.
-        set the value of position<copy> to position<item>.
-        destroy the particle in position<copy>.
-        destroy the particle in position<item>.
+        create a particle in position</item>.
     }
 }

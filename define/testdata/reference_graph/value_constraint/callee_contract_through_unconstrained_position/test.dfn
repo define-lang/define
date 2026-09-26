@@ -17,6 +17,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         create a particle in position<worker>.
         create a particle in position<source>.
         move the particle in position<source> to position<middle>.
+        set the value of position<middle> to literal</decimal>"5".
         move the particle in position<middle> to position<worker>::action</consume>::position<input>.
     }
 }

@@ -373,6 +373,7 @@ def test_child_guarantee_after_parent_move_is_diagnostic_source(
         requirement_diagnostic,
         diagnostics.InferredRequirementViolationDiagnostic,
     )
+    assert requirement_diagnostic.required_value is False
     assert_propagation_chain(
         requirement_diagnostic,
         {

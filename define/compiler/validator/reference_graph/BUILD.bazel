@@ -11,6 +11,7 @@ py_library(
     deps = [
         ":child_state",
         ":destruction_contract",
+        ":particle_info",
         ":position_occupancy",
         ":quality_assignment",
         "//define/compiler:ast",
@@ -65,7 +66,9 @@ py_library(
     srcs = ["child_state.py"],
     visibility = ["//define/compiler/validator/reference_graph:__subpackages__"],
     deps = [
+        ":particle_info",
         ":position_occupancy",
+        "@pypi//msgspec",
     ],
 )
 
@@ -75,6 +78,7 @@ py_test(
     srcs = ["child_state_test.py"],
     deps = [
         ":child_state",
+        ":particle_info",
         ":position_occupancy",
         "//define/compiler:ast",
     ],
@@ -155,6 +159,7 @@ py_library(
     srcs = ["particle_operation_validator.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
+        ":particle_info",
         ":particle_tracker",
         "//define/compiler:ast",
         "//define/compiler:diagnostics",

@@ -1,0 +1,22 @@
+# Value errors propagate through guarantees; successful assignments restore a set value.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<worker> {
+            it may only contain particles where {
+                it has the action</provide>.
+            }
+        }
+        create a particle in position<worker>.
+        define the position<copy> {
+            it may only contain particles where {
+                it has the value</number>.
+            }
+        }
+        create a particle in position<copy>.
+        create a particle in position<worker>::action</provide>::position<trigger>.
+        set the value of position<copy> to position<worker>::action</provide>::position<item>.
+        destroy the particle in position<worker>::action</provide>::position<item>.
+    }
+}

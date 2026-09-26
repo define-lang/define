@@ -115,6 +115,7 @@ def test_auto_destruction_failing_empty_requirement(
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diag.required_value is False
     assert diag.location.line == 10
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
@@ -185,6 +186,7 @@ def test_auto_destruction_failing_occupied_requirement(
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diag.required_value is False
     assert diag.location.line == 12
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
@@ -245,6 +247,7 @@ def test_constructor_auto_destruction_failing_requirement(
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diag.required_value is False
     assert diag.location.line == 10
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
@@ -315,6 +318,7 @@ def test_auto_destruction_reports_each_failing_destructor_requirement(
     assert len(all_diags) == 2
     box_a_diag = all_diags[0]
     assert isinstance(box_a_diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert box_a_diag.required_value is False
     assert box_a_diag.location.line == 17
     assert box_a_diag.location.column == 30
     assert box_a_diag.location.file_path == PurePosixPath("test.dfn")
@@ -378,6 +382,7 @@ def test_auto_destruction_reports_each_failing_destructor_requirement(
 
     box_b_diag = all_diags[1]
     assert isinstance(box_b_diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert box_b_diag.required_value is False
     assert box_b_diag.location.line == 19
     assert box_b_diag.location.column == 30
     assert box_b_diag.location.file_path == PurePosixPath("test.dfn")
@@ -449,6 +454,7 @@ def test_cascade_child_auto_destruction_failing_requirement(
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diag.required_value is False
     assert diag.location.line == 10
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")
@@ -521,6 +527,7 @@ def test_interface_to_local_auto_destruction_failing_requirement(
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diag.required_value is False
     assert diag.location.line == 15
     assert diag.location.column == 52
     assert diag.location.file_path == PurePosixPath("test.dfn")
@@ -594,6 +601,7 @@ def test_implied_to_local_auto_destruction_failing_requirement(
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diag.required_value is False
     assert diag.location.line == 11
     assert diag.location.column == 54
     assert diag.location.file_path == PurePosixPath("test.dfn")
@@ -665,6 +673,7 @@ def test_destructor_requirement_propagates_to_caller_via_implied_position(
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diag.required_value is False
     assert diag.location.line == 21
     assert diag.location.column == 30
     assert diag.location.file_path == PurePosixPath("test.dfn")

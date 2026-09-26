@@ -20,16 +20,13 @@ class PositionOccupancyState(enum.Enum):
 
 
 class ChildOccupancy(msgspec.Struct, frozen=True):
-    """A child position's occupancy and the Source location of the statement that filled it."""
+    """A child position's occupancy and fill location."""
 
     state: PositionOccupancyState
     # Where the occupying particle was last placed, so a caller that resolves an
     # empty-requirement violation from this record (rather than from its own
     # tracker) can still report the fill site. Only set when state is OCCUPIED.
     filled_at: ast.SourceLocation | None = None
-
-
-type ChildOccupancyMap = dict[tuple[str, ...], ChildOccupancy]
 
 
 # The empty and error states carry no fill site, so a single shared instance

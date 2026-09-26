@@ -39,6 +39,7 @@ def test_parent_verification_does_not_skip_child_destructor(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 50
     assert_propagation_chain(
@@ -109,6 +110,7 @@ def test_propagated_child_verification_does_not_skip_parent_destructor(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 17
     assert all_diags[0].location.column == 50
     assert_propagation_chain(
@@ -186,6 +188,7 @@ def test_destructor_diagnostic_retains_callee_local_assignment(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 33
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
@@ -240,6 +243,7 @@ def test_intermediate_resolves_one_destructor_and_carries_another(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 24
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
@@ -309,6 +313,7 @@ def test_intermediate_resolves_one_destructor_and_carries_another(
         },
     )
     assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[1].required_value is False
     assert all_diags[1].location.line == 21
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == PurePosixPath("mid.dfn")
@@ -398,6 +403,7 @@ def test_five_level_implied_requirements_resolved_across_actions_violated(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 21
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("outer.dfn")
@@ -459,6 +465,7 @@ def test_five_level_implied_requirements_resolved_across_actions_violated(
         },
     )
     assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[1].required_value is False
     assert all_diags[1].location.line == 21
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == PurePosixPath("outer.dfn")
@@ -557,6 +564,7 @@ def test_six_level_destructor_knower_separate_from_resolvers_violated(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 18
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("outer.dfn")
@@ -626,6 +634,7 @@ def test_six_level_destructor_knower_separate_from_resolvers_violated(
         },
     )
     assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[1].required_value is False
     assert all_diags[1].location.line == 18
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == PurePosixPath("outer.dfn")

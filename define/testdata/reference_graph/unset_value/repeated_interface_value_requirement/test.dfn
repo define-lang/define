@@ -1,0 +1,15 @@
+# A failed value requirement on an interface is diagnosed only once.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<input> {
+        it may only contain particles where {
+            it has the action</consume>.
+        }
+    }
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position<input>::action</consume>::position<trigger>.
+        create a particle in position<input>::action</consume>::position<trigger>.
+        destroy the particle in position<input>::action</consume>::position<input>.
+    }
+}

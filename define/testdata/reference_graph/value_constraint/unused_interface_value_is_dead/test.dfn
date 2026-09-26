@@ -1,0 +1,13 @@
+# Occupancy requirements alone do not keep an interface value constraint alive.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<input> {
+        it may only contain particles where {
+            it has the value</number>.
+        }
+    }
+    it happens when {
+        the position<input> has a particle.
+    } and it does {
+        destroy the particle in position<input>.
+    }
+}

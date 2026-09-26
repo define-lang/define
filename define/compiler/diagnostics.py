@@ -691,6 +691,16 @@ class ValueSettingMissingValueTypeDiagnostic(Diagnostic):
     )
 
 
+class UnsetValueDiagnostic(Diagnostic):
+    """A Value Setting Statement reads a particle whose value is unset."""
+
+    position_name: str
+    message_format: ClassVar[str] = (
+        "the particle in '{self.position_name}' must have a set value"
+        " before its value can be read."
+    )
+
+
 class ValueSettingTypeMismatchDiagnostic(Diagnostic):
     """A Value Setting Statement uses particles with different value types."""
 
@@ -834,7 +844,7 @@ class IncorrectIndentationDiagnostic(Diagnostic):
 
 
 class InferredRequirementViolationDiagnostic(Diagnostic):
-    """Diagnostic for when an automatically inferred occupancy requirement is violated.
+    """Diagnostic for when an automatically inferred requirement is violated.
 
     The same shape serves every case (Action Execution, destructor, Destruction
     Contract): a uniform top sentence naming the runner whose run the requirement
@@ -847,15 +857,18 @@ class InferredRequirementViolationDiagnostic(Diagnostic):
     # The action whose Action Statements Block we can't run because the requirement
     # isn't satisfied.
     action_name: str
+    required_value: bool = False
     message_format: ClassVar[str] = (
         "'{self.position_name}' must be {self.required_state} before"
-        " '{self.action_name}' runs, and it is not {self.required_state}.\n\n"
+        " '{self.action_name}' runs.\n\n"
         "{self.formatted_propagation_chain}"
     )
 
     @property
     def required_state(self) -> str:
         """The word describing the state the position must be in."""
+        if self.required_value:
+            return "occupied by a particle with a set value"
         return "empty" if self.required_empty else "occupied"
 
     # TODO: This really needs to be able to show all the relevant
@@ -935,6 +948,15 @@ class DestructorProducesOccupiedGuaranteeDiagnostic(DestructorGuaranteeDiagnosti
         "a destructor must leave every contracted position in the state it was in when it started.\n"
         "However, this line creates a new particle in '{self.position_name}' and then"
         " nothing removes it from that position."
+    )
+
+
+class DestructorChangesValueDiagnostic(DestructorGuaranteeDiagnostic):
+    """A destructor changes a contracted particle's value."""
+
+    message_format: ClassVar[str] = (
+        "a destructor must leave every contracted position in the state it was in when it started.\n"
+        "However, this line changes the value of the particle in '{self.position_name}'."
     )
 
 

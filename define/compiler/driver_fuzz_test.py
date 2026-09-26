@@ -1318,6 +1318,47 @@ def _build_destroy_particle_project(root_universe: str) -> ProjectCase:
     )
 
 
+def _build_value_copy_project(universe_name: str, copies: int) -> ProjectCase:
+    statements = [
+        _local_position_with_requirements(
+            "source", [("value", "/number")], indent="        "
+        ),
+        _local_position_with_requirements(
+            "target", [("value", "/number")], indent="        "
+        ),
+        _create_particle_statement("position<source>", indent="        "),
+        _create_particle_statement("position<target>", indent="        "),
+        '        set the value of position<source> to literal</decimal>"5".\n',
+    ]
+    for _ in range(copies):
+        statements.append(
+            "        set the value of position<target> to position<source>.\n"
+        )
+        statements.append(
+            "        set the value of position<source> to position<target>.\n"
+        )
+    files = {
+        "test.dfn": _action_with_block(
+            universe_name,
+            "test.dfn",
+            trigger_kind="constructor",
+            outer_locals=[],
+            inner_locals=statements,
+        ),
+        "number.dfn": f"define the potential value<{universe_name}:/number>.\n",
+        "decimal.dfn": (
+            f"define the potential literal<{universe_name}:/decimal> {{\n"
+            "    it has the encoding</decimal_encoding>.\n"
+            "}\n"
+        ),
+        "decimal_encoding.dfn": f"define the encoding<{universe_name}:/decimal_encoding>.\n",
+    }
+    return ProjectCase(
+        entrypoint="test.dfn",
+        roots=(ProjectRootCase("", universe_name, files, {}),),
+    )
+
+
 def _build_lifecycle_project(
     universe_name: str, *, repetitions: int, explicit_destruction: bool
 ) -> ProjectCase:
@@ -1473,6 +1514,7 @@ def valid_project_cases(draw: st.DrawFn) -> ProjectCase:
                 "action_quality_implication",
                 "destroy_local",
                 "lifecycle",
+                "value_copy",
                 "literal_same_file",
                 "literal_same_universe",
                 "literal_cross_fqun",
@@ -1509,6 +1551,10 @@ def valid_project_cases(draw: st.DrawFn) -> ProjectCase:
     elif project_kind == "action_quality_implication":
         project_case = _build_action_quality_implication_project(
             root_universe, child_universe
+        )
+    elif project_kind == "value_copy":
+        project_case = _build_value_copy_project(
+            root_universe, copies=draw(st.integers(min_value=1, max_value=8))
         )
     elif project_kind == "lifecycle":
         project_case = _build_lifecycle_project(
@@ -1984,6 +2030,7 @@ def test_valid_syntax_validates_cleanly(fuzz_project: Path, source: str):
         _PROJECT_FQUN, repetitions=8, explicit_destruction=False
     )
 )
+@example(project_case=_build_value_copy_project(_PROJECT_FQUN, copies=8))
 def test_valid_projects_validate_cleanly(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, project_case: ProjectCase
 ):

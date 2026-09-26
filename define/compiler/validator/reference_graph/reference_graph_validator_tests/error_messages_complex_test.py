@@ -275,7 +275,7 @@ def test_destruction_contract_traces_every_trigger_hop(
         File "outer_implied.dfn", line 18, column 52
                 move the particle in position<incoming> to action</triggered_by_outer_implied>::position<trigger_pos>.
                                                            ^
-        'action</triggered_by_outer_implied>::position<trigger_pos>::position</p1>' must be empty before 'action<my.domain.com:my_lib:/triggered_by_outer_implied>' runs, and it is not empty.
+        'action</triggered_by_outer_implied>::position<trigger_pos>::position</p1>' must be empty before 'action<my.domain.com:my_lib:/triggered_by_outer_implied>' runs.
 
         This error happens because:
           'action<my.domain.com:my_lib:/d1>' is assigned to 'position<incoming>':
@@ -307,7 +307,7 @@ def test_destruction_contract_traces_every_trigger_hop(
         File "outer.dfn", line 13, column 30
                 create a particle in action</outer_implied>::position<run>.
                                      ^
-        'action</outer_implied>::position<incoming>::position</p2>' must be occupied before 'action<my.domain.com:my_lib:/outer_implied>' runs, and it is not occupied.
+        'action</outer_implied>::position<incoming>::position</p2>' must be occupied before 'action<my.domain.com:my_lib:/outer_implied>' runs.
 
         This error happens because:
           'action<my.domain.com:my_lib:/d2>' is assigned to 'position<my.domain.com:my_lib:/carrier>':

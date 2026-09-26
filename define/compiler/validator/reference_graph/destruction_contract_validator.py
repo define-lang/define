@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import itertools
 import typing
 
 import msgspec
@@ -46,6 +47,7 @@ class _ResolvedRequirement(msgspec.Struct, frozen=True):
     requirement: action_contract.PositionRequirement
     position: ast.PositionReference
     occupancy: position_occupancy.ChildOccupancy
+    value_state: particle_info.ParticleValueState | None
 
 
 class _DestructionContractInCaller(msgspec.Struct, frozen=True):
@@ -114,11 +116,13 @@ class DestructionContractValidator:
         connections: list[destruction_contract_types.DestructionConnection],
     ) -> tuple[
         list[_DestructionContractInCaller],
-        position_occupancy.ChildOccupancyMap,
+        child_state.ChildOccupancyMap,
+        child_state.ChildValueMap,
     ]:
         """Resolve contracted positions and collect the caller's Child State."""
         caller_contracts: list[_DestructionContractInCaller] = []
-        caller_knowledge: position_occupancy.ChildOccupancyMap = {}
+        caller_knowledge: child_state.ChildOccupancyMap = {}
+        caller_values: child_state.ChildValueMap = {}
         for destruction_contract in callee_contracts.particles:
             connection = destruction_contract_types.DestructionConnection(
                 callee_destruction=destruction_contract.propagated_destruction,
@@ -134,6 +138,7 @@ class DestructionContractValidator:
                 continue
             particles = self._tracker.collect_caller_destruction_state(
                 caller_knowledge,
+                caller_values,
                 callee_contracts.child_state,
                 position,
                 destruction_contract.position_in_child_state,
@@ -144,7 +149,7 @@ class DestructionContractValidator:
                     destruction_contract, position, connection, particles
                 )
             )
-        return caller_contracts, caller_knowledge
+        return caller_contracts, caller_knowledge, caller_values
 
     def _check_destruction_contract_group(
         self,
@@ -154,11 +159,15 @@ class DestructionContractValidator:
         result: DestructionContractValidationResult,
     ):
         """Verify particles sharing Child State and record their contributions."""
-        caller_contracts, caller_knowledge = self._destruction_contracts_in_caller(
-            callee_contracts, action_chain, result.connections
+        caller_contracts, caller_knowledge, caller_values = (
+            self._destruction_contracts_in_caller(
+                callee_contracts, action_chain, result.connections
+            )
         )
         propagated_contracts = action_contract.DestructionContracts(
-            child_state=callee_contracts.child_state.with_caller(caller_knowledge),
+            child_state=callee_contracts.child_state.with_caller(
+                caller_knowledge, caller_values
+            ),
             propagation=action_contract.PropagationHistory(
                 trigger_step, callee_contracts.propagation
             ),
@@ -271,7 +280,9 @@ class DestructionContractValidator:
         particle = caller_particles.get(position_in_child_state)
         if particle is None:
             return
-        occupancy = propagated_contracts.child_state.get(position_in_child_state)
+        occupancy = propagated_contracts.child_state.occupancy.get(
+            position_in_child_state
+        )
         # A position the destruction-time picture records as empty was emptied
         # before the destruction, so nothing there was destroyed and thus there
         # is no more work to do.
@@ -439,7 +450,10 @@ class DestructionContractValidator:
         # state of every position it requires. Resolve the state of all required positions
         # first, before we attempt to check its requirements.
         resolved_requirements: list[_ResolvedRequirement] = []
-        for inner_req in destructor_contract.requirements:
+        for inner_req in itertools.chain(
+            destructor_contract.occupancy_requirements,
+            destructor_contract.value_requirements,
+        ):
             resolution = self._resolve_destructor_requirement(
                 inner_req=inner_req,
                 action_chain=action_chain,
@@ -455,17 +469,11 @@ class DestructionContractValidator:
             resolved_requirements.append(resolution)
         for resolved_requirement in resolved_requirements:
             occupancy = resolved_requirement.occupancy
-            required_state = resolved_requirement.requirement.required_state
-            empty_violation = (
-                required_state == position_occupancy.PositionOccupancyState.EMPTY
-                and occupancy.state
-                == position_occupancy.PositionOccupancyState.OCCUPIED
-            )
-            occupied_violation = (
-                required_state == position_occupancy.PositionOccupancyState.OCCUPIED
-                and occupancy.state == position_occupancy.PositionOccupancyState.EMPTY
-            )
-            if not (empty_violation or occupied_violation):
+            if not requirement_violation.is_violated(
+                resolved_requirement.requirement,
+                occupancy.state,
+                resolved_requirement.value_state,
+            ):
                 continue
             validation_diagnostics.append(
                 requirement_violation.contract_destructor(
@@ -506,30 +514,33 @@ class DestructionContractValidator:
         relative_key = required_position.canonical_chained_name_tuple[
             caller_prefix_length:
         ]
-        occupancy = merged_child_state.get(
-            (*destruction_contract.position_in_child_state, *relative_key)
-        )
+        state_key = destruction_contract.position_in_child_state + relative_key
+        occupancy = merged_child_state.occupancy.get(state_key)
+        value_state = None
+        if isinstance(inner_req, action_contract.ValueRequirement):
+            value_state = merged_child_state.values.get(state_key)
         if occupancy is None:
             # A passed-in particle's untouched position is decided higher up: this
             # action cannot resolve it, so the destructor travels up unchecked.
             if not created_in_this_action:
                 return None
-            # The owner created the particle, and we have optimized this case to
-            # not copy the whole subtree to update a new child_state and instead
-            # to just read the state out of the current tracker.
+            # Child State already includes every occupied child position. Check
+            # the tracker for errors on parent names before treating a missing
+            # Child State entry as empty.
             if self._tracker.has_error_state(required_position):
                 occupancy = position_occupancy.ERROR_OCCUPANCY
-            elif self._tracker.is_occupied(required_position):
-                occupancy = position_occupancy.ChildOccupancy(
-                    position_occupancy.PositionOccupancyState.OCCUPIED,
-                    filled_at=self._tracker.get_occupant(
-                        required_position
-                    ).last_position.location,
-                )
             else:
                 occupancy = position_occupancy.EMPTY_OCCUPANCY
+        if (
+            isinstance(inner_req, action_contract.ValueRequirement)
+            and occupancy.state == position_occupancy.PositionOccupancyState.OCCUPIED
+            and value_state is None
+        ):
+            # A higher caller may know the value state, so this requirement gets propagated.
+            return None
         return _ResolvedRequirement(
             requirement=inner_req,
             position=required_position,
             occupancy=occupancy,
+            value_state=value_state,
         )

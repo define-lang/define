@@ -419,7 +419,7 @@ class ActionPostorderValidator:
         action_chain = destructor.position.with_action_suffix(destructor_name)
         known_destructors.append(action_chain)
         parent_particle = self._tracker.get_occupant(destructor.position)
-        requirements_in_caller = contract.requirements_in_caller(action_chain)
+        requirements_in_caller = contract.occupancy_requirements_in_caller(action_chain)
         self._dead_constraint_validator.mark_callee_contract_constraints_alive(
             requirements_in_caller, scope
         )
@@ -433,6 +433,19 @@ class ActionPostorderValidator:
             self._requirement_validator.check_destructor_requirements(
                 destructor,
                 requirements_in_caller,
+                auto_destruction_target=auto_destruction_target,
+            )
+        )
+        value_requirements = contract.value_requirements_in_caller(action_chain)
+        self._requirement_validator.propagate_value_requirements(
+            action_chain, value_requirements, destructor.action_assignment()
+        )
+        self._diagnostics.extend(
+            self._requirement_validator.check_value_requirements(
+                value_requirements,
+                acting_on_position=destructor.position,
+                action_assignment=destructor.action_assignment(),
+                destructor=destructor,
                 auto_destruction_target=auto_destruction_target,
             )
         )
@@ -511,7 +524,7 @@ class ActionPostorderValidator:
         # (req.position.in_caller(action_chain)). Deriving it is a fresh
         # allocation, so compute it once here and hand the same objects to both
         # rather than rebuilding it twice per requirement per trigger.
-        requirements_in_caller = contract.requirements_in_caller(action_chain)
+        requirements_in_caller = contract.occupancy_requirements_in_caller(action_chain)
         self._dead_constraint_validator.mark_callee_contract_constraints_alive(
             requirements_in_caller, scope
         )
@@ -525,6 +538,17 @@ class ActionPostorderValidator:
             self._requirement_validator.check_requirements(
                 acting_on_position,
                 requirements_in_caller,
+                action_assignment=action_assignment,
+            )
+        )
+        value_requirements = contract.value_requirements_in_caller(action_chain)
+        self._requirement_validator.propagate_value_requirements(
+            action_chain, value_requirements, action_assignment
+        )
+        self._diagnostics.extend(
+            self._requirement_validator.check_value_requirements(
+                value_requirements,
+                acting_on_position=acting_on_position,
                 action_assignment=action_assignment,
             )
         )
@@ -677,11 +701,20 @@ class ActionPostorderValidator:
                     position_occupancy.PositionOccupancyState.OCCUPIED, position, scope
                 )
                 self._dead_constraint_validator.mark_value_constraint_alive(position)
-        self._diagnostics.extend(
+        if isinstance(stmt.source, ast.PositionReference):
+            self._requirement_validator.infer_value_requirement(
+                stmt.source, inferred_at=stmt.source.location
+            )
+        value_diagnostics, value_state = (
             self._operation_validator.validate_value_setting(
                 stmt.target_position, stmt.source
             )
         )
+        self._diagnostics.extend(value_diagnostics)
+        if not value_diagnostics and all(
+            not self._tracker.has_error_state(position) for position in positions
+        ):
+            self._tracker.set_value(stmt.target_position, value_state)
 
     def _analyze_create(
         self,
@@ -934,7 +967,7 @@ class ActionPostorderValidator:
 
     def _generate_contract(self) -> action_contract.ActionContract:
         """Generate the action contract from inferred requirements and final tracker state."""
-        requirements = self._requirement_validator.requirements
+        requirements = self._requirement_validator.occupancy_requirements
         if self._definition.is_destructor:
             guarantees = self._tracker.generate_destructor_guarantees(
                 self._definition.interface_position_names,
@@ -951,7 +984,10 @@ class ActionPostorderValidator:
             )
             callees = self._tracker.nested_guarantees()
         return action_contract.ActionContract(
-            requirements=list(requirements.values()),
+            occupancy_requirements=list(requirements.values()),
+            value_requirements=list(
+                self._requirement_validator.value_requirements.values()
+            ),
             guarantees=guarantees,
             callees=callees,
             destruction_contracts=self._destruction_contracts,
@@ -993,6 +1029,20 @@ class ActionPostorderValidator:
                 case action_contract.OccupiedByNewGuarantee():
                     self._diagnostics.append(
                         diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic(
+                            location=guarantee.caused_by.location,
+                            position_name=position_name,
+                        )
+                    )
+                case action_contract.OccupiedByExistingGuarantee() if (
+                    guarantee.origin_position.canonical_chained_name_tuple == position
+                ):
+                    if guarantee.value_effect == particle_info.ParticleValueState.ERROR:
+                        continue
+                    # TODO: Track the value-changing statement separately from
+                    # particle placement so this diagnostic identifies the Value
+                    # Setting Statement, including changes made by callees.
+                    self._diagnostics.append(
+                        diagnostics.DestructorChangesValueDiagnostic(
                             location=guarantee.caused_by.location,
                             position_name=position_name,
                         )

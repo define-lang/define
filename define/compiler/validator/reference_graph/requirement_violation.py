@@ -1,6 +1,6 @@
-"""Builds inferred-requirement violation diagnostics with execution-ordered chains.
+"""Check inferred requirements and build violation diagnostics.
 
-Each function takes the raw context of a violation the validator has already
+Diagnostic functions take the raw context of a violation the validator has already
 detected and constructs the whole diagnostic: it renders names, derives the
 fill site and required state, assembles the causal stack, and produces the
 ``InferredRequirementViolationDiagnostic``.
@@ -33,6 +33,27 @@ class _AutoDestruction(msgspec.Struct, frozen=True):
     local_position_name: str
     containing_definition_name: str
     location: ast.SourceLocation
+
+
+def is_violated(
+    requirement: action_contract.PositionRequirement,
+    occupancy: position_occupancy.PositionOccupancyState,
+    value_state: particle_info.ParticleValueState | None,
+) -> bool:
+    """Check a requirement after the caller has resolved or inferred its state."""
+    if occupancy == position_occupancy.PositionOccupancyState.ERROR:
+        return False
+    if isinstance(requirement, action_contract.PositionOccupancyRequirement):
+        return occupancy != requirement.required_state
+    # It's not an occupancy requirement, so it must be a value requirement.
+    return (
+        occupancy == position_occupancy.PositionOccupancyState.OCCUPIED
+        and value_state
+        not in (
+            particle_info.ParticleValueState.SET,
+            particle_info.ParticleValueState.ERROR,
+        )
+    )
 
 
 def trigger_violation(
@@ -77,8 +98,11 @@ def trigger_violation(
     return _diagnostic(
         location=acting_on_position.location,
         position_name=position_name,
-        required_empty=req.required_state
-        == position_occupancy.PositionOccupancyState.EMPTY,
+        required_empty=(
+            isinstance(req, action_contract.PositionOccupancyRequirement)
+            and not req.requires_occupied
+        ),
+        required_value=isinstance(req, action_contract.ValueRequirement),
         action_name=req.enclosing_action.typed_name.source_typed_name,
         steps=steps,
     )
@@ -139,8 +163,11 @@ def direct_destructor(
     return _diagnostic(
         location=location,
         position_name=position_name,
-        required_empty=req.required_state
-        == position_occupancy.PositionOccupancyState.EMPTY,
+        required_empty=(
+            isinstance(req, action_contract.PositionOccupancyRequirement)
+            and not req.requires_occupied
+        ),
+        required_value=isinstance(req, action_contract.ValueRequirement),
         action_name=destructor_name,
         steps=steps,
     )
@@ -162,8 +189,8 @@ def contract_destructor(
 ) -> diagnostics.InferredRequirementViolationDiagnostic:
     """Build the diagnostic for an unmet requirement of a destructor surfaced via a Destruction Contract."""
     enclosing_fqun = definition.typed_name.name_content.fqun
-    destruction_requirement = action_contract.PositionRequirement(
-        required_state=propagated_requirement.required_state,
+    destruction_requirement = msgspec.structs.replace(
+        propagated_requirement,
         position=propagated_requirement.position.in_caller(
             destruction_contract.propagated_destruction.destruction_fact.destroyed_position_in_destroyer
         ),
@@ -173,8 +200,10 @@ def contract_destructor(
     )
     position_name = resolved_position.source_form_in_universe(enclosing_fqun)
     required_empty = (
-        destruction_requirement.required_state
-        == position_occupancy.PositionOccupancyState.EMPTY
+        isinstance(
+            destruction_requirement, action_contract.PositionOccupancyRequirement
+        )
+        and not destruction_requirement.requires_occupied
     )
     fill_at = occupancy.filled_at if required_empty else None
     if required_empty and fill_at is None:
@@ -228,6 +257,9 @@ def contract_destructor(
         location=trigger_step.location,
         position_name=position_name,
         required_empty=required_empty,
+        required_value=isinstance(
+            propagated_requirement, action_contract.ValueRequirement
+        ),
         action_name=runner_name,
         steps=steps,
     )
@@ -268,6 +300,7 @@ def _diagnostic(
     location: ast.SourceLocation,
     position_name: str,
     required_empty: bool,
+    required_value: bool,
     action_name: str,
     steps: list[action_contract.PropagationStep],
 ) -> diagnostics.InferredRequirementViolationDiagnostic:
@@ -276,5 +309,6 @@ def _diagnostic(
         position_name=position_name,
         propagation_chain=steps,
         required_empty=required_empty,
+        required_value=required_value,
         action_name=action_name,
     )

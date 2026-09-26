@@ -23,6 +23,9 @@ define/testdata/reference_graph/chained_name/create_particle__invalid_local_name
 ```
 
 - Use the dedicated `*_testdata*` fixture for the scenario type.
+- Assert on diagnostic types and structured fields, not message text. Only test
+  files dedicated to diagnostic messages or their formatting should assert on
+  message text.
 - Every test-module directory has its own `BUILD.bazel` and a filegroup named
   after that directory. Make its Python test target depend on the shorthand
   package label, such as `//define/testdata/reference_graph/create_particle`.

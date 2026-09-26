@@ -5,6 +5,7 @@ from __future__ import annotations
 import typing
 
 from define.compiler import ast, diagnostics
+from define.compiler.validator.reference_graph import particle_info
 
 if typing.TYPE_CHECKING:
     from define.compiler.validator.reference_graph import particle_tracker
@@ -110,20 +111,23 @@ class ParticleOperationValidator:
 
     def validate_value_setting(
         self, target: ast.PositionReference, source: ast.PositionReference | ast.Literal
-    ) -> list[diagnostics.Diagnostic]:
+    ) -> tuple[list[diagnostics.Diagnostic], particle_info.ParticleValueState]:
         """Validate occupancy and assigned value types for a Value Setting Statement."""
         validation_diagnostics: list[diagnostics.Diagnostic] = []
         target_type = self._validate_value_setting_position(
             target, validation_diagnostics
         )
         if isinstance(source, ast.Literal):
-            return validation_diagnostics
+            return validation_diagnostics, particle_info.ParticleValueState.SET
         source_type = self._validate_value_setting_position(
             source, validation_diagnostics
         )
-        if target_type is None or source_type is None:
-            return validation_diagnostics
-        if target_type.full_typed_name != source_type.full_typed_name:
+        if source_type is None:
+            return validation_diagnostics, particle_info.ParticleValueState.ERROR
+        if (
+            target_type is not None
+            and target_type.full_typed_name != source_type.full_typed_name
+        ):
             validation_diagnostics.append(
                 diagnostics.ValueSettingTypeMismatchDiagnostic(
                     location=source.location,
@@ -137,7 +141,23 @@ class ParticleOperationValidator:
                     ),
                 )
             )
-        return validation_diagnostics
+        particle = self._tracker.get_occupant(source)
+        value_state = particle.value_state
+        if value_state not in (
+            particle_info.ParticleValueState.SET,
+            particle_info.ParticleValueState.ERROR,
+        ):
+            validation_diagnostics.append(
+                diagnostics.UnsetValueDiagnostic(
+                    location=source.location,
+                    position_name=source.source_chained_name,
+                )
+            )
+            value_state = particle_info.ParticleValueState.ERROR
+            self._tracker.mark_value_error(source)
+            if target_type is not None:
+                self._tracker.mark_value_error(target)
+        return validation_diagnostics, value_state
 
     def _validate_value_setting_position(
         self,

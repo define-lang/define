@@ -1,0 +1,26 @@
+define the potential action<my.domain.com:my_lib:/close> {
+    define the position<input> {
+        it may only contain particles where {
+            it has the position</value>.
+        }
+    }
+    define the position<replacement> {
+        it may only contain particles where {
+            it has the value</number>.
+        }
+    }
+    it happens when {
+        the position<input> has a particle.
+    } and it does {
+        destroy the particle in position<input>::position</value>.
+        define the position<holder> {
+            it may only contain particles where {
+                it has the action</hold>.
+            }
+        }
+        create a particle in position<holder>.
+        move the particle in position<replacement> to position<holder>::action</hold>::position<input>.
+        move the particle in position<holder>::action</hold>::position<result> to position<input>::position</value>.
+        destroy the particle in position<input>.
+    }
+}

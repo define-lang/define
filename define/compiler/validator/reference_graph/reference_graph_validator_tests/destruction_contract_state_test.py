@@ -121,13 +121,13 @@ def test_automatic_destruction_snapshots_each_target_before_destructors(
     )
     assert first_contracts.child_state is not second_contracts.child_state
     child_position = ("position<my.domain.com:my_lib:/child>",)
-    occupied = first_contracts.child_state.get(child_position)
+    occupied = first_contracts.child_state.occupancy.get(child_position)
     assert occupied is not None
     assert occupied.state == position_occupancy.PositionOccupancyState.OCCUPIED
     assert occupied.filled_at is not None
     assert occupied.filled_at.file_path == PurePosixPath("middle.dfn")
     assert (
-        second_contracts.child_state.get(child_position)
+        second_contracts.child_state.occupancy.get(child_position)
         == position_occupancy.EMPTY_OCCUPANCY
     )
 
@@ -153,8 +153,8 @@ def test_automatic_destruction_with_unrelated_pending_guarantees(
     )
     assert first.child_state is not second.child_state
     marker = ("position<my.domain.com:my_lib:/marker>",)
-    assert first.child_state.get(marker) is None
-    assert second.child_state.get(marker) is None
+    assert first.child_state.occupancy.get(marker) is None
+    assert second.child_state.occupancy.get(marker) is None
     assert action_graph(result.reference_graph_result) == [
         (
             "action<my.domain.com:my_lib:/outer>",
@@ -255,7 +255,7 @@ def test_large_child_states_share_extend_and_compact_from_source(
     project["test.dfn"] = "\n".join(lines) + "\n"
     result = validate_project(project, max_workers=1)
     assert_no_errors(result.program_result)
-    snapshots: list[child_state.ChildState] = []
+    snapshots: list[child_state.ChildStateStore[position_occupancy.ChildOccupancy]] = []
     for stage, count in enumerate(counts):
         (contracts,) = published_contracts[
             f"action<my.domain.com:my_lib:/stage{stage}>"
@@ -264,7 +264,7 @@ def test_large_child_states_share_extend_and_compact_from_source(
         # particle known to this Action. They describe the same destruction, so
         # they should share one snapshot rather than each storing a copy.
         assert len(contracts.particles) == count + 1
-        snapshot = contracts.child_state
+        snapshot = contracts.child_state.occupancy
         snapshots.append(snapshot)
         # For example, stage2 knows about 18 occupied children, but stage0 must
         # still know about only 16 after compilation finishes. This catches both
@@ -280,16 +280,16 @@ def test_large_child_states_share_extend_and_compact_from_source(
             )
     # Sixteen children reach the threshold for sharing. Stage1 adds nothing,
     # so it should keep exactly the snapshot stage0 already built.
-    assert isinstance(snapshots[0], child_state.FlatChildState)
+    assert isinstance(snapshots[0], child_state.FlatChildStateStore)
     assert snapshots[0] is snapshots[1]
     # Stages 2 and 3 each add two children: too few to justify copying the
     # original sixteen entries. Stage4 adds nothing and should reuse stage3's state.
-    assert isinstance(snapshots[2], child_state.ExtendedChildState)
-    assert isinstance(snapshots[3], child_state.ExtendedChildState)
+    assert isinstance(snapshots[2], child_state.ExtendedChildStateStore)
+    assert isinstance(snapshots[3], child_state.ExtendedChildStateStore)
     assert snapshots[3] is snapshots[4]
     # By stage5, the callers have added sixteen children in total. With as much
     # new knowledge as original knowledge, we expect a single combined dictionary.
-    assert isinstance(snapshots[5], child_state.FlatChildState)
+    assert isinstance(snapshots[5], child_state.FlatChildStateStore)
 
 
 def test_caller_passed_child_of_local_parent_keeps_its_contract(

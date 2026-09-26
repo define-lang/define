@@ -690,6 +690,7 @@ py_test(
         "//define/compiler:conftest",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/validator/reference_graph:test_helpers",
+        "@pypi//pytest",
     ],
 )
 
@@ -878,6 +879,20 @@ py_test(
 )
 
 py_test(
+    name = "unset_value_test",
+    size = "small",
+    srcs = ["unset_value_test.py"],
+    data = ["//define/testdata/reference_graph/unset_value"],
+    deps = [
+        ":test_helpers",
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+        "//define/compiler/validator/reference_graph:action_contract",
+    ],
+)
+
+py_test(
     name = "value_constraint_test",
     size = "small",
     srcs = ["value_constraint_test.py"],
@@ -995,6 +1010,7 @@ pyright_test(
         ":reference_graph_validator_tests",
         ":test_helpers",
         ":trigger_conditions_test",
+        ":unset_value_test",
         ":value_constraint_test",
         ":value_setting_literal_test",
         ":value_setting_test",
