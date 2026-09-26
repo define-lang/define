@@ -1,0 +1,25 @@
+id: no-conditional-imports
+language: python
+severity: error
+message:
+  Put imports at the top level of the module, not inside a `try` or `if` block.
+note: An `if TYPE_CHECKING:` block is allowed.
+files:
+  - "**/*.py"
+ignores:
+  - vendored/**
+rule:
+  any:
+    - kind: import_statement
+    - kind: import_from_statement
+  inside:
+    stopBy: end
+    any:
+      - kind: try_statement
+      - kind: if_statement
+        not:
+          has:
+            field: condition
+            any:
+              - pattern: TYPE_CHECKING
+              - pattern: typing.TYPE_CHECKING

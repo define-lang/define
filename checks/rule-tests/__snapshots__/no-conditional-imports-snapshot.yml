@@ -1,0 +1,48 @@
+id: no-conditional-imports
+snapshots:
+  ? |
+    if sys.platform == "linux":
+        import fcntl
+  : labels:
+    - source: import fcntl
+      style: primary
+      start: 32
+      end: 44
+    - source: |-
+        if sys.platform == "linux":
+            import fcntl
+      style: secondary
+      start: 0
+      end: 44
+  ? |
+    if sys.version_info >= (3, 14):
+        from annotationlib import get_annotations
+  : labels:
+    - source: from annotationlib import get_annotations
+      style: primary
+      start: 36
+      end: 77
+    - source: |-
+        if sys.version_info >= (3, 14):
+            from annotationlib import get_annotations
+      style: secondary
+      start: 0
+      end: 77
+  ? |
+    try:
+        import tomllib
+    except ImportError:
+        tomllib = None
+  : labels:
+    - source: import tomllib
+      style: primary
+      start: 9
+      end: 23
+    - source: |-
+        try:
+            import tomllib
+        except ImportError:
+            tomllib = None
+      style: secondary
+      start: 0
+      end: 62

@@ -1,0 +1,11 @@
+id: parser-tests-no-parametrize
+snapshots:
+  ? |
+    @pytest.mark.parametrize("source", ["define position</x>.\n"])
+    def test_global_position(parse: Parse, source: str):
+        parse(source)
+  : labels:
+    - source: pytest.mark.parametrize
+      style: primary
+      start: 1
+      end: 24

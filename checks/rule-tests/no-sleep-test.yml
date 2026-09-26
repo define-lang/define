@@ -1,0 +1,13 @@
+id: no-sleep
+valid:
+  - |
+    ready.wait()
+  - |
+    sleep_duration = 5
+invalid:
+  - |
+    time.sleep(0.1)
+  - |
+    sleep(1)
+  - |
+    await asyncio.sleep(0)

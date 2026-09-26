@@ -1,0 +1,17 @@
+id: parser-tests-no-disk-access
+language: python
+severity: error
+message: Keep parser test source inline instead of reading files or testdata.
+files:
+  - define/compiler/parser_tests/*_test.py
+rule:
+  any:
+    - pattern: open($$$)
+    - pattern: $PATH.open($$$)
+    - pattern: $PATH.read_text($$$)
+    - pattern: $PATH.read_bytes($$$)
+    - kind: identifier
+      regex: ^(validate_testdata_structural|validate_testdata_structural_non_filesystem|validate_testdata_project_with_reference_graph|validate_testdata_non_filesystem_with_reference_graph|testdata_project_directory)$
+      inside:
+        kind: parameters
+        stopBy: end

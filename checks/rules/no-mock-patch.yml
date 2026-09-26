@@ -1,0 +1,13 @@
+id: no-mock-patch
+language: python
+severity: error
+message: Use `patch.object(..., autospec=True)` instead of `patch`.
+files:
+  - "**/*.py"
+ignores:
+  - vendored/**
+rule:
+  any:
+    - pattern: patch($$$)
+    - pattern: mock.patch($$$)
+    - pattern: unittest.mock.patch($$$)

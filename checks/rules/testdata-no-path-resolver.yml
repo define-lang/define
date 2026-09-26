@@ -14,5 +14,4 @@ rule:
     - kind: import_from_statement
   has:
     stopBy: end
-    kind: identifier
-    regex: ^path_resolver$
+    pattern: path_resolver

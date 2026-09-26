@@ -1,0 +1,18 @@
+id: parser-tests-specific-syntax-error
+snapshots:
+  ? |
+    with pytest.raises(DefineSyntaxError, match="terminator"):
+        parse("define position</x>\n")
+  : labels:
+    - source: pytest.raises(DefineSyntaxError, match="terminator")
+      style: primary
+      start: 5
+      end: 57
+  ? |
+    with pytest.raises(parser_exceptions.DefineSyntaxError):
+        parse("define position</x>\n")
+  : labels:
+    - source: pytest.raises(parser_exceptions.DefineSyntaxError)
+      style: primary
+      start: 5
+      end: 55

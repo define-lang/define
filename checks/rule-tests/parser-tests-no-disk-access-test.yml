@@ -1,0 +1,20 @@
+id: parser-tests-no-disk-access
+valid:
+  - |
+    def test_global_position(parse: Parse):
+        parse("define position</x>.\n")
+  - |
+    location = pathlib.PurePosixPath("test.dfn")
+invalid:
+  - |
+    source = open("test.dfn").read()
+  - |
+    source = pathlib.Path("test.dfn").read_text()
+  - |
+    source = pathlib.Path("test.dfn").read_bytes()
+  - |
+    with pathlib.Path("test.dfn").open() as source_file:
+        pass
+  - |
+    def test_global_position(validate_testdata_structural_non_filesystem):
+        pass

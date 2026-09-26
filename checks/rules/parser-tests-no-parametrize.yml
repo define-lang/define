@@ -1,0 +1,9 @@
+id: parser-tests-no-parametrize
+language: python
+severity: error
+message:
+  Write each parser test as its own test function instead of parametrizing it.
+files:
+  - define/compiler/parser_tests/*_test.py
+rule:
+  pattern: pytest.mark.parametrize

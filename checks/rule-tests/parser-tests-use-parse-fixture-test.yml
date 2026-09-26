@@ -1,0 +1,10 @@
+id: parser-tests-use-parse-fixture
+valid:
+  - |
+    def test_global_position(parse: Parse):
+        parse("define position</x>.\n")
+invalid:
+  - |
+    tree = parser.Parser().parse("define position</x>.\n")
+  - |
+    tree = Parser().parse("define position</x>.\n")

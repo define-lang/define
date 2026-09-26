@@ -20,22 +20,14 @@ rule:
   all:
     - has:
         stopBy: end
-        kind: attribute
-        has:
-          field: attribute
-          regex: ^(diagnostics|all_diagnostics)$
+        any:
+          - pattern: $_.diagnostics
+          - pattern: $_.all_diagnostics
     - not:
         has:
           stopBy: end
-          kind: attribute
-          has:
-            field: attribute
-            regex: ^all_exceptions$
+          pattern: $_.all_exceptions
     - not:
         has:
           stopBy: end
-          kind: call
-          has:
-            field: function
-            kind: identifier
-            regex: ^assert_no_errors$
+          pattern: assert_no_errors($$$)

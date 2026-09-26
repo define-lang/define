@@ -16,6 +16,6 @@ before accepting it, then run `//tools/profiler:profiler_test` and
 `//tools/profiler:compiler_profile_test`.
 
 Fixture targets must coordinate phases through file descriptors or FIFOs. Do not
-add sleeps, elapsed-time deadlines, or fixed CPU-time workloads. The regenerator
-samples a bounded number of persisted observations per phase and validates that
-each captured profile contains the evidence its test requires.
+add elapsed-time deadlines or fixed CPU-time workloads. The regenerator samples
+a bounded number of persisted observations per phase and validates that each
+captured profile contains the evidence its test requires.

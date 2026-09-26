@@ -1,0 +1,22 @@
+id: no-conditional-imports
+valid:
+  - |
+    import os
+  - |
+    if TYPE_CHECKING:
+        from pathlib import Path
+  - |
+    if typing.TYPE_CHECKING:
+        from pathlib import Path
+invalid:
+  - |
+    try:
+        import tomllib
+    except ImportError:
+        tomllib = None
+  - |
+    if sys.platform == "linux":
+        import fcntl
+  - |
+    if sys.version_info >= (3, 14):
+        from annotationlib import get_annotations

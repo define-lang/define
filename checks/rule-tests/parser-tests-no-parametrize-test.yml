@@ -1,0 +1,10 @@
+id: parser-tests-no-parametrize
+valid:
+  - |
+    def test_global_position(parse: Parse):
+        parse("define position</x>.\n")
+invalid:
+  - |
+    @pytest.mark.parametrize("source", ["define position</x>.\n"])
+    def test_global_position(parse: Parse, source: str):
+        parse(source)

@@ -1,0 +1,16 @@
+id: parser-tests-use-parse-fixture
+snapshots:
+  ? |
+    tree = Parser().parse("define position</x>.\n")
+  : labels:
+    - source: Parser()
+      style: primary
+      start: 7
+      end: 15
+  ? |
+    tree = parser.Parser().parse("define position</x>.\n")
+  : labels:
+    - source: parser.Parser()
+      style: primary
+      start: 7
+      end: 22

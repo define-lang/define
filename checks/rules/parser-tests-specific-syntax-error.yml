@@ -1,0 +1,17 @@
+id: parser-tests-specific-syntax-error
+language: python
+severity: error
+message:
+  Expect a specific subclass of `DefineSyntaxError`, not `DefineSyntaxError`
+  itself.
+files:
+  - define/compiler/parser_tests/*_test.py
+rule:
+  any:
+    - pattern: pytest.raises($ERROR)
+    - pattern: pytest.raises($ERROR, $$$)
+constraints:
+  ERROR:
+    any:
+      - pattern: parser_exceptions.DefineSyntaxError
+      - pattern: DefineSyntaxError

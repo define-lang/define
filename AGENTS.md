@@ -51,7 +51,6 @@ See [define/spec/spec.md] for the language specification.
 - Only use `typing.TYPE_CHECKING` to fix ruff TC001, TC002, or TC003.
 - Never do dynamic imports. (Never write an import statement inside of a
   function.)
-- Never do conditional imports.
 
 ## Exceptions
 
@@ -150,8 +149,6 @@ See [define/spec/spec.md] for the language specification.
 - If the spec and the tests are in conflict, the spec is right and the tests are
   wrong.
 - Avoid adding debug messages to assert calls.
-- When using `unittest.mock`, always use `patch.object` with `autospec=True`
-  instead of `patch`.
 - **Never filter results or diagnostics in test assertions.** Always assert on
   the complete set of diagnostics returned. Do not use list comprehensions to
   filter by type or by file and then assert on the filtered list — assert

@@ -13,10 +13,6 @@ snapshots:
       style: primary
       start: 20
       end: 159
-    - source: diagnostics
-      style: secondary
-      start: 142
-      end: 153
     - source: result.diagnostics
       style: secondary
       start: 135
@@ -39,10 +35,6 @@ snapshots:
       style: primary
       start: 0
       end: 120
-    - source: all_diagnostics
-      style: secondary
-      start: 99
-      end: 114
     - source: validate_testdata_structural().all_diagnostics
       style: secondary
       start: 68
@@ -65,10 +57,6 @@ snapshots:
       style: primary
       start: 0
       end: 221
-    - source: diagnostics
-      style: secondary
-      start: 204
-      end: 215
     - source: validate_testdata_non_filesystem_with_reference_graph().diagnostics
       style: secondary
       start: 148

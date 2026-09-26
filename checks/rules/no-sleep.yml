@@ -1,0 +1,14 @@
+id: no-sleep
+language: python
+severity: error
+message:
+  Do not call `sleep`. Wait on an explicit signal, such as an event, a file
+  descriptor, or a process exit.
+files:
+  - "**/*.py"
+ignores:
+  - vendored/**
+rule:
+  any:
+    - pattern: sleep($$$)
+    - pattern: $MODULE.sleep($$$)

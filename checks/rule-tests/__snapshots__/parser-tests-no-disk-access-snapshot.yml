@@ -1,0 +1,43 @@
+id: parser-tests-no-disk-access
+snapshots:
+  ? |
+    def test_global_position(validate_testdata_structural_non_filesystem):
+        pass
+  : labels:
+    - source: validate_testdata_structural_non_filesystem
+      style: primary
+      start: 25
+      end: 68
+    - source: (validate_testdata_structural_non_filesystem)
+      style: secondary
+      start: 24
+      end: 69
+  ? |
+    source = open("test.dfn").read()
+  : labels:
+    - source: open("test.dfn")
+      style: primary
+      start: 9
+      end: 25
+  ? |
+    source = pathlib.Path("test.dfn").read_bytes()
+  : labels:
+    - source: pathlib.Path("test.dfn").read_bytes()
+      style: primary
+      start: 9
+      end: 46
+  ? |
+    source = pathlib.Path("test.dfn").read_text()
+  : labels:
+    - source: pathlib.Path("test.dfn").read_text()
+      style: primary
+      start: 9
+      end: 45
+  ? |
+    with pathlib.Path("test.dfn").open() as source_file:
+        pass
+  : labels:
+    - source: pathlib.Path("test.dfn").open()
+      style: primary
+      start: 5
+      end: 36

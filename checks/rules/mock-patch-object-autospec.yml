@@ -1,0 +1,32 @@
+id: mock-patch-object-autospec
+language: python
+severity: error
+message: Pass `autospec=True` to `patch.object`.
+note:
+  A call that passes `new=` supplies its own replacement, which mock does not
+  allow together with `autospec`.
+files:
+  - "**/*.py"
+ignores:
+  - vendored/**
+rule:
+  any:
+    - pattern: patch.object($$$)
+    - pattern: mock.patch.object($$$)
+    - pattern: unittest.mock.patch.object($$$)
+  not:
+    has:
+      field: arguments
+      has:
+        kind: keyword_argument
+        any:
+          - all:
+              - has:
+                  field: name
+                  pattern: autospec
+              - has:
+                  field: value
+                  kind: "true"
+          - has:
+              field: name
+              pattern: new

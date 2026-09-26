@@ -1,0 +1,25 @@
+id: mock-patch-object-autospec
+snapshots:
+  ? |
+    @unittest.mock.patch.object(parser, "Parser", return_value=None)
+    def test_parse(parser_class):
+        pass
+  : labels:
+    - source: unittest.mock.patch.object(parser, "Parser", return_value=None)
+      style: primary
+      start: 1
+      end: 64
+  ? |
+    mock.patch.object(parser, "Parser")
+  : labels:
+    - source: mock.patch.object(parser, "Parser")
+      style: primary
+      start: 0
+      end: 35
+  ? |
+    patch.object(parser, "Parser", autospec=False)
+  : labels:
+    - source: patch.object(parser, "Parser", autospec=False)
+      style: primary
+      start: 0
+      end: 46

@@ -1,0 +1,12 @@
+id: parser-tests-specific-syntax-error
+valid:
+  - |
+    with pytest.raises(parser_exceptions.MissingTerminator):
+        parse("define position</x>\n")
+invalid:
+  - |
+    with pytest.raises(parser_exceptions.DefineSyntaxError):
+        parse("define position</x>\n")
+  - |
+    with pytest.raises(DefineSyntaxError, match="terminator"):
+        parse("define position</x>\n")

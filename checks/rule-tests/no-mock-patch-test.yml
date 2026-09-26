@@ -1,0 +1,15 @@
+id: no-mock-patch
+valid:
+  - |
+    mock.patch.object(parser, "Parser", autospec=True)
+  - |
+    patch.object(parser, "Parser", autospec=True)
+invalid:
+  - |
+    mock.patch("define.compiler.parser.Parser")
+  - |
+    patch("define.compiler.parser.Parser")
+  - |
+    @unittest.mock.patch("define.compiler.parser.Parser")
+    def test_parse(parser_class):
+        pass

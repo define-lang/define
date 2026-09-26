@@ -1,0 +1,17 @@
+id: mock-patch-object-autospec
+valid:
+  - |
+    mock.patch.object(parser, "Parser", autospec=True)
+  - |
+    patch.object(parser, "Parser", return_value=None, autospec=True)
+  - |
+    mock.patch.object(remote_frame_names, "ctypes", new=types.SimpleNamespace())
+invalid:
+  - |
+    mock.patch.object(parser, "Parser")
+  - |
+    patch.object(parser, "Parser", autospec=False)
+  - |
+    @unittest.mock.patch.object(parser, "Parser", return_value=None)
+    def test_parse(parser_class):
+        pass
