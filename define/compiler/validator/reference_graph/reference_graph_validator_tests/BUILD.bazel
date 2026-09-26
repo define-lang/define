@@ -912,9 +912,12 @@ py_test(
     deps = [
         ":test_helpers",
         "//define/compiler:conftest",
+        "//define/compiler:constants",
         "//define/compiler:diagnostics",
+        "//define/compiler:literal_parsers",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/reference_graph:action_contract",
+        "@pypi//pytest",
     ],
 )
 

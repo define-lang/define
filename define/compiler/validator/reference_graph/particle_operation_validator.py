@@ -111,19 +111,34 @@ class ParticleOperationValidator:
 
     def validate_value_setting(
         self, target: ast.PositionReference, source: ast.PositionReference | ast.Literal
-    ) -> tuple[list[diagnostics.Diagnostic], particle_info.ParticleValueState]:
-        """Validate occupancy and assigned value types for a Value Setting Statement."""
+    ) -> tuple[
+        list[diagnostics.Diagnostic],
+        particle_info.ParticleValueState,
+        ast.GlobalTypedNameReference | None,
+    ]:
+        """Validate occupancy and assigned value types for a Value Setting Statement.
+
+        Also returns the target's value type, when it is known.
+        """
         validation_diagnostics: list[diagnostics.Diagnostic] = []
         target_type = self._validate_value_setting_position(
             target, validation_diagnostics
         )
         if isinstance(source, ast.Literal):
-            return validation_diagnostics, particle_info.ParticleValueState.SET
+            return (
+                validation_diagnostics,
+                particle_info.ParticleValueState.SET,
+                target_type,
+            )
         source_type = self._validate_value_setting_position(
             source, validation_diagnostics
         )
         if source_type is None:
-            return validation_diagnostics, particle_info.ParticleValueState.ERROR
+            return (
+                validation_diagnostics,
+                particle_info.ParticleValueState.ERROR,
+                target_type,
+            )
         if (
             target_type is not None
             and target_type.full_typed_name != source_type.full_typed_name
@@ -157,7 +172,7 @@ class ParticleOperationValidator:
             self._tracker.mark_value_error(source)
             if target_type is not None:
                 self._tracker.mark_value_error(target)
-        return validation_diagnostics, value_state
+        return validation_diagnostics, value_state, target_type
 
     def _validate_value_setting_position(
         self,

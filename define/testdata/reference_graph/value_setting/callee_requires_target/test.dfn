@@ -10,7 +10,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         }
         create a particle in position<worker>.
         create a particle in position<worker>::action</assign>::position<source>.
-        set the value of position<worker>::action</assign>::position<source> to literal</decimal>"5".
+        set the value of position<worker>::action</assign>::position<source> to literal<standard:/number>"5".
         create a particle in position<worker>::action</assign>::position<trigger>.
         destroy the particle in position<worker>::action</assign>::position<source>.
     }

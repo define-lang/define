@@ -958,3 +958,37 @@ class TestWithSuffix:
         base = _position_reference_for("position<box>")
         with pytest.raises(ValueError, match="must be an action"):
             _ = base.with_action_suffix(*base.typed_names)
+
+
+class TestLiteralContentCharacterLocation:
+    @pytest.mark.parametrize(
+        ("index", "source_character"),
+        [(0, "a"), (1, "\\"), (2, "b"), (3, "\\"), (4, "c"), (5, "\\"), (6, "d")],
+    )
+    def test_points_at_source_character(self, index: int, source_character: str):
+        literal_line = (
+            '        set the value of position<dest> to literal</text>"a\\"b\\\\c\\nd".'
+        )
+        source = (
+            f"define the potential action<{_FQUN}:/test> {{\n"
+            "    it happens when {\n"
+            "        this particle is created.\n"
+            "    } and it does {\n"
+            "        define the position<dest>.\n"
+            f"{literal_line}\n"
+            "    }\n"
+            "}\n"
+        )
+        program = test_helpers.parse_and_transform(source)
+        action_definition = program.definitions[0]
+        assert isinstance(action_definition, ast.ActionDefinition)
+        statement = action_definition.action_statements.statements[1]
+        assert isinstance(statement, ast.ValueSettingStatement)
+        literal = statement.source
+        assert isinstance(literal, ast.Literal)
+        assert literal.content == 'a"b\\c\nd'
+        location = literal.content_character_location(index)
+        assert location.line == 6
+        assert location.end_line == 6
+        assert location.end_column == location.column + 1
+        assert literal_line[location.column - 1] == source_character

@@ -17,9 +17,10 @@ DEFAULT_MULTIVERSE: Final = "local"
 DEFAULT_OUTPUT_DIR: Final = pathlib.Path("define-out")
 # The compiler provides these standard universe names itself until the Define
 # Standard Library exists.
+DECIMAL_ASCII_ENCODING: Final = "encoding<standard:/number/decimal/ascii>"
+BUILT_IN_LITERAL_ENCODINGS: Final = {
+    "literal<standard:/number>": DECIMAL_ASCII_ENCODING
+}
 BUILT_IN_GLOBAL_NAMES: Final = frozenset(
-    {
-        "encoding<standard:/decimal/ascii>",
-        "literal<standard:/number>",
-    }
+    {DECIMAL_ASCII_ENCODING, *BUILT_IN_LITERAL_ENCODINGS}
 )

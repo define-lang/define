@@ -5,6 +5,6 @@ define the potential action<my.domain.com:my_lib:/test> {
     } and it does {
         define the position<parent>.
         create a particle in position<parent>.
-        set the value of position<parent>::position</child> to literal</decimal>"5".
+        set the value of position<parent>::position</child> to literal<standard:/number>"5".
     }
 }

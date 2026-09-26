@@ -230,6 +230,24 @@ py_test(
     ],
 )
 
+py_library(
+    name = "literal_parsers",
+    srcs = ["literal_parsers.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [":constants"],
+)
+
+py_test(
+    name = "literal_parsers_test",
+    size = "small",
+    srcs = ["literal_parsers_test.py"],
+    deps = [
+        ":constants",
+        ":literal_parsers",
+        "@pypi//pytest",
+    ],
+)
+
 py_binary(
     name = "main",
     srcs = ["main.py"],
@@ -435,6 +453,8 @@ pyright_test(
         ":exceptions",
         ":indentation_validator",
         ":indentation_validator_test",
+        ":literal_parsers",
+        ":literal_parsers_test",
         ":main",
         ":main_integration_test",
         ":main_test",

@@ -716,6 +716,21 @@ class Literal(ASTNode):
     potential_literal: GlobalTypedNameReference
     content: str
 
+    def content_character_location(self, index: int) -> SourceLocation:
+        """Return the source location of the content character at ``index``."""
+        # ", \, and newlines can only appear in content through two-character
+        # escapes, so each one before ``index`` adds one source column.
+        escaped_count = sum(1 for char in self.content[:index] if char in '"\\\n')
+        # The Potential Literal reference ends at the opening quote.
+        column = self.potential_literal.location.end_column + 1 + index + escaped_count
+        return SourceLocation(
+            line=self.location.line,
+            column=column,
+            end_line=self.location.line,
+            end_column=column + 1,
+            file_path=self.location.file_path,
+        )
+
 
 class ValueSettingStatement(ParticleStatement):
     """Represents a 'set the value of ... to' statement."""

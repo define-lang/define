@@ -1,0 +1,8 @@
+# Literal content is not checked when the target position is undefined.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        set the value of position<missing> to literal<standard:/number>"5.".
+    }
+}

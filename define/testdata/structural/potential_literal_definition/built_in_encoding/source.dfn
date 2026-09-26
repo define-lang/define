@@ -1,4 +1,4 @@
 # The built-in standard encoding needs no definition file or project configuration.
 define the potential literal<my.domain.com:my_lib:/decimal> {
-    it has the encoding<standard:/decimal/ascii>.
+    it has the encoding<standard:/number/decimal/ascii>.
 }

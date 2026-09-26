@@ -13,7 +13,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         create a particle in position<original>.
         move the particle in position<original> to position<target>.
         create a particle in position<source>.
-        set the value of position<source> to literal</decimal>"5".
+        set the value of position<source> to literal<standard:/number>"5".
         set the value of position<target> to position<source>.
     }
 }

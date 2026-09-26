@@ -8,7 +8,7 @@ define the potential action<my.domain.com:my_lib:/assign> {
     it happens when {
         the position<trigger> has a particle.
     } and it does {
-        set the value of position<target> to literal</decimal>"5".
+        set the value of position<target> to literal<standard:/number>"5".
         destroy the particle in position<trigger>.
     }
 }

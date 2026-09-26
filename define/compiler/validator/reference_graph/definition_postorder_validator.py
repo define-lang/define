@@ -7,7 +7,7 @@ from functools import cached_property
 
 import msgspec
 
-from define.compiler import ast, diagnostics
+from define.compiler import ast, constants, diagnostics, literal_parsers
 from define.compiler.validator import codegen_input, scope_tracker
 from define.compiler.validator.reference_graph import (
     action_contract,
@@ -705,16 +705,93 @@ class ActionPostorderValidator:
             self._requirement_validator.infer_value_requirement(
                 stmt.source, inferred_at=stmt.source.location
             )
-        value_diagnostics, value_state = (
+        value_diagnostics, value_state, target_type = (
             self._operation_validator.validate_value_setting(
                 stmt.target_position, stmt.source
             )
         )
         self._diagnostics.extend(value_diagnostics)
+        # A literal can only be checked against the value type it sets.
+        if isinstance(stmt.source, ast.Literal) and target_type is not None:
+            self._diagnostics.extend(self._validate_literal(stmt.source, target_type))
         if not value_diagnostics and all(
             not self._tracker.has_error_state(position) for position in positions
         ):
             self._tracker.set_value(stmt.target_position, value_state)
+
+    def _validate_literal(
+        self, literal: ast.Literal, value_type: ast.GlobalTypedNameReference
+    ) -> list[diagnostics.Diagnostic]:
+        potential_literal = literal.potential_literal
+        literal_encoding = constants.BUILT_IN_LITERAL_ENCODINGS.get(
+            potential_literal.full_typed_name
+        )
+        if literal_encoding is None:
+            definition_result = self._definition_results.get(potential_literal)
+            # A missing Potential Literal was already reported when its
+            # reference was resolved.
+            if definition_result is None:
+                return []
+            definition = typing.cast(
+                "ast.PotentialLiteralDefinition", definition_result.definition
+            )
+            literal_encoding = definition.encoding.full_typed_name
+            literal_encoding_name = definition.encoding.source_form_in_universe(
+                self._enclosing_fqun
+            )
+        else:
+            literal_encoding_name = literal_encoding
+        # TODO: Use the value type's encoding once value types have encodings.
+        # Until then, every value type uses this encoding.
+        value_encoding = constants.DECIMAL_ASCII_ENCODING
+        parser = literal_parsers.LITERAL_PARSERS.get((literal_encoding, value_encoding))
+        if parser is None:
+            return [
+                self._literal_cannot_set_value(
+                    potential_literal, literal_encoding_name, value_type, value_encoding
+                )
+            ]
+        try:
+            _ = parser(literal.content)
+        except literal_parsers.LiteralParseError as e:
+            return [
+                diagnostics.InvalidLiteralContentDiagnostic(
+                    location=literal.content_character_location(e.content_index),
+                    content=literal.content,
+                    potential_literal=potential_literal.source_form_in_universe(
+                        self._enclosing_fqun
+                    ),
+                    value_encoding=value_encoding,
+                    reason=e.reason,
+                )
+            ]
+        return []
+
+    def _literal_cannot_set_value(
+        self,
+        potential_literal: ast.GlobalTypedNameReference,
+        literal_encoding_name: str,
+        value_type: ast.GlobalTypedNameReference,
+        value_encoding: str,
+    ) -> diagnostics.LiteralCannotSetValueDiagnostic:
+        supported_encodings: list[str] = []
+        for source_encoding, destination_encoding in literal_parsers.LITERAL_PARSERS:
+            if destination_encoding == value_encoding:
+                supported_encodings.append(source_encoding)
+        example_literals: list[str] = []
+        for built_in_literal, encoding in constants.BUILT_IN_LITERAL_ENCODINGS.items():
+            if encoding in supported_encodings:
+                example_literals.append(built_in_literal)
+        return diagnostics.LiteralCannotSetValueDiagnostic(
+            location=potential_literal.location,
+            potential_literal=potential_literal.source_form_in_universe(
+                self._enclosing_fqun
+            ),
+            literal_encoding=literal_encoding_name,
+            value_type=value_type.source_form_in_universe(self._enclosing_fqun),
+            supported_encodings=supported_encodings,
+            example_literals=example_literals,
+        )
 
     def _analyze_create(
         self,

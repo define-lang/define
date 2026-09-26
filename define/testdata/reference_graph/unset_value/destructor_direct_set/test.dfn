@@ -11,7 +11,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         }
         create a particle in position<box>.
         create a particle in position<box>::position</value>.
-        set the value of position<box>::position</value> to literal</decimal>"5".
+        set the value of position<box>::position</value> to literal<standard:/number>"5".
         destroy the particle in position<box>.
     }
 }

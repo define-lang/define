@@ -7,7 +7,7 @@ define the potential action<my.domain.com:my_lib:/close> {
     it happens when {
         the position<input> has a particle.
     } and it does {
-        set the value of position<input>::position</value> to literal</decimal>"5".
+        set the value of position<input>::position</value> to literal<standard:/number>"5".
         destroy the particle in position<input>.
     }
 }

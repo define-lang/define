@@ -715,6 +715,48 @@ class ValueSettingTypeMismatchDiagnostic(Diagnostic):
     )
 
 
+class LiteralCannotSetValueDiagnostic(Diagnostic):
+    """A literal's encoding cannot be read as the value type it is setting."""
+
+    potential_literal: str
+    literal_encoding: str
+    value_type: str
+    supported_encodings: Sequence[str]
+    example_literals: Sequence[str]
+
+    @property
+    def supported_encoding_list(self) -> str:
+        """Format the supported encodings as an indented list."""
+        return "\n    ".join(self.supported_encodings)
+
+    @property
+    def example_literal_list(self) -> str:
+        """Format the example literals as a comma-separated list."""
+        return ", ".join(self.example_literals)
+
+    message_format: ClassVar[str] = (
+        "{self.potential_literal} cannot set a {self.value_type}, because literals"
+        " with the {self.literal_encoding} cannot be read as {self.value_type}.\n"
+        "To set a {self.value_type}, use a literal with one of these encodings:\n"
+        "    {self.supported_encoding_list}\n"
+        "For example: {self.example_literal_list}"
+    )
+
+
+class InvalidLiteralContentDiagnostic(Diagnostic):
+    """A literal's content cannot be represented in the value's encoding."""
+
+    content: str
+    potential_literal: str
+    value_encoding: str
+    reason: str
+    message_format: ClassVar[str] = (
+        "'{self.content}' is not a valid value for '{self.potential_literal}' here,"
+        " because it cannot be represented as '{self.value_encoding}':"
+        " {self.reason}."
+    )
+
+
 class MoveViolatesConstraintsDiagnostic(Diagnostic):
     """Diagnostic for when a move's destination constraints are not satisfied."""
 
