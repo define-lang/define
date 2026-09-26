@@ -1,0 +1,15 @@
+id: testdata-no-path-resolver
+valid:
+  - |
+    from define.compiler import conftest
+  - |
+    from define.testdata import other_module
+  - |
+    path_resolver = None
+invalid:
+  - |
+    from define.testdata import path_resolver
+  - |
+    from define.testdata.path_resolver import directory_for
+  - |
+    import define.testdata.path_resolver

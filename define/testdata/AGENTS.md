@@ -22,16 +22,10 @@ name without `Test`, converted to snake case, and separate the two parts with
 define/testdata/reference_graph/chained_name/create_particle__invalid_local_name_char/
 ```
 
-- Use the dedicated `*_testdata*` fixture for the scenario type. Never read a
-  convention-organized path directly from a test.
-- A test that reads diagnostics must also assert on `all_exceptions`, so that a
-  file whose validation raised cannot silently satisfy a diagnostic assertion.
-  Use `assert_no_errors` when no diagnostics are expected either.
+- Use the dedicated `*_testdata*` fixture for the scenario type.
 - Every test-module directory has its own `BUILD.bazel` and a filegroup named
   after that directory. Make its Python test target depend on the shorthand
-  package label, such as `//define/testdata/reference_graph/create_particle`;
-  never define all module targets in `define/testdata/BUILD.bazel` or make an
-  individual Python test depend on the repository-wide `testdata_files` target.
+  package label, such as `//define/testdata/reference_graph/create_particle`.
 - When renaming an owning test module or function, use `git mv` to rename its
   testdata directory in the same change.
 - A non-filesystem scenario has a `source.dfn` at the scenario root. Supporting

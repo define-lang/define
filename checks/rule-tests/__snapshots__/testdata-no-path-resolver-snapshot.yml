@@ -1,0 +1,35 @@
+id: testdata-no-path-resolver
+snapshots:
+  ? |
+    from define.testdata import path_resolver
+  : labels:
+    - source: from define.testdata import path_resolver
+      style: primary
+      start: 0
+      end: 41
+    - source: path_resolver
+      style: secondary
+      start: 28
+      end: 41
+  ? |
+    from define.testdata.path_resolver import directory_for
+  : labels:
+    - source: from define.testdata.path_resolver import directory_for
+      style: primary
+      start: 0
+      end: 55
+    - source: path_resolver
+      style: secondary
+      start: 21
+      end: 34
+  ? |
+    import define.testdata.path_resolver
+  : labels:
+    - source: import define.testdata.path_resolver
+      style: primary
+      start: 0
+      end: 36
+    - source: path_resolver
+      style: secondary
+      start: 23
+      end: 36

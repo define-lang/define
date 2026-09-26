@@ -1,0 +1,15 @@
+id: testdata-no-direct-paths
+valid:
+  - |
+    _CODEGEN_TESTDATA_ROOT = Path("define/testdata/codegen")
+  - |
+    source = Path("define/testdata/codegen/action_triggering/test.dfn")
+invalid:
+  - |
+    source = Path("define/testdata/reference_graph/create_particle/short_form_global_reference")
+  - |
+    root = "define/testdata/structural"
+  - |
+    source = f"define/testdata/driver/{case}/source.dfn"
+  - |
+    source = Path("define/testdata/codegen/generator/constructor_entry_point/test.dfn")

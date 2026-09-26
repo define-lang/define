@@ -18,6 +18,11 @@ alias(
 )
 
 bzl_library(
+    name = "ast_grep",
+    srcs = ["ast_grep.bzl"],
+)
+
+bzl_library(
     name = "format",
     srcs = ["format.bzl"],
     visibility = ["//visibility:public"],
@@ -27,6 +32,7 @@ bzl_library(
     name = "linters",
     srcs = ["linters.bzl"],
     visibility = ["//visibility:public"],
+    deps = [":ast_grep"],
 )
 
 alias(

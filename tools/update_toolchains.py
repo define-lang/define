@@ -2,7 +2,7 @@
 
 Handles Go SDK version (MODULE.bazel + go.mod), buf toolchain version + SHA256
 (MODULE.bazel), Node.js toolchain version (MODULE.bazel), and multitool lockfile
-(ruff, uv).
+(ast-grep, ruff, uv).
 
 Usage:
     uv run tools/update_toolchains.py
@@ -189,7 +189,7 @@ def _update_buf_toolchain(tag: str, sha256: str) -> bool:
 
 
 def _update_multitool() -> None:
-    """Run multitool update via Bazel to refresh ruff and uv versions."""
+    """Run multitool update via Bazel to refresh ast-grep, ruff, and uv versions."""
     lockfile = _REPO_ROOT / "tools" / "multitool.lock.json"
     cmd = [
         "bazelisk",
@@ -228,7 +228,7 @@ def main() -> int:
     else:
         print(f"  Already at latest ({latest_node})")
 
-    print("\nUpdating multitool (ruff, uv)...")
+    print("\nUpdating multitool (ast-grep, ruff, uv)...")
     _update_multitool()
     print("  Done.")
 

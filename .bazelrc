@@ -54,3 +54,6 @@ build --@aspect_rules_py//py/private/interpreter:freethreaded=true
 # Ruff linting via aspect_rules_lint
 build --aspects=//tools/bzl:linters.bzl%ruff
 build --@aspect_rules_lint//lint:fail_on_violation
+
+# ast-grep linting
+build --aspects=//tools/bzl:linters.bzl%ast_grep

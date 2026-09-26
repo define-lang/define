@@ -1,0 +1,42 @@
+load("//tools/bzl:format.bzl", "format_test")
+load("//tools/bzl:py_test.bzl", "py_test")
+load("//tools/bzl:pyright.bzl", "pyright_test")
+
+# ast-grep does not load symlinked rule files, so consumers take each directory
+# as a whole, which Bazel provides as a symlink to a directory of real files.
+exports_files(
+    ["rules"],
+    visibility = ["//tools/bzl:__pkg__"],
+)
+
+py_test(
+    name = "rules_test",
+    size = "small",
+    srcs = ["rules_test.py"],
+    data = [
+        "rule-tests",
+        "rules",
+        "//:sgconfig.yml",
+        "@multitool//tools/ast-grep",
+    ],
+    env = {"AST_GREP": "$(rlocationpath @multitool//tools/ast-grep)"},
+    deps = [
+        "@pypi//pyyaml",
+        "@rules_python//python/runfiles",
+    ],
+)
+
+format_test(
+    name = "format_test",
+    srcs = glob(["*.py"]),
+    python = "@multitool//tools/ruff",
+)
+
+# IMPORTANT: When adding a new py_library, py_binary, or py_test target to this
+# package, you must also add it to the deps list below.
+pyright_test(
+    name = "pyright_test",
+    deps = [
+        ":rules_test",
+    ],
+)

@@ -1,0 +1,4 @@
+ruleDirs:
+  - checks/rules
+testConfigs:
+  - testDir: checks/rule-tests

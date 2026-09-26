@@ -1,0 +1,18 @@
+id: testdata-no-path-resolver
+language: python
+severity: error
+message:
+  Read convention-organized testdata through its testdata fixture instead of
+  path_resolver.
+files:
+  - "**/*_test.py"
+ignores:
+  - define/testdata/**
+rule:
+  any:
+    - kind: import_statement
+    - kind: import_from_statement
+  has:
+    stopBy: end
+    kind: identifier
+    regex: ^path_resolver$

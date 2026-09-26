@@ -1,0 +1,41 @@
+id: testdata-diagnostics-require-exceptions
+language: python
+severity: error
+message:
+  A data-backed test that reads diagnostics must also assert on all_exceptions
+  or call assert_no_errors.
+note:
+  Otherwise a file whose validation raised can silently satisfy a diagnostic
+  assertion.
+files:
+  - "**/*_test.py"
+rule:
+  kind: function_definition
+  has:
+    field: parameters
+    has:
+      stopBy: end
+      kind: identifier
+      regex: ^(validate_testdata_structural|validate_testdata_structural_non_filesystem|validate_testdata_project_with_reference_graph|validate_testdata_non_filesystem_with_reference_graph|testdata_project_directory)$
+  all:
+    - has:
+        stopBy: end
+        kind: attribute
+        has:
+          field: attribute
+          regex: ^(diagnostics|all_diagnostics)$
+    - not:
+        has:
+          stopBy: end
+          kind: attribute
+          has:
+            field: attribute
+            regex: ^all_exceptions$
+    - not:
+        has:
+          stopBy: end
+          kind: call
+          has:
+            field: function
+            kind: identifier
+            regex: ^assert_no_errors$

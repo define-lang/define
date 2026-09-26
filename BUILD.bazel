@@ -17,6 +17,14 @@ exports_files(
     visibility = ["//tools:__pkg__"],
 )
 
+exports_files(
+    ["sgconfig.yml"],
+    visibility = [
+        "//checks:__pkg__",
+        "//tools/bzl:__pkg__",
+    ],
+)
+
 # basedpyright has to go here instead of in tools/, because otherwise
 # it tries to type check its own code, which is slow.
 npm_link_all_packages(name = "node_modules")

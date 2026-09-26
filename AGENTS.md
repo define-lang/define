@@ -30,6 +30,12 @@ See [define/spec/spec.md] for the language specification.
 - Run `npx @bufbuild/buf lint` after making changes to .proto files in
   `defcl/schema` or `define/config`.
 - Fix all linting errors that are reported.
+- Deterministic repository conventions are enforced by ast-grep rules in
+  `checks/rules`. Every rule must have `valid` and `invalid` cases in
+  `checks/rule-tests/<rule id>-test.yml`, checked by `//checks:rules_test`.
+  After adding or changing a rule or its cases, run `ast-grep test --update-all`
+  and review the changed snapshots in `checks/rule-tests/__snapshots__` to
+  confirm each invalid case matches the intended code.
 - **Never disable pyright rules globally** in `pyproject.toml`. All basedpyright
   rules must remain enabled. When a pyright check fails:
   - Fix the type error in source code (add type annotations, use `cast()`,
@@ -275,7 +281,8 @@ BUILD file generator.
 ### Keeping Dependencies Up to Date
 
 - Run `uv run tools/update_toolchains.py` to update Go SDK version, buf
-  toolchain (version + SHA256), node version, and multitool (ruff, uv).
+  toolchain (version + SHA256), node version, and multitool (ast-grep, ruff,
+  uv).
 
 ## Compute Performance and Memory Efficiency
 

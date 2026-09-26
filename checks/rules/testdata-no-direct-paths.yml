@@ -1,0 +1,13 @@
+id: testdata-no-direct-paths
+language: python
+severity: error
+message:
+  Read convention-organized testdata through its testdata fixture instead of by
+  path.
+files:
+  - "**/*_test.py"
+ignores:
+  - define/testdata/**
+rule:
+  kind: string_content
+  regex: define/testdata/(structural|reference_graph|driver|codegen/generator)(/|$)

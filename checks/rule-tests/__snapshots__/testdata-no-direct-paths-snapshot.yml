@@ -1,0 +1,30 @@
+id: testdata-no-direct-paths
+snapshots:
+  ? |
+    root = "define/testdata/structural"
+  : labels:
+    - source: define/testdata/structural
+      style: primary
+      start: 8
+      end: 34
+  ? |
+    source = Path("define/testdata/codegen/generator/constructor_entry_point/test.dfn")
+  : labels:
+    - source: define/testdata/codegen/generator/constructor_entry_point/test.dfn
+      style: primary
+      start: 15
+      end: 81
+  ? |
+    source = Path("define/testdata/reference_graph/create_particle/short_form_global_reference")
+  : labels:
+    - source: define/testdata/reference_graph/create_particle/short_form_global_reference
+      style: primary
+      start: 15
+      end: 90
+  ? |
+    source = f"define/testdata/driver/{case}/source.dfn"
+  : labels:
+    - source: define/testdata/driver/
+      style: primary
+      start: 11
+      end: 34

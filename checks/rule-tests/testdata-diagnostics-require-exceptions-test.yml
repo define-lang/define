@@ -1,0 +1,34 @@
+id: testdata-diagnostics-require-exceptions
+valid:
+  - |
+    def test_checks_exceptions(validate_testdata_structural):
+        result = validate_testdata_structural()
+        assert result.all_exceptions == []
+        assert result.all_diagnostics == []
+  - |
+    def test_no_errors(validate_testdata_project_with_reference_graph):
+        assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+  - |
+    def test_without_diagnostics(validate_testdata_structural_non_filesystem):
+        validate_testdata_structural_non_filesystem()
+  - |
+    def test_without_fixture(validator):
+        assert validator.diagnostics == []
+  - |
+    class TestCase:
+        def test_method(self, validate_testdata_non_filesystem_with_reference_graph: conftest.ValidateTestdataNonFilesystemWithReferenceGraph):
+            result = validate_testdata_non_filesystem_with_reference_graph()
+            assert result.all_exceptions == []
+            assert result.diagnostics == []
+invalid:
+  - |
+    def test_diagnostics_only(validate_testdata_structural):
+        assert validate_testdata_structural().all_diagnostics == []
+  - |
+    def test_typed_fixture(validate_testdata_non_filesystem_with_reference_graph: conftest.ValidateTestdataNonFilesystemWithReferenceGraph):
+        assert validate_testdata_non_filesystem_with_reference_graph().diagnostics == []
+  - |
+    class TestCase:
+        def test_method(self, testdata_project_directory):
+            result = run(testdata_project_directory)
+            assert result.diagnostics == []
