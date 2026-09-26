@@ -5,12 +5,16 @@ Follow program validator test authoring rules in program_validator_tests/AGENTS.
 
 from __future__ import annotations
 
+from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler import diagnostics
 
 if TYPE_CHECKING:
-    from define.compiler.conftest import ValidateTestdataStructuralNonFilesystem
+    from define.compiler.conftest import (
+        ValidateTestdataStructural,
+        ValidateTestdataStructuralNonFilesystem,
+    )
 
 
 def test_case_insensitive_reserved_universe_position(
@@ -115,6 +119,21 @@ def test_reserved_universe_name_position(
     assert diags[0].reserved_name == "standard"
     assert diags[0].location.line == 1
     assert diags[0].location.column == 31
+
+
+def test_reserved_universe_name_reference(
+    validate_testdata_structural: ValidateTestdataStructural,
+):
+    result = validate_testdata_structural()
+    assert result.all_exceptions == []
+    assert len(result.all_diagnostics) == 1
+    diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.universe == "standard"
+    assert diagnostic.current_universe_name == "my.domain.com:my_lib"
+    assert diagnostic.location.line == 4
+    assert diagnostic.location.column == 26
 
 
 def test_reserved_universe_name_with_authority_position(

@@ -1,0 +1,6 @@
+# Reserved universe names only restrict definitions, so a reference to one gets the ordinary unconfigured universe diagnostic.
+define the potential position<my.domain.com:my_lib:/test> {
+    it may only contain particles where {
+        it has the value<standard:/number>.
+    }
+}

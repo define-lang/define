@@ -357,7 +357,6 @@ def _validate_fqun(fqun: ast.Fqun) -> list[diagnostics.Diagnostic]:
         result.extend(_validate_authority(fqun.authority, fqun.multiverse))
 
     result.extend(_validate_universe_name_format(fqun.universe))
-    result.extend(_validate_universe_name_reserved(fqun.universe))
     return result
 
 
@@ -374,6 +373,10 @@ def validate_global_name(
     result: list[diagnostics.Diagnostic] = []
     if name.fqun is not None:
         result.extend(_validate_fqun(name.fqun))
+        # References may name reserved universes, such as standard. Only
+        # defining names in a reserved universe is forbidden.
+        if isinstance(name, ast.DefinitionGlobalNameContent):
+            result.extend(_validate_universe_name_reserved(name.fqun.universe))
         if (
             must_use_short_form is not None
             and name.fqun.canonical == must_use_short_form.canonical

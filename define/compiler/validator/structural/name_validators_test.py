@@ -526,6 +526,15 @@ class TestUniverseNameReserved:
         result = _validate_universe_name(_universe("my_library"))
         assert not result
 
+    def test_reference_to_reserved_name(self):
+        name = ast.ReferenceGlobalNameContent(
+            fqun=_fqun("standard"),
+            path=_global_path_name("/valid_path"),
+            location=_LOC,
+        )
+        result = name_validators.validate_global_name(name)
+        assert not result
+
 
 class TestLocalNameFormat:
     def test_valid(self):
