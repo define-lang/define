@@ -54,12 +54,6 @@ py_test(
     ],
 )
 
-native_binary(
-    name = "basedpyright_langserver_sh",
-    src = "basedpyright-langserver.sh",
-    data = ["//:basedpyright-langserver"],
-)
-
 py_binary(
     name = "check_python_deps",
     srcs = ["check_python_deps.py"],

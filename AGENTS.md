@@ -224,16 +224,16 @@ BUILD file generator.
 
 - All Python dependencies are managed via `aspect_rules_py`'s uv extension with
   a single `pypi` hub backed by the root `uv.lock`.
-- Dependencies are in `pyproject.toml`. The `tools/` directory has its own
-  `pyproject.toml` file.
+- Dependencies are in the root `pyproject.toml`; build and test tooling
+  dependencies are in its `dev` group.
 - To regenerate or update the uv lock file:
   `bazelisk run --noshow_progress --ui_event_filters=-info //:update_lock`
 - Reference Python dependencies in BUILD files as `@pypi//package_name`.
 
 ### Basedpyright Type-Checking
 
-- Each source directory (`compiler`, `defcl/python`, `tools`) has a
-  `pyright_test` target that type-checks all Python sources in that directory.
+- Each package with Python targets has its own `pyright_test` target that
+  type-checks that package's Python targets.
 
 ### Python Format Checking
 

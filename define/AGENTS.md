@@ -75,11 +75,6 @@ flowchart LR
   affected component (parser, transformer, or validator) that reproduces the
   specific issue before fixing it.
 
-## Code Generation
-
-- After changing the code generator or any testdata, regenerate the expected
-  outputs: `bazelisk run --noshow_progress //tools:regenerate_codegen_testdata`
-
 ## Implementation Sequence
 
 - When I ask you to implement an entirely new language feature, first update

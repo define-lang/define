@@ -20,7 +20,7 @@ same time, because they share that state directory.
 ## Workflow
 
 1. Prepare the repo:
-   - `uv run tools/setup_local_dev.py`
+   - `bazelisk run --noshow_progress --ui_event_filters=-info //tools:setup_local_dev`
 2. Start or resume mutation testing:
    - broad run: `uv run mutmut run`
    - focused run: pass specific mutant names to `uv run mutmut run`
@@ -41,7 +41,8 @@ same time, because they share that state directory.
      exceptions or code that exists only for pyright narrowing, such as
      `isinstance(...)` or `is None` checks whose purpose is type narrowing
    - use `uv run mutmut apply MUTANT_NAME` only when you need the exact mutant
-     written into the working tree
+     written into the working tree, because it dirties the working tree and adds
+     cleanup work
 6. Verify:
    - run the most targeted pytest command that covers the new or changed tests
      first
@@ -51,9 +52,8 @@ same time, because they share that state directory.
 
 ## Report Generation
 
-After a broad mutmut run completes, **always** produce a markdown report file
-(`mutmut_survivors_report.md`) with the following structure. Use **parallel
-agents** to analyze mutants across different source files concurrently.
+After a broad mutmut run completes, produce a markdown report file
+(`mutmut_survivors_report.md`) with the following structure.
 
 ### Report structure
 
@@ -112,23 +112,3 @@ Prioritize these statuses:
 
 Ignore `not checked` until the run has progressed far enough to produce
 completed results.
-
-## Agent Guidance
-
-For automated work, prefer this loop:
-
-1. Narrow mutmut to one module or function pattern.
-2. Read `mutmut results`.
-3. Pick one `survived` mutant.
-4. Read `mutmut show MUTANT_NAME`.
-5. Read `mutmut tests-for-mutant MUTANT_NAME`.
-6. Inspect the affected source file and nearby tests.
-7. Add or strengthen tests.
-8. Run targeted pytest.
-9. Re-run the same mutant pattern with mutmut.
-10. Only after the focused mutant is killed, move on or run broader
-    verification.
-
-Prefer `mutmut show` over `mutmut apply` unless the exact on-disk mutated file
-is necessary. `apply` is useful, but it dirties the working tree and adds
-cleanup overhead.

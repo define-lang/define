@@ -43,14 +43,15 @@ blocked TODO is a success, not a failure.
 
 ## Steps
 
-1. Set up the worktree for local development: `uv run tools/setup_local_dev.py`
+1. Set up the worktree for local development:
+   `bazelisk run --noshow_progress --ui_event_filters=-info //tools:setup_local_dev`
 2. Read the TODO in context and confirm the fix plan still matches the code.
 3. Implement the fix.
 4. Format:
    `bazelisk run --noshow_progress --ui_event_filters=-info //tools:format`
 5. If you changed any Python imports or BUILD targets:
    `uv run tools/check_python_deps.py <changed files>`
-6. Run the full suite — this is required, not optional:
+6. Run the full suite:
    `bazelisk test --noshow_progress --ui_event_filters=-info //...` Expect a
    cold build; that is normal for a fresh worktree. If anything fails that your
    change plausibly caused, fix it or take the escape hatch.

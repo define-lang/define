@@ -97,10 +97,9 @@ no cap; a backlog that has not been cleaned up in a while may legitimately
 contain many candidates. The table is the entire report. Say nothing about the
 TODOs you are not proposing — no exclusion lists, categories, or justifications
 — and add no notes about choices the fixers will make: if a candidate hinges on
-a choice, fold the proposed answer into its fix-plan cell. The pull to
-demonstrate diligence with extra commentary is strong; resist it — the user
-reads this list to pick work, not to audit your process. **Wait for the user to
-approve or trim the list before creating any worktree.**
+a choice, fold the proposed answer into its fix-plan cell. The user reads this
+list to pick work, not to audit your process. **Wait for the user to approve or
+trim the list before creating any worktree.**
 
 ### 3. Fix
 
@@ -136,13 +135,13 @@ review. The rest of the workflow is unchanged.
 
 ### Monitor active fixers
 
-Keep the orchestrator's turn active while any fixer or review-revision task is
-running. Use the runtime's agent-wait mechanism and continue waiting after
-status updates until every active fixer has either finished or asked the user a
-question. Do not yield back to the user merely because the work continues in a
-background agent: once the turn ends, the orchestrator cannot proactively
-deliver the completion report. Relay each completion immediately, stage the
-worktree, and provide its review command before ending the turn.
+If your runtime does not wake you when a background agent finishes, keep the
+orchestrator's turn active while any fixer or review-revision task is running:
+use the runtime's agent-wait mechanism and keep waiting after status updates
+until every active fixer has either finished or asked the user a question,
+because once the turn ends you cannot deliver the completion report. In every
+runtime, relay each completion as soon as it arrives, stage the worktree, and
+provide its review command.
 
 ### Questions during fixing
 
