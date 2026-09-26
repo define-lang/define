@@ -214,6 +214,27 @@ _package_without_pyright_test_is_not_checked_for_coverage_test = unittest.make(
     _package_without_pyright_test_is_not_checked_for_coverage_impl,
 )
 
+def _codegen_testdata(name):
+    return [(name, {"kind": "filegroup"})]
+
+def _codegen_testdata_requires_pyright_test_impl(ctx):
+    env = unittest.begin(ctx)
+    asserts.equals(env, [
+        "codegen testdata packages must declare a pyright_test for their generated Python",
+    ], build_file_violations("move_particle", _codegen_testdata("codegen_testdata")))
+    asserts.equals(env, [
+        "codegen testdata packages must declare a pyright_test for their generated Python",
+    ], build_file_violations("generator", _codegen_testdata("tracing_testdata")))
+    asserts.equals(env, [], build_file_violations(
+        "move_particle",
+        _codegen_testdata("codegen_testdata") + _pyright_test([]),
+    ))
+    return unittest.end(env)
+
+_codegen_testdata_requires_pyright_test_test = unittest.make(
+    _codegen_testdata_requires_pyright_test_impl,
+)
+
 def build_file_checks_test_suite(name):
     """Creates the unit tests for build_file_checks.bzl.
 
@@ -236,6 +257,7 @@ def build_file_checks_test_suite(name):
                 _language_proto_targets_follow_their_proto_library_test,
                 _python_targets_must_be_in_pyright_test_test,
                 _package_without_pyright_test_is_not_checked_for_coverage_test,
+                _codegen_testdata_requires_pyright_test_test,
             ]
         ]
     )

@@ -13,6 +13,10 @@ _META_FUNCTIONS = [
 
 _PYTHON_FUNCTIONS = ["py_binary", "py_library", "py_test"]
 
+# Codegen testdata packages provide these targets to the generator integration
+# tests. Their expected outputs are generated Python, which must type-check.
+_CODEGEN_TESTDATA_TARGETS = ["codegen_testdata", "tracing_testdata"]
+
 # rules_go instantiates go_binary through an internal macro.
 _FUNCTION_ALIASES = {"go_binary_macro": "go_binary"}
 
@@ -140,6 +144,13 @@ def _pyright_violations(calls, rules):
         if call.function in _PYTHON_FUNCTIONS and call.name not in covered
     ]
 
+def _codegen_testdata_violations(calls):
+    if [call for call in calls if call.function == "pyright_test"]:
+        return []
+    if [call for call in calls if call.name in _CODEGEN_TESTDATA_TARGETS]:
+        return ["codegen testdata packages must declare a pyright_test for their generated Python"]
+    return []
+
 def build_file_violations(package_name, rules):
     """Return the BUILD file convention violations in a package.
 
@@ -156,7 +167,8 @@ def build_file_violations(package_name, rules):
         _size_violations(calls) +
         _name_violations(calls, package_name) +
         _order_violations(calls) +
-        _pyright_violations(calls, rules)
+        _pyright_violations(calls, rules) +
+        _codegen_testdata_violations(calls)
     )
 
 def _check_build_file_impl(name, visibility):  # buildifier: disable=unused-variable
