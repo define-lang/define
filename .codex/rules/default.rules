@@ -266,11 +266,6 @@ prefix_rule(
 )
 
 prefix_rule(
-    pattern = ["git", "checkout"],
-    decision = "prompt",
-)
-
-prefix_rule(
     pattern = ["git", "commit"],
     decision = "prompt",
 )
