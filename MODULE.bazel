@@ -13,7 +13,7 @@ bazel_dep(name = "rules_python", version = "2.3.4")
 bazel_dep(name = "rules_go", version = "0.63.0")
 bazel_dep(name = "gazelle", version = "0.54.0")
 bazel_dep(name = "rules_proto", version = "7.1.0")
-bazel_dep(name = "rules_rs", version = "0.0.111")
+bazel_dep(name = "rules_rs", version = "0.0.112")
 bazel_dep(name = "llvm", version = "0.8.23")
 
 # TODO: Upgrade when protobuf's macOS ARM protoc checksum is corrected upstream.
@@ -37,12 +37,10 @@ local_path_override(
     path = "vendored/re2",
 )
 
-# TODO: Upgrade to an aspect_rules_py release with PR #1523 and remove this override and patch.
+# TODO: Upgrade to an aspect_rules_py release with PR #1523 and remove this override.
 git_override(
     module_name = "aspect_rules_py",
-    commit = "7a342ab58cfd60c5bf0864b74f94aa9136e2064f",
-    patch_strip = 1,
-    patches = ["//tools/bzl:rules_py_pyi_propagation.patch"],
+    commit = "511b272fb5c68638f6f7bdae2f03c1e282d80ca9",
     remote = "https://github.com/aspect-build/rules_py.git",
 )
 
@@ -101,10 +99,6 @@ register_toolchains(
 )
 
 rules_rust = use_extension("@rules_rs//rs:rules_rust.bzl", "rules_rust")
-rules_rust.patch(
-    patches = ["//tools/bzl:rules_rust_pyo3_lint_config.patch"],
-    strip = 1,
-)
 use_repo(rules_rust, "rules_rust")
 
 rules_rust_pyo3 = use_extension("@rules_rs//rs:rules_rust_pyo3.bzl", "rules_rust_pyo3")
