@@ -171,3 +171,38 @@ def test_case(validate_testdata_structural):
 """) == [
         "line 4: assert isinstance(validate_testdata_structural().file_results[0].diagnostics[0], diagnostics.<class>) before asserting on its fields"
     ]
+
+
+def test_message_assertion_on_checked_diagnostic():
+    function = ast.parse("""
+def test_case(validate_testdata_structural):
+    diag = validate_testdata_structural().all_diagnostics[0]
+    assert isinstance(diag, diagnostics.DestroyInEmptyPositionDiagnostic)
+    assert "position<target>" in diag.message
+""").body[0]
+    assert isinstance(function, ast.FunctionDef)
+    assert diagnostic_assertions.diagnostic_message_assertions(function) == [
+        "line 5: assert on the fields of validate_testdata_structural().all_diagnostics[0] instead of its message"
+    ]
+
+
+def test_message_assertion_on_unchecked_diagnostic():
+    function = ast.parse("""
+def test_case(validate_testdata_structural):
+    diags = validate_testdata_structural().file_results[0].diagnostics
+    assert diags[1].message == "text"
+""").body[0]
+    assert isinstance(function, ast.FunctionDef)
+    assert diagnostic_assertions.diagnostic_message_assertions(function) == [
+        "line 4: assert on the fields of validate_testdata_structural().file_results[0].diagnostics[1] instead of its message"
+    ]
+
+
+def test_message_of_other_value_allowed():
+    function = ast.parse("""
+def test_case(validate_testdata_structural):
+    result = validate_testdata_structural()
+    assert result.all_exceptions[0].message == "text"
+""").body[0]
+    assert isinstance(function, ast.FunctionDef)
+    assert diagnostic_assertions.diagnostic_message_assertions(function) == []

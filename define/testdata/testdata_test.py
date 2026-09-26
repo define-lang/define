@@ -2,7 +2,7 @@
 
 Every testdata directory must have a Python test owner, so that renaming or
 removing a test does not leave unused testdata behind. Every diagnostic that a
-testdata test checks must have all of its fields asserted.
+testdata test checks must have all of its fields asserted instead of its message.
 """
 
 from __future__ import annotations
@@ -132,6 +132,20 @@ def test_testdata_tests_assert_every_diagnostic_field():
                 if not _fixture_arguments(function):
                     continue
                 for problem in diagnostic_assertions.unasserted_diagnostic_fields(
+                    function
+                ):
+                    problems.append(f"{test_file} {function.name} {problem}")
+    assert problems == []
+
+
+def test_testdata_tests_do_not_assert_on_diagnostic_messages():
+    problems: list[str] = []
+    for source_root in sorted(set(_TEST_SOURCE_ROOTS.values())):
+        for test_file in sorted(source_root.glob("*_test.py")):
+            for _, function in _test_functions(test_file):
+                if not _fixture_arguments(function):
+                    continue
+                for problem in diagnostic_assertions.diagnostic_message_assertions(
                     function
                 ):
                     problems.append(f"{test_file} {function.name} {problem}")

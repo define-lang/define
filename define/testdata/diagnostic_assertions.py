@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 
 _DIAGNOSTICS_MODULE = "diagnostics"
 _DIAGNOSTIC_LISTS = frozenset({"all_diagnostics", "diagnostics"})
+_MESSAGE_PROPERTY = "message"
 _LOCATION_TYPE = "SourceLocation"
 _LOCATION_FIELDS = ("line", "column", "file_path")
 
@@ -76,6 +77,7 @@ class _TestFunctionAssertions:
         self._checked_classes: dict[str, tuple[str, int]] = {}
         self._asserted_paths: dict[str, set[FieldPath]] = {}
         self._diagnostic_uses: dict[str, int] = {}
+        self._message_uses: dict[str, int] = {}
 
     def _expand(self, node: ast.expr) -> ast.expr:
         return cast(
@@ -151,6 +153,8 @@ class _TestFunctionAssertions:
         for node in ast.walk(test):
             if not isinstance(node, ast.Attribute):
                 continue
+            if node.attr == _MESSAGE_PROPERTY:
+                _ = self._message_uses.setdefault(self._key(node.value), line)
             match self._expand(node.value):
                 case ast.Subscript(value=ast.Attribute(attr=list_name)) as element if (
                     list_name in _DIAGNOSTIC_LISTS
@@ -192,7 +196,7 @@ class _TestFunctionAssertions:
                 return True
         return False
 
-    def problems(self) -> list[str]:
+    def field_problems(self) -> list[str]:
         problems: list[str] = []
         for key, line in self._diagnostic_uses.items():
             if key in self._checked_classes:
@@ -211,6 +215,15 @@ class _TestFunctionAssertions:
             if missing:
                 problems.append(
                     f"line {line}: {key} is a {class_name}, but the test does not assert on {', '.join(missing)}"
+                )
+        return problems
+
+    def message_problems(self) -> list[str]:
+        problems: list[str] = []
+        for key, line in self._message_uses.items():
+            if key in self._checked_classes or key in self._diagnostic_uses:
+                problems.append(
+                    f"line {line}: assert on the fields of {key} instead of its message"
                 )
         return problems
 
@@ -237,4 +250,13 @@ def unasserted_diagnostic_fields(
     """Describe each diagnostic checked by `function` that it does not fully assert on."""
     assertions = _TestFunctionAssertions()
     assertions.visit_statements(function.body)
-    return assertions.problems()
+    return assertions.field_problems()
+
+
+def diagnostic_message_assertions(
+    function: ast.FunctionDef | ast.AsyncFunctionDef,
+) -> list[str]:
+    """Describe each assertion in `function` on a diagnostic's message."""
+    assertions = _TestFunctionAssertions()
+    assertions.visit_statements(function.body)
+    return assertions.message_problems()
