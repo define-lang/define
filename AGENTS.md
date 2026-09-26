@@ -49,14 +49,11 @@ See [define/spec/spec.md] for the language specification.
   `from define.compiler import ast` and then reference `ast.ASTNode` in the
   code.
 - Only use `typing.TYPE_CHECKING` to fix ruff TC001, TC002, or TC003.
-- Never do dynamic imports. (Never write an import statement inside of a
-  function.)
 
 ## Exceptions
 
 - Do not swallow exceptions. Prefer to let exceptions bubble up to the user.
-- Only catch the specific exceptions that the code throws. Never
-  `catch Exception`.
+- Only catch the specific exceptions that the code throws.
 
 ## Comments
 

@@ -1,0 +1,18 @@
+id: test-functions-no-none-return-annotation
+language: python
+severity: error
+message: Do not annotate a test function's return type as `None`.
+files:
+  - "**/*_test.py"
+ignores:
+  - vendored/**
+rule:
+  pattern: None
+  inside:
+    kind: type
+    inside:
+      kind: function_definition
+      field: return_type
+      has:
+        field: name
+        regex: ^test

@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from define.compiler.parser_tests.conftest import Parse
 
 
-def test_trigger_condition_with_local_position(parse: Parse) -> None:
+def test_trigger_condition_with_local_position(parse: Parse):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<my_pos>.\n"
@@ -30,7 +30,7 @@ def test_trigger_condition_with_local_position(parse: Parse) -> None:
     assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["my_pos", "my_pos"]
 
 
-def test_trigger_condition_with_comments(parse: Parse) -> None:
+def test_trigger_condition_with_comments(parse: Parse):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
@@ -45,7 +45,7 @@ def test_trigger_condition_with_comments(parse: Parse) -> None:
     assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["run", "run"]
 
 
-def test_trigger_condition_with_blank_lines(parse: Parse) -> None:
+def test_trigger_condition_with_blank_lines(parse: Parse):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
@@ -60,7 +60,7 @@ def test_trigger_condition_with_blank_lines(parse: Parse) -> None:
     assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["run", "run"]
 
 
-def test_chained_name_is_parse_error(parse: Parse) -> None:
+def test_chained_name_is_parse_error(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidHasAParticleSyntax) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
@@ -77,7 +77,7 @@ def test_chained_name_is_parse_error(parse: Parse) -> None:
     assert exc_info.value.column == 26
 
 
-def test_global_name_is_parse_error(parse: Parse) -> None:
+def test_global_name_is_parse_error(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidLocalNameCharacter) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
@@ -92,7 +92,7 @@ def test_global_name_is_parse_error(parse: Parse) -> None:
     assert exc_info.value.char == "/"
 
 
-def test_trigger_block_same_line_no_space(parse: Parse) -> None:
+def test_trigger_block_same_line_no_space(parse: Parse):
     with pytest.raises(parser_exceptions.EmptyBlock) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
@@ -107,7 +107,7 @@ def test_trigger_block_same_line_no_space(parse: Parse) -> None:
     assert exc_info.value.column == 22
 
 
-def test_trigger_block_same_line_with_space(parse: Parse) -> None:
+def test_trigger_block_same_line_with_space(parse: Parse):
     with pytest.raises(parser_exceptions.MissingNewlineAfterOpenBrace) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
@@ -122,7 +122,7 @@ def test_trigger_block_same_line_with_space(parse: Parse) -> None:
     assert exc_info.value.column == 22
 
 
-def test_trigger_block_closing_brace_same_line(parse: Parse) -> None:
+def test_trigger_block_closing_brace_same_line(parse: Parse):
     with pytest.raises(parser_exceptions.EmptyBlock) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
@@ -136,7 +136,7 @@ def test_trigger_block_closing_brace_same_line(parse: Parse) -> None:
     assert exc_info.value.column == 22
 
 
-def test_empty_trigger_block_is_error(parse: Parse) -> None:
+def test_empty_trigger_block_is_error(parse: Parse):
     with pytest.raises(parser_exceptions.MissingTriggerConditionContent) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
@@ -151,7 +151,7 @@ def test_empty_trigger_block_is_error(parse: Parse) -> None:
     assert exc_info.value.column == 5
 
 
-def test_invalid_content_in_trigger_block(parse: Parse) -> None:
+def test_invalid_content_in_trigger_block(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidTriggerConditionsBlock) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
@@ -168,7 +168,7 @@ def test_invalid_content_in_trigger_block(parse: Parse) -> None:
     assert exc_info.value.column == 9
 
 
-def test_missing_terminator_after_trigger_condition(parse: Parse) -> None:
+def test_missing_terminator_after_trigger_condition(parse: Parse):
     with pytest.raises(parser_exceptions.MissingTerminator) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
@@ -185,7 +185,7 @@ def test_missing_terminator_after_trigger_condition(parse: Parse) -> None:
     assert exc_info.value.column == 41
 
 
-def test_missing_space_before_has_a_particle(parse: Parse) -> None:
+def test_missing_space_before_has_a_particle(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidHasAParticleSyntax) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
@@ -200,7 +200,7 @@ def test_missing_space_before_has_a_particle(parse: Parse) -> None:
     assert exc_info.value.column == 26
 
 
-def test_missing_has_a_particle(parse: Parse) -> None:
+def test_missing_has_a_particle(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidHasAParticleSyntax) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"

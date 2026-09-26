@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from define.compiler.parser_tests.conftest import Parse
 
 
-def test_empty_source_error_message(parse: Parse) -> None:
+def test_empty_source_error_message(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
         parse("")
     assert str(exc_info.value) == textwrap.dedent("""\
@@ -33,7 +33,7 @@ def test_empty_source_error_message(parse: Parse) -> None:
             - define the encoding""")
 
 
-def test_error_message_without_path(parse: Parse) -> None:
+def test_error_message_without_path(parse: Parse):
     with pytest.raises(parser_exceptions.ByteOrderMarkError) as exc_info:
         parse("\ufeffdefine the potential position<standard:/path>.\n")
     assert exc_info.value.line == 1
@@ -48,7 +48,7 @@ def test_error_message_without_path(parse: Parse) -> None:
     )
 
 
-def test_error_message_with_path(parse: Parse) -> None:
+def test_error_message_with_path(parse: Parse):
     with pytest.raises(parser_exceptions.ByteOrderMarkError) as exc_info:
         parse(
             "\ufeffdefine the potential position<standard:/path>.\n",
@@ -66,7 +66,7 @@ def test_error_message_with_path(parse: Parse) -> None:
     )
 
 
-def test_char_error_message(parse: Parse) -> None:
+def test_char_error_message(parse: Parse):
     with pytest.raises(parser_exceptions.CarriageReturnError) as exc_info:
         parse("define the potential position<standard:/path>.\r\n")
     assert exc_info.value.line == 1
@@ -78,7 +78,7 @@ def test_char_error_message(parse: Parse) -> None:
         Carriage return character (\\r) is not allowed.""")
 
 
-def test_char_error_message_with_path(parse: Parse) -> None:
+def test_char_error_message_with_path(parse: Parse):
     with pytest.raises(parser_exceptions.CarriageReturnError) as exc_info:
         parse(
             "define the potential position<standard:/path>.\r\n",
@@ -93,7 +93,7 @@ def test_char_error_message_with_path(parse: Parse) -> None:
         Carriage return character (\\r) is not allowed.""")
 
 
-def test_token_error_message(parse: Parse) -> None:
+def test_token_error_message(parse: Parse):
     with pytest.raises(parser_exceptions.MissingTerminatorOrBrace) as exc_info:
         parse("define the potential position<standard:/path>\n")
     assert exc_info.value.line == 1
@@ -105,7 +105,7 @@ def test_token_error_message(parse: Parse) -> None:
         This statement must end with a '.' or a single space followed by '{'""")
 
 
-def test_error_message_for_indented_code_in_action_block(parse: Parse) -> None:
+def test_error_message_for_indented_code_in_action_block(parse: Parse):
     with pytest.raises(parser_exceptions.MissingCloseAngleBracket) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"

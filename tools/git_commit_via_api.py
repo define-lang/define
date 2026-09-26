@@ -26,8 +26,8 @@ def main(message: str, files: tuple[str, ...]):  # noqa: D103
     repo = gh.get_repo(os.environ["GITHUB_REPOSITORY"])
     branch = os.environ["GITHUB_REF_NAME"]
 
-    ref = repo.get_git_ref(f"heads/{branch}")
-    head_commit = repo.get_git_commit(ref.object.sha)
+    branch_ref = repo.get_git_ref(f"heads/{branch}")
+    head_commit = repo.get_git_commit(branch_ref.object.sha)
 
     tree_elements: list[github.InputGitTreeElement] = []
     for path in files:
@@ -41,7 +41,7 @@ def main(message: str, files: tuple[str, ...]):  # noqa: D103
 
     tree = repo.create_git_tree(tree_elements, base_tree=head_commit.tree)
     commit = repo.create_git_commit(message, tree, [head_commit])
-    ref.edit(commit.sha)
+    branch_ref.edit(commit.sha)
 
 
 if __name__ == "__main__":

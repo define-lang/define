@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from define.compiler.parser_tests.conftest import Parse
 
 
-def test_local_name_simple(parse: Parse) -> None:
+def test_local_name_simple(parse: Parse):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<my_pos>.\n"
@@ -33,7 +33,7 @@ def test_local_name_simple(parse: Parse) -> None:
     assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["my_pos", "my_pos"]
 
 
-def test_local_name_underscore_start(parse: Parse) -> None:
+def test_local_name_underscore_start(parse: Parse):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<_private>.\n"
@@ -52,7 +52,7 @@ def test_local_name_underscore_start(parse: Parse) -> None:
     ]
 
 
-def test_local_name_with_digits(parse: Parse) -> None:
+def test_local_name_with_digits(parse: Parse):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<pos_1>.\n"
@@ -68,7 +68,7 @@ def test_local_name_with_digits(parse: Parse) -> None:
     assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["pos_1", "pos_1"]
 
 
-def test_local_name_single_char(parse: Parse) -> None:
+def test_local_name_single_char(parse: Parse):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<x>.\n"
@@ -84,7 +84,7 @@ def test_local_name_single_char(parse: Parse) -> None:
     assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["x", "x"]
 
 
-def test_local_name_single_underscore(parse: Parse) -> None:
+def test_local_name_single_underscore(parse: Parse):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<_>.\n"
@@ -100,7 +100,7 @@ def test_local_name_single_underscore(parse: Parse) -> None:
     assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["_", "_"]
 
 
-def test_local_name_starting_with_digit(parse: Parse) -> None:
+def test_local_name_starting_with_digit(parse: Parse):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<2bad>.\n"
@@ -116,7 +116,7 @@ def test_local_name_starting_with_digit(parse: Parse) -> None:
     assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["2bad", "2bad"]
 
 
-def test_local_name_uppercase(parse: Parse) -> None:
+def test_local_name_uppercase(parse: Parse):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<MyPos>.\n"
@@ -132,7 +132,7 @@ def test_local_name_uppercase(parse: Parse) -> None:
     assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["MyPos", "MyPos"]
 
 
-def test_local_name_with_space(parse: Parse) -> None:
+def test_local_name_with_space(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidLocalNameCharacter) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
@@ -149,7 +149,7 @@ def test_local_name_with_space(parse: Parse) -> None:
     assert exc_info.value.column == 25
 
 
-def test_local_name_with_space_after_valid_characters(parse: Parse) -> None:
+def test_local_name_with_space_after_valid_characters(parse: Parse):
     with pytest.raises(parser_exceptions.MissingCloseAngleBracket) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
@@ -167,7 +167,7 @@ def test_local_name_with_space_after_valid_characters(parse: Parse) -> None:
     assert exc_info.value.column == 29
 
 
-def test_create_position_ref_starting_with_space(parse: Parse) -> None:
+def test_create_position_ref_starting_with_space(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidName) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
@@ -184,7 +184,7 @@ def test_create_position_ref_starting_with_space(parse: Parse) -> None:
     assert exc_info.value.column == 39
 
 
-def test_local_name_first_char_colon(parse: Parse) -> None:
+def test_local_name_first_char_colon(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidLocalNameCharacter) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
@@ -201,7 +201,7 @@ def test_local_name_first_char_colon(parse: Parse) -> None:
     assert exc_info.value.column == 25
 
 
-def test_local_name_first_char_slash(parse: Parse) -> None:
+def test_local_name_first_char_slash(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidLocalNameCharacter) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
@@ -218,7 +218,7 @@ def test_local_name_first_char_slash(parse: Parse) -> None:
     assert exc_info.value.column == 25
 
 
-def test_local_name_missing_open_angle(parse: Parse) -> None:
+def test_local_name_missing_open_angle(parse: Parse):
     with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
@@ -236,7 +236,7 @@ def test_local_name_missing_open_angle(parse: Parse) -> None:
     assert exc_info.value.name == "my_pos"
 
 
-def test_local_name_empty(parse: Parse) -> None:
+def test_local_name_empty(parse: Parse):
     with pytest.raises(parser_exceptions.EmptyName) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
@@ -253,7 +253,7 @@ def test_local_name_empty(parse: Parse) -> None:
     assert exc_info.value.column == 25
 
 
-def test_local_name_with_angle_bracket(parse: Parse) -> None:
+def test_local_name_with_angle_bracket(parse: Parse):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<run>.\n"
@@ -267,7 +267,7 @@ def test_local_name_with_angle_bracket(parse: Parse) -> None:
     assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["run", "<", "run"]
 
 
-def test_local_name_dot_then_angle_bracket(parse: Parse) -> None:
+def test_local_name_dot_then_angle_bracket(parse: Parse):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<run>.\n"
@@ -281,7 +281,7 @@ def test_local_name_dot_then_angle_bracket(parse: Parse) -> None:
     assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["run", ".<", "run"]
 
 
-def test_local_name_dot_then_slash(parse: Parse) -> None:
+def test_local_name_dot_then_slash(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidLocalNameCharacter) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
@@ -298,7 +298,7 @@ def test_local_name_dot_then_slash(parse: Parse) -> None:
     assert exc_info.value.column == 26
 
 
-def test_local_name_brace_then_slash(parse: Parse) -> None:
+def test_local_name_brace_then_slash(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidLocalNameCharacter) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
@@ -315,7 +315,7 @@ def test_local_name_brace_then_slash(parse: Parse) -> None:
     assert exc_info.value.column == 26
 
 
-def test_local_name_angle_bracket_then_slash(parse: Parse) -> None:
+def test_local_name_angle_bracket_then_slash(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidLocalNameCharacter) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
@@ -332,7 +332,7 @@ def test_local_name_angle_bracket_then_slash(parse: Parse) -> None:
     assert exc_info.value.column == 26
 
 
-def test_local_name_angle_bracket_then_colon(parse: Parse) -> None:
+def test_local_name_angle_bracket_then_colon(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidLocalNameCharacter) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
@@ -349,7 +349,7 @@ def test_local_name_angle_bracket_then_colon(parse: Parse) -> None:
     assert exc_info.value.column == 26
 
 
-def test_local_name_with_slash(parse: Parse) -> None:
+def test_local_name_with_slash(parse: Parse):
     with pytest.raises(parser_exceptions.GlobalNameWhereLocalNameExpected) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
@@ -365,7 +365,7 @@ def test_local_name_with_slash(parse: Parse) -> None:
     assert exc_info.value.column == 27
 
 
-def test_local_name_with_colon(parse: Parse) -> None:
+def test_local_name_with_colon(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidLocalNameCharacter) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
@@ -382,7 +382,7 @@ def test_local_name_with_colon(parse: Parse) -> None:
     assert exc_info.value.column == 27
 
 
-def test_local_name_with_global_short_form(parse: Parse) -> None:
+def test_local_name_with_global_short_form(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidLocalNameCharacter) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
@@ -399,7 +399,7 @@ def test_local_name_with_global_short_form(parse: Parse) -> None:
     assert exc_info.value.column == 25
 
 
-def test_local_name_with_global_long_form(parse: Parse) -> None:
+def test_local_name_with_global_long_form(parse: Parse):
     with pytest.raises(parser_exceptions.GlobalNameWhereLocalNameExpected) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/act> {\n"
@@ -415,7 +415,7 @@ def test_local_name_with_global_long_form(parse: Parse) -> None:
     assert exc_info.value.column == 27
 
 
-def test_local_name_with_hyphen(parse: Parse) -> None:
+def test_local_name_with_hyphen(parse: Parse):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<my-pos>.\n"

@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from define.compiler.parser_tests.conftest import Parse
 
 
-def test_position_definition_parses(parse: Parse) -> None:
+def test_position_definition_parses(parse: Parse):
     tree = parse("define the potential position<mv:define-lang.org:parser:/path>.\n")
     assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/path"
@@ -27,7 +27,7 @@ def test_position_definition_parses(parse: Parse) -> None:
 
 def test_position_definition_with_local_style_name_is_global_terminal(
     parse: Parse,
-) -> None:
+):
     with pytest.raises(parser_exceptions.InvalidGlobalName) as exc_info:
         parse("define the potential position<foo>.\n")
     assert exc_info.value.token == "foo"
@@ -36,7 +36,7 @@ def test_position_definition_with_local_style_name_is_global_terminal(
     assert exc_info.value.column == 31
 
 
-def test_position_definition_missing_open_angle(parse: Parse) -> None:
+def test_position_definition_missing_open_angle(parse: Parse):
     with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
         parse("define the potential positionstandard:/path>.\n")
     assert str(exc_info.value.token) == "standard:/path"
@@ -45,7 +45,7 @@ def test_position_definition_missing_open_angle(parse: Parse) -> None:
     assert exc_info.value.name == "standard:/path"
 
 
-def test_position_definition_space_instead_of_open_angle(parse: Parse) -> None:
+def test_position_definition_space_instead_of_open_angle(parse: Parse):
     with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
         parse("define the potential position mv:define-lang.org:parser:/path>.\n")
     assert exc_info.value.token == " "
@@ -55,7 +55,7 @@ def test_position_definition_space_instead_of_open_angle(parse: Parse) -> None:
     assert exc_info.value.column == 30
 
 
-def test_position_definition_with_control_character(parse: Parse) -> None:
+def test_position_definition_with_control_character(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
         parse("define the potential \x00position<mv:define-lang.org:parser:/path>.\n")
     assert exc_info.value.token == "define"
@@ -64,7 +64,7 @@ def test_position_definition_with_control_character(parse: Parse) -> None:
     assert exc_info.value.column == 1
 
 
-def test_position_definition_with_empty_global_path(parse: Parse) -> None:
+def test_position_definition_with_empty_global_path(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidGlobalName) as exc_info:
         parse("define the potential position<mv:define-lang.org:parser:>.\n")
     assert exc_info.value.token == "mv"
@@ -75,7 +75,7 @@ def test_position_definition_with_empty_global_path(parse: Parse) -> None:
 
 def test_position_definition_with_global_path_missing_leading_slash(
     parse: Parse,
-) -> None:
+):
     with pytest.raises(parser_exceptions.InvalidGlobalName) as exc_info:
         parse("define the potential position<mv:define-lang.org:parser:path>.\n")
     assert exc_info.value.token == "mv"
@@ -84,7 +84,7 @@ def test_position_definition_with_global_path_missing_leading_slash(
     assert exc_info.value.column == 31
 
 
-def test_position_definition_empty_name_content(parse: Parse) -> None:
+def test_position_definition_empty_name_content(parse: Parse):
     with pytest.raises(parser_exceptions.EmptyName) as exc_info:
         parse("define the potential position<>.\n")
     assert str(exc_info.value.token) == ">"
@@ -92,7 +92,7 @@ def test_position_definition_empty_name_content(parse: Parse) -> None:
     assert exc_info.value.column == 31
 
 
-def test_position_definition_empty_name_at_eof(parse: Parse) -> None:
+def test_position_definition_empty_name_at_eof(parse: Parse):
     with pytest.raises(parser_exceptions.EmptyName) as exc_info:
         parse("define the potential position<")
     assert exc_info.value.token.type == "$END"
@@ -100,7 +100,7 @@ def test_position_definition_empty_name_at_eof(parse: Parse) -> None:
     assert exc_info.value.column == 30
 
 
-def test_position_definition_with_constraint_block(parse: Parse) -> None:
+def test_position_definition_with_constraint_block(parse: Parse):
     tree = parse(
         "define the potential position<mv:define-lang.org:parser:/path> {\n"
         + "    it may only contain particles where {\n"
@@ -115,7 +115,7 @@ def test_position_definition_with_constraint_block(parse: Parse) -> None:
     assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == []
 
 
-def test_position_definition_with_multiple_requirements(parse: Parse) -> None:
+def test_position_definition_with_multiple_requirements(parse: Parse):
     tree = parse(
         "define the potential position<mv:define-lang.org:parser:/path> {\n"
         + "    it may only contain particles where {\n"
@@ -132,7 +132,7 @@ def test_position_definition_with_multiple_requirements(parse: Parse) -> None:
     assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == []
 
 
-def test_position_definition_block_requires_content(parse: Parse) -> None:
+def test_position_definition_block_requires_content(parse: Parse):
     with pytest.raises(
         parser_exceptions.MissingPotentialPositionDefinitionContent
     ) as exc_info:
@@ -142,7 +142,7 @@ def test_position_definition_block_requires_content(parse: Parse) -> None:
     assert exc_info.value.column == 1
 
 
-def test_position_constraint_block_requires_requirements(parse: Parse) -> None:
+def test_position_constraint_block_requires_requirements(parse: Parse):
     with pytest.raises(parser_exceptions.MissingPositionConstraintContent) as exc_info:
         parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
@@ -157,7 +157,7 @@ def test_position_constraint_block_requires_requirements(parse: Parse) -> None:
 
 def test_position_constraint_block_with_invalid_statement_then_more_definitions(
     parse: Parse,
-) -> None:
+):
     with pytest.raises(parser_exceptions.InvalidPositionConstraintBlock) as exc_info:
         parse(
             "define the potential position<my_lib:/path>.\n"
@@ -175,7 +175,7 @@ def test_position_constraint_block_with_invalid_statement_then_more_definitions(
 
 def test_position_definition_rejects_multiple_constraint_blocks(
     parse: Parse,
-) -> None:
+):
     with pytest.raises(parser_exceptions.MissingCloseBrace) as exc_info:
         parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
@@ -194,7 +194,7 @@ def test_position_definition_rejects_multiple_constraint_blocks(
 
 def test_second_constraint_block_after_close_on_same_line(
     parse: Parse,
-) -> None:
+):
     with pytest.raises(parser_exceptions.MissingNewlineAfterCloseBrace) as exc_info:
         parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
@@ -213,7 +213,7 @@ def test_second_constraint_block_after_close_on_same_line(
 
 def test_second_constraint_block_on_requirement_line(
     parse: Parse,
-) -> None:
+):
     with pytest.raises(parser_exceptions.MissingNewlineAfterTerminator) as exc_info:
         parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
@@ -231,7 +231,7 @@ def test_second_constraint_block_on_requirement_line(
 
 def test_action_definition_block_with_mixed_local_position_forms(
     parse: Parse,
-) -> None:
+):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<run>.\n"
@@ -261,7 +261,7 @@ def test_action_definition_block_with_mixed_local_position_forms(
 
 def test_action_definition_block_with_multiple_local_block_positions(
     parse: Parse,
-) -> None:
+):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<run>.\n"
@@ -296,7 +296,7 @@ def test_action_definition_block_with_multiple_local_block_positions(
 
 def test_action_statements_block_with_mixed_local_position_forms(
     parse: Parse,
-) -> None:
+):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<run>.\n"
@@ -326,7 +326,7 @@ def test_action_statements_block_with_mixed_local_position_forms(
 
 def test_action_statements_block_with_multiple_local_block_positions(
     parse: Parse,
-) -> None:
+):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/act> {\n"
         + "    define the position<run>.\n"
@@ -359,7 +359,7 @@ def test_action_statements_block_with_multiple_local_block_positions(
     ]
 
 
-def test_empty_potential_position_block(parse: Parse) -> None:
+def test_empty_potential_position_block(parse: Parse):
     with pytest.raises(
         parser_exceptions.MissingPotentialPositionDefinitionContent
     ) as exc_info:
@@ -369,7 +369,7 @@ def test_empty_potential_position_block(parse: Parse) -> None:
     assert exc_info.value.column == 1
 
 
-def test_invalid_content_in_potential_position_block(parse: Parse) -> None:
+def test_invalid_content_in_potential_position_block(parse: Parse):
     with pytest.raises(
         parser_exceptions.InvalidPotentialPositionDefinitionBlock
     ) as exc_info:
@@ -384,7 +384,7 @@ def test_invalid_content_in_potential_position_block(parse: Parse) -> None:
     assert exc_info.value.column == 5
 
 
-def test_empty_local_position_definition_block(parse: Parse) -> None:
+def test_empty_local_position_definition_block(parse: Parse):
     with pytest.raises(parser_exceptions.MissingPositionDefinitionContent) as exc_info:
         parse(
             "define the potential action<standard:/act> {\n"
@@ -401,7 +401,7 @@ def test_empty_local_position_definition_block(parse: Parse) -> None:
     assert exc_info.value.column == 5
 
 
-def test_invalid_content_in_local_position_definition_block(parse: Parse) -> None:
+def test_invalid_content_in_local_position_definition_block(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidPositionDefinitionBlock) as exc_info:
         parse(
             "define the potential action<standard:/act> {\n"

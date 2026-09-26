@@ -1,0 +1,22 @@
+id: test-functions-no-none-return-annotation
+valid:
+  - |
+    def test_global_position(parse: Parse):
+        parse("define position</x>.\n")
+  - |
+    def _parse_source(source: str) -> None:
+        parse(source)
+  - |
+    def test_accepts_none(value: None):
+        assert value is None
+invalid:
+  - |
+    def test_global_position(parse: Parse) -> None:
+        parse("define position</x>.\n")
+  - |
+    class TestCreateParticle:
+        def test_short_form(self) -> None:
+            pass
+  - |
+    async def test_trace() -> None:
+        pass

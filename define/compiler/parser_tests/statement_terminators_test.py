@@ -17,14 +17,14 @@ if TYPE_CHECKING:
     from define.compiler.parser_tests.conftest import Parse
 
 
-def test_valid_terminator(parse: Parse) -> None:
+def test_valid_terminator(parse: Parse):
     tree = parse("define the potential position<mv:define-lang.org:parser:/path>.\n")
     assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
         "mv:define-lang.org:parser:/path"
     ]
 
 
-def test_missing_terminator(parse: Parse) -> None:
+def test_missing_terminator(parse: Parse):
     with pytest.raises(parser_exceptions.MissingTerminatorOrBrace) as exc_info:
         parse("define the potential position<standard:/path>\n")
     assert str(exc_info.value.token) == "\n"
@@ -32,7 +32,7 @@ def test_missing_terminator(parse: Parse) -> None:
     assert exc_info.value.column == 46
 
 
-def test_missing_newline_after_terminator(parse: Parse) -> None:
+def test_missing_newline_after_terminator(parse: Parse):
     with pytest.raises(parser_exceptions.MissingNewlineAtEof) as exc_info:
         parse("define the potential position<standard:/path>.")
     assert str(exc_info.value.token) == ""
@@ -40,7 +40,7 @@ def test_missing_newline_after_terminator(parse: Parse) -> None:
     assert exc_info.value.column == 46
 
 
-def test_missing_newline_between_global_definitions(parse: Parse) -> None:
+def test_missing_newline_between_global_definitions(parse: Parse):
     with pytest.raises(parser_exceptions.MissingNewlineAfterTerminator) as exc_info:
         parse(
             "define the potential position<mv:define-lang.org:parser:/path>.define the potential action<mv:define-lang.org:parser:/path>.\n"
@@ -51,7 +51,7 @@ def test_missing_newline_between_global_definitions(parse: Parse) -> None:
     assert exc_info.value.column == 64
 
 
-def test_double_terminator(parse: Parse) -> None:
+def test_double_terminator(parse: Parse):
     with pytest.raises(parser_exceptions.MissingNewlineAfterTerminator) as exc_info:
         parse("define the potential position<mv:define-lang.org:parser:/path>..\n")
     assert exc_info.value.token == "."
@@ -60,7 +60,7 @@ def test_double_terminator(parse: Parse) -> None:
     assert exc_info.value.column == 64
 
 
-def test_space_before_terminator(parse: Parse) -> None:
+def test_space_before_terminator(parse: Parse):
     with pytest.raises(parser_exceptions.MissingCloseAngleBracket) as exc_info:
         parse("define the potential position<mv:my.domain.com:my_lib:/some_name .\n")
     assert str(exc_info.value.token) == "\n"
@@ -69,7 +69,7 @@ def test_space_before_terminator(parse: Parse) -> None:
     assert exc_info.value.name == "mv:my.domain.com:my_lib:/some_name ."
 
 
-def test_trailing_space_before_newline(parse: Parse) -> None:
+def test_trailing_space_before_newline(parse: Parse):
     with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
         parse("define the potential position<standard:/path>. \n")
     assert exc_info.value.char == " "
@@ -79,7 +79,7 @@ def test_trailing_space_before_newline(parse: Parse) -> None:
 
 def test_missing_terminator_after_typed_reference_in_position_constraint(
     parse: Parse,
-) -> None:
+):
     with pytest.raises(parser_exceptions.MissingTerminator) as exc_info:
         parse(
             "define the potential position<my_lib:/hello/hello>.\n"

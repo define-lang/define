@@ -1,0 +1,69 @@
+id: test-functions-no-none-return-annotation
+snapshots:
+  ? |
+    async def test_trace() -> None:
+        pass
+  : labels:
+    - source: None
+      style: primary
+      start: 26
+      end: 30
+    - source: test_trace
+      style: secondary
+      start: 10
+      end: 20
+    - source: |-
+        async def test_trace() -> None:
+            pass
+      style: secondary
+      start: 0
+      end: 40
+    - source: None
+      style: secondary
+      start: 26
+      end: 30
+  ? |
+    class TestCreateParticle:
+        def test_short_form(self) -> None:
+            pass
+  : labels:
+    - source: None
+      style: primary
+      start: 59
+      end: 63
+    - source: test_short_form
+      style: secondary
+      start: 34
+      end: 49
+    - source: |-
+        def test_short_form(self) -> None:
+                pass
+      style: secondary
+      start: 30
+      end: 77
+    - source: None
+      style: secondary
+      start: 59
+      end: 63
+  ? |
+    def test_global_position(parse: Parse) -> None:
+        parse("define position</x>.\n")
+  : labels:
+    - source: None
+      style: primary
+      start: 42
+      end: 46
+    - source: test_global_position
+      style: secondary
+      start: 4
+      end: 24
+    - source: |-
+        def test_global_position(parse: Parse) -> None:
+            parse("define position</x>.\n")
+      style: secondary
+      start: 0
+      end: 83
+    - source: None
+      style: secondary
+      start: 42
+      end: 46

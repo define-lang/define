@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from define.compiler.parser_tests.conftest import Parse
 
 
-def test_file_all_spaces(parse: Parse) -> None:
+def test_file_all_spaces(parse: Parse):
     with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
         parse("   ")
     assert str(exc_info.value.char) == " "
@@ -24,7 +24,7 @@ def test_file_all_spaces(parse: Parse) -> None:
     assert exc_info.value.column == 1
 
 
-def test_file_spaces_and_newlines_only(parse: Parse) -> None:
+def test_file_spaces_and_newlines_only(parse: Parse):
     with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
         parse(" \n  \n ")
     assert str(exc_info.value.char) == " "
@@ -32,7 +32,7 @@ def test_file_spaces_and_newlines_only(parse: Parse) -> None:
     assert exc_info.value.column == 1
 
 
-def test_extra_space_after_define_in_position_definition(parse: Parse) -> None:
+def test_extra_space_after_define_in_position_definition(parse: Parse):
     with pytest.raises(parser_exceptions.ExtraWhitespace) as exc_info:
         parse("define  the potential position<mv:define-lang.org:parser:/path>.\n")
     assert exc_info.value.token == "define"
@@ -41,7 +41,7 @@ def test_extra_space_after_define_in_position_definition(parse: Parse) -> None:
     assert exc_info.value.column == 1
 
 
-def test_extra_space_after_the_in_position_definition(parse: Parse) -> None:
+def test_extra_space_after_the_in_position_definition(parse: Parse):
     with pytest.raises(parser_exceptions.ExtraWhitespace) as exc_info:
         parse("define the  potential position<mv:define-lang.org:parser:/path>.\n")
     assert exc_info.value.token == "define"
@@ -52,7 +52,7 @@ def test_extra_space_after_the_in_position_definition(parse: Parse) -> None:
 
 def test_extra_space_after_potential_in_position_definition(
     parse: Parse,
-) -> None:
+):
     with pytest.raises(parser_exceptions.ExtraWhitespace) as exc_info:
         parse("define the potential  position<mv:define-lang.org:parser:/path>.\n")
     assert exc_info.value.token == "define"
@@ -61,7 +61,7 @@ def test_extra_space_after_potential_in_position_definition(
     assert exc_info.value.column == 1
 
 
-def test_extra_space_after_potential_in_action_definition(parse: Parse) -> None:
+def test_extra_space_after_potential_in_action_definition(parse: Parse):
     with pytest.raises(parser_exceptions.ExtraWhitespace) as exc_info:
         parse("define the potential  action<mv:define-lang.org:parser:/path>.\n")
     assert exc_info.value.token == "define"
@@ -72,7 +72,7 @@ def test_extra_space_after_potential_in_action_definition(parse: Parse) -> None:
 
 def test_extra_space_in_local_position_definition_in_action_block(
     parse: Parse,
-) -> None:
+):
     with pytest.raises(parser_exceptions.ExtraWhitespace) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
@@ -90,7 +90,7 @@ def test_extra_space_in_local_position_definition_in_action_block(
     assert exc_info.value.column == 5
 
 
-def test_extra_space_in_trigger_clause_in_action_block(parse: Parse) -> None:
+def test_extra_space_in_trigger_clause_in_action_block(parse: Parse):
     with pytest.raises(parser_exceptions.ExtraWhitespace) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
@@ -107,7 +107,7 @@ def test_extra_space_in_trigger_clause_in_action_block(parse: Parse) -> None:
     assert exc_info.value.column == 5
 
 
-def test_extra_space_in_and_it_does_clause_in_action_block(parse: Parse) -> None:
+def test_extra_space_in_and_it_does_clause_in_action_block(parse: Parse):
     with pytest.raises(parser_exceptions.ExtraWhitespace) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
@@ -123,7 +123,7 @@ def test_extra_space_in_and_it_does_clause_in_action_block(parse: Parse) -> None
     assert exc_info.value.column == 6
 
 
-def test_extra_space_after_and_it_does_before_open_brace(parse: Parse) -> None:
+def test_extra_space_after_and_it_does_before_open_brace(parse: Parse):
     with pytest.raises(parser_exceptions.ExtraWhitespace) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
@@ -141,7 +141,7 @@ def test_extra_space_after_and_it_does_before_open_brace(parse: Parse) -> None:
 
 def test_extra_space_before_local_name_in_position_requirement_statement(
     parse: Parse,
-) -> None:
+):
     with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
         parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"

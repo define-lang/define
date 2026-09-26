@@ -58,15 +58,15 @@ def test_add_and_is_defined():
     local_def = _make_local_def("my_pos")
     tracker.add_definition(local_def)
 
-    ref = _make_local_typed_name("my_pos")
-    assert tracker.is_defined(ref) is True
+    typed_name = _make_local_typed_name("my_pos")
+    assert tracker.is_defined(typed_name) is True
 
 
 def test_is_defined_unknown():
     tracker = scope_tracker.ScopeTracker()
 
-    ref = _make_local_typed_name("no_such")
-    assert tracker.is_defined(ref) is False
+    typed_name = _make_local_typed_name("no_such")
+    assert tracker.is_defined(typed_name) is False
 
 
 def test_enter_child_scope_sees_parent():
@@ -75,8 +75,8 @@ def test_enter_child_scope_sees_parent():
 
     tracker.enter_child_scope()
 
-    ref = _make_local_typed_name("parent_pos")
-    assert tracker.is_defined(ref) is True
+    typed_name = _make_local_typed_name("parent_pos")
+    assert tracker.is_defined(typed_name) is True
 
 
 def test_is_defined_in_current_scope_parent_not_visible():
@@ -85,9 +85,9 @@ def test_is_defined_in_current_scope_parent_not_visible():
 
     tracker.enter_child_scope()
 
-    ref = _make_local_typed_name("parent_pos")
-    assert tracker.is_defined(ref) is True
-    assert tracker.is_defined_in_current_scope(ref) is False
+    typed_name = _make_local_typed_name("parent_pos")
+    assert tracker.is_defined(typed_name) is True
+    assert tracker.is_defined_in_current_scope(typed_name) is False
 
 
 def test_is_defined_in_current_scope_child_visible():
@@ -95,8 +95,8 @@ def test_is_defined_in_current_scope_child_visible():
     tracker.enter_child_scope()
     tracker.add_definition(_make_local_def("child_pos"))
 
-    ref = _make_local_typed_name("child_pos")
-    assert tracker.is_defined_in_current_scope(ref) is True
+    typed_name = _make_local_typed_name("child_pos")
+    assert tracker.is_defined_in_current_scope(typed_name) is True
 
 
 def test_enter_child_scope_adds_to_child_layer():

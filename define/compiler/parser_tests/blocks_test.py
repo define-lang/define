@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from define.compiler.parser_tests.conftest import Parse
 
 
-def test_empty_block_on_position(parse: Parse) -> None:
+def test_empty_block_on_position(parse: Parse):
     with pytest.raises(
         parser_exceptions.MissingPotentialPositionDefinitionContent
     ) as exc_info:
@@ -27,7 +27,7 @@ def test_empty_block_on_position(parse: Parse) -> None:
     assert exc_info.value.column == 1
 
 
-def test_empty_block_on_action(parse: Parse) -> None:
+def test_empty_block_on_action(parse: Parse):
     with pytest.raises(parser_exceptions.MissingActionDefinitionSyntax) as exc_info:
         parse("define the potential action<standard:/path> {\n}\n")
     assert str(exc_info.value.token) == "}"
@@ -35,7 +35,7 @@ def test_empty_block_on_action(parse: Parse) -> None:
     assert exc_info.value.column == 1
 
 
-def test_block_with_blank_lines(parse: Parse) -> None:
+def test_block_with_blank_lines(parse: Parse):
     tree = parse(
         "define the potential position<standard:/path> {\n"
         + "\n"
@@ -51,7 +51,7 @@ def test_block_with_blank_lines(parse: Parse) -> None:
     ]
 
 
-def test_blank_line_between_constraint_requirement_and_close(parse: Parse) -> None:
+def test_blank_line_between_constraint_requirement_and_close(parse: Parse):
     tree = parse(
         "define the potential position<mv:define-lang.org:parser:/path> {\n"
         + "    it may only contain particles where {\n"
@@ -68,7 +68,7 @@ def test_blank_line_between_constraint_requirement_and_close(parse: Parse) -> No
 
 def test_comment_line_between_constraint_requirement_and_close(
     parse: Parse,
-) -> None:
+):
     tree = parse(
         "define the potential position<mv:define-lang.org:parser:/path> {\n"
         + "    it may only contain particles where {\n"
@@ -83,7 +83,7 @@ def test_comment_line_between_constraint_requirement_and_close(
     ]
 
 
-def test_block_with_comment_inside(parse: Parse) -> None:
+def test_block_with_comment_inside(parse: Parse):
     tree = parse(
         "define the potential position<standard:/path> {\n"
         + "    # comment\n"
@@ -98,7 +98,7 @@ def test_block_with_comment_inside(parse: Parse) -> None:
     ]
 
 
-def test_block_with_comment_after_open(parse: Parse) -> None:
+def test_block_with_comment_after_open(parse: Parse):
     tree = parse(
         "define the potential position<standard:/path> { # comment\n"
         + "    it may only contain particles where {\n"
@@ -112,7 +112,7 @@ def test_block_with_comment_after_open(parse: Parse) -> None:
     ]
 
 
-def test_block_with_comment_after_close(parse: Parse) -> None:
+def test_block_with_comment_after_close(parse: Parse):
     tree = parse(
         "define the potential position<standard:/path> {\n"
         + "    it may only contain particles where {\n"
@@ -126,7 +126,7 @@ def test_block_with_comment_after_close(parse: Parse) -> None:
     ]
 
 
-def test_block_with_full_fqun(parse: Parse) -> None:
+def test_block_with_full_fqun(parse: Parse):
     tree = parse(
         "define the potential position<my_mv:example.com:my_lib:/some/path> {\n"
         + "    it may only contain particles where {\n"
@@ -140,7 +140,7 @@ def test_block_with_full_fqun(parse: Parse) -> None:
     ]
 
 
-def test_multiple_definitions_with_blocks(parse: Parse) -> None:
+def test_multiple_definitions_with_blocks(parse: Parse):
     tree = parse(
         "define the potential position<standard:/first> {\n"
         + "    it may only contain particles where {\n"
@@ -161,7 +161,7 @@ def test_multiple_definitions_with_blocks(parse: Parse) -> None:
     ]
 
 
-def test_mixed_block_and_terminator(parse: Parse) -> None:
+def test_mixed_block_and_terminator(parse: Parse):
     tree = parse(
         "define the potential position<standard:/first>.\n"
         + "define the potential position<standard:/second> {\n"
@@ -177,7 +177,7 @@ def test_mixed_block_and_terminator(parse: Parse) -> None:
     ]
 
 
-def test_missing_block_close(parse: Parse) -> None:
+def test_missing_block_close(parse: Parse):
     with pytest.raises(
         parser_exceptions.InvalidPotentialPositionDefinitionBlock
     ) as exc_info:
@@ -186,14 +186,14 @@ def test_missing_block_close(parse: Parse) -> None:
     assert exc_info.value.column == 48
 
 
-def test_missing_newline_after_block_open(parse: Parse) -> None:
+def test_missing_newline_after_block_open(parse: Parse):
     with pytest.raises(parser_exceptions.EmptyBlock) as exc_info:
         parse("define the potential position<standard:/path> {}\n")
     assert exc_info.value.line == 1
     assert exc_info.value.column == 48
 
 
-def test_no_space_before_brace(parse: Parse) -> None:
+def test_no_space_before_brace(parse: Parse):
     with pytest.raises(parser_exceptions.MissingWhitespaceBeforeBrace) as exc_info:
         parse("define the potential position<standard:/path>{\n")
     assert str(exc_info.value.token) == "{"
@@ -201,14 +201,14 @@ def test_no_space_before_brace(parse: Parse) -> None:
     assert exc_info.value.column == 46
 
 
-def test_missing_terminator_still_works(parse: Parse) -> None:
+def test_missing_terminator_still_works(parse: Parse):
     with pytest.raises(parser_exceptions.MissingTerminatorOrBrace) as exc_info:
         parse("define the potential position<standard:/path>\n")
     assert exc_info.value.line == 1
     assert exc_info.value.column == 46
 
 
-def test_missing_outer_block_close_with_inner_block_message(parse: Parse) -> None:
+def test_missing_outer_block_close_with_inner_block_message(parse: Parse):
     with pytest.raises(parser_exceptions.MissingCloseBrace) as exc_info:
         parse(
             "define the potential action<standard:/path> {\n"
@@ -222,7 +222,7 @@ def test_missing_outer_block_close_with_inner_block_message(parse: Parse) -> Non
     assert exc_info.value.column == 6
 
 
-def test_position_constraint_invalid_type_keyword(parse: Parse) -> None:
+def test_position_constraint_invalid_type_keyword(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedConstraintNameType) as exc_info:
         parse(
             "define the potential position<my_lib:/path> {\n"

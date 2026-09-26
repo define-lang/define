@@ -738,7 +738,7 @@ def _enclosing_definition() -> ast.PositionDefinition:
 
 class TestValidateTypedName:
     def test_global_reference_valid(self):
-        ref = ast.GlobalTypedNameReference(
+        typed_name = ast.GlobalTypedNameReference(
             name_type=ast.NameType.POSITION,
             name_content=ast.ReferenceGlobalNameContent(
                 fqun=None,
@@ -748,11 +748,13 @@ class TestValidateTypedName:
             enclosing_fqun=_fqun("my_lib", authority=_authority("my.domain.com")),
             location=_LOC,
         )
-        result = name_validators.validate_typed_name(ref, _enclosing_definition())
+        result = name_validators.validate_typed_name(
+            typed_name, _enclosing_definition()
+        )
         assert not result
 
     def test_global_reference_same_fqun_must_use_short_form(self):
-        ref = ast.GlobalTypedNameReference(
+        typed_name = ast.GlobalTypedNameReference(
             name_type=ast.NameType.POSITION,
             name_content=ast.ReferenceGlobalNameContent(
                 fqun=_fqun("my_lib", authority=_authority("my.domain.com")),
@@ -762,27 +764,33 @@ class TestValidateTypedName:
             enclosing_fqun=_fqun("my_lib", authority=_authority("my.domain.com")),
             location=_LOC,
         )
-        result = name_validators.validate_typed_name(ref, _enclosing_definition())
+        result = name_validators.validate_typed_name(
+            typed_name, _enclosing_definition()
+        )
         assert len(result) == 1
         assert isinstance(
             result[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic
         )
 
     def test_local_reference_valid(self):
-        ref = ast.LocalTypedNameReference(
+        typed_name = ast.LocalTypedNameReference(
             name_type=ast.NameType.POSITION,
             name_content=ast.LocalNameContent(name="my_pos", location=_LOC),
             location=_LOC,
         )
-        result = name_validators.validate_typed_name(ref, _enclosing_definition())
+        result = name_validators.validate_typed_name(
+            typed_name, _enclosing_definition()
+        )
         assert not result
 
     def test_local_reference_invalid_char(self):
-        ref = ast.LocalTypedNameReference(
+        typed_name = ast.LocalTypedNameReference(
             name_type=ast.NameType.POSITION,
             name_content=ast.LocalNameContent(name="My-pos", location=_LOC),
             location=_LOC,
         )
-        result = name_validators.validate_typed_name(ref, _enclosing_definition())
+        result = name_validators.validate_typed_name(
+            typed_name, _enclosing_definition()
+        )
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.InvalidLocalNameFormatDiagnostic)

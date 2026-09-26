@@ -31,7 +31,7 @@ def _write_valid_position_project(project_root: Path, universe_name: str) -> Non
 
 def test_absolute_path_in_project_returns_success(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+):
     project_root = tmp_path / "project"
     project_root.mkdir()
     _write_valid_position_project(
@@ -51,7 +51,7 @@ def test_absolute_path_in_project_returns_success(
 
 def test_absolute_path_outside_project_root_returns_error(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+):
     project_root = tmp_path / "project"
     project_root.mkdir()
     outside_path = tmp_path / "outside.dfn"
@@ -71,7 +71,7 @@ def test_absolute_path_outside_project_root_returns_error(
 
 def test_invalid_config_returns_error_and_prints_to_stream(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+):
     config_dir = tmp_path / ".define" / "project"
     config_dir.mkdir(parents=True)
     _ = (config_dir / "config.defcl").write_text("project: {}\n")
@@ -94,7 +94,7 @@ def test_invalid_config_without_error_stream_prints_to_stderr(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
-) -> None:
+):
     config_dir = tmp_path / ".define" / "project"
     config_dir.mkdir(parents=True)
     _ = (config_dir / "config.defcl").write_text("project: {}\n")
@@ -117,7 +117,7 @@ def test_invalid_config_without_error_stream_prints_to_stderr(
 
 def test_valid_file_returns_success(
     testdata_project_directory: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+):
     monkeypatch.chdir(testdata_project_directory)
     error_stream = io.StringIO()
     result = driver.Driver(_PARSER).run(Path("test.dfn"), error_stream=error_stream)
@@ -127,7 +127,7 @@ def test_valid_file_returns_success(
 
 def test_relative_path_outside_project_root_returns_error(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+):
     project_root = tmp_path / "project"
     project_root.mkdir()
     outside_path = tmp_path / "outside.dfn"
@@ -149,7 +149,7 @@ def test_relative_path_outside_project_root_returns_error(
 
 def test_syntax_error_returns_error_and_prints_to_stream(
     testdata_project_directory: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+):
     monkeypatch.chdir(testdata_project_directory)
     error_stream = io.StringIO()
     result = driver.Driver(_PARSER).run(
@@ -172,7 +172,7 @@ def test_syntax_error_returns_error_and_prints_to_stream(
 
 def test_validation_diagnostics_returns_error_and_prints_to_stream(
     testdata_project_directory: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+):
     monkeypatch.chdir(testdata_project_directory)
     error_stream = io.StringIO()
     result = driver.Driver(_PARSER).run(
@@ -190,7 +190,7 @@ def test_validation_diagnostics_returns_error_and_prints_to_stream(
 
 def test_multiple_errors_are_separated_by_divider(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+):
     config_dir = tmp_path / ".define" / "project"
     config_dir.mkdir(parents=True)
     _ = (config_dir / "config.defcl").write_text(
@@ -227,7 +227,7 @@ def test_multiple_errors_are_separated_by_divider(
 
 def test_stats_stream_receives_output(
     testdata_project_directory: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+):
     monkeypatch.chdir(testdata_project_directory)
     stats_stream = io.StringIO()
     result = driver.Driver(_PARSER).run(
@@ -244,7 +244,7 @@ def test_stats_stream_receives_output(
 
 def test_stats_stream_none_produces_no_stats(
     testdata_project_directory: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+):
     monkeypatch.chdir(testdata_project_directory)
     error_stream = io.StringIO()
     result = driver.Driver(_PARSER).run(Path("test.dfn"), error_stream=error_stream)
@@ -256,7 +256,7 @@ def test_compile_succeeds(
     testdata_project_directory: Path,
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
-) -> None:
+):
     monkeypatch.chdir(testdata_project_directory)
     result = driver.Driver(_PARSER).run(
         Path("test.dfn"),
@@ -266,7 +266,7 @@ def test_compile_succeeds(
     assert result == driver.ExitCode.SUCCESS
 
 
-def test_compile_source_succeeds(tmp_path: Path) -> None:
+def test_compile_source_succeeds(tmp_path: Path):
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
         "    it happens when {\n"
@@ -294,7 +294,7 @@ def test_compile_with_errors_returns_error(
     testdata_project_directory: Path,
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
-) -> None:
+):
     monkeypatch.chdir(testdata_project_directory)
     result = driver.Driver(_PARSER).run(
         Path("test.dfn"),
@@ -309,7 +309,7 @@ def test_compile_emits_codegen_diagnostic_on_action_entry_point(
     testdata_project_directory: Path,
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
-) -> None:
+):
     monkeypatch.chdir(testdata_project_directory)
     error_stream = io.StringIO()
     result = driver.Driver(_PARSER).run(
@@ -327,12 +327,12 @@ def test_compile_emits_codegen_diagnostic_on_action_entry_point(
     )
 
 
-def test_compile_without_output_directory_raises_value_error() -> None:
+def test_compile_without_output_directory_raises_value_error():
     with pytest.raises(ValueError, match="output_dir is required when mode is COMPILE"):
         _ = driver.Driver(_PARSER).run(mode=driver.DriverMode.COMPILE)
 
 
-def test_compile_without_path_or_source_raises_value_error(tmp_path: Path) -> None:
+def test_compile_without_path_or_source_raises_value_error(tmp_path: Path):
     with pytest.raises(ValueError, match="path is required when source is not given"):
         _ = driver.Driver(_PARSER).run(
             mode=driver.DriverMode.COMPILE,
@@ -340,7 +340,7 @@ def test_compile_without_path_or_source_raises_value_error(tmp_path: Path) -> No
         )
 
 
-def test_default_parser_returns_success() -> None:
+def test_default_parser_returns_success():
     source = "define the potential position<my.domain.com:my_lib:/test>.\n"
     error_stream = io.StringIO()
 
@@ -352,7 +352,7 @@ def test_default_parser_returns_success() -> None:
 
 def test_multifile_project_returns_success(
     testdata_project_directory: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+):
     monkeypatch.chdir(testdata_project_directory)
     error_stream = io.StringIO()
     stats_stream = io.StringIO()
@@ -374,7 +374,7 @@ def test_multifile_project_returns_success(
 
 def test_reference_graph_diagnostic_returns_error(
     testdata_project_directory: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+):
     monkeypatch.chdir(testdata_project_directory)
     error_stream = io.StringIO()
 
@@ -395,7 +395,7 @@ def test_reference_graph_diagnostic_returns_error(
 
 def test_relative_path_with_dotdot_in_project_returns_success(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+):
     project_root = tmp_path / "project"
     project_root.mkdir()
     _write_valid_position_project(
@@ -413,7 +413,7 @@ def test_relative_path_with_dotdot_in_project_returns_success(
     assert error_stream.getvalue() == ""
 
 
-def test_valid_source_returns_success() -> None:
+def test_valid_source_returns_success():
     source = "define the potential position<my.domain.com:my_lib:/test>.\n"
     error_stream = io.StringIO()
 
@@ -423,6 +423,6 @@ def test_valid_source_returns_success() -> None:
     assert error_stream.getvalue() == ""
 
 
-def test_validate_without_path_or_source_raises_value_error() -> None:
+def test_validate_without_path_or_source_raises_value_error():
     with pytest.raises(ValueError, match="path is required when source is not given"):
         _ = driver.Driver(_PARSER).run()

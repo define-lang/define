@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from define.compiler.parser_tests.conftest import Parse
 
 
-def test_action_definition_without_body_is_error(parse: Parse) -> None:
+def test_action_definition_without_body_is_error(parse: Parse):
     with pytest.raises(parser_exceptions.MissingOpenBrace) as exc_info:
         parse("define the potential action<standard:/path>.\n")
     assert str(exc_info.value.token) == "."
@@ -26,7 +26,7 @@ def test_action_definition_without_body_is_error(parse: Parse) -> None:
     assert exc_info.value.column == 44
 
 
-def test_action_definition_with_body_parses(parse: Parse) -> None:
+def test_action_definition_with_body_parses(parse: Parse):
     tree = parse(
         "define the potential action<standard:/path> {\n"
         + "    define the position<pp>.\n"
@@ -41,7 +41,7 @@ def test_action_definition_with_body_parses(parse: Parse) -> None:
     assert get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == ["standard:/path"]
 
 
-def test_action_definition_missing_open_angle(parse: Parse) -> None:
+def test_action_definition_missing_open_angle(parse: Parse):
     with pytest.raises(parser_exceptions.MissingOpenAngleBracket) as exc_info:
         parse("define the potential actionstandard:/path>.\n")
     assert str(exc_info.value.token) == "standard:/path"
@@ -50,7 +50,7 @@ def test_action_definition_missing_open_angle(parse: Parse) -> None:
     assert exc_info.value.name == "standard:/path"
 
 
-def test_action_definition_empty_name_content(parse: Parse) -> None:
+def test_action_definition_empty_name_content(parse: Parse):
     with pytest.raises(parser_exceptions.EmptyName) as exc_info:
         parse("define the potential action<>.\n")
     assert str(exc_info.value.token) == ">"
@@ -58,7 +58,7 @@ def test_action_definition_empty_name_content(parse: Parse) -> None:
     assert exc_info.value.column == 29
 
 
-def test_action_with_empty_inner_blocks(parse: Parse) -> None:
+def test_action_with_empty_inner_blocks(parse: Parse):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
@@ -74,7 +74,7 @@ def test_action_with_empty_inner_blocks(parse: Parse) -> None:
     assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["run", "run"]
 
 
-def test_action_with_local_position_definition(parse: Parse) -> None:
+def test_action_with_local_position_definition(parse: Parse):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<my_pos>.\n"
@@ -90,7 +90,7 @@ def test_action_with_local_position_definition(parse: Parse) -> None:
     assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["my_pos", "my_pos"]
 
 
-def test_action_with_constrained_local_position_definition(parse: Parse) -> None:
+def test_action_with_constrained_local_position_definition(parse: Parse):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<my_pos> {\n"
@@ -111,7 +111,7 @@ def test_action_with_constrained_local_position_definition(parse: Parse) -> None
     assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["my_pos", "my_pos"]
 
 
-def test_action_with_multiple_local_position_definitions(parse: Parse) -> None:
+def test_action_with_multiple_local_position_definitions(parse: Parse):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<first_pos>.\n"
@@ -132,7 +132,7 @@ def test_action_with_multiple_local_position_definitions(parse: Parse) -> None:
     ]
 
 
-def test_action_with_mixed_local_position_definition_forms(parse: Parse) -> None:
+def test_action_with_mixed_local_position_definition_forms(parse: Parse):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<first_pos>.\n"
@@ -158,7 +158,7 @@ def test_action_with_mixed_local_position_definition_forms(parse: Parse) -> None
     ]
 
 
-def test_action_block_with_comments_and_blank_lines(parse: Parse) -> None:
+def test_action_block_with_comments_and_blank_lines(parse: Parse):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<my_pos>.\n"
@@ -176,7 +176,7 @@ def test_action_block_with_comments_and_blank_lines(parse: Parse) -> None:
     assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["my_pos", "my_pos"]
 
 
-def test_action_block_with_full_fqun(parse: Parse) -> None:
+def test_action_block_with_full_fqun(parse: Parse):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/some/path> {\n"
         + "    define the position<my_pos>.\n"
@@ -192,7 +192,7 @@ def test_action_block_with_full_fqun(parse: Parse) -> None:
     assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["my_pos", "my_pos"]
 
 
-def test_action_block_comment_after_trigger_open(parse: Parse) -> None:
+def test_action_block_comment_after_trigger_open(parse: Parse):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
@@ -208,7 +208,7 @@ def test_action_block_comment_after_trigger_open(parse: Parse) -> None:
     assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["run", "run"]
 
 
-def test_action_block_comment_after_action_close(parse: Parse) -> None:
+def test_action_block_comment_after_action_close(parse: Parse):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
@@ -224,7 +224,7 @@ def test_action_block_comment_after_action_close(parse: Parse) -> None:
     assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["run", "run"]
 
 
-def test_action_block_no_indentation(p: parser.Parser) -> None:
+def test_action_block_no_indentation(p: parser.Parser):
     result = p.parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "define the position<run>.\n"
@@ -247,7 +247,7 @@ def test_action_block_no_indentation(p: parser.Parser) -> None:
     assert get_tokens_by_type(result.tree, "LOCAL_NAME_CONTENT") == ["run", "run"]
 
 
-def test_action_block_blank_lines_in_trigger_block(parse: Parse) -> None:
+def test_action_block_blank_lines_in_trigger_block(parse: Parse):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
@@ -265,7 +265,7 @@ def test_action_block_blank_lines_in_trigger_block(parse: Parse) -> None:
     assert get_tokens_by_type(tree, "LOCAL_NAME_CONTENT") == ["run", "run"]
 
 
-def test_action_block_blank_lines_in_action_block(parse: Parse) -> None:
+def test_action_block_blank_lines_in_action_block(parse: Parse):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
@@ -285,7 +285,7 @@ def test_action_block_blank_lines_in_action_block(parse: Parse) -> None:
 
 def test_action_block_with_local_position_definition_in_action_statements(
     parse: Parse,
-) -> None:
+):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
@@ -308,7 +308,7 @@ def test_action_block_with_local_position_definition_in_action_statements(
 
 def test_action_block_with_multiple_local_position_definitions_in_action_statements(
     parse: Parse,
-) -> None:
+):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
@@ -333,7 +333,7 @@ def test_action_block_with_multiple_local_position_definitions_in_action_stateme
 
 def test_action_block_with_local_position_definitions_inside_and_outside_action_statements(
     parse: Parse,
-) -> None:
+):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<outer_pos>.\n"
@@ -354,7 +354,7 @@ def test_action_block_with_local_position_definitions_inside_and_outside_action_
     ]
 
 
-def test_two_action_definitions_in_same_file(parse: Parse) -> None:
+def test_two_action_definitions_in_same_file(parse: Parse):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/first> {\n"
         + "    define the position<run>.\n"
@@ -383,7 +383,7 @@ def test_two_action_definitions_in_same_file(parse: Parse) -> None:
     ]
 
 
-def test_action_block_missing_trigger_block(parse: Parse) -> None:
+def test_action_block_missing_trigger_block(parse: Parse):
     with pytest.raises(parser_exceptions.MissingActionDefinitionSyntax) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
@@ -397,7 +397,7 @@ def test_action_block_missing_trigger_block(parse: Parse) -> None:
 
 def test_global_position_definition_not_allowed_in_action_definition_block(
     parse: Parse,
-) -> None:
+):
     with pytest.raises(
         parser_exceptions.GlobalPositionDefinitionInLocalContext
     ) as exc_info:
@@ -418,7 +418,7 @@ def test_global_position_definition_not_allowed_in_action_definition_block(
 
 def test_global_position_definition_not_allowed_in_action_statements_block(
     parse: Parse,
-) -> None:
+):
     with pytest.raises(
         parser_exceptions.GlobalPositionDefinitionInLocalContext
     ) as exc_info:
@@ -438,7 +438,7 @@ def test_global_position_definition_not_allowed_in_action_statements_block(
     assert exc_info.value.column == 9
 
 
-def test_action_block_missing_action_statements_block(parse: Parse) -> None:
+def test_action_block_missing_action_statements_block(parse: Parse):
     with pytest.raises(parser_exceptions.MissingActionStatementsBlock) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
@@ -453,7 +453,7 @@ def test_action_block_missing_action_statements_block(parse: Parse) -> None:
     assert exc_info.value.column == 6
 
 
-def test_action_block_missing_outer_close(parse: Parse) -> None:
+def test_action_block_missing_outer_close(parse: Parse):
     with pytest.raises(parser_exceptions.MissingCloseBrace) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
@@ -468,7 +468,7 @@ def test_action_block_missing_outer_close(parse: Parse) -> None:
     assert exc_info.value.column == 6
 
 
-def test_action_block_extra_space_before_brace(parse: Parse) -> None:
+def test_action_block_extra_space_before_brace(parse: Parse):
     with pytest.raises(parser_exceptions.ExtraWhitespace) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/path>  {\n"
@@ -483,7 +483,7 @@ def test_action_block_extra_space_before_brace(parse: Parse) -> None:
     assert exc_info.value.column == 61
 
 
-def test_action_block_no_newline_after_open_brace(parse: Parse) -> None:
+def test_action_block_no_newline_after_open_brace(parse: Parse):
     with pytest.raises(parser_exceptions.EmptyBlock) as exc_info:
         parse("define the potential action<mv:define-lang.org:parser:/path> {}\n")
     assert str(exc_info.value.token) == "}"
@@ -491,7 +491,7 @@ def test_action_block_no_newline_after_open_brace(parse: Parse) -> None:
     assert exc_info.value.column == 63
 
 
-def test_action_block_missing_newline_after_outer_open_brace(parse: Parse) -> None:
+def test_action_block_missing_newline_after_outer_open_brace(parse: Parse):
     with pytest.raises(parser_exceptions.MissingNewlineAfterOpenBrace) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/path> { it happens when {\n"
@@ -505,7 +505,7 @@ def test_action_block_missing_newline_after_outer_open_brace(parse: Parse) -> No
     assert exc_info.value.column == 63
 
 
-def test_action_block_missing_newline_after_inner_close(parse: Parse) -> None:
+def test_action_block_missing_newline_after_inner_close(parse: Parse):
     with pytest.raises(parser_exceptions.MissingNewlineAfterCloseBrace) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
@@ -520,7 +520,7 @@ def test_action_block_missing_newline_after_inner_close(parse: Parse) -> None:
     assert exc_info.value.column == 6
 
 
-def test_trigger_and_action_on_wrong_line(parse: Parse) -> None:
+def test_trigger_and_action_on_wrong_line(parse: Parse):
     with pytest.raises(parser_exceptions.MissingActionStatementsBlock) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
@@ -537,7 +537,7 @@ def test_trigger_and_action_on_wrong_line(parse: Parse) -> None:
     assert exc_info.value.column == 6
 
 
-def test_local_position_after_trigger_and_action(parse: Parse) -> None:
+def test_local_position_after_trigger_and_action(parse: Parse):
     with pytest.raises(
         parser_exceptions.InvalidPositionDefinitionLocationInAction
     ) as exc_info:
@@ -556,7 +556,7 @@ def test_local_position_after_trigger_and_action(parse: Parse) -> None:
     assert exc_info.value.column == 5
 
 
-def test_second_trigger_and_action_block_pair_not_allowed(parse: Parse) -> None:
+def test_second_trigger_and_action_block_pair_not_allowed(parse: Parse):
     with pytest.raises(parser_exceptions.MissingCloseBrace) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
@@ -576,7 +576,7 @@ def test_second_trigger_and_action_block_pair_not_allowed(parse: Parse) -> None:
     assert exc_info.value.column == 5
 
 
-def test_missing_close_brace_followed_by_global_definition(parse: Parse) -> None:
+def test_missing_close_brace_followed_by_global_definition(parse: Parse):
     with pytest.raises(parser_exceptions.MissingCloseBrace) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
@@ -592,7 +592,7 @@ def test_missing_close_brace_followed_by_global_definition(parse: Parse) -> None
     assert exc_info.value.column == 1
 
 
-def test_action_statements_block_invalid_statement(parse: Parse) -> None:
+def test_action_statements_block_invalid_statement(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidActionStatementsBlock) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
@@ -611,7 +611,7 @@ def test_action_statements_block_invalid_statement(parse: Parse) -> None:
 
 def test_action_statements_block_with_create_particle_local_position(
     parse: Parse,
-) -> None:
+):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
@@ -634,7 +634,7 @@ def test_action_statements_block_with_create_particle_local_position(
 
 def test_action_statements_block_with_create_particle_short_global_position(
     parse: Parse,
-) -> None:
+):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
@@ -654,7 +654,7 @@ def test_action_statements_block_with_create_particle_short_global_position(
 
 def test_action_statements_block_with_create_particle_full_global_position(
     parse: Parse,
-) -> None:
+):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
@@ -674,7 +674,7 @@ def test_action_statements_block_with_create_particle_full_global_position(
 
 def test_action_statements_block_with_create_particle_chain(
     parse: Parse,
-) -> None:
+):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
@@ -699,7 +699,7 @@ def test_action_statements_block_with_create_particle_chain(
 
 def test_action_statements_block_with_create_particle_short_global_chain(
     parse: Parse,
-) -> None:
+):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
@@ -721,7 +721,7 @@ def test_action_statements_block_with_create_particle_short_global_chain(
 
 def test_action_statements_block_with_create_particle_any_typed_chain(
     parse: Parse,
-) -> None:
+):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
@@ -746,7 +746,7 @@ def test_action_statements_block_with_create_particle_any_typed_chain(
 
 def test_action_statements_block_with_mixed_statements_and_multiple_create_particles(
     parse: Parse,
-) -> None:
+):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"

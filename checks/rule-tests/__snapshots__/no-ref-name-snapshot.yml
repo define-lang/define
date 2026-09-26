@@ -1,0 +1,120 @@
+id: no-ref-name
+snapshots:
+  ? |
+    callback = lambda ref: ref.name
+  : labels:
+    - source: ref
+      style: primary
+      start: 18
+      end: 21
+    - source: ref
+      style: secondary
+      start: 18
+      end: 21
+  ? |
+    def lookup(ref):
+        pass
+  : labels:
+    - source: ref
+      style: primary
+      start: 11
+      end: 14
+    - source: (ref)
+      style: secondary
+      start: 10
+      end: 15
+  ? |
+    def lookup(ref: ast.TypedName = None):
+        pass
+  : labels:
+    - source: ref
+      style: primary
+      start: 11
+      end: 14
+    - source: 'ref: ast.TypedName = None'
+      style: secondary
+      start: 11
+      end: 36
+  ? |
+    def lookup(ref: ast.TypedName):
+        pass
+  : labels:
+    - source: ref
+      style: primary
+      start: 11
+      end: 14
+    - source: 'ref: ast.TypedName'
+      style: secondary
+      start: 11
+      end: 29
+  ? |
+    for ref in references:
+        pass
+  : labels:
+    - source: ref
+      style: primary
+      start: 4
+      end: 7
+    - source: |-
+        for ref in references:
+            pass
+      style: secondary
+      start: 0
+      end: 31
+  ? |
+    if (ref := lookup()) is not None:
+        pass
+  : labels:
+    - source: ref
+      style: primary
+      start: 4
+      end: 7
+    - source: ref := lookup()
+      style: secondary
+      start: 4
+      end: 19
+  ? |
+    name, ref = pair
+  : labels:
+    - source: ref
+      style: primary
+      start: 6
+      end: 9
+    - source: name, ref
+      style: secondary
+      start: 0
+      end: 9
+  ? |
+    names = [ref.name for ref in references]
+  : labels:
+    - source: ref
+      style: primary
+      start: 22
+      end: 25
+    - source: for ref in references
+      style: secondary
+      start: 18
+      end: 39
+  ? |
+    ref = _make_local_typed_name("my_pos")
+  : labels:
+    - source: ref
+      style: primary
+      start: 0
+      end: 3
+    - source: ref = _make_local_typed_name("my_pos")
+      style: secondary
+      start: 0
+      end: 38
+  ? |
+    with open(path) as ref:
+        pass
+  : labels:
+    - source: ref
+      style: primary
+      start: 19
+      end: 22
+    - source: ref
+      style: secondary
+      start: 19
+      end: 22

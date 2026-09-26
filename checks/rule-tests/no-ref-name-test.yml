@@ -1,0 +1,40 @@
+id: no-ref-name
+valid:
+  - |
+    typed_name = _make_local_typed_name("my_pos")
+  - |
+    tracker.ref = typed_name
+  - |
+    lookup(ref=typed_name)
+  - |
+    def lookup(typed_name: ast.TypedName = ref):
+        pass
+  - |
+    ref_count = 0
+invalid:
+  - |
+    ref = _make_local_typed_name("my_pos")
+  - |
+    def lookup(ref):
+        pass
+  - |
+    def lookup(ref: ast.TypedName):
+        pass
+  - |
+    def lookup(ref: ast.TypedName = None):
+        pass
+  - |
+    for ref in references:
+        pass
+  - |
+    with open(path) as ref:
+        pass
+  - |
+    name, ref = pair
+  - |
+    names = [ref.name for ref in references]
+  - |
+    if (ref := lookup()) is not None:
+        pass
+  - |
+    callback = lambda ref: ref.name

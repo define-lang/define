@@ -35,118 +35,28 @@ flowchart LR
     CodeGen -.->|generated code imports| Runtime["runtime/literal.py"]
 ```
 
-### Parsing
-
-```mermaid
-flowchart LR
-    Grammar["grammar.lark"] --> Parser["parser.py"]
-    ParseErrors["parser_exceptions.py"] --> Parser
-    ErrorClassification["parser_error_classification.py"] --> Parser
-    NameParser["name_parser.py"] --> Parser
-    IndentValidator["indentation_validator.py"] --> Parser
-```
-
-### Transformation
-
-```mermaid
-flowchart LR
-    AST["ast.py"] --> Transformer["transformer.py"]
-```
-
-### Structural Validation
-
-```mermaid
-flowchart LR
-    FileValidator["validator/structural/file_validator.py"]
-    NameValidators["validator/structural/name_validators.py"] --> FileValidator
-    ScopeTracker["validator/scope_tracker.py"] --> FileValidator
-    ReferenceGraph["graphs/reference_graph.py"] --> ProgramValidator
-    FileValidator --> ProgramValidator["validator/structural/program_validator.py"]
-    PathTracker["validator/structural/path_tracker.py"] --> ProgramValidator
-    Config["config.py"] --> ProgramValidator
-    ValidationResult["validator/validation_result.py"] --> ProgramValidator
-    Stats["validator/stats.py"] --> ValidationResult
-```
-
-### Reference Graph Validation
-
-```mermaid
-flowchart LR
-    ReferenceGraphValidator["validator/reference_graph/reference_graph_validator.py"]
-    DefinitionPostorderValidator["validator/reference_graph/definition_postorder_validator.py"] --> ReferenceGraphValidator
-    ActionContract["validator/reference_graph/action_contract.py"] --> ReferenceGraphValidator
-    ParticleTracker["validator/reference_graph/particle_tracker.py"] --> DefinitionPostorderValidator
-    ParticleOperationValidator["validator/reference_graph/particle_operation_validator.py"] --> DefinitionPostorderValidator
-    RequirementViolation["validator/reference_graph/requirement_violation.py"] --> DefinitionPostorderValidator
-    DeadConstraintTracker["validator/reference_graph/dead_constraint_tracker.py"] --> DefinitionPostorderValidator
-    ActionContract --> DefinitionPostorderValidator
-    ActionContract --> ParticleTracker
-    ActionContract --> RequirementViolation
-    ParticleTracker --> ParticleOperationValidator
-    ParticleTracker --> RequirementViolation
-    ScopeTracker["validator/scope_tracker.py"] --> DefinitionPostorderValidator
-    ReferenceGraph["graphs/reference_graph.py"] --> ReferenceGraphValidator
-    ValidationResult["validator/validation_result.py"] --> ReferenceGraphValidator
-```
-
-### Code Generation
-
-```mermaid
-flowchart LR
-    PythonGenerator["codegen/literal/python/generator.py"] --> CodeGenerator["codegen/generator.py"]
-    Naming["codegen/literal/python/naming.py"] --> PythonGenerator
-    PositionDef["codegen/literal/python/position_definition.py"] --> PythonGenerator
-    ActionDef["codegen/literal/python/action_definition.py"] --> PythonGenerator
-    TemplateCtx["codegen/literal/python/template_context.py"] --> PythonGenerator
-    Renderer["codegen/literal/python/renderer.rs"] --> PythonGenerator
-    ActionStmts["codegen/literal/python/action_statements.py"] --> PositionDef
-    ActionStmts --> ActionDef
-    Template["codegen/literal/python/*.j2"] --> Renderer
-```
-
-### CLI
-
-```mermaid
-flowchart LR
-    ProgramValidator["validator/structural/program_validator.py"] --> Driver["driver.py"]
-    ReferenceGraphValidator["validator/reference_graph/reference_graph_validator.py"] --> Driver
-    CodeGenerator["codegen/generator.py"] --> Driver
-    OverallStats["overall_stats.py"] --> Driver
-    Diagnostics["diagnostics.py"] --> Driver
-    Exceptions["exceptions.py"] --> Driver
-    Driver --> Main["main.py"]
-```
-
 ## Grammar
 
-- The grammar for the language is in `compiler/grammar.lark`.
 - When updating the grammar, use EBNF instead of regex.
 
 ## Parser
 
-- The parser is in `compiler/parser.py`. Before changing the functionality of
-  the parser, update the tests in `compiler/parser_tests` first, or write a new
-  test in the same style if you are adding totally new functionality.
+- Before changing the functionality of the parser, update the tests in
+  `compiler/parser_tests` first, or write a new test in the same style if you
+  are adding totally new functionality.
 
 ## Transformer
 
-- The transformer turns the parse tree into an AST. The transformer is in
-  `compiler/transformer.py`, the AST is in `compiler/ast.py`, and they both have
-  tests.
+- The transformer turns the parse tree into an AST.
 
 ## Validator
 
 - The validator checks syntax that the parser can't check, and it also checks
   semantics.
-- Validator coordinator code is in `compiler/validator/program_validator.py`.
-- Per-file validation code is in `compiler/validator/file_validator.py`.
-- Validator tests are in `compiler/validator/` and
-  `compiler/validator/structural/program_validator_tests/`.
 
 ## Driver
 
-- The Driver is the class that represents the compiler overall. It is in
-  `compiler/driver.py`.
+- The Driver is the class that represents the compiler overall.
 - When changing functionality in `compiler/driver.py` itself that creates new
   functionality, first update `compiler/driver_test.py`.
 - When changing functionality `Driver.run`, first update
@@ -167,9 +77,6 @@ flowchart LR
 
 ## Code Generation
 
-- Generator code is in `compiler/codegen/`, with the Python-specific generator
-  in `compiler/codegen/literal/python/generator.py`.
-- Integration test cases for the generator live in `testdata/codegen/`.
 - After changing the code generator or any testdata, regenerate the expected
   outputs: `bazelisk run --noshow_progress //tools:regenerate_codegen_testdata`
 

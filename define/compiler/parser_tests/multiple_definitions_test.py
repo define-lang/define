@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from define.compiler.parser_tests.conftest import Parse
 
 
-def test_multiple_position_definitions(parse: Parse) -> None:
+def test_multiple_position_definitions(parse: Parse):
     tree = parse(
         "define the potential position<example.com:my_lib:/first>.\n"
         + "define the potential position<example.com:my_lib:/second>.\n"
@@ -25,7 +25,7 @@ def test_multiple_position_definitions(parse: Parse) -> None:
     ]
 
 
-def test_multiple_action_definitions(parse: Parse) -> None:
+def test_multiple_action_definitions(parse: Parse):
     tree = parse(
         "define the potential action<my_mv:example.com:my_lib:/first> {\n"
         + "    define the position<_noop>.\n"
@@ -52,7 +52,7 @@ def test_multiple_action_definitions(parse: Parse) -> None:
     ]
 
 
-def test_mixed_position_and_action_definitions(parse: Parse) -> None:
+def test_mixed_position_and_action_definitions(parse: Parse):
     tree = parse(
         "define the potential position<example.com:my_lib:/pos>.\n"
         + "define the potential action<my_mv:example.com:my_lib:/act> {\n"
@@ -71,7 +71,7 @@ def test_mixed_position_and_action_definitions(parse: Parse) -> None:
     ]
 
 
-def test_definitions_separated_by_blank_lines(parse: Parse) -> None:
+def test_definitions_separated_by_blank_lines(parse: Parse):
     tree = parse(
         "define the potential position<standard:/first>.\n"
         + "\n"
@@ -83,7 +83,7 @@ def test_definitions_separated_by_blank_lines(parse: Parse) -> None:
     ]
 
 
-def test_definitions_separated_by_comments(parse: Parse) -> None:
+def test_definitions_separated_by_comments(parse: Parse):
     tree = parse(
         "define the potential position<my_mv:example.com:my_lib:/first>.\n"
         + "# a comment between definitions\n"

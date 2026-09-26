@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from define.compiler.parser_tests.conftest import Parse
 
 
-def test_constructor_with_no_interface_positions(parse: Parse) -> None:
+def test_constructor_with_no_interface_positions(parse: Parse):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    it happens when {\n"
@@ -35,7 +35,7 @@ def test_constructor_with_no_interface_positions(parse: Parse) -> None:
     ]
 
 
-def test_constructor_with_comments(parse: Parse) -> None:
+def test_constructor_with_comments(parse: Parse):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    it happens when {\n"
@@ -51,7 +51,7 @@ def test_constructor_with_comments(parse: Parse) -> None:
     ]
 
 
-def test_constructor_with_blank_lines(parse: Parse) -> None:
+def test_constructor_with_blank_lines(parse: Parse):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    it happens when {\n"
@@ -67,7 +67,7 @@ def test_constructor_with_blank_lines(parse: Parse) -> None:
     ]
 
 
-def test_constructor_missing_terminator(parse: Parse) -> None:
+def test_constructor_missing_terminator(parse: Parse):
     with pytest.raises(parser_exceptions.MissingTerminator) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
@@ -83,7 +83,7 @@ def test_constructor_missing_terminator(parse: Parse) -> None:
     assert exc_info.value.column == 33
 
 
-def test_constructor_followed_by_extra_content(parse: Parse) -> None:
+def test_constructor_followed_by_extra_content(parse: Parse):
     with pytest.raises(parser_exceptions.MissingTerminator) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
@@ -99,7 +99,7 @@ def test_constructor_followed_by_extra_content(parse: Parse) -> None:
     assert exc_info.value.column == 33
 
 
-def test_trigger_condition_and_constructor_in_one_block(parse: Parse) -> None:
+def test_trigger_condition_and_constructor_in_one_block(parse: Parse):
     with pytest.raises(parser_exceptions.MissingCloseBrace) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
@@ -117,7 +117,7 @@ def test_trigger_condition_and_constructor_in_one_block(parse: Parse) -> None:
     assert exc_info.value.column == 9
 
 
-def test_constructor_as_action_statement(parse: Parse) -> None:
+def test_constructor_as_action_statement(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidActionStatementsBlock) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
@@ -135,7 +135,7 @@ def test_constructor_as_action_statement(parse: Parse) -> None:
     assert exc_info.value.column == 9
 
 
-def test_constructor_at_top_level(parse: Parse) -> None:
+def test_constructor_at_top_level(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
         parse("this particle is created.\n")
     assert exc_info.value.token == "this particle is created"
@@ -144,7 +144,7 @@ def test_constructor_at_top_level(parse: Parse) -> None:
     assert exc_info.value.column == 1
 
 
-def test_truncated_constructor_phrase_in_trigger_block(parse: Parse) -> None:
+def test_truncated_constructor_phrase_in_trigger_block(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidTriggerConditionsBlock) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
@@ -160,7 +160,7 @@ def test_truncated_constructor_phrase_in_trigger_block(parse: Parse) -> None:
     assert exc_info.value.column == 9
 
 
-def test_constructor_block_missing_and_it_does(parse: Parse) -> None:
+def test_constructor_block_missing_and_it_does(parse: Parse):
     with pytest.raises(parser_exceptions.MissingActionStatementsBlock) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
@@ -175,7 +175,7 @@ def test_constructor_block_missing_and_it_does(parse: Parse) -> None:
     assert exc_info.value.column == 6
 
 
-def test_constructor_action_block_missing_close_brace(parse: Parse) -> None:
+def test_constructor_action_block_missing_close_brace(parse: Parse):
     with pytest.raises(parser_exceptions.MissingCloseBrace) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"

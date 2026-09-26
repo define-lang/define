@@ -24,7 +24,6 @@ This directory contains a custom buf lint plugin written in Go.
 
 - Use `checktest.CheckTest` for testing rules.
 - Each rule should have at least one valid and one invalid test case.
-- Test proto files should use `edition = "2023";`.
 
 ## Comments
 

@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 def test_action_statements_block_with_move_particle_local_positions(
     parse: Parse,
-) -> None:
+):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
@@ -40,7 +40,7 @@ def test_action_statements_block_with_move_particle_local_positions(
 
 def test_action_statements_block_with_move_particle_short_global_positions(
     parse: Parse,
-) -> None:
+):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
@@ -61,7 +61,7 @@ def test_action_statements_block_with_move_particle_short_global_positions(
 
 def test_action_statements_block_with_move_particle_full_global_positions(
     parse: Parse,
-) -> None:
+):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
@@ -82,7 +82,7 @@ def test_action_statements_block_with_move_particle_full_global_positions(
 
 def test_action_statements_block_with_move_particle_chained_source(
     parse: Parse,
-) -> None:
+):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
@@ -108,7 +108,7 @@ def test_action_statements_block_with_move_particle_chained_source(
 
 def test_action_statements_block_with_move_particle_chained_destination(
     parse: Parse,
-) -> None:
+):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
@@ -134,7 +134,7 @@ def test_action_statements_block_with_move_particle_chained_destination(
 
 def test_action_statements_block_with_move_particle_both_chained(
     parse: Parse,
-) -> None:
+):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
@@ -160,7 +160,7 @@ def test_action_statements_block_with_move_particle_both_chained(
 
 def test_action_statements_block_with_mixed_create_and_move_statements(
     parse: Parse,
-) -> None:
+):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
@@ -186,7 +186,7 @@ def test_action_statements_block_with_mixed_create_and_move_statements(
 
 def test_action_statements_block_with_move_particle_mixed_local_and_global(
     parse: Parse,
-) -> None:
+):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"

@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 def test_action_statements_block_with_destroy_particle_local_position(
     parse: Parse,
-) -> None:
+):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
@@ -39,7 +39,7 @@ def test_action_statements_block_with_destroy_particle_local_position(
 
 def test_action_statements_block_with_destroy_particle_short_global_position(
     parse: Parse,
-) -> None:
+):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
@@ -59,7 +59,7 @@ def test_action_statements_block_with_destroy_particle_short_global_position(
 
 def test_action_statements_block_with_destroy_particle_full_global_position(
     parse: Parse,
-) -> None:
+):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
@@ -79,7 +79,7 @@ def test_action_statements_block_with_destroy_particle_full_global_position(
 
 def test_action_statements_block_with_destroy_particle_chained_position(
     parse: Parse,
-) -> None:
+):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
@@ -104,7 +104,7 @@ def test_action_statements_block_with_destroy_particle_chained_position(
 
 def test_action_statements_block_with_destroy_particle_short_global_chain(
     parse: Parse,
-) -> None:
+):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
@@ -126,7 +126,7 @@ def test_action_statements_block_with_destroy_particle_short_global_chain(
 
 def test_action_statements_block_with_destroy_particle_any_typed_chain(
     parse: Parse,
-) -> None:
+):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
@@ -151,7 +151,7 @@ def test_action_statements_block_with_destroy_particle_any_typed_chain(
 
 def test_action_statements_block_with_mixed_create_move_and_destroy_statements(
     parse: Parse,
-) -> None:
+):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
@@ -179,7 +179,7 @@ def test_action_statements_block_with_mixed_create_move_and_destroy_statements(
 
 def test_action_statements_block_with_mixed_statements_and_multiple_destroy_particles(
     parse: Parse,
-) -> None:
+):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"
@@ -208,7 +208,7 @@ def test_action_statements_block_with_mixed_statements_and_multiple_destroy_part
 
 def test_action_statements_block_with_destroy_particle_mixed_local_and_global(
     parse: Parse,
-) -> None:
+):
     tree = parse(
         "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
         + "    define the position<run>.\n"

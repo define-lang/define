@@ -1,0 +1,44 @@
+id: no-ref-name
+language: python
+severity: error
+message: Use a descriptive name instead of `ref`.
+files:
+  - "**/*.py"
+ignores:
+  - vendored/**
+rule:
+  pattern: ref
+  any:
+    - inside:
+        kind: assignment
+        field: left
+    - inside:
+        kind: augmented_assignment
+        field: left
+    - inside:
+        kind: pattern_list
+    - inside:
+        kind: tuple_pattern
+    - inside:
+        kind: for_statement
+        field: left
+    - inside:
+        kind: for_in_clause
+        field: left
+    - inside:
+        kind: named_expression
+        field: name
+    - inside:
+        kind: as_pattern_target
+    - inside:
+        kind: parameters
+    - inside:
+        kind: lambda_parameters
+    - inside:
+        kind: typed_parameter
+    - inside:
+        kind: default_parameter
+        field: name
+    - inside:
+        kind: typed_default_parameter
+        field: name

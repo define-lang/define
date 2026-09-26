@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from define.compiler.parser_tests.conftest import Parse
 
 
-def test_typed_global_name_reference_short_position_name(parse: Parse) -> None:
+def test_typed_global_name_reference_short_position_name(parse: Parse):
     tree = parse(
         "define the potential position<mv:define-lang.org:parser:/root> {\n"
         + "    it may only contain particles where {\n"
@@ -31,7 +31,7 @@ def test_typed_global_name_reference_short_position_name(parse: Parse) -> None:
     ]
 
 
-def test_typed_global_name_reference_short_action_name(parse: Parse) -> None:
+def test_typed_global_name_reference_short_action_name(parse: Parse):
     tree = parse(
         "define the potential position<mv:define-lang.org:parser:/root> {\n"
         + "    it may only contain particles where {\n"
@@ -45,7 +45,7 @@ def test_typed_global_name_reference_short_action_name(parse: Parse) -> None:
     ]
 
 
-def test_typed_global_name_reference_full_name(parse: Parse) -> None:
+def test_typed_global_name_reference_full_name(parse: Parse):
     tree = parse(
         "define the potential position<mv:define-lang.org:parser:/root> {\n"
         + "    it may only contain particles where {\n"
@@ -61,7 +61,7 @@ def test_typed_global_name_reference_full_name(parse: Parse) -> None:
 
 def test_typed_global_name_reference_local_style_name_is_global_terminal(
     parse: Parse,
-) -> None:
+):
     with pytest.raises(parser_exceptions.InvalidGlobalName) as exc_info:
         parse(
             "define the potential position<mv:define-lang.org:parser:/root> {\n"
