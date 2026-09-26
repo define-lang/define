@@ -210,12 +210,9 @@ def test_cpu_growth(case: CpuGrowthCase, tmp_path: Path):
     control.check(rss_bytes=384 * _MIB, stderr=control_stderr)
     assert control_stderr == ""
 
-    # Stop shortly after excessive growth can be established on this machine,
-    # without interpreting the independent safety ceiling as a regression.
-    cpu_limit = min(
-        _CPU_GROWTH_SAFETY_SECONDS,
-        math.ceil(control.cpu_seconds * case.maximum_ratio),
-    )
+    # Stop shortly after excessive growth can be established on this machine.
+    # The whole-second CPU limit must exceed the relative allowance.
+    cpu_limit = math.floor(control.cpu_seconds * case.maximum_ratio) + 1
     directory = tmp_path / "adversarial"
     measured = _measure(
         test_runfiles.resolve_from_env(case.source_variable),
@@ -224,7 +221,7 @@ def test_cpu_growth(case: CpuGrowthCase, tmp_path: Path):
         workers=1,
         cpu_limit=cpu_limit,
         data_mib=1024,
-        wall_limit=_WALL_GROWTH_SAFETY_SECONDS,
+        wall_limit=max(_WALL_GROWTH_SAFETY_SECONDS, cpu_limit * 2),
     )
     stderr = _stderr(directory)
     measured.check_cpu_growth(
