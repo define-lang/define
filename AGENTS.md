@@ -171,20 +171,11 @@ The project uses Bazel 9 (via bazelisk) with Bzlmod. WORKSPACE is not used.
 BUILD files are maintained entirely by hand — do not use gazelle or any other
 BUILD file generator.
 
+- End every `BUILD.bazel` file with `check_build_file()`, loaded from
+  `//tools/bzl:build_file_checks.bzl`. It fails loading the package when the
+  BUILD file breaks these conventions.
 - **One rule per source file.** Each `.py`, `.go`, or `.proto` file gets exactly
   one build rule (`py_library`, `py_test`, `py_binary`, `go_library`, etc.).
-- **Naming convention:** The target name matches the source file's basename
-  without extension:
-  - `parser.py` → `name = "parser"`
-  - `parser_test.py` → `name = "parser_test"`
-  - `__init__.py` → name the target after the package directory (e.g.,
-    `define/compiler/__init__.py` → `name = "compiler"`)
-  - `go_library` for a single `.go` file is named `<dir>_lib` when a `go_binary`
-    in the same package embeds it, or just `<dir>` otherwise. `go_test` is named
-    `<dir>_test`. `go_binary` is named after the directory.
-  - `proto_library` rules are named `{proto_name}_proto`.
-  - `py_proto_library` rules are named `{proto_library_name}_py` (do not add
-    `_pb2`).
 - **Keep targets atomic:** each target lists only its own source file in `srcs`
   and only its direct dependencies in `deps`.
 - After changing Python imports or targets, run
@@ -194,15 +185,6 @@ BUILD file generator.
 - **Visibility:** Use the narrowest visibility that works. Omit `visibility` for
   package-private targets; use `//pkg:__subpackages__` when needed by sibling
   packages; use `//visibility:public` only for true public APIs.
-- **Target order:** Keep normal rule targets (e.g. `py_library`, `py_test`,
-  `py_binary`, `go_library`, etc.) in alphabetical order by target name. This
-  includes test targets that test specific files (like `parser_test` for
-  `parser.py`) — these should be alphabetized together with their corresponding
-  source targets so you can see them side-by-side. Language-specific proto
-  targets (e.g. `py_proto_library`) go immediately after their `proto_library`,
-  not in a separate section. Only special meta-test targets like `format_test`
-  and `pyright_test` should be grouped in separate sections and need not be
-  alphabetized with the normal rules.
 
 ### Git Worktrees
 
@@ -216,8 +198,6 @@ BUILD file generator.
 - Test all targets:
   `bazelisk test --noshow_progress --ui_event_filters=-info //...`
 - Run tests after making changes to code. When in doubt, test all targets.
-- **When adding a new test target** (e.g. `py_test`, `go_test`, `native_test`),
-  always set `size = "small"`.
 - After changing code generation, run the codegen tests. Regenerate expected
   outputs only when the generated output is intentionally changing, and review
   the resulting output diff before accepting it:
@@ -254,9 +234,6 @@ BUILD file generator.
 
 - Each source directory (`compiler`, `defcl/python`, `tools`) has a
   `pyright_test` target that type-checks all Python sources in that directory.
-- **When adding a new `py_library`, `py_binary`, or `py_test` target**, you must
-  also add it to the `deps` of the `pyright_test` in the same BUILD file (or the
-  parent package's `pyright_test` for sub-packages under `defcl/python`).
 
 ### Python Format Checking
 

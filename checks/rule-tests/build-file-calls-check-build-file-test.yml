@@ -1,0 +1,18 @@
+id: build-file-calls-check-build-file
+valid:
+  - |
+    load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+
+    filegroup(name = "testdata", srcs = glob(["**"]))
+
+    check_build_file()
+invalid:
+  - |
+    filegroup(name = "testdata", srcs = glob(["**"]))
+  - |
+    filegroup(name = "testdata", srcs = glob(["**"]))
+
+    # check_build_file()
+  - |
+    def _macro():
+        check_build_file()

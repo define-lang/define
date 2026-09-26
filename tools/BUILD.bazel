@@ -3,6 +3,7 @@ load("@aspect_rules_py//py:defs.bzl", "py_binary", "py_library")
 load("@bazel_skylib//rules:native_binary.bzl", "native_binary", "native_test")
 load("@npm//:defs.bzl", "npm_link_all_packages")
 load("@npm//tools:prettier/package_json.bzl", prettier_bin = "bin")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 load("//tools/bzl:format.bzl", "format_test")
 load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
@@ -53,6 +54,12 @@ py_test(
     ],
 )
 
+native_binary(
+    name = "basedpyright_langserver_sh",
+    src = "basedpyright-langserver.sh",
+    data = ["//:basedpyright-langserver"],
+)
+
 py_binary(
     name = "check_python_deps",
     srcs = ["check_python_deps.py"],
@@ -79,18 +86,18 @@ py_binary(
 )
 
 py_binary(
+    name = "generate_programming_languages",
+    srcs = ["generate_programming_languages.py"],
+    deps = ["@pypi//pyyaml"],
+)
+
+py_binary(
     name = "git_commit_via_api",
     srcs = ["git_commit_via_api.py"],
     deps = [
         "@pypi//click",
         "@pypi//pygithub",
     ],
-)
-
-py_binary(
-    name = "generate_programming_languages",
-    srcs = ["generate_programming_languages.py"],
-    deps = ["@pypi//pyyaml"],
 )
 
 py_library(
@@ -107,6 +114,24 @@ py_test(
     deps = [
         ":loop_coverage",
         "@pypi//pytest",
+    ],
+)
+
+prettier_bin.prettier_binary(
+    name = "prettier",
+    env = {
+        "BAZEL_BINDIR": ".",
+    },
+    visibility = ["//:__subpackages__"],
+)
+
+# PRF-012: Orchestration boundary. PRF-014: CPU mode.
+py_library(
+    name = "profile_orchestration",
+    srcs = ["profile_orchestration.py"],
+    deps = [
+        "@pypi//click",
+        "@pypi//msgspec",
     ],
 )
 
@@ -142,24 +167,6 @@ py_test(
         ":regenerate_codegen_testdata",
         "//define/compiler:driver",
         "@pypi//pytest",
-    ],
-)
-
-prettier_bin.prettier_binary(
-    name = "prettier",
-    env = {
-        "BAZEL_BINDIR": ".",
-    },
-    visibility = ["//:__subpackages__"],
-)
-
-# PRF-012: Orchestration boundary. PRF-014: CPU mode.
-py_library(
-    name = "profile_orchestration",
-    srcs = ["profile_orchestration.py"],
-    deps = [
-        "@pypi//click",
-        "@pypi//msgspec",
     ],
 )
 
@@ -231,12 +238,6 @@ py_binary(
     srcs = ["sync_agent_permissions.py"],
 )
 
-py_binary(
-    name = "update_toolchains",
-    srcs = ["update_toolchains.py"],
-    deps = ["@pypi//requests"],
-)
-
 native_test(
     name = "sync_agent_permissions_test",
     size = "small",
@@ -251,16 +252,16 @@ native_test(
 )
 
 native_binary(
-    name = "basedpyright_langserver_sh",
-    src = "basedpyright-langserver.sh",
-    data = ["//:basedpyright-langserver"],
-)
-
-native_binary(
     name = "update_lock",
     src = "update_lock.sh",
     out = "update_lock_runner",
     visibility = ["//:__pkg__"],
+)
+
+py_binary(
+    name = "update_toolchains",
+    srcs = ["update_toolchains.py"],
+    deps = ["@pypi//requests"],
 )
 
 native_test(
@@ -359,8 +360,6 @@ format_test(
 
 # --- Type-checking ---
 
-# IMPORTANT: When adding a new py_library, py_binary, or py_test target to this
-# package, you must also add it to the deps list below.
 pyright_test(
     name = "pyright_test",
     deps = [
@@ -389,3 +388,5 @@ pyright_test(
         ":validate_proposals",
     ],
 )
+
+check_build_file()

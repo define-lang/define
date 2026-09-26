@@ -1,25 +1,8 @@
 load("@aspect_rules_py//py:defs.bzl", "py_library")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 load("//tools/bzl:format.bzl", "format_test")
 load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
-
-filegroup(
-    name = "test_sources",
-    testonly = True,
-    srcs = glob(["*_test.py"]),
-    visibility = ["//define/testdata:__pkg__"],
-)
-
-py_test(
-    name = "diagnostic_collection_test",
-    size = "small",
-    srcs = ["diagnostic_collection_test.py"],
-    data = ["//define/testdata/structural/diagnostic_collection"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
-    ],
-)
 
 py_test(
     name = "action_statements_block_test",
@@ -55,6 +38,17 @@ py_test(
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:test_helpers",
+    ],
+)
+
+py_test(
+    name = "diagnostic_collection_test",
+    size = "small",
+    srcs = ["diagnostic_collection_test.py"],
+    data = ["//define/testdata/structural/diagnostic_collection"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
     ],
 )
 
@@ -292,6 +286,24 @@ py_test(
     ],
 )
 
+py_library(
+    name = "program_validator_tests",
+    srcs = ["__init__.py"],
+)
+
+py_test(
+    name = "quality_implication_test",
+    size = "small",
+    srcs = ["quality_implication_test.py"],
+    data = ["//define/testdata/structural/quality_implication"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/data_structures:define_path",
+        "//define/compiler/validator:test_helpers",
+    ],
+)
+
 py_test(
     name = "reserved_name_positions_test",
     size = "small",
@@ -316,23 +328,18 @@ py_library(
     ],
 )
 
+filegroup(
+    name = "test_sources",
+    testonly = True,
+    srcs = glob(["*_test.py"]),
+    visibility = ["//define/testdata:__pkg__"],
+)
+
 py_test(
     name = "trigger_conditions_test",
     size = "small",
     srcs = ["trigger_conditions_test.py"],
     data = ["//define/testdata/structural/trigger_conditions"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_test(
-    name = "unreferenced_positions_test",
-    size = "small",
-    srcs = ["unreferenced_positions_test.py"],
-    data = ["//define/testdata/structural/unreferenced_positions"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
@@ -353,6 +360,18 @@ py_test(
 )
 
 py_test(
+    name = "unreferenced_positions_test",
+    size = "small",
+    srcs = ["unreferenced_positions_test.py"],
+    data = ["//define/testdata/structural/unreferenced_positions"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+    ],
+)
+
+py_test(
     name = "validation_timing_stats_test",
     size = "small",
     srcs = ["validation_timing_stats_test.py"],
@@ -363,24 +382,6 @@ py_test(
         "//define/compiler/validator/structural:program_validator",
         "@pypi//pytest",
     ],
-)
-
-py_test(
-    name = "quality_implication_test",
-    size = "small",
-    srcs = ["quality_implication_test.py"],
-    data = ["//define/testdata/structural/quality_implication"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
-        "//define/compiler/data_structures:define_path",
-        "//define/compiler/validator:test_helpers",
-    ],
-)
-
-py_library(
-    name = "program_validator_tests",
-    srcs = ["__init__.py"],
 )
 
 py_test(
@@ -482,3 +483,5 @@ pyright_test(
         ":value_setting_test",
     ],
 )
+
+check_build_file()

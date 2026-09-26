@@ -1,3 +1,4 @@
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
 filegroup(
@@ -34,3 +35,5 @@ pyright_test(
         "//define/runtime:literal",
     ],
 )
+
+check_build_file()

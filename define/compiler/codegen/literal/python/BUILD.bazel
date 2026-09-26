@@ -2,6 +2,7 @@ load("@aspect_rules_py//py:defs.bzl", "py_library")
 load("@crates//:defs.bzl", "lint_config")
 load("@rules_rust//rust:defs.bzl", "rust_clippy_test", "rustfmt_test")
 load("@rules_rust_pyo3//:defs.bzl", "pyo3_extension")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 load("//tools/bzl:format.bzl", "format_test")
 load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
@@ -198,8 +199,6 @@ format_test(
 
 # --- Type-checking ---
 
-# IMPORTANT: When adding a new py_library, py_binary, or py_test target to this
-# package, you must also add it to the deps list below.
 pyright_test(
     name = "pyright_test",
     deps = [
@@ -218,3 +217,5 @@ pyright_test(
         ":template_context",
     ],
 )
+
+check_build_file()

@@ -195,7 +195,10 @@ def _load_targets(
     py_proto_deps: dict[str, str] = {}
     for build_file in repository.rglob("BUILD.bazel"):
         relative_build_file = build_file.relative_to(repository)
-        if relative_build_file.parts[0] not in {"defcl", "define", "tools"}:
+        if (
+            relative_build_file.parts[0] == "vendored"
+            or "node_modules" in relative_build_file.parts
+        ):
             continue
         package = relative_build_file.parent
         contents = build_file.read_text()

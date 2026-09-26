@@ -1,14 +1,8 @@
 load("@aspect_rules_py//py:defs.bzl", "py_library")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 load("//tools/bzl:format.bzl", "format_test")
 load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
-
-filegroup(
-    name = "test_sources",
-    testonly = True,
-    srcs = glob(["*_test.py"]),
-    visibility = ["//define/testdata:__pkg__"],
-)
 
 py_test(
     name = "action_triggering_test",
@@ -19,19 +13,6 @@ py_test(
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler:parser_exceptions",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:test_helpers",
-    ],
-)
-
-py_test(
-    name = "automated_guarantees_require_consumption_test",
-    size = "small",
-    srcs = ["automated_guarantees_require_consumption_test.py"],
-    data = ["//define/testdata/reference_graph/automated_guarantees_require_consumption"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/reference_graph:test_helpers",
     ],
@@ -123,6 +104,19 @@ py_test(
         "//define/compiler:diagnostics",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/reference_graph:action_contract",
+        "//define/compiler/validator/reference_graph:test_helpers",
+    ],
+)
+
+py_test(
+    name = "automated_guarantees_require_consumption_test",
+    size = "small",
+    srcs = ["automated_guarantees_require_consumption_test.py"],
+    data = ["//define/testdata/reference_graph/automated_guarantees_require_consumption"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/reference_graph:test_helpers",
     ],
 )
@@ -591,21 +585,6 @@ py_test(
 )
 
 py_test(
-    name = "destruction_contract_test",
-    size = "small",
-    srcs = ["destruction_contract_test.py"],
-    data = ["//define/testdata/reference_graph/destruction_contract"],
-    deps = [
-        ":test_helpers",
-        "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:action_contract",
-        "//define/compiler/validator/reference_graph:test_helpers",
-    ],
-)
-
-py_test(
     name = "destruction_contract_state_test",
     size = "small",
     srcs = ["destruction_contract_state_test.py"],
@@ -620,6 +599,21 @@ py_test(
         "//define/compiler/validator/reference_graph:reference_graph_validation_state",
         "//define/compiler/validator/reference_graph:test_helpers",
         "@pypi//pytest",
+    ],
+)
+
+py_test(
+    name = "destruction_contract_test",
+    size = "small",
+    srcs = ["destruction_contract_test.py"],
+    data = ["//define/testdata/reference_graph/destruction_contract"],
+    deps = [
+        ":test_helpers",
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+        "//define/compiler/validator/reference_graph:action_contract",
+        "//define/compiler/validator/reference_graph:test_helpers",
     ],
 )
 
@@ -661,18 +655,6 @@ py_test(
         "//define/compiler:diagnostics",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/reference_graph:test_helpers",
-    ],
-)
-
-py_test(
-    name = "particle_conflict_test",
-    size = "small",
-    srcs = ["particle_conflict_test.py"],
-    data = ["//define/testdata/reference_graph/particle_conflict"],
-    deps = [
-        "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
-        "//define/compiler/validator:test_helpers",
     ],
 )
 
@@ -759,10 +741,10 @@ py_test(
 )
 
 py_test(
-    name = "move_without_parent_test",
+    name = "move_local_constraint_test",
     size = "small",
-    srcs = ["move_without_parent_test.py"],
-    data = ["//define/testdata/reference_graph/move_without_parent"],
+    srcs = ["move_local_constraint_test.py"],
+    data = ["//define/testdata/reference_graph/move_local_constraint"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
@@ -783,10 +765,10 @@ py_test(
 )
 
 py_test(
-    name = "move_local_constraint_test",
+    name = "move_state_tracking_test",
     size = "small",
-    srcs = ["move_local_constraint_test.py"],
-    data = ["//define/testdata/reference_graph/move_local_constraint"],
+    srcs = ["move_state_tracking_test.py"],
+    data = ["//define/testdata/reference_graph/move_state_tracking"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
@@ -795,10 +777,22 @@ py_test(
 )
 
 py_test(
-    name = "move_state_tracking_test",
+    name = "move_without_parent_test",
     size = "small",
-    srcs = ["move_state_tracking_test.py"],
-    data = ["//define/testdata/reference_graph/move_state_tracking"],
+    srcs = ["move_without_parent_test.py"],
+    data = ["//define/testdata/reference_graph/move_without_parent"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+    ],
+)
+
+py_test(
+    name = "particle_conflict_test",
+    size = "small",
+    srcs = ["particle_conflict_test.py"],
+    data = ["//define/testdata/reference_graph/particle_conflict"],
     deps = [
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
@@ -858,6 +852,13 @@ py_library(
         "//define/compiler:diagnostics",
         "//define/compiler/validator/reference_graph:action_contract",
     ],
+)
+
+filegroup(
+    name = "test_sources",
+    testonly = True,
+    srcs = glob(["*_test.py"]),
+    visibility = ["//define/testdata:__pkg__"],
 )
 
 py_test(
@@ -991,3 +992,5 @@ pyright_test(
         ":value_setting_test",
     ],
 )
+
+check_build_file()

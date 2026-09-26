@@ -53,6 +53,14 @@ repos:
         language: system
         files: (^|/)(BUILD\.bazel|.*\.pyi?)$
 
+      - id: build-file-checks
+        name: check that BUILD files call check_build_file
+        entry:
+          bazelisk run --noshow_progress @multitool//tools/ast-grep:cwd -- scan
+        language: system
+        files: (^|/)BUILD\.bazel$
+        exclude: ^vendored/
+
       - id: rust-checks
         name: Rust lint and format checks
         entry:

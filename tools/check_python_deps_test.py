@@ -452,3 +452,37 @@ pyright_test(name = "pyright_test", deps = [":first"])
     repository = check_python_deps.load_repository(tmp_path)
 
     assert check_python_deps.analyze_targets(repository, []).changes == ()
+
+
+def test_pyright_test_covers_targets_outside_known_top_level_directories(
+    tmp_path: Path,
+):
+    checks = tmp_path / "checks"
+    checks.mkdir()
+    _ = (checks / "rules_test.py").write_text("")
+    _ = (checks / "BUILD.bazel").write_text(
+        """py_test(name = "rules_test", srcs = ["rules_test.py"])
+pyright_test(name = "pyright_test", deps = [])
+"""
+    )
+
+    repository = check_python_deps.load_repository(tmp_path)
+    results = check_python_deps.analyze_targets(repository, [])
+
+    assert len(results.changes) == 1
+    change = results.changes[0]
+    assert change.target.label == "//checks:pyright_test"
+    assert change.missing == {"//checks:rules_test"}
+    assert change.unnecessary == frozenset()
+
+
+def test_load_repository_skips_vendored_and_node_modules(tmp_path: Path):
+    for package in (tmp_path / "vendored", tmp_path / "tools" / "node_modules"):
+        package.mkdir(parents=True)
+        _ = (package / "BUILD.bazel").write_text(
+            'py_library(name = "library", srcs = ["first.py", "second.py"])\n'
+        )
+
+    repository = check_python_deps.load_repository(tmp_path)
+
+    assert check_python_deps.analyze_targets(repository, []).changes == ()

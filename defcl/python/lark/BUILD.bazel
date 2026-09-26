@@ -1,8 +1,15 @@
 load("@aspect_rules_py//py:defs.bzl", "py_library")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 
 py_library(
     name = "lark",
     srcs = ["__init__.py"],
+    visibility = ["//defcl/python:__subpackages__"],
+)
+
+py_library(
+    name = "lark_standalone",
+    srcs = [":lark_standalone.py"],
     visibility = ["//defcl/python:__subpackages__"],
 )
 
@@ -14,8 +21,4 @@ genrule(
     tools = ["//tools:generate_lark_standalone"],
 )
 
-py_library(
-    name = "lark_standalone",
-    srcs = [":lark_standalone.py"],
-    visibility = ["//defcl/python:__subpackages__"],
-)
+check_build_file()

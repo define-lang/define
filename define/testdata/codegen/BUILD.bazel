@@ -1,4 +1,5 @@
 load("//define/compiler/codegen:generator_integration_tests.bzl", "generator_integration_tests")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 load("//tools/bzl:package_checks.bzl", "require_subpackages")
 
 require_subpackages(["**"])
@@ -38,3 +39,5 @@ generator_integration_tests(
     visibility = ["//define/compiler/codegen:__pkg__"],
     deps = ["//define/compiler/codegen:tracing_integration_test"],
 )
+
+check_build_file()

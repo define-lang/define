@@ -1,7 +1,10 @@
 load("@aspect_rules_py//py:defs.bzl", "py_library")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 
 py_library(
     name = "literal",
     srcs = ["__init__.py"],
     visibility = ["//define/compiler/codegen:__subpackages__"],
 )
+
+check_build_file()

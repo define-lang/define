@@ -10,6 +10,7 @@ from python.runfiles import runfiles  # pyright: ignore[reportMissingTypeStubs]
 
 _RULES = Path("checks/rules")
 _RULE_TESTS = Path("checks/rule-tests")
+_SNAPSHOTS = _RULE_TESTS / "__snapshots__"
 
 
 def _ids_by_path(directory: Path) -> dict[Path, str]:
@@ -45,6 +46,21 @@ def test_every_rule_has_rule_tests():
     rule_ids = sorted(_ids_by_path(_RULES).values())
     tested_ids = sorted(_ids_by_path(_RULE_TESTS).values())
     assert tested_ids == rule_ids
+
+
+def test_snapshots_match_invalid_cases():
+    # ast-grep test --update-all keeps the snapshots of cases removed from a rule
+    # test.
+    for path in sorted(_SNAPSHOTS.glob("*.yml")):
+        snapshot = cast("dict[str, object]", yaml.safe_load(path.read_text()))
+        rule_id = cast("str", snapshot["id"])
+        assert path.stem == f"{rule_id}-snapshot"
+        rule_test = cast(
+            "dict[str, list[str]]",
+            yaml.safe_load((_RULE_TESTS / f"{rule_id}-test.yml").read_text()),
+        )
+        snapshots = cast("dict[str, object]", snapshot["snapshots"])
+        assert sorted(snapshots) == sorted(rule_test["invalid"])
 
 
 def test_rule_tests_pass():

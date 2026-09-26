@@ -1,6 +1,7 @@
 load("@aspect_rules_py//py:defs.bzl", "py_library")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 load("//tools/bzl:format.bzl", "format_test")
 
 proto_library(
@@ -37,7 +38,7 @@ py_proto_library(
 )
 
 py_library(
-    name = "schemas_py",
+    name = "schemas",
     srcs = ["__init__.py"],
     visibility = ["//defcl/python:__pkg__"],
     deps = ["//defcl/testdata/valid"],
@@ -73,3 +74,5 @@ format_test(
     ),
     python = "@multitool//tools/ruff",
 )
+
+check_build_file()

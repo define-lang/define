@@ -1,0 +1,18 @@
+id: build-file-calls-check-build-file
+language: python
+severity: error
+message: End every BUILD file with `check_build_file()`.
+note:
+  The call fails loading the package when the BUILD file breaks the repository's
+  conventions.
+files:
+  - "**/BUILD.bazel"
+ignores:
+  - vendored/**
+rule:
+  kind: module
+  not:
+    has:
+      kind: expression_statement
+      has:
+        pattern: check_build_file($$$)

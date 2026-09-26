@@ -1,3 +1,4 @@
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 load("//tools/bzl:format.bzl", "format_test")
 
 filegroup(
@@ -13,3 +14,5 @@ format_test(
     srcs = glob(["**/*.pyi"]),
     python = "@multitool//tools/ruff",
 )
+
+check_build_file()

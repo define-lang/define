@@ -2,3 +2,6 @@ ruleDirs:
   - checks/rules
 testConfigs:
   - testDir: checks/rule-tests
+languageGlobs:
+  python:
+    - BUILD.bazel

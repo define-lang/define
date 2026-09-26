@@ -1,6 +1,21 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("@protobuf//bazel/toolchains:proto_lang_toolchain.bzl", "proto_lang_toolchain")
 load("@rules_rust//extensions/pyo3:defs.bzl", "rust_pyo3_toolchain")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+load(":build_file_checks_test.bzl", "build_file_checks_test_suite")
+
+bzl_library(
+    name = "ast_grep",
+    srcs = ["ast_grep.bzl"],
+)
+
+bzl_library(
+    name = "build_file_checks",
+    srcs = ["build_file_checks.bzl"],
+    visibility = ["//visibility:public"],
+)
+
+build_file_checks_test_suite(name = "build_file_checks_test")
 
 config_setting(
     name = "coverage_enabled",
@@ -15,11 +30,6 @@ alias(
         "//conditions:default": "@pypi//pytest",
     }),
     visibility = ["//visibility:public"],
-)
-
-bzl_library(
-    name = "ast_grep",
-    srcs = ["ast_grep.bzl"],
 )
 
 bzl_library(
@@ -87,3 +97,5 @@ toolchain(
     toolchain = ":rust_pyo3",
     toolchain_type = "@rules_rust//extensions/pyo3:rust_toolchain_type",
 )
+
+check_build_file()

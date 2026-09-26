@@ -1,4 +1,5 @@
 load("@rules_go//go:def.bzl", "go_binary", "go_library", "go_test")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 
 go_binary(
     name = "buf",
@@ -25,3 +26,5 @@ go_test(
     embed = [":buf_lib"],
     deps = ["@build_buf_go_bufplugin//check/checktest"],
 )
+
+check_build_file()

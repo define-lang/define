@@ -1,4 +1,5 @@
 load("@aspect_rules_py//py:defs.bzl", "py_binary", "py_library")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 load("//tools/bzl:format.bzl", "format_test")
 load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
@@ -190,20 +191,6 @@ py_test(
     ],
 )
 
-# PRF-002: Independent sampling schedule. PRF-020: Machine and human interfaces.
-# PRF-024: Explicit failures. PRF-041: Realistic tests.
-# PRF-049: Event-driven coordination.
-py_library(
-    name = "test_helpers",
-    testonly = True,
-    srcs = ["test_helpers.py"],
-    deps = [
-        ":schema",
-        "@pypi//msgspec",
-        "@rules_python//python/runfiles",
-    ],
-)
-
 # PRF-002: Independent sampling schedule. PRF-003: Pause exclusion.
 # PRF-010: Raw-data preservation. PRF-011: Complete invocation.
 # PRF-014: CPU mode. PRF-020: Machine and human interfaces.
@@ -255,16 +242,6 @@ py_library(
     ],
 )
 
-# PRF-010: Raw-data preservation.
-py_library(
-    name = "schema",
-    srcs = ["schema.py"],
-    visibility = ["//tools:__pkg__"],
-    deps = [
-        "@pypi//msgspec",
-    ],
-)
-
 # PRF-052: Independent causal evidence. PRF-053: Causal diagnostics.
 py_library(
     name = "scheduler_events",
@@ -284,6 +261,30 @@ py_test(
     deps = [
         ":scheduler_events",
         "@pypi//pytest",
+    ],
+)
+
+# PRF-010: Raw-data preservation.
+py_library(
+    name = "schema",
+    srcs = ["schema.py"],
+    visibility = ["//tools:__pkg__"],
+    deps = [
+        "@pypi//msgspec",
+    ],
+)
+
+# PRF-002: Independent sampling schedule. PRF-020: Machine and human interfaces.
+# PRF-024: Explicit failures. PRF-041: Realistic tests.
+# PRF-049: Event-driven coordination.
+py_library(
+    name = "test_helpers",
+    testonly = True,
+    srcs = ["test_helpers.py"],
+    deps = [
+        ":schema",
+        "@pypi//msgspec",
+        "@rules_python//python/runfiles",
     ],
 )
 
@@ -374,3 +375,5 @@ pyright_test(
         ":wall_model",
     ],
 )
+
+check_build_file()

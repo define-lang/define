@@ -3,6 +3,7 @@
 load("@bazel_skylib//rules:native_binary.bzl", "native_binary")
 load("@npm//:basedpyright/package_json.bzl", basedpyright_bin = "bin")
 load("@npm//:defs.bzl", "npm_link_all_packages")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 
 exports_files([
     "Cargo.toml",
@@ -59,3 +60,5 @@ native_binary(
         "requires-network",
     ],
 )
+
+check_build_file()
