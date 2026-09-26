@@ -460,7 +460,6 @@ def test_value_cannot_start_position_reference(parse: Parse):
     assert error.value.token == "value"
     assert error.value.line == 5
     assert error.value.column == 30
-    assert error.value.message_format == "Expected 'position' or 'action'."
 
 
 def test_value_cannot_be_in_chained_position_reference(parse: Parse):

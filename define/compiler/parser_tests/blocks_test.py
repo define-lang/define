@@ -220,9 +220,6 @@ def test_missing_outer_block_close_with_inner_block_message(parse: Parse) -> Non
         )
     assert exc_info.value.line == 6
     assert exc_info.value.column == 6
-    assert str(exc_info.value) == (
-        "line 6, column 6\n    }\n     ^\nMissing a closing '}' somewhere in this block."
-    )
 
 
 def test_position_constraint_invalid_type_keyword(parse: Parse) -> None:

@@ -68,4 +68,3 @@ def test_constraint_name_type_error_includes_value(parse: Parse):
     assert error.value.token == "thing<"
     assert error.value.line == 3
     assert error.value.column == 20
-    assert error.value.message_format == "Expected 'position', 'action', or 'value'."

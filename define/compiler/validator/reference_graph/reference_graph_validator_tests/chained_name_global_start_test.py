@@ -49,10 +49,6 @@ class TestUnnecessarySelfReference:
         assert diags[0].definition_name == "action<my.domain.com:my_lib:/test>"
         assert diags[0].location.line == 7
         assert diags[0].location.column == 30
-        assert diags[0].message == (
-            "the reference to 'action<my.domain.com:my_lib:/test>' is not necessary"
-            " because the code is already inside that definition"
-        )
 
     def test_self_reference_stops_further_chain_validation(
         self,

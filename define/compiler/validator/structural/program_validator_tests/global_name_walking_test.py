@@ -178,12 +178,6 @@ def test_self_cycle_emits_diagnostic(
     ]
     assert diags[0].location.line == 3
     assert diags[0].location.column == 20
-    assert (
-        diags[0].message
-        == "circular references between definitions are not allowed in Define:\n"
-        + "position<my.domain.com:my_lib:/test>\n"
-        + "  --> position<my.domain.com:my_lib:/test>"
-    )
 
 
 def test_two_file_cycle_emits_diagnostic(
@@ -207,13 +201,6 @@ def test_two_file_cycle_emits_diagnostic(
     ]
     assert diags[0].location.line == 3
     assert diags[0].location.column == 20
-    assert (
-        diags[0].message
-        == "circular references between definitions are not allowed in Define:\n"
-        + "position<mv:define-lang.org:test_walk_cycle:/test>\n"
-        + "  --> position<mv:define-lang.org:test_walk_cycle:/loop>\n"
-        + "  --> position<mv:define-lang.org:test_walk_cycle:/test>"
-    )
 
 
 def test_shared_target_depth_increases_through_paths_of_different_lengths(

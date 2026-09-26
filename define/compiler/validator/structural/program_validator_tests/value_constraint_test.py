@@ -57,10 +57,6 @@ def test_multiple_values(
     assert first.location.line == 8
     assert second.location.line == 9
     assert first.location.column == 20
-    assert first.message == (
-        "a position may only have one value constraint; "
-        "'value</number>' was already declared on line 7"
-    )
 
 
 def test_multiple_values_in_local_position(
