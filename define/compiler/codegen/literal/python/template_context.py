@@ -20,6 +20,8 @@ class StatementKind(enum.Enum):
     CREATE_PARTICLE = enum.auto()
     MOVE_PARTICLE = enum.auto()
     DESTROY_PARTICLE = enum.auto()
+    SET_VALUE = enum.auto()
+    SET_VALUE_FROM = enum.auto()
     RUN_ACTION = enum.auto()
     RUN_CONTRACT_DESTRUCTORS = enum.auto()
     DESTROY_CONTRACT_CHILDREN = enum.auto()
@@ -136,10 +138,11 @@ class DestructionContractDefinition(msgspec.Struct):
     methods: list[DestructionContractMethod]
 
 
-class ActionStatementContext(msgspec.Struct):
-    """Template-friendly representation of an action statement."""
+class ActionStatementContext(msgspec.Struct, kw_only=True):
+    """Template-friendly action statement, optionally recorded in a trace."""
 
     kind: ClassVar[StatementKind]
+    operation_label: str | None = None
 
 
 class LocalPositionContext(ActionStatementContext):
@@ -152,10 +155,9 @@ class LocalPositionContext(ActionStatementContext):
 
 
 class ParticleOperationContext(ActionStatementContext, kw_only=True):
-    """An operation on a particle, optionally recorded in a trace."""
+    """An operation on a particle."""
 
     position: PositionExpr
-    operation_label: str | None = None
 
 
 class CreateParticleContext(ParticleOperationContext, kw_only=True):
@@ -175,6 +177,20 @@ class DestroyParticleContext(ParticleOperationContext, kw_only=True):
     """Destroy a particle at a position."""
 
     kind: ClassVar[StatementKind] = StatementKind.DESTROY_PARTICLE
+
+
+class SetValueContext(ParticleOperationContext, kw_only=True):
+    """Set the value of a particle from a literal."""
+
+    kind: ClassVar[StatementKind] = StatementKind.SET_VALUE
+    value: str
+
+
+class SetValueFromContext(ParticleOperationContext, kw_only=True):
+    """Set the value of a particle from another particle's value."""
+
+    kind: ClassVar[StatementKind] = StatementKind.SET_VALUE_FROM
+    source_position: PositionExpr
 
 
 class RunActionContext(ActionStatementContext):

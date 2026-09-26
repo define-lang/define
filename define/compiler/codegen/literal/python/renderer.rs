@@ -76,14 +76,24 @@ struct LocalPosition {
 #[derive(FromPyObject)]
 struct ParticleOperation {
     position: PositionExpression,
-    operation_label: Option<String>,
 }
 
 #[derive(FromPyObject)]
 struct MoveParticle {
     position: PositionExpression,
     to_position: PositionExpression,
-    operation_label: Option<String>,
+}
+
+#[derive(FromPyObject)]
+struct SetValue {
+    position: PositionExpression,
+    value: String,
+}
+
+#[derive(FromPyObject)]
+struct SetValueFrom {
+    position: PositionExpression,
+    source_position: PositionExpression,
 }
 
 #[derive(FromPyObject)]
@@ -104,16 +114,33 @@ struct ContractContribution {
     contract_method: String,
 }
 
-enum Statement {
+struct Statement {
+    kind: StatementKind,
+    operation_label: Option<String>,
+}
+
+enum StatementKind {
     LocalPosition(LocalPosition),
     CreateParticle(ParticleOperation),
     MoveParticle(MoveParticle),
     DestroyParticle(ParticleOperation),
+    SetValue(SetValue),
+    SetValueFrom(SetValueFrom),
     RunAction(RunAction),
     ContractContribution(ContractContribution),
 }
 
 impl<'a, 'py> FromPyObject<'a, 'py> for Statement {
+    type Error = PyErr;
+    fn extract(object: pyo3::Borrowed<'a, 'py, PyAny>) -> PyResult<Self> {
+        Ok(Self {
+            kind: object.extract()?,
+            operation_label: object.getattr("operation_label")?.extract()?,
+        })
+    }
+}
+
+impl<'a, 'py> FromPyObject<'a, 'py> for StatementKind {
     type Error = PyErr;
     fn extract(object: pyo3::Borrowed<'a, 'py, PyAny>) -> PyResult<Self> {
         let kind: String = object.getattr("kind")?.getattr("name")?.extract()?;
@@ -122,6 +149,8 @@ impl<'a, 'py> FromPyObject<'a, 'py> for Statement {
             "CREATE_PARTICLE" => Ok(Self::CreateParticle(object.extract()?)),
             "MOVE_PARTICLE" => Ok(Self::MoveParticle(object.extract()?)),
             "DESTROY_PARTICLE" => Ok(Self::DestroyParticle(object.extract()?)),
+            "SET_VALUE" => Ok(Self::SetValue(object.extract()?)),
+            "SET_VALUE_FROM" => Ok(Self::SetValueFrom(object.extract()?)),
             "RUN_ACTION" => Ok(Self::RunAction(object.extract()?)),
             "RUN_CONTRACT_DESTRUCTORS" | "DESTROY_CONTRACT_CHILDREN" => {
                 Ok(Self::ContractContribution(object.extract()?))

@@ -1,0 +1,6 @@
+test.create(source)
+test.create(target)
+test.set_value(source, -5)
+test.set_value(target, source)
+test.destroy(source)
+test.destroy(target)

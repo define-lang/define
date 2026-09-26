@@ -55,16 +55,28 @@ class _DefinitionGenerator:
         max_workers: int | None,
     ) -> tuple[action_context.ActionDefinitionContext, set[Path]]:
         """Generate every definition with bounded worker concurrency."""
-        package_dirs = reference_graph_executor.process_definitions(
+        package_dirs: set[Path] = set()
+        for package_dir in reference_graph_executor.process_definitions(
             self._codegen_input.definition_order,
             self._generate_definition,
             max_workers=max_workers,
-        )
-        return self._entry_definition, set(package_dirs)
+        ):
+            if package_dir is not None:
+                package_dirs.add(package_dir)
+        # TODO: Remove this special case once the Define Standard Library
+        # defines the built-in names.
+        for reference in self._converter.built_in_value_references:
+            content = _templates.render_value(reference.class_name)
+            package_dirs.add(self._write_definition_file(content, reference))
+        return self._entry_definition, package_dirs
 
-    def _generate_definition(self, definition: ast.GlobalDefinition) -> Path:
-        if isinstance(definition, ast.EncodingDefinition):
-            raise NotImplementedError("Encoding code generation is not implemented")
+    def _generate_definition(self, definition: ast.GlobalDefinition) -> Path | None:
+        # Literals are already in their values' encodings in generated code, so
+        # encodings and Potential Literals need no code of their own.
+        if isinstance(
+            definition, ast.EncodingDefinition | ast.PotentialLiteralDefinition
+        ):
+            return None
         if isinstance(definition, ast.ActionDefinition):
             context = self._generate_action(definition)
             content = _templates.render_action(context)

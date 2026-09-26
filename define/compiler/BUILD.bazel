@@ -372,6 +372,7 @@ py_library(
     srcs = ["parser_exceptions.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
+        ":constants",
         ":exceptions",
         "//define/compiler/lark:lark_standalone",
         "@pypi//lark_cython",

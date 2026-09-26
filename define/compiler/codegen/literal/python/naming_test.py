@@ -76,6 +76,27 @@ def test_module_name_short_component_unchanged():
     assert converter.module_name(name_content) == "local.my_domain_com.my_lib.worker"
 
 
+def test_class_reference_in_standard_universe():
+    converter = naming.NameConverter()
+    value_name = ast.GlobalTypedNameInDefinition(
+        name_type=ast.NameType.VALUE,
+        name_content=ast.DefinitionGlobalNameContent(
+            fqun=ast.Fqun(
+                multiverse=None,
+                authority=None,
+                universe=ast.Universe(name="standard", location=_LOCATION),
+                location=_LOCATION,
+            ),
+            path=ast.GlobalPathName(name="/number/rational", location=_LOCATION),
+            location=_LOCATION,
+        ),
+        location=_LOCATION,
+    )
+    assert converter.class_reference(value_name) == naming.ClassReference(
+        module_name="standard.number.rational", class_name="NumberRational"
+    )
+
+
 def test_module_name_truncates_long_component():
     converter = naming.NameConverter()
     long_segment = "x" * 300

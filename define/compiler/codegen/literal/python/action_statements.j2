@@ -1,8 +1,8 @@
 {% import "position_expression.j2" as expressions -%}
 {% macro action_statements(statements) -%}
     {%- for statement in statements.iter() %}
-        {%- match statement %}
-            {%- when Statement::LocalPosition with (statement) %}
+        {%- match statement.kind %}
+            {%- when StatementKind::LocalPosition with (statement) %}
         {{ statement.name }} = literal.LocalPosition(
             "{{ statement.local_typed_name }}",
                 {%- if !statement.constraints.is_empty() %}
@@ -13,24 +13,21 @@
             ),
                 {%- endif %}
         )
-            {%- when Statement::CreateParticle with (statement) %}
+            {%- when StatementKind::CreateParticle with (statement) %}
         {{ expressions::position_expression(statement.position, "") }}.create_particle()
-                {%- if let Some(label) = statement.operation_label %}
-        literal.record_operation("{{ label }}")
-                {%- endif %}
-            {%- when Statement::MoveParticle with (statement) %}
+            {%- when StatementKind::MoveParticle with (statement) %}
         {{ expressions::position_expression(statement.position, "") }}.move_particle_to(
             {{ expressions::position_expression(statement.to_position, "    ") }}
         )
-                {%- if let Some(label) = statement.operation_label %}
-        literal.record_operation("{{ label }}")
-                {%- endif %}
-            {%- when Statement::DestroyParticle with (statement) %}
+            {%- when StatementKind::DestroyParticle with (statement) %}
         {{ expressions::position_expression(statement.position, "") }}.destroy_particle()
-                {%- if let Some(label) = statement.operation_label %}
-        literal.record_operation("{{ label }}")
-                {%- endif %}
-            {%- when Statement::RunAction with (statement) %}
+            {%- when StatementKind::SetValue with (statement) %}
+        {{ expressions::position_expression(statement.position, "") }}.set_value({{ statement.value }})
+            {%- when StatementKind::SetValueFrom with (statement) %}
+        {{ expressions::position_expression(statement.position, "") }}.set_value_from(
+            {{ expressions::position_expression(statement.source_position, "    ") }}
+        )
+            {%- when StatementKind::RunAction with (statement) %}
                 {%- if let Some(contract) = statement.destruction_contract %}
                     {%- if !contract.forwarded_methods.is_empty() %}
         {{ expressions::position_expression(statement.position, "") }}.run(
@@ -46,10 +43,13 @@
                 {%- else %}
         {{ expressions::position_expression(statement.position, "") }}.run()
                 {%- endif %}
-            {%- when Statement::ContractContribution with (statement) %}
+            {%- when StatementKind::ContractContribution with (statement) %}
         destruction_contracts.{{ statement.contract_method }}(
             {{ expressions::position_expression(statement.position, "    ") }}.particle
         )
         {%- endmatch %}
+        {%- if let Some(label) = statement.operation_label %}
+        literal.record_operation("{{ label }}")
+        {%- endif %}
     {%- endfor %}
 {% endmacro %}

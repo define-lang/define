@@ -11,7 +11,9 @@ from define.compiler import constants
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-_DECIMAL: Final = re.compile(r"-?[0-9]+(?:\.[0-9]+)?")
+# Only the canonical spelling of each number is accepted: no leading zeros, no
+# trailing zeros after the decimal point, and no -0.
+_DECIMAL: Final = re.compile(r"(?!-0\Z)-?(?:0|[1-9][0-9]*)(?:\.[0-9]*[1-9])?")
 
 
 class LiteralParseError(Exception):
@@ -25,8 +27,6 @@ class LiteralParseError(Exception):
 
 
 def _parse_decimal_ascii(content: str) -> str:
-    # TODO: Canonicalize decimal literals so that equal numbers always have
-    # identical values.
     if _DECIMAL.fullmatch(content) is None:
         raise _decimal_error(content)
     return content
@@ -71,6 +71,24 @@ def _decimal_error(content: str) -> LiteralParseError:
         return LiteralParseError(
             "there must be a digit after the decimal point", last_index
         )
+    integer_start = 1 if content[0] == "-" else 0
+    integer_part, _, fraction = content[integer_start:].partition(".")
+    if len(integer_part) > 1 and integer_part[0] == "0":
+        return LiteralParseError(
+            "numbers are written without leading zeros", integer_start
+        )
+    if fraction and not fraction.strip("0"):
+        return LiteralParseError(
+            "whole numbers are written without a decimal point",
+            integer_start + len(integer_part),
+        )
+    if fraction.endswith("0"):
+        return LiteralParseError(
+            "numbers are written without trailing zeros after the decimal point",
+            last_index,
+        )
+    if content == "-0":
+        return LiteralParseError("zero is written without a minus sign", 0)
     raise ValueError(f"valid decimal content was rejected: {content!r}")
 
 

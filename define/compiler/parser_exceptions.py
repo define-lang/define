@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, ClassVar, Self, override
 
-from define.compiler import exceptions
+from define.compiler import constants, exceptions
 
 if TYPE_CHECKING:
     import pathlib
@@ -574,5 +574,5 @@ class GlobalNameInvalidFqunFormat(DefineNameSyntaxError):
     message_format: ClassVar[str] = (
         "Fully qualified universe name format is invalid. "
         "Use '<multiverse:authority:universe:/path>' or "
-        "'<authority:universe:/path>' or '<standard:/path>'."
+        f"'<authority:universe:/path>' or '<{constants.STANDARD_UNIVERSE}:/path>'."
     )

@@ -711,17 +711,34 @@ class ActionPostorderValidator:
             )
         )
         self._diagnostics.extend(value_diagnostics)
-        # A literal can only be checked against the value type it sets.
-        if isinstance(stmt.source, ast.Literal) and target_type is not None:
-            self._diagnostics.extend(self._validate_literal(stmt.source, target_type))
+        match stmt.source:
+            case ast.Literal():
+                # A literal can only be encoded once the value type it sets is
+                # known.
+                if target_type is not None:
+                    value = self._encode_literal(stmt.source, target_type)
+                    if value is not None:
+                        self._steps.append(
+                            codegen_input.LiteralValueSetting(
+                                target_position=stmt.target_position, value=value
+                            )
+                        )
+            case ast.PositionReference():
+                self._steps.append(
+                    codegen_input.PositionValueSetting(
+                        target_position=stmt.target_position,
+                        source_position=stmt.source,
+                    )
+                )
         if not value_diagnostics and all(
             not self._tracker.has_error_state(position) for position in positions
         ):
             self._tracker.set_value(stmt.target_position, value_state)
 
-    def _validate_literal(
+    def _encode_literal(
         self, literal: ast.Literal, value_type: ast.GlobalTypedNameReference
-    ) -> list[diagnostics.Diagnostic]:
+    ) -> str | None:
+        """Return the literal in the value's encoding, or report why it cannot be."""
         potential_literal = literal.potential_literal
         # TODO: Remove this special case once the Define Standard Library
         # defines the built-in names.
@@ -733,7 +750,7 @@ class ActionPostorderValidator:
             # A missing Potential Literal was already reported when its
             # reference was resolved.
             if definition_result is None:
-                return []
+                return None
             definition = typing.cast(
                 "ast.PotentialLiteralDefinition", definition_result.definition
             )
@@ -747,23 +764,25 @@ class ActionPostorderValidator:
             value_type.full_typed_name
         )
         if value_encoding is None:
-            return [
+            self._diagnostics.append(
                 diagnostics.ValueHasNoEncodingDiagnostic(
                     location=potential_literal.location,
                     value_type=value_type.source_form_in_universe(self._enclosing_fqun),
                 )
-            ]
+            )
+            return None
         parser = literal_parsers.LITERAL_PARSERS.get((literal_encoding, value_encoding))
         if parser is None:
-            return [
+            self._diagnostics.append(
                 self._literal_cannot_set_value(
                     potential_literal, literal_encoding_name, value_type, value_encoding
                 )
-            ]
+            )
+            return None
         try:
-            _ = parser(literal.content)
+            return parser(literal.content)
         except literal_parsers.LiteralParseError as e:
-            return [
+            self._diagnostics.append(
                 diagnostics.InvalidLiteralContentDiagnostic(
                     location=literal.content_character_location(e.content_index),
                     content=literal.content,
@@ -773,8 +792,8 @@ class ActionPostorderValidator:
                     value_encoding=value_encoding,
                     reason=e.reason,
                 )
-            ]
-        return []
+            )
+            return None
 
     def _literal_cannot_set_value(
         self,

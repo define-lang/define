@@ -1,0 +1,14 @@
+# A defined Potential Literal and its encoding generate no code of their own.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<count> {
+            it may only contain particles where {
+                it has the value<standard:/number/rational>.
+            }
+        }
+        create a particle in position<count>.
+        set the value of position<count> to literal</decimal>"42".
+    }
+}

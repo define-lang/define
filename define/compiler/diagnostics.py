@@ -104,7 +104,7 @@ class UniverseWithoutAuthorityDiagnostic(Diagnostic):
     universe_name: str
     message_format: ClassVar[str] = (
         "universe '{self.universe_name}' requires an authority; "
-        "only 'standard' may be used without an authority"
+        f"only '{constants.STANDARD_UNIVERSE}' may be used without an authority"
     )
 
 

@@ -41,6 +41,14 @@ class NoParticleError(DefineRuntimeError):
     )
 
 
+class UnsetValueError(DefineRuntimeError):
+    """Raised when setting a value from a particle whose value is not set."""
+
+    message_format: ClassVar[str] = (
+        "The particle in position '{self.position_name}' does not have a set value."
+    )
+
+
 class UnsatisfiedConstraintError(DefineRuntimeError):
     """Raised when moving a particle to a position whose constraints are not met."""
 
@@ -104,6 +112,7 @@ class Particle:
         self._actions: dict[type[Action], Action] = {}
         self._assigned_qualities: list[Quality] = []
         self.value_type: type[Value] | None = None
+        self.value: float | None = None
 
     def assign_position(self, position_class: type[GlobalPosition]):
         """Assign a position to this particle, or do nothing if already present."""
@@ -209,6 +218,17 @@ class Position(ABC):
                 )
         destination._particle = self._particle
         self._particle = None
+
+    def set_value(self, value: float):
+        """Set the value of the particle in this position."""
+        self.particle.value = value
+
+    def set_value_from(self, source: Position):
+        """Set the value of this position's particle to the source particle's value."""
+        value = source.particle.value
+        if value is None:
+            raise UnsetValueError(source.name)
+        self.particle.value = value
 
     def destroy_particle(self):
         """Destroy the particle in this position."""

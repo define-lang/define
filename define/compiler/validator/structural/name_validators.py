@@ -22,7 +22,7 @@ _PROGRAMMING_LANGUAGES = _load_reserved_words("programming_languages.txt")
 
 _RESERVED_UNIVERSE_NAMES_EXPLICIT: frozenset[str] = frozenset(
     {
-        "standard",
+        constants.STANDARD_UNIVERSE,
         "example",
         "authority",
         "define",
@@ -346,7 +346,7 @@ def _validate_fqun(fqun: ast.Fqun) -> list[diagnostics.Diagnostic]:
         result.extend(_validate_multiverse_name_reserved(fqun.multiverse))
 
     if fqun.authority is None:
-        if fqun.universe.name.lower() != "standard":
+        if fqun.universe.name.lower() != constants.STANDARD_UNIVERSE:
             result.append(
                 diagnostics.UniverseWithoutAuthorityDiagnostic(
                     location=fqun.universe.location,

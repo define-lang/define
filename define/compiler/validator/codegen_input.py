@@ -34,10 +34,31 @@ class Destruction(msgspec.Struct):
     positions: list[ast.PositionReference] = msgspec.field(default_factory=list)
 
 
+class ValueSetting(msgspec.Struct):
+    """A validated Value Setting Statement."""
+
+    target_position: ast.PositionReference
+
+
+class LiteralValueSetting(ValueSetting):
+    """A Value Setting Statement whose source is a literal."""
+
+    # Already in the value's encoding, so code generation never parses it.
+    value: str
+
+
+class PositionValueSetting(ValueSetting):
+    """A Value Setting Statement whose source is another position."""
+
+    source_position: ast.PositionReference
+
+
 type ActionStep = (
     ast.LocalPositionDefinition
     | ast.CreateParticleStatement
     | ast.MoveParticleStatement
+    | LiteralValueSetting
+    | PositionValueSetting
     | ActionExecution
     | Destruction
 )

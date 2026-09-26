@@ -1,0 +1,17 @@
+# A caller sets a value in a callee's interface position, and the callee copies it.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<worker> {
+            it may only contain particles where {
+                it has the action</assign>.
+            }
+        }
+        create a particle in position<worker>.
+        create a particle in position<worker>::action</assign>::position<target>.
+        create a particle in position<worker>::action</assign>::position<source>.
+        set the value of position<worker>::action</assign>::position<source> to literal<standard:/number>"0.25".
+        create a particle in position<worker>::action</assign>::position<trigger>.
+    }
+}

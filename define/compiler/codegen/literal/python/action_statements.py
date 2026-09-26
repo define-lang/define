@@ -69,6 +69,17 @@ class ActionStatementsGenerator:
                     modules.update(
                         self._converter.referenced_modules(step.target_position)
                     )
+                case codegen_input.LiteralValueSetting():
+                    modules.update(
+                        self._converter.referenced_modules(step.target_position)
+                    )
+                case codegen_input.PositionValueSetting():
+                    modules.update(
+                        self._converter.referenced_modules(step.target_position)
+                    )
+                    modules.update(
+                        self._converter.referenced_modules(step.source_position)
+                    )
                 case codegen_input.ActionExecution():
                     modules.update(self._converter.referenced_modules(step.action))
                     for connection in step.destruction_connections:
@@ -156,6 +167,28 @@ class ActionStatementsGenerator:
                                 template_context.StatementKind.MOVE_PARTICLE,
                                 statement.source_position,
                                 statement.target_position,
+                            ),
+                        )
+                    )
+                case codegen_input.LiteralValueSetting():
+                    statements.append(
+                        template_context.SetValueContext(
+                            position=positions.build(statement.target_position),
+                            value=statement.value,
+                            operation_label=self._literal_value_label(
+                                statement.target_position, statement.value
+                            ),
+                        )
+                    )
+                case codegen_input.PositionValueSetting():
+                    statements.append(
+                        template_context.SetValueFromContext(
+                            position=positions.build(statement.target_position),
+                            source_position=positions.build(statement.source_position),
+                            operation_label=self._operation_label(
+                                template_context.StatementKind.SET_VALUE_FROM,
+                                statement.target_position,
+                                statement.source_position,
                             ),
                         )
                     )
@@ -249,5 +282,14 @@ class ActionStatementsGenerator:
                 kind,
                 position,
                 destination,
+            )
+        return None
+
+    def _literal_value_label(
+        self, position: ast.PositionReference, value: str
+    ) -> str | None:
+        if self._trace_operations:
+            return operation_labels.literal_value_operation_label(
+                self._action_input.definition.typed_name, position, value
             )
         return None

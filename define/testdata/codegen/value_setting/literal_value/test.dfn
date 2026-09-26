@@ -1,0 +1,14 @@
+# A literal sets a value in its encoding, with no conversion at runtime.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<price> {
+            it may only contain particles where {
+                it has the value<standard:/number/rational>.
+            }
+        }
+        create a particle in position<price>.
+        set the value of position<price> to literal<standard:/number>"12.5".
+    }
+}
