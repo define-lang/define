@@ -179,8 +179,7 @@ class FileStructuralValidator:
         """Load a Define source file and return source and syntax errors."""
         posix_path = path.as_posix_path()
         try:
-            with open(pathlib.Path(posix_path), "rb") as source_file:
-                raw = source_file.read()
+            raw = pathlib.Path(posix_path).read_bytes()
         except FileNotFoundError:
             return "", exceptions.SourceFileNotFoundError(
                 filesystem_path=pathlib.Path(posix_path)

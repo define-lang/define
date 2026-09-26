@@ -40,7 +40,7 @@ class Token(str):
     def __new__(
         cls,
         type: str,  # noqa: A002
-        value,
+        value: str,
         start_pos: int | None = None,
         line: int | None = None,
         column: int | None = None,

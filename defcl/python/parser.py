@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pathlib
 from functools import cached_property
 from typing import TYPE_CHECKING
 
@@ -46,5 +47,5 @@ class Parser:
         self, path: str | os.PathLike[str], message_type: type[M]
     ) -> M:
         """Parse a DCL file into a protobuf message."""
-        with open(path, encoding="utf-8", newline="") as f:
-            return self.parse(f.read(), message_type, path_name=path)
+        source = pathlib.Path(path).read_text(encoding="utf-8", newline="")
+        return self.parse(source, message_type, path_name=path)

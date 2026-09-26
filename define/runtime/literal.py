@@ -296,7 +296,7 @@ def record_operation(label: str):
 
 def start(entry_point: type[Action], *, trace_operations: bool = False):
     """Create the view point particle and execute its entry action."""
-    global _operation_trace
+    global _operation_trace  # noqa: PLW0603 - A program run has exactly one operation trace.
     _operation_trace = [] if trace_operations else None
     try:
         view_point = LocalPosition("position<view_point>", constraints=(entry_point,))

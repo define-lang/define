@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pathlib
 from functools import cached_property
 from typing import TYPE_CHECKING
 
@@ -188,5 +189,5 @@ class Parser:
         self, path: str | os.PathLike[str]
     ) -> lark_standalone.Tree[lark_cython.Token]:
         """Parse a DCL file and return the parse tree."""
-        with open(path, encoding="utf-8", newline="") as f:
-            return self.parse(f.read(), path_name=path)
+        source = pathlib.Path(path).read_text(encoding="utf-8", newline="")
+        return self.parse(source, path_name=path)

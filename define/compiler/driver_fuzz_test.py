@@ -618,8 +618,9 @@ def _decorated_source(draw: st.DrawFn, source: str) -> str:
             and draw(st.integers(min_value=0, max_value=7)) == 0
         ):
             tag = draw(st.sampled_from(_TRAILING_COMMENT_TAGS))
-            line = body + tag + "\n"
-        result.append(line)
+            result.append(body + tag + "\n")
+        else:
+            result.append(line)
     return "".join(result)
 
 

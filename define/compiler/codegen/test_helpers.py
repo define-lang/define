@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import difflib
-import glob
 import os
 from pathlib import Path
 
@@ -67,9 +66,7 @@ def codegen_test_cases() -> list[Path]:
     # direct pytest runners such as mutmut do not set it and must discover all cases.
     category = os.environ.get("DEFINE_CODEGEN_TESTDATA_CATEGORY")
     pattern = f"{category}/*/test.dfn" if category is not None else "*/*/test.dfn"
-    return sorted(
-        Path(path).parent for path in glob.glob(str(_CODEGEN_TESTDATA_ROOT / pattern))
-    )
+    return sorted(path.parent for path in _CODEGEN_TESTDATA_ROOT.glob(pattern))
 
 
 def codegen_test_case_id(test_case_dir: Path) -> str:

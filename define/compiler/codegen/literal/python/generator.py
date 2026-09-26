@@ -145,7 +145,7 @@ class PythonLiteralCodeGenerator:
         for package_dir in package_dirs:
             needed_dirs.add(package_dir)
             for parent in package_dir.parents:
-                if parent == Path("."):
+                if parent == Path():
                     continue
                 needed_dirs.add(parent)
 

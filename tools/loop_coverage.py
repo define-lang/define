@@ -250,7 +250,7 @@ class LoopCoverageCollector:
 
 
 def _monitored_frame() -> FrameType:  # pragma: no cover
-    return sys._getframe(2)  # pyright: ignore[reportPrivateUsage]
+    return sys._getframe(2)  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
 
 
 def _instruction_line_pairs(  # pragma: no cover

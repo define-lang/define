@@ -16,6 +16,40 @@ dependencies = [
 ]
 
 [tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+  # Return annotations, including `-> None`, which this project omits.
+  "ANN201",
+  "ANN202",
+  "ANN204",
+  "ANN205",
+  # Size and complexity limits with arbitrary thresholds.
+  "C901",
+  "PLR0911",
+  "PLR0912",
+  "PLR0913",
+  "PLR0915",
+  "PLR0917",
+  "CPY001", # Files do not carry copyright notices.
+  # Conflict with the ruff formatter.
+  "COM812",
+  "ISC001",
+  # The formatter owns line length, and Define source is never split across
+  # Python lines.
+  "E501",
+  "ERA001", # Its heuristic flags example and descriptive comments as code.
+  # Exception message style.
+  "EM",
+  "TRY003",
+  # TODO comments are allowed and need no author or issue link.
+  "FIX002",
+  "TD",
+  # Source directories do not all have `__init__.py`.
+  "INP001",
+  "ISC003", # Explicit string concatenation is allowed.
+  "PERF401", # Loops are preferred over comprehensions that are not simple.
+  "PLR2004", # Tests compare against literal values.
+]
 extend-select = [
   "W",  # pycodestyle warnings
   "I",  # isort
@@ -50,6 +84,12 @@ required-imports = ["from __future__ import annotations"]
 "**/*.py" = [
     "S603", # Allow subprocess calls without a shell.
 ]
+"tools/**/*.py" = [
+    "T201", # Command-line tools print their output.
+]
+"tools/profiler/testdata/*_target.py" = [
+    "PTH", # Profiler targets are test data.
+]
 "define/compiler/**/*.py" = [
     "S105", # Stop complaining about assigning things to "token"
 ]
@@ -81,6 +121,7 @@ required-imports = ["from __future__ import annotations"]
     "D101", # Don't require docstrings on test classes.
     "D102", # Don't require docstrings on test methods.
     "D103", # Don't require docstrings on test functions.
+    "SLF001", # Tests may exercise private helpers.
 ]
 "**/conftest.py" = [
     "S101", # Allow assert statements.

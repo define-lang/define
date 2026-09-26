@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -24,7 +23,7 @@ def write_lines(output: Path, lines: Iterable[str]) -> int:
                 _ = temporary_file.write(line)
                 _ = temporary_file.write("\n")
                 line_count += 1
-        os.replace(temporary_path, output)
+        _ = temporary_path.replace(output)
     finally:
         if temporary_path is not None:
             temporary_path.unlink(missing_ok=True)

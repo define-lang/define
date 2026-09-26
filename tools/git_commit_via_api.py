@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import base64
 import os
+import pathlib
 
 import click
 import github
@@ -30,8 +31,7 @@ def main(message: str, files: tuple[str, ...]):  # noqa: D103
 
     tree_elements: list[github.InputGitTreeElement] = []
     for path in files:
-        with open(path, "rb") as f:
-            content = base64.b64encode(f.read()).decode()
+        content = base64.b64encode(pathlib.Path(path).read_bytes()).decode()
         blob = repo.create_git_blob(content, "base64")
         tree_elements.append(
             github.InputGitTreeElement(

@@ -40,8 +40,10 @@ def _samples(
             first_sample.observation_index,
             first_sample.interval,
         )
-        for identity, sample in observation.items():
-            sample = msgspec.structs.replace(sample, observation=observation_sample)
+        for identity, recorded_sample in observation.items():
+            sample = msgspec.structs.replace(
+                recorded_sample, observation=observation_sample
+            )
             observation_sample.threads[identity] = sample
             by_identity.setdefault(identity, []).append(sample)
         observation_samples.append(observation_sample)

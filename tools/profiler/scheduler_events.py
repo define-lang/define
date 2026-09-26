@@ -71,11 +71,12 @@ def _tracepoint_access_error(
         try:
             for tracepoint_name in _TRACEPOINT_NAMES:
                 _ = (trace_root / tracepoint_name / "id").read_text()
-            return None
         except FileNotFoundError:
             continue
         except PermissionError as error:
             permission_error = error
+        else:
+            return None
     if permission_error is not None:
         return "scheduler tracepoints are not readable by the profiler user"
     return "the kernel does not expose the required scheduler tracepoints"

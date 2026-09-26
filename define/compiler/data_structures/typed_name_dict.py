@@ -46,6 +46,8 @@ class _AstNodeDict[K: ast.ASTNode, V](collections.abc.MutableMapping[K, V], abc.
     """
 
     _key_type: typing.ClassVar[type[ast.ASTNode]]
+    # A mutable mapping must not be hashable.
+    __hash__: typing.ClassVar[None] = None  # pyright: ignore[reportIncompatibleMethodOverride]
 
     def __init__(self):
         """Initialize an empty mapping."""

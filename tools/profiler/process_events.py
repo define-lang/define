@@ -6,6 +6,7 @@ import contextlib
 import ctypes
 import enum
 import os
+import pathlib
 import select
 import signal
 import time
@@ -93,10 +94,10 @@ def blocked_child_signal() -> collections.abc.Generator[None, None, None]:
 def executable_identity(process_id: int) -> schema.ExecutableIdentity:
     """Read the executable identity currently mapped by a process."""
     # PRF-021: Version match.
-    executable_path = os.readlink(f"/proc/{process_id}/exe")
-    executable_stat = os.stat(executable_path)
+    executable_path = pathlib.Path(f"/proc/{process_id}/exe").readlink()
+    executable_stat = executable_path.stat()
     return {
-        "path": executable_path,
+        "path": str(executable_path),
         "device": executable_stat.st_dev,
         "inode": executable_stat.st_ino,
     }
