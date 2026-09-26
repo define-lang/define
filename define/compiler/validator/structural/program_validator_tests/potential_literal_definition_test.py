@@ -227,3 +227,27 @@ def test_non_filesystem_encoding_must_precede_reference(
     assert diagnostic.location.column == 25
     assert diagnostic.location.file_path is None
     assert diagnostic.file_path == "decimal_text.dfn"
+
+
+def test_built_in_encoding(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert_no_errors(result)
+    assert len(result.file_results) == 1
+    assert len(result.definition_results) == 1
+
+
+def test_built_in_name_with_wrong_type(
+    validate_testdata_structural: ValidateTestdataStructural,
+):
+    result = validate_testdata_structural()
+    assert result.all_exceptions == []
+    assert len(result.all_diagnostics) == 1
+    diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.universe == "standard"
+    assert diagnostic.current_universe_name == "my.domain.com:my_lib"
+    assert diagnostic.location.line == 3
+    assert diagnostic.location.column == 25

@@ -1,0 +1,9 @@
+# The built-in standard literal needs no definition file or project configuration.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<dest>.
+        set the value of position<dest> to literal<standard:/number>"5".
+    }
+}

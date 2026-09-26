@@ -23,6 +23,14 @@ def test_matching_types(
     assert_no_errors(result)
 
 
+def test_built_in_literal(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph().program_result
+    assert_no_errors(result)
+    assert len(result.file_results) == 2
+
+
 def test_target_missing_type(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):

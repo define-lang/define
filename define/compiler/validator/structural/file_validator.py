@@ -743,6 +743,9 @@ class DefinitionStructuralValidator:
         typed_global_name: ast.GlobalTypedNameReference,
     ):
         """Record a reference edge for a global name reference."""
+        # Built-in names have no definition file to load or depend on.
+        if typed_global_name.full_typed_name in constants.BUILT_IN_GLOBAL_NAMES:
+            return
         global_name = typed_global_name.name_content
 
         is_self_reference = (

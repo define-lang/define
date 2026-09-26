@@ -15,3 +15,11 @@ PROJECT_ROOT: Final = define_path.DefinePathFromPosix(pathlib.PurePosixPath(".")
 NON_FILESYSTEM_PATH: Final = define_path.InvalidDefinePath("<string>")
 DEFAULT_MULTIVERSE: Final = "local"
 DEFAULT_OUTPUT_DIR: Final = pathlib.Path("define-out")
+# The compiler provides these standard universe names itself until the Define
+# Standard Library exists.
+BUILT_IN_GLOBAL_NAMES: Final = frozenset(
+    {
+        "encoding<standard:/decimal/ascii>",
+        "literal<standard:/number>",
+    }
+)

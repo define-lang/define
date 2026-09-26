@@ -147,3 +147,27 @@ def test_unconfigured_external_literal(
     assert diagnostic.universe == "literals.org:literals"
     assert diagnostic.location.line == 7
     assert diagnostic.location.column == 52
+
+
+def test_built_in_literal(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert_no_errors(result)
+    assert len(result.file_results) == 1
+    assert len(result.definition_results) == 1
+
+
+def test_undefined_standard_literal(
+    validate_testdata_structural: ValidateTestdataStructural,
+):
+    result = validate_testdata_structural()
+    assert result.all_exceptions == []
+    assert len(result.all_diagnostics) == 1
+    diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.universe == "standard"
+    assert diagnostic.current_universe_name == "my.domain.com:my_lib"
+    assert diagnostic.location.line == 7
+    assert diagnostic.location.column == 52

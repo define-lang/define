@@ -1,0 +1,4 @@
+# A built-in standard name is only built in for its own name type.
+define the potential literal<my.domain.com:my_lib:/test> {
+    it has the encoding<standard:/number>.
+}
