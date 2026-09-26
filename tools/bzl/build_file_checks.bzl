@@ -176,6 +176,8 @@ _check_build_file = macro(
     finalizer = True,
 )
 
+# This package-wide check declares no targets and always uses a fixed name.
+# buildifier: disable=unnamed-macro
 def check_build_file():
     """Fails loading the package when its BUILD file breaks the repository's conventions."""
     _check_build_file(name = "check_build_file")
