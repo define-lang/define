@@ -1319,12 +1319,14 @@ def _build_destroy_particle_project(root_universe: str) -> ProjectCase:
 
 
 def _build_value_copy_project(universe_name: str, copies: int) -> ProjectCase:
+    # A literal can only set a value type that has an encoding, and only
+    # built-in value types have encodings.
     statements = [
         _local_position_with_requirements(
-            "source", [("value", "/number")], indent="        "
+            "source", [("value", "standard:/number/rational")], indent="        "
         ),
         _local_position_with_requirements(
-            "target", [("value", "/number")], indent="        "
+            "target", [("value", "standard:/number/rational")], indent="        "
         ),
         _create_particle_statement("position<source>", indent="        "),
         _create_particle_statement("position<target>", indent="        "),
@@ -1345,13 +1347,11 @@ def _build_value_copy_project(universe_name: str, copies: int) -> ProjectCase:
             outer_locals=[],
             inner_locals=statements,
         ),
-        "number.dfn": f"define the potential value<{universe_name}:/number>.\n",
         "decimal.dfn": (
             f"define the potential literal<{universe_name}:/decimal> {{\n"
-            "    it has the encoding</decimal_encoding>.\n"
+            "    it has the encoding<standard:/number/decimal/ascii>.\n"
             "}\n"
         ),
-        "decimal_encoding.dfn": f"define the encoding<{universe_name}:/decimal_encoding>.\n",
     }
     return ProjectCase(
         entrypoint="test.dfn",
