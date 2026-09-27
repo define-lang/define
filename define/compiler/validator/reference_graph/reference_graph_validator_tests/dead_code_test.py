@@ -1199,3 +1199,34 @@ def test_unreferenced_constraint_on_global_position_is_not_checked(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
+
+
+# --- Operation Executions ---
+
+
+def test_operation_execution_does_not_keep_child_constraints_alive(
+    validate_testdata_non_filesystem_with_reference_graph: conftest.ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
+    assert len(result.all_diagnostics) == 2
+    dead_child, untriggered_action = result.all_diagnostics
+    assert isinstance(dead_child, diagnostics.DeadChildPositionDiagnostic)
+    assert dead_child.location.file_path is None
+    assert dead_child.location.line == 29
+    assert dead_child.location.column == 28
+    assert dead_child.constraint_name == "position</child>"
+    assert dead_child.position_name == "position<box>"
+    assert isinstance(untriggered_action, diagnostics.UntriggeredActionDiagnostic)
+    assert untriggered_action.location.file_path is None
+    assert untriggered_action.location.line == 30
+    assert untriggered_action.location.column == 28
+    assert untriggered_action.constraint_name == "action</poke>"
+    assert untriggered_action.position_name == "position<box>"
+
+
+def test_operation_execution_on_child_position_keeps_child_position_alive(
+    validate_testdata_non_filesystem_with_reference_graph: conftest.ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert_no_errors(result)

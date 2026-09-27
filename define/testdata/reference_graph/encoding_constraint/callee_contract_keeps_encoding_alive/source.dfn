@@ -1,0 +1,38 @@
+# Moving a particle into a callee's contracted position with the same encoding constraint keeps its encoding constraint alive.
+define the potential action<my.domain.com:my_lib:/consume> {
+    define the position<input> {
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+            it has the encoding<standard:/number/decimal/ascii>.
+        }
+    }
+    define the position<trigger>.
+    it happens when {
+        the position<trigger> has a particle.
+    } and it does {
+        set the value of position<input> to literal<standard:/number>"1".
+        destroy the particle in position<input>.
+        destroy the particle in position<trigger>.
+    }
+}
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<worker> {
+            it may only contain particles where {
+                it has the action</consume>.
+            }
+        }
+        define the position<number> {
+            it may only contain particles where {
+                it has the value<standard:/number/rational>.
+                it has the encoding<standard:/number/decimal/ascii>.
+            }
+        }
+        create a particle in position<worker>.
+        create a particle in position<number>.
+        move the particle in position<number> to position<worker>::action</consume>::position<input>.
+        create a particle in position<worker>::action</consume>::position<trigger>.
+    }
+}

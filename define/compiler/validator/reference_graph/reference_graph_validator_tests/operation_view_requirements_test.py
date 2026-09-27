@@ -151,3 +151,91 @@ def test_looks_at_position(
     assert diagnostic.location.line == 27
     assert diagnostic.location.column == 42
     assert diagnostic.position_name == "position<number>"
+
+
+def test_invalid_literal_content_in_action(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
+    assert len(result.all_diagnostics) == 1
+    diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.InvalidLiteralContentDiagnostic)
+    assert diagnostic.location.file_path is None
+    assert diagnostic.location.line == 30
+    assert diagnostic.location.column == 68
+    assert diagnostic.content == "x"
+    assert diagnostic.potential_literal == "literal<standard:/number>"
+    assert diagnostic.value_encoding == "encoding<standard:/number/decimal/ascii>"
+    assert diagnostic.reason == "'x' is not allowed in a number"
+
+
+def test_position_missing_value_type(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
+    assert len(result.all_diagnostics) == 1
+    diagnostic = result.all_diagnostics[0]
+    assert isinstance(
+        diagnostic, diagnostics.OperationArgumentViolatesConstraintsDiagnostic
+    )
+    assert diagnostic.location.file_path is None
+    assert diagnostic.location.line == 33
+    assert diagnostic.location.column == 42
+    assert diagnostic.view_name == "view<target>"
+    assert diagnostic.looked_at_name == "position<second>"
+    assert diagnostic.looked_at_kind == diagnostics.LookedAtKind.POSITION
+    assert diagnostic.missing_qualities == ["value<standard:/number/rational>"]
+
+
+def test_position_value_mismatch(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
+    assert len(result.all_diagnostics) == 1
+    diagnostic = result.all_diagnostics[0]
+    assert isinstance(
+        diagnostic, diagnostics.OperationArgumentViolatesConstraintsDiagnostic
+    )
+    assert diagnostic.location.file_path is None
+    assert diagnostic.location.line == 36
+    assert diagnostic.location.column == 42
+    assert diagnostic.view_name == "view<target>"
+    assert diagnostic.looked_at_name == "position<second>"
+    assert diagnostic.looked_at_kind == diagnostics.LookedAtKind.POSITION
+    assert diagnostic.missing_qualities == ["value<standard:/number/rational>"]
+
+
+def test_position_missing_encoding(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
+    assert len(result.all_diagnostics) == 1
+    diagnostic = result.all_diagnostics[0]
+    assert isinstance(
+        diagnostic, diagnostics.OperationArgumentViolatesConstraintsDiagnostic
+    )
+    assert diagnostic.location.file_path is None
+    assert diagnostic.location.line == 38
+    assert diagnostic.location.column == 42
+    assert diagnostic.view_name == "view<source>"
+    assert diagnostic.looked_at_name == "position<first>"
+    assert diagnostic.looked_at_kind == diagnostics.LookedAtKind.POSITION
+    assert diagnostic.missing_qualities == ["encoding<standard:/number/decimal/ascii>"]
+
+
+def test_position_matching_encoding(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert_no_errors(result)
+
+
+def test_particle_qualities_in_unconstrained_position(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert_no_errors(result)

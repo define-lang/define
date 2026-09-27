@@ -208,6 +208,34 @@ class ParticleOperationValidator:
             )
         return value_type
 
+    def validate_looked_at(
+        self, position: ast.PositionReference
+    ) -> diagnostics.Diagnostic | None:
+        """Validate a position looked at by an Operation Argument Statement."""
+        parent_diagnostic = self._check_parents_occupied(position)
+        if parent_diagnostic is not None:
+            return parent_diagnostic
+        particle = self._tracker.get_occupant_or_none(position)
+        if particle is None:
+            return diagnostics.OperationArgumentEmptyPositionDiagnostic(
+                location=position.location,
+                position_name=position.source_chained_name,
+            )
+        # A particle without a value type does not meet the constraints of the
+        # view looking at it, which is reported instead.
+        if particle.qualities.value_type is None:
+            return None
+        if particle.value_state not in (
+            particle_info.ParticleValueState.SET,
+            particle_info.ParticleValueState.ERROR,
+        ):
+            self._tracker.mark_value_error(position)
+            return diagnostics.UnsetValueDiagnostic(
+                location=position.location,
+                position_name=position.source_chained_name,
+            )
+        return None
+
     def validate_destroy(
         self,
         target: ast.PositionReference,

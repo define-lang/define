@@ -1,0 +1,35 @@
+# Using a particle in an Operation Execution Statement keeps its encoding constraint alive.
+define the operation<my.domain.com:my_lib:/copy> {
+    define the view<source> {
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+        }
+    }
+    define the view<target> {
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+        }
+    }
+
+    it does {
+        execute the encoding operation.
+    }
+}
+define the potential action<my.domain.com:my_lib:/run> {
+    define the position<number> {
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+            it has the encoding<standard:/number/decimal/ascii>.
+        }
+    }
+    define the position<trigger>.
+    it happens when {
+        the position<trigger> has a particle.
+    } and it does {
+        execute the operation</copy> {
+            with view<source> looking at literal<standard:/number>"1".
+            with view<target> looking at position<number>.
+        }
+        destroy the particle in position<trigger>.
+    }
+}

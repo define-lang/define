@@ -1,0 +1,15 @@
+# Using a particle in a Value Setting Statement keeps its encoding constraint alive.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<number> {
+            it may only contain particles where {
+                it has the value<standard:/number/rational>.
+                it has the encoding<standard:/number/decimal/ascii>.
+            }
+        }
+        create a particle in position<number>.
+        set the value of position<number> to literal<standard:/number>"1".
+    }
+}

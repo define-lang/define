@@ -209,6 +209,7 @@ class DefinitionStructuralValidator:
     _reference_edges: list[reference_graph.ReferenceEdge]
     _seen_edge_targets: set[str]
     _particle_statement_validity: list[validation_result.ParticleStatementValidity]
+    _looked_at_position_validity: list[bool]
     _seen_definitions: typed_name_dict.TypedNameDict[
         ast.GlobalTypedNameInDefinition, ast.GlobalDefinition
     ]
@@ -236,6 +237,7 @@ class DefinitionStructuralValidator:
         self._reference_edges = []
         self._seen_edge_targets = set()
         self._particle_statement_validity = []
+        self._looked_at_position_validity = []
         self._seen_definitions = seen_definitions
         self._unknown_fquns = set()
         self._implied_qualities = typed_name_dict.TypedNameDict()
@@ -279,6 +281,7 @@ class DefinitionStructuralValidator:
             _diagnostics=self._diagnostics,
             reference_edges=self._reference_edges,
             particle_statement_validity=self._particle_statement_validity,
+            looked_at_position_validity=self._looked_at_position_validity,
         )
 
     def _validate_path_matches_file(self):
@@ -531,7 +534,9 @@ class DefinitionStructuralValidator:
     ) -> bool:
         match looking_at:
             case ast.PositionReference():
-                return self._validate_full_chained_name(looking_at, scope)
+                position_ok = self._validate_full_chained_name(looking_at, scope)
+                self._looked_at_position_validity.append(position_ok)
+                return position_ok
             case ast.LocalTypedNameReference():
                 self._diagnostics.append(
                     diagnostics.OperationArgumentViewDiagnostic(

@@ -1423,3 +1423,49 @@ def test_operation_argument_violates_constraints_format(
                                                  ^
         'view<source>' cannot look at 'view<number>' because 'view<number>' does not have the required qualities:
           encoding<standard:/number/decimal/ascii>""")
+
+
+def test_operation_argument_position_violates_constraints_format(
+    validate_project: ValidateProject,
+):
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    it happens when {\n"
+        "        this particle is created.\n"
+        "    } and it does {\n"
+        "        define the position<number>.\n"
+        "        create a particle in position<number>.\n"
+        "        execute the operation</read> {\n"
+        "            with view<source> looking at position<number>.\n"
+        "        }\n"
+        "    }\n"
+        "}\n"
+    )
+    result = validate_project(
+        {
+            "test.dfn": source,
+            "read.dfn": (
+                "define the operation<my.domain.com:my_lib:/read> {\n"
+                "    define the view<source> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the value<standard:/number/rational>.\n"
+                "        }\n"
+                "    }\n"
+                "\n"
+                "    it does {\n"
+                "        execute the encoding operation.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    assert result.program_result.all_exceptions == []
+    diags = result.program_result.all_diagnostics
+    assert len(diags) == 1
+    formatted = diags[0].format(source.splitlines())
+    assert formatted == textwrap.dedent("""\
+        File "test.dfn", line 8, column 42
+                    with view<source> looking at position<number>.
+                                                 ^
+        'view<source>' cannot look at 'position<number>' because the particle in 'position<number>' does not have the required qualities:
+          value<standard:/number/rational>""")

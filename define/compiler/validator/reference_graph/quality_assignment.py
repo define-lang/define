@@ -63,12 +63,13 @@ class QualityAssignments:
         assignments.append(quality)
 
     @cached_property
-    def _quality_names(self) -> frozenset[str]:
+    def names(self) -> frozenset[str]:
+        """The full typed names of the assigned qualities."""
         return frozenset(quality.full_typed_name for quality in self.assignments)
 
     def has_quality(self, quality: ast.GlobalTypedNameReference) -> bool:
         """Return whether the quality is assigned."""
-        return quality.full_typed_name in self._quality_names
+        return quality.full_typed_name in self.names
 
     @cached_property
     def value_type(self) -> ast.GlobalTypedNameReference | None:

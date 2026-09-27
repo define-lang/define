@@ -5,6 +5,20 @@ load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
 py_test(
+    name = "action_operation_execution_test",
+    size = "small",
+    srcs = ["action_operation_execution_test.py"],
+    data = ["//define/testdata/reference_graph/action_operation_execution"],
+    deps = [
+        ":test_helpers",
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+        "//define/compiler/validator/reference_graph:action_contract",
+    ],
+)
+
+py_test(
     name = "action_triggering_test",
     size = "small",
     srcs = ["action_triggering_test.py"],
@@ -663,6 +677,18 @@ py_test(
 )
 
 py_test(
+    name = "encoding_constraint_test",
+    size = "small",
+    srcs = ["encoding_constraint_test.py"],
+    data = ["//define/testdata/reference_graph/encoding_constraint"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+    ],
+)
+
+py_test(
     name = "error_messages_complex_test",
     size = "small",
     srcs = ["error_messages_complex_test.py"],
@@ -973,6 +999,7 @@ format_test(
 pyright_test(
     name = "pyright_test",
     deps = [
+        ":action_operation_execution_test",
         ":action_triggering_test",
         ":automated_guarantees_constructor_implied_test",
         ":automated_guarantees_constructor_test",
@@ -1020,6 +1047,7 @@ pyright_test(
         ":destructor_auto_test",
         ":destructor_cascade_test",
         ":destructor_triggering_test",
+        ":encoding_constraint_test",
         ":error_messages_complex_test",
         ":error_messages_destruction_test",
         ":error_messages_test",

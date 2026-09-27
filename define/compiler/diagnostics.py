@@ -400,6 +400,16 @@ class DeadValueConstraintDiagnostic(DeadConstraintDiagnostic):
     )
 
 
+class DeadEncodingConstraintDiagnostic(DeadConstraintDiagnostic):
+    """Diagnostic for an encoding constraint that is never used."""
+
+    message_format: ClassVar[str] = (
+        "'{self.constraint_name}' is a constraint of '{self.position_name}' here,"
+        " but the value of a particle created in this position is never used, so"
+        " its encoding never matters. Either use the value or remove the constraint."
+    )
+
+
 class UntriggeredActionDiagnostic(DeadConstraintDiagnostic):
     """Diagnostic for an action constraint on a local or interface position that is never triggered."""
 
@@ -876,8 +886,17 @@ class ValueSettingMissingValueTypeDiagnostic(Diagnostic):
     )
 
 
+class OperationArgumentEmptyPositionDiagnostic(Diagnostic):
+    """An Operation Argument Statement looks at an empty position."""
+
+    position_name: str
+    message_format: ClassVar[str] = (
+        "'{self.position_name}' has no particle in it, so a view cannot look at it."
+    )
+
+
 class UnsetValueDiagnostic(Diagnostic):
-    """A Value Setting Statement reads a particle whose value is unset."""
+    """A Value Setting Statement or an Operation Argument Statement reads a particle whose value is unset."""
 
     position_name: str
     message_format: ClassVar[str] = (

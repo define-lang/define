@@ -15,6 +15,11 @@ if typing.TYPE_CHECKING:
     from define.compiler.validator import validation_result
 
 
+# Constraints that a particle's use in a Value Setting Statement or Operation
+# Execution Statement keeps alive.
+VALUE_AND_ENCODING_NAME_TYPES = frozenset((ast.NameType.VALUE, ast.NameType.ENCODING))
+
+
 class DeadConstraintCandidate(msgspec.Struct, frozen=True):
     """A directly-written constraint on a local or interface position pending a DLP 42 liveness check."""
 
@@ -34,7 +39,7 @@ class DeadConstraintTracker:
     A candidate is registered for each of a local or interface position's
     directly-written constraints that resolves and is not a destructor, and
     removed once the constraint is proven alive by a child-position reference,
-    a value use, an action trigger, or an action contract. Whatever remains after a
+    a value or encoding use, an action trigger, or an action contract. Whatever remains after a
     definition's body is analyzed is dead code.
 
     Implied actions must be triggered to be alive (which means constructors and
@@ -54,7 +59,7 @@ class DeadConstraintTracker:
         self._action_constraint_candidates: dict[
             tuple[str, str], DeadConstraintCandidate
         ] = {}
-        self._value_constraint_candidates: dict[
+        self._value_and_encoding_constraint_candidates: dict[
             tuple[str, str], DeadConstraintCandidate
         ] = {}
         self._implied_action_candidates: dict[str, ast.GlobalTypedNameReference] = {}
@@ -68,8 +73,8 @@ class DeadConstraintTracker:
         candidate = DeadConstraintCandidate(position=position, constraint=constraint)
         if constraint.name_type == ast.NameType.ACTION:
             self._action_constraint_candidates[candidate.key] = candidate
-        elif constraint.name_type == ast.NameType.VALUE:
-            self._value_constraint_candidates[candidate.key] = candidate
+        elif constraint.name_type in VALUE_AND_ENCODING_NAME_TYPES:
+            self._value_and_encoding_constraint_candidates[candidate.key] = candidate
         else:
             constraint_name = constraint.full_typed_name
             self._position_constraint_candidate_counts[constraint_name] = (
@@ -139,16 +144,16 @@ class DeadConstraintTracker:
         return bool(
             self._position_constraint_candidates
             or self._action_constraint_candidates
-            or self._value_constraint_candidates
+            or self._value_and_encoding_constraint_candidates
         )
 
-    def mark_value_alive(
+    def mark_value_or_encoding_alive(
         self,
         origin_position: ast.PositionReference,
         constraint: ast.GlobalTypedNameReference,
     ):
-        """Keep a used value constraint alive on the particle's origin position."""
-        _ = self._value_constraint_candidates.pop(
+        """Keep a used value or encoding constraint alive on the particle's origin position."""
+        _ = self._value_and_encoding_constraint_candidates.pop(
             (origin_position.canonical_chained_name, constraint.full_typed_name), None
         )
 
@@ -221,9 +226,9 @@ class DeadConstraintTracker:
         if not self.has_constraint_candidates():
             return
         for constraint in constraints:
-            if constraint.name_type == ast.NameType.VALUE:
+            if constraint.name_type in VALUE_AND_ENCODING_NAME_TYPES:
                 self._mark_constraint_alive(
-                    self._value_constraint_candidates,
+                    self._value_and_encoding_constraint_candidates,
                     current_position,
                     origin_position,
                     constraint,
@@ -270,9 +275,9 @@ class DeadConstraintTracker:
         """Return the dead directly-written action constraints (DLP 42)."""
         return self._action_constraint_candidates.values()
 
-    def dead_value_constraints(self) -> Iterable[DeadConstraintCandidate]:
-        """Return unused directly-written value constraints."""
-        return self._value_constraint_candidates.values()
+    def dead_value_and_encoding_constraints(self) -> Iterable[DeadConstraintCandidate]:
+        """Return unused directly-written value and encoding constraints."""
+        return self._value_and_encoding_constraint_candidates.values()
 
     def untriggered_implied_actions(
         self,

@@ -1,0 +1,17 @@
+define the potential action<my.domain.com:my_lib:/run> {
+    define the position<number> {
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+        }
+    }
+    define the position<trigger>.
+    it happens when {
+        the position<trigger> has a particle.
+    } and it does {
+        execute the operation</copy> {
+            with view<source> looking at literal<standard:/number>"1".
+            with view<target> looking at position<number>.
+        }
+        destroy the particle in position<trigger>.
+    }
+}

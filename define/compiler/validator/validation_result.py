@@ -58,6 +58,9 @@ class DefinitionValidationResult(msgspec.Struct):
     particle_statement_validity: list[ParticleStatementValidity] = msgspec.field(
         default_factory=list
     )
+    # Whether each position looked at by an Operation Argument Statement in an
+    # action is valid, in source order.
+    looked_at_position_validity: list[bool] = msgspec.field(default_factory=list)
 
     def add_diagnostic(self, diagnostic: diagnostics.Diagnostic):
         """Append a diagnostic to this definition's results."""

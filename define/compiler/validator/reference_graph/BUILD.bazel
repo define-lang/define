@@ -43,6 +43,7 @@ py_library(
         ":destruction_contract",
         ":destruction_contract_validator",
         ":literal_encoder",
+        ":operation_arguments_validator",
         ":particle_info",
         ":particle_operation_validator",
         ":particle_tracker",
@@ -158,8 +159,8 @@ py_library(
 )
 
 py_library(
-    name = "operation_definition_validator",
-    srcs = ["operation_definition_validator.py"],
+    name = "operation_arguments_validator",
+    srcs = ["operation_arguments_validator.py"],
     deps = [
         ":literal_encoder",
         "//define/compiler:ast",
@@ -167,6 +168,19 @@ py_library(
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/validator:validation_result",
         "//define/compiler/validator/structural:name_validators",
+    ],
+)
+
+py_library(
+    name = "operation_definition_validator",
+    srcs = ["operation_definition_validator.py"],
+    deps = [
+        ":literal_encoder",
+        ":operation_arguments_validator",
+        "//define/compiler:ast",
+        "//define/compiler:diagnostics",
+        "//define/compiler/data_structures:typed_name_dict",
+        "//define/compiler/validator:validation_result",
     ],
 )
 
@@ -371,6 +385,7 @@ pyright_test(
         ":destruction_contract",
         ":destruction_contract_validator",
         ":literal_encoder",
+        ":operation_arguments_validator",
         ":operation_definition_validator",
         ":particle_info",
         ":particle_operation_validator",

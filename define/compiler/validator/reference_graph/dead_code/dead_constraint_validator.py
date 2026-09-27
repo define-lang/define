@@ -74,13 +74,21 @@ class DeadConstraintValidator:
             parent_particle.origin_position if parent_particle is not None else None,
         )
 
-    def mark_value_constraint_alive(self, position: ast.PositionReference):
-        """Keep the value constraint on a used particle's origin position alive."""
+    def mark_value_and_encoding_constraints_alive(
+        self, position: ast.PositionReference
+    ):
+        """Keep the value and encoding constraints on a used particle's origin position alive."""
         particle = self._tracker.get_occupant_or_none(position)
-        if particle is not None and particle.qualities.value_type is not None:
-            self._dead_constraint_tracker.mark_value_alive(
-                particle.origin_position, particle.qualities.value_type
-            )
+        if particle is None:
+            return
+        for quality in particle.qualities:
+            if (
+                quality.name_type
+                in dead_constraint_tracker.VALUE_AND_ENCODING_NAME_TYPES
+            ):
+                self._dead_constraint_tracker.mark_value_or_encoding_alive(
+                    particle.origin_position, quality
+                )
 
     def _particle_origin_position(
         self, position: ast.PositionReference
@@ -166,9 +174,16 @@ class DeadConstraintValidator:
         """Check dead constraints and untriggered Actions after accounting for final guarantees."""
         self._mark_own_contract_guarantees_alive(own_guarantees, scope)
         validation_diagnostics: list[diagnostics.Diagnostic] = []
-        for candidate in self._dead_constraint_tracker.dead_value_constraints():
+        for (
+            candidate
+        ) in self._dead_constraint_tracker.dead_value_and_encoding_constraints():
+            dead_constraint_diagnostic = diagnostics.DeadValueConstraintDiagnostic
+            if candidate.constraint.name_type == ast.NameType.ENCODING:
+                dead_constraint_diagnostic = (
+                    diagnostics.DeadEncodingConstraintDiagnostic
+                )
             validation_diagnostics.append(
-                diagnostics.DeadValueConstraintDiagnostic(
+                dead_constraint_diagnostic(
                     location=candidate.constraint.location,
                     constraint_name=candidate.constraint.source_typed_name,
                     position_name=candidate.position.source_typed_name,

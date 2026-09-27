@@ -1866,11 +1866,11 @@ Any reference to a particle's direct child positions causes that position
 constraint to be alive in the origin position of the particle and the current
 position of the particle.
 
-#### Used Values
+#### Used Values & Encodings
 
-Any use of a particle in a Value Setting Statement or value operation causes
-that particle's value constraint to be alive in the origin position of the
-particle.
+Any use of a particle in a Value Setting Statement or Operation Execution
+Statement causes that particle's value and/or encoding constraint to be alive in
+the origin position of the particle.
 
 #### Triggering a Child Action
 

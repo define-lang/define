@@ -1,0 +1,13 @@
+# An encoding constraint is dead when no particle created in its position is ever used.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<number> {
+            it may only contain particles where {
+                it has the encoding<standard:/number/decimal/ascii>.
+            }
+        }
+        create a particle in position<number>.
+    }
+}

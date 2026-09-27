@@ -1,0 +1,34 @@
+# Looking at a child position keeps the child position constraint alive on its parent.
+define the potential position<my.domain.com:my_lib:/child> {
+    it may only contain particles where {
+        it has the value<standard:/number/rational>.
+    }
+}
+define the operation<my.domain.com:my_lib:/read> {
+    define the view<source> {
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+        }
+    }
+
+    it does {
+        execute the encoding operation.
+    }
+}
+define the potential action<my.domain.com:my_lib:/run> {
+    define the position<box> {
+        it may only contain particles where {
+            it has the position</child>.
+        }
+    }
+    define the position<trigger>.
+    it happens when {
+        the position<trigger> has a particle.
+    } and it does {
+        execute the operation</read> {
+            with view<source> looking at position<box>::position</child>.
+        }
+        destroy the particle in position<box>.
+        destroy the particle in position<trigger>.
+    }
+}

@@ -1,0 +1,16 @@
+# A particle left in a position the action guarantees is occupied keeps its encoding constraint alive.
+define the potential action<my.domain.com:my_lib:/run> {
+    define the position<output> {
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+            it has the encoding<standard:/number/decimal/ascii>.
+        }
+    }
+    define the position<trigger>.
+    it happens when {
+        the position<trigger> has a particle.
+    } and it does {
+        create a particle in position<output>.
+        destroy the particle in position<trigger>.
+    }
+}

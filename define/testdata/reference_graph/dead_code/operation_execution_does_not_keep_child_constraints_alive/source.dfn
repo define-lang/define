@@ -1,0 +1,39 @@
+# Using a particle in an Operation Execution Statement keeps only its value constraint alive, not its child position or action constraints.
+define the potential position<my.domain.com:my_lib:/child>.
+define the potential action<my.domain.com:my_lib:/poke> {
+    define the position<trigger>.
+    it happens when {
+        the position<trigger> has a particle.
+    } and it does {
+        destroy the particle in position<trigger>.
+    }
+}
+define the operation<my.domain.com:my_lib:/read> {
+    define the view<source> {
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+        }
+    }
+
+    it does {
+        execute the encoding operation.
+    }
+}
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the value<standard:/number/rational>.
+                it has the position</child>.
+                it has the action</poke>.
+            }
+        }
+        create a particle in position<box>.
+        set the value of position<box> to literal<standard:/number>"1".
+        execute the operation</read> {
+            with view<source> looking at position<box>.
+        }
+    }
+}

@@ -133,6 +133,7 @@ class ReferenceGraphValidator:
         result = action_definition_validator.ActionDefinitionValidator(
             definition=definition,
             particle_statement_validity=definition_result.particle_statement_validity,
+            looked_at_position_validity=definition_result.looked_at_position_validity,
             definition_results=self._definition_results,
             validation_state=self._validation_state,
         ).analyze()

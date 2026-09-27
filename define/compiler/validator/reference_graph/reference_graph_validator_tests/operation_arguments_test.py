@@ -196,3 +196,57 @@ def test_duplicate_executed_view(
     assert diagnostic.location.column == 21
     assert diagnostic.local_name == "source"
     assert diagnostic.first_definition_line == 3
+
+
+def test_valid_arguments_in_action(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert_no_errors(result)
+
+
+def test_undefined_view_in_action(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
+    assert len(result.all_diagnostics) == 1
+    diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.UndefinedOperationViewDiagnostic)
+    assert diagnostic.location.file_path is None
+    assert diagnostic.location.line == 39
+    assert diagnostic.location.column == 18
+    assert diagnostic.view_name == "view<extra>"
+    assert diagnostic.operation_name == "operation</copy>"
+    assert diagnostic.interface_view_names == ["view<source>", "view<target>"]
+
+
+def test_missing_argument_in_action(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
+    assert len(result.all_diagnostics) == 1
+    diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.MissingOperationArgumentDiagnostic)
+    assert diagnostic.location.file_path is None
+    assert diagnostic.location.line == 29
+    assert diagnostic.location.column == 21
+    assert diagnostic.view_name == "view<target>"
+    assert diagnostic.operation_name == "operation</copy>"
+
+
+def test_out_of_order_in_action(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
+    assert len(result.all_diagnostics) == 1
+    diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.OperationArgumentOrderDiagnostic)
+    assert diagnostic.location.file_path is None
+    assert diagnostic.location.line == 38
+    assert diagnostic.location.column == 18
+    assert diagnostic.view_name == "view<source>"
+    assert diagnostic.operation_name == "operation</copy>"
+    assert diagnostic.expected_order == ["view<source>", "view<target>"]

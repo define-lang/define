@@ -1,0 +1,44 @@
+# A view may not look at a child position of an empty position.
+define the potential position<my.domain.com:my_lib:/child> {
+    it may only contain particles where {
+        it has the value<standard:/number/rational>.
+    }
+}
+define the operation<my.domain.com:my_lib:/copy> {
+    define the view<source> {
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+        }
+    }
+    define the view<target> {
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+        }
+    }
+
+    it does {
+        execute the encoding operation.
+    }
+}
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<first> {
+            it may only contain particles where {
+                it has the value<standard:/number/rational>.
+            }
+        }
+        define the position<box> {
+            it may only contain particles where {
+                it has the position</child>.
+            }
+        }
+        create a particle in position<first>.
+        set the value of position<first> to literal<standard:/number>"1".
+        execute the operation</copy> {
+            with view<source> looking at position<first>.
+            with view<target> looking at position<box>::position</child>.
+        }
+    }
+}

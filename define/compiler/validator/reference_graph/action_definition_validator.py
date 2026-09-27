@@ -15,6 +15,7 @@ from define.compiler.validator.reference_graph import (
     chained_name_validator,
     destruction_contract_validator,
     literal_encoder,
+    operation_arguments_validator,
     particle_info,
     particle_operation_validator,
     particle_tracker,
@@ -31,7 +32,7 @@ from define.compiler.validator.reference_graph.dead_code import (
 )
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Iterator, Sequence
 
     from define.compiler.data_structures import typed_name_dict
 
@@ -56,6 +57,7 @@ class ActionDefinitionValidator:
 
     _definition: ast.ActionDefinition
     _particle_statement_validity: Sequence[validation_result.ParticleStatementValidity]
+    _looked_at_position_validity: Sequence[bool]
     _definition_results: typed_name_dict.TypedNameDict[
         ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
         validation_result.DefinitionValidationResult,
@@ -70,6 +72,7 @@ class ActionDefinitionValidator:
         particle_statement_validity: Sequence[
             validation_result.ParticleStatementValidity
         ],
+        looked_at_position_validity: Sequence[bool],
         definition_results: typed_name_dict.TypedNameDict[
             ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
             validation_result.DefinitionValidationResult,
@@ -79,6 +82,7 @@ class ActionDefinitionValidator:
         """Initialize with the Action Definition, statement validity, and known definitions."""
         self._definition = definition
         self._particle_statement_validity = particle_statement_validity
+        self._looked_at_position_validity = looked_at_position_validity
         self._definition_results = definition_results
         self._validation_state = validation_state
         self._diagnostics = []
@@ -105,6 +109,14 @@ class ActionDefinitionValidator:
     def _literal_encoder(self) -> literal_encoder.LiteralEncoder:
         return literal_encoder.LiteralEncoder(
             self._definition_results, self._enclosing_fqun
+        )
+
+    @cached_property
+    def _operation_arguments_validator(
+        self,
+    ) -> operation_arguments_validator.OperationArgumentsValidator:
+        return operation_arguments_validator.OperationArgumentsValidator(
+            self._definition_results, self._enclosing_fqun, self._literal_encoder
         )
 
     @cached_property
@@ -614,6 +626,7 @@ class ActionDefinitionValidator:
         scope: scope_tracker.ScopeTracker,
     ):
         validity_iter = iter(self._particle_statement_validity)
+        looked_at_validity_iter = iter(self._looked_at_position_validity)
         for stmt in action_statements.statements:
             match stmt:
                 case ast.ValueSettingStatement():
@@ -635,8 +648,8 @@ class ActionDefinitionValidator:
                     validity = next(validity_iter)
                     self._analyze_destroy(stmt, validity, scope)
                 case ast.OperationExecutionStatement():
-                    raise NotImplementedError(
-                        "Operation executions in actions are not implemented"
+                    self._analyze_operation_execution(
+                        stmt, looked_at_validity_iter, scope
                     )
         self._auto_destruct_locals(scope)
 
@@ -702,7 +715,9 @@ class ActionDefinitionValidator:
                 self._requirement_validator.infer_requirements_on_chain(
                     position_occupancy.PositionOccupancyState.OCCUPIED, position, scope
                 )
-                self._dead_constraint_validator.mark_value_constraint_alive(position)
+                self._dead_constraint_validator.mark_value_and_encoding_constraints_alive(
+                    position
+                )
         if isinstance(stmt.source, ast.PositionReference):
             self._requirement_validator.infer_value_requirement(
                 stmt.source, inferred_at=stmt.source.location
@@ -739,6 +754,56 @@ class ActionDefinitionValidator:
             not self._tracker.has_error_state(position) for position in positions
         ):
             self._tracker.set_value(stmt.target_position, value_state)
+
+    def _analyze_operation_execution(
+        self,
+        stmt: ast.OperationExecutionStatement,
+        looked_at_validity: Iterator[bool],
+        scope: scope_tracker.ScopeTracker,
+    ):
+        looked_at_qualities: dict[ast.OperationArgumentStatement, frozenset[str]] = {}
+        for argument in stmt.arguments:
+            position = argument.looking_at
+            if not isinstance(position, ast.PositionReference):
+                continue
+            if not next(looked_at_validity):
+                continue
+            particle = self._analyze_looked_at_position(position, scope)
+            if particle is not None:
+                looked_at_qualities[argument] = particle.qualities.names
+        self._diagnostics.extend(
+            self._operation_arguments_validator.validate(stmt, looked_at_qualities)
+        )
+        # TODO: Update the values of the looked-at particles once operations
+        # declare which views they read and write.
+        # TODO: Record a step for code generation once value operations have
+        # code generation.
+
+    def _analyze_looked_at_position(
+        self, position: ast.PositionReference, scope: scope_tracker.ScopeTracker
+    ) -> particle_info.ParticleInfo | None:
+        """Validate a position looked at by an Operation Argument Statement, and return its particle when it can be checked further."""
+        self._dead_constraint_validator.mark_referenced_position_constraints_alive(
+            position
+        )
+        self._diagnostics.extend(self._chained_name_validator.validate(position, scope))
+        if self._tracker.has_error_state(position):
+            return None
+        self._requirement_validator.infer_requirements_on_chain(
+            position_occupancy.PositionOccupancyState.OCCUPIED, position, scope
+        )
+        self._dead_constraint_validator.mark_value_and_encoding_constraints_alive(
+            position
+        )
+        # TODO: Only require a set value for views that the operation reads, once
+        # operations declare which views they read and write.
+        self._requirement_validator.infer_value_requirement(
+            position, inferred_at=position.location
+        )
+        diagnostic = self._operation_validator.validate_looked_at(position)
+        if diagnostic is not None:
+            self._diagnostics.append(diagnostic)
+        return self._tracker.get_occupant_or_none(position)
 
     def _analyze_create(
         self,
