@@ -1,0 +1,57 @@
+# After an action writes to a particle through an output view, its caller can read that particle's value.
+define the operation<my.domain.com:my_lib:/copy> {
+    define the view<source> {
+        it is read.
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+        }
+    }
+    define the view<target> {
+        it is written.
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+        }
+    }
+
+    it does {
+        execute the encoding operation.
+    }
+}
+define the potential action<my.domain.com:my_lib:/run> {
+    define the position<number> {
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+        }
+    }
+    define the position<trigger>.
+    it happens when {
+        the position<trigger> has a particle.
+    } and it does {
+        execute the operation</copy> {
+            with view<source> looking at literal<standard:/number>"1".
+            with view<target> looking at position<number>.
+        }
+        destroy the particle in position<trigger>.
+    }
+}
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<worker> {
+            it may only contain particles where {
+                it has the action</run>.
+            }
+        }
+        create a particle in position<worker>.
+        create a particle in position<worker>::action</run>::position<number>.
+        create a particle in position<worker>::action</run>::position<trigger>.
+        define the position<copy> {
+            it may only contain particles where {
+                it has the value<standard:/number/rational>.
+            }
+        }
+        create a particle in position<copy>.
+        set the value of position<copy> to position<worker>::action</run>::position<number>.
+    }
+}

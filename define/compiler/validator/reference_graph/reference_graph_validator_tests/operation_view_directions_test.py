@@ -186,3 +186,10 @@ def test_output_views_set_values_in_action(
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
     assert_no_errors(result)
+
+
+def test_callee_output_view_sets_caller_value(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert_no_errors(result)
