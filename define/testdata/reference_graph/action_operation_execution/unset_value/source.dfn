@@ -1,13 +1,13 @@
 # A view may only look at a particle with a set value.
-define the operation<my.domain.com:my_lib:/copy> {
-    define the view<source> {
+define the operation<my.domain.com:my_lib:/compare> {
+    define the view<left> {
         it is read.
         it may only contain particles where {
             it has the value<standard:/number/rational>.
         }
     }
-    define the view<target> {
-        it is written.
+    define the view<right> {
+        it is read.
         it may only contain particles where {
             it has the value<standard:/number/rational>.
         }
@@ -34,9 +34,9 @@ define the potential action<my.domain.com:my_lib:/test> {
         create a particle in position<first>.
         create a particle in position<second>.
         set the value of position<first> to literal<standard:/number>"1".
-        execute the operation</copy> {
-            with view<source> looking at position<first>.
-            with view<target> looking at position<second>.
+        execute the operation</compare> {
+            with view<left> looking at position<first>.
+            with view<right> looking at position<second>.
         }
     }
 }

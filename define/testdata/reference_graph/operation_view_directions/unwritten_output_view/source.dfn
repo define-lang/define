@@ -1,0 +1,28 @@
+# view<number> says it is written, but nothing writes to it.
+define the operation<my.domain.com:my_lib:/inspect> {
+    define the view<value> {
+        it is read.
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+        }
+    }
+
+    it does {
+        execute the encoding operation.
+    }
+}
+define the operation<my.domain.com:my_lib:/check> {
+    define the view<number> {
+        it is read.
+        it is written.
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+        }
+    }
+
+    it does {
+        execute the operation</inspect> {
+            with view<value> looking at view<number>.
+        }
+    }
+}

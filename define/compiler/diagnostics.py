@@ -336,6 +336,66 @@ class MissingOperationArgumentDiagnostic(Diagnostic):
     )
 
 
+class OutputViewLooksAtLiteralDiagnostic(Diagnostic):
+    """Diagnostic for an output view of an executed operation looking at a literal."""
+
+    view_name: str
+    operation_name: str
+    message_format: ClassVar[str] = (
+        "'{self.operation_name}' writes to '{self.view_name}',"
+        " so it cannot look at a literal."
+    )
+
+
+class UnreadInputViewDiagnostic(Diagnostic):
+    """Diagnostic for an input view that its value operation never reads."""
+
+    view_name: str
+    message_format: ClassVar[str] = (
+        "'{self.view_name}' has 'it is read.', but nothing in this operation"
+        " reads it. Either have an operation read it, execute the"
+        " encoding operation, or remove 'it is read.'"
+    )
+
+
+class UnwrittenOutputViewDiagnostic(Diagnostic):
+    """Diagnostic for an output view that its value operation never writes to."""
+
+    view_name: str
+    message_format: ClassVar[str] = (
+        "'{self.view_name}' has 'it is written.', but nothing in this operation"
+        " writes to it. Either have an operation write to it, execute"
+        " the encoding operation, or remove 'it is written.'"
+    )
+
+
+class WriteToInputOnlyViewDiagnostic(Diagnostic):
+    """Diagnostic for an executed operation writing to an input-only view."""
+
+    looked_at_name: str
+    view_name: str
+    operation_name: str
+    message_format: ClassVar[str] = (
+        "'{self.looked_at_name}' is read-only, so it cannot be written to."
+        " However, '{self.view_name}' of '{self.operation_name}' writes to it"
+        " on this line."
+    )
+
+
+class ReadFromUnwrittenOutputViewDiagnostic(Diagnostic):
+    """Diagnostic for an executed operation reading an output-only view before anything writes to it."""
+
+    looked_at_name: str
+    view_name: str
+    operation_name: str
+    message_format: ClassVar[str] = (
+        "'{self.looked_at_name}' is write-only, so it cannot be read until an"
+        " earlier statement writes to it. However, '{self.view_name}' of"
+        " '{self.operation_name}' reads it on this line before anything writes"
+        " to it."
+    )
+
+
 class LookedAtKind(enum.Enum):
     """What an Operation Argument Statement's view is looking at."""
 

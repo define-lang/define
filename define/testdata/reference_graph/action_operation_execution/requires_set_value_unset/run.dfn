@@ -8,9 +8,9 @@ define the potential action<my.domain.com:my_lib:/run> {
     it happens when {
         the position<trigger> has a particle.
     } and it does {
-        execute the operation</copy> {
-            with view<source> looking at literal<standard:/number>"1".
-            with view<target> looking at position<number>.
+        execute the operation</compare> {
+            with view<left> looking at literal<standard:/number>"1".
+            with view<right> looking at position<number>.
         }
         destroy the particle in position<trigger>.
     }

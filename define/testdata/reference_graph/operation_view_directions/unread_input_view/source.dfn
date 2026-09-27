@@ -1,4 +1,4 @@
-# view<source> looks at two things in the same execution.
+# view<number> says it is read, but nothing reads it.
 define the operation<my.domain.com:my_lib:/copy> {
     define the view<source> {
         it is read.
@@ -17,14 +17,9 @@ define the operation<my.domain.com:my_lib:/copy> {
         execute the encoding operation.
     }
 }
-define the operation<my.domain.com:my_lib:/double> {
+define the operation<my.domain.com:my_lib:/overwrite> {
     define the view<number> {
         it is read.
-        it may only contain particles where {
-            it has the value<standard:/number/rational>.
-        }
-    }
-    define the view<result> {
         it is written.
         it may only contain particles where {
             it has the value<standard:/number/rational>.
@@ -33,9 +28,8 @@ define the operation<my.domain.com:my_lib:/double> {
 
     it does {
         execute the operation</copy> {
-            with view<source> looking at view<number>.
-            with view<source> looking at literal<standard:/number>"2".
-            with view<target> looking at view<result>.
+            with view<source> looking at literal<standard:/number>"1".
+            with view<target> looking at view<number>.
         }
     }
 }

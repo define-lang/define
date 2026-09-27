@@ -832,6 +832,18 @@ py_test(
 )
 
 py_test(
+    name = "operation_view_directions_test",
+    size = "small",
+    srcs = ["operation_view_directions_test.py"],
+    data = ["//define/testdata/reference_graph/operation_view_directions"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+    ],
+)
+
+py_test(
     name = "operation_view_requirements_test",
     size = "small",
     srcs = ["operation_view_requirements_test.py"],
@@ -1060,6 +1072,7 @@ pyright_test(
         ":move_state_tracking_test",
         ":move_without_parent_test",
         ":operation_arguments_test",
+        ":operation_view_directions_test",
         ":operation_view_requirements_test",
         ":particle_conflict_test",
         ":quality_implication_particle_test",

@@ -761,26 +761,50 @@ class ActionDefinitionValidator:
         looked_at_validity: Iterator[bool],
         scope: scope_tracker.ScopeTracker,
     ):
+        executed = self._operation_arguments_validator.get_executed_operation(stmt)
         looked_at_qualities: dict[ast.OperationArgumentStatement, frozenset[str]] = {}
+        written_positions: list[ast.PositionReference] = []
         for argument in stmt.arguments:
             position = argument.looking_at
             if not isinstance(position, ast.PositionReference):
                 continue
             if not next(looked_at_validity):
                 continue
-            particle = self._analyze_looked_at_position(position, scope)
-            if particle is not None:
-                looked_at_qualities[argument] = particle.qualities.names
+            executed_view = (
+                None
+                if executed is None
+                else executed.get_view(argument.view.source_typed_name)
+            )
+            # A missing operation or an undefined interface view is reported
+            # when the arguments are validated, so its position is neither
+            # read nor written.
+            is_read = executed_view is not None and executed_view.is_input
+            particle = self._analyze_looked_at_position(
+                position, scope, is_read=is_read
+            )
+            if particle is None:
+                continue
+            looked_at_qualities[argument] = particle.qualities.names
+            if (
+                executed_view is not None
+                and executed_view.is_output
+                and particle.qualities.value_type is not None
+            ):
+                written_positions.append(position)
         self._diagnostics.extend(
             self._operation_arguments_validator.validate(stmt, looked_at_qualities)
         )
-        # TODO: Update the values of the looked-at particles once operations
-        # declare which views they read and write.
+        for position in written_positions:
+            self._tracker.set_value(position, particle_info.ParticleValueState.SET)
         # TODO: Record a step for code generation once value operations have
         # code generation.
 
     def _analyze_looked_at_position(
-        self, position: ast.PositionReference, scope: scope_tracker.ScopeTracker
+        self,
+        position: ast.PositionReference,
+        scope: scope_tracker.ScopeTracker,
+        *,
+        is_read: bool,
     ) -> particle_info.ParticleInfo | None:
         """Validate a position looked at by an Operation Argument Statement, and return its particle when it can be checked further."""
         self._dead_constraint_validator.mark_referenced_position_constraints_alive(
@@ -795,12 +819,13 @@ class ActionDefinitionValidator:
         self._dead_constraint_validator.mark_value_and_encoding_constraints_alive(
             position
         )
-        # TODO: Only require a set value for views that the operation reads, once
-        # operations declare which views they read and write.
-        self._requirement_validator.infer_value_requirement(
-            position, inferred_at=position.location
+        if is_read:
+            self._requirement_validator.infer_value_requirement(
+                position, inferred_at=position.location
+            )
+        diagnostic = self._operation_validator.validate_looked_at(
+            position, is_read=is_read
         )
-        diagnostic = self._operation_validator.validate_looked_at(position)
         if diagnostic is not None:
             self._diagnostics.append(diagnostic)
         return self._tracker.get_occupant_or_none(position)

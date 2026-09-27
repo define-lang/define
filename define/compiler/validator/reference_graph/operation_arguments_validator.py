@@ -52,12 +52,9 @@ class OperationArgumentsValidator:
         at them.
         """
         validation_diagnostics: list[diagnostics.Diagnostic] = []
-        definition_result = self._definition_results.get(statement.operation)
-        # A missing operation, or a definition of another type, was already
-        # reported when its reference was resolved.
-        if definition_result is None:
+        executed = self.get_executed_operation(statement)
+        if executed is None:
             return validation_diagnostics
-        executed = typing.cast("ast.OperationDefinition", definition_result.definition)
         operation_name = statement.operation.source_form_in_universe(
             self._enclosing_fqun
         )
@@ -83,10 +80,22 @@ class OperationArgumentsValidator:
             self._check_view_requirements(
                 argument,
                 executed.views[index],
+                operation_name,
                 looked_at_qualities,
                 validation_diagnostics,
             )
         return validation_diagnostics
+
+    def get_executed_operation(
+        self, statement: ast.OperationExecutionStatement
+    ) -> ast.OperationDefinition | None:
+        """Return the operation the statement executes, if it is defined."""
+        definition_result = self._definition_results.get(statement.operation)
+        # A missing operation, or a definition of another type, was already
+        # reported when its reference was resolved.
+        if definition_result is None:
+            return None
+        return typing.cast("ast.OperationDefinition", definition_result.definition)
 
     def _collect_arguments(
         self,
@@ -172,6 +181,7 @@ class OperationArgumentsValidator:
         self,
         argument: ast.OperationArgumentStatement,
         executed_view: ast.ViewDefinition,
+        operation_name: str,
         looked_at_qualities: Mapping[ast.OperationArgumentStatement, frozenset[str]],
         validation_diagnostics: list[diagnostics.Diagnostic],
     ):
@@ -179,6 +189,15 @@ class OperationArgumentsValidator:
         looking_at = argument.looking_at
         match looking_at:
             case ast.Literal():
+                if executed_view.is_output:
+                    validation_diagnostics.append(
+                        diagnostics.OutputViewLooksAtLiteralDiagnostic(
+                            location=looking_at.location,
+                            view_name=argument.view.source_typed_name,
+                            operation_name=operation_name,
+                        )
+                    )
+                    return
                 self._check_literal_translation(
                     looking_at, executed_view, validation_diagnostics
                 )

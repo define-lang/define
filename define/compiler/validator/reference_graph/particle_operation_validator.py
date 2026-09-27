@@ -209,7 +209,7 @@ class ParticleOperationValidator:
         return value_type
 
     def validate_looked_at(
-        self, position: ast.PositionReference
+        self, position: ast.PositionReference, *, is_read: bool
     ) -> diagnostics.Diagnostic | None:
         """Validate a position looked at by an Operation Argument Statement."""
         parent_diagnostic = self._check_parents_occupied(position)
@@ -223,7 +223,7 @@ class ParticleOperationValidator:
             )
         # A particle without a value type does not meet the constraints of the
         # view looking at it, which is reported instead.
-        if particle.qualities.value_type is None:
+        if not is_read or particle.qualities.value_type is None:
             return None
         if particle.value_state not in (
             particle_info.ParticleValueState.SET,

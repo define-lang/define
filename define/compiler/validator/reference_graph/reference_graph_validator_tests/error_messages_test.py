@@ -1328,7 +1328,7 @@ def test_undefined_operation_view_format(
         "        execute the operation</sum> {\n"
         '            with view<first> looking at literal<standard:/number>"1".\n'
         '            with view<second> looking at literal<standard:/number>"2".\n'
-        '            with view<result> looking at literal<standard:/number>"3".\n'
+        '            with view<third> looking at literal<standard:/number>"3".\n'
         '            with view<extra> looking at literal<standard:/number>"4".\n'
         "        }\n"
         "    }\n"
@@ -1351,8 +1351,8 @@ def test_undefined_operation_view_format(
                 "            it has the value<standard:/number/rational>.\n"
                 "        }\n"
                 "    }\n"
-                "    define the view<result> {\n"
-                "        it is written.\n"
+                "    define the view<third> {\n"
+                "        it is read.\n"
                 "        it may only contain particles where {\n"
                 "            it has the value<standard:/number/rational>.\n"
                 "        }\n"
@@ -1376,7 +1376,7 @@ def test_undefined_operation_view_format(
         'view<extra>' is not an interface view of 'operation</sum>'; its interface views are:
           view<first>
           view<second>
-          view<result>""")
+          view<third>""")
 
 
 def test_operation_argument_violates_constraints_format(

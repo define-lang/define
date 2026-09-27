@@ -1,13 +1,14 @@
-# view<source> looks at two things in the same execution.
-define the operation<my.domain.com:my_lib:/copy> {
-    define the view<source> {
+# Executing the encoding operation writes to every output view.
+define the operation<my.domain.com:my_lib:/increment_by> {
+    define the view<total> {
         it is read.
+        it is written.
         it may only contain particles where {
             it has the value<standard:/number/rational>.
         }
     }
-    define the view<target> {
-        it is written.
+    define the view<amount> {
+        it is read.
         it may only contain particles where {
             it has the value<standard:/number/rational>.
         }
@@ -17,7 +18,7 @@ define the operation<my.domain.com:my_lib:/copy> {
         execute the encoding operation.
     }
 }
-define the operation<my.domain.com:my_lib:/double> {
+define the operation<my.domain.com:my_lib:/fill_and_increment> {
     define the view<number> {
         it is read.
         it may only contain particles where {
@@ -32,10 +33,10 @@ define the operation<my.domain.com:my_lib:/double> {
     }
 
     it does {
-        execute the operation</copy> {
-            with view<source> looking at view<number>.
-            with view<source> looking at literal<standard:/number>"2".
-            with view<target> looking at view<result>.
+        execute the encoding operation.
+        execute the operation</increment_by> {
+            with view<total> looking at view<result>.
+            with view<amount> looking at view<number>.
         }
     }
 }
