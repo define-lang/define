@@ -51,9 +51,9 @@ def test_multiple_values(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     first, second = result.all_diagnostics
-    assert isinstance(first, diagnostics.MultipleValueConstraintsDiagnostic)
+    assert isinstance(first, diagnostics.PositionMultipleValueConstraintsDiagnostic)
     assert first.location.file_path is None
-    assert isinstance(second, diagnostics.MultipleValueConstraintsDiagnostic)
+    assert isinstance(second, diagnostics.PositionMultipleValueConstraintsDiagnostic)
     assert second.location.column == 20
     assert second.location.file_path is None
     assert first.first_value_name == "value</number>"
@@ -72,7 +72,9 @@ def test_multiple_values_in_local_position(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.MultipleValueConstraintsDiagnostic)
+    assert isinstance(
+        diagnostic, diagnostics.PositionMultipleValueConstraintsDiagnostic
+    )
     assert diagnostic.location.file_path is None
     assert diagnostic.first_value_name == "value</number>"
     assert diagnostic.first_constraint_line == 7

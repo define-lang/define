@@ -1,0 +1,14 @@
+# A view may have only one value constraint.
+define the potential value<my.domain.com:my_lib:/integer>.
+define the operation<my.domain.com:my_lib:/copy> {
+    define the view<number> {
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+            it has the value</integer>.
+        }
+    }
+
+    it does {
+        execute the encoding operation.
+    }
+}

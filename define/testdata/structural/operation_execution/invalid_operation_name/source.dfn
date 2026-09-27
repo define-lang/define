@@ -1,0 +1,7 @@
+# Executed operation names follow the global name format.
+define the operation<my.domain.com:my_lib:/double> {
+
+    it does {
+        execute the operation</bad-name>.
+    }
+}

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import pathlib
 from functools import cached_property
+from typing import TYPE_CHECKING
 
 import msgspec
 
@@ -25,6 +26,9 @@ from define.compiler.data_structures import define_path, typed_name_dict
 from define.compiler.graphs import reference_graph
 from define.compiler.validator import scope_tracker, stats, validation_result
 from define.compiler.validator.structural import name_validators
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
 class FileValidationContext(msgspec.Struct, frozen=True, dict=True):
@@ -263,12 +267,7 @@ class DefinitionStructuralValidator:
                 if not encoding_diagnostics:
                     self._process_reference(encoding)
             case ast.OperationDefinition():
-                # TODO: The grammar accepts some forms the spec forbids, so
-                # validation must reject view constraints on positions or
-                # actions, and operation arguments that look at a position.
-                raise NotImplementedError(
-                    "Value operation validation is not implemented"
-                )
+                self._validate_operation_definition(self._definition)
             case _:
                 pass
         return self.build_result()
@@ -347,9 +346,171 @@ class DefinitionStructuralValidator:
     ):
         self._validate_quality_implications(definition.quality_implications)
         if definition.constraints:
-            self._validate_position_constraints(definition.constraints)
+            self._validate_position_requirements(
+                definition.constraints.requirements,
+                multiple_values_diagnostic=diagnostics.PositionMultipleValueConstraintsDiagnostic,
+            )
         self._check_unreferenced_positions()
         self._check_unused_quality_implications()
+
+    def _validate_operation_definition(self, definition: ast.OperationDefinition):
+        views: typed_name_dict.TypedNameDict[
+            ast.LocalTypedNameReference, ast.ViewDefinition
+        ] = typed_name_dict.TypedNameDict()
+        unreferenced_views: typed_name_dict.TypedNameDict[
+            ast.LocalTypedNameReference, ast.ViewDefinition
+        ] = typed_name_dict.TypedNameDict()
+        for view in definition.views:
+            self._validate_view_definition(view, views, unreferenced_views)
+        executes_encoding_operation = False
+        for statement in definition.operation_statements:
+            match statement:
+                case ast.OperationExecutionStatement():
+                    self._validate_operation_execution(
+                        statement, views, unreferenced_views
+                    )
+                case ast.EncodingOperationExecutionStatement():
+                    executes_encoding_operation = True
+        # The encoding operation receives every interface view, so executing it
+        # references all of them.
+        if executes_encoding_operation:
+            return
+        for view in unreferenced_views.values():
+            self._diagnostics.append(
+                diagnostics.UnreferencedViewDiagnostic(
+                    location=view.typed_name.name_content.location,
+                    view_name=view.typed_name.source_typed_name,
+                )
+            )
+
+    def _validate_view_definition(
+        self,
+        view: ast.ViewDefinition,
+        views: typed_name_dict.TypedNameDict[
+            ast.LocalTypedNameReference, ast.ViewDefinition
+        ],
+        unreferenced_views: typed_name_dict.TypedNameDict[
+            ast.LocalTypedNameReference, ast.ViewDefinition
+        ],
+    ):
+        self._diagnostics.extend(
+            name_validators.validate_local_name_format(view.typed_name.name_content)
+        )
+        if view.typed_name in views:
+            self._diagnostics.append(
+                diagnostics.LocalNameConflictDiagnostic(
+                    location=view.typed_name.name_content.location,
+                    local_name=view.typed_name.name_content.name,
+                    first_definition_line=views[view.typed_name].location.line,
+                )
+            )
+        else:
+            views[view.typed_name] = view
+            unreferenced_views[view.typed_name] = view
+        requirements: list[ast.PositionRequirementStatement] = []
+        has_value_constraint = False
+        for requirement in view.constraints.requirements:
+            constraint = requirement.typed_global_name
+            if constraint.name_type in (ast.NameType.POSITION, ast.NameType.ACTION):
+                self._diagnostics.append(
+                    diagnostics.ViewQualityConstraintDiagnostic(
+                        location=constraint.location,
+                        constraint_name=constraint.source_typed_name,
+                    )
+                )
+                continue
+            if constraint.name_type == ast.NameType.VALUE:
+                has_value_constraint = True
+            requirements.append(requirement)
+        self._validate_position_requirements(
+            requirements,
+            multiple_values_diagnostic=diagnostics.ViewMultipleValueConstraintsDiagnostic,
+        )
+        if not has_value_constraint:
+            self._diagnostics.append(
+                diagnostics.ViewMissingValueConstraintDiagnostic(
+                    location=view.typed_name.name_content.location,
+                    view_name=view.typed_name.source_typed_name,
+                )
+            )
+
+    def _validate_operation_execution(
+        self,
+        statement: ast.OperationExecutionStatement,
+        views: typed_name_dict.TypedNameDict[
+            ast.LocalTypedNameReference, ast.ViewDefinition
+        ],
+        unreferenced_views: typed_name_dict.TypedNameDict[
+            ast.LocalTypedNameReference, ast.ViewDefinition
+        ],
+    ):
+        operation_diagnostics = name_validators.validate_typed_name(
+            statement.operation, self._definition
+        )
+        self._diagnostics.extend(operation_diagnostics)
+        if not operation_diagnostics:
+            self._process_reference(statement.operation)
+        looked_at_lines: typed_name_dict.TypedNameDict[
+            ast.LocalTypedNameReference, int
+        ] = typed_name_dict.TypedNameDict()
+        for argument in statement.arguments:
+            self._diagnostics.extend(
+                name_validators.validate_local_name_format(argument.view.name_content)
+            )
+            looking_at = argument.looking_at
+            match looking_at:
+                case ast.Literal():
+                    _ = self._validate_literal(looking_at)
+                case ast.LocalTypedNameReference():
+                    self._validate_looked_at_view(
+                        looking_at, views, unreferenced_views, looked_at_lines
+                    )
+                case ast.PositionReference():
+                    self._diagnostics.append(
+                        diagnostics.OperationArgumentPositionDiagnostic(
+                            location=looking_at.location,
+                            position_name=looking_at.source_chained_name,
+                        )
+                    )
+
+    def _validate_looked_at_view(
+        self,
+        view: ast.LocalTypedNameReference,
+        views: typed_name_dict.TypedNameDict[
+            ast.LocalTypedNameReference, ast.ViewDefinition
+        ],
+        unreferenced_views: typed_name_dict.TypedNameDict[
+            ast.LocalTypedNameReference, ast.ViewDefinition
+        ],
+        looked_at_lines: typed_name_dict.TypedNameDict[
+            ast.LocalTypedNameReference, int
+        ],
+    ):
+        name_diagnostics = name_validators.validate_local_name_format(view.name_content)
+        self._diagnostics.extend(name_diagnostics)
+        if name_diagnostics:
+            return
+        if view not in views:
+            self._diagnostics.append(
+                diagnostics.UndefinedLocalNameDiagnostic(
+                    location=view.location,
+                    local_name=view.full_typed_name,
+                )
+            )
+            return
+        if view in unreferenced_views:
+            del unreferenced_views[view]
+        first_line = looked_at_lines.get(view)
+        if first_line is not None:
+            self._diagnostics.append(
+                diagnostics.AliasedViewDiagnostic(
+                    location=view.location,
+                    looked_at_name=view.source_typed_name,
+                    first_argument_line=first_line,
+                )
+            )
+            return
+        looked_at_lines[view] = view.location.line
 
     def _validate_trigger_conditions(
         self,
@@ -392,14 +553,7 @@ class DefinitionStructuralValidator:
         target_ok = self._validate_full_chained_name(stmt.target_position, scope)
         match stmt.source:
             case ast.Literal():
-                potential_literal = stmt.source.potential_literal
-                name_diagnostics = name_validators.validate_typed_name(
-                    potential_literal, self._definition
-                )
-                self._diagnostics.extend(name_diagnostics)
-                source_ok = not name_diagnostics
-                if source_ok:
-                    self._process_reference(potential_literal)
+                source_ok = self._validate_literal(stmt.source)
             case ast.PositionReference():
                 source_ok = self._validate_full_chained_name(stmt.source, scope)
                 if (
@@ -418,6 +572,18 @@ class DefinitionStructuralValidator:
             )
         )
 
+    def _validate_literal(self, literal: ast.Literal) -> bool:
+        """Validate a literal's Potential Literal name and return whether it is valid."""
+        potential_literal = literal.potential_literal
+        name_diagnostics = name_validators.validate_typed_name(
+            potential_literal, self._definition
+        )
+        self._diagnostics.extend(name_diagnostics)
+        if name_diagnostics:
+            return False
+        self._process_reference(potential_literal)
+        return True
+
     def _validate_local_position_definition(
         self,
         local_def: ast.LocalPositionDefinition,
@@ -425,7 +591,10 @@ class DefinitionStructuralValidator:
     ):
         self._validate_local_name_format_and_conflicts(local_def, scope)
         if local_def.constraints is not None:
-            self._validate_position_constraints(local_def.constraints)
+            self._validate_position_requirements(
+                local_def.constraints.requirements,
+                multiple_values_diagnostic=diagnostics.PositionMultipleValueConstraintsDiagnostic,
+            )
 
     def _validate_local_name_format_and_conflicts(
         self,
@@ -654,15 +823,19 @@ class DefinitionStructuralValidator:
                 )
             )
 
-    def _validate_position_constraints(
+    def _validate_position_requirements(
         self,
-        constraints: ast.PositionConstraintBlock,
+        requirements: Sequence[ast.PositionRequirementStatement],
+        *,
+        multiple_values_diagnostic: type[
+            diagnostics.MultipleValueConstraintsDiagnostic
+        ],
     ):
         seen_lines: typed_name_dict.TypedNameDict[ast.GlobalTypedNameReference, int] = (
             typed_name_dict.TypedNameDict()
         )
         first_value: ast.GlobalTypedNameReference | None = None
-        for requirement in constraints.requirements:
+        for requirement in requirements:
             reference_diagnostics = name_validators.validate_typed_name(
                 requirement.typed_global_name, self._definition
             )
@@ -685,7 +858,7 @@ class DefinitionStructuralValidator:
             if requirement.typed_global_name.name_type == ast.NameType.VALUE:
                 if first_value is not None:
                     self._diagnostics.append(
-                        diagnostics.MultipleValueConstraintsDiagnostic(
+                        multiple_values_diagnostic(
                             location=requirement.typed_global_name.location,
                             first_value_name=first_value.source_typed_name,
                             first_constraint_line=first_value.location.line,

@@ -1,0 +1,17 @@
+# view<number> is defined twice.
+define the operation<my.domain.com:my_lib:/copy> {
+    define the view<number> {
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+        }
+    }
+    define the view<number> {
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+        }
+    }
+
+    it does {
+        execute the encoding operation.
+    }
+}

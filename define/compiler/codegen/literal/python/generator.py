@@ -83,6 +83,10 @@ class _DefinitionGenerator:
         elif isinstance(definition, ast.ValueDefinition):
             context = self._converter.class_reference(definition.typed_name)
             content = _templates.render_value(context.class_name)
+        elif isinstance(definition, ast.OperationDefinition):
+            raise NotImplementedError(
+                "Value operation code generation is not implemented"
+            )
         else:
             context = position_definition.PositionDefinitionGenerator(
                 typing.cast("ast.PositionDefinition", definition),

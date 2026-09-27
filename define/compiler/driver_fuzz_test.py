@@ -774,10 +774,31 @@ def action_definitions_with_implications(draw: st.DrawFn) -> str:
 
 
 @st.composite
+def operation_definitions(draw: st.DrawFn) -> str:
+    name = draw(global_names())
+    value_name = draw(global_names())
+    operation_name = draw(global_names())
+    return (
+        f"define the operation<{name}> {{\n"
+        f"    define the view<number> {{\n"
+        f"        it may only contain particles where {{\n"
+        f"            it has the value<{value_name}>.\n"
+        f"        }}\n"
+        f"    }}\n"
+        f"\n"
+        f"    it does {{\n"
+        f"        execute the operation<{operation_name}> {{\n"
+        f"            with view<number> looking at view<number>.\n"
+        f"        }}\n"
+        f"        execute the encoding operation.\n"
+        f"    }}\n"
+        f"}}\n"
+    )
+
+
+@st.composite
 def syntactic_sources(draw: st.DrawFn) -> str:
     """Generate definition-shaped sources without enforcing source validity."""
-    # TODO: Generate operation definitions here once value operation validation
-    # is implemented.
     num_defs = draw(st.integers(min_value=1, max_value=5))
     defs: list[str] = []
     for _ in range(num_defs):
@@ -793,6 +814,7 @@ def syntactic_sources(draw: st.DrawFn) -> str:
                     "action_block",
                     "position_implication",
                     "action_implication",
+                    "operation",
                 ]
             )
         )
@@ -815,6 +837,8 @@ def syntactic_sources(draw: st.DrawFn) -> str:
             defs.append(draw(action_definitions_with_block()))
         elif kind == "position_implication":
             defs.append(draw(position_definitions_with_implications()))
+        elif kind == "operation":
+            defs.append(draw(operation_definitions()))
         else:
             defs.append(draw(action_definitions_with_implications()))
     return "".join(defs)

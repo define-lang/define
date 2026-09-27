@@ -1,0 +1,26 @@
+# Two views may look at the same literal.
+define the operation<my.domain.com:my_lib:/copy> {
+    define the view<source> {
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+        }
+    }
+    define the view<target> {
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+        }
+    }
+
+    it does {
+        execute the encoding operation.
+    }
+}
+define the operation<my.domain.com:my_lib:/double> {
+
+    it does {
+        execute the operation</copy> {
+            with view<source> looking at literal<standard:/number>"2".
+            with view<target> looking at literal<standard:/number>"2".
+        }
+    }
+}

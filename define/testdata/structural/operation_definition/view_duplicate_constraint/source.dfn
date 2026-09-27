@@ -1,0 +1,13 @@
+# A view may not repeat a constraint.
+define the operation<my.domain.com:my_lib:/copy> {
+    define the view<number> {
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+            it has the value<standard:/number/rational>.
+        }
+    }
+
+    it does {
+        execute the encoding operation.
+    }
+}

@@ -1,0 +1,15 @@
+# The executed operation is defined in another file.
+define the operation<my.domain.com:my_lib:/test> {
+    define the view<number> {
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+        }
+    }
+
+    it does {
+        execute the operation</copy> {
+            with view<source> looking at view<number>.
+            with view<target> looking at literal<standard:/number>"2".
+        }
+    }
+}

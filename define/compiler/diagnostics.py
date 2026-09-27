@@ -143,12 +143,26 @@ class DuplicatePositionConstraintDiagnostic(Diagnostic):
 
 
 class MultipleValueConstraintsDiagnostic(Diagnostic):
-    """A Position Constraint Block specifies more than one value type."""
+    """Base class for a Position Constraint Block that specifies more than one value type."""
 
     first_value_name: str
     first_constraint_line: int
+
+
+class PositionMultipleValueConstraintsDiagnostic(MultipleValueConstraintsDiagnostic):
+    """A position's Position Constraint Block specifies more than one value type."""
+
     message_format: ClassVar[str] = (
         "a position may only have one value constraint; "
+        "'{self.first_value_name}' was already declared on line {self.first_constraint_line}"
+    )
+
+
+class ViewMultipleValueConstraintsDiagnostic(MultipleValueConstraintsDiagnostic):
+    """A view's constraints specify more than one value type."""
+
+    message_format: ClassVar[str] = (
+        "a view may only have one value constraint; "
         "'{self.first_value_name}' was already declared on line {self.first_constraint_line}"
     )
 
@@ -184,6 +198,59 @@ class UnreferencedPositionDiagnostic(Diagnostic):
         "'{self.position_name}' is defined here, but it is never referenced "
         "within this definition; either remove the definition or reference "
         "'{self.position_name}'."
+    )
+
+
+class UnreferencedViewDiagnostic(Diagnostic):
+    """Diagnostic for an interface view never referenced in its value operation."""
+
+    view_name: str
+    message_format: ClassVar[str] = (
+        "'{self.view_name}' is defined here, but it is never referenced "
+        "within this definition; either remove the definition, reference "
+        "'{self.view_name}', or execute the encoding operation."
+    )
+
+
+class ViewQualityConstraintDiagnostic(Diagnostic):
+    """Diagnostic for a view constraint that names a position or action."""
+
+    constraint_name: str
+    message_format: ClassVar[str] = (
+        "views may only have value and encoding constraints, "
+        "but '{self.constraint_name}' is not a value or an encoding"
+    )
+
+
+class ViewMissingValueConstraintDiagnostic(Diagnostic):
+    """Diagnostic for an interface view of a value operation without a value constraint."""
+
+    view_name: str
+    message_format: ClassVar[str] = (
+        "'{self.view_name}' must have a value constraint, because every "
+        "interface view on a value operation must have one"
+    )
+
+
+class OperationArgumentPositionDiagnostic(Diagnostic):
+    """Diagnostic for an Operation Argument Statement in a value operation that looks at a position."""
+
+    position_name: str
+    message_format: ClassVar[str] = (
+        "within a value operation, a view may only look at a view or a "
+        "literal, but this is looking at '{self.position_name}'"
+    )
+
+
+class AliasedViewDiagnostic(Diagnostic):
+    """Diagnostic for more than one view looking at the same view in one Operation Arguments Block."""
+
+    looked_at_name: str
+    first_argument_line: int
+    message_format: ClassVar[str] = (
+        "'{self.looked_at_name}' is already being looked at by another view "
+        "on line {self.first_argument_line}; two views in the same execution "
+        "may not look at the same particle"
     )
 
 
