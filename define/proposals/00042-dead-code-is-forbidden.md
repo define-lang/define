@@ -102,6 +102,10 @@ local context where they are supposed to be referenced.
   Block.
 - **Unreferenced Quality Implications**: Already forbidden in
   [DLP 22 (Atomic Qualities)](00022-atomic-qualities.md).
+- **Unreferenced Interface Views**: Any view in a value operation or encoding
+  operation definition must be referenced within that definition. However, the
+  `execute the encoding operation` or `execute the computer operation`
+  statements are considered to reference all views.
 
 ### Unnecessary Quality Assignments
 

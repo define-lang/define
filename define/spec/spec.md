@@ -188,6 +188,7 @@ comment_text = { ? any character allowed per Define parsing rules, excluding U+0
 Proposals:
 
 - [DLP 1: Types of Names](../proposals/00001-types-of-names.md)
+- [DLP 40: Value Operations](../proposals/00040-value-operations.md)
 - [DLP 46: Value Encodings](../proposals/00046-value-encodings.md)
 - [DLP 52: Literals](../proposals/00052-literals.md)
 
@@ -203,10 +204,12 @@ The valid name types are currently:
 - `value`
 - `encoding`
 - `literal`
+- `operation`
+- `view`
 
 ```ebnf
 typed_name = name_type, "<", name_content, ">" ;
-name_type  = "position" | "action" | "value" | "encoding" | "literal";
+name_type  = "position" | "action" | "value" | "encoding" | "literal" | "operation" | "view" ;
 ```
 
 Define Language Proposals sometimes sometimes use the term "name" to mean
@@ -667,6 +670,7 @@ Proposals:
 
 - [DLP 5: Global Names, Local Names, and Scopes](../proposals/00005-global-names-local-names-and-scopes.md)
 - [DLP 12: Definitions in the Universe of Reflection](../proposals/00012-definitions-in-the-universe-of-reflection.md)
+- [DLP 40: Value Operations](../proposals/00040-value-operations.md)
 - [DLP 46: Value Encodings](../proposals/00046-value-encodings.md)
 - [DLP 52: Literals](../proposals/00052-literals.md)
 
@@ -677,7 +681,8 @@ program = { global_definition } ;
 global_definition =
     quality_definition
     | encoding_definition
-    | potential_literal_definition ;
+    | potential_literal_definition
+    | operation_definition ;
 ```
 
 ## Statements
@@ -1128,6 +1133,7 @@ Action statements are:
 - move particle statements
 - destroy particle statements
 - value setting statements
+- operation execution statements
 
 ```ebnf
 action_statements_contents = action_statement, { action_statement } ;
@@ -1136,7 +1142,8 @@ action_statement =
     | create_particle_statement
     | move_particle_statement
     | destroy_particle_statement
-    | value_setting_statement ;
+    | value_setting_statement
+    | operation_execution_statement ;
 ```
 
 ## Action Contracts
@@ -1695,6 +1702,120 @@ value.
 The positions on the left and right side of the Value Setting Statement may not
 be the same position.
 
+## Value Operations
+
+Proposals:
+
+- [DLP 40: Value Operations](../proposals/00040-value-operations.md)
+
+A value operation is defined by `define the ` followed by a global typed name
+with the type `operation`, followed by an Operation Definition Block.
+
+An Operation Definition Block may contain any number of Interface Views (which
+are optional) followed by one other block: the Operation Statements Block.
+
+The Operation Statements Block creates a new local scope.
+
+```ebnf
+fully_qualified_operation_name = "operation", "<", fully_qualified_global_name, ">" ;
+operation_definition = "define the", " ", fully_qualified_operation_name, operation_definition_block ;
+operation_definition_block =
+    block_open,
+    { view_definition },
+    operation_statements_block,
+    block_close ;
+```
+
+### Interface Views
+
+An Interface View is defined by `define the ` followed by a local typed name
+with the type `view`, followed by a View Definition Block.
+
+It has syntax and rules identical to a local position definition, except that
+its Position Requirement Statements may not reference positions or actions. Each
+Interface View on a Value Operation must have a `value` constraint.
+
+```ebnf
+local_view_name = "view", "<", local_name, ">" ;
+view_definition = "define the", " ", local_view_name, view_definition_block ;
+view_definition_block = block_open, view_constraint_block, block_close ;
+view_constraint_block =
+    "it may only contain particles where",
+    block_open,
+    view_requirement_statement,
+    { view_requirement_statement },
+    block_close ;
+view_requirement_statement =
+    "it has the", " ", ( "value" | "encoding" ), "<", global_name, ">", terminator ;
+```
+
+### Operation Statements Block
+
+An operation statements block starts with `it does` followed by a block.
+
+This block may contain only two types of statements:
+
+1. Value Operation Execution Statements
+2. The statement `execute the encoding operation.` which determines and executes
+   the correct encoding operation for this value operation.
+
+```ebnf
+operation_statements_block = "it does", block_open, operation_statements_contents, block_close ;
+operation_statements_contents = operation_statement, { operation_statement } ;
+operation_statement = operation_execution_statement | encoding_operation_execution_statement ;
+encoding_operation_execution_statement = "execute the encoding operation", terminator ;
+```
+
+## Executing Value Operations
+
+An Operation Execution Statement has the syntax `execute the` followed by the
+typed global name of a Value Operation, followed by an Operation Arguments Block
+or a terminator.
+
+```ebnf
+operation_name = "operation", "<", global_name, ">" ;
+operation_execution_statement = "execute the", " ", operation_name, operation_execution_end ;
+operation_execution_end = terminator | operation_arguments_block ;
+```
+
+### Operation Arguments Block
+
+An Operation Arguments Block contains Operation Argument Statements, which start
+with `with` followed by the name of one of the operation's interface views,
+followed by `looking at` and followed by a position reference or a literal.
+
+Arguments must be specified in the same order as the Interface View definitions
+are listed in the definition of the Value Operation.
+
+Positions referenced in an Operation Argument Statement must have a set value.
+
+```ebnf
+operation_arguments_block =
+    block_open,
+    operation_argument_statement,
+    { operation_argument_statement },
+    block_close ;
+operation_argument_statement =
+    "with", " ", local_view_name, " looking at ", ( position_reference | literal ), terminator ;
+```
+
+### Matching View Requirements
+
+The particle in the position a view is looking at must meet the constraints of
+that Interface View as though the particle were being moved into a position with
+the constraints of the Interface View.
+
+### Views May Not Alias
+
+The same position may not be specified as the position that more than one view
+is looking at in any given Operation Arguments Block.
+
+### Code Generation for Value Operations
+
+For each executed value operation, the compiler determines the correct Encoding
+Operation based on the encodings of any input views, and that Encoding Operation
+is what occurs at runtime in the program.
+
 ## Dead Code
 
 Proposals:
@@ -1712,6 +1833,9 @@ The following are all dead code:
 - A local position never referenced within the block where it is defined.
 - An implied quality that is not referenced within the action that implies it.
 - An implied action that is not triggered within the action that implies it.
+- An interface view that is never referenced within its value operation or
+  encoding operation definition, unless that definition contains
+  `execute the encoding operation` or `execute the computer operation`.
 
 ### Dead Constraints
 

@@ -156,8 +156,8 @@ In Define's model of the universe, what is actually happening is that the
 machine is looking at the qualities on A and B and setting or changing a quality
 on C.
 
-This is the one place in Define where we _reference_ positions without _moving_
-them, because we need some way to talk about the positions we are modifying.
+This is the one place in Define where we _reference_ particles without _moving_
+them, because we need some way to talk about the particles we are modifying.
 
 We define a new name type, `view`, that uses only _local_ names. It is defined
 only inside of `operation` and `encoding_operation` definitions. It has syntax
