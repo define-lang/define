@@ -1791,8 +1791,6 @@ are listed in the definition of the Value Operation.
 Every view defined by the Value Operation must be listed once in the Operation
 Arguments Block.
 
-Positions referenced in an Operation Argument Statement must have a set value.
-
 ```ebnf
 operation_arguments_block =
     block_open,
@@ -1810,14 +1808,17 @@ Argument Statement may only look at a view or a literal, and may not look at a
 position. The views available to be looked at are the ones valid in the local
 scope of the Value Operation Statements Block.
 
-That is, within a Value Operation Statements Block, `position_reference` in
-`operation_argument_statement` is replaced by `local_view_name`.
+That is, within a Value Operation Statements Block, the EBNF would be modified:
+`position_reference` in `operation_argument_statement` is replaced by
+`local_view_name`.
 
 ### Matching View Requirements
 
 The particle in the position a view is looking at must meet the constraints of
 that Interface View as though the particle were being moved into a position with
 the constraints of the Interface View.
+
+The particle being looked at by any input view must have a set value.
 
 ### Views May Not Alias
 

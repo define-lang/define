@@ -167,8 +167,7 @@ literal parsers do not have to deal with these escapes.
 Literals may be specified on the right side of the `set the value of`
 statements.
 
-Literals may also be placed in any input view of any value operation (any view
-that is not written to by the operation).
+Literals may also be placed in any view that is not written to by the operation.
 
 ### Literal Parsers
 
