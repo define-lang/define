@@ -567,6 +567,12 @@ class DefinitionStructuralValidator:
                     self._validate_move_particle(stmt, scope)
                 case ast.DestroyParticleStatement():
                     self._validate_destroy_particle(stmt, scope)
+                case ast.OperationExecutionStatement():
+                    # TODO: The grammar accepts arguments that look at views,
+                    # which the spec forbids within actions.
+                    raise NotImplementedError(
+                        "Operation executions in actions are not implemented"
+                    )
 
     def _validate_value_setting(
         self,

@@ -1324,3 +1324,76 @@ def test_operation_definitions_update_reference_fqun():
         second_statement.operation.full_typed_name
         == "operation<mv:example.com:second:/other>"
     )
+
+
+_OPERATION_EXECUTING_ACTION = (
+    "define the potential action<mv:example.com:example:/run> {\n"
+    + "    define the position<p>.\n"
+    + "    it happens when {\n"
+    + "        the position<p> has a particle.\n"
+    + "    } and it does {\n"
+    + "        execute the operation</clear>.\n"
+    + "        execute the operation<standard:/add> {\n"
+    + "            with view<a> looking at position<p>.\n"
+    + '            with view<b> looking at literal</number>"12".\n'
+    + "        }\n"
+    + "    }\n"
+    + "}\n"
+)
+
+
+def test_action_operation_execution_statement_without_arguments_fields():
+    block = _only_action(_OPERATION_EXECUTING_ACTION).action_statements
+    statement = block.statements[0]
+    assert isinstance(statement, ast.OperationExecutionStatement)
+    assert statement.arguments == ()
+    assert statement.operation.name_type == ast.NameType.OPERATION
+    assert (
+        statement.operation.full_typed_name
+        == "operation<mv:example.com:example:/clear>"
+    )
+    assert statement.location == ast.SourceLocation(
+        line=6, column=9, end_line=6, end_column=39
+    )
+    assert (
+        _slice(_OPERATION_EXECUTING_ACTION, statement.location)
+        == "execute the operation</clear>."
+    )
+
+
+def test_action_operation_execution_statement_with_arguments_fields():
+    block = _only_action(_OPERATION_EXECUTING_ACTION).action_statements
+    statement = block.statements[1]
+    assert isinstance(statement, ast.OperationExecutionStatement)
+    assert statement.operation.full_typed_name == "operation<standard:/add>"
+    assert statement.location == ast.SourceLocation(
+        line=7, column=9, end_line=10, end_column=10
+    )
+    assert _slice(_OPERATION_EXECUTING_ACTION, statement.location) == (
+        "execute the operation<standard:/add> {\n"
+        "            with view<a> looking at position<p>.\n"
+        '            with view<b> looking at literal</number>"12".\n'
+        "        }"
+    )
+    position_argument, literal_argument = statement.arguments
+    assert position_argument.view.source_typed_name == "view<a>"
+    position = position_argument.looking_at
+    assert isinstance(position, ast.PositionReference)
+    assert position.source_chained_name == "position<p>"
+    assert _slice(_OPERATION_EXECUTING_ACTION, position.location) == "position<p>"
+    assert (
+        _slice(_OPERATION_EXECUTING_ACTION, position_argument.location)
+        == "with view<a> looking at position<p>."
+    )
+    assert literal_argument.view.source_typed_name == "view<b>"
+    literal = literal_argument.looking_at
+    assert isinstance(literal, ast.Literal)
+    assert literal.content == "12"
+    assert (
+        literal.potential_literal.full_typed_name
+        == "literal<mv:example.com:example:/number>"
+    )
+    assert (
+        _slice(_OPERATION_EXECUTING_ACTION, literal_argument.location)
+        == 'with view<b> looking at literal</number>"12".'
+    )

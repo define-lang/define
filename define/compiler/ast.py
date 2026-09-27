@@ -819,6 +819,7 @@ type ActionStatement = (
     | MoveParticleStatement
     | DestroyParticleStatement
     | ValueSettingStatement
+    | OperationExecutionStatement
 )
 
 

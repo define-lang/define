@@ -19,6 +19,18 @@ py_test(
 )
 
 py_test(
+    name = "action_operation_execution_test",
+    size = "small",
+    srcs = ["action_operation_execution_test.py"],
+    deps = [
+        ":conftest",
+        ":test_helpers",
+        "//define/compiler:parser_exceptions",
+        "@pypi//pytest",
+    ],
+)
+
+py_test(
     name = "blocks_test",
     size = "small",
     srcs = ["blocks_test.py"],
@@ -369,6 +381,7 @@ pyright_test(
     name = "pyright_test",
     deps = [
         ":action_definition_test",
+        ":action_operation_execution_test",
         ":blocks_test",
         ":comments_test",
         ":conftest",

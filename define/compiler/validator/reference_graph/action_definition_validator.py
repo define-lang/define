@@ -634,6 +634,10 @@ class ActionDefinitionValidator:
                 case ast.DestroyParticleStatement():
                     validity = next(validity_iter)
                     self._analyze_destroy(stmt, validity, scope)
+                case ast.OperationExecutionStatement():
+                    raise NotImplementedError(
+                        "Operation executions in actions are not implemented"
+                    )
         self._auto_destruct_locals(scope)
 
     def _auto_destruct_locals(self, scope: scope_tracker.ScopeTracker):
