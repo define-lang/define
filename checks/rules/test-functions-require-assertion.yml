@@ -1,0 +1,39 @@
+id: test-functions-require-assertion
+language: python
+severity: error
+message:
+  Tests must contain an assertion, an assertion helper call, or pytest.raises.
+files:
+  - "**/*_test.py"
+ignores:
+  - vendored/**
+rule:
+  kind: function_definition
+  has:
+    field: name
+    kind: identifier
+    regex: ^test_
+  not:
+    has:
+      field: body
+      has:
+        stopBy:
+          any:
+            - kind: function_definition
+            - kind: class_definition
+            - kind: lambda
+        any:
+          - kind: assert_statement
+          - kind: call
+            has:
+              field: function
+              any:
+                - kind: identifier
+                  regex: ^_?assert(_|[A-Z])
+                - kind: attribute
+                  has:
+                    field: attribute
+                    kind: identifier
+                    regex: ^_?assert(_|[A-Z])
+          - pattern: pytest.raises($$$)
+          - pattern: pytest.fail($$$)

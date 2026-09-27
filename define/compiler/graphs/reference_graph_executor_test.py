@@ -84,7 +84,7 @@ def test_order_can_be_reused_for_multiple_passes(max_workers: int):
         "position<my.domain.com:lib:/independent>": set(),
     }
 
-    def run_pass(pass_number: int):
+    def assert_pass_results(pass_number: int):
         processed: set[str] = set()
         lock = threading.Lock()
 
@@ -105,5 +105,5 @@ def test_order_can_be_reused_for_multiple_passes(max_workers: int):
         assert results == expected
         assert processed == set(dependencies)
 
-    run_pass(0)
-    run_pass(1)
+    assert_pass_results(0)
+    assert_pass_results(1)

@@ -778,9 +778,11 @@ def test_disabled_tracing_does_not_write_file(
     assert not trace_file.exists()
 
 
-def test_tracing_without_file(monkeypatch: pytest.MonkeyPatch):
+def test_tracing_without_file(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     monkeypatch.delenv("DEFINE_OPERATION_TRACE_FILE", raising=False)
+    monkeypatch.chdir(tmp_path)
     literal.start(_Entry, trace_operations=True)
+    assert list(tmp_path.iterdir()) == []
 
 
 def test_failed_action_clears_tracing(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):

@@ -1,0 +1,206 @@
+id: test-functions-require-assertion
+snapshots:
+  ? |
+    @decorator(pytest.raises(ValueError))
+    def test_value():
+        operation()
+  : labels:
+    - source: |-
+        def test_value():
+            operation()
+      style: primary
+      start: 38
+      end: 71
+    - source: test_value
+      style: secondary
+      start: 42
+      end: 52
+  ? |
+    async def test_value():
+        await operation()
+  : labels:
+    - source: |-
+        async def test_value():
+            await operation()
+      style: primary
+      start: 0
+      end: 45
+    - source: test_value
+      style: secondary
+      start: 10
+      end: 20
+  ? |
+    class TestValue:
+        def test_value(self):
+            pass
+  : labels:
+    - source: |-
+        def test_value(self):
+                pass
+      style: primary
+      start: 21
+      end: 55
+    - source: test_value
+      style: secondary
+      start: 25
+      end: 35
+  ? |
+    def test_deprecated():
+        with pytest.deprecated_call():
+            operation()
+  : labels:
+    - source: |-
+        def test_deprecated():
+            with pytest.deprecated_call():
+                operation()
+      style: primary
+      start: 0
+      end: 77
+    - source: test_deprecated
+      style: secondary
+      start: 4
+      end: 19
+  ? |
+    def test_value():
+        "assert value"
+        # assert value
+        operation()
+  : labels:
+    - source: |-
+        def test_value():
+            "assert value"
+            # assert value
+            operation()
+      style: primary
+      start: 0
+      end: 71
+    - source: test_value
+      style: secondary
+      start: 4
+      end: 14
+  ? |
+    def test_value():
+        assertion = True
+        assert_no_errors = helper
+  : labels:
+    - source: |-
+        def test_value():
+            assertion = True
+            assert_no_errors = helper
+      style: primary
+      start: 0
+      end: 68
+    - source: test_value
+      style: secondary
+      start: 4
+      end: 14
+  ? |
+    def test_value():
+        check = lambda: pytest.raises(ValueError, operation)
+  : labels:
+    - source: |-
+        def test_value():
+            check = lambda: pytest.raises(ValueError, operation)
+      style: primary
+      start: 0
+      end: 74
+    - source: test_value
+      style: secondary
+      start: 4
+      end: 14
+  ? |
+    def test_value():
+        class Helper:
+            def check(self):
+                assert value
+        operation()
+  : labels:
+    - source: |-
+        def test_value():
+            class Helper:
+                def check(self):
+                    assert value
+            operation()
+      style: primary
+      start: 0
+      end: 101
+    - source: test_value
+      style: secondary
+      start: 4
+      end: 14
+  ? |
+    def test_value():
+        def helper():
+            assert value
+        operation()
+  : labels:
+    - source: |-
+        def test_value():
+            def helper():
+                assert value
+            operation()
+      style: primary
+      start: 0
+      end: 72
+    - source: test_value
+      style: secondary
+      start: 4
+      end: 14
+  ? |
+    def test_value():
+        operation()
+  : labels:
+    - source: |-
+        def test_value():
+            operation()
+      style: primary
+      start: 0
+      end: 33
+    - source: test_value
+      style: secondary
+      start: 4
+      end: 14
+  ? |
+    def test_value():
+        operation(assert_no_errors)
+  : labels:
+    - source: |-
+        def test_value():
+            operation(assert_no_errors)
+      style: primary
+      start: 0
+      end: 49
+    - source: test_value
+      style: secondary
+      start: 4
+      end: 14
+  ? |
+    def test_value():
+        pytest.skip("unavailable")
+  : labels:
+    - source: |-
+        def test_value():
+            pytest.skip("unavailable")
+      style: primary
+      start: 0
+      end: 48
+    - source: test_value
+      style: secondary
+      start: 4
+      end: 14
+  ? |
+    def test_warning():
+        with pytest.warns(UserWarning):
+            operation()
+  : labels:
+    - source: |-
+        def test_warning():
+            with pytest.warns(UserWarning):
+                operation()
+      style: primary
+      start: 0
+      end: 75
+    - source: test_warning
+      style: secondary
+      start: 4
+      end: 16

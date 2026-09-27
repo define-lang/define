@@ -10,7 +10,7 @@ from define.compiler import ast, driver, parser
 from tools.generators import generate_large_define_source as gen
 
 
-def _parse_and_transform(source: str) -> ast.Program:
+def _assert_parses_and_transforms(source: str) -> ast.Program:
     par = parser.Parser()
     result = par.parse_and_transform(source, file_path=PurePosixPath("generated.dfn"))
     assert result.exception is None
@@ -43,7 +43,7 @@ class TestGenerateSourceLines:
     def test_small_target_produces_parseable_program(self):
         lines = gen.generate_source_lines(500)
         assert len(lines) >= 500
-        program = _parse_and_transform("\n".join(lines) + "\n")
+        program = _assert_parses_and_transforms("\n".join(lines) + "\n")
         assert len(program.definitions) >= 3
 
     def test_output_exercises_diverse_syntax(self):
@@ -72,7 +72,7 @@ class TestGenerateSourceLines:
         assert longest_chain_elements <= 50
 
     def test_multiple_definitions_emitted(self):
-        program = _parse_and_transform(
+        program = _assert_parses_and_transforms(
             "\n".join(gen.generate_source_lines(1000)) + "\n"
         )
         assert len(program.definitions) > 5
@@ -93,7 +93,7 @@ class TestWriteToPath:
     def test_written_file_parses_and_transforms_cleanly(self, tmp_path: Path):
         out = tmp_path / "big.dfn"
         gen.write_to_path(out, 1000, max_chain_length=100)
-        _parse_and_transform(out.read_text(encoding="utf-8"))
+        _assert_parses_and_transforms(out.read_text(encoding="utf-8"))
 
 
 class TestMain:

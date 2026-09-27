@@ -10,7 +10,7 @@ from define.compiler import ast, driver, parser
 from tools.generators import generate_particle_operations_source as gen
 
 
-def _parse_and_transform(source: str) -> ast.Program:
+def _assert_parses_and_transforms(source: str) -> ast.Program:
     par = parser.Parser()
     result = par.parse_and_transform(source, file_path=PurePosixPath("generated.dfn"))
     assert result.exception is None
@@ -170,7 +170,7 @@ class TestWriteToPath:
             independent_move_branches=2,
             independent_move_chain_length=3,
         )
-        _parse_and_transform(out.read_text(encoding="utf-8"))
+        _assert_parses_and_transforms(out.read_text(encoding="utf-8"))
 
 
 class TestMain:

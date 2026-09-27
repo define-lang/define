@@ -102,6 +102,10 @@ class TestReferenceGraphNoCycles:
         for defn in (a, b, c, d):
             graph.add_definition(defn)
         _add(graph, _make_edge(a, "/b"), _make_edge(b, "/c"), _make_edge(c, "/d"))
+        assert list(graph.referenced_definitions(a)) == [b]
+        assert list(graph.referenced_definitions(b)) == [c]
+        assert list(graph.referenced_definitions(c)) == [d]
+        assert list(graph.referenced_definitions(d)) == []
 
     def test_dag_diamond(self):
         graph = reference_graph.ReferenceGraph()
@@ -118,6 +122,10 @@ class TestReferenceGraphNoCycles:
             _make_edge(b, "/d"),
             _make_edge(c, "/d"),
         )
+        assert list(graph.referenced_definitions(a)) == [b, c]
+        assert list(graph.referenced_definitions(b)) == [d]
+        assert list(graph.referenced_definitions(c)) == [d]
+        assert list(graph.referenced_definitions(d)) == []
 
     def test_multiple_roots(self):
         graph = reference_graph.ReferenceGraph()
@@ -127,6 +135,9 @@ class TestReferenceGraphNoCycles:
         for defn in (a, b, c):
             graph.add_definition(defn)
         _add(graph, _make_edge(a, "/c"), _make_edge(b, "/c"))
+        assert list(graph.referenced_definitions(a)) == [c]
+        assert list(graph.referenced_definitions(b)) == [c]
+        assert list(graph.referenced_definitions(c)) == []
 
 
 class TestReferenceGraphSelfCycles:

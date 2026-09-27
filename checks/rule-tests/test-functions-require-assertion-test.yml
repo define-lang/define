@@ -1,0 +1,94 @@
+id: test-functions-require-assertion
+valid:
+  - |
+    def test_result():
+        if result.returncode != 0:
+            pytest.fail(result.stderr)
+  - |
+    def test_value():
+        assert value == 1
+  - |
+    def test_error():
+        with pytest.raises(ValueError):
+            operation()
+  - |
+    def test_error():
+        pytest.raises(ValueError, operation)
+  - |
+    def test_result():
+        assert_no_errors(result)
+  - |
+    def test_result():
+        _assert_results_are_clean(result)
+  - |
+    def test_result():
+        test_helpers.assert_capture_summary(result)
+  - |
+    def test_call():
+        operation.assert_called_once_with(1)
+  - |
+    class TestValue:
+        def test_value(self):
+            self.assertEqual(value, 1)
+  - |
+    async def test_value():
+        assert await operation() == 1
+  - |
+    def test_values():
+        for value in values:
+            assert value
+  - |
+    def helper():
+        operation()
+invalid:
+  - |
+    def test_warning():
+        with pytest.warns(UserWarning):
+            operation()
+  - |
+    def test_deprecated():
+        with pytest.deprecated_call():
+            operation()
+  - |
+    def test_value():
+        operation()
+  - |
+    async def test_value():
+        await operation()
+  - |
+    class TestValue:
+        def test_value(self):
+            pass
+  - |
+    def test_value():
+        "assert value"
+        # assert value
+        operation()
+  - |
+    def test_value():
+        def helper():
+            assert value
+        operation()
+  - |
+    def test_value():
+        class Helper:
+            def check(self):
+                assert value
+        operation()
+  - |
+    def test_value():
+        check = lambda: pytest.raises(ValueError, operation)
+  - |
+    def test_value():
+        assertion = True
+        assert_no_errors = helper
+  - |
+    def test_value():
+        operation(assert_no_errors)
+  - |
+    def test_value():
+        pytest.skip("unavailable")
+  - |
+    @decorator(pytest.raises(ValueError))
+    def test_value():
+        operation()

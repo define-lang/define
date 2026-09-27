@@ -10,7 +10,7 @@ from define.compiler import ast, driver, parser
 from tools.generators import generate_action_graph_source as gen
 
 
-def _parse_and_transform(source: str) -> ast.Program:
+def _assert_parses_and_transforms(source: str) -> ast.Program:
     par = parser.Parser()
     result = par.parse_and_transform(source, file_path=PurePosixPath("generated.dfn"))
     assert result.exception is None
@@ -37,7 +37,7 @@ class TestGenerateSourceLines:
             gen.generate_source_lines(destructor_fraction=2.0)
 
     def test_action_count_matches_layers_times_width(self):
-        program = _parse_and_transform(
+        program = _assert_parses_and_transforms(
             "\n".join(
                 gen.generate_source_lines(
                     layers=3, width=4, fan_out=2, destructor_fraction=0
@@ -81,7 +81,7 @@ class TestWriteToPath:
     def test_written_file_parses_and_transforms_cleanly(self, tmp_path: Path):
         out = tmp_path / "graph.dfn"
         gen.write_to_path(out, layers=4, width=4, fan_out=2)
-        _parse_and_transform(out.read_text(encoding="utf-8"))
+        _assert_parses_and_transforms(out.read_text(encoding="utf-8"))
 
 
 class TestMain:

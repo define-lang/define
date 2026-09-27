@@ -29,7 +29,7 @@ def test_potential_literal_definition(parse: Parse):
 
 
 def test_comments_and_blank_lines(parse: Parse):
-    _ = parse(
+    tree = parse(
         "define the potential literal<mv:define-lang.org:parser:/decimal> { # comment\n"
         + "\n"
         + "    # comment\n"
@@ -37,6 +37,10 @@ def test_comments_and_blank_lines(parse: Parse):
         + "\n"
         + "}\n"
     )
+    assert test_helpers.get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
+        "mv:define-lang.org:parser:/decimal",
+        "standard:/decimal_text",
+    ]
 
 
 def test_requires_global_name(parse: Parse):
