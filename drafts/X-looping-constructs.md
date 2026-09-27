@@ -590,3 +590,143 @@ repeat action</sequence/next> {
 This is a deterministic transformation: any
 `repeat N times { trigger action; wait until done; }` becomes
 `repeat action { stop after N times. }`.
+
+## Notes From Claude: Loop Discussion (September 27, 2026)
+
+_Claude (Opus 5.5) wrote this section. It summarizes the parts of a discussion
+with Max about value types (DLP 39), value operations (DLP 40), and verified
+numbers that bear on this draft. It is input for revising the proposal, not
+proposal text._
+
+### Facts About Unbounded Collections Are Per-Iteration Facts
+
+- A fact like "every particle in the bag has a value between 0 and 100" is a
+  per-iteration fact. The compiler checks it once against the loop body (it
+  holds on entry, and every iteration keeps it true), which is the induction
+  step. No quantifiers are needed, so it stays decidable as long as the
+  per-iteration fact itself is in a decidable theory.
+- The planned constraint language is linear arithmetic (linear integer and
+  rational arithmetic, plus congruences like `x mod k = c`). Under that limit:
+  - Checkable: per-element bounds, sortedness (if the loop keeps the previous
+    element on a position, making it the linear fact "current ≥ previous"), and
+    running totals against constant bounds (total ≤ `i * 100`, where `i` is the
+    iteration count).
+  - Not checkable: totals against a variable bound (total ≤ `i * max` where
+    `max` is a value multiplies two variables, which is nonlinear), and counting
+    facts ("the result is a permutation of the input", "exactly k items
+    matched"), which need multiset or cardinality reasoning.
+- Who supplies the per-iteration fact: the programmer states it, as constraints
+  on the positions the loop acts on, rather than the compiler inferring it with
+  abstract interpretation and widening. Stated facts need a single pass over the
+  body (no fixpoint), are deterministic and modular, and give diagnostics that
+  name the exact step that breaks the fact. This matches this draft's "action
+  contracts are loop invariants" design: the action's Requirements and
+  Guarantees are the stated fact.
+
+### Numbers Across Iterations
+
+These follow from the `value<standard:/number>` design discussed for DLP 39 and
+40: `/number` has exact rational meaning, and the compiler may use a float
+encoding only where it has proven an error bound under which every proven fact
+still holds.
+
+- Float error grows with the number of iterations. Proving facts about a value
+  accumulated across iterations of `repeat` or `for each` requires a bound on
+  the iteration count. `stop after N times` gives one. `stop when` does not, and
+  bag sizes are unbounded, so an accumulation under those needs either a
+  constraint on the iteration count or bag size, or an exact encoding.
+- Comparisons on `/number` are exact by definition. They are implemented with
+  filtering (Shewchuk-style): compare in floats, and fall back to exact
+  recomputation from the original values when the difference is within the error
+  bound. That fallback needs the original values to still exist and the
+  expression to have bounded depth. A total accumulated over an unbounded number
+  of iterations fails both conditions. For those, the compiler reports a
+  diagnostic, and the programmer chooses one of:
+  - a granularity constraint (like "a multiple of 0.01") so the accumulator gets
+    an exact scaled-integer encoding,
+  - an explicit tolerant comparison operation, or
+  - an explicit arbitrary-precision encoding for the accumulator.
+- Reductions can be reordered (fast-math `reassoc`, and vectorized reductions)
+  without breaking proofs, because summing n terms in any order has error at
+  most `γ(n−1)·Σ|xᵢ|`, where `γ(k) = k·u / (1 − k·u)` and u is the rounding
+  unit. The analysis does not need to know the order the backend chose. This
+  again needs n bounded.
+- `min`, `max`, and select never round, so running maximums and clamps across
+  iterations add no error and never need filtering.
+
+### Knowing Whether `for each` Iterations Are Independent
+
+Unlike ISPC (which trusts the programmer and silently races when the programmer
+is wrong), Define can compute independence:
+
+1. Loop bodies are action calls, and every action has an inferred summary of its
+   Requirements and Guarantees (DLP 37): which positions it reads, sets values
+   on, creates particles in, moves particles from, or destroys particles in.
+   Comparing summaries is cheap and modular.
+2. A particle is in exactly one place, so each iteration's `position<item>`
+   holds a different particle. If the action only affects `position<item>` and
+   its child positions, iterations cannot interfere.
+
+Proposed classification, based on the action's effects on state other than the
+item particle and its child positions:
+
+| Effects on shared state                                           | Classification                                         | Execution                                                               |
+| ----------------------------------------------------------------- | ------------------------------------------------------ | ----------------------------------------------------------------------- |
+| None, or only reads                                               | Independent                                            | SPMD lanes                                                              |
+| Moves particles into a bag other than the one being iterated      | Independent (bags are unordered, so the moves commute) | SPMD with a vector compress-store to append                             |
+| Sets a shared value with an associative and commutative operation | Reduction                                              | Per-lane partial results combined at the end                            |
+| Adds particles to the bag being iterated (self-feeding)           | Waves                                                  | Each wave's particles are independent; new particles form the next wave |
+| Any other set, move, or destroy on shared state                   | Sequential                                             | Scalar                                                                  |
+
+Consequences:
+
+- Operations would need to declare associativity and commutativity for the
+  reduction case.
+- Global positions an action assigns (like
+  `it also assigns the position</sequence/current>`) are shared state.
+- The effects of actions triggered by the loop body must appear in the called
+  action's summary.
+- Processing self-feeding bags in waves is compatible with this draft, because
+  iteration order is already unspecified.
+- `repeat` is usually sequential by nature (the Fibonacci example needs each
+  previous step), and that is correct. Vectorization mainly comes from
+  `for each`.
+- The compiler should report each `for each` loop's classification, and give a
+  diagnostic naming the effect that made a loop sequential, so programmers who
+  depend on vectorization never get a silent slowdown.
+
+### Vectorization
+
+Reliable vectorization is a stated goal. The recommended model is ISPC's SPMD
+model (Intel SPMD Program Compiler, Matt Pharr, ~2011): the loop body is written
+for one item, and the compiler always runs a gang of iterations across SIMD
+lanes. Vectorization is part of the language's meaning, not an optimization that
+can silently fail.
+
+- The Define compiler should emit the vector form itself rather than relying on
+  LLVM's auto-vectorizer, which is heuristic and tends to give up on loops with
+  cold branches (like a filtered comparison's slow path).
+- Branches in the body that go different ways in different lanes (for example
+  one branch on `x > y` and another on `x < y`) run as masked execution of both
+  sides, skipping a side when every lane agrees.
+- A filtered comparison is a fast-path mask plus one "did any lane fail" branch
+  per vector (`movmsk`/`vptest` on x86), not per lane. The slow path should be a
+  fixed-length, branch-free version of the exact recomputation (`TwoSum` and
+  `TwoProduct` with FMA are straight-line code), run on the whole vector with
+  the failing lanes' results blended in. It stays vectorized even on data with
+  many exact ties, where the slow path runs often.
+- ISPC makes the programmer write `uniform` and `varying`. Define can infer
+  which values depend on the iteration and which do not.
+- This draft's rule that every particle in a bag has exactly the same qualities
+  is what efficient vectorization needs: the compiler can store a bag as
+  struct-of-arrays, with each quality's values contiguous, so
+  `position<item>::position</x>`'s value is a single vector load. Positions that
+  get wider exact encodings (float plus error terms) should use the same layout.
+
+### Issue in the Current Draft
+
+In the Batch Processing example, `action</process_one>` moves its particle to
+`bag<completed>`, but `bag<completed>` is a local name in `action</run>`'s
+Action Statements Block, so `process_one` cannot name it. The draft needs a way
+to give an action a bag through its interface. That also matters for the "moves
+particles into another bag" row of the independence table above.
