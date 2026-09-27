@@ -1316,3 +1316,110 @@ def test_destructor_changes_value_after_move_format(validate_project: ValidatePr
                                  ^
         a destructor must leave every contracted position in the state it was in when it started.
         However, this line changes the value of the particle in 'position</value>'.""")
+
+
+def test_undefined_operation_view_format(
+    validate_project: ValidateProject,
+):
+    source = (
+        "define the operation<my.domain.com:my_lib:/test> {\n"
+        "\n"
+        "    it does {\n"
+        "        execute the operation</sum> {\n"
+        '            with view<first> looking at literal<standard:/number>"1".\n'
+        '            with view<second> looking at literal<standard:/number>"2".\n'
+        '            with view<result> looking at literal<standard:/number>"3".\n'
+        '            with view<extra> looking at literal<standard:/number>"4".\n'
+        "        }\n"
+        "    }\n"
+        "}\n"
+    )
+    result = validate_project(
+        {
+            "test.dfn": source,
+            "sum.dfn": (
+                "define the operation<my.domain.com:my_lib:/sum> {\n"
+                "    define the view<first> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the value<standard:/number/rational>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the view<second> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the value<standard:/number/rational>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the view<result> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the value<standard:/number/rational>.\n"
+                "        }\n"
+                "    }\n"
+                "\n"
+                "    it does {\n"
+                "        execute the encoding operation.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    assert result.program_result.all_exceptions == []
+    diags = result.program_result.all_diagnostics
+    assert len(diags) == 1
+    formatted = diags[0].format(source.splitlines())
+    assert formatted == textwrap.dedent("""\
+        File "test.dfn", line 8, column 18
+                    with view<extra> looking at literal<standard:/number>"4".
+                         ^
+        'view<extra>' is not an interface view of 'operation</sum>'; its interface views are:
+          view<first>
+          view<second>
+          view<result>""")
+
+
+def test_operation_argument_violates_constraints_format(
+    validate_project: ValidateProject,
+):
+    source = (
+        "define the operation<my.domain.com:my_lib:/test> {\n"
+        "    define the view<number> {\n"
+        "        it may only contain particles where {\n"
+        "            it has the value<standard:/number/rational>.\n"
+        "        }\n"
+        "    }\n"
+        "\n"
+        "    it does {\n"
+        "        execute the operation</encoded> {\n"
+        "            with view<source> looking at view<number>.\n"
+        "        }\n"
+        "    }\n"
+        "}\n"
+    )
+    result = validate_project(
+        {
+            "test.dfn": source,
+            "encoded.dfn": (
+                "define the operation<my.domain.com:my_lib:/encoded> {\n"
+                "    define the view<source> {\n"
+                "        it may only contain particles where {\n"
+                "            it has the value<standard:/number/rational>.\n"
+                "            it has the encoding<standard:/number/decimal/ascii>.\n"
+                "        }\n"
+                "    }\n"
+                "\n"
+                "    it does {\n"
+                "        execute the encoding operation.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    assert result.program_result.all_exceptions == []
+    diags = result.program_result.all_diagnostics
+    assert len(diags) == 1
+    formatted = diags[0].format(source.splitlines())
+    assert formatted == textwrap.dedent("""\
+        File "test.dfn", line 10, column 42
+                    with view<source> looking at view<number>.
+                                                 ^
+        'view<source>' cannot look at 'view<number>' because 'view<number>' does not have the required qualities:
+          encoding<standard:/number/decimal/ascii>""")

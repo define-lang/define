@@ -13,7 +13,7 @@ import pytest
 
 from define.compiler.validator.reference_graph import (
     action_contract,
-    definition_postorder_validator,
+    action_definition_validator,
     reference_graph_validator,
 )
 from define.compiler.validator.structural import program_validator
@@ -98,16 +98,16 @@ def test_independent_actions_validate_in_parallel():
         _ACTION_TEMPLATE.format(name="first") + _ACTION_TEMPLATE.format(name="second")
     )
     validation_barrier = threading.Barrier(2)
-    original_analyze = definition_postorder_validator.ActionPostorderValidator.analyze
+    original_analyze = action_definition_validator.ActionDefinitionValidator.analyze
 
     def synchronized_analyze(
-        validator: definition_postorder_validator.ActionPostorderValidator,
-    ) -> definition_postorder_validator.PostorderValidationResult:
+        validator: action_definition_validator.ActionDefinitionValidator,
+    ) -> validation_result.ActionPostorderValidationResult:
         validation_barrier.wait(timeout=5)
         return original_analyze(validator)
 
     with mock.patch.object(
-        definition_postorder_validator.ActionPostorderValidator,
+        action_definition_validator.ActionDefinitionValidator,
         "analyze",
         autospec=True,
         side_effect=synchronized_analyze,
@@ -126,11 +126,11 @@ def test_referenced_action_finishes_before_referencing_action_starts():
     structural_result = _structural_result(_CALLEE_AND_CALLER_SOURCE)
     completed_actions: set[str] = set()
     completed_actions_lock = threading.Lock()
-    original_analyze = definition_postorder_validator.ActionPostorderValidator.analyze
+    original_analyze = action_definition_validator.ActionDefinitionValidator.analyze
 
     def record_order(
-        validator: definition_postorder_validator.ActionPostorderValidator,
-    ) -> definition_postorder_validator.PostorderValidationResult:
+        validator: action_definition_validator.ActionDefinitionValidator,
+    ) -> validation_result.ActionPostorderValidationResult:
         action_name = validator._definition.typed_name.full_typed_name  # pyright: ignore[reportPrivateUsage]
         if action_name == _CALLER_NAME:
             with completed_actions_lock:
@@ -141,7 +141,7 @@ def test_referenced_action_finishes_before_referencing_action_starts():
         return result
 
     with mock.patch.object(
-        definition_postorder_validator.ActionPostorderValidator,
+        action_definition_validator.ActionDefinitionValidator,
         "analyze",
         autospec=True,
         side_effect=record_order,
@@ -161,11 +161,11 @@ def test_shared_referenced_definition_is_validated_once():
     )
     validation_count_by_action: dict[str, int] = {}
     validation_count_lock = threading.Lock()
-    original_analyze = definition_postorder_validator.ActionPostorderValidator.analyze
+    original_analyze = action_definition_validator.ActionDefinitionValidator.analyze
 
     def count_validation(
-        validator: definition_postorder_validator.ActionPostorderValidator,
-    ) -> definition_postorder_validator.PostorderValidationResult:
+        validator: action_definition_validator.ActionDefinitionValidator,
+    ) -> validation_result.ActionPostorderValidationResult:
         action_name = validator._definition.typed_name.full_typed_name  # pyright: ignore[reportPrivateUsage]
         with validation_count_lock:
             validation_count_by_action[action_name] = (
@@ -174,7 +174,7 @@ def test_shared_referenced_definition_is_validated_once():
         return original_analyze(validator)
 
     with mock.patch.object(
-        definition_postorder_validator.ActionPostorderValidator,
+        action_definition_validator.ActionDefinitionValidator,
         "analyze",
         autospec=True,
         side_effect=count_validation,
@@ -204,11 +204,11 @@ def test_callers_share_the_completed_callee_contract():
     )
     structural_result = _structural_result(source)
     contracts: dict[str, action_contract.ActionContract] = {}
-    original_analyze = definition_postorder_validator.ActionPostorderValidator.analyze
+    original_analyze = action_definition_validator.ActionDefinitionValidator.analyze
 
     def collect_contract(
-        validator: definition_postorder_validator.ActionPostorderValidator,
-    ) -> definition_postorder_validator.PostorderValidationResult:
+        validator: action_definition_validator.ActionDefinitionValidator,
+    ) -> validation_result.ActionPostorderValidationResult:
         result = original_analyze(validator)
         contracts[result.codegen_input.definition.typed_name.full_typed_name] = (
             result.contract
@@ -216,7 +216,7 @@ def test_callers_share_the_completed_callee_contract():
         return result
 
     with mock.patch.object(
-        definition_postorder_validator.ActionPostorderValidator,
+        action_definition_validator.ActionDefinitionValidator,
         "analyze",
         autospec=True,
         side_effect=collect_contract,
@@ -240,8 +240,8 @@ def test_reference_failure_prevents_referencing_action_validation():
     analyzed_actions: set[str] = set()
 
     def fail_callee(
-        validator: definition_postorder_validator.ActionPostorderValidator,
-    ) -> definition_postorder_validator.PostorderValidationResult:
+        validator: action_definition_validator.ActionDefinitionValidator,
+    ) -> validation_result.ActionPostorderValidationResult:
         action_name = validator._definition.typed_name.full_typed_name  # pyright: ignore[reportPrivateUsage]
         analyzed_actions.add(action_name)
         if action_name == _CALLER_NAME:
@@ -250,7 +250,7 @@ def test_reference_failure_prevents_referencing_action_validation():
 
     with (
         mock.patch.object(
-            definition_postorder_validator.ActionPostorderValidator,
+            action_definition_validator.ActionDefinitionValidator,
             "analyze",
             autospec=True,
             side_effect=fail_callee,

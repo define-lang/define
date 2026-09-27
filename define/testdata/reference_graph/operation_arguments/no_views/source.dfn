@@ -1,0 +1,13 @@
+# An operation with no views is executed without an Operation Arguments Block.
+define the operation<my.domain.com:my_lib:/reset> {
+
+    it does {
+        execute the encoding operation.
+    }
+}
+define the operation<my.domain.com:my_lib:/double> {
+
+    it does {
+        execute the operation</reset>.
+    }
+}

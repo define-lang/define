@@ -13,7 +13,8 @@ from define.compiler.graphs import (
 )
 from define.compiler.validator import codegen_input, validation_result
 from define.compiler.validator.reference_graph import (
-    definition_postorder_validator,
+    action_definition_validator,
+    operation_definition_validator,
     position_occupancy,
     reference_graph_validation_state,
 )
@@ -21,8 +22,9 @@ from define.compiler.validator.reference_graph import (
 if typing.TYPE_CHECKING:
     from define.compiler.data_structures import typed_name_dict
 
-# Position definitions get no validation and so produce None.
-type _PostorderResult = definition_postorder_validator.PostorderValidationResult | None
+# Definitions that are neither actions nor operations get no validation and so
+# produce None.
+type _PostorderResult = validation_result.PostorderValidationResult | None
 
 
 class ReferenceGraphValidationResult(msgspec.Struct, frozen=True):
@@ -97,7 +99,8 @@ class ReferenceGraphValidator:
             definition_result = self._definition_results[definition.typed_name]
             for d in result.diagnostics:
                 definition_result.add_diagnostic(d)
-            actions[definition.typed_name.full_typed_name] = result.codegen_input
+            if isinstance(result, validation_result.ActionPostorderValidationResult):
+                actions[definition.typed_name.full_typed_name] = result.codegen_input
         if (
             self._entry_action is not None
             and not self._allow_entry_action_occupied_implied_position_requirements
@@ -113,15 +116,21 @@ class ReferenceGraphValidator:
     def _validate_definition(
         self, definition: ast.GlobalDefinition
     ) -> _PostorderResult:
-        if not isinstance(definition, ast.ActionDefinition):
-            return None
-        return self._validate_action(definition)
+        match definition:
+            case ast.ActionDefinition():
+                return self._validate_action(definition)
+            case ast.OperationDefinition():
+                return operation_definition_validator.OperationDefinitionValidator(
+                    definition, self._definition_results
+                ).analyze()
+            case _:
+                return None
 
     def _validate_action(
         self, definition: ast.ActionDefinition
-    ) -> definition_postorder_validator.PostorderValidationResult:
+    ) -> validation_result.ActionPostorderValidationResult:
         definition_result = self._definition_results[definition.typed_name]
-        result = definition_postorder_validator.ActionPostorderValidator(
+        result = action_definition_validator.ActionDefinitionValidator(
             definition=definition,
             particle_statement_validity=definition_result.particle_statement_validity,
             definition_results=self._definition_results,

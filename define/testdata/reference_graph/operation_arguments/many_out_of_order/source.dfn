@@ -1,0 +1,43 @@
+# view<result> is the last interface view of operation</sum>, but its argument is written first.
+define the operation<my.domain.com:my_lib:/sum> {
+    define the view<first> {
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+        }
+    }
+    define the view<second> {
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+        }
+    }
+    define the view<third> {
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+        }
+    }
+    define the view<result> {
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+        }
+    }
+
+    it does {
+        execute the encoding operation.
+    }
+}
+define the operation<my.domain.com:my_lib:/total> {
+    define the view<result> {
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+        }
+    }
+
+    it does {
+        execute the operation</sum> {
+            with view<result> looking at view<result>.
+            with view<third> looking at literal<standard:/number>"3".
+            with view<second> looking at literal<standard:/number>"2".
+            with view<first> looking at literal<standard:/number>"1".
+        }
+    }
+}

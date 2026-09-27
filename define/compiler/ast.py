@@ -219,6 +219,25 @@ class OperationDefinition(GlobalDefinition):
             location=location,
         )
 
+    def view_index(self, view_name: str) -> int | None:
+        """Return the index of the first view with this name, if there is one."""
+        # Operations have only a few views, so scanning them is as fast as a
+        # dict lookup, and it avoids storing a dict on every operation
+        # definition for the whole compile.
+        for index, view in enumerate(self.views):
+            if view.typed_name.source_typed_name == view_name:
+                return index
+        return None
+
+    def get_view(self, view_name: str) -> ViewDefinition | None:
+        """Return the first view with this name, if there is one."""
+        # This scans the views instead of keeping a dict of them for the same
+        # reason view_index does.
+        index = self.view_index(view_name)
+        if index is None:
+            return None
+        return self.views[index]
+
 
 class ValueDefinition(QualityDefinition):
     """Represents a value type definition."""
@@ -850,6 +869,14 @@ class PositionConstraintBlock(ASTNode):
             requirement.typed_global_name.full_typed_name
             for requirement in self.requirements
         )
+
+    @property
+    def value_constraint(self) -> GlobalTypedNameReference | None:
+        """Return the first value this block requires, if any."""
+        for requirement in self.requirements:
+            if requirement.typed_global_name.name_type == NameType.VALUE:
+                return requirement.typed_global_name
+        return None
 
 
 class GlobalPathName(ASTNode):

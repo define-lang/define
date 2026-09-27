@@ -71,6 +71,7 @@ py_library(
         "//define/compiler:__subpackages__",
     ],
     deps = [
+        ":codegen_input",
         ":stats",
         "//define/compiler:ast",
         "//define/compiler:diagnostics",
@@ -80,6 +81,7 @@ py_library(
         "//define/compiler/graphs:reference_graph",
         "//define/compiler/graphs:reference_graph_order",
         "//define/compiler/lark:lark_standalone",
+        "//define/compiler/validator/reference_graph:action_contract",
         "@pypi//msgspec",
     ],
 )

@@ -216,3 +216,18 @@ def test_wrong_operation_definition_type(
     assert diagnostic.location.column == 31
     assert diagnostic.definition_name == "operation<my.domain.com:my_lib:/copy>"
     assert diagnostic.file_path == "copy.dfn"
+
+
+def test_duplicate_argument(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    assert len(result.all_diagnostics) == 1
+    diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.DuplicateOperationArgumentDiagnostic)
+    assert diagnostic.location.file_path is None
+    assert diagnostic.location.line == 33
+    assert diagnostic.location.column == 18
+    assert diagnostic.view_name == "view<source>"
+    assert diagnostic.first_argument_line == 32

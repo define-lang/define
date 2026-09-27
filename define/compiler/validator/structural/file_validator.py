@@ -453,10 +453,16 @@ class DefinitionStructuralValidator:
         looked_at_lines: typed_name_dict.TypedNameDict[
             ast.LocalTypedNameReference, int
         ] = typed_name_dict.TypedNameDict()
+        argument_lines: typed_name_dict.TypedNameDict[
+            ast.LocalTypedNameReference, int
+        ] = typed_name_dict.TypedNameDict()
         for argument in statement.arguments:
-            self._diagnostics.extend(
-                name_validators.validate_local_name_format(argument.view.name_content)
+            view_name_diagnostics = name_validators.validate_local_name_format(
+                argument.view.name_content
             )
+            self._diagnostics.extend(view_name_diagnostics)
+            if not view_name_diagnostics:
+                self._check_duplicate_argument(argument.view, argument_lines)
             looking_at = argument.looking_at
             match looking_at:
                 case ast.Literal():
@@ -472,6 +478,23 @@ class DefinitionStructuralValidator:
                             position_name=looking_at.source_chained_name,
                         )
                     )
+
+    def _check_duplicate_argument(
+        self,
+        view: ast.LocalTypedNameReference,
+        argument_lines: typed_name_dict.TypedNameDict[ast.LocalTypedNameReference, int],
+    ):
+        first_line = argument_lines.get(view)
+        if first_line is not None:
+            self._diagnostics.append(
+                diagnostics.DuplicateOperationArgumentDiagnostic(
+                    location=view.location,
+                    view_name=view.source_typed_name,
+                    first_argument_line=first_line,
+                )
+            )
+            return
+        argument_lines[view] = view.location.line
 
     def _validate_looked_at_view(
         self,

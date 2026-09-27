@@ -1788,6 +1788,9 @@ say that each view is "looking at" that position or literal.
 Arguments must be specified in the same order as the Interface View definitions
 are listed in the definition of the Value Operation.
 
+Every view defined by the Value Operation must be listed once in the Operation
+Arguments Block.
+
 Positions referenced in an Operation Argument Statement must have a set value.
 
 ```ebnf

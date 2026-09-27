@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import enum
 import typing
 from typing import ClassVar
 
@@ -251,6 +252,113 @@ class AliasedViewDiagnostic(Diagnostic):
         "'{self.looked_at_name}' is already being looked at by another view "
         "on line {self.first_argument_line}; two views in the same execution "
         "may not look at the same particle"
+    )
+
+
+class DuplicateOperationArgumentDiagnostic(Diagnostic):
+    """Diagnostic for a view given more than one Operation Argument Statement in one execution."""
+
+    view_name: str
+    first_argument_line: int
+    message_format: ClassVar[str] = (
+        "'{self.view_name}' is already looking at something on line "
+        "{self.first_argument_line}; each view can only be specified once in this block"
+    )
+
+
+class UndefinedOperationViewDiagnostic(Diagnostic):
+    """Diagnostic for an Operation Argument Statement naming a view the executed operation does not define."""
+
+    view_name: str
+    operation_name: str
+    interface_view_names: Sequence[str]
+
+    @property
+    def interface_view_list(self) -> str:
+        """Format the interface views as an indented list."""
+        return "\n  ".join(self.interface_view_names)
+
+    message_format: ClassVar[str] = (
+        "'{self.view_name}' is not an interface view of '{self.operation_name}'; "
+        "its interface views are:\n"
+        "  {self.interface_view_list}"
+    )
+
+
+class ArgumentsForOperationWithoutViewsDiagnostic(Diagnostic):
+    """Diagnostic for an Operation Arguments Block executing an operation that has no interface views."""
+
+    operation_name: str
+    message_format: ClassVar[str] = (
+        "'{self.operation_name}' has no interface views, so it must end with "
+        "a '.' instead of having a block here"
+    )
+
+
+class OperationArgumentOrderDiagnostic(Diagnostic):
+    """Diagnostic for Operation Argument Statements out of the order of the executed operation's interface views."""
+
+    view_name: str
+    operation_name: str
+    expected_order: Sequence[str]
+
+    @property
+    def expected_order_list(self) -> str:
+        """Format the expected order as an indented list."""
+        return "\n  ".join(self.expected_order)
+
+    message_format: ClassVar[str] = (
+        "'{self.view_name}' is out of order; the arguments to "
+        "'{self.operation_name}' must be in the same order as its interface "
+        "views:\n"
+        "  {self.expected_order_list}"
+    )
+
+
+class MissingOperationArgumentDiagnostic(Diagnostic):
+    """Diagnostic for an interface view of an executed operation with no Operation Argument Statement."""
+
+    view_name: str
+    operation_name: str
+    message_format: ClassVar[str] = (
+        "'{self.operation_name}' requires '{self.view_name}' to look at "
+        "something; add a 'with {self.view_name} looking at' line"
+    )
+
+
+class LookedAtKind(enum.Enum):
+    """What an Operation Argument Statement's view is looking at."""
+
+    VIEW = enum.auto()
+    POSITION = enum.auto()
+
+
+class OperationArgumentViolatesConstraintsDiagnostic(Diagnostic):
+    """Diagnostic for a view looking at a particle that does not meet the view's constraints."""
+
+    view_name: str
+    looked_at_name: str
+    looked_at_kind: LookedAtKind
+    missing_qualities: Sequence[str]
+
+    @property
+    def looked_at_description(self) -> str:
+        """Name what is being looked at."""
+        match self.looked_at_kind:
+            case LookedAtKind.VIEW:
+                return f"'{self.looked_at_name}'"
+            case LookedAtKind.POSITION:
+                return f"the particle in '{self.looked_at_name}'"
+
+    @property
+    def missing_list(self) -> str:
+        """Format the missing qualities as an indented list."""
+        return "\n  ".join(self.missing_qualities)
+
+    message_format: ClassVar[str] = (
+        "'{self.view_name}' cannot look at '{self.looked_at_name}' because "
+        "{self.looked_at_description} does not have the required qualities:\n"
+        "  {self.missing_list}"
     )
 
 

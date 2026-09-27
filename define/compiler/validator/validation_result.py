@@ -19,7 +19,8 @@ if typing.TYPE_CHECKING:
 
     from define.compiler.data_structures import define_path, typed_name_dict
     from define.compiler.graphs import reference_graph, reference_graph_order
-    from define.compiler.validator import stats
+    from define.compiler.validator import codegen_input, stats
+    from define.compiler.validator.reference_graph import action_contract
 
 type AnyValidationException = exceptions.DefineError | lark_standalone.UnexpectedInput
 
@@ -30,6 +31,19 @@ class ParticleStatementValidity(msgspec.Struct, frozen=True):
     target_ok: bool
     source_ok: bool = True
     from_is_prefix_of_to: bool = False
+
+
+class PostorderValidationResult(msgspec.Struct):
+    """Result of validating a single definition during the DFS post-order walk."""
+
+    diagnostics: list[diagnostics.Diagnostic]
+
+
+class ActionPostorderValidationResult(PostorderValidationResult):
+    """Result of validating a single action definition during the DFS post-order walk."""
+
+    contract: action_contract.ActionContract
+    codegen_input: codegen_input.ActionCodegenInput
 
 
 class DefinitionValidationResult(msgspec.Struct):

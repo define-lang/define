@@ -18,7 +18,7 @@ class ReferenceGraphValidationState:
     """State shared by concurrent reference graph action validators.
 
     This module encapsulates the shared state that is concurrently _written_
-    to by multiple definition_postorder_validator instances at once. It does
+    to by multiple action_definition_validator instances at once. It does
     this so that we can guarantee that only thread-safe actions occur, to
     some degree.
 

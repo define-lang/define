@@ -1,4 +1,4 @@
-"""Post-order validation for a single definition during the reference graph DFS walk."""
+"""Post-order validation for a single action definition during the reference graph DFS walk."""
 
 from __future__ import annotations
 
@@ -7,13 +7,14 @@ from functools import cached_property
 
 import msgspec
 
-from define.compiler import ast, constants, diagnostics, literal_parsers
-from define.compiler.validator import codegen_input, scope_tracker
+from define.compiler import ast, diagnostics
+from define.compiler.validator import codegen_input, scope_tracker, validation_result
 from define.compiler.validator.reference_graph import (
     action_contract,
     action_requirement_validator,
     chained_name_validator,
     destruction_contract_validator,
+    literal_encoder,
     particle_info,
     particle_operation_validator,
     particle_tracker,
@@ -33,15 +34,6 @@ if typing.TYPE_CHECKING:
     from collections.abc import Sequence
 
     from define.compiler.data_structures import typed_name_dict
-    from define.compiler.validator import validation_result
-
-
-class PostorderValidationResult(msgspec.Struct):
-    """Result of validating a single definition during the DFS post-order walk."""
-
-    diagnostics: list[diagnostics.Diagnostic]
-    contract: action_contract.ActionContract
-    codegen_input: codegen_input.ActionCodegenInput
 
 
 class _DestructionTarget(msgspec.Struct, frozen=True):
@@ -59,7 +51,7 @@ class _PendingDestructionContract(msgspec.Struct, frozen=True):
     destruction_fact: destruction_contract_types.DestructionFact
 
 
-class ActionPostorderValidator:
+class ActionDefinitionValidator:
     """Validates an action definition during a DFS post-order walk of the reference graph."""
 
     _definition: ast.ActionDefinition
@@ -107,6 +99,12 @@ class ActionPostorderValidator:
     ) -> particle_operation_validator.ParticleOperationValidator:
         return particle_operation_validator.ParticleOperationValidator(
             self._tracker, self._enclosing_fqun
+        )
+
+    @cached_property
+    def _literal_encoder(self) -> literal_encoder.LiteralEncoder:
+        return literal_encoder.LiteralEncoder(
+            self._definition_results, self._enclosing_fqun
         )
 
     @cached_property
@@ -716,7 +714,10 @@ class ActionPostorderValidator:
                 # A literal can only be encoded once the value type it sets is
                 # known.
                 if target_type is not None:
-                    value = self._encode_literal(stmt.source, target_type)
+                    value, literal_diagnostics = self._literal_encoder.encode(
+                        stmt.source, target_type
+                    )
+                    self._diagnostics.extend(literal_diagnostics)
                     if value is not None:
                         self._steps.append(
                             codegen_input.LiteralValueSetting(
@@ -734,87 +735,6 @@ class ActionPostorderValidator:
             not self._tracker.has_error_state(position) for position in positions
         ):
             self._tracker.set_value(stmt.target_position, value_state)
-
-    def _encode_literal(
-        self, literal: ast.Literal, value_type: ast.GlobalTypedNameReference
-    ) -> str | None:
-        """Return the literal in the value's encoding, or report why it cannot be."""
-        potential_literal = literal.potential_literal
-        # TODO: Remove this special case once the Define Standard Library
-        # defines the built-in names.
-        literal_encoding = constants.BUILT_IN_LITERAL_ENCODINGS.get(
-            potential_literal.full_typed_name
-        )
-        if literal_encoding is None:
-            definition_result = self._definition_results.get(potential_literal)
-            # A missing Potential Literal was already reported when its
-            # reference was resolved.
-            if definition_result is None:
-                return None
-            definition = typing.cast(
-                "ast.PotentialLiteralDefinition", definition_result.definition
-            )
-            literal_encoding = definition.encoding.full_typed_name
-            literal_encoding_name = definition.encoding.source_form_in_universe(
-                self._enclosing_fqun
-            )
-        else:
-            literal_encoding_name = literal_encoding
-        value_encoding = constants.BUILT_IN_VALUE_ENCODINGS.get(
-            value_type.full_typed_name
-        )
-        if value_encoding is None:
-            self._diagnostics.append(
-                diagnostics.ValueHasNoEncodingDiagnostic(
-                    location=potential_literal.location,
-                    value_type=value_type.source_form_in_universe(self._enclosing_fqun),
-                )
-            )
-            return None
-        parser = literal_parsers.LITERAL_PARSERS.get((literal_encoding, value_encoding))
-        if parser is None:
-            self._diagnostics.append(
-                self._literal_cannot_set_value(
-                    potential_literal, literal_encoding_name, value_type, value_encoding
-                )
-            )
-            return None
-        try:
-            return parser(literal.content)
-        except literal_parsers.LiteralParseError as e:
-            self._diagnostics.append(
-                diagnostics.InvalidLiteralContentDiagnostic(
-                    location=literal.content_character_location(e.content_index),
-                    content=literal.content,
-                    potential_literal=potential_literal.source_form_in_universe(
-                        self._enclosing_fqun
-                    ),
-                    value_encoding=value_encoding,
-                    reason=e.reason,
-                )
-            )
-            return None
-
-    def _literal_cannot_set_value(
-        self,
-        potential_literal: ast.GlobalTypedNameReference,
-        literal_encoding_name: str,
-        value_type: ast.GlobalTypedNameReference,
-        value_encoding: str,
-    ) -> diagnostics.LiteralCannotSetValueDiagnostic:
-        supported_encodings: list[str] = []
-        for source_encoding, destination_encoding in literal_parsers.LITERAL_PARSERS:
-            if destination_encoding == value_encoding:
-                supported_encodings.append(source_encoding)
-        return diagnostics.LiteralCannotSetValueDiagnostic(
-            location=potential_literal.location,
-            potential_literal=potential_literal.source_form_in_universe(
-                self._enclosing_fqun
-            ),
-            literal_encoding=literal_encoding_name,
-            value_type=value_type.source_form_in_universe(self._enclosing_fqun),
-            supported_encodings=supported_encodings,
-        )
 
     def _analyze_create(
         self,
@@ -966,7 +886,9 @@ class ActionPostorderValidator:
             return self._definition.trigger_position.typed_name.full_typed_name
         return None
 
-    def analyze(self) -> PostorderValidationResult:
+    def analyze(
+        self,
+    ) -> validation_result.ActionPostorderValidationResult:
         """Run post-order validation and return diagnostics, contract, and codegen input."""
         contract = self._analyze_action_definition()
         propagated_destructions: list[
@@ -977,7 +899,7 @@ class ActionPostorderValidator:
                 propagated_destructions.append(
                     destruction_contract.propagated_destruction
                 )
-        return PostorderValidationResult(
+        return validation_result.ActionPostorderValidationResult(
             diagnostics=self._diagnostics,
             contract=contract,
             codegen_input=codegen_input.ActionCodegenInput(

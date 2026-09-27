@@ -794,6 +794,30 @@ py_test(
 )
 
 py_test(
+    name = "operation_arguments_test",
+    size = "small",
+    srcs = ["operation_arguments_test.py"],
+    data = ["//define/testdata/reference_graph/operation_arguments"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+    ],
+)
+
+py_test(
+    name = "operation_view_requirements_test",
+    size = "small",
+    srcs = ["operation_view_requirements_test.py"],
+    data = ["//define/testdata/reference_graph/operation_view_requirements"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+    ],
+)
+
+py_test(
     name = "particle_conflict_test",
     size = "small",
     srcs = ["particle_conflict_test.py"],
@@ -1007,6 +1031,8 @@ pyright_test(
         ":move_particle_test",
         ":move_state_tracking_test",
         ":move_without_parent_test",
+        ":operation_arguments_test",
+        ":operation_view_requirements_test",
         ":particle_conflict_test",
         ":quality_implication_particle_test",
         ":quality_implication_test",
