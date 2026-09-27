@@ -77,7 +77,6 @@
       "Shell(uv run python -m pip *)",
       "Shell(uv run python -m pip3 *)",
       "Shell(uv run python -m pipx *)"
-    ],
-    "ask": ["Shell(git commit*)", "Shell(git push*)", "Shell(git reset)"]
+    ]
   }
 }

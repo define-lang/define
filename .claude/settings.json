@@ -76,8 +76,7 @@
       "Bash(uv run python -m pip *)",
       "Bash(uv run python -m pip3 *)",
       "Bash(uv run python -m pipx *)"
-    ],
-    "ask": ["Bash(git commit*)", "Bash(git push*)", "Bash(git reset)"]
+    ]
   },
   "enabledPlugins": {
     "bazel-basedpyright-lsp@define-plugins": false
