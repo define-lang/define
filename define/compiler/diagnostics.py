@@ -243,8 +243,18 @@ class OperationArgumentPositionDiagnostic(Diagnostic):
     )
 
 
+class OperationArgumentViewDiagnostic(Diagnostic):
+    """Diagnostic for an Operation Argument Statement in an action that looks at a view."""
+
+    view_name: str
+    message_format: ClassVar[str] = (
+        "within an action, a view may only look at a position or a "
+        "literal, but this is looking at '{self.view_name}'"
+    )
+
+
 class AliasedViewDiagnostic(Diagnostic):
-    """Diagnostic for more than one view looking at the same view in one Operation Arguments Block."""
+    """Diagnostic for more than one view looking at the same view or position in one Operation Arguments Block."""
 
     looked_at_name: str
     first_argument_line: int

@@ -5,6 +5,18 @@ load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
 py_test(
+    name = "action_operation_execution_test",
+    size = "small",
+    srcs = ["action_operation_execution_test.py"],
+    data = ["//define/testdata/structural/action_operation_execution"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+    ],
+)
+
+py_test(
     name = "action_statements_block_test",
     size = "small",
     srcs = ["action_statements_block_test.py"],
@@ -471,6 +483,7 @@ format_test(
 pyright_test(
     name = "pyright_test",
     deps = [
+        ":action_operation_execution_test",
         ":action_statements_block_test",
         ":cross_fqun_walking_test",
         ":destroy_particle_test",

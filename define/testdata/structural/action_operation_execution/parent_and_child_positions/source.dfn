@@ -1,0 +1,29 @@
+# Views may look at a position and one of its child positions.
+define the operation<my.domain.com:my_lib:/copy> {
+    define the view<source> {
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+        }
+    }
+    define the view<target> {
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+        }
+    }
+
+    it does {
+        execute the encoding operation.
+    }
+}
+define the potential position<my.domain.com:my_lib:/child>.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<number>.
+        execute the operation</copy> {
+            with view<source> looking at position<number>.
+            with view<target> looking at position<number>::position</child>.
+        }
+    }
+}

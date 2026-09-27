@@ -1,0 +1,33 @@
+# Separate executions may look at the same position.
+define the operation<my.domain.com:my_lib:/copy> {
+    define the view<source> {
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+        }
+    }
+    define the view<target> {
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+        }
+    }
+
+    it does {
+        execute the encoding operation.
+    }
+}
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<first>.
+        define the position<second>.
+        execute the operation</copy> {
+            with view<source> looking at position<first>.
+            with view<target> looking at position<second>.
+        }
+        execute the operation</copy> {
+            with view<source> looking at position<second>.
+            with view<target> looking at position<first>.
+        }
+    }
+}

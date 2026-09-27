@@ -28,7 +28,7 @@ from define.compiler.validator import scope_tracker, stats, validation_result
 from define.compiler.validator.structural import name_validators
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Callable, Sequence
 
 
 class FileValidationContext(msgspec.Struct, frozen=True, dict=True):
@@ -367,7 +367,10 @@ class DefinitionStructuralValidator:
             match statement:
                 case ast.OperationExecutionStatement():
                     self._validate_operation_execution(
-                        statement, views, unreferenced_views
+                        statement,
+                        lambda looking_at: self._validate_looked_at_in_operation(
+                            looking_at, views, unreferenced_views
+                        ),
                     )
                 case ast.EncodingOperationExecutionStatement():
                     executes_encoding_operation = True
@@ -437,26 +440,35 @@ class DefinitionStructuralValidator:
     def _validate_operation_execution(
         self,
         statement: ast.OperationExecutionStatement,
-        views: typed_name_dict.TypedNameDict[
-            ast.LocalTypedNameReference, ast.ViewDefinition
-        ],
-        unreferenced_views: typed_name_dict.TypedNameDict[
-            ast.LocalTypedNameReference, ast.ViewDefinition
+        validate_looked_at: Callable[
+            [ast.PositionReference | ast.LocalTypedNameReference], bool
         ],
     ):
+        """Validate an Operation Execution Statement.
+
+        validate_looked_at validates a looked-at position or view and returns
+        whether it is valid to check for aliasing.
+        """
         operation_diagnostics = name_validators.validate_typed_name(
             statement.operation, self._definition
         )
         self._diagnostics.extend(operation_diagnostics)
         if not operation_diagnostics:
             self._process_reference(statement.operation)
-        looked_at_lines: typed_name_dict.TypedNameDict[
-            ast.LocalTypedNameReference, int
-        ] = typed_name_dict.TypedNameDict()
+        self._validate_operation_arguments(statement.arguments, validate_looked_at)
+
+    def _validate_operation_arguments(
+        self,
+        arguments: Sequence[ast.OperationArgumentStatement],
+        validate_looked_at: Callable[
+            [ast.PositionReference | ast.LocalTypedNameReference], bool
+        ],
+    ):
+        looked_at_lines: dict[str, int] = {}
         argument_lines: typed_name_dict.TypedNameDict[
             ast.LocalTypedNameReference, int
         ] = typed_name_dict.TypedNameDict()
-        for argument in statement.arguments:
+        for argument in arguments:
             view_name_diagnostics = name_validators.validate_local_name_format(
                 argument.view.name_content
             )
@@ -464,20 +476,70 @@ class DefinitionStructuralValidator:
             if not view_name_diagnostics:
                 self._check_duplicate_argument(argument.view, argument_lines)
             looking_at = argument.looking_at
+            if isinstance(looking_at, ast.Literal):
+                _ = self._validate_literal(looking_at)
+                continue
+            if not validate_looked_at(looking_at):
+                continue
             match looking_at:
-                case ast.Literal():
-                    _ = self._validate_literal(looking_at)
-                case ast.LocalTypedNameReference():
-                    self._validate_looked_at_view(
-                        looking_at, views, unreferenced_views, looked_at_lines
-                    )
                 case ast.PositionReference():
-                    self._diagnostics.append(
-                        diagnostics.OperationArgumentPositionDiagnostic(
-                            location=looking_at.location,
-                            position_name=looking_at.source_chained_name,
-                        )
+                    canonical_name = looking_at.canonical_chained_name
+                    source_name = looking_at.source_chained_name
+                case ast.LocalTypedNameReference():
+                    canonical_name = looking_at.full_typed_name
+                    source_name = looking_at.source_typed_name
+            first_line = looked_at_lines.get(canonical_name)
+            if first_line is None:
+                looked_at_lines[canonical_name] = looking_at.location.line
+            else:
+                self._diagnostics.append(
+                    diagnostics.AliasedViewDiagnostic(
+                        location=looking_at.location,
+                        looked_at_name=source_name,
+                        first_argument_line=first_line,
                     )
+                )
+
+    def _validate_looked_at_in_operation(
+        self,
+        looking_at: ast.PositionReference | ast.LocalTypedNameReference,
+        views: typed_name_dict.TypedNameDict[
+            ast.LocalTypedNameReference, ast.ViewDefinition
+        ],
+        unreferenced_views: typed_name_dict.TypedNameDict[
+            ast.LocalTypedNameReference, ast.ViewDefinition
+        ],
+    ) -> bool:
+        match looking_at:
+            case ast.LocalTypedNameReference():
+                return self._validate_looked_at_view(
+                    looking_at, views, unreferenced_views
+                )
+            case ast.PositionReference():
+                self._diagnostics.append(
+                    diagnostics.OperationArgumentPositionDiagnostic(
+                        location=looking_at.location,
+                        position_name=looking_at.source_chained_name,
+                    )
+                )
+                return False
+
+    def _validate_looked_at_in_action(
+        self,
+        looking_at: ast.PositionReference | ast.LocalTypedNameReference,
+        scope: scope_tracker.ScopeTracker,
+    ) -> bool:
+        match looking_at:
+            case ast.PositionReference():
+                return self._validate_full_chained_name(looking_at, scope)
+            case ast.LocalTypedNameReference():
+                self._diagnostics.append(
+                    diagnostics.OperationArgumentViewDiagnostic(
+                        location=looking_at.location,
+                        view_name=looking_at.source_typed_name,
+                    )
+                )
+                return False
 
     def _check_duplicate_argument(
         self,
@@ -505,14 +567,11 @@ class DefinitionStructuralValidator:
         unreferenced_views: typed_name_dict.TypedNameDict[
             ast.LocalTypedNameReference, ast.ViewDefinition
         ],
-        looked_at_lines: typed_name_dict.TypedNameDict[
-            ast.LocalTypedNameReference, int
-        ],
-    ):
+    ) -> bool:
         name_diagnostics = name_validators.validate_local_name_format(view.name_content)
         self._diagnostics.extend(name_diagnostics)
         if name_diagnostics:
-            return
+            return False
         if view not in views:
             self._diagnostics.append(
                 diagnostics.UndefinedLocalNameDiagnostic(
@@ -520,20 +579,10 @@ class DefinitionStructuralValidator:
                     local_name=view.full_typed_name,
                 )
             )
-            return
+            return False
         if view in unreferenced_views:
             del unreferenced_views[view]
-        first_line = looked_at_lines.get(view)
-        if first_line is not None:
-            self._diagnostics.append(
-                diagnostics.AliasedViewDiagnostic(
-                    location=view.location,
-                    looked_at_name=view.source_typed_name,
-                    first_argument_line=first_line,
-                )
-            )
-            return
-        looked_at_lines[view] = view.location.line
+        return True
 
     def _validate_trigger_conditions(
         self,
@@ -568,10 +617,11 @@ class DefinitionStructuralValidator:
                 case ast.DestroyParticleStatement():
                     self._validate_destroy_particle(stmt, scope)
                 case ast.OperationExecutionStatement():
-                    # TODO: The grammar accepts arguments that look at views,
-                    # which the spec forbids within actions.
-                    raise NotImplementedError(
-                        "Operation executions in actions are not implemented"
+                    self._validate_operation_execution(
+                        stmt,
+                        lambda looking_at: self._validate_looked_at_in_action(
+                            looking_at, scope
+                        ),
                     )
 
     def _validate_value_setting(

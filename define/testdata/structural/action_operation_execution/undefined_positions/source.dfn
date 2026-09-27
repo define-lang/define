@@ -1,0 +1,27 @@
+# Undefined positions are reported once each and are not reported as aliased.
+define the operation<my.domain.com:my_lib:/copy> {
+    define the view<source> {
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+        }
+    }
+    define the view<target> {
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+        }
+    }
+
+    it does {
+        execute the encoding operation.
+    }
+}
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        execute the operation</copy> {
+            with view<source> looking at position<missing>.
+            with view<target> looking at position<missing>.
+        }
+    }
+}
