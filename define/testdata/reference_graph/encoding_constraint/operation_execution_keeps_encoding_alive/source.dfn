@@ -1,11 +1,13 @@
 # Using a particle in an Operation Execution Statement keeps its encoding constraint alive.
 define the operation<my.domain.com:my_lib:/copy> {
     define the view<source> {
+        it is read.
         it may only contain particles where {
             it has the value<standard:/number/rational>.
         }
     }
     define the view<target> {
+        it is written.
         it may only contain particles where {
             it has the value<standard:/number/rational>.
         }

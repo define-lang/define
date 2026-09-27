@@ -29,10 +29,10 @@ def test_duplicate_caller_view(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.LocalNameConflictDiagnostic)
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 26
+    assert diagnostic.location.line == 29
     assert diagnostic.location.column == 21
     assert diagnostic.local_name == "number"
-    assert diagnostic.first_definition_line == 20
+    assert diagnostic.first_definition_line == 22
 
 
 def test_value_mismatch(
@@ -46,7 +46,7 @@ def test_value_mismatch(
         diagnostic, diagnostics.OperationArgumentViolatesConstraintsDiagnostic
     )
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 33
+    assert diagnostic.location.line == 37
     assert diagnostic.location.column == 42
     assert diagnostic.view_name == "view<source>"
     assert diagnostic.looked_at_name == "view<number>"
@@ -65,7 +65,7 @@ def test_missing_encoding(
         diagnostic, diagnostics.OperationArgumentViolatesConstraintsDiagnostic
     )
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 33
+    assert diagnostic.location.line == 37
     assert diagnostic.location.column == 42
     assert diagnostic.view_name == "view<source>"
     assert diagnostic.looked_at_name == "view<number>"
@@ -89,7 +89,7 @@ def test_invalid_literal_content(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InvalidLiteralContentDiagnostic)
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 27
+    assert diagnostic.location.line == 30
     assert diagnostic.location.column == 68
     assert diagnostic.content == "abc"
     assert diagnostic.potential_literal == "literal<standard:/number>"
@@ -106,7 +106,7 @@ def test_literal_value_has_no_encoding(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ValueHasNoEncodingDiagnostic)
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 28
+    assert diagnostic.location.line == 31
     assert diagnostic.location.column == 42
     assert diagnostic.value_type == "value</count>"
 
@@ -134,7 +134,7 @@ def test_looks_at_undefined_view(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.UndefinedLocalNameDiagnostic)
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 27
+    assert diagnostic.location.line == 30
     assert diagnostic.location.column == 42
     assert diagnostic.local_name == "view<missing>"
 
@@ -148,7 +148,7 @@ def test_looks_at_position(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.OperationArgumentPositionDiagnostic)
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 27
+    assert diagnostic.location.line == 30
     assert diagnostic.location.column == 42
     assert diagnostic.position_name == "position<number>"
 
@@ -162,7 +162,7 @@ def test_invalid_literal_content_in_action(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InvalidLiteralContentDiagnostic)
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 30
+    assert diagnostic.location.line == 32
     assert diagnostic.location.column == 68
     assert diagnostic.content == "x"
     assert diagnostic.potential_literal == "literal<standard:/number>"
@@ -181,7 +181,7 @@ def test_position_missing_value_type(
         diagnostic, diagnostics.OperationArgumentViolatesConstraintsDiagnostic
     )
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 33
+    assert diagnostic.location.line == 35
     assert diagnostic.location.column == 42
     assert diagnostic.view_name == "view<target>"
     assert diagnostic.looked_at_name == "position<second>"
@@ -200,7 +200,7 @@ def test_position_value_mismatch(
         diagnostic, diagnostics.OperationArgumentViolatesConstraintsDiagnostic
     )
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 36
+    assert diagnostic.location.line == 38
     assert diagnostic.location.column == 42
     assert diagnostic.view_name == "view<target>"
     assert diagnostic.looked_at_name == "position<second>"
@@ -219,7 +219,7 @@ def test_position_missing_encoding(
         diagnostic, diagnostics.OperationArgumentViolatesConstraintsDiagnostic
     )
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 38
+    assert diagnostic.location.line == 40
     assert diagnostic.location.column == 42
     assert diagnostic.view_name == "view<source>"
     assert diagnostic.looked_at_name == "position<first>"

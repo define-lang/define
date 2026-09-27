@@ -1213,13 +1213,13 @@ def test_operation_execution_does_not_keep_child_constraints_alive(
     dead_child, untriggered_action = result.all_diagnostics
     assert isinstance(dead_child, diagnostics.DeadChildPositionDiagnostic)
     assert dead_child.location.file_path is None
-    assert dead_child.location.line == 29
+    assert dead_child.location.line == 30
     assert dead_child.location.column == 28
     assert dead_child.constraint_name == "position</child>"
     assert dead_child.position_name == "position<box>"
     assert isinstance(untriggered_action, diagnostics.UntriggeredActionDiagnostic)
     assert untriggered_action.location.file_path is None
-    assert untriggered_action.location.line == 30
+    assert untriggered_action.location.line == 31
     assert untriggered_action.location.column == 28
     assert untriggered_action.constraint_name == "action</poke>"
     assert untriggered_action.position_name == "position<box>"

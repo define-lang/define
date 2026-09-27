@@ -46,6 +46,16 @@ def _stripped_context(source: str, line: int, column: int) -> str:
     return error_line[column:].strip()
 
 
+def _is_in_view_definition(e: lark_standalone.UnexpectedToken) -> bool:
+    interactive_parser = typing.cast(
+        "lark_standalone.InteractiveParser", e.interactive_parser
+    )
+    for item in interactive_parser.parser_state.value_stack:
+        if isinstance(item, lark_cython.Token) and item.type == "DEFINE_THE_VIEW":
+            return True
+    return False
+
+
 def raise_token_error(
     e: lark_standalone.UnexpectedToken,
     source: str,
@@ -180,6 +190,13 @@ def raise_token_error(
             )
         if e.token.type == "IT_ALSO_ASSIGNS_THE":
             raise parser_exceptions.QualityImplicationInWrongLocation(
+                e, source, file_path
+            )
+        if e.token.type in (
+            "IT_IS_READ",
+            "IT_IS_WRITTEN",
+        ) and _is_in_view_definition(e):
+            raise parser_exceptions.InvalidViewDirectionStatementOrder(
                 e, source, file_path
             )
         raise parser_exceptions.MissingCloseBrace(e, source, file_path)
@@ -320,11 +337,20 @@ def raise_token_error(
             e, source, file_path
         )
 
+    # We are at the start of a view definition block.
+    if "IT_IS_READ" in e.accepts:
+        raise parser_exceptions.MissingViewDirectionStatement(e, source, file_path)
+
+    # We are after the View Direction Statements of a view definition block.
+    if "IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE" in e.accepts and _is_in_view_definition(e):
+        if e.token.type in ("IT_IS_READ", "IT_IS_WRITTEN"):
+            raise parser_exceptions.InvalidViewDirectionStatementOrder(
+                e, source, file_path
+            )
+        raise parser_exceptions.InvalidViewDefinitionBlock(e, source, file_path)
+
     # We are in a position definition block.
     if "IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE" in e.accepts:
-        # TODO: An empty view definition block also gets here, and
-        # this error's advice to end the definition with a period is wrong for
-        # views, which require a block.
         if e.token.value == "}":
             raise parser_exceptions.MissingPositionDefinitionContent(
                 e, source, file_path

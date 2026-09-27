@@ -58,6 +58,8 @@ EXECUTE_THE: "execute the"
 EXECUTE_THE_ENCODING_OPERATION: "execute the encoding operation"
 WITH: "with"
 LOOKING_AT: "looking at"
+IT_IS_READ: "it is read"
+IT_IS_WRITTEN: "it is written"
 
 # General
 
@@ -152,7 +154,10 @@ action_definition_block: _block_open NEWLINE* _quality_implications _action_loca
 
 # Value Operation Definition Syntax
 
-view_definition: DEFINE_THE_VIEW local_name_content local_position_definition_block
+_view_direction_statements: IT_IS_READ terminator NEWLINE* (IT_IS_WRITTEN terminator NEWLINE*)?
+    | IT_IS_WRITTEN terminator NEWLINE*
+view_definition_block: _block_open NEWLINE* _view_direction_statements position_constraint_block NEWLINE* _block_close
+view_definition: DEFINE_THE_VIEW local_name_content view_definition_block
 
 operation_argument_statement: WITH " " typed_view_name_reference " " LOOKING_AT " " (position_reference | typed_view_name_reference | literal) terminator
 operation_arguments_block: _block_open NEWLINE* (operation_argument_statement NEWLINE*)+ _block_close

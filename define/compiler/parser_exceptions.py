@@ -460,6 +460,24 @@ class InvalidValueSettingStatementSyntax(DefineTokenError):
     )
 
 
+class InvalidViewDefinitionBlock(DefineTokenError):
+    """Wrote something nonsensical after the View Direction Statements."""
+
+    message_format: ClassVar[str] = (
+        "A view definition must contain an 'it may only contain particles where'"
+        " block after its 'it is read.' and 'it is written.' statements."
+    )
+
+
+class InvalidViewDirectionStatementOrder(DefineTokenError):
+    """Repeated a View Direction Statement or put them in the wrong order."""
+
+    message_format: ClassVar[str] = (
+        "A view definition must start with 'it is read.', 'it is written.', or both,"
+        " in that order, with each at most once."
+    )
+
+
 class MissingActionDefinitionSyntax(DefineTokenError):
     """Forgot to write 'it happens when' in an Action Definition Block."""
 
@@ -594,6 +612,14 @@ class MissingTriggerConditionContent(DefineTokenError):
 
     message_format: ClassVar[str] = (
         "Trigger conditions blocks must contain at least one 'the ... has a particle.' statement."
+    )
+
+
+class MissingViewDirectionStatement(DefineTokenError):
+    """Left out the View Direction Statements at the start of a view definition."""
+
+    message_format: ClassVar[str] = (
+        "A view definition must start with 'it is read.', 'it is written.', or both."
     )
 
 

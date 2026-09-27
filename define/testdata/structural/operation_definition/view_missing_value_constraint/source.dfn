@@ -1,6 +1,7 @@
 # Every interface view of a value operation must have a value constraint.
 define the operation<my.domain.com:my_lib:/copy> {
     define the view<number> {
+        it is read.
         it may only contain particles where {
             it has the encoding<standard:/number/decimal/ascii>.
         }

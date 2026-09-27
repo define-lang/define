@@ -1,16 +1,19 @@
 define the operation<define-lang.org:rectangle:/integer/multiply> {
     define the view<a> {
+        it is read.
         # TODO: This now makes this syntax awkward, because views don't contain particles.
         it may only contain particles where {
             it has the value</integer>.
         }
     }
     define the view<b> {
+        it is read.
         it may only contain particles where {
             it has the value</integer>.
         }
     }
     define the view<result> {
+        it is written.
         it may only contain particles where {
             it has the value</integer>.
         }

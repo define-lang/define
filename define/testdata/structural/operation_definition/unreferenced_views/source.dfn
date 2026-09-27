@@ -1,11 +1,13 @@
 # view<unused> and view<also_unused> are never referenced and the encoding operation is never executed.
 define the operation<my.domain.com:my_lib:/copy> {
     define the view<source> {
+        it is read.
         it may only contain particles where {
             it has the value<standard:/number/rational>.
         }
     }
     define the view<target> {
+        it is written.
         it may only contain particles where {
             it has the value<standard:/number/rational>.
         }
@@ -17,16 +19,19 @@ define the operation<my.domain.com:my_lib:/copy> {
 }
 define the operation<my.domain.com:my_lib:/double> {
     define the view<number> {
+        it is read.
         it may only contain particles where {
             it has the value<standard:/number/rational>.
         }
     }
     define the view<unused> {
+        it is read.
         it may only contain particles where {
             it has the value<standard:/number/rational>.
         }
     }
     define the view<also_unused> {
+        it is read.
         it may only contain particles where {
             it has the value<standard:/number/rational>.
         }

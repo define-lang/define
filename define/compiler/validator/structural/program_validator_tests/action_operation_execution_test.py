@@ -30,7 +30,7 @@ def test_looks_at_view(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.OperationArgumentViewDiagnostic)
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 25
+    assert diagnostic.location.line == 27
     assert diagnostic.location.column == 42
     assert diagnostic.view_name == "view<number>"
 
@@ -44,10 +44,10 @@ def test_aliased_positions(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.AliasedViewDiagnostic)
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 25
+    assert diagnostic.location.line == 27
     assert diagnostic.location.column == 42
     assert diagnostic.looked_at_name == "position<number>"
-    assert diagnostic.first_argument_line == 24
+    assert diagnostic.first_argument_line == 26
 
 
 def test_aliased_chained_positions(
@@ -59,10 +59,10 @@ def test_aliased_chained_positions(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.AliasedViewDiagnostic)
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 26
+    assert diagnostic.location.line == 28
     assert diagnostic.location.column == 42
     assert diagnostic.looked_at_name == "position<number>::position</child>"
-    assert diagnostic.first_argument_line == 25
+    assert diagnostic.first_argument_line == 27
 
 
 def test_same_position_in_separate_executions(
@@ -88,12 +88,12 @@ def test_undefined_positions(
     first, second = result.all_diagnostics
     assert isinstance(first, diagnostics.UndefinedLocalNameDiagnostic)
     assert first.location.file_path is None
-    assert first.location.line == 23
+    assert first.location.line == 25
     assert first.location.column == 42
     assert first.local_name == "position<missing>"
     assert isinstance(second, diagnostics.UndefinedLocalNameDiagnostic)
     assert second.location.file_path is None
-    assert second.location.line == 24
+    assert second.location.line == 26
     assert second.location.column == 42
     assert second.local_name == "position<missing>"
 
@@ -107,7 +107,7 @@ def test_invalid_argument_view_name(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InvalidLocalNameFormatDiagnostic)
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 25
+    assert diagnostic.location.line == 27
     assert diagnostic.location.column == 23
     assert diagnostic.local_name == "Source"
     assert diagnostic.char == "S"
@@ -122,10 +122,10 @@ def test_duplicate_argument(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.DuplicateOperationArgumentDiagnostic)
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 26
+    assert diagnostic.location.line == 28
     assert diagnostic.location.column == 18
     assert diagnostic.view_name == "view<source>"
-    assert diagnostic.first_argument_line == 25
+    assert diagnostic.first_argument_line == 27
 
 
 def test_invalid_literal_name(
@@ -137,7 +137,7 @@ def test_invalid_literal_name(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 25
+    assert diagnostic.location.line == 27
     assert diagnostic.location.column == 63
     assert diagnostic.segment == "bad-name"
     assert diagnostic.char == "-"
@@ -152,7 +152,7 @@ def test_invalid_operation_name(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 24
+    assert diagnostic.location.line == 26
     assert diagnostic.location.column == 35
     assert diagnostic.segment == "bad-name"
     assert diagnostic.char == "-"

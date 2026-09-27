@@ -781,6 +781,7 @@ def operation_definitions(draw: st.DrawFn) -> str:
     return (
         f"define the operation<{name}> {{\n"
         f"    define the view<number> {{\n"
+        f"        it is read.\n"
         f"        it may only contain particles where {{\n"
         f"            it has the value<{value_name}>.\n"
         f"        }}\n"
@@ -885,6 +886,8 @@ _SYNTAX_FRAGMENTS = [
     "destroy the particle in position<p>.\n",
     "define the operation</o> {\n",
     "define the view<v> {\n",
+    "it is read.\n",
+    "it is written.\n",
     "it has the value</v>.\n",
     "it does {\n",
     "execute the operation</o>.\n",

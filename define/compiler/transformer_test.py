@@ -1070,12 +1070,14 @@ def test_literal_file_path_and_following_statement():
 _FULL_OPERATION = (
     "define the operation<mv:example.com:example:/add> {\n"
     + "    define the view<left> {\n"
+    + "        it is read.\n"
     + "        it may only contain particles where {\n"
     + "            it has the value</number>.\n"
     + "            it has the encoding<standard:/decimal>.\n"
     + "        }\n"
     + "    }\n"
     + "    define the view<right> {\n"
+    + "        it is read.\n"
     + "        it may only contain particles where {\n"
     + "            it has the value</number>.\n"
     + "        }\n"
@@ -1107,7 +1109,7 @@ def test_operation_definition_fields():
         definition.typed_name.name_content.source_name == "mv:example.com:example:/add"
     )
     assert definition.location == ast.SourceLocation(
-        line=1, column=1, end_line=21, end_column=2
+        line=1, column=1, end_line=23, end_column=2
     )
     assert _slice(_FULL_OPERATION, definition.location) == _FULL_OPERATION.rstrip("\n")
     assert (
@@ -1146,11 +1148,14 @@ def test_view_definition_fields():
     assert view.typed_name.source_typed_name == "view<left>"
     assert _slice(_FULL_OPERATION, view.typed_name.location) == "view<left>"
     assert _slice(_FULL_OPERATION, view.typed_name.name_content.location) == "left"
+    assert view.is_input
+    assert not view.is_output
     assert view.location == ast.SourceLocation(
-        line=2, column=5, end_line=7, end_column=6
+        line=2, column=5, end_line=8, end_column=6
     )
     assert _slice(_FULL_OPERATION, view.location) == (
         "define the view<left> {\n"
+        "        it is read.\n"
         "        it may only contain particles where {\n"
         "            it has the value</number>.\n"
         "            it has the encoding<standard:/decimal>.\n"
@@ -1158,7 +1163,7 @@ def test_view_definition_fields():
         "    }"
     )
     assert view.constraints.location == ast.SourceLocation(
-        line=3, column=9, end_line=6, end_column=10
+        line=4, column=9, end_line=7, end_column=10
     )
     assert [
         requirement.typed_global_name.full_typed_name
@@ -1170,11 +1175,45 @@ def test_view_definition_fields():
     encoding_requirement = view.constraints.requirements[1]
     assert encoding_requirement.typed_global_name.name_type == ast.NameType.ENCODING
     assert encoding_requirement.location == ast.SourceLocation(
-        line=5, column=13, end_line=5, end_column=52
+        line=6, column=13, end_line=6, end_column=52
     )
     assert (
         _slice(_FULL_OPERATION, encoding_requirement.location)
         == "it has the encoding<standard:/decimal>."
+    )
+
+
+def test_view_direction_fields():
+    source = (
+        "define the operation<mv:example.com:example:/increment> {\n"
+        + "    define the view<number> {\n"
+        + "        it is read.\n"
+        + "        it is written.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</number>.\n"
+        + "        }\n"
+        + "    }\n"
+        + "    define the view<result> {\n"
+        + "        it is written.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</number>.\n"
+        + "        }\n"
+        + "    }\n"
+        + "    it does {\n"
+        + "        execute the encoding operation.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    read_and_written, written = _only_operation(source).views
+    assert read_and_written.is_input
+    assert read_and_written.is_output
+    assert read_and_written.location == ast.SourceLocation(
+        line=2, column=5, end_line=8, end_column=6
+    )
+    assert not written.is_input
+    assert written.is_output
+    assert written.location == ast.SourceLocation(
+        line=9, column=5, end_line=14, end_column=6
     )
 
 
@@ -1190,7 +1229,7 @@ def test_operation_execution_statement_without_arguments_fields():
     )
     assert _slice(_FULL_OPERATION, statement.operation.location) == "operation</other>"
     assert statement.location == ast.SourceLocation(
-        line=14, column=9, end_line=14, end_column=39
+        line=16, column=9, end_line=16, end_column=39
     )
     assert (
         _slice(_FULL_OPERATION, statement.location) == "execute the operation</other>."
@@ -1203,7 +1242,7 @@ def test_operation_execution_statement_with_arguments_fields():
     assert statement.operation.full_typed_name == "operation<standard:/sum>"
     assert len(statement.arguments) == 2
     assert statement.location == ast.SourceLocation(
-        line=15, column=9, end_line=18, end_column=10
+        line=17, column=9, end_line=20, end_column=10
     )
     assert _slice(_FULL_OPERATION, statement.location) == (
         "execute the operation<standard:/sum> {\n"
@@ -1228,7 +1267,7 @@ def test_operation_argument_statement_view_fields():
     assert _slice(_FULL_OPERATION, looking_at.location) == "view<left>"
     assert _slice(_FULL_OPERATION, looking_at.name_content.location) == "left"
     assert argument.location == ast.SourceLocation(
-        line=16, column=13, end_line=16, end_column=48
+        line=18, column=13, end_line=18, end_column=48
     )
     assert (
         _slice(_FULL_OPERATION, argument.location)
@@ -1277,7 +1316,7 @@ def test_operation_argument_statement_literal_fields():
     )
     assert _slice(_FULL_OPERATION, literal.location) == 'literal</number>"12"'
     assert argument.location == ast.SourceLocation(
-        line=17, column=13, end_line=17, end_column=58
+        line=19, column=13, end_line=19, end_column=58
     )
     assert (
         _slice(_FULL_OPERATION, argument.location)
@@ -1289,7 +1328,7 @@ def test_encoding_operation_execution_statement_fields():
     statement = _only_operation(_FULL_OPERATION).operation_statements[2]
     assert isinstance(statement, ast.EncodingOperationExecutionStatement)
     assert statement.location == ast.SourceLocation(
-        line=19, column=9, end_line=19, end_column=40
+        line=21, column=9, end_line=21, end_column=40
     )
     assert (
         _slice(_FULL_OPERATION, statement.location) == "execute the encoding operation."

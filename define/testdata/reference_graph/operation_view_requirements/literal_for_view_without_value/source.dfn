@@ -1,11 +1,13 @@
 # view<source> has no value constraint, so a literal cannot know which value it becomes.
 define the operation<my.domain.com:my_lib:/copy> {
     define the view<source> {
+        it is read.
         it may only contain particles where {
             it has the encoding<standard:/number/decimal/ascii>.
         }
     }
     define the view<target> {
+        it is written.
         it may only contain particles where {
             it has the value<standard:/number/rational>.
         }
@@ -17,6 +19,7 @@ define the operation<my.domain.com:my_lib:/copy> {
 }
 define the operation<my.domain.com:my_lib:/double> {
     define the view<result> {
+        it is written.
         it may only contain particles where {
             it has the value<standard:/number/rational>.
         }

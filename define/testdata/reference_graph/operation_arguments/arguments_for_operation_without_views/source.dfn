@@ -7,6 +7,7 @@ define the operation<my.domain.com:my_lib:/reset> {
 }
 define the operation<my.domain.com:my_lib:/double> {
     define the view<result> {
+        it is written.
         it may only contain particles where {
             it has the value<standard:/number/rational>.
         }

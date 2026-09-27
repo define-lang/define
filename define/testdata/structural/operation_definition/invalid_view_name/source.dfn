@@ -1,6 +1,7 @@
 # View names follow the local name format.
 define the operation<my.domain.com:my_lib:/copy> {
     define the view<Number> {
+        it is read.
         it may only contain particles where {
             it has the value<standard:/number/rational>.
         }

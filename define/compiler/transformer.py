@@ -66,6 +66,13 @@ class _LocalPositionBlockData(msgspec.Struct, frozen=True):
     block_close: lark_cython.Token
 
 
+class _ViewDefinitionBlockData(msgspec.Struct, frozen=True):
+    is_input: bool
+    is_output: bool
+    constraints: ast.PositionConstraintBlock
+    block_close: lark_cython.Token
+
+
 class _PotentialLiteralBlockData(msgspec.Struct, frozen=True):
     encoding: ast.GlobalTypedNameReference
     block_close: lark_cython.Token
@@ -260,16 +267,38 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
     @_strip_discard
     def view_definition(
         self,
-        items: list[lark_cython.Token | ast.LocalNameContent | _LocalPositionBlockData],
+        items: list[
+            lark_cython.Token | ast.LocalNameContent | _ViewDefinitionBlockData
+        ],
     ) -> ast.ViewDefinition:
         """Transform a view definition."""
         keyword = cast("lark_cython.Token", items[0])
         local_name = cast("ast.LocalNameContent", items[1])
-        block = cast("_LocalPositionBlockData", items[2])
+        block = cast("_ViewDefinitionBlockData", items[2])
         return ast.ViewDefinition.from_name(
             local_name=local_name,
+            is_input=block.is_input,
+            is_output=block.is_output,
             constraints=block.constraints,
             location=self._location(start=keyword, end=block.block_close),
+        )
+
+    @_strip_discard
+    def view_definition_block(
+        self,
+        items: list[lark_cython.Token | ast.PositionConstraintBlock],
+    ) -> _ViewDefinitionBlockData:
+        """Bundle the view direction and constraint block with the outer ``}`` token.
+
+        items: [IT_IS_READ and/or IT_IS_WRITTEN tokens, position_constraint_block,
+        CLOSE_BRACE token].
+        """
+        direction_types = [cast("lark_cython.Token", item).type for item in items[:-2]]
+        return _ViewDefinitionBlockData(
+            is_input="IT_IS_READ" in direction_types,
+            is_output="IT_IS_WRITTEN" in direction_types,
+            constraints=cast("ast.PositionConstraintBlock", items[-2]),
+            block_close=cast("lark_cython.Token", items[-1]),
         )
 
     @_strip_discard

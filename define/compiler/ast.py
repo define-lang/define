@@ -358,6 +358,8 @@ class ViewDefinition(ASTNode):
     """Represents a view definition."""
 
     typed_name: LocalTypedNameReference
+    is_input: bool
+    is_output: bool
     constraints: PositionConstraintBlock
 
     @classmethod
@@ -365,6 +367,8 @@ class ViewDefinition(ASTNode):
         cls,
         *,
         local_name: LocalNameContent,
+        is_input: bool,
+        is_output: bool,
         constraints: PositionConstraintBlock,
         location: SourceLocation,
     ) -> Self:
@@ -375,6 +379,8 @@ class ViewDefinition(ASTNode):
                 name_content=local_name,
                 location=SourceLocation.from_definition_name(local_name, NameType.VIEW),
             ),
+            is_input=is_input,
+            is_output=is_output,
             constraints=constraints,
             location=location,
         )

@@ -28,7 +28,7 @@ def test_empty_position(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.OperationArgumentEmptyPositionDiagnostic)
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 32
+    assert diagnostic.location.line == 34
     assert diagnostic.location.column == 42
     assert diagnostic.position_name == "position<second>"
 
@@ -42,7 +42,7 @@ def test_empty_parent(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ParentPositionNotOccupiedDiagnostic)
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 41
+    assert diagnostic.location.line == 43
     assert diagnostic.location.column == 42
     assert diagnostic.position_name == "position<box>::position</child>"
     assert diagnostic.parent_position_name == "position<box>"
@@ -57,7 +57,7 @@ def test_unset_value(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 37
+    assert diagnostic.location.line == 39
     assert diagnostic.location.column == 42
     assert diagnostic.position_name == "position<second>"
 
@@ -71,7 +71,7 @@ def test_unset_value_reported_once(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 37
+    assert diagnostic.location.line == 39
     assert diagnostic.location.column == 42
     assert diagnostic.position_name == "position<second>"
 
@@ -85,12 +85,12 @@ def test_invalid_looked_at_position(
     first, second = result.all_diagnostics
     assert isinstance(first, diagnostics.UndefinedLocalNameDiagnostic)
     assert first.location.file_path is None
-    assert first.location.line == 24
+    assert first.location.line == 26
     assert first.location.column == 42
     assert first.local_name == "position<missing>"
     assert isinstance(second, diagnostics.OperationArgumentEmptyPositionDiagnostic)
     assert second.location.file_path is None
-    assert second.location.line == 25
+    assert second.location.line == 27
     assert second.location.column == 42
     assert second.position_name == "position<second>"
 
@@ -104,7 +104,7 @@ def test_prior_error(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.MoveFromEmptyPositionDiagnostic)
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 31
+    assert diagnostic.location.line == 33
     assert diagnostic.location.column == 30
     assert diagnostic.position_name == "position<empty>"
     assert diagnostic.is_action_interface_position is False

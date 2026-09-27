@@ -33,11 +33,13 @@ def test_operation_definition_with_views(parse: Parse):
     tree = parse(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
         + "    define the view<left> {\n"
+        + "        it is read.\n"
         + "        it may only contain particles where {\n"
         + "            it has the value</number>.\n"
         + "        }\n"
         + "    }\n"
         + "    define the view<right> {\n"
+        + "        it is read.\n"
         + "        it may only contain particles where {\n"
         + "            it has the value</number>.\n"
         + "        }\n"
@@ -60,6 +62,8 @@ def test_comments_and_blank_lines(parse: Parse):
         + "\n"
         + "    # comment\n"
         + "    define the view<left> { # comment\n"
+        + "\n"
+        + "        it is read. # comment\n"
         + "\n"
         + "        it may only contain particles where { # comment\n"
         + "\n"
@@ -135,13 +139,14 @@ def test_requires_operation_statements_block_after_views(parse: Parse):
         parse(
             "define the operation<mv:define-lang.org:parser:/add> {\n"
             + "    define the view<left> {\n"
+            + "        it is read.\n"
             + "        it may only contain particles where {\n"
             + "            it has the value</number>.\n"
             + "        }\n"
             + "    }\n"
             + "}\n"
         )
-    assert error.value.line == 7
+    assert error.value.line == 8
     assert error.value.column == 1
     assert error.value.token == "}"
 
@@ -169,6 +174,7 @@ def test_disallows_view_after_operation_statements_block(parse: Parse):
             + "        execute the encoding operation.\n"
             + "    }\n"
             + "    define the view<left> {\n"
+            + "        it is read.\n"
             + "        it may only contain particles where {\n"
             + "            it has the value</number>.\n"
             + "        }\n"

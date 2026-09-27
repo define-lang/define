@@ -1340,16 +1340,19 @@ def test_undefined_operation_view_format(
             "sum.dfn": (
                 "define the operation<my.domain.com:my_lib:/sum> {\n"
                 "    define the view<first> {\n"
+                "        it is read.\n"
                 "        it may only contain particles where {\n"
                 "            it has the value<standard:/number/rational>.\n"
                 "        }\n"
                 "    }\n"
                 "    define the view<second> {\n"
+                "        it is read.\n"
                 "        it may only contain particles where {\n"
                 "            it has the value<standard:/number/rational>.\n"
                 "        }\n"
                 "    }\n"
                 "    define the view<result> {\n"
+                "        it is written.\n"
                 "        it may only contain particles where {\n"
                 "            it has the value<standard:/number/rational>.\n"
                 "        }\n"
@@ -1382,6 +1385,7 @@ def test_operation_argument_violates_constraints_format(
     source = (
         "define the operation<my.domain.com:my_lib:/test> {\n"
         "    define the view<number> {\n"
+        "        it is read.\n"
         "        it may only contain particles where {\n"
         "            it has the value<standard:/number/rational>.\n"
         "        }\n"
@@ -1400,6 +1404,7 @@ def test_operation_argument_violates_constraints_format(
             "encoded.dfn": (
                 "define the operation<my.domain.com:my_lib:/encoded> {\n"
                 "    define the view<source> {\n"
+                "        it is read.\n"
                 "        it may only contain particles where {\n"
                 "            it has the value<standard:/number/rational>.\n"
                 "            it has the encoding<standard:/number/decimal/ascii>.\n"
@@ -1418,7 +1423,7 @@ def test_operation_argument_violates_constraints_format(
     assert len(diags) == 1
     formatted = diags[0].format(source.splitlines())
     assert formatted == textwrap.dedent("""\
-        File "test.dfn", line 10, column 42
+        File "test.dfn", line 11, column 42
                     with view<source> looking at view<number>.
                                                  ^
         'view<source>' cannot look at 'view<number>' because 'view<number>' does not have the required qualities:
@@ -1447,6 +1452,7 @@ def test_operation_argument_position_violates_constraints_format(
             "read.dfn": (
                 "define the operation<my.domain.com:my_lib:/read> {\n"
                 "    define the view<source> {\n"
+                "        it is read.\n"
                 "        it may only contain particles where {\n"
                 "            it has the value<standard:/number/rational>.\n"
                 "        }\n"

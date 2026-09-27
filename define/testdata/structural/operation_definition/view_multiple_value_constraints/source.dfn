@@ -2,6 +2,7 @@
 define the potential value<my.domain.com:my_lib:/integer>.
 define the operation<my.domain.com:my_lib:/copy> {
     define the view<number> {
+        it is read.
         it may only contain particles where {
             it has the value<standard:/number/rational>.
             it has the value</integer>.

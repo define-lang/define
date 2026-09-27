@@ -2,16 +2,19 @@ define the encoding_operation<define-lang.org:rectangle:/integer/cpu/multiply> {
     it implements the operation</integer/multiply>.
 
     define the view<a> {
+        it is read.
         it may only contain particles where {
             it has the encoding</integer/cpu>.
         }
     }
     define the view<b> {
+        it is read.
         it may only contain particles where {
             it has the encoding</integer/cpu>.
         }
     }
     define the view<result> {
+        it is written.
         it may only contain particles where {
             it has the encoding</integer/cpu>.
         }

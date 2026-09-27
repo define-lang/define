@@ -27,7 +27,7 @@ def test_looks_at_position(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.OperationArgumentPositionDiagnostic)
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 33
+    assert diagnostic.location.line == 37
     assert diagnostic.location.column == 42
     assert diagnostic.position_name == "position<result>"
 
@@ -41,7 +41,7 @@ def test_looks_at_chained_position(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.OperationArgumentPositionDiagnostic)
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 33
+    assert diagnostic.location.line == 37
     assert diagnostic.location.column == 42
     assert diagnostic.position_name == "position</box>::position<result>"
 
@@ -55,7 +55,7 @@ def test_looks_at_undefined_view(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.UndefinedLocalNameDiagnostic)
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 33
+    assert diagnostic.location.line == 37
     assert diagnostic.location.column == 42
     assert diagnostic.local_name == "view<missing>"
 
@@ -69,7 +69,7 @@ def test_looks_at_invalid_view_name(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InvalidLocalNameFormatDiagnostic)
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 33
+    assert diagnostic.location.line == 37
     assert diagnostic.location.column == 47
     assert diagnostic.local_name == "Result"
     assert diagnostic.char == "R"
@@ -84,10 +84,10 @@ def test_aliased_views(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.AliasedViewDiagnostic)
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 28
+    assert diagnostic.location.line == 31
     assert diagnostic.location.column == 42
     assert diagnostic.looked_at_name == "view<number>"
-    assert diagnostic.first_argument_line == 27
+    assert diagnostic.first_argument_line == 30
 
 
 def test_same_view_in_separate_executions(
@@ -113,7 +113,7 @@ def test_invalid_argument_view_name(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InvalidLocalNameFormatDiagnostic)
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 32
+    assert diagnostic.location.line == 36
     assert diagnostic.location.column == 23
     assert diagnostic.local_name == "Source"
     assert diagnostic.char == "S"
@@ -128,7 +128,7 @@ def test_invalid_literal_name(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 27
+    assert diagnostic.location.line == 30
     assert diagnostic.location.column == 63
     assert diagnostic.segment == "bad-name"
     assert diagnostic.char == "-"
@@ -158,7 +158,7 @@ def test_requires_short_operation_name(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 21
+    assert diagnostic.location.line == 23
     assert diagnostic.location.column == 31
     assert diagnostic.fqun == "my.domain.com:my_lib"
 
@@ -198,7 +198,7 @@ def test_missing_operation_file(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ReferencedFileNotFoundDiagnostic)
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert diagnostic.location.line == 10
+    assert diagnostic.location.line == 11
     assert diagnostic.location.column == 31
     assert diagnostic.file_path == "copy.dfn"
 
@@ -212,7 +212,7 @@ def test_wrong_operation_definition_type(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ReferencedDefinitionNotFoundDiagnostic)
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert diagnostic.location.line == 10
+    assert diagnostic.location.line == 11
     assert diagnostic.location.column == 31
     assert diagnostic.definition_name == "operation<my.domain.com:my_lib:/copy>"
     assert diagnostic.file_path == "copy.dfn"
@@ -227,7 +227,7 @@ def test_duplicate_argument(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.DuplicateOperationArgumentDiagnostic)
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 33
+    assert diagnostic.location.line == 37
     assert diagnostic.location.column == 18
     assert diagnostic.view_name == "view<source>"
-    assert diagnostic.first_argument_line == 32
+    assert diagnostic.first_argument_line == 36
