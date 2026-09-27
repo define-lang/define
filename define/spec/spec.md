@@ -1707,6 +1707,7 @@ be the same position.
 Proposals:
 
 - [DLP 40: Value Operations](../proposals/00040-value-operations.md)
+- [DLP 54: View Direction Statements](../proposals/00054-view-direction-statements.md)
 
 A value operation is defined by `define the ` followed by a global typed name
 with the type `operation`, followed by an Operation Definition Block.
@@ -1731,14 +1732,20 @@ operation_definition_block =
 An Interface View is defined by `define the ` followed by a local typed name
 with the type `view`, followed by a View Definition Block.
 
-It has syntax and rules identical to a local position definition, except that
-its Position Requirement Statements may not reference positions or actions. Each
-Interface View on a Value Operation must have a `value` constraint.
+A View Definition Block starts with View Direction Statements, followed by a
+Position Constraint Block. Its Position Requirement Statements may not reference
+positions or actions.
+
+Each Interface View on a Value Operation must have a `value` constraint.
 
 ```ebnf
 local_view_name = "view", "<", local_name, ">" ;
 view_definition = "define the", " ", local_view_name, view_definition_block ;
-view_definition_block = block_open, view_constraint_block, block_close ;
+view_definition_block =
+    block_open,
+    view_direction_statements,
+    view_constraint_block,
+    block_close ;
 view_constraint_block =
     "it may only contain particles where",
     block_open,
@@ -1747,6 +1754,21 @@ view_constraint_block =
     block_close ;
 view_requirement_statement =
     "it has the", " ", ( "value" | "encoding" ), "<", global_name, ">", terminator ;
+```
+
+#### View Direction Statements
+
+View Direction Statements consist of one or both of `it is read.` and
+`it is written.`, in that order, on separate lines. At least one must be
+specified.
+
+Any view with `it is read.` is called an "input view." Any view with
+`it is written.` is called an "output view."
+
+```ebnf
+view_direction_statements =
+    ( "it is read", terminator, [ "it is written", terminator ] )
+    | ( "it is written", terminator ) ;
 ```
 
 ### Operation Statements Block
@@ -1765,6 +1787,17 @@ operation_statements_contents = operation_statement, { operation_statement } ;
 operation_statement = operation_execution_statement | encoding_operation_execution_statement ;
 encoding_operation_execution_statement = "execute the encoding operation", terminator ;
 ```
+
+### Operations Must Obey Their Directions
+
+Input views must be read in the Operation Statements Block, and output views
+must be written to. The statement `execute the encoding operation.` is
+considered to read from all input views and write to all output views.
+
+Value Operations executed in an Operation Statements Block must not write to any
+input-only view. They also may not read from any output-only view unless an
+earlier statement has already written to that view within the current Operation
+Statements Block.
 
 ## Executing Value Operations
 
@@ -1818,7 +1851,10 @@ The particle in the position a view is looking at must meet the constraints of
 that Interface View as though the particle were being moved into a position with
 the constraints of the Interface View.
 
-The particle being looked at by any input view must have a set value.
+The particle being looked at by any input view must have a set value. The
+particle looked at by an output view has its value set by the operation.
+
+Output views may not look at a literal.
 
 ### Views May Not Alias
 
