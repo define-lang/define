@@ -238,7 +238,9 @@ class ExpectedChainSeparatorOrTerminator(DefineTokenError):
 class ExpectedConstraintNameType(DefineTokenError):
     """Expected a quality type in a Position Constraint Block."""
 
-    message_format: ClassVar[str] = "Expected 'position', 'action', or 'value'."
+    message_format: ClassVar[str] = (
+        "Expected 'position', 'action', 'value', or 'encoding'."
+    )
 
 
 class ExpectedGlobalDefinition(DefineTokenError):
@@ -248,10 +250,19 @@ class ExpectedGlobalDefinition(DefineTokenError):
         "Expected a global definition, one of:\n"
         + "    - define the potential position\n"
         + "    - define the potential action\n"
+        + "\n"
+        + "Or less commonly:\n"
         + "    - define the potential value\n"
         + "    - define the potential literal\n"
-        + "    - define the encoding"
+        + "    - define the encoding\n"
+        + "    - define the operation"
     )
+
+
+class ExpectedOperation(DefineTokenError):
+    """Expected an operation name in an Operation Execution Statement."""
+
+    message_format: ClassVar[str] = "Expected 'operation'."
 
 
 class ExpectedPositionOrAction(DefineTokenError):
@@ -261,9 +272,23 @@ class ExpectedPositionOrAction(DefineTokenError):
 
 
 class ExpectedPositionOrActionOrLiteral(DefineTokenError):
-    """Expected a position reference or literal as a Value Setting Statement source."""
+    """Expected a position reference or a literal."""
 
     message_format: ClassVar[str] = "Expected 'position', 'action', or 'literal'."
+
+
+class ExpectedValueSource(DefineTokenError):
+    """Expected what an Operation Argument Statement is looking at."""
+
+    message_format: ClassVar[str] = (
+        "Expected 'position', 'action', 'view', or 'literal'."
+    )
+
+
+class ExpectedView(DefineTokenError):
+    """Expected a view name in an Operation Argument Statement."""
+
+    message_format: ClassVar[str] = "Expected 'view'."
 
 
 class ExtraWhitespace(DefineTokenError):
@@ -345,6 +370,43 @@ class InvalidName(DefineTokenError):
 
     message_format: ClassVar[str] = (
         "'{token}' is not valid inside of a local or global name."
+    )
+
+
+class InvalidOperationArgumentsBlock(DefineTokenError):
+    """Wrote something other than an Operation Argument Statement in an Operation Arguments Block."""
+
+    message_format: ClassVar[str] = (
+        "Operation arguments blocks must contain one or more statements like:"
+        " with view<name> looking at position<foo>."
+    )
+
+
+class InvalidOperationArgumentSyntax(DefineTokenError):
+    """Expected ' looking at ' after the view name in an Operation Argument Statement."""
+
+    message_format: ClassVar[str] = (
+        "The syntax for an operation argument looks like:"
+        " with view<name> looking at position<foo>."
+        ' The position may also be a literal, such as literal</decimal>"123".'
+    )
+
+
+class InvalidOperationDefinitionBlock(DefineTokenError):
+    """Wrote something invalid in an Operation Definition Block."""
+
+    message_format: ClassVar[str] = (
+        "An operation definition may contain 'define the view' definitions"
+        " and must end with an 'it does' block."
+    )
+
+
+class InvalidOperationStatementsBlock(DefineTokenError):
+    """Wrote something other than an operation statement in an Operation Statements Block."""
+
+    message_format: ClassVar[str] = (
+        "Operation statements blocks must contain one or more"
+        " 'execute the operation<...>' or 'execute the encoding operation.' statements."
     )
 
 

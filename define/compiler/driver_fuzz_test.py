@@ -776,6 +776,8 @@ def action_definitions_with_implications(draw: st.DrawFn) -> str:
 @st.composite
 def syntactic_sources(draw: st.DrawFn) -> str:
     """Generate definition-shaped sources without enforcing source validity."""
+    # TODO: Generate operation definitions here once value operation validation
+    # is implemented.
     num_defs = draw(st.integers(min_value=1, max_value=5))
     defs: list[str] = []
     for _ in range(num_defs):
@@ -857,6 +859,14 @@ _SYNTAX_FRAGMENTS = [
     "create a particle in position<p>.\n",
     "move the particle in position<p> to position<q>.\n",
     "destroy the particle in position<p>.\n",
+    "define the operation</o> {\n",
+    "define the view<v> {\n",
+    "it has the value</v>.\n",
+    "it does {\n",
+    "execute the operation</o>.\n",
+    "execute the operation</o> {\n",
+    "execute the encoding operation.\n",
+    "with view<v> looking at view<w>.\n",
     "position<p>",
     "action</a>::position<p>",
     "::",
@@ -951,6 +961,8 @@ def _apply_source_mutation(source: str, draw: st.DrawFn, mutation: str) -> str:
             "action",
             "literal",
             "encoding",
+            "operation",
+            "view",
             "create a particle in",
             "move the particle in",
             "destroy the particle in",

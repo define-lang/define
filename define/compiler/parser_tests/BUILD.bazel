@@ -177,6 +177,30 @@ py_test(
     ],
 )
 
+py_test(
+    name = "operation_definition_test",
+    size = "small",
+    srcs = ["operation_definition_test.py"],
+    deps = [
+        ":conftest",
+        ":test_helpers",
+        "//define/compiler:parser_exceptions",
+        "@pypi//pytest",
+    ],
+)
+
+py_test(
+    name = "operation_execution_test",
+    size = "small",
+    srcs = ["operation_execution_test.py"],
+    deps = [
+        ":conftest",
+        ":test_helpers",
+        "//define/compiler:parser_exceptions",
+        "@pypi//pytest",
+    ],
+)
+
 py_library(
     name = "parser_tests",
     srcs = ["__init__.py"],
@@ -321,6 +345,18 @@ py_test(
 
 # --- Format checking ---
 
+py_test(
+    name = "view_definition_test",
+    size = "small",
+    srcs = ["view_definition_test.py"],
+    deps = [
+        ":conftest",
+        ":test_helpers",
+        "//define/compiler:parser_exceptions",
+        "@pypi//pytest",
+    ],
+)
+
 format_test(
     name = "format_test",
     srcs = glob(["*.py"]),
@@ -347,6 +383,8 @@ pyright_test(
         ":local_name_format_test",
         ":move_particle_test",
         ":multiple_definitions_test",
+        ":operation_definition_test",
+        ":operation_execution_test",
         ":parser_tests",
         ":position_definition_test",
         ":potential_literal_definition_test",
@@ -359,6 +397,7 @@ pyright_test(
         ":value_definition_test",
         ":value_setting_literal_test",
         ":value_setting_test",
+        ":view_definition_test",
     ],
 )
 

@@ -1065,3 +1065,262 @@ def test_literal_file_path_and_following_statement():
     assert isinstance(second, ast.ValueSettingStatement)
     assert isinstance(second.source, ast.Literal)
     assert second.source.content == ""
+
+
+_FULL_OPERATION = (
+    "define the operation<mv:example.com:example:/add> {\n"
+    + "    define the view<left> {\n"
+    + "        it may only contain particles where {\n"
+    + "            it has the value</number>.\n"
+    + "            it has the encoding<standard:/decimal>.\n"
+    + "        }\n"
+    + "    }\n"
+    + "    define the view<right> {\n"
+    + "        it may only contain particles where {\n"
+    + "            it has the value</number>.\n"
+    + "        }\n"
+    + "    }\n"
+    + "    it does {\n"
+    + "        execute the operation</other>.\n"
+    + "        execute the operation<standard:/sum> {\n"
+    + "            with view<a> looking at view<left>.\n"
+    + '            with view<b> looking at literal</number>"12".\n'
+    + "        }\n"
+    + "        execute the encoding operation.\n"
+    + "    }\n"
+    + "}\n"
+)
+
+
+def _only_operation(source: str) -> ast.OperationDefinition:
+    program = test_helpers.parse_and_transform(source)
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.OperationDefinition)
+    return definition
+
+
+def test_operation_definition_fields():
+    definition = _only_operation(_FULL_OPERATION)
+    assert not isinstance(definition, ast.QualityDefinition)
+    assert definition.typed_name.name_type == ast.NameType.OPERATION
+    assert (
+        definition.typed_name.name_content.source_name == "mv:example.com:example:/add"
+    )
+    assert definition.location == ast.SourceLocation(
+        line=1, column=1, end_line=21, end_column=2
+    )
+    assert _slice(_FULL_OPERATION, definition.location) == _FULL_OPERATION.rstrip("\n")
+    assert (
+        _slice(_FULL_OPERATION, definition.typed_name.location)
+        == "operation<mv:example.com:example:/add>"
+    )
+    assert [view.typed_name.source_typed_name for view in definition.views] == [
+        "view<left>",
+        "view<right>",
+    ]
+    assert len(definition.operation_statements) == 3
+
+
+def test_operation_definition_without_views_fields():
+    source = (
+        "define the operation<mv:example.com:example:/add> {\n"
+        + "    it does {\n"
+        + "        execute the encoding operation.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = _only_operation(source)
+    assert definition.views == ()
+    assert len(definition.operation_statements) == 1
+    assert definition.location == ast.SourceLocation(
+        line=1, column=1, end_line=5, end_column=2
+    )
+    assert _slice(source, definition.location) == source.rstrip("\n")
+
+
+def test_view_definition_fields():
+    view = _only_operation(_FULL_OPERATION).views[0]
+    assert isinstance(view, ast.ViewDefinition)
+    assert isinstance(view.typed_name, ast.LocalTypedNameReference)
+    assert view.typed_name.name_type == ast.NameType.VIEW
+    assert view.typed_name.source_typed_name == "view<left>"
+    assert _slice(_FULL_OPERATION, view.typed_name.location) == "view<left>"
+    assert _slice(_FULL_OPERATION, view.typed_name.name_content.location) == "left"
+    assert view.location == ast.SourceLocation(
+        line=2, column=5, end_line=7, end_column=6
+    )
+    assert _slice(_FULL_OPERATION, view.location) == (
+        "define the view<left> {\n"
+        "        it may only contain particles where {\n"
+        "            it has the value</number>.\n"
+        "            it has the encoding<standard:/decimal>.\n"
+        "        }\n"
+        "    }"
+    )
+    assert view.constraints.location == ast.SourceLocation(
+        line=3, column=9, end_line=6, end_column=10
+    )
+    assert [
+        requirement.typed_global_name.full_typed_name
+        for requirement in view.constraints.requirements
+    ] == [
+        "value<mv:example.com:example:/number>",
+        "encoding<standard:/decimal>",
+    ]
+    encoding_requirement = view.constraints.requirements[1]
+    assert encoding_requirement.typed_global_name.name_type == ast.NameType.ENCODING
+    assert encoding_requirement.location == ast.SourceLocation(
+        line=5, column=13, end_line=5, end_column=52
+    )
+    assert (
+        _slice(_FULL_OPERATION, encoding_requirement.location)
+        == "it has the encoding<standard:/decimal>."
+    )
+
+
+def test_operation_execution_statement_without_arguments_fields():
+    statement = _only_operation(_FULL_OPERATION).operation_statements[0]
+    assert isinstance(statement, ast.OperationExecutionStatement)
+    assert statement.arguments == ()
+    assert statement.operation.name_type == ast.NameType.OPERATION
+    assert statement.operation.source_typed_name == "operation</other>"
+    assert (
+        statement.operation.full_typed_name
+        == "operation<mv:example.com:example:/other>"
+    )
+    assert _slice(_FULL_OPERATION, statement.operation.location) == "operation</other>"
+    assert statement.location == ast.SourceLocation(
+        line=14, column=9, end_line=14, end_column=39
+    )
+    assert (
+        _slice(_FULL_OPERATION, statement.location) == "execute the operation</other>."
+    )
+
+
+def test_operation_execution_statement_with_arguments_fields():
+    statement = _only_operation(_FULL_OPERATION).operation_statements[1]
+    assert isinstance(statement, ast.OperationExecutionStatement)
+    assert statement.operation.full_typed_name == "operation<standard:/sum>"
+    assert len(statement.arguments) == 2
+    assert statement.location == ast.SourceLocation(
+        line=15, column=9, end_line=18, end_column=10
+    )
+    assert _slice(_FULL_OPERATION, statement.location) == (
+        "execute the operation<standard:/sum> {\n"
+        "            with view<a> looking at view<left>.\n"
+        '            with view<b> looking at literal</number>"12".\n'
+        "        }"
+    )
+
+
+def test_operation_argument_statement_view_fields():
+    statement = _only_operation(_FULL_OPERATION).operation_statements[1]
+    assert isinstance(statement, ast.OperationExecutionStatement)
+    argument = statement.arguments[0]
+    assert isinstance(argument, ast.OperationArgumentStatement)
+    assert argument.view.name_type == ast.NameType.VIEW
+    assert argument.view.source_typed_name == "view<a>"
+    assert _slice(_FULL_OPERATION, argument.view.location) == "view<a>"
+    looking_at = argument.looking_at
+    assert isinstance(looking_at, ast.LocalTypedNameReference)
+    assert looking_at.name_type == ast.NameType.VIEW
+    assert looking_at.source_typed_name == "view<left>"
+    assert _slice(_FULL_OPERATION, looking_at.location) == "view<left>"
+    assert _slice(_FULL_OPERATION, looking_at.name_content.location) == "left"
+    assert argument.location == ast.SourceLocation(
+        line=16, column=13, end_line=16, end_column=48
+    )
+    assert (
+        _slice(_FULL_OPERATION, argument.location)
+        == "with view<a> looking at view<left>."
+    )
+
+
+def test_operation_argument_statement_position_fields():
+    source = (
+        "define the operation<mv:example.com:example:/add> {\n"
+        + "    it does {\n"
+        + "        execute the operation</other> {\n"
+        + "            with view<a> looking at position<p>::position<child>.\n"
+        + "        }\n"
+        + "    }\n"
+        + "}\n"
+    )
+    statement = _only_operation(source).operation_statements[0]
+    assert isinstance(statement, ast.OperationExecutionStatement)
+    argument = statement.arguments[0]
+    assert argument.view.source_typed_name == "view<a>"
+    looking_at = argument.looking_at
+    assert isinstance(looking_at, ast.PositionReference)
+    assert looking_at.source_chained_name == "position<p>::position<child>"
+    assert _slice(source, looking_at.location) == "position<p>::position<child>"
+    assert argument.location == ast.SourceLocation(
+        line=4, column=13, end_line=4, end_column=66
+    )
+    assert (
+        _slice(source, argument.location)
+        == "with view<a> looking at position<p>::position<child>."
+    )
+
+
+def test_operation_argument_statement_literal_fields():
+    statement = _only_operation(_FULL_OPERATION).operation_statements[1]
+    assert isinstance(statement, ast.OperationExecutionStatement)
+    argument = statement.arguments[1]
+    assert argument.view.source_typed_name == "view<b>"
+    literal = argument.looking_at
+    assert isinstance(literal, ast.Literal)
+    assert literal.content == "12"
+    assert (
+        literal.potential_literal.full_typed_name
+        == "literal<mv:example.com:example:/number>"
+    )
+    assert _slice(_FULL_OPERATION, literal.location) == 'literal</number>"12"'
+    assert argument.location == ast.SourceLocation(
+        line=17, column=13, end_line=17, end_column=58
+    )
+    assert (
+        _slice(_FULL_OPERATION, argument.location)
+        == 'with view<b> looking at literal</number>"12".'
+    )
+
+
+def test_encoding_operation_execution_statement_fields():
+    statement = _only_operation(_FULL_OPERATION).operation_statements[2]
+    assert isinstance(statement, ast.EncodingOperationExecutionStatement)
+    assert statement.location == ast.SourceLocation(
+        line=19, column=9, end_line=19, end_column=40
+    )
+    assert (
+        _slice(_FULL_OPERATION, statement.location) == "execute the encoding operation."
+    )
+
+
+def test_operation_definitions_update_reference_fqun():
+    source = (
+        "define the operation<mv:example.com:first:/add> {\n"
+        + "    it does {\n"
+        + "        execute the operation</other>.\n"
+        + "    }\n"
+        + "}\n"
+        + "define the operation<mv:example.com:second:/add> {\n"
+        + "    it does {\n"
+        + "        execute the operation</other>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    first, second = test_helpers.parse_and_transform(source).definitions
+    assert isinstance(first, ast.OperationDefinition)
+    assert isinstance(second, ast.OperationDefinition)
+    first_statement = first.operation_statements[0]
+    second_statement = second.operation_statements[0]
+    assert isinstance(first_statement, ast.OperationExecutionStatement)
+    assert isinstance(second_statement, ast.OperationExecutionStatement)
+    assert (
+        first_statement.operation.full_typed_name
+        == "operation<mv:example.com:first:/other>"
+    )
+    assert (
+        second_statement.operation.full_typed_name
+        == "operation<mv:example.com:second:/other>"
+    )

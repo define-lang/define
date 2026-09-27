@@ -52,6 +52,7 @@ def raise_token_error(
     file_path: pathlib.PurePosixPath | None,
 ):
     """Classify a token error into a specific exception type."""
+    # TODO: Convert much of this classification into match/case statements.
     ####################################
     ## First Character Classification ##
     ####################################
@@ -70,6 +71,10 @@ def raise_token_error(
         raise parser_exceptions.TrailingWhitespaceError.from_lark_exception(
             e, source, e.token.value, file_path
         )
+
+    # TODO: Raise ExtraWhitespace when the unexpected token is a space that
+    # follows another space and SPACE is not in e.accepts. Today a doubled space
+    # before a keyword or name falls through to an "expected X" error below.
 
     ###############################
     ## e.accepts Classification ##
@@ -191,8 +196,29 @@ def raise_token_error(
     if e.accepts == {"POSITION_OR_ACTION", "LITERAL"}:
         raise parser_exceptions.ExpectedPositionOrActionOrLiteral(e, source, file_path)
 
-    if e.accepts == {"POSITION_OR_ACTION", "VALUE"}:
+    if e.accepts == {"POSITION_OR_ACTION", "VIEW", "LITERAL"}:
+        raise parser_exceptions.ExpectedValueSource(e, source, file_path)
+
+    if e.accepts == {"POSITION_OR_ACTION", "VALUE", "ENCODING"}:
         raise parser_exceptions.ExpectedConstraintNameType(e, source, file_path)
+
+    if e.accepts == {"OPERATION"}:
+        raise parser_exceptions.ExpectedOperation(e, source, file_path)
+
+    if e.accepts == {"VIEW"}:
+        raise parser_exceptions.ExpectedView(e, source, file_path)
+
+    if e.accepts == {"LOOKING_AT"}:
+        raise parser_exceptions.InvalidOperationArgumentSyntax(e, source, file_path)
+
+    if e.accepts == {"WITH", "NEWLINE"}:
+        raise parser_exceptions.InvalidOperationArgumentsBlock(e, source, file_path)
+
+    if e.accepts == {"DEFINE_THE_VIEW", "IT_DOES", "NEWLINE"}:
+        raise parser_exceptions.InvalidOperationDefinitionBlock(e, source, file_path)
+
+    if e.accepts == {"EXECUTE_THE", "EXECUTE_THE_ENCODING_OPERATION", "NEWLINE"}:
+        raise parser_exceptions.InvalidOperationStatementsBlock(e, source, file_path)
 
     if e.accepts == {"ENCODING"}:
         raise parser_exceptions.InvalidPotentialLiteralDefinitionBlock(
@@ -296,6 +322,9 @@ def raise_token_error(
 
     # We are in a position definition block.
     if "IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE" in e.accepts:
+        # TODO: An empty view definition block also gets here, and
+        # this error's advice to end the definition with a period is wrong for
+        # views, which require a block.
         if e.token.value == "}":
             raise parser_exceptions.MissingPositionDefinitionContent(
                 e, source, file_path

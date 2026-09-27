@@ -262,6 +262,13 @@ class DefinitionStructuralValidator:
                 self._diagnostics.extend(encoding_diagnostics)
                 if not encoding_diagnostics:
                     self._process_reference(encoding)
+            case ast.OperationDefinition():
+                # TODO: The grammar accepts some forms the spec forbids, so
+                # validation must reject view constraints on positions or
+                # actions, and operation arguments that look at a position.
+                raise NotImplementedError(
+                    "Value operation validation is not implemented"
+                )
             case _:
                 pass
         return self.build_result()

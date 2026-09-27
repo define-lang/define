@@ -34,6 +34,8 @@ class NameType(enum.StrEnum):
     VALUE = "value"
     ENCODING = "encoding"
     LITERAL = "literal"
+    OPERATION = "operation"
+    VIEW = "view"
 
 
 class ASTNodeMeta(msgspec.StructMeta, abc.ABCMeta):
@@ -190,6 +192,34 @@ class PotentialLiteralDefinition(GlobalDefinition):
         )
 
 
+class OperationDefinition(GlobalDefinition):
+    """Represents a value operation definition."""
+
+    views: tuple[ViewDefinition, ...]
+    operation_statements: tuple[OperationStatement, ...]
+
+    @classmethod
+    def from_name(
+        cls,
+        *,
+        name: DefinitionGlobalNameContent,
+        views: tuple[ViewDefinition, ...],
+        operation_statements: tuple[OperationStatement, ...],
+        location: SourceLocation,
+    ) -> Self:
+        """Initialize with a global name, its views, and its statements."""
+        return cls(
+            typed_name=GlobalTypedNameInDefinition(
+                name_type=NameType.OPERATION,
+                name_content=name,
+                location=SourceLocation.from_definition_name(name, NameType.OPERATION),
+            ),
+            views=views,
+            operation_statements=operation_statements,
+            location=location,
+        )
+
+
 class ValueDefinition(QualityDefinition):
     """Represents a value type definition."""
 
@@ -303,6 +333,32 @@ class LocalPositionDefinition(ASTNode):
 
 
 type AnyPositionDefinition = PositionDefinition | LocalPositionDefinition
+
+
+class ViewDefinition(ASTNode):
+    """Represents a view definition."""
+
+    typed_name: LocalTypedNameReference
+    constraints: PositionConstraintBlock
+
+    @classmethod
+    def from_name(
+        cls,
+        *,
+        local_name: LocalNameContent,
+        constraints: PositionConstraintBlock,
+        location: SourceLocation,
+    ) -> Self:
+        """Initialize with a local name, wrapping it in a typed name."""
+        return cls(
+            typed_name=LocalTypedNameReference(
+                name_type=NameType.VIEW,
+                name_content=local_name,
+                location=SourceLocation.from_definition_name(local_name, NameType.VIEW),
+            ),
+            constraints=constraints,
+            location=location,
+        )
 
 
 # Struct-generated constructors prevent automatic covariance inference.
@@ -744,6 +800,29 @@ type ActionStatement = (
     | MoveParticleStatement
     | DestroyParticleStatement
     | ValueSettingStatement
+)
+
+
+class OperationArgumentStatement(ASTNode):
+    """Represents a 'with view<...> looking at' statement."""
+
+    view: LocalTypedNameReference
+    looking_at: PositionReference | LocalTypedNameReference | Literal
+
+
+class OperationExecutionStatement(ASTNode):
+    """Represents an 'execute the operation<...>' statement."""
+
+    operation: GlobalTypedNameReference
+    arguments: tuple[OperationArgumentStatement, ...]
+
+
+class EncodingOperationExecutionStatement(ASTNode):
+    """Represents the 'execute the encoding operation' statement."""
+
+
+type OperationStatement = (
+    OperationExecutionStatement | EncodingOperationExecutionStatement
 )
 
 

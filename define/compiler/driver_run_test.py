@@ -164,9 +164,12 @@ def test_syntax_error_returns_error_and_prints_to_stream(
         "Expected a global definition, one of:\n"
         "    - define the potential position\n"
         "    - define the potential action\n"
+        "\n"
+        "Or less commonly:\n"
         "    - define the potential value\n"
         "    - define the potential literal\n"
         "    - define the encoding\n"
+        "    - define the operation\n"
     )
 
 

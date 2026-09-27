@@ -70,15 +70,16 @@ def test_encoding_definition_disallows_local_context(parse: Parse):
     assert error.value.token == "define the encoding"
 
 
-def test_encoding_disallowed_in_constraints(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedConstraintNameType) as error:
-        _ = parse(
-            "define the potential position<mv:define-lang.org:parser:/test> {\n"
-            + "    it may only contain particles where {\n"
-            + "        it has the encoding</utf8>.\n"
-            + "    }\n"
-            + "}\n"
-        )
-    assert error.value.line == 3
-    assert error.value.column == 20
-    assert error.value.token == "encoding"
+def test_encoding_in_constraints(parse: Parse):
+    tree = parse(
+        "define the potential position<mv:define-lang.org:parser:/test> {\n"
+        + "    it may only contain particles where {\n"
+        + "        it has the encoding</utf8>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert test_helpers.get_tokens_by_type(tree, "ENCODING") == ["encoding"]
+    assert test_helpers.get_tokens_by_type(tree, "GLOBAL_NAME_CONTENT") == [
+        "mv:define-lang.org:parser:/test",
+        "/utf8",
+    ]

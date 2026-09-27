@@ -71,6 +71,17 @@ class _PotentialLiteralBlockData(msgspec.Struct, frozen=True):
     block_close: lark_cython.Token
 
 
+class _OperationDefinitionBlockData(msgspec.Struct, frozen=True):
+    views: tuple[ast.ViewDefinition, ...]
+    operation_statements: tuple[ast.OperationStatement, ...]
+    block_close: lark_cython.Token
+
+
+class _OperationArgumentsBlockData(msgspec.Struct, frozen=True):
+    arguments: tuple[ast.OperationArgumentStatement, ...]
+    block_close: lark_cython.Token
+
+
 class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Program]):
     """Builds an AST inline as the Lark parser reduces each rule."""
 
@@ -210,6 +221,144 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
         return cast("ast.GlobalTypedNameReference", items[1])
 
     @_strip_discard
+    def operation_definition(
+        self,
+        items: list[
+            lark_cython.Token
+            | ast.DefinitionGlobalNameContent
+            | _OperationDefinitionBlockData
+        ],
+    ) -> ast.OperationDefinition:
+        """Transform a value operation definition."""
+        keyword = cast("lark_cython.Token", items[0])
+        name = cast("ast.DefinitionGlobalNameContent", items[1])
+        block = cast("_OperationDefinitionBlockData", items[2])
+        return ast.OperationDefinition.from_name(
+            name=name,
+            views=block.views,
+            operation_statements=block.operation_statements,
+            location=self._location(start=keyword, end=block.block_close),
+        )
+
+    @_strip_discard
+    def operation_definition_block(
+        self,
+        items: list[
+            lark_cython.Token | ast.ViewDefinition | tuple[ast.OperationStatement, ...]
+        ],
+    ) -> _OperationDefinitionBlockData:
+        """Bundle the block's contents with the outer ``}`` token.
+
+        items: [*view_definitions, operation statements, CLOSE_BRACE token].
+        """
+        return _OperationDefinitionBlockData(
+            views=tuple(cast("list[ast.ViewDefinition]", items[:-2])),
+            operation_statements=cast("tuple[ast.OperationStatement, ...]", items[-2]),
+            block_close=cast("lark_cython.Token", items[-1]),
+        )
+
+    @_strip_discard
+    def view_definition(
+        self,
+        items: list[lark_cython.Token | ast.LocalNameContent | _LocalPositionBlockData],
+    ) -> ast.ViewDefinition:
+        """Transform a view definition."""
+        keyword = cast("lark_cython.Token", items[0])
+        local_name = cast("ast.LocalNameContent", items[1])
+        block = cast("_LocalPositionBlockData", items[2])
+        return ast.ViewDefinition.from_name(
+            local_name=local_name,
+            constraints=block.constraints,
+            location=self._location(start=keyword, end=block.block_close),
+        )
+
+    @_strip_discard
+    def operation_statements_block(
+        self, items: list[lark_cython.Token | ast.OperationStatement]
+    ) -> tuple[ast.OperationStatement, ...]:
+        """Collect the statements of an operation statements block.
+
+        items: [IT_DOES token, *statements, CLOSE_BRACE token].
+        """
+        return tuple(cast("list[ast.OperationStatement]", items[1:-1]))
+
+    @_strip_discard
+    def operation_execution_statement(
+        self,
+        items: list[
+            lark_cython.Token
+            | ast.GlobalTypedNameReference
+            | _OperationArgumentsBlockData
+        ],
+    ) -> ast.OperationExecutionStatement:
+        """Transform an operation execution statement.
+
+        items: [EXECUTE_THE token, operation name, optional arguments block data].
+        """
+        keyword = cast("lark_cython.Token", items[0])
+        operation = cast("ast.GlobalTypedNameReference", items[1])
+        if len(items) > 2:
+            block = cast("_OperationArgumentsBlockData", items[2])
+            return ast.OperationExecutionStatement(
+                operation=operation,
+                arguments=block.arguments,
+                location=self._location(start=keyword, end=block.block_close),
+            )
+        return ast.OperationExecutionStatement(
+            operation=operation,
+            arguments=(),
+            location=self._location_with_terminator(start=keyword, end=operation),
+        )
+
+    @_strip_discard
+    def operation_arguments_block(
+        self, items: list[lark_cython.Token | ast.OperationArgumentStatement]
+    ) -> _OperationArgumentsBlockData:
+        """Bundle the argument statements with the block's ``}`` token."""
+        return _OperationArgumentsBlockData(
+            arguments=tuple(cast("list[ast.OperationArgumentStatement]", items[:-1])),
+            block_close=cast("lark_cython.Token", items[-1]),
+        )
+
+    @_strip_discard
+    def operation_argument_statement(
+        self,
+        items: list[
+            lark_cython.Token
+            | ast.LocalTypedNameReference
+            | ast.PositionReference
+            | ast.Literal
+        ],
+    ) -> ast.OperationArgumentStatement:
+        """Transform an operation argument statement.
+
+        items: [WITH token, view name, position reference, view name, or
+        literal]. The
+        LOOKING_AT separator is discarded.
+        """
+        keyword = cast("lark_cython.Token", items[0])
+        view = cast("ast.LocalTypedNameReference", items[1])
+        looking_at = cast(
+            "ast.PositionReference | ast.LocalTypedNameReference | ast.Literal",
+            items[2],
+        )
+        return ast.OperationArgumentStatement(
+            view=view,
+            looking_at=looking_at,
+            location=self._location_with_terminator(start=keyword, end=looking_at),
+        )
+
+    @_strip_discard
+    def encoding_operation_execution_statement(
+        self, items: list[lark_cython.Token]
+    ) -> ast.EncodingOperationExecutionStatement:
+        """Transform the encoding operation execution statement."""
+        keyword = items[0]
+        return ast.EncodingOperationExecutionStatement(
+            location=self._location_with_terminator(start=keyword, end=keyword),
+        )
+
+    @_strip_discard
     def value_definition(
         self, items: list[lark_cython.Token | ast.DefinitionGlobalNameContent]
     ) -> ast.ValueDefinition:
@@ -289,6 +438,10 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
 
     def TO(self, _token: lark_cython.Token) -> object:  # noqa: N802
         """Discard the 'to' keyword token."""
+        return _DISCARD
+
+    def LOOKING_AT(self, _token: lark_cython.Token) -> object:  # noqa: N802
+        """Discard the 'looking at' keyword token."""
         return _DISCARD
 
     def CHAIN_SEPARATOR(self, _token: lark_cython.Token) -> object:  # noqa: N802
@@ -433,6 +586,14 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
     def ENCODING(self, _token: lark_cython.Token) -> ast.NameType:  # noqa: N802
         """Transform the encoding name type."""
         return ast.NameType.ENCODING
+
+    def OPERATION(self, _token: lark_cython.Token) -> ast.NameType:  # noqa: N802
+        """Transform the operation name type."""
+        return ast.NameType.OPERATION
+
+    def VIEW(self, _token: lark_cython.Token) -> ast.NameType:  # noqa: N802
+        """Transform the view name type."""
+        return ast.NameType.VIEW
 
     @_strip_discard
     def typed_global_name_reference(

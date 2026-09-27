@@ -1782,7 +1782,8 @@ operation_execution_end = terminator | operation_arguments_block ;
 
 An Operation Arguments Block contains Operation Argument Statements, which start
 with `with` followed by the name of one of the operation's interface views,
-followed by `looking at` and followed by a position reference or a literal.
+followed by `looking at` and followed by a position reference or a literal. We
+say that each view is "looking at" that position or literal.
 
 Arguments must be specified in the same order as the Interface View definitions
 are listed in the definition of the Value Operation.
@@ -1798,6 +1799,16 @@ operation_arguments_block =
 operation_argument_statement =
     "with", " ", local_view_name, " looking at ", ( position_reference | literal ), terminator ;
 ```
+
+### Execution Within Value Operations
+
+When being executed within a Value Operation Statements Block, an Operation
+Argument Statement may only look at a view or a literal, and may not look at a
+position. The views available to be looked at are the ones valid in the local
+scope of the Value Operation Statements Block.
+
+That is, within a Value Operation Statements Block, `position_reference` in
+`operation_argument_statement` is replaced by `local_view_name`.
 
 ### Matching View Requirements
 
