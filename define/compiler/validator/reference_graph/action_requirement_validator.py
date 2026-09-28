@@ -130,13 +130,6 @@ class ActionRequirementValidator:
             case position_occupancy.PositionOccupancyState.EMPTY:
                 self._tracker.assume_empty(local_position)
 
-    # TODO: Classify every Position Requirement once, in one batched tracker
-    # query, as either needing propagation or local violation checking. The
-    # current propagation pass inspects position state and particle provenance,
-    # records assumptions for propagated requirements, and then the checking
-    # pass queries every position again. A combined result must classify all
-    # requirements from the pre-assumption state and retain occupancy information
-    # for the requirements that need local violation checking.
     def propagate_action_requirements(
         self,
         action_chain: ast.ActionReference,

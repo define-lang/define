@@ -15,8 +15,6 @@ bazel_dep(name = "gazelle", version = "0.54.0")
 bazel_dep(name = "rules_proto", version = "7.1.0")
 bazel_dep(name = "rules_rs", version = "0.0.112")
 bazel_dep(name = "llvm", version = "0.8.24")
-
-# TODO: Upgrade when protobuf's macOS ARM protoc checksum is corrected upstream.
 bazel_dep(name = "protobuf", version = "36.2")
 bazel_dep(name = "protovalidate", version = "1.2.2")
 bazel_dep(name = "re2", version = "2025-11-05")
@@ -37,7 +35,7 @@ local_path_override(
     path = "vendored/re2",
 )
 
-# TODO: Upgrade to an aspect_rules_py release with PR #1523 and remove this override.
+# TODO: Upgrade to an aspect_rules_py release with PR #1538 and remove this override.
 git_override(
     module_name = "aspect_rules_py",
     commit = "e88321be110fbf2ed94f6e474297ad534c9a74d8",

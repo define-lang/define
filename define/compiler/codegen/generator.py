@@ -29,8 +29,6 @@ class CodeGenerator:
 
         Expects the direct-reference-first order from a validation with no errors.
         """
-        # TODO: Diagnose entry-point requirements that cannot be satisfied
-        # because no caller triggers the entry point.
         python_gen = python_generator.PythonLiteralCodeGenerator()
         python_gen.generate(
             codegen_input,
