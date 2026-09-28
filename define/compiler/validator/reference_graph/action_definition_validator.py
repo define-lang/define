@@ -768,7 +768,7 @@ class ActionDefinitionValidator:
         looked_at_validity: Iterator[bool],
         scope: scope_tracker.ScopeTracker,
     ):
-        diagnostic_count = len(self._diagnostics)
+        statement_diagnostics: list[diagnostics.Diagnostic] = []
         executed = self._operation_arguments_validator.get_executed_operation(stmt)
         looked_at_qualities: dict[ast.OperationArgumentStatement, frozenset[str]] = {}
         written_positions: list[ast.PositionReference] = []
@@ -788,7 +788,7 @@ class ActionDefinitionValidator:
             # read nor written.
             is_read = executed_view is not None and executed_view.is_input
             particle = self._analyze_looked_at_position(
-                position, scope, is_read=is_read
+                position, scope, statement_diagnostics, is_read=is_read
             )
             if particle is None:
                 continue
@@ -799,14 +799,14 @@ class ActionDefinitionValidator:
                 and particle.qualities.value_type is not None
             ):
                 written_positions.append(position)
-        self._diagnostics.extend(
+        statement_diagnostics.extend(
             self._operation_arguments_validator.validate(stmt, looked_at_qualities)
         )
+        self._diagnostics.extend(statement_diagnostics)
         # A failed statement still counts as writing its output views, so
         # later reads do not report the same mistake again as an unset value.
-        has_errors = len(self._diagnostics) > diagnostic_count
         for position in written_positions:
-            if has_errors:
+            if statement_diagnostics:
                 self._tracker.mark_value_error(position)
             else:
                 self._tracker.set_value(position, particle_info.ParticleValueState.SET)
@@ -817,14 +817,20 @@ class ActionDefinitionValidator:
         self,
         position: ast.PositionReference,
         scope: scope_tracker.ScopeTracker,
+        statement_diagnostics: list[diagnostics.Diagnostic],
         *,
         is_read: bool,
     ) -> particle_info.ParticleInfo | None:
-        """Validate a position looked at by an Operation Argument Statement, and return its particle when it can be checked further."""
+        """Validate a position looked at by an Operation Argument Statement, and return its particle when it can be checked further.
+
+        Diagnostics are added to ``statement_diagnostics``.
+        """
         self._dead_constraint_validator.mark_referenced_position_constraints_alive(
             position
         )
-        self._diagnostics.extend(self._chained_name_validator.validate(position, scope))
+        statement_diagnostics.extend(
+            self._chained_name_validator.validate(position, scope)
+        )
         if self._tracker.has_error_state(position):
             return None
         self._requirement_validator.infer_requirements_on_chain(
@@ -841,7 +847,7 @@ class ActionDefinitionValidator:
             position, is_read=is_read
         )
         if diagnostic is not None:
-            self._diagnostics.append(diagnostic)
+            statement_diagnostics.append(diagnostic)
         return self._tracker.get_occupant_or_none(position)
 
     def _analyze_create(
