@@ -714,7 +714,6 @@ py_test(
         "//define/compiler:conftest",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/validator/reference_graph:test_helpers",
-        "@pypi//pytest",
     ],
 )
 

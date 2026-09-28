@@ -1189,12 +1189,9 @@ class ActionDefinitionValidator:
                 ):
                     if guarantee.value_effect == particle_info.ParticleValueState.ERROR:
                         continue
-                    # TODO: Track the value-changing statement separately from
-                    # particle placement so this diagnostic identifies the Value
-                    # Setting Statement, including changes made by callees.
                     self._diagnostics.append(
                         diagnostics.DestructorChangesValueDiagnostic(
-                            location=guarantee.caused_by.location,
+                            location=self._tracker.value_written_at(position),
                             position_name=position_name,
                         )
                     )

@@ -1065,6 +1065,20 @@ def test_destructor_replaced_child_identity_unset(
     )
 
 
+def test_destructor_callee_cannot_set_contracted_value(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph().program_result
+    assert result.all_exceptions == []
+    assert len(result.all_diagnostics) == 1
+    diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.DestructorChangesValueDiagnostic)
+    assert diagnostic.location.file_path == PurePosixPath("cleanup.dfn")
+    assert diagnostic.location.line == 6
+    assert diagnostic.location.column == 30
+    assert diagnostic.position_name == "position</value>"
+
+
 def test_destructor_cannot_set_contracted_value(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -1758,17 +1772,17 @@ def test_value_error_recovered_by_literal(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.DestructorChangesValueDiagnostic)
-    assert diagnostic.location.file_path == PurePosixPath("cleanup.dfn")
-    assert diagnostic.location.line == 12
-    assert diagnostic.location.column == 26
-    assert diagnostic.position_name == "position</value>"
-    diagnostic = result.all_diagnostics[1]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.location.file_path == PurePosixPath("cleanup.dfn")
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 46
     assert diagnostic.position_name == "position<source>"
+    diagnostic = result.all_diagnostics[1]
+    assert isinstance(diagnostic, diagnostics.DestructorChangesValueDiagnostic)
+    assert diagnostic.location.file_path == PurePosixPath("cleanup.dfn")
+    assert diagnostic.location.line == 13
+    assert diagnostic.location.column == 26
+    assert diagnostic.position_name == "position</value>"
 
 
 def test_destructor_value_error(
@@ -1792,14 +1806,14 @@ def test_value_error_recovered_by_copy(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.DestructorChangesValueDiagnostic)
-    assert diagnostic.location.file_path == PurePosixPath("cleanup.dfn")
-    assert diagnostic.location.line == 12
-    assert diagnostic.location.column == 26
-    assert diagnostic.position_name == "position</value>"
-    diagnostic = result.all_diagnostics[1]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.location.file_path == PurePosixPath("cleanup.dfn")
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 46
     assert diagnostic.position_name == "position<source>"
+    diagnostic = result.all_diagnostics[1]
+    assert isinstance(diagnostic, diagnostics.DestructorChangesValueDiagnostic)
+    assert diagnostic.location.file_path == PurePosixPath("cleanup.dfn")
+    assert diagnostic.location.line == 14
+    assert diagnostic.location.column == 26
+    assert diagnostic.position_name == "position</value>"

@@ -1,0 +1,10 @@
+define the potential action<my.domain.com:my_lib:/setter> {
+    it also assigns the position</value>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        set the value of position</value> to literal<standard:/number>"5".
+        destroy the particle in position<run>.
+    }
+}

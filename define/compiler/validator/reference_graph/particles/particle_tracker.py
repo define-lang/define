@@ -362,13 +362,20 @@ class ParticleTracker:
         value_state: particle_info.ParticleValueState,
     ):
         """Apply a validated Value Setting Statement."""
-        self.get_occupant(position).set_value_state(value_state)
+        self.get_occupant(position).set_value_state(value_state, position.location)
         self._record_write(position.canonical_chained_name_tuple)
+
+    def value_written_at(self, key: ast.ChainedNameTuple) -> ast.SourceLocation:
+        """Return where this action last wrote the value of the particle at this position."""
+        written_at = self._store.occupant(key).value_written_at
+        if written_at is None:
+            raise ValueError(f"the value of the particle at {key} was not written")
+        return written_at
 
     def mark_value_error(self, position: ast.PositionReference):
         """Suppress further value failures without changing occupancy."""
         self.get_occupant(position).set_value_state(
-            particle_info.ParticleValueState.ERROR
+            particle_info.ParticleValueState.ERROR, position.location
         )
         self._record_write(position.canonical_chained_name_tuple)
 
@@ -709,7 +716,7 @@ class ParticleTracker:
                 )
             if (
                 key != info.origin_position.canonical_chained_name_tuple
-                or info.value_written
+                or info.value_written_at is not None
                 or info.value_state == particle_info.ParticleValueState.ERROR
             ):
                 return action_contract.OccupiedByExistingGuarantee(

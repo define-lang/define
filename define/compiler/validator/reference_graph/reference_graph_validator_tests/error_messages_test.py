@@ -9,8 +9,6 @@ import textwrap
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
-import pytest
-
 from define.compiler.data_structures import define_path
 from define.compiler.validator.reference_graph.test_helpers import (
     action_graph,
@@ -1263,11 +1261,6 @@ def test_propagated_value_requirement_format(validate_project: ValidateProject):
             File "consume.dfn", line 16, column 44""")
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="DestructorChangesValueDiagnostic uses the last particle placement instead of the value-changing statement.",
-)
 def test_destructor_changes_value_after_move_format(validate_project: ValidateProject):
     files = {
         "test.dfn": (

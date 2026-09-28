@@ -36,23 +36,26 @@ class ParticleInfo(msgspec.Struct, eq=False):
     # Whether this particle was passed in by the caller (trigger/inferred) vs created in the body.
     from_caller: bool = False
     value_state: ParticleValueState | None = None
-    # Assuming a value requirement does not change the caller's value.
-    value_written: bool = False
+    # Where this action last wrote the particle's value, or None when it has
+    # not written it. Assuming a value requirement does not write it.
+    value_written_at: ast.SourceLocation | None = None
 
     def value_effect(self) -> ParticleValueState | None:
         """Value change for a guarantee, or None when the value is unchanged."""
         if (
             self.from_caller
-            and not self.value_written
+            and self.value_written_at is None
             and self.value_state != ParticleValueState.ERROR
         ):
             return None
         return self.value_state
 
-    def set_value_state(self, state: ParticleValueState | None):
-        """Set the particle's value state; None leaves it unchanged."""
+    def set_value_state(
+        self, state: ParticleValueState | None, written_at: ast.SourceLocation
+    ):
+        """Set the particle's value state as written at ``written_at``; None leaves it unchanged."""
         if state is None:
             return
         self.value_state = state
         if state != ParticleValueState.ERROR:
-            self.value_written = True
+            self.value_written_at = written_at

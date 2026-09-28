@@ -548,7 +548,10 @@ class CalleeGuaranteeApplier:
         ):
             occupant = self._store.occupant_or_none(key)
             if occupant is not None:
-                occupant.set_value_state(guarantee.value_effect)
+                occupant.set_value_state(
+                    guarantee.value_effect,
+                    pending_guarantee.execution.action.get_last_action().location,
+                )
             return
 
         overwrites_subtree = key in application.origin_keys or (
@@ -592,7 +595,10 @@ class CalleeGuaranteeApplier:
                     qualities=guarantee.qualities,
                     origin_position=guarantee.origin_position,
                 )
-                new_info.set_value_state(guarantee.value_effect)
+                new_info.set_value_state(
+                    guarantee.value_effect,
+                    pending_guarantee.execution.action.get_last_action().location,
+                )
                 self._store.mark_occupied(key, new_info)
                 self._dead_interfaces.register_occupied_interface_child_position(
                     key,
@@ -643,10 +649,10 @@ class CalleeGuaranteeApplier:
             self._store.mark_error(dest_key, guarantee.caused_by)
             return
 
-        moved_info.set_value_state(guarantee.value_effect)
+        source_location = pending_guarantee.execution.action.get_last_action().location
+        moved_info.set_value_state(guarantee.value_effect, source_location)
         moved_info.last_position = guarantee.caused_by
         self._dead_interfaces.mark_particle_departed(moved_info)
-        source_location = pending_guarantee.execution.action.get_last_action().location
 
         def record_guaranteed_position(
             position: ast.ChainedNameTuple,
