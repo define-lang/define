@@ -15,9 +15,9 @@ import local.my_domain_com.my_lib.starter
 import local.my_domain_com.my_lib.wrapper
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.starter.Starter,
+        local.my_domain_com.my_lib.starter.StarterAction,
     )
 
     @override
@@ -25,29 +25,29 @@ class Test(literal.Action):
         source = literal.LocalPosition(
             "position<source>",
             constraints=(
-                local.my_domain_com.my_lib.wrapper.Wrapper,
-                local.my_domain_com.my_lib.crate.Crate,
+                local.my_domain_com.my_lib.wrapper.WrapperAction,
+                local.my_domain_com.my_lib.crate.CratePosition,
             ),
         )
         crate_source = literal.LocalPosition(
             "position<crate_source>",
             constraints=(
-                local.my_domain_com.my_lib.outer.Outer,
-                local.my_domain_com.my_lib.carrier.Carrier,
+                local.my_domain_com.my_lib.outer.OuterAction,
+                local.my_domain_com.my_lib.carrier.CarrierPosition,
             ),
         )
         carrier_source = literal.LocalPosition(
             "position<carrier_source>",
             constraints=(
-                local.my_domain_com.my_lib.middle.Middle,
-                local.my_domain_com.my_lib.payload.Payload,
+                local.my_domain_com.my_lib.middle.MiddleAction,
+                local.my_domain_com.my_lib.payload.PayloadPosition,
             ),
         )
         payload_source = literal.LocalPosition(
             "position<payload_source>",
             constraints=(
-                local.my_domain_com.my_lib.extra_destructor.ExtraDestructor,
-                local.my_domain_com.my_lib.known_destructor.KnownDestructor,
+                local.my_domain_com.my_lib.extra_destructor.ExtraDestructorAction,
+                local.my_domain_com.my_lib.known_destructor.KnownDestructorAction,
             ),
         )
         source.create_particle()
@@ -60,32 +60,32 @@ class Test(literal.Action):
         literal.record_operation("test.create(payload_source)")
         payload_source.move_particle_to(
             carrier_source.particle.get_position(
-                local.my_domain_com.my_lib.payload.Payload
+                local.my_domain_com.my_lib.payload.PayloadPosition
             )
         )
         literal.record_operation("test.move(payload_source, carrier_source::/payload)")
         carrier_source.move_particle_to(
             crate_source.particle.get_position(
-                local.my_domain_com.my_lib.carrier.Carrier
+                local.my_domain_com.my_lib.carrier.CarrierPosition
             )
         )
         literal.record_operation("test.move(carrier_source, crate_source::/carrier)")
         crate_source.move_particle_to(
             source.particle.get_position(
-                local.my_domain_com.my_lib.crate.Crate
+                local.my_domain_com.my_lib.crate.CratePosition
             )
         )
         literal.record_operation("test.move(crate_source, source::/crate)")
         source.move_particle_to(
             self.on_particle.get_action(
-                local.my_domain_com.my_lib.starter.Starter
+                local.my_domain_com.my_lib.starter.StarterAction
             ).get_interface_position(
                 "position<run>"
             )
         )
         literal.record_operation("test.move(source, /starter::run)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.starter.Starter
+            local.my_domain_com.my_lib.starter.StarterAction
         ).run(StarterDestructionContracts())
 
 
@@ -94,5 +94,5 @@ class StarterDestructionContracts(local.my_domain_com.my_lib.starter.StarterDest
     @override
     def run_destructors_position_run__position_crate__position_carrier__position_payload(self, particle: literal.Particle):
         particle.get_action(
-            local.my_domain_com.my_lib.extra_destructor.ExtraDestructor
+            local.my_domain_com.my_lib.extra_destructor.ExtraDestructorAction
         ).run()

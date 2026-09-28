@@ -19,9 +19,9 @@ class RightChildDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = RightChildDestructionContracts()
 
 
-class RightChild(literal.Action):
+class RightChildAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.marker.Marker,
+        local.my_domain_com.my_lib.marker.MarkerPosition,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -35,21 +35,21 @@ class RightChild(literal.Action):
     @override
     def run(self, destruction_contracts: RightChildDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.marker.Marker
+            local.my_domain_com.my_lib.marker.MarkerPosition
         ).particle.get_action(
-            local.my_domain_com.my_lib.destructor.Destructor
+            local.my_domain_com.my_lib.destructor.DestructorAction
         ).run()
         destruction_contracts.run_destructors_global_position_marker(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.marker.Marker
+                local.my_domain_com.my_lib.marker.MarkerPosition
             ).particle
         )
         destruction_contracts.destroy_global_position_marker(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.marker.Marker
+                local.my_domain_com.my_lib.marker.MarkerPosition
             ).particle
         )
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.marker.Marker
+            local.my_domain_com.my_lib.marker.MarkerPosition
         ).destroy_particle()
         literal.record_operation("right_child.destroy(/marker)")

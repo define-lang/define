@@ -8,43 +8,43 @@ import local.my_domain_com.my_lib.worker
 import local.my_domain_com.my_lib.y
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         gw = literal.LocalPosition(
             "position<gw>",
             constraints=(
-                local.my_domain_com.my_lib.worker.Worker,
+                local.my_domain_com.my_lib.worker.WorkerAction,
             ),
         )
         gw.create_particle()
         literal.record_operation("test.create(gw)")
         gw.particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<box>"
         ).create_particle()
         literal.record_operation("test.create(gw::/worker::box)")
         gw.particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<in>"
         ).create_particle()
         literal.record_operation("test.create(gw::/worker::in)")
         gw.particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).run()
         gw.particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<box>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.y.Y
+            local.my_domain_com.my_lib.y.YPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(gw::/worker::box::/y)")
         gw.particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<box>"
         ).destroy_particle()

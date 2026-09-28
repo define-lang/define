@@ -10,15 +10,15 @@ import local.my_domain_com.my_lib.left
 import local.my_domain_com.my_lib.right
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         source = literal.LocalPosition(
             "position<source>",
             constraints=(
-                local.my_domain_com.my_lib.box_a.BoxA,
-                local.my_domain_com.my_lib.box_b.BoxB,
+                local.my_domain_com.my_lib.box_a.BoxAPosition,
+                local.my_domain_com.my_lib.box_b.BoxBPosition,
             ),
         )
         stage_a = literal.LocalPosition(
@@ -30,8 +30,8 @@ class Test(literal.Action):
         workspace = literal.LocalPosition(
             "position<workspace>",
             constraints=(
-                local.my_domain_com.my_lib.box_a.BoxA,
-                local.my_domain_com.my_lib.box_b.BoxB,
+                local.my_domain_com.my_lib.box_a.BoxAPosition,
+                local.my_domain_com.my_lib.box_b.BoxBPosition,
             ),
         )
         moved_marker = literal.LocalPosition(
@@ -51,16 +51,16 @@ class Test(literal.Action):
         )
         source.create_particle()
         source.particle.get_position(
-            local.my_domain_com.my_lib.box_a.BoxA
+            local.my_domain_com.my_lib.box_a.BoxAPosition
         ).create_particle()
         source.particle.get_position(
-            local.my_domain_com.my_lib.box_a.BoxA
+            local.my_domain_com.my_lib.box_a.BoxAPosition
         ).destroy_particle()
         source.particle.get_position(
-            local.my_domain_com.my_lib.box_b.BoxB
+            local.my_domain_com.my_lib.box_b.BoxBPosition
         ).create_particle()
         source.particle.get_position(
-            local.my_domain_com.my_lib.box_b.BoxB
+            local.my_domain_com.my_lib.box_b.BoxBPosition
         ).destroy_particle()
         source.move_particle_to(
             stage_a
@@ -76,66 +76,66 @@ class Test(literal.Action):
         )
         workspace.create_particle()
         workspace.particle.get_position(
-            local.my_domain_com.my_lib.box_a.BoxA
+            local.my_domain_com.my_lib.box_a.BoxAPosition
         ).create_particle()
         workspace.particle.get_position(
-            local.my_domain_com.my_lib.box_a.BoxA
+            local.my_domain_com.my_lib.box_a.BoxAPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.left.Left
+            local.my_domain_com.my_lib.left.LeftPosition
         ).create_particle()
         workspace.particle.get_position(
-            local.my_domain_com.my_lib.box_a.BoxA
+            local.my_domain_com.my_lib.box_a.BoxAPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.right.Right
+            local.my_domain_com.my_lib.right.RightPosition
         ).create_particle()
         workspace.particle.get_position(
-            local.my_domain_com.my_lib.box_a.BoxA
+            local.my_domain_com.my_lib.box_a.BoxAPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.left.Left
+            local.my_domain_com.my_lib.left.LeftPosition
         ).move_particle_to(
             left_a_holder
         )
         workspace.particle.get_position(
-            local.my_domain_com.my_lib.box_a.BoxA
+            local.my_domain_com.my_lib.box_a.BoxAPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.right.Right
+            local.my_domain_com.my_lib.right.RightPosition
         ).move_particle_to(
             right_a_holder
         )
         workspace.particle.get_position(
-            local.my_domain_com.my_lib.box_a.BoxA
+            local.my_domain_com.my_lib.box_a.BoxAPosition
         ).destroy_particle()
         left_a_holder.destroy_particle()
         right_a_holder.destroy_particle()
         workspace.particle.get_position(
-            local.my_domain_com.my_lib.box_b.BoxB
+            local.my_domain_com.my_lib.box_b.BoxBPosition
         ).create_particle()
         workspace.particle.get_position(
-            local.my_domain_com.my_lib.box_b.BoxB
+            local.my_domain_com.my_lib.box_b.BoxBPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.left.Left
+            local.my_domain_com.my_lib.left.LeftPosition
         ).create_particle()
         workspace.particle.get_position(
-            local.my_domain_com.my_lib.box_b.BoxB
+            local.my_domain_com.my_lib.box_b.BoxBPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.right.Right
+            local.my_domain_com.my_lib.right.RightPosition
         ).create_particle()
         workspace.particle.get_position(
-            local.my_domain_com.my_lib.box_b.BoxB
+            local.my_domain_com.my_lib.box_b.BoxBPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.left.Left
+            local.my_domain_com.my_lib.left.LeftPosition
         ).move_particle_to(
             left_b_holder
         )
         workspace.particle.get_position(
-            local.my_domain_com.my_lib.box_b.BoxB
+            local.my_domain_com.my_lib.box_b.BoxBPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.right.Right
+            local.my_domain_com.my_lib.right.RightPosition
         ).move_particle_to(
             right_b_holder
         )
         workspace.particle.get_position(
-            local.my_domain_com.my_lib.box_b.BoxB
+            local.my_domain_com.my_lib.box_b.BoxBPosition
         ).destroy_particle()
         left_b_holder.destroy_particle()
         right_b_holder.destroy_particle()

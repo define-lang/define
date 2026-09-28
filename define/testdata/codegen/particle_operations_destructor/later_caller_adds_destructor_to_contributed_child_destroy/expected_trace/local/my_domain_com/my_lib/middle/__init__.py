@@ -25,9 +25,9 @@ class MiddleDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = MiddleDestructionContracts()
 
 
-class Middle(literal.Action):
+class MiddleAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.destroyer.Destroyer,
+        local.my_domain_com.my_lib.destroyer.DestroyerAction,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -37,7 +37,7 @@ class Middle(literal.Action):
                 literal.LocalPosition(
                     "position<target>",
                     constraints=(
-                        local.my_domain_com.my_lib.child.Child,
+                        local.my_domain_com.my_lib.child.ChildPosition,
                     ),
                 ),
             ],
@@ -51,7 +51,7 @@ class Middle(literal.Action):
         self.get_interface_position(
             "position<target>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).move_particle_to(
             retained_child
         )
@@ -60,7 +60,7 @@ class Middle(literal.Action):
             self.get_interface_position(
                 "position<target>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.child.Child
+                local.my_domain_com.my_lib.child.ChildPosition
             )
         )
         literal.record_operation("middle.move(retained_child, target::/child)")
@@ -68,14 +68,14 @@ class Middle(literal.Action):
             "position<target>"
         ).move_particle_to(
             self.on_particle.get_action(
-                local.my_domain_com.my_lib.destroyer.Destroyer
+                local.my_domain_com.my_lib.destroyer.DestroyerAction
             ).get_interface_position(
                 "position<target>"
             )
         )
         literal.record_operation("middle.move(target, /destroyer::target)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.destroyer.Destroyer
+            local.my_domain_com.my_lib.destroyer.DestroyerAction
         ).run(
             DestroyerDestructionContracts(
                 destruction_contracts.run_destructors_position_target__position_child,
@@ -103,7 +103,7 @@ class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.Destroy
     def run_destructors_position_target(self, particle: literal.Particle):
         self._run_destructors_position_target__position_child(
             particle.get_position(
-                local.my_domain_com.my_lib.child.Child
+                local.my_domain_com.my_lib.child.ChildPosition
             ).particle
         )
         self._run_destructors_position_target(
@@ -114,13 +114,13 @@ class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.Destroy
     def destroy_position_target(self, particle: literal.Particle):
         self._destroy_position_target__position_child(
             particle.get_position(
-                local.my_domain_com.my_lib.child.Child
+                local.my_domain_com.my_lib.child.ChildPosition
             ).particle
         )
         self._destroy_position_target(
             particle
         )
         particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).destroy_particle()
         literal.record_operation("destroyer.destroy(holder::/child)")

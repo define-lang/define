@@ -7,7 +7,7 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.d
 
 
-class C(literal.GlobalPosition):
+class CPosition(literal.GlobalPosition):
     constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.d.D,
+        local.my_domain_com.my_lib.d.DPosition,
     )

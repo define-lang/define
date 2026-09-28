@@ -11,9 +11,9 @@ import local.my_domain_com.my_lib.second_destructor
 import local.my_domain_com.my_lib.third_destructor
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.destroyer.Destroyer,
+        local.my_domain_com.my_lib.destroyer.DestroyerAction,
     )
 
     @override
@@ -21,30 +21,30 @@ class Test(literal.Action):
         carrier = literal.LocalPosition(
             "position<carrier>",
             constraints=(
-                local.my_domain_com.my_lib.first_destructor.FirstDestructor,
-                local.my_domain_com.my_lib.second.Second,
-                local.my_domain_com.my_lib.second_destructor.SecondDestructor,
-                local.my_domain_com.my_lib.third_destructor.ThirdDestructor,
+                local.my_domain_com.my_lib.first_destructor.FirstDestructorAction,
+                local.my_domain_com.my_lib.second.SecondPosition,
+                local.my_domain_com.my_lib.second_destructor.SecondDestructorAction,
+                local.my_domain_com.my_lib.third_destructor.ThirdDestructorAction,
             ),
         )
         carrier.create_particle()
         literal.record_operation("test.create(carrier)")
         carrier.particle.get_position(
-            local.my_domain_com.my_lib.second.Second
+            local.my_domain_com.my_lib.second.SecondPosition
         ).create_particle()
         literal.record_operation("test.create(carrier::/second)")
         carrier.particle.get_position(
-            local.my_domain_com.my_lib.second.Second
+            local.my_domain_com.my_lib.second.SecondPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(carrier::/second)")
         carrier.move_particle_to(
             self.on_particle.get_action(
-                local.my_domain_com.my_lib.destroyer.Destroyer
+                local.my_domain_com.my_lib.destroyer.DestroyerAction
             ).get_interface_position(
                 "position<target>"
             )
         )
         literal.record_operation("test.move(carrier, /destroyer::target)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.destroyer.Destroyer
+            local.my_domain_com.my_lib.destroyer.DestroyerAction
         ).run()

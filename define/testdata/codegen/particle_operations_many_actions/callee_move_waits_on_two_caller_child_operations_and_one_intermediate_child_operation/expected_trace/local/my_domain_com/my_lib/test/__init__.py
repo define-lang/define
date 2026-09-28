@@ -10,10 +10,10 @@ import local.my_domain_com.my_lib.second
 import local.my_domain_com.my_lib.third
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.input.Input,
-        local.my_domain_com.my_lib.middle_action.MiddleAction,
+        local.my_domain_com.my_lib.input.InputPosition,
+        local.my_domain_com.my_lib.middle_action.MiddleActionAction,
     )
 
     @override
@@ -25,19 +25,19 @@ class Test(literal.Action):
             "position<third_holder>",
         )
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.input.Input
+            local.my_domain_com.my_lib.input.InputPosition
         ).create_particle()
         literal.record_operation("test.create(/input)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.input.Input
+            local.my_domain_com.my_lib.input.InputPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.second.Second
+            local.my_domain_com.my_lib.second.SecondPosition
         ).create_particle()
         literal.record_operation("test.create(/input::/second)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.input.Input
+            local.my_domain_com.my_lib.input.InputPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.second.Second
+            local.my_domain_com.my_lib.second.SecondPosition
         ).move_particle_to(
             second_holder
         )
@@ -45,15 +45,15 @@ class Test(literal.Action):
         second_holder.destroy_particle()
         literal.record_operation("test.destroy(second_holder)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.input.Input
+            local.my_domain_com.my_lib.input.InputPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.third.Third
+            local.my_domain_com.my_lib.third.ThirdPosition
         ).create_particle()
         literal.record_operation("test.create(/input::/third)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.input.Input
+            local.my_domain_com.my_lib.input.InputPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.third.Third
+            local.my_domain_com.my_lib.third.ThirdPosition
         ).move_particle_to(
             third_holder
         )
@@ -61,16 +61,16 @@ class Test(literal.Action):
         third_holder.destroy_particle()
         literal.record_operation("test.destroy(third_holder)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.middle_action.MiddleAction
+            local.my_domain_com.my_lib.middle_action.MiddleActionAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("test.create(/middle_action::trigger_pos)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.middle_action.MiddleAction
+            local.my_domain_com.my_lib.middle_action.MiddleActionAction
         ).run()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.middle_action.MiddleAction
+            local.my_domain_com.my_lib.middle_action.MiddleActionAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

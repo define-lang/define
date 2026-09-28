@@ -9,9 +9,9 @@ import local.my_domain_com.my_lib.destination
 import local.my_domain_com.my_lib.item
 
 
-class Consumer(literal.Action):
+class ConsumerAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.box.Box,
+        local.my_domain_com.my_lib.box.BoxPosition,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -25,20 +25,20 @@ class Consumer(literal.Action):
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.box.Box
+            local.my_domain_com.my_lib.box.BoxPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.item.Item
+            local.my_domain_com.my_lib.item.ItemPosition
         ).create_particle()
         literal.record_operation("consumer.create(/box::/item)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.box.Box
+            local.my_domain_com.my_lib.box.BoxPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.item.Item
+            local.my_domain_com.my_lib.item.ItemPosition
         ).move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.box.Box
+                local.my_domain_com.my_lib.box.BoxPosition
             ).particle.get_position(
-                local.my_domain_com.my_lib.destination.Destination
+                local.my_domain_com.my_lib.destination.DestinationPosition
             )
         )
         literal.record_operation("consumer.move(/box::/item, /box::/destination)")

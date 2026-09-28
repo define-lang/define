@@ -8,27 +8,27 @@ import local.my_domain_com.my_lib.first
 import local.my_domain_com.my_lib.marker
 
 
-class FirstDestructor(literal.Action):
+class FirstDestructorAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.first.First,
-        local.my_domain_com.my_lib.marker.Marker,
+        local.my_domain_com.my_lib.first.FirstPosition,
+        local.my_domain_com.my_lib.marker.MarkerPosition,
     )
 
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.first.First
+            local.my_domain_com.my_lib.first.FirstPosition
         ).create_particle()
         literal.record_operation("first_destructor.create(/first)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.first.First
+            local.my_domain_com.my_lib.first.FirstPosition
         ).destroy_particle()
         literal.record_operation("first_destructor.destroy(/first)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.marker.Marker
+            local.my_domain_com.my_lib.marker.MarkerPosition
         ).create_particle()
         literal.record_operation("first_destructor.create(/marker)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.marker.Marker
+            local.my_domain_com.my_lib.marker.MarkerPosition
         ).destroy_particle()
         literal.record_operation("first_destructor.destroy(/marker)")

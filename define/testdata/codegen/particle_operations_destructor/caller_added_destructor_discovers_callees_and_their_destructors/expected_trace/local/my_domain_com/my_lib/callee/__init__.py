@@ -16,7 +16,7 @@ class CalleeDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = CalleeDestructionContracts()
 
 
-class Callee(literal.Action):
+class CalleeAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(

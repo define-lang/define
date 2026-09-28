@@ -7,7 +7,7 @@ from define.runtime import literal
 import local.a_b.cd.b
 
 
-class A(literal.GlobalPosition):
+class APosition(literal.GlobalPosition):
     constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.a_b.cd.b.B,
+        local.a_b.cd.b.BAction,
     )

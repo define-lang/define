@@ -24,7 +24,7 @@ class DestroyerDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = DestroyerDestructionContracts()
 
 
-class Destroyer(literal.Action):
+class DestroyerAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -33,13 +33,13 @@ class Destroyer(literal.Action):
                 literal.LocalPosition(
                     "position<target>",
                     constraints=(
-                        local.my_domain_com.my_lib.first_destructor.FirstDestructor,
-                        local.my_domain_com.my_lib.second.Second,
-                        local.my_domain_com.my_lib.second_destructor.SecondDestructor,
-                        local.my_domain_com.my_lib.third_destructor.ThirdDestructor,
-                        local.my_domain_com.my_lib.fourth.Fourth,
-                        local.my_domain_com.my_lib.fourth_destructor.FourthDestructor,
-                        local.my_domain_com.my_lib.fifth_destructor.FifthDestructor,
+                        local.my_domain_com.my_lib.first_destructor.FirstDestructorAction,
+                        local.my_domain_com.my_lib.second.SecondPosition,
+                        local.my_domain_com.my_lib.second_destructor.SecondDestructorAction,
+                        local.my_domain_com.my_lib.third_destructor.ThirdDestructorAction,
+                        local.my_domain_com.my_lib.fourth.FourthPosition,
+                        local.my_domain_com.my_lib.fourth_destructor.FourthDestructorAction,
+                        local.my_domain_com.my_lib.fifth_destructor.FifthDestructorAction,
                     ),
                 ),
             ],
@@ -50,51 +50,51 @@ class Destroyer(literal.Action):
         self.get_interface_position(
             "position<target>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.second.Second
+            local.my_domain_com.my_lib.second.SecondPosition
         ).create_particle()
         literal.record_operation("destroyer.create(target::/second)")
         self.get_interface_position(
             "position<target>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.second.Second
+            local.my_domain_com.my_lib.second.SecondPosition
         ).destroy_particle()
         literal.record_operation("destroyer.destroy(target::/second)")
         self.get_interface_position(
             "position<target>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.fourth.Fourth
+            local.my_domain_com.my_lib.fourth.FourthPosition
         ).create_particle()
         literal.record_operation("destroyer.create(target::/fourth)")
         self.get_interface_position(
             "position<target>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.fourth.Fourth
+            local.my_domain_com.my_lib.fourth.FourthPosition
         ).destroy_particle()
         literal.record_operation("destroyer.destroy(target::/fourth)")
         self.get_interface_position(
             "position<target>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.first_destructor.FirstDestructor
+            local.my_domain_com.my_lib.first_destructor.FirstDestructorAction
         ).run()
         self.get_interface_position(
             "position<target>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.second_destructor.SecondDestructor
+            local.my_domain_com.my_lib.second_destructor.SecondDestructorAction
         ).run()
         self.get_interface_position(
             "position<target>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.third_destructor.ThirdDestructor
+            local.my_domain_com.my_lib.third_destructor.ThirdDestructorAction
         ).run()
         self.get_interface_position(
             "position<target>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.fourth_destructor.FourthDestructor
+            local.my_domain_com.my_lib.fourth_destructor.FourthDestructorAction
         ).run()
         self.get_interface_position(
             "position<target>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.fifth_destructor.FifthDestructor
+            local.my_domain_com.my_lib.fifth_destructor.FifthDestructorAction
         ).run()
         destruction_contracts.run_destructors_position_target(
             self.get_interface_position(

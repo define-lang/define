@@ -8,27 +8,27 @@ import local.my_domain_com.my_lib.destination
 import local.my_domain_com.my_lib.origin
 
 
-class ExtraDestructor(literal.Action):
+class ExtraDestructorAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.origin.Origin,
-        local.my_domain_com.my_lib.destination.Destination,
+        local.my_domain_com.my_lib.origin.OriginPosition,
+        local.my_domain_com.my_lib.destination.DestinationPosition,
     )
 
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.origin.Origin
+            local.my_domain_com.my_lib.origin.OriginPosition
         ).move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.destination.Destination
+                local.my_domain_com.my_lib.destination.DestinationPosition
             )
         )
         literal.record_operation("extra_destructor.move(/origin, /destination)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.destination.Destination
+            local.my_domain_com.my_lib.destination.DestinationPosition
         ).move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.origin.Origin
+                local.my_domain_com.my_lib.origin.OriginPosition
             )
         )
         literal.record_operation("extra_destructor.move(/destination, /origin)")

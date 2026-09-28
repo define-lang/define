@@ -3,5 +3,5 @@
 from define.runtime import literal
 
 
-class Holder(literal.GlobalPosition):
+class HolderPosition(literal.GlobalPosition):
     pass

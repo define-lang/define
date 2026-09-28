@@ -24,7 +24,7 @@ class MiddleDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = MiddleDestructionContracts()
 
 
-class Middle(literal.Action):
+class MiddleAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -34,7 +34,7 @@ class Middle(literal.Action):
                 literal.LocalPosition(
                     "position<box>",
                     constraints=(
-                        local.my_domain_com.my_lib.worker.Worker,
+                        local.my_domain_com.my_lib.worker.WorkerAction,
                     ),
                 ),
                 literal.LocalPosition("position<final>"),
@@ -46,7 +46,7 @@ class Middle(literal.Action):
         self.get_interface_position(
             "position<box>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<input>"
         ).create_particle()
@@ -54,7 +54,7 @@ class Middle(literal.Action):
         self.get_interface_position(
             "position<box>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
@@ -62,12 +62,12 @@ class Middle(literal.Action):
         self.get_interface_position(
             "position<box>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).run()
         self.get_interface_position(
             "position<box>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<output>"
         ).move_particle_to(

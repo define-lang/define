@@ -8,27 +8,27 @@ import local.my_domain_com.my_lib.empty_marker
 import local.my_domain_com.my_lib.marker
 
 
-class ExtraDestructor(literal.Action):
+class ExtraDestructorAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.marker.Marker,
-        local.my_domain_com.my_lib.empty_marker.EmptyMarker,
+        local.my_domain_com.my_lib.marker.MarkerPosition,
+        local.my_domain_com.my_lib.empty_marker.EmptyMarkerPosition,
     )
 
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.marker.Marker
+            local.my_domain_com.my_lib.marker.MarkerPosition
         ).move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.empty_marker.EmptyMarker
+                local.my_domain_com.my_lib.empty_marker.EmptyMarkerPosition
             )
         )
         literal.record_operation("extra_destructor.move(/marker, /empty_marker)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.empty_marker.EmptyMarker
+            local.my_domain_com.my_lib.empty_marker.EmptyMarkerPosition
         ).move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.marker.Marker
+                local.my_domain_com.my_lib.marker.MarkerPosition
             )
         )
         literal.record_operation("extra_destructor.move(/empty_marker, /marker)")

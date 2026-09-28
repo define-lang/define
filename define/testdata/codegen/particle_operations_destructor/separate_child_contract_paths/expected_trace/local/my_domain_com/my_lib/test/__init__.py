@@ -12,9 +12,9 @@ import local.my_domain_com.my_lib.parent_destructor
 import local.my_domain_com.my_lib.right
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.destroyer.Destroyer,
+        local.my_domain_com.my_lib.destroyer.DestroyerAction,
     )
 
     @override
@@ -22,21 +22,21 @@ class Test(literal.Action):
         source = literal.LocalPosition(
             "position<source>",
             constraints=(
-                local.my_domain_com.my_lib.left.Left,
-                local.my_domain_com.my_lib.right.Right,
-                local.my_domain_com.my_lib.parent_destructor.ParentDestructor,
+                local.my_domain_com.my_lib.left.LeftPosition,
+                local.my_domain_com.my_lib.right.RightPosition,
+                local.my_domain_com.my_lib.parent_destructor.ParentDestructorAction,
             ),
         )
         left_source = literal.LocalPosition(
             "position<left_source>",
             constraints=(
-                local.my_domain_com.my_lib.extra.Extra,
+                local.my_domain_com.my_lib.extra.ExtraPosition,
             ),
         )
         right_source = literal.LocalPosition(
             "position<right_source>",
             constraints=(
-                local.my_domain_com.my_lib.child_destructor.ChildDestructor,
+                local.my_domain_com.my_lib.child_destructor.ChildDestructorAction,
             ),
         )
         source.create_particle()
@@ -44,12 +44,12 @@ class Test(literal.Action):
         left_source.create_particle()
         literal.record_operation("test.create(left_source)")
         left_source.particle.get_position(
-            local.my_domain_com.my_lib.extra.Extra
+            local.my_domain_com.my_lib.extra.ExtraPosition
         ).create_particle()
         literal.record_operation("test.create(left_source::/extra)")
         left_source.move_particle_to(
             source.particle.get_position(
-                local.my_domain_com.my_lib.left.Left
+                local.my_domain_com.my_lib.left.LeftPosition
             )
         )
         literal.record_operation("test.move(left_source, source::/left)")
@@ -57,20 +57,20 @@ class Test(literal.Action):
         literal.record_operation("test.create(right_source)")
         right_source.move_particle_to(
             source.particle.get_position(
-                local.my_domain_com.my_lib.right.Right
+                local.my_domain_com.my_lib.right.RightPosition
             )
         )
         literal.record_operation("test.move(right_source, source::/right)")
         source.move_particle_to(
             self.on_particle.get_action(
-                local.my_domain_com.my_lib.destroyer.Destroyer
+                local.my_domain_com.my_lib.destroyer.DestroyerAction
             ).get_interface_position(
                 "position<target>"
             )
         )
         literal.record_operation("test.move(source, /destroyer::target)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.destroyer.Destroyer
+            local.my_domain_com.my_lib.destroyer.DestroyerAction
         ).run(DestroyerDestructionContracts())
 
 
@@ -79,18 +79,18 @@ class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.Destroy
     @override
     def destroy_position_target__position_left(self, particle: literal.Particle):
         particle.get_position(
-            local.my_domain_com.my_lib.extra.Extra
+            local.my_domain_com.my_lib.extra.ExtraPosition
         ).destroy_particle()
         literal.record_operation("destroyer.destroy(target::/left::/extra)")
 
     @override
     def run_destructors_position_target__position_right(self, particle: literal.Particle):
         particle.get_action(
-            local.my_domain_com.my_lib.child_destructor.ChildDestructor
+            local.my_domain_com.my_lib.child_destructor.ChildDestructorAction
         ).run()
 
     @override
     def run_destructors_position_target(self, particle: literal.Particle):
         particle.get_action(
-            local.my_domain_com.my_lib.parent_destructor.ParentDestructor
+            local.my_domain_com.my_lib.parent_destructor.ParentDestructorAction
         ).run()

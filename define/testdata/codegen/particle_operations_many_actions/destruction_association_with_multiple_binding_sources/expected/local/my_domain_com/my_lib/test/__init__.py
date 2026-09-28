@@ -14,13 +14,13 @@ import local.my_domain_com.my_lib.guaranteed_parent
 import local.my_domain_com.my_lib.mover
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.guaranteed_parent.GuaranteedParent,
-        local.my_domain_com.my_lib.caller_parent.CallerParent,
-        local.my_domain_com.my_lib.fill_a.FillA,
-        local.my_domain_com.my_lib.fill_b.FillB,
-        local.my_domain_com.my_lib.mover.Mover,
+        local.my_domain_com.my_lib.guaranteed_parent.GuaranteedParentPosition,
+        local.my_domain_com.my_lib.caller_parent.CallerParentPosition,
+        local.my_domain_com.my_lib.fill_a.FillAAction,
+        local.my_domain_com.my_lib.fill_b.FillBAction,
+        local.my_domain_com.my_lib.mover.MoverAction,
     )
 
     @override
@@ -28,67 +28,67 @@ class Test(literal.Action):
         trash = literal.LocalPosition(
             "position<trash>",
             constraints=(
-                local.my_domain_com.my_lib.caller_only.CallerOnly,
+                local.my_domain_com.my_lib.caller_only.CallerOnlyPosition,
             ),
         )
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.guaranteed_parent.GuaranteedParent
+            local.my_domain_com.my_lib.guaranteed_parent.GuaranteedParentPosition
         ).create_particle()
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.caller_parent.CallerParent
+            local.my_domain_com.my_lib.caller_parent.CallerParentPosition
         ).create_particle()
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.caller_parent.CallerParent
+            local.my_domain_com.my_lib.caller_parent.CallerParentPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.child_a.ChildA
+            local.my_domain_com.my_lib.child_a.ChildAPosition
         ).create_particle()
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.caller_parent.CallerParent
+            local.my_domain_com.my_lib.caller_parent.CallerParentPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.child_b.ChildB
+            local.my_domain_com.my_lib.child_b.ChildBPosition
         ).create_particle()
         trash.create_particle()
         trash.particle.get_position(
-            local.my_domain_com.my_lib.caller_only.CallerOnly
+            local.my_domain_com.my_lib.caller_only.CallerOnlyPosition
         ).create_particle()
         trash.move_particle_to(
             self.on_particle.get_action(
-                local.my_domain_com.my_lib.mover.Mover
+                local.my_domain_com.my_lib.mover.MoverAction
             ).get_interface_position(
                 "position<discard>"
             )
         )
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.fill_a.FillA
+            local.my_domain_com.my_lib.fill_a.FillAAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.fill_a.FillA
+            local.my_domain_com.my_lib.fill_a.FillAAction
         ).run()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.fill_b.FillB
+            local.my_domain_com.my_lib.fill_b.FillBAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.fill_b.FillB
+            local.my_domain_com.my_lib.fill_b.FillBAction
         ).run()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.mover.Mover
+            local.my_domain_com.my_lib.mover.MoverAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.mover.Mover
+            local.my_domain_com.my_lib.mover.MoverAction
         ).run(MoverDestructionContracts())
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.fill_a.FillA
+            local.my_domain_com.my_lib.fill_a.FillAAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.fill_b.FillB
+            local.my_domain_com.my_lib.fill_b.FillBAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
@@ -99,5 +99,5 @@ class MoverDestructionContracts(local.my_domain_com.my_lib.mover.MoverDestructio
     @override
     def destroy_position_discard(self, particle: literal.Particle):
         particle.get_position(
-            local.my_domain_com.my_lib.caller_only.CallerOnly
+            local.my_domain_com.my_lib.caller_only.CallerOnlyPosition
         ).destroy_particle()

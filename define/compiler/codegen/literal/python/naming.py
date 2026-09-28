@@ -19,8 +19,6 @@ if typing.TYPE_CHECKING:
 
 _AUTHORITY_CHAR_TABLE = str.maketrans(".-~/", "____")
 _RESERVED_NAMES = (*keyword.kwlist, "self", "literal", "destruction_contracts")
-# Class names must not shadow the typing imports used by generated annotations.
-_RESERVED_CLASS_NAMES = {"ClassVar"}
 
 RUN_DESTRUCTORS_PREFIX = "run_destructors_"
 DESTROY_PREFIX = "destroy_"
@@ -53,6 +51,17 @@ def _truncate_module_component(component: str) -> str:
     prefix_byte_limit = _MODULE_COMPONENT_BYTE_LIMIT - len(suffix)
     prefix = component[:prefix_byte_limit]
     return prefix + suffix
+
+
+def _escape_module_component(component: str) -> str:
+    """Make a module-name component importable without colliding with another.
+
+    Python keywords cannot appear in an ``import`` statement. Appending ``_``
+    to every component that already ends in ``_`` keeps the escaping one-to-one.
+    """
+    if keyword.iskeyword(component) or component.endswith("_"):
+        return component + "_"
+    return component
 
 
 class ClassReference(msgspec.Struct):
@@ -126,12 +135,20 @@ class NameConverter:
         self._authority_names = {}
         self._used_authority_names = set()
 
-    def class_name(self, path: define_path.DefinePath) -> str:
-        """Convert a definition path to a PascalCase class name.
+    def class_name(
+        self,
+        typed_global_name: ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
+    ) -> str:
+        """Convert a global name to a PascalCase class name ending in its name type.
 
-        Results are cached so the same path always returns the same name.
+        Results are cached so the same name always returns the same class name.
         """
-        return self._class_name(path, "")
+        # Definitions of different name types at the same path share a Python
+        # module, so the name type keeps their classes apart.
+        return self._class_name(
+            typed_global_name.name_content.path.relative_path,
+            typed_global_name.name_type.value.capitalize(),
+        )
 
     def destruction_contract_class_name(self, path: define_path.DefinePath) -> str:
         """Convert an action path to its destruction-contract class name."""
@@ -142,8 +159,6 @@ class NameConverter:
         if key in self._class_names:
             return self._class_names[key]
         name = _path_to_pascal(path) + suffix
-        if name in _RESERVED_CLASS_NAMES:
-            name += "_"
         self._class_names[key] = name
         return name
 
@@ -164,7 +179,7 @@ class NameConverter:
         """
         if authority in self._authority_names:
             return self._authority_names[authority]
-        raw = _authority_to_module_segment(authority)
+        raw = _escape_module_component(_authority_to_module_segment(authority))
         safe = raw
         while safe in self._used_authority_names:
             safe += "_"
@@ -178,12 +193,14 @@ class NameConverter:
         # Only the standard universe is written without an authority.
         if fqun.authority is not None:
             if fqun.multiverse is not None:
-                parts.append(fqun.multiverse.name)
+                parts.append(_escape_module_component(fqun.multiverse.name))
             else:
                 parts.append(constants.DEFAULT_MULTIVERSE)
             parts.append(self.authority_segment(fqun.authority.name))
-        parts.append(fqun.universe.name)
-        parts.extend(path.relative_path.parts)
+        parts.append(_escape_module_component(fqun.universe.name))
+        parts.extend(
+            _escape_module_component(segment) for segment in path.relative_path.parts
+        )
         return [_truncate_module_component(part) for part in parts]
 
     def module_name(self, name_content: ast.DefinitionGlobalNameContent) -> str:
@@ -223,7 +240,7 @@ class NameConverter:
         if existing is not None:
             return existing
         name_content = typed_global_name.name_content
-        cls_name = self.class_name(name_content.path.relative_path)
+        cls_name = self.class_name(typed_global_name)
         if isinstance(typed_global_name, ast.GlobalTypedNameReference):
             fqun = typed_global_name.effective_fqun
         else:

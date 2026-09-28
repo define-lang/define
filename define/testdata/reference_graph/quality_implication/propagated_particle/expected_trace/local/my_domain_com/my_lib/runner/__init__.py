@@ -25,7 +25,7 @@ class RunnerDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = RunnerDestructionContracts()
 
 
-class Runner(literal.Action):
+class RunnerAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -35,7 +35,7 @@ class Runner(literal.Action):
                 literal.LocalPosition(
                     "position<wrapper>",
                     constraints=(
-                        local.my_domain_com.my_lib.middle.Middle,
+                        local.my_domain_com.my_lib.middle.MiddleAction,
                     ),
                 ),
             ],
@@ -46,7 +46,7 @@ class Runner(literal.Action):
         self.get_interface_position(
             "position<wrapper>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<box>"
         ).create_particle()
@@ -54,16 +54,16 @@ class Runner(literal.Action):
         self.get_interface_position(
             "position<wrapper>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<box>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.implier.Implier
+            local.my_domain_com.my_lib.implier.ImplierAction
         ).run()
         self.get_interface_position(
             "position<wrapper>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
@@ -71,7 +71,7 @@ class Runner(literal.Action):
         self.get_interface_position(
             "position<wrapper>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).run()
         destruction_contracts.run_destructors_position_wrapper(
             self.get_interface_position(

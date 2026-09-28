@@ -5,7 +5,6 @@ from pathlib import Path
 
 from define.compiler import ast
 from define.compiler.codegen.literal.python import naming
-from define.compiler.data_structures import define_path
 
 _LOCATION = ast.start_of_file_location()
 _FQUN = ast.Fqun(
@@ -16,9 +15,9 @@ _FQUN = ast.Fqun(
 )
 
 
-def _action_name(path: str) -> ast.GlobalTypedNameInDefinition:
+def _typed_name(name_type: ast.NameType, path: str) -> ast.GlobalTypedNameInDefinition:
     return ast.GlobalTypedNameInDefinition(
-        name_type=ast.NameType.ACTION,
+        name_type=name_type,
         name_content=ast.DefinitionGlobalNameContent(
             fqun=_FQUN,
             path=ast.GlobalPathName(name=path, location=_LOCATION),
@@ -28,38 +27,50 @@ def _action_name(path: str) -> ast.GlobalTypedNameInDefinition:
     )
 
 
+def _action_name(path: str) -> ast.GlobalTypedNameInDefinition:
+    return _typed_name(ast.NameType.ACTION, path)
+
+
 def test_class_name_normal():
     converter = naming.NameConverter()
-    assert converter.class_name(define_path.DefinePath("normal")) == "Normal"
+    assert converter.class_name(_action_name("/normal")) == "NormalAction"
 
 
 def test_class_name_multi_segment():
     converter = naming.NameConverter()
-    assert converter.class_name(define_path.DefinePath("my_action")) == "MyAction"
+    assert converter.class_name(_action_name("/my_thing")) == "MyThingAction"
 
 
-def test_class_name_avoids_imported_name():
+def test_class_names_at_one_path_end_in_their_name_types():
     converter = naming.NameConverter()
-    assert converter.class_name(define_path.DefinePath("class_var")) == "ClassVar_"
+    assert converter.class_name(_typed_name(ast.NameType.POSITION, "/thing")) == (
+        "ThingPosition"
+    )
+    assert converter.class_name(_typed_name(ast.NameType.ACTION, "/thing")) == (
+        "ThingAction"
+    )
+    assert converter.class_name(_typed_name(ast.NameType.VALUE, "/thing")) == (
+        "ThingValue"
+    )
 
 
-def test_class_name_can_match_builtin_name():
+def test_class_name_cannot_match_imported_name():
     converter = naming.NameConverter()
-    assert converter.class_name(define_path.DefinePath("type_error")) == "TypeError"
+    assert converter.class_name(_action_name("/class_var")) == "ClassVarAction"
 
 
 def test_class_name_cached():
     converter = naming.NameConverter()
-    first = converter.class_name(define_path.DefinePath("class_var"))
-    second = converter.class_name(define_path.DefinePath("class_var"))
-    assert first == second == "ClassVar_"
+    first = converter.class_name(_action_name("/class_var"))
+    second = converter.class_name(_action_name("/class_var"))
+    assert first == second == "ClassVarAction"
 
 
 def test_class_names_in_different_modules_can_match():
     converter = naming.NameConverter()
-    first = converter.class_name(define_path.DefinePath("class_var"))
-    second = converter.class_name(define_path.DefinePath("class_var_"))
-    assert first == second == "ClassVar_"
+    first = converter.class_name(_action_name("/class_var"))
+    second = converter.class_name(_action_name("/class__var"))
+    assert first == second == "ClassVarAction"
 
 
 def test_class_reference_cached():
@@ -93,8 +104,27 @@ def test_class_reference_in_standard_universe():
         location=_LOCATION,
     )
     assert converter.class_reference(value_name) == naming.ClassReference(
-        module_name="standard.number.rational", class_name="NumberRational"
+        module_name="standard.number.rational", class_name="NumberRationalValue"
     )
+
+
+def test_module_name_escapes_keyword_component():
+    converter = naming.NameConverter()
+    name_content = _action_name("/if").name_content
+    assert converter.module_name(name_content) == "local.my_domain_com.my_lib.if_"
+
+
+def test_module_name_escapes_component_ending_in_underscore():
+    converter = naming.NameConverter()
+    name_content = _action_name("/if_").name_content
+    assert converter.module_name(name_content) == "local.my_domain_com.my_lib.if__"
+
+
+def test_module_name_is_shared_by_definitions_at_one_path():
+    converter = naming.NameConverter()
+    position = _typed_name(ast.NameType.POSITION, "/thing").name_content
+    action = _typed_name(ast.NameType.ACTION, "/thing").name_content
+    assert converter.module_name(position) == converter.module_name(action)
 
 
 def test_module_name_truncates_long_component():

@@ -18,9 +18,9 @@ class ImpliedDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = ImpliedDestructionContracts()
 
 
-class Implied(literal.Action):
+class ImpliedAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.transitive_implied.TransitiveImplied,
+        local.my_domain_com.my_lib.transitive_implied.TransitiveImpliedPosition,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -34,7 +34,7 @@ class Implied(literal.Action):
     @override
     def run(self, destruction_contracts: ImpliedDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.transitive_implied.TransitiveImplied
+            local.my_domain_com.my_lib.transitive_implied.TransitiveImpliedPosition
         ).create_particle()
         destruction_contracts.run_destructors_position_run(
             self.get_interface_position(

@@ -7,16 +7,16 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.destination
 
 
-class KnownDestructor(literal.Action):
+class KnownDestructorAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.destination.Destination,
+        local.my_domain_com.my_lib.destination.DestinationPosition,
     )
 
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.destination.Destination
+            local.my_domain_com.my_lib.destination.DestinationPosition
         ).create_particle()
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.destination.Destination
+            local.my_domain_com.my_lib.destination.DestinationPosition
         ).destroy_particle()

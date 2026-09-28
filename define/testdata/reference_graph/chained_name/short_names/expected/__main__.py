@@ -6,7 +6,7 @@ import local.a_b.cd.test
 
 
 def main():
-    literal.start(local.a_b.cd.test.Test)
+    literal.start(local.a_b.cd.test.TestAction)
 
 
 if __name__ == "__main__":

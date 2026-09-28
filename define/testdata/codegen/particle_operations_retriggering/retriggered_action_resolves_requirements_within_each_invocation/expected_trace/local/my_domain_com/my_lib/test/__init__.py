@@ -7,7 +7,7 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.maker
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
@@ -20,22 +20,22 @@ class Test(literal.Action):
         gw = literal.LocalPosition(
             "position<gw>",
             constraints=(
-                local.my_domain_com.my_lib.maker.Maker,
+                local.my_domain_com.my_lib.maker.MakerAction,
             ),
         )
         gw.create_particle()
         literal.record_operation("test.create(gw)")
         gw.particle.get_action(
-            local.my_domain_com.my_lib.maker.Maker
+            local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("test.create(gw::/maker::trigger_pos)")
         gw.particle.get_action(
-            local.my_domain_com.my_lib.maker.Maker
+            local.my_domain_com.my_lib.maker.MakerAction
         ).run()
         gw.particle.get_action(
-            local.my_domain_com.my_lib.maker.Maker
+            local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(
             "position<out>"
         ).move_particle_to(
@@ -43,22 +43,22 @@ class Test(literal.Action):
         )
         literal.record_operation("test.move(gw::/maker::out, first_result)")
         gw.particle.get_action(
-            local.my_domain_com.my_lib.maker.Maker
+            local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
         literal.record_operation("test.destroy(gw::/maker::trigger_pos)")
         gw.particle.get_action(
-            local.my_domain_com.my_lib.maker.Maker
+            local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("test.create(gw::/maker::trigger_pos)")
         gw.particle.get_action(
-            local.my_domain_com.my_lib.maker.Maker
+            local.my_domain_com.my_lib.maker.MakerAction
         ).run()
         gw.particle.get_action(
-            local.my_domain_com.my_lib.maker.Maker
+            local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(
             "position<out>"
         ).move_particle_to(
@@ -66,7 +66,7 @@ class Test(literal.Action):
         )
         literal.record_operation("test.move(gw::/maker::out, second_result)")
         gw.particle.get_action(
-            local.my_domain_com.my_lib.maker.Maker
+            local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

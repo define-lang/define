@@ -19,7 +19,7 @@ class WorkerDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = WorkerDestructionContracts()
 
 
-class Worker(literal.Action):
+class WorkerAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -29,8 +29,8 @@ class Worker(literal.Action):
                 literal.LocalPosition(
                     "position<state>",
                     constraints=(
-                        local.my_domain_com.my_lib.occupied.Occupied,
-                        local.my_domain_com.my_lib.target.Target,
+                        local.my_domain_com.my_lib.occupied.OccupiedPosition,
+                        local.my_domain_com.my_lib.target.TargetPosition,
                     ),
                 ),
             ],
@@ -42,20 +42,20 @@ class Worker(literal.Action):
             self.get_interface_position(
                 "position<state>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.occupied.Occupied
+                local.my_domain_com.my_lib.occupied.OccupiedPosition
             ).particle
         )
         destruction_contracts.destroy_position_state__position_occupied(
             self.get_interface_position(
                 "position<state>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.occupied.Occupied
+                local.my_domain_com.my_lib.occupied.OccupiedPosition
             ).particle
         )
         self.get_interface_position(
             "position<state>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.occupied.Occupied
+            local.my_domain_com.my_lib.occupied.OccupiedPosition
         ).destroy_particle()
         self.get_interface_position(
             "position<source>"
@@ -63,6 +63,6 @@ class Worker(literal.Action):
             self.get_interface_position(
                 "position<state>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.target.Target
+                local.my_domain_com.my_lib.target.TargetPosition
             )
         )

@@ -25,7 +25,7 @@ class DestroyerDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = DestroyerDestructionContracts()
 
 
-class Destroyer(literal.Action):
+class DestroyerAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -34,8 +34,8 @@ class Destroyer(literal.Action):
                 literal.LocalPosition(
                     "position<target>",
                     constraints=(
-                        local.my_domain_com.my_lib.occupied.Occupied,
-                        local.my_domain_com.my_lib.empty.Empty,
+                        local.my_domain_com.my_lib.occupied.OccupiedPosition,
+                        local.my_domain_com.my_lib.empty.EmptyPosition,
                     ),
                 ),
                 literal.LocalPosition("position<trigger>"),
@@ -47,17 +47,17 @@ class Destroyer(literal.Action):
         self.get_interface_position(
             "position<target>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.occupied.Occupied
+            local.my_domain_com.my_lib.occupied.OccupiedPosition
         ).create_particle()
         self.get_interface_position(
             "position<target>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.empty.Empty
+            local.my_domain_com.my_lib.empty.EmptyPosition
         ).create_particle()
         self.get_interface_position(
             "position<target>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.empty.Empty
+            local.my_domain_com.my_lib.empty.EmptyPosition
         ).destroy_particle()
         destruction_contracts.run_destructors_position_target(
             self.get_interface_position(
@@ -72,7 +72,7 @@ class Destroyer(literal.Action):
         self.get_interface_position(
             "position<target>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.occupied.Occupied
+            local.my_domain_com.my_lib.occupied.OccupiedPosition
         ).destroy_particle()
         self.get_interface_position(
             "position<target>"

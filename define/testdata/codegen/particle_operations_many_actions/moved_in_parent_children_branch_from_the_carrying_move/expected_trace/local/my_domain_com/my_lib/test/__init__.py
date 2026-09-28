@@ -8,43 +8,43 @@ import local.my_domain_com.my_lib.middle
 import local.my_domain_com.my_lib.parent
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         mw = literal.LocalPosition(
             "position<mw>",
             constraints=(
-                local.my_domain_com.my_lib.middle.Middle,
+                local.my_domain_com.my_lib.middle.MiddleAction,
             ),
         )
         mw.create_particle()
         literal.record_operation("test.create(mw)")
         mw.particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<iface>"
         ).create_particle()
         literal.record_operation("test.create(mw::/middle::iface)")
         mw.particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<iface>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.parent.Parent
+            local.my_domain_com.my_lib.parent.ParentPosition
         ).create_particle()
         literal.record_operation("test.create(mw::/middle::iface::/parent)")
         mw.particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         literal.record_operation("test.create(mw::/middle::run)")
         mw.particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).run()
         mw.particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<run>"
         ).destroy_particle()

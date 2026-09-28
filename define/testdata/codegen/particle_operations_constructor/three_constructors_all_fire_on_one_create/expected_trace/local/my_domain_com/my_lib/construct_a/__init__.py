@@ -7,14 +7,14 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.marker_a
 
 
-class ConstructA(literal.Action):
+class ConstructAAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.marker_a.MarkerA,
+        local.my_domain_com.my_lib.marker_a.MarkerAPosition,
     )
 
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.marker_a.MarkerA
+            local.my_domain_com.my_lib.marker_a.MarkerAPosition
         ).create_particle()
         literal.record_operation("construct_a.create(/marker_a)")

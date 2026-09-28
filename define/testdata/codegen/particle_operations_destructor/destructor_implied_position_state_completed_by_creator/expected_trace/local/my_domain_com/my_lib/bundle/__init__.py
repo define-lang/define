@@ -9,9 +9,9 @@ import local.my_domain_com.my_lib.occupied_first
 import local.my_domain_com.my_lib.occupied_last
 
 
-class Bundle(literal.GlobalPosition):
+class BundlePosition(literal.GlobalPosition):
     constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.destructor.Destructor,
-        local.my_domain_com.my_lib.occupied_first.OccupiedFirst,
-        local.my_domain_com.my_lib.occupied_last.OccupiedLast,
+        local.my_domain_com.my_lib.destructor.DestructorAction,
+        local.my_domain_com.my_lib.occupied_first.OccupiedFirstPosition,
+        local.my_domain_com.my_lib.occupied_last.OccupiedLastPosition,
     )

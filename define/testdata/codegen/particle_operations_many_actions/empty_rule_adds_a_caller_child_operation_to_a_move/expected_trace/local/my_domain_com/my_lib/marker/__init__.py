@@ -3,5 +3,5 @@
 from define.runtime import literal
 
 
-class Marker(literal.GlobalPosition):
+class MarkerPosition(literal.GlobalPosition):
     pass

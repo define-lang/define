@@ -9,42 +9,42 @@ import local.my_domain_com.my_lib.destructor_a
 import local.my_domain_com.my_lib.destructor_b
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         box = literal.LocalPosition(
             "position<box>",
             constraints=(
-                local.my_domain_com.my_lib.callee.Callee,
+                local.my_domain_com.my_lib.callee.CalleeAction,
             ),
         )
         carrier = literal.LocalPosition(
             "position<carrier>",
             constraints=(
-                local.my_domain_com.my_lib.destructor_a.DestructorA,
-                local.my_domain_com.my_lib.destructor_b.DestructorB,
+                local.my_domain_com.my_lib.destructor_a.DestructorAAction,
+                local.my_domain_com.my_lib.destructor_b.DestructorBAction,
             ),
         )
         box.create_particle()
         carrier.create_particle()
         carrier.move_particle_to(
             box.particle.get_action(
-                local.my_domain_com.my_lib.callee.Callee
+                local.my_domain_com.my_lib.callee.CalleeAction
             ).get_interface_position(
                 "position<target>"
             )
         )
         box.particle.get_action(
-            local.my_domain_com.my_lib.callee.Callee
+            local.my_domain_com.my_lib.callee.CalleeAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         box.particle.get_action(
-            local.my_domain_com.my_lib.callee.Callee
+            local.my_domain_com.my_lib.callee.CalleeAction
         ).run(CalleeDestructionContracts())
         box.particle.get_action(
-            local.my_domain_com.my_lib.callee.Callee
+            local.my_domain_com.my_lib.callee.CalleeAction
         ).get_interface_position(
             "position<run>"
         ).destroy_particle()
@@ -56,8 +56,8 @@ class CalleeDestructionContracts(local.my_domain_com.my_lib.callee.CalleeDestruc
     @override
     def run_destructors_position_target(self, particle: literal.Particle):
         particle.get_action(
-            local.my_domain_com.my_lib.destructor_b.DestructorB
+            local.my_domain_com.my_lib.destructor_b.DestructorBAction
         ).run()
         particle.get_action(
-            local.my_domain_com.my_lib.destructor_a.DestructorA
+            local.my_domain_com.my_lib.destructor_a.DestructorAAction
         ).run()

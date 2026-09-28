@@ -9,7 +9,7 @@ import local.my_domain_com.my_lib.marker
 import local.my_domain_com.my_lib.result
 
 
-class Middle(literal.Action):
+class MiddleAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -19,17 +19,17 @@ class Middle(literal.Action):
                 literal.LocalPosition(
                     "position<source>",
                     constraints=(
-                        local.my_domain_com.my_lib.child.Child,
-                        local.my_domain_com.my_lib.marker.Marker,
-                        local.my_domain_com.my_lib.result.Result,
+                        local.my_domain_com.my_lib.child.ChildAction,
+                        local.my_domain_com.my_lib.marker.MarkerPosition,
+                        local.my_domain_com.my_lib.result.ResultPosition,
                     ),
                 ),
                 literal.LocalPosition(
                     "position<holder>",
                     constraints=(
-                        local.my_domain_com.my_lib.child.Child,
-                        local.my_domain_com.my_lib.marker.Marker,
-                        local.my_domain_com.my_lib.result.Result,
+                        local.my_domain_com.my_lib.child.ChildAction,
+                        local.my_domain_com.my_lib.marker.MarkerPosition,
+                        local.my_domain_com.my_lib.result.ResultPosition,
                     ),
                 ),
             ],
@@ -40,7 +40,7 @@ class Middle(literal.Action):
         self.get_interface_position(
             "position<source>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
@@ -48,7 +48,7 @@ class Middle(literal.Action):
         self.get_interface_position(
             "position<source>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildAction
         ).run()
         self.get_interface_position(
             "position<source>"
@@ -61,7 +61,7 @@ class Middle(literal.Action):
         self.get_interface_position(
             "position<holder>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

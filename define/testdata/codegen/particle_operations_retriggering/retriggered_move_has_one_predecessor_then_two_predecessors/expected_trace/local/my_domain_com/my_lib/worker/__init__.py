@@ -20,7 +20,7 @@ class WorkerDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = WorkerDestructionContracts()
 
 
-class Worker(literal.Action):
+class WorkerAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -30,9 +30,9 @@ class Worker(literal.Action):
                 literal.LocalPosition(
                     "position<item>",
                     constraints=(
-                        local.my_domain_com.my_lib.a.A,
-                        local.my_domain_com.my_lib.b.B,
-                        local.my_domain_com.my_lib.c.C,
+                        local.my_domain_com.my_lib.a.APosition,
+                        local.my_domain_com.my_lib.b.BPosition,
+                        local.my_domain_com.my_lib.c.CPosition,
                     ),
                 ),
             ],

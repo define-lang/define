@@ -7,7 +7,7 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.worker
 
 
-class First(literal.Action):
+class FirstAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -22,37 +22,37 @@ class First(literal.Action):
         gw = literal.LocalPosition(
             "position<gw>",
             constraints=(
-                local.my_domain_com.my_lib.worker.Worker,
+                local.my_domain_com.my_lib.worker.WorkerAction,
             ),
         )
         gw.create_particle()
         literal.record_operation("first.create(gw)")
         gw.particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("first.create(gw::/worker::trigger_pos)")
         gw.particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).run()
         gw.particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
         literal.record_operation("first.destroy(gw::/worker::trigger_pos)")
         gw.particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("first.create(gw::/worker::trigger_pos)")
         gw.particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).run()
         gw.particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

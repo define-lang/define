@@ -16,7 +16,7 @@ class RunnerDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = RunnerDestructionContracts()
 
 
-class Runner(literal.Action):
+class RunnerAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(

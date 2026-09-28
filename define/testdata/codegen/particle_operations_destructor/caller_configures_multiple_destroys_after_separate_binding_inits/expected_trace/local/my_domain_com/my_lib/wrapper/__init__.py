@@ -37,7 +37,7 @@ class WrapperDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = WrapperDestructionContracts()
 
 
-class Wrapper(literal.Action):
+class WrapperAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -46,8 +46,8 @@ class Wrapper(literal.Action):
                 literal.LocalPosition(
                     "position<run>",
                     constraints=(
-                        local.my_domain_com.my_lib.outer.Outer,
-                        local.my_domain_com.my_lib.carrier.Carrier,
+                        local.my_domain_com.my_lib.outer.OuterAction,
+                        local.my_domain_com.my_lib.carrier.CarrierPosition,
                     ),
                 ),
             ],
@@ -58,12 +58,12 @@ class Wrapper(literal.Action):
         self.get_interface_position(
             "position<run>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.carrier.Carrier
+            local.my_domain_com.my_lib.carrier.CarrierPosition
         ).move_particle_to(
             self.get_interface_position(
                 "position<run>"
             ).particle.get_action(
-                local.my_domain_com.my_lib.outer.Outer
+                local.my_domain_com.my_lib.outer.OuterAction
             ).get_interface_position(
                 "position<run>"
             )
@@ -72,7 +72,7 @@ class Wrapper(literal.Action):
         self.get_interface_position(
             "position<run>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.outer.Outer
+            local.my_domain_com.my_lib.outer.OuterAction
         ).run(
             OuterDestructionContracts(
                 destruction_contracts.run_destructors_position_run__position_carrier__position_payload__position_marker,

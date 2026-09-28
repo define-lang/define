@@ -8,9 +8,9 @@ import local.my_domain_com.my_lib.child
 import local.my_domain_com.my_lib.middle
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.middle.Middle,
+        local.my_domain_com.my_lib.middle.MiddleAction,
     )
 
     @override
@@ -18,22 +18,22 @@ class Test(literal.Action):
         source = literal.LocalPosition(
             "position<source>",
             constraints=(
-                local.my_domain_com.my_lib.child.Child,
+                local.my_domain_com.my_lib.child.ChildPosition,
             ),
         )
         source.create_particle()
         source.particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).create_particle()
         source.move_particle_to(
             self.on_particle.get_action(
-                local.my_domain_com.my_lib.middle.Middle
+                local.my_domain_com.my_lib.middle.MiddleAction
             ).get_interface_position(
                 "position<run>"
             )
         )
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).run(MiddleDestructionContracts())
 
 
@@ -42,5 +42,5 @@ class MiddleDestructionContracts(local.my_domain_com.my_lib.middle.MiddleDestruc
     @override
     def destroy_position_run(self, particle: literal.Particle):
         particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).destroy_particle()

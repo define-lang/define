@@ -10,49 +10,49 @@ import local.my_domain_com.my_lib.origin
 import local.my_domain_com.my_lib.second
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         box = literal.LocalPosition(
             "position<box>",
             constraints=(
-                local.my_domain_com.my_lib.origin.Origin,
-                local.my_domain_com.my_lib.destination.Destination,
+                local.my_domain_com.my_lib.origin.OriginPosition,
+                local.my_domain_com.my_lib.destination.DestinationPosition,
             ),
         )
         box.create_particle()
         box.particle.get_position(
-            local.my_domain_com.my_lib.origin.Origin
+            local.my_domain_com.my_lib.origin.OriginPosition
         ).create_particle()
         box.particle.get_position(
-            local.my_domain_com.my_lib.origin.Origin
+            local.my_domain_com.my_lib.origin.OriginPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.first.First
+            local.my_domain_com.my_lib.first.FirstPosition
         ).create_particle()
         box.particle.get_position(
-            local.my_domain_com.my_lib.origin.Origin
+            local.my_domain_com.my_lib.origin.OriginPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.second.Second
+            local.my_domain_com.my_lib.second.SecondPosition
         ).create_particle()
         box.particle.get_position(
-            local.my_domain_com.my_lib.origin.Origin
+            local.my_domain_com.my_lib.origin.OriginPosition
         ).move_particle_to(
             box.particle.get_position(
-                local.my_domain_com.my_lib.destination.Destination
+                local.my_domain_com.my_lib.destination.DestinationPosition
             )
         )
         box.particle.get_position(
-            local.my_domain_com.my_lib.destination.Destination
+            local.my_domain_com.my_lib.destination.DestinationPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.first.First
+            local.my_domain_com.my_lib.first.FirstPosition
         ).destroy_particle()
         box.particle.get_position(
-            local.my_domain_com.my_lib.destination.Destination
+            local.my_domain_com.my_lib.destination.DestinationPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.second.Second
+            local.my_domain_com.my_lib.second.SecondPosition
         ).destroy_particle()
         box.particle.get_position(
-            local.my_domain_com.my_lib.destination.Destination
+            local.my_domain_com.my_lib.destination.DestinationPosition
         ).destroy_particle()
         box.destroy_particle()

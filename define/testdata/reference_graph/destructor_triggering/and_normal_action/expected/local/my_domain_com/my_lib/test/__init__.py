@@ -8,31 +8,31 @@ import local.my_domain_com.my_lib.beep
 import local.my_domain_com.my_lib.destructor
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         box = literal.LocalPosition(
             "position<box>",
             constraints=(
-                local.my_domain_com.my_lib.destructor.Destructor,
-                local.my_domain_com.my_lib.beep.Beep,
+                local.my_domain_com.my_lib.destructor.DestructorAction,
+                local.my_domain_com.my_lib.beep.BeepAction,
             ),
         )
         box.create_particle()
         box.particle.get_action(
-            local.my_domain_com.my_lib.beep.Beep
+            local.my_domain_com.my_lib.beep.BeepAction
         ).get_interface_position(
             "position<trigger>"
         ).create_particle()
         box.particle.get_action(
-            local.my_domain_com.my_lib.beep.Beep
+            local.my_domain_com.my_lib.beep.BeepAction
         ).run()
         box.particle.get_action(
-            local.my_domain_com.my_lib.destructor.Destructor
+            local.my_domain_com.my_lib.destructor.DestructorAction
         ).run()
         box.particle.get_action(
-            local.my_domain_com.my_lib.beep.Beep
+            local.my_domain_com.my_lib.beep.BeepAction
         ).get_interface_position(
             "position<trigger>"
         ).destroy_particle()

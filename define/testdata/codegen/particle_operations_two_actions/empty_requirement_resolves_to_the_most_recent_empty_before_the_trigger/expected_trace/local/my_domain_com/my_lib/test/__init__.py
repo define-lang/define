@@ -7,59 +7,59 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.filler
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         gw = literal.LocalPosition(
             "position<gw>",
             constraints=(
-                local.my_domain_com.my_lib.filler.Filler,
+                local.my_domain_com.my_lib.filler.FillerAction,
             ),
         )
         gw.create_particle()
         literal.record_operation("test.create(gw)")
         gw.particle.get_action(
-            local.my_domain_com.my_lib.filler.Filler
+            local.my_domain_com.my_lib.filler.FillerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("test.create(gw::/filler::trigger_pos)")
         gw.particle.get_action(
-            local.my_domain_com.my_lib.filler.Filler
+            local.my_domain_com.my_lib.filler.FillerAction
         ).run()
         gw.particle.get_action(
-            local.my_domain_com.my_lib.filler.Filler
+            local.my_domain_com.my_lib.filler.FillerAction
         ).get_interface_position(
             "position<slot>"
         ).destroy_particle()
         literal.record_operation("test.destroy(gw::/filler::slot)")
         gw.particle.get_action(
-            local.my_domain_com.my_lib.filler.Filler
+            local.my_domain_com.my_lib.filler.FillerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("test.create(gw::/filler::trigger_pos)")
         gw.particle.get_action(
-            local.my_domain_com.my_lib.filler.Filler
+            local.my_domain_com.my_lib.filler.FillerAction
         ).run()
         gw.particle.get_action(
-            local.my_domain_com.my_lib.filler.Filler
+            local.my_domain_com.my_lib.filler.FillerAction
         ).get_interface_position(
             "position<slot>"
         ).destroy_particle()
         literal.record_operation("test.destroy(gw::/filler::slot)")
         gw.particle.get_action(
-            local.my_domain_com.my_lib.filler.Filler
+            local.my_domain_com.my_lib.filler.FillerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("test.create(gw::/filler::trigger_pos)")
         gw.particle.get_action(
-            local.my_domain_com.my_lib.filler.Filler
+            local.my_domain_com.my_lib.filler.FillerAction
         ).run()
         gw.particle.get_action(
-            local.my_domain_com.my_lib.filler.Filler
+            local.my_domain_com.my_lib.filler.FillerAction
         ).get_interface_position(
             "position<slot>"
         ).destroy_particle()

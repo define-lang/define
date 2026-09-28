@@ -9,35 +9,35 @@ import local.my_domain_com.my_lib.implied
 import local.my_domain_com.my_lib.triggered
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.triggered.Triggered,
-        local.my_domain_com.my_lib.implied.Implied,
+        local.my_domain_com.my_lib.triggered.TriggeredAction,
+        local.my_domain_com.my_lib.implied.ImpliedPosition,
     )
 
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.implied.Implied
+            local.my_domain_com.my_lib.implied.ImpliedPosition
         ).create_particle()
         literal.record_operation("test.create(/implied)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.implied.Implied
+            local.my_domain_com.my_lib.implied.ImpliedPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).create_particle()
         literal.record_operation("test.create(/implied::/child)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.triggered.Triggered
+            local.my_domain_com.my_lib.triggered.TriggeredAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         literal.record_operation("test.create(/triggered::run)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.triggered.Triggered
+            local.my_domain_com.my_lib.triggered.TriggeredAction
         ).run()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.triggered.Triggered
+            local.my_domain_com.my_lib.triggered.TriggeredAction
         ).get_interface_position(
             "position<dest>"
         ).destroy_particle()

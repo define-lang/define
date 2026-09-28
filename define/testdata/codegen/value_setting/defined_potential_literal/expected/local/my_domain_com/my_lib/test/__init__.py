@@ -7,16 +7,16 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.count
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.count.Count,
+        local.my_domain_com.my_lib.count.CountPosition,
     )
 
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.count.Count
+            local.my_domain_com.my_lib.count.CountPosition
         ).create_particle()
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.count.Count
+            local.my_domain_com.my_lib.count.CountPosition
         ).set_value(42)

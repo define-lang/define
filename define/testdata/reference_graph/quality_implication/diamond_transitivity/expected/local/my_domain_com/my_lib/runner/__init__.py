@@ -20,7 +20,7 @@ class RunnerDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = RunnerDestructionContracts()
 
 
-class Runner(literal.Action):
+class RunnerAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -30,14 +30,14 @@ class Runner(literal.Action):
                 literal.LocalPosition(
                     "position<source>",
                     constraints=(
-                        local.my_domain_com.my_lib.implier_one.ImplierOne,
-                        local.my_domain_com.my_lib.implier_two.ImplierTwo,
+                        local.my_domain_com.my_lib.implier_one.ImplierOneAction,
+                        local.my_domain_com.my_lib.implier_two.ImplierTwoAction,
                     ),
                 ),
                 literal.LocalPosition(
                     "position<dest>",
                     constraints=(
-                        local.my_domain_com.my_lib.implied.Implied,
+                        local.my_domain_com.my_lib.implied.ImpliedPosition,
                     ),
                 ),
             ],
@@ -51,12 +51,12 @@ class Runner(literal.Action):
         self.get_interface_position(
             "position<source>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.implier_one.ImplierOne
+            local.my_domain_com.my_lib.implier_one.ImplierOneAction
         ).run()
         self.get_interface_position(
             "position<source>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.implier_two.ImplierTwo
+            local.my_domain_com.my_lib.implier_two.ImplierTwoAction
         ).run()
         self.get_interface_position(
             "position<source>"
@@ -68,12 +68,12 @@ class Runner(literal.Action):
         self.get_interface_position(
             "position<dest>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.implied.Implied
+            local.my_domain_com.my_lib.implied.ImpliedPosition
         ).create_particle()
         self.get_interface_position(
             "position<dest>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.implied.Implied
+            local.my_domain_com.my_lib.implied.ImpliedPosition
         ).destroy_particle()
         self.get_interface_position(
             "position<dest>"

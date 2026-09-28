@@ -7,18 +7,18 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.implied
 
 
-class ImplierTwo(literal.Action):
+class ImplierTwoAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.implied.Implied,
+        local.my_domain_com.my_lib.implied.ImpliedPosition,
     )
 
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.implied.Implied
+            local.my_domain_com.my_lib.implied.ImpliedPosition
         ).create_particle()
         literal.record_operation("implier_two.create(/implied)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.implied.Implied
+            local.my_domain_com.my_lib.implied.ImpliedPosition
         ).destroy_particle()
         literal.record_operation("implier_two.destroy(/implied)")

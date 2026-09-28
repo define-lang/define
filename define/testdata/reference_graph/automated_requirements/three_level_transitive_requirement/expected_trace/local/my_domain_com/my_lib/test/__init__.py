@@ -8,9 +8,9 @@ import local.my_domain_com.my_lib.data
 import local.my_domain_com.my_lib.outer
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.outer.Outer,
+        local.my_domain_com.my_lib.outer.OuterAction,
     )
 
     @override
@@ -18,29 +18,29 @@ class Test(literal.Action):
         box = literal.LocalPosition(
             "position<box>",
             constraints=(
-                local.my_domain_com.my_lib.data.Data,
+                local.my_domain_com.my_lib.data.DataPosition,
             ),
         )
         box.create_particle()
         literal.record_operation("test.create(box)")
         box.particle.get_position(
-            local.my_domain_com.my_lib.data.Data
+            local.my_domain_com.my_lib.data.DataPosition
         ).create_particle()
         literal.record_operation("test.create(box::/data)")
         box.move_particle_to(
             self.on_particle.get_action(
-                local.my_domain_com.my_lib.outer.Outer
+                local.my_domain_com.my_lib.outer.OuterAction
             ).get_interface_position(
                 "position<input>"
             )
         )
         literal.record_operation("test.move(box, /outer::input)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.outer.Outer
+            local.my_domain_com.my_lib.outer.OuterAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         literal.record_operation("test.create(/outer::run)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.outer.Outer
+            local.my_domain_com.my_lib.outer.OuterAction
         ).run()

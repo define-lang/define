@@ -3,5 +3,5 @@
 from define.runtime import literal
 
 
-class QualityA(literal.GlobalPosition):
+class QualityAPosition(literal.GlobalPosition):
     pass

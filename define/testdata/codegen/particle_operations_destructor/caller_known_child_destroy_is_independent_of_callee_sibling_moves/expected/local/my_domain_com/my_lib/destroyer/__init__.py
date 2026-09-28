@@ -24,7 +24,7 @@ class DestroyerDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = DestroyerDestructionContracts()
 
 
-class Destroyer(literal.Action):
+class DestroyerAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -33,7 +33,7 @@ class Destroyer(literal.Action):
                 literal.LocalPosition(
                     "position<run>",
                     constraints=(
-                        local.my_domain_com.my_lib.known.Known,
+                        local.my_domain_com.my_lib.known.KnownPosition,
                     ),
                 ),
             ],
@@ -47,7 +47,7 @@ class Destroyer(literal.Action):
         parent = literal.LocalPosition(
             "position<parent>",
             constraints=(
-                local.my_domain_com.my_lib.known.Known,
+                local.my_domain_com.my_lib.known.KnownPosition,
             ),
         )
         holder = literal.LocalPosition(
@@ -62,18 +62,18 @@ class Destroyer(literal.Action):
             parent
         )
         parent.particle.get_position(
-            local.my_domain_com.my_lib.known.Known
+            local.my_domain_com.my_lib.known.KnownPosition
         ).move_particle_to(
             holder
         )
         holder.move_particle_to(
             parent.particle.get_position(
-                local.my_domain_com.my_lib.known.Known
+                local.my_domain_com.my_lib.known.KnownPosition
             )
         )
         destruction_contracts.run_destructors_position_run__position_known(
             parent.particle.get_position(
-                local.my_domain_com.my_lib.known.Known
+                local.my_domain_com.my_lib.known.KnownPosition
             ).particle
         )
         destruction_contracts.run_destructors_position_run(
@@ -81,13 +81,13 @@ class Destroyer(literal.Action):
         )
         destruction_contracts.destroy_position_run__position_known(
             parent.particle.get_position(
-                local.my_domain_com.my_lib.known.Known
+                local.my_domain_com.my_lib.known.KnownPosition
             ).particle
         )
         destruction_contracts.destroy_position_run(
             parent.particle
         )
         parent.particle.get_position(
-            local.my_domain_com.my_lib.known.Known
+            local.my_domain_com.my_lib.known.KnownPosition
         ).destroy_particle()
         parent.destroy_particle()

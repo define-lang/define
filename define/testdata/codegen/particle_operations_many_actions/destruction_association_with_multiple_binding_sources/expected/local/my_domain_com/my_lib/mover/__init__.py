@@ -63,10 +63,10 @@ class MoverDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = MoverDestructionContracts()
 
 
-class Mover(literal.Action):
+class MoverAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.guaranteed_parent.GuaranteedParent,
-        local.my_domain_com.my_lib.caller_parent.CallerParent,
+        local.my_domain_com.my_lib.guaranteed_parent.GuaranteedParentPosition,
+        local.my_domain_com.my_lib.caller_parent.CallerParentPosition,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -77,15 +77,15 @@ class Mover(literal.Action):
                 literal.LocalPosition(
                     "position<guaranteed_destination>",
                     constraints=(
-                        local.my_domain_com.my_lib.child_a.ChildA,
-                        local.my_domain_com.my_lib.child_b.ChildB,
+                        local.my_domain_com.my_lib.child_a.ChildAPosition,
+                        local.my_domain_com.my_lib.child_b.ChildBPosition,
                     ),
                 ),
                 literal.LocalPosition(
                     "position<caller_destination>",
                     constraints=(
-                        local.my_domain_com.my_lib.child_a.ChildA,
-                        local.my_domain_com.my_lib.child_b.ChildB,
+                        local.my_domain_com.my_lib.child_a.ChildAPosition,
+                        local.my_domain_com.my_lib.child_b.ChildBPosition,
                     ),
                 ),
                 literal.LocalPosition("position<discard>"),
@@ -95,14 +95,14 @@ class Mover(literal.Action):
     @override
     def run(self, destruction_contracts: MoverDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.guaranteed_parent.GuaranteedParent
+            local.my_domain_com.my_lib.guaranteed_parent.GuaranteedParentPosition
         ).move_particle_to(
             self.get_interface_position(
                 "position<guaranteed_destination>"
             )
         )
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.caller_parent.CallerParent
+            local.my_domain_com.my_lib.caller_parent.CallerParentPosition
         ).move_particle_to(
             self.get_interface_position(
                 "position<caller_destination>"
@@ -125,39 +125,39 @@ class Mover(literal.Action):
             self.get_interface_position(
                 "position<guaranteed_destination>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.child_a.ChildA
+                local.my_domain_com.my_lib.child_a.ChildAPosition
             ).particle
         )
         destruction_contracts.destroy_global_position_guaranteed_parent__position_child_a(
             self.get_interface_position(
                 "position<guaranteed_destination>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.child_a.ChildA
+                local.my_domain_com.my_lib.child_a.ChildAPosition
             ).particle
         )
         self.get_interface_position(
             "position<guaranteed_destination>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.child_a.ChildA
+            local.my_domain_com.my_lib.child_a.ChildAPosition
         ).destroy_particle()
         destruction_contracts.run_destructors_global_position_guaranteed_parent__position_child_b(
             self.get_interface_position(
                 "position<guaranteed_destination>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.child_b.ChildB
+                local.my_domain_com.my_lib.child_b.ChildBPosition
             ).particle
         )
         destruction_contracts.destroy_global_position_guaranteed_parent__position_child_b(
             self.get_interface_position(
                 "position<guaranteed_destination>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.child_b.ChildB
+                local.my_domain_com.my_lib.child_b.ChildBPosition
             ).particle
         )
         self.get_interface_position(
             "position<guaranteed_destination>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.child_b.ChildB
+            local.my_domain_com.my_lib.child_b.ChildBPosition
         ).destroy_particle()
         destruction_contracts.run_destructors_global_position_guaranteed_parent(
             self.get_interface_position(
@@ -176,39 +176,39 @@ class Mover(literal.Action):
             self.get_interface_position(
                 "position<caller_destination>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.child_a.ChildA
+                local.my_domain_com.my_lib.child_a.ChildAPosition
             ).particle
         )
         destruction_contracts.destroy_global_position_caller_parent__position_child_a(
             self.get_interface_position(
                 "position<caller_destination>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.child_a.ChildA
+                local.my_domain_com.my_lib.child_a.ChildAPosition
             ).particle
         )
         self.get_interface_position(
             "position<caller_destination>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.child_a.ChildA
+            local.my_domain_com.my_lib.child_a.ChildAPosition
         ).destroy_particle()
         destruction_contracts.run_destructors_global_position_caller_parent__position_child_b(
             self.get_interface_position(
                 "position<caller_destination>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.child_b.ChildB
+                local.my_domain_com.my_lib.child_b.ChildBPosition
             ).particle
         )
         destruction_contracts.destroy_global_position_caller_parent__position_child_b(
             self.get_interface_position(
                 "position<caller_destination>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.child_b.ChildB
+                local.my_domain_com.my_lib.child_b.ChildBPosition
             ).particle
         )
         self.get_interface_position(
             "position<caller_destination>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.child_b.ChildB
+            local.my_domain_com.my_lib.child_b.ChildBPosition
         ).destroy_particle()
         destruction_contracts.run_destructors_global_position_caller_parent(
             self.get_interface_position(

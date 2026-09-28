@@ -18,7 +18,7 @@ class OtherDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = OtherDestructionContracts()
 
 
-class Other(literal.Action):
+class OtherAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -28,13 +28,13 @@ class Other(literal.Action):
                 literal.LocalPosition(
                     "position<source>",
                     constraints=(
-                        local.my_domain_com.my_lib.a.A,
+                        local.my_domain_com.my_lib.a.APosition,
                     ),
                 ),
                 literal.LocalPosition(
                     "position<holder>",
                     constraints=(
-                        local.my_domain_com.my_lib.a.A,
+                        local.my_domain_com.my_lib.a.APosition,
                     ),
                 ),
             ],
@@ -46,20 +46,20 @@ class Other(literal.Action):
             self.get_interface_position(
                 "position<source>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.a.A
+                local.my_domain_com.my_lib.a.APosition
             ).particle
         )
         destruction_contracts.destroy_position_source__position_a(
             self.get_interface_position(
                 "position<source>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.a.A
+                local.my_domain_com.my_lib.a.APosition
             ).particle
         )
         self.get_interface_position(
             "position<source>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.a.A
+            local.my_domain_com.my_lib.a.APosition
         ).destroy_particle()
         literal.record_operation("other.destroy(source::/a)")
         self.get_interface_position(

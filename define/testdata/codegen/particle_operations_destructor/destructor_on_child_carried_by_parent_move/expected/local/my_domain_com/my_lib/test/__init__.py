@@ -8,14 +8,14 @@ import local.my_domain_com.my_lib.child
 import local.my_domain_com.my_lib.destructor
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         staging = literal.LocalPosition(
             "position<staging>",
             constraints=(
-                local.my_domain_com.my_lib.child.Child,
+                local.my_domain_com.my_lib.child.ChildPosition,
             ),
         )
         box = literal.LocalPosition(
@@ -23,17 +23,17 @@ class Test(literal.Action):
         )
         staging.create_particle()
         staging.particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).create_particle()
         staging.move_particle_to(
             box
         )
         box.particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).particle.get_action(
-            local.my_domain_com.my_lib.destructor.Destructor
+            local.my_domain_com.my_lib.destructor.DestructorAction
         ).run()
         box.particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).destroy_particle()
         box.destroy_particle()

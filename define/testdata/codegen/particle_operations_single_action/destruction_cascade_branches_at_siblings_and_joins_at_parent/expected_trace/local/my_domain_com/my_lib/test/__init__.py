@@ -9,45 +9,45 @@ import local.my_domain_com.my_lib.grandchild
 import local.my_domain_com.my_lib.sibling
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         box = literal.LocalPosition(
             "position<box>",
             constraints=(
-                local.my_domain_com.my_lib.child.Child,
-                local.my_domain_com.my_lib.sibling.Sibling,
+                local.my_domain_com.my_lib.child.ChildPosition,
+                local.my_domain_com.my_lib.sibling.SiblingPosition,
             ),
         )
         box.create_particle()
         literal.record_operation("test.create(box)")
         box.particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).create_particle()
         literal.record_operation("test.create(box::/child)")
         box.particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.grandchild.Grandchild
+            local.my_domain_com.my_lib.grandchild.GrandchildPosition
         ).create_particle()
         literal.record_operation("test.create(box::/child::/grandchild)")
         box.particle.get_position(
-            local.my_domain_com.my_lib.sibling.Sibling
+            local.my_domain_com.my_lib.sibling.SiblingPosition
         ).create_particle()
         literal.record_operation("test.create(box::/sibling)")
         box.particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.grandchild.Grandchild
+            local.my_domain_com.my_lib.grandchild.GrandchildPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(box::/child::/grandchild)")
         box.particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(box::/child)")
         box.particle.get_position(
-            local.my_domain_com.my_lib.sibling.Sibling
+            local.my_domain_com.my_lib.sibling.SiblingPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(box::/sibling)")
         box.destroy_particle()

@@ -19,10 +19,10 @@ class CallerDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = CallerDestructionContracts()
 
 
-class Caller(literal.Action):
+class CallerAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.implied.Implied,
-        local.my_domain_com.my_lib.callee.Callee,
+        local.my_domain_com.my_lib.implied.ImpliedPosition,
+        local.my_domain_com.my_lib.callee.CalleeAction,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -36,16 +36,16 @@ class Caller(literal.Action):
     @override
     def run(self, destruction_contracts: CallerDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.callee.Callee
+            local.my_domain_com.my_lib.callee.CalleeAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         literal.record_operation("caller.create(/callee::run)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.callee.Callee
+            local.my_domain_com.my_lib.callee.CalleeAction
         ).run()
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.implied.Implied
+            local.my_domain_com.my_lib.implied.ImpliedPosition
         ).destroy_particle()
         literal.record_operation("caller.destroy(/implied)")
         destruction_contracts.run_destructors_position_run(

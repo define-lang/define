@@ -14,9 +14,9 @@ import local.my_domain_com.my_lib.payload
 import local.my_domain_com.my_lib.wrapper
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.wrapper.Wrapper,
+        local.my_domain_com.my_lib.wrapper.WrapperAction,
     )
 
     @override
@@ -24,23 +24,23 @@ class Test(literal.Action):
         source = literal.LocalPosition(
             "position<source>",
             constraints=(
-                local.my_domain_com.my_lib.outer.Outer,
-                local.my_domain_com.my_lib.carrier.Carrier,
+                local.my_domain_com.my_lib.outer.OuterAction,
+                local.my_domain_com.my_lib.carrier.CarrierPosition,
             ),
         )
         carrier_source = literal.LocalPosition(
             "position<carrier_source>",
             constraints=(
-                local.my_domain_com.my_lib.middle.Middle,
-                local.my_domain_com.my_lib.payload.Payload,
+                local.my_domain_com.my_lib.middle.MiddleAction,
+                local.my_domain_com.my_lib.payload.PayloadPosition,
             ),
         )
         payload_source = literal.LocalPosition(
             "position<payload_source>",
             constraints=(
-                local.my_domain_com.my_lib.extra_destructor.ExtraDestructor,
-                local.my_domain_com.my_lib.known_destructor.KnownDestructor,
-                local.my_domain_com.my_lib.marker.Marker,
+                local.my_domain_com.my_lib.extra_destructor.ExtraDestructorAction,
+                local.my_domain_com.my_lib.known_destructor.KnownDestructorAction,
+                local.my_domain_com.my_lib.marker.MarkerPosition,
             ),
         )
         source.create_particle()
@@ -50,31 +50,31 @@ class Test(literal.Action):
         payload_source.create_particle()
         literal.record_operation("test.create(payload_source)")
         payload_source.particle.get_position(
-            local.my_domain_com.my_lib.marker.Marker
+            local.my_domain_com.my_lib.marker.MarkerPosition
         ).create_particle()
         literal.record_operation("test.create(payload_source::/marker)")
         payload_source.move_particle_to(
             carrier_source.particle.get_position(
-                local.my_domain_com.my_lib.payload.Payload
+                local.my_domain_com.my_lib.payload.PayloadPosition
             )
         )
         literal.record_operation("test.move(payload_source, carrier_source::/payload)")
         carrier_source.move_particle_to(
             source.particle.get_position(
-                local.my_domain_com.my_lib.carrier.Carrier
+                local.my_domain_com.my_lib.carrier.CarrierPosition
             )
         )
         literal.record_operation("test.move(carrier_source, source::/carrier)")
         source.move_particle_to(
             self.on_particle.get_action(
-                local.my_domain_com.my_lib.wrapper.Wrapper
+                local.my_domain_com.my_lib.wrapper.WrapperAction
             ).get_interface_position(
                 "position<run>"
             )
         )
         literal.record_operation("test.move(source, /wrapper::run)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.wrapper.Wrapper
+            local.my_domain_com.my_lib.wrapper.WrapperAction
         ).run(WrapperDestructionContracts())
 
 
@@ -83,5 +83,5 @@ class WrapperDestructionContracts(local.my_domain_com.my_lib.wrapper.WrapperDest
     @override
     def run_destructors_position_run__position_carrier__position_payload(self, particle: literal.Particle):
         particle.get_action(
-            local.my_domain_com.my_lib.extra_destructor.ExtraDestructor
+            local.my_domain_com.my_lib.extra_destructor.ExtraDestructorAction
         ).run()

@@ -7,32 +7,32 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.mover
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         parent = literal.LocalPosition(
             "position<parent>",
             constraints=(
-                local.my_domain_com.my_lib.mover.Mover,
+                local.my_domain_com.my_lib.mover.MoverAction,
             ),
         )
         parent.create_particle()
         parent.particle.get_action(
-            local.my_domain_com.my_lib.mover.Mover
+            local.my_domain_com.my_lib.mover.MoverAction
         ).get_interface_position(
             "position<source>"
         ).create_particle()
         parent.particle.get_action(
-            local.my_domain_com.my_lib.mover.Mover
+            local.my_domain_com.my_lib.mover.MoverAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         parent.particle.get_action(
-            local.my_domain_com.my_lib.mover.Mover
+            local.my_domain_com.my_lib.mover.MoverAction
         ).run()
         parent.particle.get_action(
-            local.my_domain_com.my_lib.mover.Mover
+            local.my_domain_com.my_lib.mover.MoverAction
         ).get_interface_position(
             "position<destination>"
         ).destroy_particle()

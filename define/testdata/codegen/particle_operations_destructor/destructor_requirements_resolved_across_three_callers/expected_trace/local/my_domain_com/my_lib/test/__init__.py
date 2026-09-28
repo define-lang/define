@@ -11,9 +11,9 @@ import local.my_domain_com.my_lib.middle
 import local.my_domain_com.my_lib.middle_known
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.middle.Middle,
+        local.my_domain_com.my_lib.middle.MiddleAction,
     )
 
     @override
@@ -21,44 +21,44 @@ class Test(literal.Action):
         source = literal.LocalPosition(
             "position<source>",
             constraints=(
-                local.my_domain_com.my_lib.callee_known.CalleeKnown,
-                local.my_domain_com.my_lib.middle_known.MiddleKnown,
-                local.my_domain_com.my_lib.creator_known.CreatorKnown,
-                local.my_domain_com.my_lib.destructor.Destructor,
+                local.my_domain_com.my_lib.callee_known.CalleeKnownPosition,
+                local.my_domain_com.my_lib.middle_known.MiddleKnownPosition,
+                local.my_domain_com.my_lib.creator_known.CreatorKnownPosition,
+                local.my_domain_com.my_lib.destructor.DestructorAction,
             ),
         )
         source.create_particle()
         literal.record_operation("test.create(source)")
         source.particle.get_position(
-            local.my_domain_com.my_lib.callee_known.CalleeKnown
+            local.my_domain_com.my_lib.callee_known.CalleeKnownPosition
         ).create_particle()
         literal.record_operation("test.create(source::/callee_known)")
         source.particle.get_position(
-            local.my_domain_com.my_lib.callee_known.CalleeKnown
+            local.my_domain_com.my_lib.callee_known.CalleeKnownPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(source::/callee_known)")
         source.particle.get_position(
-            local.my_domain_com.my_lib.middle_known.MiddleKnown
+            local.my_domain_com.my_lib.middle_known.MiddleKnownPosition
         ).create_particle()
         literal.record_operation("test.create(source::/middle_known)")
         source.particle.get_position(
-            local.my_domain_com.my_lib.middle_known.MiddleKnown
+            local.my_domain_com.my_lib.middle_known.MiddleKnownPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(source::/middle_known)")
         source.particle.get_position(
-            local.my_domain_com.my_lib.creator_known.CreatorKnown
+            local.my_domain_com.my_lib.creator_known.CreatorKnownPosition
         ).create_particle()
         literal.record_operation("test.create(source::/creator_known)")
         source.move_particle_to(
             self.on_particle.get_action(
-                local.my_domain_com.my_lib.middle.Middle
+                local.my_domain_com.my_lib.middle.MiddleAction
             ).get_interface_position(
                 "position<target>"
             )
         )
         literal.record_operation("test.move(source, /middle::target)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).run(MiddleDestructionContracts())
 
 
@@ -67,12 +67,12 @@ class MiddleDestructionContracts(local.my_domain_com.my_lib.middle.MiddleDestruc
     @override
     def run_destructors_position_target(self, particle: literal.Particle):
         particle.get_action(
-            local.my_domain_com.my_lib.destructor.Destructor
+            local.my_domain_com.my_lib.destructor.DestructorAction
         ).run()
 
     @override
     def destroy_position_target(self, particle: literal.Particle):
         particle.get_position(
-            local.my_domain_com.my_lib.creator_known.CreatorKnown
+            local.my_domain_com.my_lib.creator_known.CreatorKnownPosition
         ).destroy_particle()
         literal.record_operation("destroyer.destroy(target::/creator_known)")

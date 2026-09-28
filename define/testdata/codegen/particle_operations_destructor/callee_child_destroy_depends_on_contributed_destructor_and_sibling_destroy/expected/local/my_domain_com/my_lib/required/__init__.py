@@ -9,9 +9,9 @@ import local.my_domain_com.my_lib.extra_b
 import local.my_domain_com.my_lib.work
 
 
-class Required(literal.GlobalPosition):
+class RequiredPosition(literal.GlobalPosition):
     constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.extra_a.ExtraA,
-        local.my_domain_com.my_lib.extra_b.ExtraB,
-        local.my_domain_com.my_lib.work.Work,
+        local.my_domain_com.my_lib.extra_a.ExtraAPosition,
+        local.my_domain_com.my_lib.extra_b.ExtraBPosition,
+        local.my_domain_com.my_lib.work.WorkPosition,
     )

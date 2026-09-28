@@ -9,38 +9,38 @@ import local.my_domain_com.my_lib.grandchild
 import local.my_domain_com.my_lib.sibling
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         box = literal.LocalPosition(
             "position<box>",
             constraints=(
-                local.my_domain_com.my_lib.child.Child,
-                local.my_domain_com.my_lib.sibling.Sibling,
+                local.my_domain_com.my_lib.child.ChildPosition,
+                local.my_domain_com.my_lib.sibling.SiblingPosition,
             ),
         )
         box.create_particle()
         box.particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).create_particle()
         box.particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.grandchild.Grandchild
+            local.my_domain_com.my_lib.grandchild.GrandchildPosition
         ).create_particle()
         box.particle.get_position(
-            local.my_domain_com.my_lib.sibling.Sibling
+            local.my_domain_com.my_lib.sibling.SiblingPosition
         ).create_particle()
         box.particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.grandchild.Grandchild
+            local.my_domain_com.my_lib.grandchild.GrandchildPosition
         ).destroy_particle()
         box.particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).destroy_particle()
         box.particle.get_position(
-            local.my_domain_com.my_lib.sibling.Sibling
+            local.my_domain_com.my_lib.sibling.SiblingPosition
         ).destroy_particle()
         box.destroy_particle()

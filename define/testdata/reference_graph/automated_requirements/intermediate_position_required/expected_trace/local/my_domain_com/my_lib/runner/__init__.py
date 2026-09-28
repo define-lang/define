@@ -37,7 +37,7 @@ class RunnerDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = RunnerDestructionContracts()
 
 
-class Runner(literal.Action):
+class RunnerAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -47,7 +47,7 @@ class Runner(literal.Action):
                 literal.LocalPosition(
                     "position<wrap>",
                     constraints=(
-                        local.my_domain_com.my_lib.mid.Mid,
+                        local.my_domain_com.my_lib.mid.MidPosition,
                     ),
                 ),
             ],
@@ -59,33 +59,33 @@ class Runner(literal.Action):
             self.get_interface_position(
                 "position<wrap>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.mid.Mid
+                local.my_domain_com.my_lib.mid.MidPosition
             ).particle.get_position(
-                local.my_domain_com.my_lib.leaf.Leaf
+                local.my_domain_com.my_lib.leaf.LeafPosition
             ).particle
         )
         destruction_contracts.destroy_position_wrap__position_mid__position_leaf(
             self.get_interface_position(
                 "position<wrap>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.mid.Mid
+                local.my_domain_com.my_lib.mid.MidPosition
             ).particle.get_position(
-                local.my_domain_com.my_lib.leaf.Leaf
+                local.my_domain_com.my_lib.leaf.LeafPosition
             ).particle
         )
         self.get_interface_position(
             "position<wrap>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.mid.Mid
+            local.my_domain_com.my_lib.mid.MidPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.leaf.Leaf
+            local.my_domain_com.my_lib.leaf.LeafPosition
         ).destroy_particle()
         literal.record_operation("runner.destroy(wrap::/mid::/leaf)")
         destruction_contracts.run_destructors_position_wrap__position_mid(
             self.get_interface_position(
                 "position<wrap>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.mid.Mid
+                local.my_domain_com.my_lib.mid.MidPosition
             ).particle
         )
         destruction_contracts.run_destructors_position_wrap(
@@ -97,7 +97,7 @@ class Runner(literal.Action):
             self.get_interface_position(
                 "position<wrap>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.mid.Mid
+                local.my_domain_com.my_lib.mid.MidPosition
             ).particle
         )
         destruction_contracts.destroy_position_wrap(
@@ -108,7 +108,7 @@ class Runner(literal.Action):
         self.get_interface_position(
             "position<wrap>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.mid.Mid
+            local.my_domain_com.my_lib.mid.MidPosition
         ).destroy_particle()
         literal.record_operation("runner.destroy(wrap::/mid)")
         self.get_interface_position(

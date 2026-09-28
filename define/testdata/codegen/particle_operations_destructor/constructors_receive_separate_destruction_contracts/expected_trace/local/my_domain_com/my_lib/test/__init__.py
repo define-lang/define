@@ -11,28 +11,28 @@ import local.my_domain_com.my_lib.second_cleanup
 import local.my_domain_com.my_lib.second_destructor
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         item = literal.LocalPosition(
             "position<item>",
             constraints=(
-                local.my_domain_com.my_lib.initialize.Initialize,
-                local.my_domain_com.my_lib.first_cleanup.FirstCleanup,
-                local.my_domain_com.my_lib.second_cleanup.SecondCleanup,
+                local.my_domain_com.my_lib.initialize.InitializeAction,
+                local.my_domain_com.my_lib.first_cleanup.FirstCleanupAction,
+                local.my_domain_com.my_lib.second_cleanup.SecondCleanupAction,
             ),
         )
         item.create_particle()
         literal.record_operation("test.create(item)")
         item.particle.get_action(
-            local.my_domain_com.my_lib.initialize.Initialize
+            local.my_domain_com.my_lib.initialize.InitializeAction
         ).run()
         item.particle.get_action(
-            local.my_domain_com.my_lib.first_cleanup.FirstCleanup
+            local.my_domain_com.my_lib.first_cleanup.FirstCleanupAction
         ).run(FirstCleanupDestructionContracts())
         item.particle.get_action(
-            local.my_domain_com.my_lib.second_cleanup.SecondCleanup
+            local.my_domain_com.my_lib.second_cleanup.SecondCleanupAction
         ).run(SecondCleanupDestructionContracts())
         item.destroy_particle()
         literal.record_operation("test.destroy(item)")
@@ -43,7 +43,7 @@ class FirstCleanupDestructionContracts(local.my_domain_com.my_lib.first_cleanup.
     @override
     def run_destructors_global_position_left(self, particle: literal.Particle):
         particle.get_action(
-            local.my_domain_com.my_lib.first_destructor.FirstDestructor
+            local.my_domain_com.my_lib.first_destructor.FirstDestructorAction
         ).run()
 
 
@@ -52,5 +52,5 @@ class SecondCleanupDestructionContracts(local.my_domain_com.my_lib.second_cleanu
     @override
     def run_destructors_global_position_right(self, particle: literal.Particle):
         particle.get_action(
-            local.my_domain_com.my_lib.second_destructor.SecondDestructor
+            local.my_domain_com.my_lib.second_destructor.SecondDestructorAction
         ).run()

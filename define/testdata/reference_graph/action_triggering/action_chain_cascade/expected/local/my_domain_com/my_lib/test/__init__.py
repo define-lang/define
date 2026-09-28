@@ -7,18 +7,18 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.kick_off
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.kick_off.KickOff,
+        local.my_domain_com.my_lib.kick_off.KickOffAction,
     )
 
     @override
     def run(self):
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.kick_off.KickOff
+            local.my_domain_com.my_lib.kick_off.KickOffAction
         ).get_interface_position(
             "position<trigger>"
         ).create_particle()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.kick_off.KickOff
+            local.my_domain_com.my_lib.kick_off.KickOffAction
         ).run()

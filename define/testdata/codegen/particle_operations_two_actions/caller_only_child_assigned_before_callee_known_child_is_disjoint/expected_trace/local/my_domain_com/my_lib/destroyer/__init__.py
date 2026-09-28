@@ -24,7 +24,7 @@ class DestroyerDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = DestroyerDestructionContracts()
 
 
-class Destroyer(literal.Action):
+class DestroyerAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -34,7 +34,7 @@ class Destroyer(literal.Action):
                 literal.LocalPosition(
                     "position<parent>",
                     constraints=(
-                        local.my_domain_com.my_lib.child.Child,
+                        local.my_domain_com.my_lib.child.ChildPosition,
                     ),
                 ),
             ],
@@ -48,7 +48,7 @@ class Destroyer(literal.Action):
         self.get_interface_position(
             "position<parent>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).move_particle_to(
             keeper
         )
@@ -57,7 +57,7 @@ class Destroyer(literal.Action):
             self.get_interface_position(
                 "position<parent>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.child.Child
+                local.my_domain_com.my_lib.child.ChildPosition
             )
         )
         literal.record_operation("destroyer.move(keeper, parent::/child)")
@@ -65,7 +65,7 @@ class Destroyer(literal.Action):
             self.get_interface_position(
                 "position<parent>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.child.Child
+                local.my_domain_com.my_lib.child.ChildPosition
             ).particle
         )
         destruction_contracts.run_destructors_position_parent(
@@ -77,7 +77,7 @@ class Destroyer(literal.Action):
             self.get_interface_position(
                 "position<parent>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.child.Child
+                local.my_domain_com.my_lib.child.ChildPosition
             ).particle
         )
         destruction_contracts.destroy_position_parent(
@@ -88,7 +88,7 @@ class Destroyer(literal.Action):
         self.get_interface_position(
             "position<parent>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).destroy_particle()
         literal.record_operation("destroyer.destroy(parent::/child)")
         self.get_interface_position(

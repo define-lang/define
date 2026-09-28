@@ -8,10 +8,10 @@ import local.my_domain_com.my_lib.marker
 import local.my_domain_com.my_lib.second
 
 
-class SecondDestructor(literal.Action):
+class SecondDestructorAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.second.Second,
-        local.my_domain_com.my_lib.marker.Marker,
+        local.my_domain_com.my_lib.second.SecondPosition,
+        local.my_domain_com.my_lib.marker.MarkerPosition,
     )
 
     @override
@@ -20,18 +20,18 @@ class SecondDestructor(literal.Action):
             "position<holder>",
         )
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.second.Second
+            local.my_domain_com.my_lib.second.SecondPosition
         ).move_particle_to(
             holder
         )
         holder.move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.second.Second
+                local.my_domain_com.my_lib.second.SecondPosition
             )
         )
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.marker.Marker
+            local.my_domain_com.my_lib.marker.MarkerPosition
         ).create_particle()
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.marker.Marker
+            local.my_domain_com.my_lib.marker.MarkerPosition
         ).destroy_particle()

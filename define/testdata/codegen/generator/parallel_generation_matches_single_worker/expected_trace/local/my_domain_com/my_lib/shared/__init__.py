@@ -16,7 +16,7 @@ class SharedDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = SharedDestructionContracts()
 
 
-class Shared(literal.Action):
+class SharedAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(

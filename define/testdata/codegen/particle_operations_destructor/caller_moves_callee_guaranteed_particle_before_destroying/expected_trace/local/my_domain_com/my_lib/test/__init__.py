@@ -8,14 +8,14 @@ import local.my_domain_com.my_lib.destructor
 import local.my_domain_com.my_lib.maker
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         box = literal.LocalPosition(
             "position<box>",
             constraints=(
-                local.my_domain_com.my_lib.maker.Maker,
+                local.my_domain_com.my_lib.maker.MakerAction,
             ),
         )
         held = literal.LocalPosition(
@@ -24,16 +24,16 @@ class Test(literal.Action):
         box.create_particle()
         literal.record_operation("test.create(box)")
         box.particle.get_action(
-            local.my_domain_com.my_lib.maker.Maker
+            local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         literal.record_operation("test.create(box::/maker::run)")
         box.particle.get_action(
-            local.my_domain_com.my_lib.maker.Maker
+            local.my_domain_com.my_lib.maker.MakerAction
         ).run()
         box.particle.get_action(
-            local.my_domain_com.my_lib.maker.Maker
+            local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(
             "position<result>"
         ).move_particle_to(
@@ -41,12 +41,12 @@ class Test(literal.Action):
         )
         literal.record_operation("test.move(box::/maker::result, held)")
         held.particle.get_action(
-            local.my_domain_com.my_lib.destructor.Destructor
+            local.my_domain_com.my_lib.destructor.DestructorAction
         ).run()
         held.destroy_particle()
         literal.record_operation("test.destroy(held)")
         box.particle.get_action(
-            local.my_domain_com.my_lib.maker.Maker
+            local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(
             "position<run>"
         ).destroy_particle()

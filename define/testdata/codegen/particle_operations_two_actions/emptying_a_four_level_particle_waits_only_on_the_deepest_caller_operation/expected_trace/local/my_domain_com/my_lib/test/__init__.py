@@ -11,89 +11,89 @@ import local.my_domain_com.my_lib.other
 import local.my_domain_com.my_lib.parent
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.parent.Parent,
-        local.my_domain_com.my_lib.other.Other,
+        local.my_domain_com.my_lib.parent.ParentPosition,
+        local.my_domain_com.my_lib.other.OtherAction,
     )
 
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.parent.Parent
+            local.my_domain_com.my_lib.parent.ParentPosition
         ).create_particle()
         literal.record_operation("test.create(/parent)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.parent.Parent
+            local.my_domain_com.my_lib.parent.ParentPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).create_particle()
         literal.record_operation("test.create(/parent::/child)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.parent.Parent
+            local.my_domain_com.my_lib.parent.ParentPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.grandchild.Grandchild
+            local.my_domain_com.my_lib.grandchild.GrandchildPosition
         ).create_particle()
         literal.record_operation("test.create(/parent::/child::/grandchild)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.parent.Parent
+            local.my_domain_com.my_lib.parent.ParentPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.grandchild.Grandchild
+            local.my_domain_com.my_lib.grandchild.GrandchildPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.greatgrandchild.Greatgrandchild
+            local.my_domain_com.my_lib.greatgrandchild.GreatgrandchildPosition
         ).create_particle()
         literal.record_operation("test.create(/parent::/child::/grandchild::/greatgrandchild)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.other.Other
+            local.my_domain_com.my_lib.other.OtherAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("test.create(/other::trigger_pos)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.other.Other
+            local.my_domain_com.my_lib.other.OtherAction
         ).run()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.other.Other
+            local.my_domain_com.my_lib.other.OtherAction
         ).get_interface_position(
             "position<out>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.grandchild.Grandchild
+            local.my_domain_com.my_lib.grandchild.GrandchildPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.greatgrandchild.Greatgrandchild
+            local.my_domain_com.my_lib.greatgrandchild.GreatgrandchildPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(/other::out::/child::/grandchild::/greatgrandchild)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.other.Other
+            local.my_domain_com.my_lib.other.OtherAction
         ).get_interface_position(
             "position<out>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.grandchild.Grandchild
+            local.my_domain_com.my_lib.grandchild.GrandchildPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(/other::out::/child::/grandchild)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.other.Other
+            local.my_domain_com.my_lib.other.OtherAction
         ).get_interface_position(
             "position<out>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(/other::out::/child)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.other.Other
+            local.my_domain_com.my_lib.other.OtherAction
         ).get_interface_position(
             "position<out>"
         ).destroy_particle()
         literal.record_operation("test.destroy(/other::out)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.other.Other
+            local.my_domain_com.my_lib.other.OtherAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

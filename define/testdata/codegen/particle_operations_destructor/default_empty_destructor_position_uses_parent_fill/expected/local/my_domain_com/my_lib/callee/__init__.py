@@ -18,7 +18,7 @@ class CalleeDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = CalleeDestructionContracts()
 
 
-class Callee(literal.Action):
+class CalleeAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -28,7 +28,7 @@ class Callee(literal.Action):
                 literal.LocalPosition(
                     "position<src>",
                     constraints=(
-                        local.my_domain_com.my_lib.destructor.Destructor,
+                        local.my_domain_com.my_lib.destructor.DestructorAction,
                     ),
                 ),
             ],
@@ -39,7 +39,7 @@ class Callee(literal.Action):
         self.get_interface_position(
             "position<src>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.destructor.Destructor
+            local.my_domain_com.my_lib.destructor.DestructorAction
         ).run()
         destruction_contracts.run_destructors_position_src(
             self.get_interface_position(

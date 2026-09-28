@@ -10,10 +10,10 @@ import local.my_domain_com.my_lib.outer
 import local.my_domain_com.my_lib.target
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.outer.Outer,
-        local.my_domain_com.my_lib.target.Target,
+        local.my_domain_com.my_lib.outer.OuterAction,
+        local.my_domain_com.my_lib.target.TargetPosition,
     )
 
     @override
@@ -21,15 +21,15 @@ class Test(literal.Action):
         source = literal.LocalPosition(
             "position<source>",
             constraints=(
-                local.my_domain_com.my_lib.extra_destructor.ExtraDestructor,
-                local.my_domain_com.my_lib.known_destructor.KnownDestructor,
+                local.my_domain_com.my_lib.extra_destructor.ExtraDestructorAction,
+                local.my_domain_com.my_lib.known_destructor.KnownDestructorAction,
             ),
         )
         source.create_particle()
         literal.record_operation("test.create(source)")
         source.move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.target.Target
+                local.my_domain_com.my_lib.target.TargetPosition
             )
         )
         literal.record_operation("test.move(source, /target)")
@@ -40,14 +40,14 @@ class Test(literal.Action):
         literal.record_operation("test.create(run_source)")
         run_source.move_particle_to(
             self.on_particle.get_action(
-                local.my_domain_com.my_lib.outer.Outer
+                local.my_domain_com.my_lib.outer.OuterAction
             ).get_interface_position(
                 "position<run>"
             )
         )
         literal.record_operation("test.move(run_source, /outer::run)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.outer.Outer
+            local.my_domain_com.my_lib.outer.OuterAction
         ).run(OuterDestructionContracts())
 
 
@@ -56,5 +56,5 @@ class OuterDestructionContracts(local.my_domain_com.my_lib.outer.OuterDestructio
     @override
     def run_destructors_global_position_target(self, particle: literal.Particle):
         particle.get_action(
-            local.my_domain_com.my_lib.extra_destructor.ExtraDestructor
+            local.my_domain_com.my_lib.extra_destructor.ExtraDestructorAction
         ).run()

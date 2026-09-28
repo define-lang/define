@@ -7,9 +7,9 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.fill_item
 
 
-class CallFill(literal.Action):
+class CallFillAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.fill_item.FillItem,
+        local.my_domain_com.my_lib.fill_item.FillItemAction,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -23,16 +23,16 @@ class CallFill(literal.Action):
     @override
     def run(self):
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.fill_item.FillItem
+            local.my_domain_com.my_lib.fill_item.FillItemAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("call_fill.create(/fill_item::trigger_pos)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.fill_item.FillItem
+            local.my_domain_com.my_lib.fill_item.FillItemAction
         ).run()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.fill_item.FillItem
+            local.my_domain_com.my_lib.fill_item.FillItemAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

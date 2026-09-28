@@ -32,9 +32,9 @@ class RunnerDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = RunnerDestructionContracts()
 
 
-class Runner(literal.Action):
+class RunnerAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.marker.Marker,
+        local.my_domain_com.my_lib.marker.MarkerPosition,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -45,13 +45,13 @@ class Runner(literal.Action):
                 literal.LocalPosition(
                     "position<input_a>",
                     constraints=(
-                        local.my_domain_com.my_lib.quality_a.QualityA,
+                        local.my_domain_com.my_lib.quality_a.QualityAPosition,
                     ),
                 ),
                 literal.LocalPosition(
                     "position<input_b>",
                     constraints=(
-                        local.my_domain_com.my_lib.quality_b.QualityB,
+                        local.my_domain_com.my_lib.quality_b.QualityBPosition,
                     ),
                 ),
             ],
@@ -60,19 +60,19 @@ class Runner(literal.Action):
     @override
     def run(self, destruction_contracts: RunnerDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.marker.Marker
+            local.my_domain_com.my_lib.marker.MarkerPosition
         ).create_particle()
         literal.record_operation("runner.create(/marker)")
         self.get_interface_position(
             "position<input_a>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.quality_a.QualityA
+            local.my_domain_com.my_lib.quality_a.QualityAPosition
         ).create_particle()
         literal.record_operation("runner.create(input_a::/quality_a)")
         self.get_interface_position(
             "position<input_b>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.quality_b.QualityB
+            local.my_domain_com.my_lib.quality_b.QualityBPosition
         ).create_particle()
         literal.record_operation("runner.create(input_b::/quality_b)")
         destruction_contracts.run_destructors_position_input_a(
@@ -88,7 +88,7 @@ class Runner(literal.Action):
         self.get_interface_position(
             "position<input_a>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.quality_a.QualityA
+            local.my_domain_com.my_lib.quality_a.QualityAPosition
         ).destroy_particle()
         literal.record_operation("runner.destroy(input_a::/quality_a)")
         self.get_interface_position(
@@ -108,7 +108,7 @@ class Runner(literal.Action):
         self.get_interface_position(
             "position<input_b>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.quality_b.QualityB
+            local.my_domain_com.my_lib.quality_b.QualityBPosition
         ).destroy_particle()
         literal.record_operation("runner.destroy(input_b::/quality_b)")
         self.get_interface_position(

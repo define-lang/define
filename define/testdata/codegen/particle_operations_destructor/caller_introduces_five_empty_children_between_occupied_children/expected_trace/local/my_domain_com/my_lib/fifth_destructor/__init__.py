@@ -8,27 +8,27 @@ import local.my_domain_com.my_lib.fifth
 import local.my_domain_com.my_lib.marker
 
 
-class FifthDestructor(literal.Action):
+class FifthDestructorAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.fifth.Fifth,
-        local.my_domain_com.my_lib.marker.Marker,
+        local.my_domain_com.my_lib.fifth.FifthPosition,
+        local.my_domain_com.my_lib.marker.MarkerPosition,
     )
 
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.fifth.Fifth
+            local.my_domain_com.my_lib.fifth.FifthPosition
         ).create_particle()
         literal.record_operation("fifth_destructor.create(/fifth)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.fifth.Fifth
+            local.my_domain_com.my_lib.fifth.FifthPosition
         ).destroy_particle()
         literal.record_operation("fifth_destructor.destroy(/fifth)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.marker.Marker
+            local.my_domain_com.my_lib.marker.MarkerPosition
         ).create_particle()
         literal.record_operation("fifth_destructor.create(/marker)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.marker.Marker
+            local.my_domain_com.my_lib.marker.MarkerPosition
         ).destroy_particle()
         literal.record_operation("fifth_destructor.destroy(/marker)")

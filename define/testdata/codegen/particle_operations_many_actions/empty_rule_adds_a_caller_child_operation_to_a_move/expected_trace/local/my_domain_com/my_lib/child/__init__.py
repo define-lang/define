@@ -16,7 +16,7 @@ class ChildDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = ChildDestructionContracts()
 
 
-class Child(literal.Action):
+class ChildAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(

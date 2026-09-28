@@ -8,37 +8,37 @@ import local.my_domain_com.my_lib.first
 import local.my_domain_com.my_lib.second
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.first.First,
-        local.my_domain_com.my_lib.second.Second,
+        local.my_domain_com.my_lib.first.FirstAction,
+        local.my_domain_com.my_lib.second.SecondAction,
     )
 
     @override
     def run(self):
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.first.First
+            local.my_domain_com.my_lib.first.FirstAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.first.First
+            local.my_domain_com.my_lib.first.FirstAction
         ).run()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.second.Second
+            local.my_domain_com.my_lib.second.SecondAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.second.Second
+            local.my_domain_com.my_lib.second.SecondAction
         ).run()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.first.First
+            local.my_domain_com.my_lib.first.FirstAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.second.Second
+            local.my_domain_com.my_lib.second.SecondAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

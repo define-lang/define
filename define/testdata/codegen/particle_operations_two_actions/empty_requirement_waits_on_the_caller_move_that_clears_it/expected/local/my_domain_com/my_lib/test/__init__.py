@@ -7,7 +7,7 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.other
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
@@ -17,35 +17,35 @@ class Test(literal.Action):
         gateway = literal.LocalPosition(
             "position<gateway>",
             constraints=(
-                local.my_domain_com.my_lib.other.Other,
+                local.my_domain_com.my_lib.other.OtherAction,
             ),
         )
         gateway.create_particle()
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.other.Other
+            local.my_domain_com.my_lib.other.OtherAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.other.Other
+            local.my_domain_com.my_lib.other.OtherAction
         ).run()
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.other.Other
+            local.my_domain_com.my_lib.other.OtherAction
         ).get_interface_position(
             "position<slot>"
         ).move_particle_to(
             sink
         )
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.other.Other
+            local.my_domain_com.my_lib.other.OtherAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.other.Other
+            local.my_domain_com.my_lib.other.OtherAction
         ).run()
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.other.Other
+            local.my_domain_com.my_lib.other.OtherAction
         ).get_interface_position(
             "position<slot>"
         ).destroy_particle()

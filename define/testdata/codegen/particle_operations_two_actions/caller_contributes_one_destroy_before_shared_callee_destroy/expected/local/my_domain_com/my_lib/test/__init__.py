@@ -11,68 +11,68 @@ import local.my_domain_com.my_lib.other
 import local.my_domain_com.my_lib.sibling
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         gateway = literal.LocalPosition(
             "position<gateway>",
             constraints=(
-                local.my_domain_com.my_lib.other.Other,
+                local.my_domain_com.my_lib.other.OtherAction,
             ),
         )
         gateway.create_particle()
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.other.Other
+            local.my_domain_com.my_lib.other.OtherAction
         ).get_interface_position(
             "position<parent>"
         ).create_particle()
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.other.Other
+            local.my_domain_com.my_lib.other.OtherAction
         ).get_interface_position(
             "position<parent>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).create_particle()
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.other.Other
+            local.my_domain_com.my_lib.other.OtherAction
         ).get_interface_position(
             "position<parent>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.sibling.Sibling
+            local.my_domain_com.my_lib.sibling.SiblingPosition
         ).create_particle()
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.other.Other
+            local.my_domain_com.my_lib.other.OtherAction
         ).get_interface_position(
             "position<parent>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.grandchild.Grandchild
+            local.my_domain_com.my_lib.grandchild.GrandchildPosition
         ).create_particle()
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.other.Other
+            local.my_domain_com.my_lib.other.OtherAction
         ).get_interface_position(
             "position<parent>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.grandchild.Grandchild
+            local.my_domain_com.my_lib.grandchild.GrandchildPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.greatgrandchild.Greatgrandchild
+            local.my_domain_com.my_lib.greatgrandchild.GreatgrandchildPosition
         ).create_particle()
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.other.Other
+            local.my_domain_com.my_lib.other.OtherAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.other.Other
+            local.my_domain_com.my_lib.other.OtherAction
         ).run(OtherDestructionContracts())
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.other.Other
+            local.my_domain_com.my_lib.other.OtherAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
@@ -84,11 +84,11 @@ class OtherDestructionContracts(local.my_domain_com.my_lib.other.OtherDestructio
     @override
     def destroy_position_parent__position_child__position_grandchild(self, particle: literal.Particle):
         particle.get_position(
-            local.my_domain_com.my_lib.greatgrandchild.Greatgrandchild
+            local.my_domain_com.my_lib.greatgrandchild.GreatgrandchildPosition
         ).destroy_particle()
 
     @override
     def destroy_position_parent__position_child(self, particle: literal.Particle):
         particle.get_position(
-            local.my_domain_com.my_lib.sibling.Sibling
+            local.my_domain_com.my_lib.sibling.SiblingPosition
         ).destroy_particle()

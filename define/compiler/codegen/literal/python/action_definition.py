@@ -58,6 +58,8 @@ class ActionDefinitionGenerator:
             generated.imports.update(
                 quality.module_name for quality in position.constraints
             )
+        module_name = self._converter.module_name(definition.typed_name.name_content)
+        generated.imports.discard(module_name)
         propagated_destructions = self._action_input.propagated_destructions
         contract_names = self._converter.destruction_method_names(
             propagated_destructions
@@ -67,10 +69,8 @@ class ActionDefinitionGenerator:
             contract_methods.append(naming.RUN_DESTRUCTORS_PREFIX + name)
             contract_methods.append(naming.DESTROY_PREFIX + name)
         return action_context.ActionDefinitionContext(
-            class_name=self._converter.class_name(
-                definition.typed_name.name_content.path.relative_path
-            ),
-            module_name=self._converter.module_name(definition.typed_name.name_content),
+            class_name=self._converter.class_name(definition.typed_name),
+            module_name=module_name,
             statements=generated.statements,
             interface_positions=interfaces,
             implied_qualities=implied_qualities,

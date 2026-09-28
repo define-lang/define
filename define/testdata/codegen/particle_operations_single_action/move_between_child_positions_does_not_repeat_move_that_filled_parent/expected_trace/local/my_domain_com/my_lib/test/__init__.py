@@ -8,22 +8,22 @@ import local.my_domain_com.my_lib.destination
 import local.my_domain_com.my_lib.origin
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         incoming = literal.LocalPosition(
             "position<incoming>",
             constraints=(
-                local.my_domain_com.my_lib.origin.Origin,
-                local.my_domain_com.my_lib.destination.Destination,
+                local.my_domain_com.my_lib.origin.OriginPosition,
+                local.my_domain_com.my_lib.destination.DestinationPosition,
             ),
         )
         box = literal.LocalPosition(
             "position<box>",
             constraints=(
-                local.my_domain_com.my_lib.origin.Origin,
-                local.my_domain_com.my_lib.destination.Destination,
+                local.my_domain_com.my_lib.origin.OriginPosition,
+                local.my_domain_com.my_lib.destination.DestinationPosition,
             ),
         )
         incoming.create_particle()
@@ -33,19 +33,19 @@ class Test(literal.Action):
         )
         literal.record_operation("test.move(incoming, box)")
         box.particle.get_position(
-            local.my_domain_com.my_lib.origin.Origin
+            local.my_domain_com.my_lib.origin.OriginPosition
         ).create_particle()
         literal.record_operation("test.create(box::/origin)")
         box.particle.get_position(
-            local.my_domain_com.my_lib.origin.Origin
+            local.my_domain_com.my_lib.origin.OriginPosition
         ).move_particle_to(
             box.particle.get_position(
-                local.my_domain_com.my_lib.destination.Destination
+                local.my_domain_com.my_lib.destination.DestinationPosition
             )
         )
         literal.record_operation("test.move(box::/origin, box::/destination)")
         box.particle.get_position(
-            local.my_domain_com.my_lib.destination.Destination
+            local.my_domain_com.my_lib.destination.DestinationPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(box::/destination)")
         box.destroy_particle()

@@ -8,33 +8,33 @@ import local.my_domain_com.my_library_collection.inner_position
 import local.my_domain_com.my_library_collection.perform_operation
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_library_collection.perform_operation.PerformOperation,
+        local.my_domain_com.my_library_collection.perform_operation.PerformOperationAction,
     )
 
     @override
     def run(self):
         self.on_particle.get_action(
-            local.my_domain_com.my_library_collection.perform_operation.PerformOperation
+            local.my_domain_com.my_library_collection.perform_operation.PerformOperationAction
         ).get_interface_position(
             "position<operation_trigger>"
         ).create_particle()
         literal.record_operation("test.create(/perform_operation::operation_trigger)")
         self.on_particle.get_action(
-            local.my_domain_com.my_library_collection.perform_operation.PerformOperation
+            local.my_domain_com.my_library_collection.perform_operation.PerformOperationAction
         ).get_interface_position(
             "position<operation_trigger>"
         ).particle.get_position(
-            local.my_domain_com.my_library_collection.inner_position.InnerPosition
+            local.my_domain_com.my_library_collection.inner_position.InnerPositionPosition
         ).create_particle()
         literal.record_operation("test.create(/perform_operation::operation_trigger::/inner_position)")
         self.on_particle.get_action(
-            local.my_domain_com.my_library_collection.perform_operation.PerformOperation
+            local.my_domain_com.my_library_collection.perform_operation.PerformOperationAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         literal.record_operation("test.create(/perform_operation::run)")
         self.on_particle.get_action(
-            local.my_domain_com.my_library_collection.perform_operation.PerformOperation
+            local.my_domain_com.my_library_collection.perform_operation.PerformOperationAction
         ).run()

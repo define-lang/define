@@ -16,7 +16,7 @@ class FillerDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = FillerDestructionContracts()
 
 
-class Filler(literal.Action):
+class FillerAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(

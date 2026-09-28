@@ -8,7 +8,7 @@ import local.my_domain_com.my_lib.destruct_a
 import local.my_domain_com.my_lib.destruct_b
 
 
-class Maker(literal.Action):
+class MakerAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -17,8 +17,8 @@ class Maker(literal.Action):
                 literal.LocalPosition(
                     "position<result>",
                     constraints=(
-                        local.my_domain_com.my_lib.destruct_a.DestructA,
-                        local.my_domain_com.my_lib.destruct_b.DestructB,
+                        local.my_domain_com.my_lib.destruct_a.DestructAAction,
+                        local.my_domain_com.my_lib.destruct_b.DestructBAction,
                     ),
                 ),
                 literal.LocalPosition("position<run>"),

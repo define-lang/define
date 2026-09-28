@@ -7,7 +7,7 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.greatgrandchild
 
 
-class Grandchild(literal.GlobalPosition):
+class GrandchildPosition(literal.GlobalPosition):
     constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.greatgrandchild.Greatgrandchild,
+        local.my_domain_com.my_lib.greatgrandchild.GreatgrandchildPosition,
     )

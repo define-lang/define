@@ -9,10 +9,10 @@ import local.my_domain_com.my_lib.item
 import local.my_domain_com.my_lib.other
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.input.Input,
-        local.my_domain_com.my_lib.other.Other,
+        local.my_domain_com.my_lib.input.InputPosition,
+        local.my_domain_com.my_lib.other.OtherAction,
     )
 
     @override
@@ -23,31 +23,31 @@ class Test(literal.Action):
         box = literal.LocalPosition(
             "position<box>",
             constraints=(
-                local.my_domain_com.my_lib.item.Item,
+                local.my_domain_com.my_lib.item.ItemPosition,
             ),
         )
         box.create_particle()
         box.particle.get_position(
-            local.my_domain_com.my_lib.item.Item
+            local.my_domain_com.my_lib.item.ItemPosition
         ).create_particle()
         box.move_particle_to(
             holder_a
         )
         holder_a.move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.input.Input
+                local.my_domain_com.my_lib.input.InputPosition
             )
         )
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.other.Other
+            local.my_domain_com.my_lib.other.OtherAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.other.Other
+            local.my_domain_com.my_lib.other.OtherAction
         ).run()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.other.Other
+            local.my_domain_com.my_lib.other.OtherAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

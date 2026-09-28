@@ -8,29 +8,29 @@ import local.my_domain_com.my_lib.middle_a
 import local.my_domain_com.my_lib.middle_b
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.middle_a.MiddleA,
-        local.my_domain_com.my_lib.middle_b.MiddleB,
+        local.my_domain_com.my_lib.middle_a.MiddleAAction,
+        local.my_domain_com.my_lib.middle_b.MiddleBAction,
     )
 
     @override
     def run(self):
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.middle_a.MiddleA
+            local.my_domain_com.my_lib.middle_a.MiddleAAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         literal.record_operation("test.create(/middle_a::run)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.middle_a.MiddleA
+            local.my_domain_com.my_lib.middle_a.MiddleAAction
         ).run()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.middle_b.MiddleB
+            local.my_domain_com.my_lib.middle_b.MiddleBAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         literal.record_operation("test.create(/middle_b::run)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.middle_b.MiddleB
+            local.my_domain_com.my_lib.middle_b.MiddleBAction
         ).run()

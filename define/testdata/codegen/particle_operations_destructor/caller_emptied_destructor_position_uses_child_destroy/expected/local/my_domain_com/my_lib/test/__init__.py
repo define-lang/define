@@ -9,48 +9,48 @@ import local.my_domain_com.my_lib.destructor
 import local.my_domain_com.my_lib.marker
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         carrier = literal.LocalPosition(
             "position<carrier>",
             constraints=(
-                local.my_domain_com.my_lib.callee.Callee,
+                local.my_domain_com.my_lib.callee.CalleeAction,
             ),
         )
         source = literal.LocalPosition(
             "position<source>",
             constraints=(
-                local.my_domain_com.my_lib.marker.Marker,
-                local.my_domain_com.my_lib.destructor.Destructor,
+                local.my_domain_com.my_lib.marker.MarkerPosition,
+                local.my_domain_com.my_lib.destructor.DestructorAction,
             ),
         )
         carrier.create_particle()
         source.create_particle()
         source.particle.get_position(
-            local.my_domain_com.my_lib.marker.Marker
+            local.my_domain_com.my_lib.marker.MarkerPosition
         ).create_particle()
         source.particle.get_position(
-            local.my_domain_com.my_lib.marker.Marker
+            local.my_domain_com.my_lib.marker.MarkerPosition
         ).destroy_particle()
         source.move_particle_to(
             carrier.particle.get_action(
-                local.my_domain_com.my_lib.callee.Callee
+                local.my_domain_com.my_lib.callee.CalleeAction
             ).get_interface_position(
                 "position<src>"
             )
         )
         carrier.particle.get_action(
-            local.my_domain_com.my_lib.callee.Callee
+            local.my_domain_com.my_lib.callee.CalleeAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         carrier.particle.get_action(
-            local.my_domain_com.my_lib.callee.Callee
+            local.my_domain_com.my_lib.callee.CalleeAction
         ).run()
         carrier.particle.get_action(
-            local.my_domain_com.my_lib.callee.Callee
+            local.my_domain_com.my_lib.callee.CalleeAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

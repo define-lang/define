@@ -7,6 +7,12 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.child
 
 
+class ClassVarPosition(literal.GlobalPosition):
+    constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
+        local.my_domain_com.my_lib.child.ChildPosition,
+    )
+
+
 class ClassVarDestructionContracts:
     def run_destructors_position_trigger_pos(self, _particle: literal.Particle):
         pass
@@ -18,9 +24,9 @@ class ClassVarDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = ClassVarDestructionContracts()
 
 
-class ClassVar_(literal.Action):
+class ClassVarAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.child.Child,
+        local.my_domain_com.my_lib.child.ChildPosition,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -34,11 +40,11 @@ class ClassVar_(literal.Action):
     @override
     def run(self, destruction_contracts: ClassVarDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).create_particle()
         literal.record_operation("class_var.create(/child)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).destroy_particle()
         literal.record_operation("class_var.destroy(/child)")
         self_ = literal.LocalPosition(
@@ -68,7 +74,7 @@ class ClassVar_(literal.Action):
         local_ = literal.LocalPosition(
             "position<local>",
             constraints=(
-                local.my_domain_com.my_lib.child.Child,
+                local.my_domain_com.my_lib.child.ChildPosition,
             ),
         )
         self_.create_particle()
@@ -90,7 +96,7 @@ class ClassVar_(literal.Action):
         local_.create_particle()
         literal.record_operation("class_var.create(local)")
         local_.particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).create_particle()
         literal.record_operation("class_var.create(local::/child)")
         destruction_contracts.run_destructors_position_trigger_pos(
@@ -124,7 +130,7 @@ class ClassVar_(literal.Action):
         class__.destroy_particle()
         literal.record_operation("class_var.destroy(class_)")
         local_.particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).destroy_particle()
         literal.record_operation("class_var.destroy(local::/child)")
         local_.destroy_particle()

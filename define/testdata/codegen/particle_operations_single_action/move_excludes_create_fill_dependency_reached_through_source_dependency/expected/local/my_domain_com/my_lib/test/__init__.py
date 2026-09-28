@@ -9,44 +9,44 @@ import local.my_domain_com.my_lib.item
 import local.my_domain_com.my_lib.payload
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         box = literal.LocalPosition(
             "position<box>",
             constraints=(
-                local.my_domain_com.my_lib.item.Item,
-                local.my_domain_com.my_lib.destination.Destination,
+                local.my_domain_com.my_lib.item.ItemPosition,
+                local.my_domain_com.my_lib.destination.DestinationPosition,
             ),
         )
         holder = literal.LocalPosition(
             "position<holder>",
             constraints=(
-                local.my_domain_com.my_lib.payload.Payload,
+                local.my_domain_com.my_lib.payload.PayloadPosition,
             ),
         )
         box.create_particle()
         box.particle.get_position(
-            local.my_domain_com.my_lib.item.Item
+            local.my_domain_com.my_lib.item.ItemPosition
         ).create_particle()
         box.particle.get_position(
-            local.my_domain_com.my_lib.item.Item
+            local.my_domain_com.my_lib.item.ItemPosition
         ).move_particle_to(
             holder
         )
         holder.particle.get_position(
-            local.my_domain_com.my_lib.payload.Payload
+            local.my_domain_com.my_lib.payload.PayloadPosition
         ).create_particle()
         holder.particle.get_position(
-            local.my_domain_com.my_lib.payload.Payload
+            local.my_domain_com.my_lib.payload.PayloadPosition
         ).move_particle_to(
             box.particle.get_position(
-                local.my_domain_com.my_lib.destination.Destination
+                local.my_domain_com.my_lib.destination.DestinationPosition
             )
         )
         box.particle.get_position(
-            local.my_domain_com.my_lib.destination.Destination
+            local.my_domain_com.my_lib.destination.DestinationPosition
         ).destroy_particle()
         box.destroy_particle()
         holder.destroy_particle()

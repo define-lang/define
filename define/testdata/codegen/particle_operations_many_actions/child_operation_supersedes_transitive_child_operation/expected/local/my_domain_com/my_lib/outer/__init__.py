@@ -8,10 +8,10 @@ import local.my_domain_com.my_lib.inner
 import local.my_domain_com.my_lib.storage
 
 
-class Outer(literal.Action):
+class OuterAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.inner.Inner,
-        local.my_domain_com.my_lib.storage.Storage,
+        local.my_domain_com.my_lib.inner.InnerAction,
+        local.my_domain_com.my_lib.storage.StorageAction,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -25,28 +25,28 @@ class Outer(literal.Action):
     @override
     def run(self):
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).run()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.storage.Storage
+            local.my_domain_com.my_lib.storage.StorageAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.storage.Storage
+            local.my_domain_com.my_lib.storage.StorageAction
         ).run()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.storage.Storage
+            local.my_domain_com.my_lib.storage.StorageAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

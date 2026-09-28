@@ -9,7 +9,7 @@ import local.my_domain_com.my_lib.origin
 import local.my_domain_com.my_lib.target
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
@@ -22,34 +22,34 @@ class Test(literal.Action):
         box = literal.LocalPosition(
             "position<box>",
             constraints=(
-                local.my_domain_com.my_lib.origin.Origin,
-                local.my_domain_com.my_lib.middle.Middle,
-                local.my_domain_com.my_lib.target.Target,
+                local.my_domain_com.my_lib.origin.OriginPosition,
+                local.my_domain_com.my_lib.middle.MiddlePosition,
+                local.my_domain_com.my_lib.target.TargetPosition,
             ),
         )
         box.create_particle()
         box.particle.get_position(
-            local.my_domain_com.my_lib.origin.Origin
+            local.my_domain_com.my_lib.origin.OriginPosition
         ).create_particle()
         box.particle.get_position(
-            local.my_domain_com.my_lib.origin.Origin
+            local.my_domain_com.my_lib.origin.OriginPosition
         ).move_particle_to(
             holder_a
         )
         holder_a.move_particle_to(
             box.particle.get_position(
-                local.my_domain_com.my_lib.middle.Middle
+                local.my_domain_com.my_lib.middle.MiddlePosition
             )
         )
         box.particle.get_position(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddlePosition
         ).move_particle_to(
             box.particle.get_position(
-                local.my_domain_com.my_lib.target.Target
+                local.my_domain_com.my_lib.target.TargetPosition
             )
         )
         box.particle.get_position(
-            local.my_domain_com.my_lib.target.Target
+            local.my_domain_com.my_lib.target.TargetPosition
         ).move_particle_to(
             holder_c
         )

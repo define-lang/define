@@ -8,43 +8,43 @@ import local.my_domain_com.my_lib.item
 import local.my_domain_com.my_lib.middle
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         gateway = literal.LocalPosition(
             "position<gateway>",
             constraints=(
-                local.my_domain_com.my_lib.middle.Middle,
+                local.my_domain_com.my_lib.middle.MiddleAction,
             ),
         )
         gateway.create_particle()
         literal.record_operation("test.create(gateway)")
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<source>"
         ).create_particle()
         literal.record_operation("test.create(gateway::/middle::source)")
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<source>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.item.Item
+            local.my_domain_com.my_lib.item.ItemPosition
         ).create_particle()
         literal.record_operation("test.create(gateway::/middle::source::/item)")
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("test.create(gateway::/middle::trigger_pos)")
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).run()
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

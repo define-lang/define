@@ -8,40 +8,40 @@ import local.my_domain_com.my_lib.left
 import local.my_domain_com.my_lib.right
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.left.Left,
-        local.my_domain_com.my_lib.right.Right,
+        local.my_domain_com.my_lib.left.LeftAction,
+        local.my_domain_com.my_lib.right.RightAction,
     )
 
     @override
     def run(self):
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.left.Left
+            local.my_domain_com.my_lib.left.LeftAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("test.create(/left::trigger_pos)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.left.Left
+            local.my_domain_com.my_lib.left.LeftAction
         ).run()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.right.Right
+            local.my_domain_com.my_lib.right.RightAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("test.create(/right::trigger_pos)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.right.Right
+            local.my_domain_com.my_lib.right.RightAction
         ).run()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.left.Left
+            local.my_domain_com.my_lib.left.LeftAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
         literal.record_operation("test.destroy(/left::trigger_pos)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.right.Right
+            local.my_domain_com.my_lib.right.RightAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

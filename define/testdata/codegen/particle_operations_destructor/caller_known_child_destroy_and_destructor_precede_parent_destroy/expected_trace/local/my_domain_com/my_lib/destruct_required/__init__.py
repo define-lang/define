@@ -7,9 +7,9 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.required
 
 
-class DestructRequired(literal.Action):
+class DestructRequiredAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.required.Required,
+        local.my_domain_com.my_lib.required.RequiredPosition,
     )
 
     @override
@@ -18,14 +18,14 @@ class DestructRequired(literal.Action):
             "position<held_required>",
         )
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.required.Required
+            local.my_domain_com.my_lib.required.RequiredPosition
         ).move_particle_to(
             held_required
         )
         literal.record_operation("destruct_required.move(/required, held_required)")
         held_required.move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.required.Required
+                local.my_domain_com.my_lib.required.RequiredPosition
             )
         )
         literal.record_operation("destruct_required.move(held_required, /required)")

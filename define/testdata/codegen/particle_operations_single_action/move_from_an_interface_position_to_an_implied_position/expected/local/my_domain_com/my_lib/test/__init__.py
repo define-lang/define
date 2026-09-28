@@ -7,9 +7,9 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.implied
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.implied.Implied,
+        local.my_domain_com.my_lib.implied.ImpliedPosition,
     )
 
     @override
@@ -20,6 +20,6 @@ class Test(literal.Action):
         source.create_particle()
         source.move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.implied.Implied
+                local.my_domain_com.my_lib.implied.ImpliedPosition
             )
         )

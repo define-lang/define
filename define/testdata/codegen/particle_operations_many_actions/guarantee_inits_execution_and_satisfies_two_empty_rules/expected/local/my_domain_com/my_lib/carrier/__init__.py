@@ -18,7 +18,7 @@ class CarrierDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = CarrierDestructionContracts()
 
 
-class Carrier(literal.Action):
+class CarrierAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -27,13 +27,13 @@ class Carrier(literal.Action):
                 literal.LocalPosition(
                     "position<source>",
                     constraints=(
-                        local.my_domain_com.my_lib.worker.Worker,
+                        local.my_domain_com.my_lib.worker.WorkerAction,
                     ),
                 ),
                 literal.LocalPosition(
                     "position<result>",
                     constraints=(
-                        local.my_domain_com.my_lib.worker.Worker,
+                        local.my_domain_com.my_lib.worker.WorkerAction,
                     ),
                 ),
                 literal.LocalPosition("position<run>"),

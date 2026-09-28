@@ -11,10 +11,10 @@ import local.my_domain_com.my_lib.third_child
 import local.my_domain_com.my_lib.worker
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.worker.Worker,
-        local.my_domain_com.my_lib.other.Other,
+        local.my_domain_com.my_lib.worker.WorkerAction,
+        local.my_domain_com.my_lib.other.OtherAction,
     )
 
     @override
@@ -22,88 +22,88 @@ class Test(literal.Action):
         source = literal.LocalPosition(
             "position<source>",
             constraints=(
-                local.my_domain_com.my_lib.first_child.FirstChild,
-                local.my_domain_com.my_lib.second_child.SecondChild,
-                local.my_domain_com.my_lib.third_child.ThirdChild,
+                local.my_domain_com.my_lib.first_child.FirstChildPosition,
+                local.my_domain_com.my_lib.second_child.SecondChildPosition,
+                local.my_domain_com.my_lib.third_child.ThirdChildPosition,
             ),
         )
         source.create_particle()
         literal.record_operation("test.create(source)")
         source.particle.get_position(
-            local.my_domain_com.my_lib.first_child.FirstChild
+            local.my_domain_com.my_lib.first_child.FirstChildPosition
         ).create_particle()
         literal.record_operation("test.create(source::/first_child)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<other_input>"
         ).create_particle()
         literal.record_operation("test.create(/worker::other_input)")
         source.move_particle_to(
             self.on_particle.get_action(
-                local.my_domain_com.my_lib.worker.Worker
+                local.my_domain_com.my_lib.worker.WorkerAction
             ).get_interface_position(
                 "position<input>"
             )
         )
         literal.record_operation("test.move(source, /worker::input)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).run(WorkerDestructionContracts())
         source.create_particle()
         literal.record_operation("test.create(source)")
         source.particle.get_position(
-            local.my_domain_com.my_lib.second_child.SecondChild
+            local.my_domain_com.my_lib.second_child.SecondChildPosition
         ).create_particle()
         literal.record_operation("test.create(source::/second_child)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<other_input>"
         ).create_particle()
         literal.record_operation("test.create(/worker::other_input)")
         source.move_particle_to(
             self.on_particle.get_action(
-                local.my_domain_com.my_lib.worker.Worker
+                local.my_domain_com.my_lib.worker.WorkerAction
             ).get_interface_position(
                 "position<input>"
             )
         )
         literal.record_operation("test.move(source, /worker::input)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).run(WorkerDestructionContracts_())
         source.create_particle()
         literal.record_operation("test.create(source)")
         source.particle.get_position(
-            local.my_domain_com.my_lib.third_child.ThirdChild
+            local.my_domain_com.my_lib.third_child.ThirdChildPosition
         ).create_particle()
         literal.record_operation("test.create(source::/third_child)")
         source.move_particle_to(
             self.on_particle.get_action(
-                local.my_domain_com.my_lib.other.Other
+                local.my_domain_com.my_lib.other.OtherAction
             ).get_interface_position(
                 "position<input>"
             )
         )
         literal.record_operation("test.move(source, /other::input)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.other.Other
+            local.my_domain_com.my_lib.other.OtherAction
         ).run(OtherDestructionContracts())
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<other_input>"
         ).create_particle()
         literal.record_operation("test.create(/worker::other_input)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<input>"
         ).create_particle()
         literal.record_operation("test.create(/worker::input)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).run()
 
 
@@ -112,7 +112,7 @@ class WorkerDestructionContracts(local.my_domain_com.my_lib.worker.WorkerDestruc
     @override
     def destroy_position_input(self, particle: literal.Particle):
         particle.get_position(
-            local.my_domain_com.my_lib.first_child.FirstChild
+            local.my_domain_com.my_lib.first_child.FirstChildPosition
         ).destroy_particle()
         literal.record_operation("worker.destroy(input::/first_child)")
 
@@ -122,7 +122,7 @@ class WorkerDestructionContracts_(local.my_domain_com.my_lib.worker.WorkerDestru
     @override
     def destroy_position_input(self, particle: literal.Particle):
         particle.get_position(
-            local.my_domain_com.my_lib.second_child.SecondChild
+            local.my_domain_com.my_lib.second_child.SecondChildPosition
         ).destroy_particle()
         literal.record_operation("worker.destroy(input::/second_child)")
 
@@ -132,6 +132,6 @@ class OtherDestructionContracts(local.my_domain_com.my_lib.other.OtherDestructio
     @override
     def destroy_position_input(self, particle: literal.Particle):
         particle.get_position(
-            local.my_domain_com.my_lib.third_child.ThirdChild
+            local.my_domain_com.my_lib.third_child.ThirdChildPosition
         ).destroy_particle()
         literal.record_operation("other.destroy(input::/third_child)")

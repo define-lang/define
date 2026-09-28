@@ -9,46 +9,46 @@ import local.my_domain_com.my_lib.maker
 import local.my_domain_com.my_lib.marker
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         box = literal.LocalPosition(
             "position<box>",
             constraints=(
-                local.my_domain_com.my_lib.maker.Maker,
+                local.my_domain_com.my_lib.maker.MakerAction,
             ),
         )
         box.create_particle()
         box.particle.get_action(
-            local.my_domain_com.my_lib.maker.Maker
+            local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         box.particle.get_action(
-            local.my_domain_com.my_lib.maker.Maker
+            local.my_domain_com.my_lib.maker.MakerAction
         ).run()
         box.particle.get_action(
-            local.my_domain_com.my_lib.maker.Maker
+            local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(
             "position<result>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.destructor.Destructor
+            local.my_domain_com.my_lib.destructor.DestructorAction
         ).run()
         box.particle.get_action(
-            local.my_domain_com.my_lib.maker.Maker
+            local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(
             "position<result>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.marker.Marker
+            local.my_domain_com.my_lib.marker.MarkerPosition
         ).destroy_particle()
         box.particle.get_action(
-            local.my_domain_com.my_lib.maker.Maker
+            local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(
             "position<result>"
         ).destroy_particle()
         box.particle.get_action(
-            local.my_domain_com.my_lib.maker.Maker
+            local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(
             "position<run>"
         ).destroy_particle()

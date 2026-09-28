@@ -3,5 +3,5 @@
 from define.runtime import literal
 
 
-class ChildMarker(literal.GlobalPosition):
+class ChildMarkerPosition(literal.GlobalPosition):
     pass

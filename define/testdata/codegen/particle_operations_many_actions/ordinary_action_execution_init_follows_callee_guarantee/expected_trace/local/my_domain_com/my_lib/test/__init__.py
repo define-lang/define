@@ -8,46 +8,46 @@ import local.my_domain_com.my_lib.carrier
 import local.my_domain_com.my_lib.worker
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         box = literal.LocalPosition(
             "position<box>",
             constraints=(
-                local.my_domain_com.my_lib.carrier.Carrier,
+                local.my_domain_com.my_lib.carrier.CarrierAction,
             ),
         )
         box.create_particle()
         literal.record_operation("test.create(box)")
         box.particle.get_action(
-            local.my_domain_com.my_lib.carrier.Carrier
+            local.my_domain_com.my_lib.carrier.CarrierAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         literal.record_operation("test.create(box::/carrier::run)")
         box.particle.get_action(
-            local.my_domain_com.my_lib.carrier.Carrier
+            local.my_domain_com.my_lib.carrier.CarrierAction
         ).run()
         box.particle.get_action(
-            local.my_domain_com.my_lib.carrier.Carrier
+            local.my_domain_com.my_lib.carrier.CarrierAction
         ).get_interface_position(
             "position<result>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         literal.record_operation("test.create(box::/carrier::result::/worker::run)")
         box.particle.get_action(
-            local.my_domain_com.my_lib.carrier.Carrier
+            local.my_domain_com.my_lib.carrier.CarrierAction
         ).get_interface_position(
             "position<result>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).run()
         box.particle.get_action(
-            local.my_domain_com.my_lib.carrier.Carrier
+            local.my_domain_com.my_lib.carrier.CarrierAction
         ).get_interface_position(
             "position<result>"
         ).destroy_particle()

@@ -9,47 +9,47 @@ import local.my_domain_com.my_lib.grandchild_x
 import local.my_domain_com.my_lib.grandchild_y
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         parent = literal.LocalPosition(
             "position<parent>",
             constraints=(
-                local.my_domain_com.my_lib.child.Child,
+                local.my_domain_com.my_lib.child.ChildPosition,
             ),
         )
         parent.create_particle()
         parent.particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).create_particle()
         parent.particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.grandchild_x.GrandchildX
+            local.my_domain_com.my_lib.grandchild_x.GrandchildXPosition
         ).create_particle()
         parent.particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.grandchild_x.GrandchildX
+            local.my_domain_com.my_lib.grandchild_x.GrandchildXPosition
         ).destroy_particle()
         parent.particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).destroy_particle()
         parent.particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).create_particle()
         parent.particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.grandchild_y.GrandchildY
+            local.my_domain_com.my_lib.grandchild_y.GrandchildYPosition
         ).create_particle()
         parent.particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.grandchild_y.GrandchildY
+            local.my_domain_com.my_lib.grandchild_y.GrandchildYPosition
         ).destroy_particle()
         parent.particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).destroy_particle()
         parent.destroy_particle()

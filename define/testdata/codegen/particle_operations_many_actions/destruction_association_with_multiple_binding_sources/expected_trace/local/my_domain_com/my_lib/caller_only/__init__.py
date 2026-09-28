@@ -3,5 +3,5 @@
 from define.runtime import literal
 
 
-class CallerOnly(literal.GlobalPosition):
+class CallerOnlyPosition(literal.GlobalPosition):
     pass

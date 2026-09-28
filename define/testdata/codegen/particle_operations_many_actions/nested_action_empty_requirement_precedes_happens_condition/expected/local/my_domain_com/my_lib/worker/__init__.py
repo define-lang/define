@@ -16,7 +16,7 @@ class WorkerDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = WorkerDestructionContracts()
 
 
-class Worker(literal.Action):
+class WorkerAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(

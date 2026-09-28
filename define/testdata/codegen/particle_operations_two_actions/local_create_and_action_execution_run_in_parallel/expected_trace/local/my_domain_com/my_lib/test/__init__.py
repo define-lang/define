@@ -7,9 +7,9 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.other
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.other.Other,
+        local.my_domain_com.my_lib.other.OtherAction,
     )
 
     @override
@@ -18,18 +18,18 @@ class Test(literal.Action):
             "position<local_item>",
         )
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.other.Other
+            local.my_domain_com.my_lib.other.OtherAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("test.create(/other::trigger_pos)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.other.Other
+            local.my_domain_com.my_lib.other.OtherAction
         ).run()
         local_item.create_particle()
         literal.record_operation("test.create(local_item)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.other.Other
+            local.my_domain_com.my_lib.other.OtherAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

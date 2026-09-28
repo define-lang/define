@@ -18,7 +18,7 @@ class CallerDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = CallerDestructionContracts()
 
 
-class Caller(literal.Action):
+class CallerAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -28,13 +28,13 @@ class Caller(literal.Action):
                 literal.LocalPosition(
                     "position<first_gateway>",
                     constraints=(
-                        local.my_domain_com.my_lib.worker.Worker,
+                        local.my_domain_com.my_lib.worker.WorkerAction,
                     ),
                 ),
                 literal.LocalPosition(
                     "position<second_gateway>",
                     constraints=(
-                        local.my_domain_com.my_lib.worker.Worker,
+                        local.my_domain_com.my_lib.worker.WorkerAction,
                     ),
                 ),
             ],
@@ -49,7 +49,7 @@ class Caller(literal.Action):
         self.get_interface_position(
             "position<first_gateway>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<second>"
         ).create_particle()
@@ -57,7 +57,7 @@ class Caller(literal.Action):
         self.get_interface_position(
             "position<first_gateway>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<third>"
         ).create_particle()
@@ -65,7 +65,7 @@ class Caller(literal.Action):
         self.get_interface_position(
             "position<first_gateway>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<first>"
         ).create_particle()
@@ -73,12 +73,12 @@ class Caller(literal.Action):
         self.get_interface_position(
             "position<first_gateway>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).run()
         self.get_interface_position(
             "position<first_gateway>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<first>"
         ).destroy_particle()
@@ -90,7 +90,7 @@ class Caller(literal.Action):
         self.get_interface_position(
             "position<second_gateway>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<second>"
         ).create_particle()
@@ -98,7 +98,7 @@ class Caller(literal.Action):
         self.get_interface_position(
             "position<second_gateway>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<third>"
         ).create_particle()
@@ -106,7 +106,7 @@ class Caller(literal.Action):
         self.get_interface_position(
             "position<second_gateway>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<first>"
         ).create_particle()
@@ -114,12 +114,12 @@ class Caller(literal.Action):
         self.get_interface_position(
             "position<second_gateway>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).run()
         self.get_interface_position(
             "position<second_gateway>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<first>"
         ).destroy_particle()

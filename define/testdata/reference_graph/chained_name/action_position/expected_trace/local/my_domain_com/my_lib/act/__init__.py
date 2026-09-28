@@ -30,7 +30,7 @@ class ActDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = ActDestructionContracts()
 
 
-class Act(literal.Action):
+class ActAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -39,7 +39,7 @@ class Act(literal.Action):
                 literal.LocalPosition(
                     "position<trigger_pos>",
                     constraints=(
-                        local.my_domain_com.my_lib.inner.Inner,
+                        local.my_domain_com.my_lib.inner.InnerPosition,
                     ),
                 ),
                 literal.LocalPosition("position<run>"),
@@ -57,20 +57,20 @@ class Act(literal.Action):
             self.get_interface_position(
                 "position<trigger_pos>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.inner.Inner
+                local.my_domain_com.my_lib.inner.InnerPosition
             ).particle
         )
         destruction_contracts.destroy_position_trigger_pos__position_inner(
             self.get_interface_position(
                 "position<trigger_pos>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.inner.Inner
+                local.my_domain_com.my_lib.inner.InnerPosition
             ).particle
         )
         self.get_interface_position(
             "position<trigger_pos>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerPosition
         ).destroy_particle()
         literal.record_operation("act.destroy(trigger_pos::/inner)")
         destruction_contracts.run_destructors_position_trigger_pos(

@@ -8,10 +8,10 @@ import local.my_domain_com.my_lib.box
 import local.my_domain_com.my_lib.input
 
 
-class Producer(literal.Action):
+class ProducerAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.box.Box,
-        local.my_domain_com.my_lib.input.Input,
+        local.my_domain_com.my_lib.box.BoxPosition,
+        local.my_domain_com.my_lib.input.InputPosition,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -25,10 +25,10 @@ class Producer(literal.Action):
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.input.Input
+            local.my_domain_com.my_lib.input.InputPosition
         ).move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.box.Box
+                local.my_domain_com.my_lib.box.BoxPosition
             )
         )
         literal.record_operation("producer.move(/input, /box)")

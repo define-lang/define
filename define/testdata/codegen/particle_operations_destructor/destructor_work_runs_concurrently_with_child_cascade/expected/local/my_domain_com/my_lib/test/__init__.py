@@ -8,25 +8,25 @@ import local.my_domain_com.my_lib.child
 import local.my_domain_com.my_lib.destructor
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         box = literal.LocalPosition(
             "position<box>",
             constraints=(
-                local.my_domain_com.my_lib.destructor.Destructor,
-                local.my_domain_com.my_lib.child.Child,
+                local.my_domain_com.my_lib.destructor.DestructorAction,
+                local.my_domain_com.my_lib.child.ChildPosition,
             ),
         )
         box.create_particle()
         box.particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).create_particle()
         box.particle.get_action(
-            local.my_domain_com.my_lib.destructor.Destructor
+            local.my_domain_com.my_lib.destructor.DestructorAction
         ).run()
         box.particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).destroy_particle()
         box.destroy_particle()

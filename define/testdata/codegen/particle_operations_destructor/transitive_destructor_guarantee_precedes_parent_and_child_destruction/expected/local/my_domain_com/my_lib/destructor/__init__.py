@@ -7,18 +7,18 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.forwarder
 
 
-class Destructor(literal.Action):
+class DestructorAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.forwarder.Forwarder,
+        local.my_domain_com.my_lib.forwarder.ForwarderAction,
     )
 
     @override
     def run(self):
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.forwarder.Forwarder
+            local.my_domain_com.my_lib.forwarder.ForwarderAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.forwarder.Forwarder
+            local.my_domain_com.my_lib.forwarder.ForwarderAction
         ).run()

@@ -5,7 +5,7 @@ from typing import override
 from define.runtime import literal
 
 
-class Grind(literal.Action):
+class GrindAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(

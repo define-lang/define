@@ -1,5 +1,5 @@
 {% import "position_expression.j2" as expressions -%}
-{% macro action_statements(statements) -%}
+{% macro action_statements(statements, module_name) -%}
     {%- for statement in statements.iter() %}
         {%- match statement.kind %}
             {%- when StatementKind::LocalPosition with (statement) %}
@@ -8,29 +8,29 @@
                 {%- if !statement.constraints.is_empty() %}
             constraints=(
                     {%- for constraint in statement.constraints %}
-                {{ constraint.module_name }}.{{ constraint.class_name }},
+                {{ constraint.name_in_module(module_name) }},
                     {%- endfor %}
             ),
                 {%- endif %}
         )
             {%- when StatementKind::CreateParticle with (statement) %}
-        {{ expressions::position_expression(statement.position, "") }}.create_particle()
+        {{ expressions::position_expression(statement.position, "", module_name) }}.create_particle()
             {%- when StatementKind::MoveParticle with (statement) %}
-        {{ expressions::position_expression(statement.position, "") }}.move_particle_to(
-            {{ expressions::position_expression(statement.to_position, "    ") }}
+        {{ expressions::position_expression(statement.position, "", module_name) }}.move_particle_to(
+            {{ expressions::position_expression(statement.to_position, "    ", module_name) }}
         )
             {%- when StatementKind::DestroyParticle with (statement) %}
-        {{ expressions::position_expression(statement.position, "") }}.destroy_particle()
+        {{ expressions::position_expression(statement.position, "", module_name) }}.destroy_particle()
             {%- when StatementKind::SetValue with (statement) %}
-        {{ expressions::position_expression(statement.position, "") }}.set_value({{ statement.value }})
+        {{ expressions::position_expression(statement.position, "", module_name) }}.set_value({{ statement.value }})
             {%- when StatementKind::SetValueFrom with (statement) %}
-        {{ expressions::position_expression(statement.position, "") }}.set_value_from(
-            {{ expressions::position_expression(statement.source_position, "    ") }}
+        {{ expressions::position_expression(statement.position, "", module_name) }}.set_value_from(
+            {{ expressions::position_expression(statement.source_position, "    ", module_name) }}
         )
             {%- when StatementKind::RunAction with (statement) %}
                 {%- if let Some(contract) = statement.destruction_contract %}
                     {%- if !contract.forwarded_methods.is_empty() %}
-        {{ expressions::position_expression(statement.position, "") }}.run(
+        {{ expressions::position_expression(statement.position, "", module_name) }}.run(
             {{ contract.class_name }}(
                         {%- for method in contract.forwarded_methods %}
                 destruction_contracts.{{ method }},
@@ -38,14 +38,14 @@
             ),
         )
                     {%- else %}
-        {{ expressions::position_expression(statement.position, "") }}.run({{ contract.class_name }}())
+        {{ expressions::position_expression(statement.position, "", module_name) }}.run({{ contract.class_name }}())
                     {%- endif %}
                 {%- else %}
-        {{ expressions::position_expression(statement.position, "") }}.run()
+        {{ expressions::position_expression(statement.position, "", module_name) }}.run()
                 {%- endif %}
             {%- when StatementKind::ContractContribution with (statement) %}
         destruction_contracts.{{ statement.contract_method }}(
-            {{ expressions::position_expression(statement.position, "    ") }}.particle
+            {{ expressions::position_expression(statement.position, "    ", module_name) }}.particle
         )
         {%- endmatch %}
         {%- if let Some(label) = statement.operation_label %}

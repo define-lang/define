@@ -9,9 +9,9 @@ import local.my_domain_com.my_lib.guaranteed_child
 import local.my_domain_com.my_lib.parent
 
 
-class Mover(literal.Action):
+class MoverAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.parent.Parent,
+        local.my_domain_com.my_lib.parent.ParentPosition,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -22,8 +22,8 @@ class Mover(literal.Action):
                 literal.LocalPosition(
                     "position<destination>",
                     constraints=(
-                        local.my_domain_com.my_lib.direct_child.DirectChild,
-                        local.my_domain_com.my_lib.guaranteed_child.GuaranteedChild,
+                        local.my_domain_com.my_lib.direct_child.DirectChildPosition,
+                        local.my_domain_com.my_lib.guaranteed_child.GuaranteedChildPosition,
                     ),
                 ),
             ],
@@ -32,7 +32,7 @@ class Mover(literal.Action):
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.parent.Parent
+            local.my_domain_com.my_lib.parent.ParentPosition
         ).move_particle_to(
             self.get_interface_position(
                 "position<destination>"

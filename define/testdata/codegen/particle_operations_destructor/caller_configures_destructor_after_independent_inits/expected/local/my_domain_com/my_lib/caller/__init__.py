@@ -26,9 +26,9 @@ class CallerDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = CallerDestructionContracts()
 
 
-class Caller(literal.Action):
+class CallerAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.middle.Middle,
+        local.my_domain_com.my_lib.middle.MiddleAction,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -38,8 +38,8 @@ class Caller(literal.Action):
                 literal.LocalPosition(
                     "position<run>",
                     constraints=(
-                        local.my_domain_com.my_lib.extra_destructor.ExtraDestructor,
-                        local.my_domain_com.my_lib.known_destructor.KnownDestructor,
+                        local.my_domain_com.my_lib.extra_destructor.ExtraDestructorAction,
+                        local.my_domain_com.my_lib.known_destructor.KnownDestructorAction,
                     ),
                 ),
             ],
@@ -51,13 +51,13 @@ class Caller(literal.Action):
             "position<run>"
         ).move_particle_to(
             self.on_particle.get_action(
-                local.my_domain_com.my_lib.middle.Middle
+                local.my_domain_com.my_lib.middle.MiddleAction
             ).get_interface_position(
                 "position<run>"
             )
         )
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).run(
             MiddleDestructionContracts(
                 destruction_contracts.run_destructors_position_run,
@@ -87,7 +87,7 @@ class MiddleDestructionContracts(local.my_domain_com.my_lib.middle.MiddleDestruc
             particle
         )
         particle.get_action(
-            local.my_domain_com.my_lib.extra_destructor.ExtraDestructor
+            local.my_domain_com.my_lib.extra_destructor.ExtraDestructorAction
         ).run()
 
     @override

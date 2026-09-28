@@ -5,95 +5,94 @@ from typing import ClassVar, override
 from define.runtime import literal
 
 import local.my_domain_com.my_lib.child
-import local.my_domain_com.my_lib.class__var
 import local.my_domain_com.my_lib.class_var
-import local.my_domain_com.my_lib.class_var_
+import local.my_domain_com.my_lib.class_var__
 import local.my_domain_com.my_lib.type_error
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.class__var.ClassVar_,
-        local.my_domain_com.my_lib.class_var.ClassVar_,
-        local.my_domain_com.my_lib.class_var_.ClassVar_,
-        local.my_domain_com.my_lib.type_error.TypeError,
+        local.my_domain_com.my_lib.class_var.ClassVarPosition,
+        local.my_domain_com.my_lib.class_var.ClassVarAction,
+        local.my_domain_com.my_lib.class_var__.ClassVarAction,
+        local.my_domain_com.my_lib.type_error.TypeErrorAction,
     )
 
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.class__var.ClassVar_
+            local.my_domain_com.my_lib.class_var.ClassVarPosition
         ).create_particle()
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.class__var.ClassVar_
+            local.my_domain_com.my_lib.class_var.ClassVarPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).create_particle()
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.class__var.ClassVar_
+            local.my_domain_com.my_lib.class_var.ClassVarPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).destroy_particle()
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.class__var.ClassVar_
+            local.my_domain_com.my_lib.class_var.ClassVarPosition
         ).destroy_particle()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.class_var.ClassVar_
+            local.my_domain_com.my_lib.class_var.ClassVarAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.class_var.ClassVar_
+            local.my_domain_com.my_lib.class_var.ClassVarAction
         ).run()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.class_var_.ClassVar_
+            local.my_domain_com.my_lib.class_var__.ClassVarAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.class_var_.ClassVar_
+            local.my_domain_com.my_lib.class_var__.ClassVarAction
         ).run()
         source = literal.LocalPosition(
             "position<source>",
             constraints=(
-                local.my_domain_com.my_lib.child.Child,
+                local.my_domain_com.my_lib.child.ChildPosition,
             ),
         )
         source.create_particle()
         source.particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).create_particle()
         source.move_particle_to(
             self.on_particle.get_action(
-                local.my_domain_com.my_lib.class_var.ClassVar_
+                local.my_domain_com.my_lib.class_var.ClassVarAction
             ).get_interface_position(
                 "position<trigger_pos>"
             )
         )
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.class_var.ClassVar_
+            local.my_domain_com.my_lib.class_var.ClassVarAction
         ).run(ClassVarDestructionContracts())
         source.create_particle()
         source.particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).create_particle()
         source.move_particle_to(
             self.on_particle.get_action(
-                local.my_domain_com.my_lib.class_var_.ClassVar_
+                local.my_domain_com.my_lib.class_var__.ClassVarAction
             ).get_interface_position(
                 "position<trigger_pos>"
             )
         )
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.class_var_.ClassVar_
+            local.my_domain_com.my_lib.class_var__.ClassVarAction
         ).run(ClassVarDestructionContracts_())
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.type_error.TypeError
+            local.my_domain_com.my_lib.type_error.TypeErrorAction
         ).get_interface_position(
             "position<pp>"
         ).create_particle()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.type_error.TypeError
+            local.my_domain_com.my_lib.type_error.TypeErrorAction
         ).run()
 
 
@@ -102,14 +101,14 @@ class ClassVarDestructionContracts(local.my_domain_com.my_lib.class_var.ClassVar
     @override
     def destroy_position_trigger_pos(self, particle: literal.Particle):
         particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).destroy_particle()
 
 
-class ClassVarDestructionContracts_(local.my_domain_com.my_lib.class_var_.ClassVarDestructionContracts):
+class ClassVarDestructionContracts_(local.my_domain_com.my_lib.class_var__.ClassVarDestructionContracts):
 
     @override
     def destroy_position_trigger_pos(self, particle: literal.Particle):
         particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).destroy_particle()

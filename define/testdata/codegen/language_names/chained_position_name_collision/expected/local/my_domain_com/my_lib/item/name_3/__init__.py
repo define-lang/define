@@ -3,5 +3,5 @@
 from define.runtime import literal
 
 
-class ItemName3(literal.GlobalPosition):
+class ItemName3Position(literal.GlobalPosition):
     pass

@@ -22,7 +22,7 @@ class TriggeredDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = TriggeredDestructionContracts()
 
 
-class Triggered(literal.Action):
+class TriggeredAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(

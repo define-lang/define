@@ -108,7 +108,9 @@ class ActionStatementsGenerator:
         )
         # Contract classes share the action's Python module, so their names
         # must not collide with the action class or its own contract class.
-        _ = self._class_names.allocate(self._converter.class_name(action_path))
+        _ = self._class_names.allocate(
+            self._converter.class_name(self._action_input.definition.typed_name)
+        )
         if propagated_destructions:
             _ = self._class_names.allocate(
                 self._converter.destruction_contract_class_name(action_path)

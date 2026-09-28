@@ -8,33 +8,33 @@ import local.my_domain_com.my_lib.act
 import local.my_domain_com.my_lib.mid_dest
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.act.Act,
+        local.my_domain_com.my_lib.act.ActAction,
     )
 
     @override
     def run(self):
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.act.Act
+            local.my_domain_com.my_lib.act.ActAction
         ).get_interface_position(
             "position<chain_dest>"
         ).create_particle()
         literal.record_operation("test.create(/act::chain_dest)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.act.Act
+            local.my_domain_com.my_lib.act.ActAction
         ).get_interface_position(
             "position<chain_dest>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.mid_dest.MidDest
+            local.my_domain_com.my_lib.mid_dest.MidDestPosition
         ).create_particle()
         literal.record_operation("test.create(/act::chain_dest::/mid_dest)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.act.Act
+            local.my_domain_com.my_lib.act.ActAction
         ).get_interface_position(
             "position<trigger>"
         ).create_particle()
         literal.record_operation("test.create(/act::trigger)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.act.Act
+            local.my_domain_com.my_lib.act.ActAction
         ).run()

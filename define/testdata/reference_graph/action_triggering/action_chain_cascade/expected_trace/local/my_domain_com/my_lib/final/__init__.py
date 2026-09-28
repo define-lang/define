@@ -16,7 +16,7 @@ class FinalDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = FinalDestructionContracts()
 
 
-class Final(literal.Action):
+class FinalAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(

@@ -19,7 +19,7 @@ class KickOffDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = KickOffDestructionContracts()
 
 
-class KickOff(literal.Action):
+class KickOffAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -29,8 +29,8 @@ class KickOff(literal.Action):
                 literal.LocalPosition(
                     "position<output>",
                     constraints=(
-                        local.my_domain_com.my_lib.react_a.ReactA,
-                        local.my_domain_com.my_lib.react_b.ReactB,
+                        local.my_domain_com.my_lib.react_a.ReactAAction,
+                        local.my_domain_com.my_lib.react_b.ReactBAction,
                     ),
                 ),
             ],
@@ -45,7 +45,7 @@ class KickOff(literal.Action):
         self.get_interface_position(
             "position<output>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.react_a.ReactA
+            local.my_domain_com.my_lib.react_a.ReactAAction
         ).get_interface_position(
             "position<trigger>"
         ).create_particle()
@@ -53,12 +53,12 @@ class KickOff(literal.Action):
         self.get_interface_position(
             "position<output>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.react_a.ReactA
+            local.my_domain_com.my_lib.react_a.ReactAAction
         ).run()
         self.get_interface_position(
             "position<output>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.react_b.ReactB
+            local.my_domain_com.my_lib.react_b.ReactBAction
         ).get_interface_position(
             "position<trigger>"
         ).create_particle()
@@ -66,7 +66,7 @@ class KickOff(literal.Action):
         self.get_interface_position(
             "position<output>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.react_b.ReactB
+            local.my_domain_com.my_lib.react_b.ReactBAction
         ).run()
         self.get_interface_position(
             "position<output>"

@@ -7,16 +7,16 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.child_marker
 
 
-class ChildDestructor(literal.Action):
+class ChildDestructorAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.child_marker.ChildMarker,
+        local.my_domain_com.my_lib.child_marker.ChildMarkerPosition,
     )
 
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.child_marker.ChildMarker
+            local.my_domain_com.my_lib.child_marker.ChildMarkerPosition
         ).create_particle()
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.child_marker.ChildMarker
+            local.my_domain_com.my_lib.child_marker.ChildMarkerPosition
         ).destroy_particle()

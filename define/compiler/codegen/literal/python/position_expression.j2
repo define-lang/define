@@ -1,4 +1,4 @@
-{% macro position_expression(expr, extra_indent) -%}
+{% macro position_expression(expr, extra_indent, module_name) -%}
     {% if expr.from_contract_particle -%}
 particle
     {%- else if let Some(name) = expr.local_position_name -%}
@@ -10,11 +10,11 @@ self
         {% match element -%}
             {% when ChainElement::PositionFromPosition with (class_reference) -%}
 .particle.get_position(
-{{ extra_indent }}            {{ class_reference.module_name }}.{{ class_reference.class_name }}
+{{ extra_indent }}            {{ class_reference.name_in_module(module_name) }}
 {{ extra_indent }}        )
             {%- when ChainElement::ActionFromPosition with (class_reference) -%}
 .particle.get_action(
-{{ extra_indent }}            {{ class_reference.module_name }}.{{ class_reference.class_name }}
+{{ extra_indent }}            {{ class_reference.name_in_module(module_name) }}
 {{ extra_indent }}        )
             {%- when ChainElement::PositionFromAction with (typed_name) -%}
 .get_interface_position(
@@ -22,11 +22,11 @@ self
 {{ extra_indent }}        )
             {%- when ChainElement::ImpliedAction with (class_reference) -%}
 {% if !expr.from_contract_particle %}.on_particle{% endif %}.get_action(
-{{ extra_indent }}            {{ class_reference.module_name }}.{{ class_reference.class_name }}
+{{ extra_indent }}            {{ class_reference.name_in_module(module_name) }}
 {{ extra_indent }}        )
             {%- when ChainElement::ImpliedPosition with (class_reference) -%}
 {% if !expr.from_contract_particle %}.on_particle{% endif %}.get_position(
-{{ extra_indent }}            {{ class_reference.module_name }}.{{ class_reference.class_name }}
+{{ extra_indent }}            {{ class_reference.name_in_module(module_name) }}
 {{ extra_indent }}        )
         {%- endmatch -%}
     {% endfor -%}

@@ -19,10 +19,10 @@ class RunnerDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = RunnerDestructionContracts()
 
 
-class Runner(literal.Action):
+class RunnerAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.marker_a.MarkerA,
-        local.my_domain_com.my_lib.marker_b.MarkerB,
+        local.my_domain_com.my_lib.marker_a.MarkerAPosition,
+        local.my_domain_com.my_lib.marker_b.MarkerBPosition,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -36,11 +36,11 @@ class Runner(literal.Action):
     @override
     def run(self, destruction_contracts: RunnerDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.marker_a.MarkerA
+            local.my_domain_com.my_lib.marker_a.MarkerAPosition
         ).create_particle()
         literal.record_operation("runner.create(/marker_a)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.marker_b.MarkerB
+            local.my_domain_com.my_lib.marker_b.MarkerBPosition
         ).create_particle()
         literal.record_operation("runner.create(/marker_b)")
         destruction_contracts.run_destructors_position_run(

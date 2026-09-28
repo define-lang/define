@@ -7,7 +7,7 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.inner
 
 
-class Second(literal.Action):
+class SecondAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -22,20 +22,20 @@ class Second(literal.Action):
         box = literal.LocalPosition(
             "position<box>",
             constraints=(
-                local.my_domain_com.my_lib.inner.Inner,
+                local.my_domain_com.my_lib.inner.InnerAction,
             ),
         )
         box.create_particle()
         box.particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         box.particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).run()
         box.particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

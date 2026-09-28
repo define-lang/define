@@ -7,9 +7,9 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.marker
 
 
-class Destructor(literal.Action):
+class DestructorAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.marker.Marker,
+        local.my_domain_com.my_lib.marker.MarkerPosition,
     )
 
     @override
@@ -18,14 +18,14 @@ class Destructor(literal.Action):
             "position<_holder>",
         )
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.marker.Marker
+            local.my_domain_com.my_lib.marker.MarkerPosition
         ).move_particle_to(
             _holder
         )
         literal.record_operation("destructor.move(/marker, _holder)")
         _holder.move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.marker.Marker
+                local.my_domain_com.my_lib.marker.MarkerPosition
             )
         )
         literal.record_operation("destructor.move(_holder, /marker)")

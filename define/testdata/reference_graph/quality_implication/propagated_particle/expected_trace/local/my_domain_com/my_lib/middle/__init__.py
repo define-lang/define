@@ -32,7 +32,7 @@ class MiddleDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = MiddleDestructionContracts()
 
 
-class Middle(literal.Action):
+class MiddleAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -42,13 +42,13 @@ class Middle(literal.Action):
                 literal.LocalPosition(
                     "position<box>",
                     constraints=(
-                        local.my_domain_com.my_lib.implier.Implier,
+                        local.my_domain_com.my_lib.implier.ImplierAction,
                     ),
                 ),
                 literal.LocalPosition(
                     "position<final>",
                     constraints=(
-                        local.my_domain_com.my_lib.implied.Implied,
+                        local.my_domain_com.my_lib.implied.ImpliedPosition,
                     ),
                 ),
             ],
@@ -59,7 +59,7 @@ class Middle(literal.Action):
         inner_holder = literal.LocalPosition(
             "position<inner_holder>",
             constraints=(
-                local.my_domain_com.my_lib.inner.Inner,
+                local.my_domain_com.my_lib.inner.InnerAction,
             ),
         )
         inner_holder.create_particle()
@@ -68,23 +68,23 @@ class Middle(literal.Action):
             "position<box>"
         ).move_particle_to(
             inner_holder.particle.get_action(
-                local.my_domain_com.my_lib.inner.Inner
+                local.my_domain_com.my_lib.inner.InnerAction
             ).get_interface_position(
                 "position<input>"
             )
         )
         literal.record_operation("middle.move(box, inner_holder::/inner::input)")
         inner_holder.particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         literal.record_operation("middle.create(inner_holder::/inner::run)")
         inner_holder.particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).run()
         inner_holder.particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<output>"
         ).move_particle_to(
@@ -97,20 +97,20 @@ class Middle(literal.Action):
             self.get_interface_position(
                 "position<final>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.implied.Implied
+                local.my_domain_com.my_lib.implied.ImpliedPosition
             ).particle
         )
         destruction_contracts.destroy_position_box__position_implied(
             self.get_interface_position(
                 "position<final>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.implied.Implied
+                local.my_domain_com.my_lib.implied.ImpliedPosition
             ).particle
         )
         self.get_interface_position(
             "position<final>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.implied.Implied
+            local.my_domain_com.my_lib.implied.ImpliedPosition
         ).destroy_particle()
         literal.record_operation("middle.destroy(final::/implied)")
         destruction_contracts.run_destructors_position_box(

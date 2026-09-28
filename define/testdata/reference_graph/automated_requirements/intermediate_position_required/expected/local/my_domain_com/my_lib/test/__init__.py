@@ -9,39 +9,39 @@ import local.my_domain_com.my_lib.mid
 import local.my_domain_com.my_lib.runner
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.runner.Runner,
+        local.my_domain_com.my_lib.runner.RunnerAction,
     )
 
     @override
     def run(self):
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.runner.Runner
+            local.my_domain_com.my_lib.runner.RunnerAction
         ).get_interface_position(
             "position<wrap>"
         ).create_particle()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.runner.Runner
+            local.my_domain_com.my_lib.runner.RunnerAction
         ).get_interface_position(
             "position<wrap>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.mid.Mid
+            local.my_domain_com.my_lib.mid.MidPosition
         ).create_particle()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.runner.Runner
+            local.my_domain_com.my_lib.runner.RunnerAction
         ).get_interface_position(
             "position<wrap>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.mid.Mid
+            local.my_domain_com.my_lib.mid.MidPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.leaf.Leaf
+            local.my_domain_com.my_lib.leaf.LeafPosition
         ).create_particle()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.runner.Runner
+            local.my_domain_com.my_lib.runner.RunnerAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.runner.Runner
+            local.my_domain_com.my_lib.runner.RunnerAction
         ).run()

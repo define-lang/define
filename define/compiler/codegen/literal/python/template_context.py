@@ -249,4 +249,5 @@ class PositionDefinitionContext(msgspec.Struct):
         module_names.update(
             class_reference.module_name for class_reference in self.implied_qualities
         )
+        module_names.discard(self.module_name)
         return sorted(module_names)

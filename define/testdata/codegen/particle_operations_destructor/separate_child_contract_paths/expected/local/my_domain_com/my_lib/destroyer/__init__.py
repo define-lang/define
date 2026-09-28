@@ -31,7 +31,7 @@ class DestroyerDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = DestroyerDestructionContracts()
 
 
-class Destroyer(literal.Action):
+class DestroyerAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -40,8 +40,8 @@ class Destroyer(literal.Action):
                 literal.LocalPosition(
                     "position<target>",
                     constraints=(
-                        local.my_domain_com.my_lib.left.Left,
-                        local.my_domain_com.my_lib.right.Right,
+                        local.my_domain_com.my_lib.left.LeftPosition,
+                        local.my_domain_com.my_lib.right.RightPosition,
                     ),
                 ),
             ],
@@ -58,7 +58,7 @@ class Destroyer(literal.Action):
         self.get_interface_position(
             "position<target>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.left.Left
+            local.my_domain_com.my_lib.left.LeftPosition
         ).move_particle_to(
             left_holder
         )
@@ -66,13 +66,13 @@ class Destroyer(literal.Action):
             self.get_interface_position(
                 "position<target>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.left.Left
+                local.my_domain_com.my_lib.left.LeftPosition
             )
         )
         self.get_interface_position(
             "position<target>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.right.Right
+            local.my_domain_com.my_lib.right.RightPosition
         ).move_particle_to(
             right_holder
         )
@@ -80,21 +80,21 @@ class Destroyer(literal.Action):
             self.get_interface_position(
                 "position<target>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.right.Right
+                local.my_domain_com.my_lib.right.RightPosition
             )
         )
         destruction_contracts.run_destructors_position_target__position_left(
             self.get_interface_position(
                 "position<target>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.left.Left
+                local.my_domain_com.my_lib.left.LeftPosition
             ).particle
         )
         destruction_contracts.run_destructors_position_target__position_right(
             self.get_interface_position(
                 "position<target>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.right.Right
+                local.my_domain_com.my_lib.right.RightPosition
             ).particle
         )
         destruction_contracts.run_destructors_position_target(
@@ -106,14 +106,14 @@ class Destroyer(literal.Action):
             self.get_interface_position(
                 "position<target>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.left.Left
+                local.my_domain_com.my_lib.left.LeftPosition
             ).particle
         )
         destruction_contracts.destroy_position_target__position_right(
             self.get_interface_position(
                 "position<target>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.right.Right
+                local.my_domain_com.my_lib.right.RightPosition
             ).particle
         )
         destruction_contracts.destroy_position_target(
@@ -124,12 +124,12 @@ class Destroyer(literal.Action):
         self.get_interface_position(
             "position<target>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.left.Left
+            local.my_domain_com.my_lib.left.LeftPosition
         ).destroy_particle()
         self.get_interface_position(
             "position<target>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.right.Right
+            local.my_domain_com.my_lib.right.RightPosition
         ).destroy_particle()
         self.get_interface_position(
             "position<target>"

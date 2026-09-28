@@ -9,31 +9,31 @@ import local.my_domain_com.my_lib.input
 import local.my_domain_com.my_lib.middle
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.input.Input,
-        local.my_domain_com.my_lib.destination.Destination,
-        local.my_domain_com.my_lib.middle.Middle,
+        local.my_domain_com.my_lib.input.InputPosition,
+        local.my_domain_com.my_lib.destination.DestinationPosition,
+        local.my_domain_com.my_lib.middle.MiddleAction,
     )
 
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.input.Input
+            local.my_domain_com.my_lib.input.InputPosition
         ).create_particle()
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.destination.Destination
+            local.my_domain_com.my_lib.destination.DestinationPosition
         ).create_particle()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).run()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

@@ -8,20 +8,20 @@ import local.my_domain_com.my_lib.inner_destroyer
 import local.my_domain_com.my_lib.inner_destructor
 
 
-class OuterDestructor(literal.Action):
+class OuterDestructorAction(literal.Action):
 
     @override
     def run(self):
         inner_destroyer_particle = literal.LocalPosition(
             "position<inner_destroyer_particle>",
             constraints=(
-                local.my_domain_com.my_lib.inner_destroyer.InnerDestroyer,
+                local.my_domain_com.my_lib.inner_destroyer.InnerDestroyerAction,
             ),
         )
         inner_source = literal.LocalPosition(
             "position<inner_source>",
             constraints=(
-                local.my_domain_com.my_lib.inner_destructor.InnerDestructor,
+                local.my_domain_com.my_lib.inner_destructor.InnerDestructorAction,
             ),
         )
         inner_destroyer_particle.create_particle()
@@ -30,14 +30,14 @@ class OuterDestructor(literal.Action):
         literal.record_operation("outer_destructor.create(inner_source)")
         inner_source.move_particle_to(
             inner_destroyer_particle.particle.get_action(
-                local.my_domain_com.my_lib.inner_destroyer.InnerDestroyer
+                local.my_domain_com.my_lib.inner_destroyer.InnerDestroyerAction
             ).get_interface_position(
                 "position<target>"
             )
         )
         literal.record_operation("outer_destructor.move(inner_source, inner_destroyer_particle::/inner_destroyer::target)")
         inner_destroyer_particle.particle.get_action(
-            local.my_domain_com.my_lib.inner_destroyer.InnerDestroyer
+            local.my_domain_com.my_lib.inner_destroyer.InnerDestroyerAction
         ).run(InnerDestroyerDestructionContracts())
         inner_destroyer_particle.destroy_particle()
         literal.record_operation("outer_destructor.destroy(inner_destroyer_particle)")
@@ -48,5 +48,5 @@ class InnerDestroyerDestructionContracts(local.my_domain_com.my_lib.inner_destro
     @override
     def run_destructors_position_target(self, particle: literal.Particle):
         particle.get_action(
-            local.my_domain_com.my_lib.inner_destructor.InnerDestructor
+            local.my_domain_com.my_lib.inner_destructor.InnerDestructorAction
         ).run()

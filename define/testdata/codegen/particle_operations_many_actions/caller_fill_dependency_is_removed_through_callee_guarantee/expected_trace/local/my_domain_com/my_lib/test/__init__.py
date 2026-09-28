@@ -9,11 +9,11 @@ import local.my_domain_com.my_lib.mover
 import local.my_domain_com.my_lib.slot
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.destination.Destination,
-        local.my_domain_com.my_lib.slot.Slot,
-        local.my_domain_com.my_lib.mover.Mover,
+        local.my_domain_com.my_lib.destination.DestinationPosition,
+        local.my_domain_com.my_lib.slot.SlotPosition,
+        local.my_domain_com.my_lib.mover.MoverAction,
     )
 
     @override
@@ -22,32 +22,32 @@ class Test(literal.Action):
             "position<temp>",
         )
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.destination.Destination
+            local.my_domain_com.my_lib.destination.DestinationPosition
         ).create_particle()
         literal.record_operation("test.create(/destination)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.destination.Destination
+            local.my_domain_com.my_lib.destination.DestinationPosition
         ).move_particle_to(
             temp
         )
         literal.record_operation("test.move(/destination, temp)")
         temp.move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.slot.Slot
+                local.my_domain_com.my_lib.slot.SlotPosition
             )
         )
         literal.record_operation("test.move(temp, /slot)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.mover.Mover
+            local.my_domain_com.my_lib.mover.MoverAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("test.create(/mover::trigger_pos)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.mover.Mover
+            local.my_domain_com.my_lib.mover.MoverAction
         ).run()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.mover.Mover
+            local.my_domain_com.my_lib.mover.MoverAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

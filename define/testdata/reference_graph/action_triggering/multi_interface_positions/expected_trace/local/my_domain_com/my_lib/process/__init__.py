@@ -22,7 +22,7 @@ class ProcessDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = ProcessDestructionContracts()
 
 
-class Process(literal.Action):
+class ProcessAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(

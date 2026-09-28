@@ -18,9 +18,9 @@ class LeftDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = LeftDestructionContracts()
 
 
-class Left(literal.Action):
+class LeftAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.shared.Shared,
+        local.my_domain_com.my_lib.shared.SharedAction,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -34,13 +34,13 @@ class Left(literal.Action):
     @override
     def run(self, destruction_contracts: LeftDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.shared.Shared
+            local.my_domain_com.my_lib.shared.SharedAction
         ).get_interface_position(
             "position<trigger>"
         ).create_particle()
         literal.record_operation("left.create(/shared::trigger)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.shared.Shared
+            local.my_domain_com.my_lib.shared.SharedAction
         ).run()
         destruction_contracts.run_destructors_position_trigger(
             self.get_interface_position(

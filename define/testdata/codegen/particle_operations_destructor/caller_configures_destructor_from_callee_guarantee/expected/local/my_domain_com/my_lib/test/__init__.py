@@ -9,37 +9,37 @@ import local.my_domain_com.my_lib.extra_destructor
 import local.my_domain_com.my_lib.maker
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.maker.Maker,
-        local.my_domain_com.my_lib.destroyer.Destroyer,
+        local.my_domain_com.my_lib.maker.MakerAction,
+        local.my_domain_com.my_lib.destroyer.DestroyerAction,
     )
 
     @override
     def run(self):
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.maker.Maker
+            local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.maker.Maker
+            local.my_domain_com.my_lib.maker.MakerAction
         ).run()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.destroyer.Destroyer
+            local.my_domain_com.my_lib.destroyer.DestroyerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.destroyer.Destroyer
+            local.my_domain_com.my_lib.destroyer.DestroyerAction
         ).run(DestroyerDestructionContracts())
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.maker.Maker
+            local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(
             "position<run>"
         ).destroy_particle()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.destroyer.Destroyer
+            local.my_domain_com.my_lib.destroyer.DestroyerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
@@ -50,5 +50,5 @@ class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.Destroy
     @override
     def run_destructors_global_position_target(self, particle: literal.Particle):
         particle.get_action(
-            local.my_domain_com.my_lib.extra_destructor.ExtraDestructor
+            local.my_domain_com.my_lib.extra_destructor.ExtraDestructorAction
         ).run()

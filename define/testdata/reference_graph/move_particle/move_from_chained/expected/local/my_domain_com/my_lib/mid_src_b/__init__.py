@@ -7,7 +7,7 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.end_src_b
 
 
-class MidSrcB(literal.GlobalPosition):
+class MidSrcBPosition(literal.GlobalPosition):
     constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.end_src_b.EndSrcB,
+        local.my_domain_com.my_lib.end_src_b.EndSrcBPosition,
     )

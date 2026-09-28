@@ -9,21 +9,21 @@ import local.my_domain_com.my_lib.target
 import local.my_domain_com.my_lib.worker
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         gateway = literal.LocalPosition(
             "position<gateway>",
             constraints=(
-                local.my_domain_com.my_lib.worker.Worker,
+                local.my_domain_com.my_lib.worker.WorkerAction,
             ),
         )
         state = literal.LocalPosition(
             "position<state>",
             constraints=(
-                local.my_domain_com.my_lib.occupied.Occupied,
-                local.my_domain_com.my_lib.target.Target,
+                local.my_domain_com.my_lib.occupied.OccupiedPosition,
+                local.my_domain_com.my_lib.target.TargetPosition,
             ),
         )
         source = literal.LocalPosition(
@@ -34,14 +34,14 @@ class Test(literal.Action):
         state.create_particle()
         literal.record_operation("test.create(state)")
         state.particle.get_position(
-            local.my_domain_com.my_lib.occupied.Occupied
+            local.my_domain_com.my_lib.occupied.OccupiedPosition
         ).create_particle()
         literal.record_operation("test.create(state::/occupied)")
         source.create_particle()
         literal.record_operation("test.create(source)")
         source.move_particle_to(
             gateway.particle.get_action(
-                local.my_domain_com.my_lib.worker.Worker
+                local.my_domain_com.my_lib.worker.WorkerAction
             ).get_interface_position(
                 "position<source>"
             )
@@ -49,25 +49,25 @@ class Test(literal.Action):
         literal.record_operation("test.move(source, gateway::/worker::source)")
         state.move_particle_to(
             gateway.particle.get_action(
-                local.my_domain_com.my_lib.worker.Worker
+                local.my_domain_com.my_lib.worker.WorkerAction
             ).get_interface_position(
                 "position<state>"
             )
         )
         literal.record_operation("test.move(state, gateway::/worker::state)")
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).run()
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<state>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.target.Target
+            local.my_domain_com.my_lib.target.TargetPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(gateway::/worker::state::/target)")
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<state>"
         ).destroy_particle()

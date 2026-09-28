@@ -10,10 +10,10 @@ import local.my_domain_com.my_lib.right
 import local.my_domain_com.my_lib.second_destructor
 
 
-class Initialize(literal.Action):
+class InitializeAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.left.Left,
-        local.my_domain_com.my_lib.right.Right,
+        local.my_domain_com.my_lib.left.LeftPosition,
+        local.my_domain_com.my_lib.right.RightPosition,
     )
 
     @override
@@ -21,24 +21,24 @@ class Initialize(literal.Action):
         left = literal.LocalPosition(
             "position<left>",
             constraints=(
-                local.my_domain_com.my_lib.first_destructor.FirstDestructor,
+                local.my_domain_com.my_lib.first_destructor.FirstDestructorAction,
             ),
         )
         right = literal.LocalPosition(
             "position<right>",
             constraints=(
-                local.my_domain_com.my_lib.second_destructor.SecondDestructor,
+                local.my_domain_com.my_lib.second_destructor.SecondDestructorAction,
             ),
         )
         left.create_particle()
         right.create_particle()
         left.move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.left.Left
+                local.my_domain_com.my_lib.left.LeftPosition
             )
         )
         right.move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.right.Right
+                local.my_domain_com.my_lib.right.RightPosition
             )
         )

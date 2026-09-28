@@ -8,8 +8,8 @@ import local.my_domain_com.my_lib.known_empty
 import local.my_domain_com.my_lib.known_occupied
 
 
-class Target(literal.GlobalPosition):
+class TargetPosition(literal.GlobalPosition):
     constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.known_empty.KnownEmpty,
-        local.my_domain_com.my_lib.known_occupied.KnownOccupied,
+        local.my_domain_com.my_lib.known_empty.KnownEmptyPosition,
+        local.my_domain_com.my_lib.known_occupied.KnownOccupiedPosition,
     )

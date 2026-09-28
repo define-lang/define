@@ -7,7 +7,7 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.outer
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
@@ -17,32 +17,32 @@ class Test(literal.Action):
         box = literal.LocalPosition(
             "position<box>",
             constraints=(
-                local.my_domain_com.my_lib.outer.Outer,
+                local.my_domain_com.my_lib.outer.OuterAction,
             ),
         )
         box.create_particle()
         box.particle.get_action(
-            local.my_domain_com.my_lib.outer.Outer
+            local.my_domain_com.my_lib.outer.OuterAction
         ).get_interface_position(
             "position<gw>"
         ).create_particle()
         box.particle.get_action(
-            local.my_domain_com.my_lib.outer.Outer
+            local.my_domain_com.my_lib.outer.OuterAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         box.particle.get_action(
-            local.my_domain_com.my_lib.outer.Outer
+            local.my_domain_com.my_lib.outer.OuterAction
         ).run()
         box.particle.get_action(
-            local.my_domain_com.my_lib.outer.Outer
+            local.my_domain_com.my_lib.outer.OuterAction
         ).get_interface_position(
             "position<out>"
         ).move_particle_to(
             result
         )
         box.particle.get_action(
-            local.my_domain_com.my_lib.outer.Outer
+            local.my_domain_com.my_lib.outer.OuterAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

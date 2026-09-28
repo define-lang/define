@@ -26,10 +26,10 @@ class InnerDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = InnerDestructionContracts()
 
 
-class Inner(literal.Action):
+class InnerAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.input.Input,
-        local.my_domain_com.my_lib.intermediate.Intermediate,
+        local.my_domain_com.my_lib.input.InputPosition,
+        local.my_domain_com.my_lib.intermediate.IntermediatePosition,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -44,36 +44,36 @@ class Inner(literal.Action):
     def run(self, destruction_contracts: InnerDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         destruction_contracts.run_destructors_global_position_intermediate(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.intermediate.Intermediate
+                local.my_domain_com.my_lib.intermediate.IntermediatePosition
             ).particle
         )
         destruction_contracts.destroy_global_position_intermediate(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.intermediate.Intermediate
+                local.my_domain_com.my_lib.intermediate.IntermediatePosition
             ).particle
         )
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.intermediate.Intermediate
+            local.my_domain_com.my_lib.intermediate.IntermediatePosition
         ).destroy_particle()
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.input.Input
+            local.my_domain_com.my_lib.input.InputPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.b.B
+            local.my_domain_com.my_lib.b.BPosition
         ).move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.intermediate.Intermediate
+                local.my_domain_com.my_lib.intermediate.IntermediatePosition
             )
         )
         destruction_contracts.run_destructors_global_position_input(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.input.Input
+                local.my_domain_com.my_lib.input.InputPosition
             ).particle
         )
         destruction_contracts.destroy_global_position_input(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.input.Input
+                local.my_domain_com.my_lib.input.InputPosition
             ).particle
         )
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.input.Input
+            local.my_domain_com.my_lib.input.InputPosition
         ).destroy_particle()

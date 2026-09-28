@@ -20,9 +20,9 @@ class MiddleDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = MiddleDestructionContracts()
 
 
-class Middle(literal.Action):
+class MiddleAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.inner.Inner,
+        local.my_domain_com.my_lib.inner.InnerAction,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -38,31 +38,31 @@ class Middle(literal.Action):
         holder = literal.LocalPosition(
             "position<holder>",
             constraints=(
-                local.my_domain_com.my_lib.child.Child,
+                local.my_domain_com.my_lib.child.ChildPosition,
             ),
         )
         holder.create_particle()
         holder.particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).create_particle()
         self.get_interface_position(
             "position<input>"
         ).move_particle_to(
             holder.particle.get_position(
-                local.my_domain_com.my_lib.child.Child
+                local.my_domain_com.my_lib.child.ChildPosition
             ).particle.get_position(
-                local.my_domain_com.my_lib.grandchild.Grandchild
+                local.my_domain_com.my_lib.grandchild.GrandchildPosition
             )
         )
         holder.move_particle_to(
             self.on_particle.get_action(
-                local.my_domain_com.my_lib.inner.Inner
+                local.my_domain_com.my_lib.inner.InnerAction
             ).get_interface_position(
                 "position<input>"
             )
         )
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).run(
             InnerDestructionContracts(
                 destruction_contracts.run_destructors_position_input,
@@ -84,9 +84,9 @@ class InnerDestructionContracts(local.my_domain_com.my_lib.inner.InnerDestructio
     def run_destructors_position_input(self, particle: literal.Particle):
         self._run_destructors_position_input(
             particle.get_position(
-                local.my_domain_com.my_lib.child.Child
+                local.my_domain_com.my_lib.child.ChildPosition
             ).particle.get_position(
-                local.my_domain_com.my_lib.grandchild.Grandchild
+                local.my_domain_com.my_lib.grandchild.GrandchildPosition
             ).particle
         )
 
@@ -94,16 +94,16 @@ class InnerDestructionContracts(local.my_domain_com.my_lib.inner.InnerDestructio
     def destroy_position_input(self, particle: literal.Particle):
         self._destroy_position_input(
             particle.get_position(
-                local.my_domain_com.my_lib.child.Child
+                local.my_domain_com.my_lib.child.ChildPosition
             ).particle.get_position(
-                local.my_domain_com.my_lib.grandchild.Grandchild
+                local.my_domain_com.my_lib.grandchild.GrandchildPosition
             ).particle
         )
         particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.grandchild.Grandchild
+            local.my_domain_com.my_lib.grandchild.GrandchildPosition
         ).destroy_particle()
         particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).destroy_particle()

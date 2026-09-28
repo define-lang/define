@@ -37,7 +37,7 @@ class PositionDefinitionGenerator:
         implied_qualities = self._converter.implied_qualities_to_class_references(
             self._definition.quality_implications,
         )
-        class_name = self._converter.class_name(name_content.path.relative_path)
+        class_name = self._converter.class_name(self._definition.typed_name)
         module_name = self._converter.module_name(name_content)
 
         return template_context.PositionDefinitionContext(

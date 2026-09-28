@@ -7,7 +7,7 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.leaf
 
 
-class Mid(literal.GlobalPosition):
+class MidPosition(literal.GlobalPosition):
     constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.leaf.Leaf,
+        local.my_domain_com.my_lib.leaf.LeafPosition,
     )

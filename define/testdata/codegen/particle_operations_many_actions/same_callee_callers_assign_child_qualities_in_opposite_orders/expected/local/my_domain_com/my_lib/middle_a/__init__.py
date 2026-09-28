@@ -20,7 +20,7 @@ class MiddleADestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = MiddleADestructionContracts()
 
 
-class MiddleA(literal.Action):
+class MiddleAAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -35,33 +35,33 @@ class MiddleA(literal.Action):
         box = literal.LocalPosition(
             "position<box>",
             constraints=(
-                local.my_domain_com.my_lib.child.Child,
-                local.my_domain_com.my_lib.sibling.Sibling,
+                local.my_domain_com.my_lib.child.ChildPosition,
+                local.my_domain_com.my_lib.sibling.SiblingPosition,
             ),
         )
         destroyer_holder = literal.LocalPosition(
             "position<destroyer_holder>",
             constraints=(
-                local.my_domain_com.my_lib.destroyer.Destroyer,
+                local.my_domain_com.my_lib.destroyer.DestroyerAction,
             ),
         )
         destroyer_holder.create_particle()
         box.create_particle()
         box.particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).create_particle()
         box.particle.get_position(
-            local.my_domain_com.my_lib.sibling.Sibling
+            local.my_domain_com.my_lib.sibling.SiblingPosition
         ).create_particle()
         box.move_particle_to(
             destroyer_holder.particle.get_action(
-                local.my_domain_com.my_lib.destroyer.Destroyer
+                local.my_domain_com.my_lib.destroyer.DestroyerAction
             ).get_interface_position(
                 "position<run>"
             )
         )
         destroyer_holder.particle.get_action(
-            local.my_domain_com.my_lib.destroyer.Destroyer
+            local.my_domain_com.my_lib.destroyer.DestroyerAction
         ).run(DestroyerDestructionContracts())
         destroyer_holder.destroy_particle()
         destruction_contracts.run_destructors_position_run(
@@ -84,5 +84,5 @@ class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.Destroy
     @override
     def destroy_position_run(self, particle: literal.Particle):
         particle.get_position(
-            local.my_domain_com.my_lib.sibling.Sibling
+            local.my_domain_com.my_lib.sibling.SiblingPosition
         ).destroy_particle()

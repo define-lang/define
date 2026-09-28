@@ -26,7 +26,7 @@ class DestroyerDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = DestroyerDestructionContracts()
 
 
-class Destroyer(literal.Action):
+class DestroyerAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -36,7 +36,7 @@ class Destroyer(literal.Action):
                 literal.LocalPosition(
                     "position<parent>",
                     constraints=(
-                        local.my_domain_com.my_lib.required.Required,
+                        local.my_domain_com.my_lib.required.RequiredPosition,
                     ),
                 ),
             ],
@@ -47,39 +47,39 @@ class Destroyer(literal.Action):
         held_required = literal.LocalPosition(
             "position<held_required>",
             constraints=(
-                local.my_domain_com.my_lib.left.Left,
-                local.my_domain_com.my_lib.right.Right,
+                local.my_domain_com.my_lib.left.LeftPosition,
+                local.my_domain_com.my_lib.right.RightPosition,
             ),
         )
         self.get_interface_position(
             "position<parent>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.required.Required
+            local.my_domain_com.my_lib.required.RequiredPosition
         ).move_particle_to(
             held_required
         )
         literal.record_operation("destroyer.move(parent::/required, held_required)")
         held_required.particle.get_position(
-            local.my_domain_com.my_lib.left.Left
+            local.my_domain_com.my_lib.left.LeftPosition
         ).create_particle()
         literal.record_operation("destroyer.create(held_required::/left)")
         held_required.particle.get_position(
-            local.my_domain_com.my_lib.right.Right
+            local.my_domain_com.my_lib.right.RightPosition
         ).create_particle()
         literal.record_operation("destroyer.create(held_required::/right)")
         held_required.particle.get_position(
-            local.my_domain_com.my_lib.left.Left
+            local.my_domain_com.my_lib.left.LeftPosition
         ).destroy_particle()
         literal.record_operation("destroyer.destroy(held_required::/left)")
         held_required.particle.get_position(
-            local.my_domain_com.my_lib.right.Right
+            local.my_domain_com.my_lib.right.RightPosition
         ).destroy_particle()
         literal.record_operation("destroyer.destroy(held_required::/right)")
         held_required.move_particle_to(
             self.get_interface_position(
                 "position<parent>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.required.Required
+                local.my_domain_com.my_lib.required.RequiredPosition
             )
         )
         literal.record_operation("destroyer.move(held_required, parent::/required)")
@@ -87,7 +87,7 @@ class Destroyer(literal.Action):
             self.get_interface_position(
                 "position<parent>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.required.Required
+                local.my_domain_com.my_lib.required.RequiredPosition
             ).particle
         )
         destruction_contracts.run_destructors_position_parent(
@@ -99,7 +99,7 @@ class Destroyer(literal.Action):
             self.get_interface_position(
                 "position<parent>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.required.Required
+                local.my_domain_com.my_lib.required.RequiredPosition
             ).particle
         )
         destruction_contracts.destroy_position_parent(
@@ -110,7 +110,7 @@ class Destroyer(literal.Action):
         self.get_interface_position(
             "position<parent>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.required.Required
+            local.my_domain_com.my_lib.required.RequiredPosition
         ).destroy_particle()
         literal.record_operation("destroyer.destroy(parent::/required)")
         self.get_interface_position(

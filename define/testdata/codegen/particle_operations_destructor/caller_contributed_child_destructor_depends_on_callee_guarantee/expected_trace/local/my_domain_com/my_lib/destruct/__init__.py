@@ -8,10 +8,10 @@ import local.my_domain_com.my_lib.required
 import local.my_domain_com.my_lib.sibling
 
 
-class Destruct(literal.Action):
+class DestructAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.required.Required,
-        local.my_domain_com.my_lib.sibling.Sibling,
+        local.my_domain_com.my_lib.required.RequiredPosition,
+        local.my_domain_com.my_lib.sibling.SiblingPosition,
     )
 
     @override
@@ -23,26 +23,26 @@ class Destruct(literal.Action):
             "position<held_sibling>",
         )
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.required.Required
+            local.my_domain_com.my_lib.required.RequiredPosition
         ).move_particle_to(
             held_result
         )
         literal.record_operation("destruct.move(/required, held_result)")
         held_result.move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.required.Required
+                local.my_domain_com.my_lib.required.RequiredPosition
             )
         )
         literal.record_operation("destruct.move(held_result, /required)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.sibling.Sibling
+            local.my_domain_com.my_lib.sibling.SiblingPosition
         ).move_particle_to(
             held_sibling
         )
         literal.record_operation("destruct.move(/sibling, held_sibling)")
         held_sibling.move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.sibling.Sibling
+                local.my_domain_com.my_lib.sibling.SiblingPosition
             )
         )
         literal.record_operation("destruct.move(held_sibling, /sibling)")

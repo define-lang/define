@@ -10,10 +10,10 @@ import local.my_domain_com.my_lib.start
 import local.my_domain_com.my_lib.target
 
 
-class Input(literal.GlobalPosition):
+class InputPosition(literal.GlobalPosition):
     constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.origin.Origin,
-        local.my_domain_com.my_lib.start.Start,
-        local.my_domain_com.my_lib.middle.Middle,
-        local.my_domain_com.my_lib.target.Target,
+        local.my_domain_com.my_lib.origin.OriginPosition,
+        local.my_domain_com.my_lib.start.StartPosition,
+        local.my_domain_com.my_lib.middle.MiddlePosition,
+        local.my_domain_com.my_lib.target.TargetPosition,
     )

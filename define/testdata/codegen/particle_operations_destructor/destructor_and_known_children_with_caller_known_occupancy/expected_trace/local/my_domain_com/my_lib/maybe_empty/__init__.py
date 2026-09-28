@@ -3,5 +3,5 @@
 from define.runtime import literal
 
 
-class MaybeEmpty(literal.GlobalPosition):
+class MaybeEmptyPosition(literal.GlobalPosition):
     pass

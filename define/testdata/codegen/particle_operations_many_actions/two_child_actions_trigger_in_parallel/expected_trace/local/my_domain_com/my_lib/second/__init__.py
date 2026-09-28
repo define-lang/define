@@ -16,7 +16,7 @@ class SecondDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = SecondDestructionContracts()
 
 
-class Second(literal.Action):
+class SecondAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(

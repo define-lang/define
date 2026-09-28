@@ -7,35 +7,35 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.callee
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         carrier = literal.LocalPosition(
             "position<carrier>",
             constraints=(
-                local.my_domain_com.my_lib.callee.Callee,
+                local.my_domain_com.my_lib.callee.CalleeAction,
             ),
         )
         carrier.create_particle()
         literal.record_operation("test.create(carrier)")
         carrier.particle.get_action(
-            local.my_domain_com.my_lib.callee.Callee
+            local.my_domain_com.my_lib.callee.CalleeAction
         ).get_interface_position(
             "position<src>"
         ).create_particle()
         literal.record_operation("test.create(carrier::/callee::src)")
         carrier.particle.get_action(
-            local.my_domain_com.my_lib.callee.Callee
+            local.my_domain_com.my_lib.callee.CalleeAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("test.create(carrier::/callee::trigger_pos)")
         carrier.particle.get_action(
-            local.my_domain_com.my_lib.callee.Callee
+            local.my_domain_com.my_lib.callee.CalleeAction
         ).run()
         carrier.particle.get_action(
-            local.my_domain_com.my_lib.callee.Callee
+            local.my_domain_com.my_lib.callee.CalleeAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

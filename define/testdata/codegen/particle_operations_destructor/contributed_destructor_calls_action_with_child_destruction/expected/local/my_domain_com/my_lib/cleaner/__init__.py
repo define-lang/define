@@ -18,9 +18,9 @@ class CleanerDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = CleanerDestructionContracts()
 
 
-class Cleaner(literal.Action):
+class CleanerAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.marker.Marker,
+        local.my_domain_com.my_lib.marker.MarkerPosition,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -35,14 +35,14 @@ class Cleaner(literal.Action):
     def run(self, destruction_contracts: CleanerDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         destruction_contracts.run_destructors_global_position_marker(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.marker.Marker
+                local.my_domain_com.my_lib.marker.MarkerPosition
             ).particle
         )
         destruction_contracts.destroy_global_position_marker(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.marker.Marker
+                local.my_domain_com.my_lib.marker.MarkerPosition
             ).particle
         )
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.marker.Marker
+            local.my_domain_com.my_lib.marker.MarkerPosition
         ).destroy_particle()

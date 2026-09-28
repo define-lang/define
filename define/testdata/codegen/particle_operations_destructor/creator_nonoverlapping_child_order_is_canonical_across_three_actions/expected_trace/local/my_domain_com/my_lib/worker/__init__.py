@@ -8,19 +8,19 @@ import local.my_domain_com.my_lib.first_interface
 import local.my_domain_com.my_lib.second_interface
 
 
-class Worker(literal.Action):
+class WorkerAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.first_interface.FirstInterface,
-        local.my_domain_com.my_lib.second_interface.SecondInterface,
+        local.my_domain_com.my_lib.first_interface.FirstInterfacePosition,
+        local.my_domain_com.my_lib.second_interface.SecondInterfacePosition,
     )
 
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.first_interface.FirstInterface
+            local.my_domain_com.my_lib.first_interface.FirstInterfacePosition
         ).create_particle()
         literal.record_operation("worker.create(/first_interface)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.second_interface.SecondInterface
+            local.my_domain_com.my_lib.second_interface.SecondInterfacePosition
         ).create_particle()
         literal.record_operation("worker.create(/second_interface)")

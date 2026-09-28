@@ -24,7 +24,7 @@ class DestroyerDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = DestroyerDestructionContracts()
 
 
-class Destroyer(literal.Action):
+class DestroyerAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -33,7 +33,7 @@ class Destroyer(literal.Action):
                 literal.LocalPosition(
                     "position<first>",
                     constraints=(
-                        local.my_domain_com.my_lib.direct_destructor.DirectDestructor,
+                        local.my_domain_com.my_lib.direct_destructor.DirectDestructorAction,
                     ),
                 ),
                 literal.LocalPosition("position<second>"),
@@ -46,7 +46,7 @@ class Destroyer(literal.Action):
         self.get_interface_position(
             "position<first>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.direct_destructor.DirectDestructor
+            local.my_domain_com.my_lib.direct_destructor.DirectDestructorAction
         ).run()
         destruction_contracts.run_destructors_position_first(
             self.get_interface_position(

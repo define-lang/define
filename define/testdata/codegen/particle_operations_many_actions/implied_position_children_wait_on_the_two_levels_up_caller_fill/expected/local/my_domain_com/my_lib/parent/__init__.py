@@ -8,8 +8,8 @@ import local.my_domain_com.my_lib.child1
 import local.my_domain_com.my_lib.child2
 
 
-class Parent(literal.GlobalPosition):
+class ParentPosition(literal.GlobalPosition):
     constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.child1.Child1,
-        local.my_domain_com.my_lib.child2.Child2,
+        local.my_domain_com.my_lib.child1.Child1Position,
+        local.my_domain_com.my_lib.child2.Child2Position,
     )

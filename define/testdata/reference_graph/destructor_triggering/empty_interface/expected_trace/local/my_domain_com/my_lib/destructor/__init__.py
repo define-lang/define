@@ -5,7 +5,7 @@ from typing import override
 from define.runtime import literal
 
 
-class Destructor(literal.Action):
+class DestructorAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(

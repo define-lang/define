@@ -18,24 +18,24 @@ class SecondCleanupDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = SecondCleanupDestructionContracts()
 
 
-class SecondCleanup(literal.Action):
+class SecondCleanupAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.right.Right,
+        local.my_domain_com.my_lib.right.RightPosition,
     )
 
     @override
     def run(self, destruction_contracts: SecondCleanupDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         destruction_contracts.run_destructors_global_position_right(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.right.Right
+                local.my_domain_com.my_lib.right.RightPosition
             ).particle
         )
         destruction_contracts.destroy_global_position_right(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.right.Right
+                local.my_domain_com.my_lib.right.RightPosition
             ).particle
         )
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.right.Right
+            local.my_domain_com.my_lib.right.RightPosition
         ).destroy_particle()
         literal.record_operation("second_cleanup.destroy(/right)")

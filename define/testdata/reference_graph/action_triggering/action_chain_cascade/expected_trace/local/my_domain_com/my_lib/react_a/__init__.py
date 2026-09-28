@@ -18,7 +18,7 @@ class ReactADestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = ReactADestructionContracts()
 
 
-class ReactA(literal.Action):
+class ReactAAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -28,7 +28,7 @@ class ReactA(literal.Action):
                 literal.LocalPosition(
                     "position<result>",
                     constraints=(
-                        local.my_domain_com.my_lib.final.Final,
+                        local.my_domain_com.my_lib.final.FinalAction,
                     ),
                 ),
             ],
@@ -43,7 +43,7 @@ class ReactA(literal.Action):
         self.get_interface_position(
             "position<result>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.final.Final
+            local.my_domain_com.my_lib.final.FinalAction
         ).get_interface_position(
             "position<trigger>"
         ).create_particle()
@@ -51,7 +51,7 @@ class ReactA(literal.Action):
         self.get_interface_position(
             "position<result>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.final.Final
+            local.my_domain_com.my_lib.final.FinalAction
         ).run()
         self.get_interface_position(
             "position<result>"

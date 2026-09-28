@@ -3,5 +3,5 @@
 from define.runtime import literal
 
 
-class FirstInterface(literal.GlobalPosition):
+class FirstInterfacePosition(literal.GlobalPosition):
     pass

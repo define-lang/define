@@ -7,7 +7,7 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.y
 
 
-class Worker(literal.Action):
+class WorkerAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -17,7 +17,7 @@ class Worker(literal.Action):
                 literal.LocalPosition(
                     "position<box>",
                     constraints=(
-                        local.my_domain_com.my_lib.y.Y,
+                        local.my_domain_com.my_lib.y.YPosition,
                     ),
                 ),
             ],
@@ -31,7 +31,7 @@ class Worker(literal.Action):
             self.get_interface_position(
                 "position<box>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.y.Y
+                local.my_domain_com.my_lib.y.YPosition
             )
         )
         literal.record_operation("worker.move(in, box::/y)")

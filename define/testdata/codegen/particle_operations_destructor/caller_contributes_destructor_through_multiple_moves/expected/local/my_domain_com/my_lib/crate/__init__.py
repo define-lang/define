@@ -8,8 +8,8 @@ import local.my_domain_com.my_lib.carrier
 import local.my_domain_com.my_lib.outer
 
 
-class Crate(literal.GlobalPosition):
+class CratePosition(literal.GlobalPosition):
     constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.outer.Outer,
-        local.my_domain_com.my_lib.carrier.Carrier,
+        local.my_domain_com.my_lib.outer.OuterAction,
+        local.my_domain_com.my_lib.carrier.CarrierPosition,
     )

@@ -106,9 +106,10 @@ def test_file_with_position_and_constructor_passes(
 
     assert_no_errors(program_result)
     _generate(program_result, tmp_path)
-    main_file = tmp_path / "__main__.py"
-    assert main_file.exists()
-    assert main_file.stat().st_size > 0
+    runtime_result = generated_program_runner.run_generated_program(tmp_path)
+    assert runtime_result.returncode == 0
+    assert runtime_result.stdout == ""
+    assert runtime_result.stderr == ""
 
 
 def test_constructor_chosen_when_position_constrains_it(
@@ -119,9 +120,10 @@ def test_constructor_chosen_when_position_constrains_it(
 
     assert_no_errors(program_result)
     _generate(program_result, tmp_path)
-    main_file = tmp_path / "__main__.py"
-    assert main_file.exists()
-    assert main_file.stat().st_size > 0
+    runtime_result = generated_program_runner.run_generated_program(tmp_path)
+    assert runtime_result.returncode == 0
+    assert runtime_result.stdout == ""
+    assert runtime_result.stderr == ""
 
 
 def test_parallel_generation_matches_single_worker(

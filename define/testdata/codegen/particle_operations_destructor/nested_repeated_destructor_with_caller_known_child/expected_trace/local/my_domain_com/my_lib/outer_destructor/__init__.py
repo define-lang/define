@@ -10,29 +10,29 @@ import local.my_domain_com.my_lib.inner_destructor_a
 import local.my_domain_com.my_lib.inner_destructor_b
 
 
-class OuterDestructor(literal.Action):
+class OuterDestructorAction(literal.Action):
 
     @override
     def run(self):
         inner_destroyer_particle = literal.LocalPosition(
             "position<inner_destroyer_particle>",
             constraints=(
-                local.my_domain_com.my_lib.inner_destroyer.InnerDestroyer,
+                local.my_domain_com.my_lib.inner_destroyer.InnerDestroyerAction,
             ),
         )
         first_source = literal.LocalPosition(
             "position<first_source>",
             constraints=(
-                local.my_domain_com.my_lib.extra.Extra,
-                local.my_domain_com.my_lib.inner_destructor_a.InnerDestructorA,
+                local.my_domain_com.my_lib.extra.ExtraPosition,
+                local.my_domain_com.my_lib.inner_destructor_a.InnerDestructorAAction,
             ),
         )
         second_source = literal.LocalPosition(
             "position<second_source>",
             constraints=(
-                local.my_domain_com.my_lib.extra.Extra,
-                local.my_domain_com.my_lib.inner_destructor_a.InnerDestructorA,
-                local.my_domain_com.my_lib.inner_destructor_b.InnerDestructorB,
+                local.my_domain_com.my_lib.extra.ExtraPosition,
+                local.my_domain_com.my_lib.inner_destructor_a.InnerDestructorAAction,
+                local.my_domain_com.my_lib.inner_destructor_b.InnerDestructorBAction,
             ),
         )
         inner_destroyer_particle.create_particle()
@@ -40,36 +40,36 @@ class OuterDestructor(literal.Action):
         first_source.create_particle()
         literal.record_operation("outer_destructor.create(first_source)")
         first_source.particle.get_position(
-            local.my_domain_com.my_lib.extra.Extra
+            local.my_domain_com.my_lib.extra.ExtraPosition
         ).create_particle()
         literal.record_operation("outer_destructor.create(first_source::/extra)")
         first_source.move_particle_to(
             inner_destroyer_particle.particle.get_action(
-                local.my_domain_com.my_lib.inner_destroyer.InnerDestroyer
+                local.my_domain_com.my_lib.inner_destroyer.InnerDestroyerAction
             ).get_interface_position(
                 "position<target>"
             )
         )
         literal.record_operation("outer_destructor.move(first_source, inner_destroyer_particle::/inner_destroyer::target)")
         inner_destroyer_particle.particle.get_action(
-            local.my_domain_com.my_lib.inner_destroyer.InnerDestroyer
+            local.my_domain_com.my_lib.inner_destroyer.InnerDestroyerAction
         ).run(InnerDestroyerDestructionContracts())
         second_source.create_particle()
         literal.record_operation("outer_destructor.create(second_source)")
         second_source.particle.get_position(
-            local.my_domain_com.my_lib.extra.Extra
+            local.my_domain_com.my_lib.extra.ExtraPosition
         ).create_particle()
         literal.record_operation("outer_destructor.create(second_source::/extra)")
         second_source.move_particle_to(
             inner_destroyer_particle.particle.get_action(
-                local.my_domain_com.my_lib.inner_destroyer.InnerDestroyer
+                local.my_domain_com.my_lib.inner_destroyer.InnerDestroyerAction
             ).get_interface_position(
                 "position<target>"
             )
         )
         literal.record_operation("outer_destructor.move(second_source, inner_destroyer_particle::/inner_destroyer::target)")
         inner_destroyer_particle.particle.get_action(
-            local.my_domain_com.my_lib.inner_destroyer.InnerDestroyer
+            local.my_domain_com.my_lib.inner_destroyer.InnerDestroyerAction
         ).run(InnerDestroyerDestructionContracts_())
         inner_destroyer_particle.destroy_particle()
         literal.record_operation("outer_destructor.destroy(inner_destroyer_particle)")
@@ -80,13 +80,13 @@ class InnerDestroyerDestructionContracts(local.my_domain_com.my_lib.inner_destro
     @override
     def run_destructors_position_target(self, particle: literal.Particle):
         particle.get_action(
-            local.my_domain_com.my_lib.inner_destructor_a.InnerDestructorA
+            local.my_domain_com.my_lib.inner_destructor_a.InnerDestructorAAction
         ).run()
 
     @override
     def destroy_position_target(self, particle: literal.Particle):
         particle.get_position(
-            local.my_domain_com.my_lib.extra.Extra
+            local.my_domain_com.my_lib.extra.ExtraPosition
         ).destroy_particle()
         literal.record_operation("inner_destroyer.destroy(target::/extra)")
 
@@ -96,15 +96,15 @@ class InnerDestroyerDestructionContracts_(local.my_domain_com.my_lib.inner_destr
     @override
     def run_destructors_position_target(self, particle: literal.Particle):
         particle.get_action(
-            local.my_domain_com.my_lib.inner_destructor_b.InnerDestructorB
+            local.my_domain_com.my_lib.inner_destructor_b.InnerDestructorBAction
         ).run()
         particle.get_action(
-            local.my_domain_com.my_lib.inner_destructor_a.InnerDestructorA
+            local.my_domain_com.my_lib.inner_destructor_a.InnerDestructorAAction
         ).run()
 
     @override
     def destroy_position_target(self, particle: literal.Particle):
         particle.get_position(
-            local.my_domain_com.my_lib.extra.Extra
+            local.my_domain_com.my_lib.extra.ExtraPosition
         ).destroy_particle()
         literal.record_operation("inner_destroyer.destroy(target::/extra)")

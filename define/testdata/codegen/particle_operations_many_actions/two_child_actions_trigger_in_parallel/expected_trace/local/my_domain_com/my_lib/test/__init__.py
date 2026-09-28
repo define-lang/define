@@ -8,36 +8,36 @@ import local.my_domain_com.my_lib.first
 import local.my_domain_com.my_lib.second
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         box = literal.LocalPosition(
             "position<box>",
             constraints=(
-                local.my_domain_com.my_lib.first.First,
-                local.my_domain_com.my_lib.second.Second,
+                local.my_domain_com.my_lib.first.FirstAction,
+                local.my_domain_com.my_lib.second.SecondAction,
             ),
         )
         box.create_particle()
         literal.record_operation("test.create(box)")
         box.particle.get_action(
-            local.my_domain_com.my_lib.first.First
+            local.my_domain_com.my_lib.first.FirstAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("test.create(box::/first::trigger_pos)")
         box.particle.get_action(
-            local.my_domain_com.my_lib.first.First
+            local.my_domain_com.my_lib.first.FirstAction
         ).run()
         box.particle.get_action(
-            local.my_domain_com.my_lib.second.Second
+            local.my_domain_com.my_lib.second.SecondAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("test.create(box::/second::trigger_pos)")
         box.particle.get_action(
-            local.my_domain_com.my_lib.second.Second
+            local.my_domain_com.my_lib.second.SecondAction
         ).run()
         box.destroy_particle()
         literal.record_operation("test.destroy(box)")

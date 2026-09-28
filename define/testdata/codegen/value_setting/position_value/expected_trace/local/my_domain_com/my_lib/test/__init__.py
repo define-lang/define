@@ -8,9 +8,9 @@ import local.my_domain_com.my_lib.target
 import standard.number.rational
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.target.Target,
+        local.my_domain_com.my_lib.target.TargetPosition,
     )
 
     @override
@@ -18,19 +18,19 @@ class Test(literal.Action):
         source = literal.LocalPosition(
             "position<source>",
             constraints=(
-                standard.number.rational.NumberRational,
+                standard.number.rational.NumberRationalValue,
             ),
         )
         source.create_particle()
         literal.record_operation("test.create(source)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.target.Target
+            local.my_domain_com.my_lib.target.TargetPosition
         ).create_particle()
         literal.record_operation("test.create(/target)")
         source.set_value(-5)
         literal.record_operation("test.set_value(source, -5)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.target.Target
+            local.my_domain_com.my_lib.target.TargetPosition
         ).set_value_from(
             source
         )

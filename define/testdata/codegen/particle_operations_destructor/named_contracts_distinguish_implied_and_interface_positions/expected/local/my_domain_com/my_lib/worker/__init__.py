@@ -24,9 +24,9 @@ class WorkerDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = WorkerDestructionContracts()
 
 
-class Worker(literal.Action):
+class WorkerAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.item.Item,
+        local.my_domain_com.my_lib.item.ItemPosition,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -42,16 +42,16 @@ class Worker(literal.Action):
     def run(self, destruction_contracts: WorkerDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         destruction_contracts.run_destructors_global_position_item(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.item.Item
+                local.my_domain_com.my_lib.item.ItemPosition
             ).particle
         )
         destruction_contracts.destroy_global_position_item(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.item.Item
+                local.my_domain_com.my_lib.item.ItemPosition
             ).particle
         )
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.item.Item
+            local.my_domain_com.my_lib.item.ItemPosition
         ).destroy_particle()
         destruction_contracts.run_destructors_position_item(
             self.get_interface_position(

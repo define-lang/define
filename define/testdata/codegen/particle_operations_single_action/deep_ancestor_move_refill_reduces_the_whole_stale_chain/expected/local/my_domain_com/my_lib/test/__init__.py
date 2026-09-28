@@ -8,58 +8,58 @@ import local.my_domain_com.my_lib.leaf
 import local.my_domain_com.my_lib.mid
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         box = literal.LocalPosition(
             "position<box>",
             constraints=(
-                local.my_domain_com.my_lib.mid.Mid,
+                local.my_domain_com.my_lib.mid.MidPosition,
             ),
         )
         source = literal.LocalPosition(
             "position<source>",
             constraints=(
-                local.my_domain_com.my_lib.mid.Mid,
+                local.my_domain_com.my_lib.mid.MidPosition,
             ),
         )
         box.create_particle()
         box.particle.get_position(
-            local.my_domain_com.my_lib.mid.Mid
+            local.my_domain_com.my_lib.mid.MidPosition
         ).create_particle()
         box.particle.get_position(
-            local.my_domain_com.my_lib.mid.Mid
+            local.my_domain_com.my_lib.mid.MidPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.leaf.Leaf
+            local.my_domain_com.my_lib.leaf.LeafPosition
         ).create_particle()
         box.particle.get_position(
-            local.my_domain_com.my_lib.mid.Mid
+            local.my_domain_com.my_lib.mid.MidPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.leaf.Leaf
+            local.my_domain_com.my_lib.leaf.LeafPosition
         ).destroy_particle()
         box.particle.get_position(
-            local.my_domain_com.my_lib.mid.Mid
+            local.my_domain_com.my_lib.mid.MidPosition
         ).destroy_particle()
         box.destroy_particle()
         source.create_particle()
         source.particle.get_position(
-            local.my_domain_com.my_lib.mid.Mid
+            local.my_domain_com.my_lib.mid.MidPosition
         ).create_particle()
         source.particle.get_position(
-            local.my_domain_com.my_lib.mid.Mid
+            local.my_domain_com.my_lib.mid.MidPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.leaf.Leaf
+            local.my_domain_com.my_lib.leaf.LeafPosition
         ).create_particle()
         source.move_particle_to(
             box
         )
         box.particle.get_position(
-            local.my_domain_com.my_lib.mid.Mid
+            local.my_domain_com.my_lib.mid.MidPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.leaf.Leaf
+            local.my_domain_com.my_lib.leaf.LeafPosition
         ).destroy_particle()
         box.particle.get_position(
-            local.my_domain_com.my_lib.mid.Mid
+            local.my_domain_com.my_lib.mid.MidPosition
         ).destroy_particle()
         box.destroy_particle()

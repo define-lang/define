@@ -17,13 +17,13 @@ define the potential action<my.domain.com:my_lib:/test> {
 ```
 
 ```python
-class Test(literal.Action):
+class TestAction(literal.Action):
     def run(self):
-        self.on_particle.get_action(Runner).get_interface_position(
+        self.on_particle.get_action(RunnerAction).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.on_particle.get_action(Runner).run()
-        self.on_particle.get_action(Runner).get_interface_position(
+        self.on_particle.get_action(RunnerAction).run()
+        self.on_particle.get_action(RunnerAction).get_interface_position(
             "position<run>"
         ).destroy_particle()
 ```
@@ -49,18 +49,18 @@ define the potential action<my.domain.com:my_lib:/runner> {
 ```
 
 ```python
-class Runner(literal.Action):
+class RunnerAction(literal.Action):
     def run(self):
         wrapper = literal.LocalPosition("position<wrapper>", constraints=(Middle,))
         wrapper.create_particle()
-        wrapper.particle.get_action(Middle).get_interface_position(
+        wrapper.particle.get_action(MiddleAction).get_interface_position(
             "position<box>"
         ).create_particle()
-        wrapper.particle.get_action(Middle).get_interface_position(
+        wrapper.particle.get_action(MiddleAction).get_interface_position(
             "position<run>"
         ).create_particle()
-        wrapper.particle.get_action(Middle).run()
-        wrapper.particle.get_action(Middle).get_interface_position(
+        wrapper.particle.get_action(MiddleAction).run()
+        wrapper.particle.get_action(MiddleAction).get_interface_position(
             "position<final>"
         ).destroy_particle()
         wrapper.destroy_particle()
@@ -90,17 +90,17 @@ define the potential action<my.domain.com:my_lib:/middle> {
 ```
 
 ```python
-class Middle(literal.Action):
+class MiddleAction(literal.Action):
     def run(self):
         self.get_interface_position("position<box>").particle.get_action(
-            Worker
+            WorkerAction
         ).get_interface_position("position<input>").create_particle()
         self.get_interface_position("position<box>").particle.get_action(
-            Worker
+            WorkerAction
         ).get_interface_position("position<run>").create_particle()
-        self.get_interface_position("position<box>").particle.get_action(Worker).run()
+        self.get_interface_position("position<box>").particle.get_action(WorkerAction).run()
         self.get_interface_position("position<box>").particle.get_action(
-            Worker
+            WorkerAction
         ).get_interface_position("position<output>").move_particle_to(
             self.get_interface_position("position<final>")
         )
@@ -125,7 +125,7 @@ define the potential action<my.domain.com:my_lib:/worker> {
 ```
 
 ```python
-class Worker(literal.Action):
+class WorkerAction(literal.Action):
     def run(self):
         self.get_interface_position("position<input>").move_particle_to(
             self.get_interface_position("position<output>")
@@ -155,23 +155,23 @@ define the potential action<my.domain.com:my_lib:/test> {
 ```
 
 ```python
-class Test(literal.Action):
+class TestAction(literal.Action):
     def run(self):
         runner_parent = literal.LocalPosition(
             "position<runner_parent>", constraints=(Runner,)
         )
         runner_parent.create_particle()
-        runner_parent.particle.get_action(Runner).get_interface_position(
+        runner_parent.particle.get_action(RunnerAction).get_interface_position(
             "position<second>"
         ).create_particle()
-        runner_parent.particle.get_action(Runner).get_interface_position(
+        runner_parent.particle.get_action(RunnerAction).get_interface_position(
             "position<first>"
         ).create_particle()
-        runner_parent.particle.get_action(Runner).run()
-        runner_parent.particle.get_action(Runner).get_interface_position(
+        runner_parent.particle.get_action(RunnerAction).run()
+        runner_parent.particle.get_action(RunnerAction).get_interface_position(
             "position<second_result>"
         ).destroy_particle()
-        runner_parent.particle.get_action(Runner).get_interface_position(
+        runner_parent.particle.get_action(RunnerAction).get_interface_position(
             "position<first_result>"
         ).destroy_particle()
         runner_parent.destroy_particle()
@@ -195,7 +195,7 @@ define the potential action<my.domain.com:my_lib:/runner> {
 ```
 
 ```python
-class Runner(literal.Action):
+class RunnerAction(literal.Action):
     def run(self):
         self.get_interface_position("position<first>").move_particle_to(
             self.get_interface_position("position<first_result>")
@@ -233,24 +233,24 @@ define the potential action<my.domain.com:my_lib:/test> {
 ```
 
 ```python
-class Test(literal.Action):
+class TestAction(literal.Action):
     def run(self):
         box = literal.LocalPosition("position<box>", constraints=(Maker,))
         box.create_particle()
-        box.particle.get_action(Maker).get_interface_position(
+        box.particle.get_action(MakerAction).get_interface_position(
             "position<run>"
         ).create_particle()
-        box.particle.get_action(Maker).run()
-        box.particle.get_action(Maker).get_interface_position(
+        box.particle.get_action(MakerAction).run()
+        box.particle.get_action(MakerAction).get_interface_position(
             "position<result>"
-        ).particle.get_action(Destructor).run()
-        box.particle.get_action(Maker).get_interface_position(
+        ).particle.get_action(DestructorAction).run()
+        box.particle.get_action(MakerAction).get_interface_position(
             "position<result>"
-        ).particle.get_position(Marker).destroy_particle()
-        box.particle.get_action(Maker).get_interface_position(
+        ).particle.get_position(MarkerPosition).destroy_particle()
+        box.particle.get_action(MakerAction).get_interface_position(
             "position<result>"
         ).destroy_particle()
-        box.particle.get_action(Maker).get_interface_position(
+        box.particle.get_action(MakerAction).get_interface_position(
             "position<run>"
         ).destroy_particle()
         box.destroy_particle()
@@ -277,11 +277,11 @@ define the potential action<my.domain.com:my_lib:/maker> {
 ```
 
 ```python
-class Maker(literal.Action):
+class MakerAction(literal.Action):
     def run(self):
         self.get_interface_position("position<result>").create_particle()
         self.get_interface_position("position<result>").particle.get_position(
-            Marker
+            MarkerPosition
         ).create_particle()
 ```
 
@@ -301,11 +301,11 @@ define the potential action<my.domain.com:my_lib:/destructor> {
 ```
 
 ```python
-class Destructor(literal.Action):
+class DestructorAction(literal.Action):
     def run(self):
         holder = literal.LocalPosition("position<holder>")
-        self.on_particle.get_position(Marker).move_particle_to(holder)
-        holder.move_particle_to(self.on_particle.get_position(Marker))
+        self.on_particle.get_position(MarkerPosition).move_particle_to(holder)
+        holder.move_particle_to(self.on_particle.get_position(MarkerPosition))
 ```
 
 ## Two local operations and two triggered actions
@@ -330,15 +330,15 @@ define the potential action<my.domain.com:my_lib:/test> {
 ```
 
 ```python
-class Test(literal.Action):
+class TestAction(literal.Action):
     def run(self):
         gateway = literal.LocalPosition("position<gateway>", constraints=(Middle,))
         gateway.create_particle()
-        gateway.particle.get_action(Middle).get_interface_position(
+        gateway.particle.get_action(MiddleAction).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        gateway.particle.get_action(Middle).run()
-        gateway.particle.get_action(Middle).get_interface_position(
+        gateway.particle.get_action(MiddleAction).run()
+        gateway.particle.get_action(MiddleAction).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
         gateway.destroy_particle()
@@ -367,24 +367,24 @@ define the potential action<my.domain.com:my_lib:/middle> {
 ```
 
 ```python
-class Middle(literal.Action):
+class MiddleAction(literal.Action):
     def run(self):
         first = literal.LocalPosition("position<first>")
         second = literal.LocalPosition("position<second>")
         first.create_particle()
         second.create_particle()
-        self.on_particle.get_action(ChildA).get_interface_position(
+        self.on_particle.get_action(ChildAAction).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.on_particle.get_action(ChildA).run()
-        self.on_particle.get_action(ChildB).get_interface_position(
+        self.on_particle.get_action(ChildAAction).run()
+        self.on_particle.get_action(ChildBAction).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.on_particle.get_action(ChildB).run()
-        self.on_particle.get_action(ChildA).get_interface_position(
+        self.on_particle.get_action(ChildBAction).run()
+        self.on_particle.get_action(ChildAAction).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
-        self.on_particle.get_action(ChildB).get_interface_position(
+        self.on_particle.get_action(ChildBAction).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
         first.destroy_particle()
@@ -406,7 +406,7 @@ define the potential action<my.domain.com:my_lib:/child_a> {
 ```
 
 ```python
-class ChildA(literal.Action):
+class ChildAAction(literal.Action):
     def run(self):
         scratch = literal.LocalPosition("position<scratch>")
         scratch.create_particle()
@@ -428,7 +428,7 @@ define the potential action<my.domain.com:my_lib:/child_b> {
 ```
 
 ```python
-class ChildB(literal.Action):
+class ChildBAction(literal.Action):
     def run(self):
         scratch = literal.LocalPosition("position<scratch>")
         scratch.create_particle()
@@ -457,24 +457,24 @@ define the potential action<my.domain.com:my_lib:/test> {
 ```
 
 ```python
-class Test(literal.Action):
+class TestAction(literal.Action):
     def run(self):
         box = literal.LocalPosition("position<box>", constraints=(Maker,))
         box.create_particle()
-        box.particle.get_action(Maker).get_interface_position(
+        box.particle.get_action(MakerAction).get_interface_position(
             "position<run>"
         ).create_particle()
-        box.particle.get_action(Maker).run()
-        box.particle.get_action(Maker).get_interface_position(
+        box.particle.get_action(MakerAction).run()
+        box.particle.get_action(MakerAction).get_interface_position(
             "position<result>"
-        ).particle.get_action(DestructB).run()
-        box.particle.get_action(Maker).get_interface_position(
+        ).particle.get_action(DestructBAction).run()
+        box.particle.get_action(MakerAction).get_interface_position(
             "position<result>"
-        ).particle.get_action(DestructA).run()
-        box.particle.get_action(Maker).get_interface_position(
+        ).particle.get_action(DestructAAction).run()
+        box.particle.get_action(MakerAction).get_interface_position(
             "position<result>"
         ).destroy_particle()
-        box.particle.get_action(Maker).get_interface_position(
+        box.particle.get_action(MakerAction).get_interface_position(
             "position<run>"
         ).destroy_particle()
         box.destroy_particle()
@@ -500,7 +500,7 @@ define the potential action<my.domain.com:my_lib:/maker> {
 ```
 
 ```python
-class Maker(literal.Action):
+class MakerAction(literal.Action):
     def run(self):
         self.get_interface_position("position<result>").create_particle()
 ```
@@ -520,7 +520,7 @@ define the potential action<my.domain.com:my_lib:/destruct_a> {
 ```
 
 ```python
-class DestructA(literal.Action):
+class DestructAAction(literal.Action):
     def run(self):
         _noop = literal.LocalPosition("position<_noop>")
         _noop.create_particle()
@@ -542,7 +542,7 @@ define the potential action<my.domain.com:my_lib:/destruct_b> {
 ```
 
 ```python
-class DestructB(literal.Action):
+class DestructBAction(literal.Action):
     def run(self):
         _noop = literal.LocalPosition("position<_noop>")
         _noop.create_particle()
@@ -573,23 +573,23 @@ define the potential action<my.domain.com:my_lib:/test> {
 ```
 
 ```python
-class Test(literal.Action):
+class TestAction(literal.Action):
     def run(self):
         box = literal.LocalPosition("position<box>", constraints=(Carrier,))
         box.create_particle()
-        box.particle.get_action(Carrier).get_interface_position(
+        box.particle.get_action(CarrierAction).get_interface_position(
             "position<run>"
         ).create_particle()
-        box.particle.get_action(Carrier).run()
-        box.particle.get_action(Carrier).get_interface_position(
+        box.particle.get_action(CarrierAction).run()
+        box.particle.get_action(CarrierAction).get_interface_position(
             "position<result>"
-        ).particle.get_action(Worker).get_interface_position(
+        ).particle.get_action(WorkerAction).get_interface_position(
             "position<run>"
         ).create_particle()
-        box.particle.get_action(Carrier).get_interface_position(
+        box.particle.get_action(CarrierAction).get_interface_position(
             "position<result>"
-        ).particle.get_action(Worker).run()
-        box.particle.get_action(Carrier).get_interface_position(
+        ).particle.get_action(WorkerAction).run()
+        box.particle.get_action(CarrierAction).get_interface_position(
             "position<result>"
         ).destroy_particle()
         box.destroy_particle()
@@ -621,7 +621,7 @@ define the potential action<my.domain.com:my_lib:/carrier> {
 ```
 
 ```python
-class Carrier(literal.Action):
+class CarrierAction(literal.Action):
     def run(self):
         self.get_interface_position("position<source>").create_particle()
         self.get_interface_position("position<source>").move_particle_to(
@@ -644,7 +644,7 @@ define the potential action<my.domain.com:my_lib:/worker> {
 ```
 
 ```python
-class Worker(literal.Action):
+class WorkerAction(literal.Action):
     def run(self):
         self.get_interface_position("position<run>").destroy_particle()
 ```
@@ -687,24 +687,24 @@ define the potential action<my.domain.com:my_lib:/test> {
 import local.my_domain_com.my_lib.triggered
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     def run(self):
         source = literal.LocalPosition("position<source>", constraints=(A,))
         source.create_particle()
-        source.particle.get_position(A).create_particle()
+        source.particle.get_position(APosition).create_particle()
         source.move_particle_to(
-            self.on_particle.get_action(Triggered).get_interface_position(
+            self.on_particle.get_action(TriggeredAction).get_interface_position(
                 "position<run>"
             )
         )
-        self.on_particle.get_action(Triggered).run(TriggeredDestructionContracts())
+        self.on_particle.get_action(TriggeredAction).run(TriggeredDestructionContracts())
 
 
 class TriggeredDestructionContracts(
     local.my_domain_com.my_lib.triggered.TriggeredDestructionContracts
 ):
     def destroy_position_run(self, particle):
-        particle.get_position(A).destroy_particle()
+        particle.get_position(APosition).destroy_particle()
 ```
 
 ### triggered.dfn
@@ -732,15 +732,15 @@ class TriggeredDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = TriggeredDestructionContracts()
 
 
-class Triggered(literal.Action):
+class TriggeredAction(literal.Action):
     def run(self, destruction_contracts=_DEFAULT_DESTRUCTION_CONTRACTS):
         self.get_interface_position("position<run>").move_particle_to(
-            self.on_particle.get_position(Target)
+            self.on_particle.get_position(TargetPosition)
         )
         destruction_contracts.destroy_position_run(
-            self.on_particle.get_position(Target).particle
+            self.on_particle.get_position(TargetPosition).particle
         )
-        self.on_particle.get_position(Target).destroy_particle()
+        self.on_particle.get_position(TargetPosition).destroy_particle()
 ```
 
 ## A Destruction Contract passed to an action on a local particle
@@ -777,15 +777,15 @@ class TriggeredDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = TriggeredDestructionContracts()
 
 
-class Triggered(literal.Action):
+class TriggeredAction(literal.Action):
     def run(self, destruction_contracts=_DEFAULT_DESTRUCTION_CONTRACTS):
         self.get_interface_position("position<run>").move_particle_to(
-            self.on_particle.get_position(Target)
+            self.on_particle.get_position(TargetPosition)
         )
         destruction_contracts.destroy_position_run(
-            self.on_particle.get_position(Target).particle
+            self.on_particle.get_position(TargetPosition).particle
         )
-        self.on_particle.get_position(Target).destroy_particle()
+        self.on_particle.get_position(TargetPosition).destroy_particle()
 ```
 
 ### test.dfn
@@ -817,7 +817,7 @@ define the potential action<my.domain.com:my_lib:/test> {
 import local.my_domain_com.my_lib.triggered
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     def run(self):
         triggered_parent = literal.LocalPosition(
             "position<triggered_parent>", constraints=(Triggered,)
@@ -825,13 +825,13 @@ class Test(literal.Action):
         source = literal.LocalPosition("position<source>", constraints=(A,))
         triggered_parent.create_particle()
         source.create_particle()
-        source.particle.get_position(A).create_particle()
+        source.particle.get_position(APosition).create_particle()
         source.move_particle_to(
-            triggered_parent.particle.get_action(Triggered).get_interface_position(
+            triggered_parent.particle.get_action(TriggeredAction).get_interface_position(
                 "position<run>"
             )
         )
-        triggered_parent.particle.get_action(Triggered).run(
+        triggered_parent.particle.get_action(TriggeredAction).run(
             TriggeredDestructionContracts()
         )
         triggered_parent.destroy_particle()
@@ -841,7 +841,7 @@ class TriggeredDestructionContracts(
     local.my_domain_com.my_lib.triggered.TriggeredDestructionContracts
 ):
     def destroy_position_run(self, particle):
-        particle.get_position(A).destroy_particle()
+        particle.get_position(APosition).destroy_particle()
 ```
 
 ## An action created and triggered by another action
@@ -865,20 +865,20 @@ define the potential action<my.domain.com:my_lib:/test> {
 ```
 
 ```python
-class Test(literal.Action):
+class TestAction(literal.Action):
     def run(self):
         maker_parent = literal.LocalPosition(
             "position<maker_parent>", constraints=(Maker,)
         )
         maker_parent.create_particle()
-        maker_parent.particle.get_action(Maker).get_interface_position(
+        maker_parent.particle.get_action(MakerAction).get_interface_position(
             "position<run>"
         ).create_particle()
-        maker_parent.particle.get_action(Maker).run()
-        maker_parent.particle.get_action(Maker).get_interface_position(
+        maker_parent.particle.get_action(MakerAction).run()
+        maker_parent.particle.get_action(MakerAction).get_interface_position(
             "position<result>"
         ).destroy_particle()
-        maker_parent.particle.get_action(Maker).get_interface_position(
+        maker_parent.particle.get_action(MakerAction).get_interface_position(
             "position<run>"
         ).destroy_particle()
         maker_parent.destroy_particle()
@@ -904,14 +904,14 @@ define the potential action<my.domain.com:my_lib:/maker> {
 ```
 
 ```python
-class Maker(literal.Action):
+class MakerAction(literal.Action):
     def run(self):
         self.get_interface_position("position<result>").create_particle()
         self.get_interface_position("position<result>").particle.get_action(
-            Worker
+            WorkerAction
         ).get_interface_position("position<run>").create_particle()
         self.get_interface_position("position<result>").particle.get_action(
-            Worker
+            WorkerAction
         ).run()
 ```
 
@@ -931,7 +931,7 @@ define the potential action<my.domain.com:my_lib:/worker> {
 ```
 
 ```python
-class Worker(literal.Action):
+class WorkerAction(literal.Action):
     def run(self):
         scratch = literal.LocalPosition("position<scratch>")
         scratch.create_particle()
@@ -966,16 +966,16 @@ define the potential action<my.domain.com:my_lib:/test> {
 ```
 
 ```python
-class Test(literal.Action):
+class TestAction(literal.Action):
     def run(self):
-        self.on_particle.get_position(Dest).create_particle()
-        self.on_particle.get_position(Dest).destroy_particle()
-        self.on_particle.get_action(Other).get_interface_position(
+        self.on_particle.get_position(DestPosition).create_particle()
+        self.on_particle.get_position(DestPosition).destroy_particle()
+        self.on_particle.get_action(OtherAction).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.on_particle.get_action(Other).run()
-        self.on_particle.get_position(Dest).destroy_particle()
-        self.on_particle.get_action(Other).get_interface_position(
+        self.on_particle.get_action(OtherAction).run()
+        self.on_particle.get_position(DestPosition).destroy_particle()
+        self.on_particle.get_action(OtherAction).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
 ```
@@ -997,11 +997,11 @@ define the potential action<my.domain.com:my_lib:/other> {
 ```
 
 ```python
-class Other(literal.Action):
+class OtherAction(literal.Action):
     def run(self):
         src = literal.LocalPosition("position<src>")
         src.create_particle()
-        src.move_particle_to(self.on_particle.get_position(Dest))
+        src.move_particle_to(self.on_particle.get_position(DestPosition))
 ```
 
 ## Repeated Action Executions
@@ -1028,22 +1028,22 @@ define the potential action<my.domain.com:my_lib:/test> {
 ```
 
 ```python
-class Test(literal.Action):
+class TestAction(literal.Action):
     def run(self):
         gateway = literal.LocalPosition("position<gateway>", constraints=(Worker,))
         gateway.create_particle()
-        gateway.particle.get_action(Worker).get_interface_position(
+        gateway.particle.get_action(WorkerAction).get_interface_position(
             "position<item>"
         ).create_particle()
-        gateway.particle.get_action(Worker).get_interface_position(
+        gateway.particle.get_action(WorkerAction).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        gateway.particle.get_action(Worker).run()
-        gateway.particle.get_action(Worker).get_interface_position(
+        gateway.particle.get_action(WorkerAction).run()
+        gateway.particle.get_action(WorkerAction).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        gateway.particle.get_action(Worker).run()
-        gateway.particle.get_action(Worker).get_interface_position(
+        gateway.particle.get_action(WorkerAction).run()
+        gateway.particle.get_action(WorkerAction).get_interface_position(
             "position<item>"
         ).destroy_particle()
         gateway.destroy_particle()
@@ -1067,7 +1067,7 @@ define the potential action<my.domain.com:my_lib:/worker> {
 ```
 
 ```python
-class Worker(literal.Action):
+class WorkerAction(literal.Action):
     def run(self):
         holder = literal.LocalPosition("position<holder>")
         self.get_interface_position("position<item>").move_particle_to(holder)
@@ -1105,21 +1105,21 @@ define the potential action<my.domain.com:my_lib:/test> {
 ```
 
 ```python
-class Test(literal.Action):
+class TestAction(literal.Action):
     def run(self):
         gateway = literal.LocalPosition("position<gateway>", constraints=(Other,))
         gateway.create_particle()
-        gateway.particle.get_action(Other).get_interface_position(
+        gateway.particle.get_action(OtherAction).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        gateway.particle.get_action(Other).run()
-        gateway.particle.get_action(Other).get_interface_position(
+        gateway.particle.get_action(OtherAction).run()
+        gateway.particle.get_action(OtherAction).get_interface_position(
             "position<dest>"
-        ).particle.get_position(B).destroy_particle()
-        gateway.particle.get_action(Other).get_interface_position(
+        ).particle.get_position(BPosition).destroy_particle()
+        gateway.particle.get_action(OtherAction).get_interface_position(
             "position<dest>"
-        ).particle.get_position(A).destroy_particle()
-        gateway.particle.get_action(Other).get_interface_position(
+        ).particle.get_position(APosition).destroy_particle()
+        gateway.particle.get_action(OtherAction).get_interface_position(
             "position<dest>"
         ).destroy_particle()
         gateway.destroy_particle()
@@ -1158,22 +1158,22 @@ define the potential action<my.domain.com:my_lib:/other> {
 ```
 
 ```python
-class Other(literal.Action):
+class OtherAction(literal.Action):
     def run(self):
         self.get_interface_position("position<src>").create_particle()
         self.get_interface_position("position<src>").particle.get_position(
-            A
+            APosition
         ).create_particle()
         self.get_interface_position("position<src>").particle.get_position(
-            B
+            BPosition
         ).create_particle()
         self.get_interface_position("position<src>").move_particle_to(
             self.get_interface_position("position<dest>")
         )
         self.get_interface_position("position<dest>").particle.get_action(
-            Worker
+            WorkerAction
         ).get_interface_position("position<run>").create_particle()
-        self.get_interface_position("position<dest>").particle.get_action(Worker).run()
+        self.get_interface_position("position<dest>").particle.get_action(WorkerAction).run()
         self.get_interface_position("position<trigger_pos>").destroy_particle()
 ```
 
@@ -1194,7 +1194,7 @@ define the potential action<my.domain.com:my_lib:/worker> {
 ```
 
 ```python
-class Worker(literal.Action):
+class WorkerAction(literal.Action):
     def run(self):
         scratch = literal.LocalPosition("position<scratch>")
         scratch.create_particle()
@@ -1223,11 +1223,11 @@ define the potential action<my.domain.com:my_lib:/test> {
 ```
 
 ```python
-class Test(literal.Action):
+class TestAction(literal.Action):
     def run(self):
         box = literal.LocalPosition("position<box>", constraints=(Destructor,))
         box.create_particle()
-        box.particle.get_action(Destructor).run()
+        box.particle.get_action(DestructorAction).run()
         box.destroy_particle()
 ```
 
@@ -1249,7 +1249,7 @@ define the potential action<my.domain.com:my_lib:/destructor> {
 ```
 
 ```python
-class Destructor(literal.Action):
+class DestructorAction(literal.Action):
     def run(self):
         first = literal.LocalPosition("position<first>")
         second = literal.LocalPosition("position<second>")
@@ -1292,16 +1292,16 @@ define the potential action<my.domain.com:my_lib:/test> {
 ```
 
 ```python
-class Test(literal.Action):
+class TestAction(literal.Action):
     def run(self):
         source = literal.LocalPosition("position<source>", constraints=(A, B))
         destination = literal.LocalPosition("position<destination>")
         source.create_particle()
-        source.particle.get_position(A).create_particle()
-        source.particle.get_position(B).create_particle()
+        source.particle.get_position(APosition).create_particle()
+        source.particle.get_position(BPosition).create_particle()
         source.move_particle_to(destination)
-        destination.particle.get_position(B).destroy_particle()
-        destination.particle.get_position(A).destroy_particle()
+        destination.particle.get_position(BPosition).destroy_particle()
+        destination.particle.get_position(APosition).destroy_particle()
         destination.destroy_particle()
 ```
 
@@ -1348,30 +1348,30 @@ define the potential action<my.domain.com:my_lib:/test> {
 ```
 
 ```python
-class Test(literal.Action):
+class TestAction(literal.Action):
     def run(self):
         second_holder = literal.LocalPosition("position<second_holder>")
         third_holder = literal.LocalPosition("position<third_holder>")
-        self.on_particle.get_position(Input).create_particle()
-        self.on_particle.get_position(Input).particle.get_position(
-            Second
+        self.on_particle.get_position(InputPosition).create_particle()
+        self.on_particle.get_position(InputPosition).particle.get_position(
+            SecondPosition
         ).create_particle()
-        self.on_particle.get_position(Input).particle.get_position(
-            Second
+        self.on_particle.get_position(InputPosition).particle.get_position(
+            SecondPosition
         ).move_particle_to(second_holder)
         second_holder.destroy_particle()
-        self.on_particle.get_position(Input).particle.get_position(
-            Third
+        self.on_particle.get_position(InputPosition).particle.get_position(
+            ThirdPosition
         ).create_particle()
-        self.on_particle.get_position(Input).particle.get_position(
-            Third
+        self.on_particle.get_position(InputPosition).particle.get_position(
+            ThirdPosition
         ).move_particle_to(third_holder)
         third_holder.destroy_particle()
-        self.on_particle.get_action(MiddleAction).get_interface_position(
+        self.on_particle.get_action(MiddleActionAction).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.on_particle.get_action(MiddleAction).run()
-        self.on_particle.get_action(MiddleAction).get_interface_position(
+        self.on_particle.get_action(MiddleActionAction).run()
+        self.on_particle.get_action(MiddleActionAction).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
 ```
@@ -1397,16 +1397,16 @@ define the potential action<my.domain.com:my_lib:/middle_action> {
 import local.my_domain_com.my_lib.inner
 
 
-class MiddleAction(literal.Action):
+class MiddleActionAction(literal.Action):
     def run(self):
-        self.on_particle.get_position(Input).particle.get_position(
-            First
+        self.on_particle.get_position(InputPosition).particle.get_position(
+            FirstPosition
         ).create_particle()
-        self.on_particle.get_action(Inner).get_interface_position(
+        self.on_particle.get_action(InnerAction).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
-        self.on_particle.get_action(Inner).run(InnerDestructionContracts())
-        self.on_particle.get_action(Inner).get_interface_position(
+        self.on_particle.get_action(InnerAction).run(InnerDestructionContracts())
+        self.on_particle.get_action(InnerAction).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
 
@@ -1415,7 +1415,7 @@ class InnerDestructionContracts(
     local.my_domain_com.my_lib.inner.InnerDestructionContracts
 ):
     def destroy_global_position_input(self, particle):
-        particle.get_position(First).destroy_particle()
+        particle.get_position(FirstPosition).destroy_particle()
 ```
 
 ### inner.dfn
@@ -1444,10 +1444,10 @@ class InnerDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = InnerDestructionContracts()
 
 
-class Inner(literal.Action):
+class InnerAction(literal.Action):
     def run(self, destruction_contracts=_DEFAULT_DESTRUCTION_CONTRACTS):
         holder = literal.LocalPosition("position<holder>")
-        self.on_particle.get_position(Input).move_particle_to(holder)
+        self.on_particle.get_position(InputPosition).move_particle_to(holder)
         destruction_contracts.destroy_global_position_input(holder.particle)
         holder.destroy_particle()
 ```
@@ -1486,26 +1486,26 @@ define the potential action<my.domain.com:my_lib:/outer> {
 import local.my_domain_com.my_lib.middle
 
 
-class Outer(literal.Action):
+class OuterAction(literal.Action):
     def run(self):
         source = literal.LocalPosition(
             "position<source>", constraints=(OuterChild, MiddleChild)
         )
         source.create_particle()
-        source.particle.get_position(OuterChild).create_particle()
+        source.particle.get_position(OuterChildPosition).create_particle()
         source.move_particle_to(
-            self.on_particle.get_action(Middle).get_interface_position(
+            self.on_particle.get_action(MiddleAction).get_interface_position(
                 "position<input>"
             )
         )
-        self.on_particle.get_action(Middle).run(MiddleDestructionContracts())
+        self.on_particle.get_action(MiddleAction).run(MiddleDestructionContracts())
 
 
 class MiddleDestructionContracts(
     local.my_domain_com.my_lib.middle.MiddleDestructionContracts
 ):
     def destroy_position_input(self, particle):
-        particle.get_position(OuterChild).destroy_particle()
+        particle.get_position(OuterChildPosition).destroy_particle()
 ```
 
 ### middle.dfn
@@ -1540,17 +1540,17 @@ class MiddleDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = MiddleDestructionContracts()
 
 
-class Middle(literal.Action):
+class MiddleAction(literal.Action):
     def run(self, destruction_contracts=_DEFAULT_DESTRUCTION_CONTRACTS):
         self.get_interface_position("position<input>").particle.get_position(
-            MiddleChild
+            MiddleChildPosition
         ).create_particle()
         self.get_interface_position("position<input>").move_particle_to(
-            self.on_particle.get_action(Inner).get_interface_position(
+            self.on_particle.get_action(InnerAction).get_interface_position(
                 "position<input>"
             )
         )
-        self.on_particle.get_action(Inner).run(
+        self.on_particle.get_action(InnerAction).run(
             InnerDestructionContracts(destruction_contracts.destroy_position_input)
         )
 
@@ -1563,7 +1563,7 @@ class InnerDestructionContracts(
 
     def destroy_position_input(self, particle):
         self._destroy_position_input(particle)
-        particle.get_position(MiddleChild).destroy_particle()
+        particle.get_position(MiddleChildPosition).destroy_particle()
 ```
 
 ### inner.dfn
@@ -1591,7 +1591,7 @@ class InnerDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = InnerDestructionContracts()
 
 
-class Inner(literal.Action):
+class InnerAction(literal.Action):
     def run(self, destruction_contracts=_DEFAULT_DESTRUCTION_CONTRACTS):
         holder = literal.LocalPosition("position<holder>")
         self.get_interface_position("position<input>").move_particle_to(holder)
@@ -1641,37 +1641,37 @@ define the potential action<my.domain.com:my_lib:/outer> {
 import local.my_domain_com.my_lib.middle
 
 
-class Outer(literal.Action):
+class OuterAction(literal.Action):
     def run(self):
         source = literal.LocalPosition(
             "position<source>", constraints=(OuterChild, MiddleChild)
         )
         source.create_particle()
-        source.particle.get_position(OuterChild).create_particle()
+        source.particle.get_position(OuterChildPosition).create_particle()
         source.move_particle_to(
-            self.on_particle.get_action(Middle).get_interface_position(
+            self.on_particle.get_action(MiddleAction).get_interface_position(
                 "position<input>"
             )
         )
         source.create_particle()
-        source.particle.get_position(OuterChild).create_particle()
+        source.particle.get_position(OuterChildPosition).create_particle()
         source.move_particle_to(
-            self.on_particle.get_action(Middle).get_interface_position(
+            self.on_particle.get_action(MiddleAction).get_interface_position(
                 "position<next_input>"
             )
         )
         source.create_particle()
-        source.particle.get_position(OuterChild).create_particle()
+        source.particle.get_position(OuterChildPosition).create_particle()
         source.move_particle_to(
-            self.on_particle.get_action(Middle).get_interface_position(
+            self.on_particle.get_action(MiddleAction).get_interface_position(
                 "position<inner_input>"
             )
         )
-        self.on_particle.get_action(Middle).get_interface_position(
+        self.on_particle.get_action(MiddleAction).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.on_particle.get_action(Middle).run(MiddleDestructionContracts())
-        self.on_particle.get_action(Middle).get_interface_position(
+        self.on_particle.get_action(MiddleAction).run(MiddleDestructionContracts())
+        self.on_particle.get_action(MiddleAction).get_interface_position(
             "position<run>"
         ).destroy_particle()
 
@@ -1680,13 +1680,13 @@ class MiddleDestructionContracts(
     local.my_domain_com.my_lib.middle.MiddleDestructionContracts
 ):
     def destroy_position_input(self, particle):
-        particle.get_position(OuterChild).destroy_particle()
+        particle.get_position(OuterChildPosition).destroy_particle()
 
     def destroy_position_next_input(self, particle):
-        particle.get_position(OuterChild).destroy_particle()
+        particle.get_position(OuterChildPosition).destroy_particle()
 
     def destroy_position_inner_input(self, particle):
-        particle.get_position(OuterChild).destroy_particle()
+        particle.get_position(OuterChildPosition).destroy_particle()
 ```
 
 ### middle.dfn
@@ -1735,7 +1735,7 @@ class MiddleDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = MiddleDestructionContracts()
 
 
-class Middle(literal.Action):
+class MiddleAction(literal.Action):
     def run(self, destruction_contracts=_DEFAULT_DESTRUCTION_CONTRACTS):
         holder = literal.LocalPosition("position<holder>")
         self.get_interface_position("position<input>").move_particle_to(holder)
@@ -1745,14 +1745,14 @@ class Middle(literal.Action):
         destruction_contracts.destroy_position_next_input(holder.particle)
         holder.destroy_particle()
         self.get_interface_position("position<inner_input>").particle.get_position(
-            MiddleChild
+            MiddleChildPosition
         ).create_particle()
         self.get_interface_position("position<inner_input>").move_particle_to(
-            self.on_particle.get_action(Inner).get_interface_position(
+            self.on_particle.get_action(InnerAction).get_interface_position(
                 "position<input>"
             )
         )
-        self.on_particle.get_action(Inner).run(
+        self.on_particle.get_action(InnerAction).run(
             InnerDestructionContracts(
                 destruction_contracts.destroy_position_inner_input
             )
@@ -1767,7 +1767,7 @@ class InnerDestructionContracts(
 
     def destroy_position_input(self, particle):
         self._destroy_position_input(particle)
-        particle.get_position(MiddleChild).destroy_particle()
+        particle.get_position(MiddleChildPosition).destroy_particle()
 ```
 
 ### inner.dfn
@@ -1795,7 +1795,7 @@ class InnerDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = InnerDestructionContracts()
 
 
-class Inner(literal.Action):
+class InnerAction(literal.Action):
     def run(self, destruction_contracts=_DEFAULT_DESTRUCTION_CONTRACTS):
         holder = literal.LocalPosition("position<holder>")
         self.get_interface_position("position<input>").move_particle_to(holder)
@@ -1842,24 +1842,24 @@ define the potential action<my.domain.com:my_lib:/outer> {
 import local.my_domain_com.my_lib.worker
 
 
-class Outer(literal.Action):
+class OuterAction(literal.Action):
     def run(self):
         source = literal.LocalPosition("position<source>", constraints=(OuterChild,))
         source.create_particle()
-        source.particle.get_position(OuterChild).create_particle()
-        source.move_particle_to(self.on_particle.get_position(Item))
+        source.particle.get_position(OuterChildPosition).create_particle()
+        source.move_particle_to(self.on_particle.get_position(ItemPosition))
         source.create_particle()
-        source.particle.get_position(OuterChild).create_particle()
+        source.particle.get_position(OuterChildPosition).create_particle()
         source.move_particle_to(
-            self.on_particle.get_action(Worker).get_interface_position(
+            self.on_particle.get_action(WorkerAction).get_interface_position(
                 "position<item>"
             )
         )
-        self.on_particle.get_action(Worker).get_interface_position(
+        self.on_particle.get_action(WorkerAction).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.on_particle.get_action(Worker).run(WorkerDestructionContracts())
-        self.on_particle.get_action(Worker).get_interface_position(
+        self.on_particle.get_action(WorkerAction).run(WorkerDestructionContracts())
+        self.on_particle.get_action(WorkerAction).get_interface_position(
             "position<run>"
         ).destroy_particle()
 
@@ -1868,10 +1868,10 @@ class WorkerDestructionContracts(
     local.my_domain_com.my_lib.worker.WorkerDestructionContracts
 ):
     def destroy_global_position_item(self, particle):
-        particle.get_position(OuterChild).destroy_particle()
+        particle.get_position(OuterChildPosition).destroy_particle()
 
     def destroy_position_item(self, particle):
-        particle.get_position(OuterChild).destroy_particle()
+        particle.get_position(OuterChildPosition).destroy_particle()
 ```
 
 ### worker.dfn
@@ -1903,12 +1903,12 @@ class WorkerDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = WorkerDestructionContracts()
 
 
-class Worker(literal.Action):
+class WorkerAction(literal.Action):
     def run(self, destruction_contracts=_DEFAULT_DESTRUCTION_CONTRACTS):
         destruction_contracts.destroy_global_position_item(
-            self.on_particle.get_position(Item).particle
+            self.on_particle.get_position(ItemPosition).particle
         )
-        self.on_particle.get_position(Item).destroy_particle()
+        self.on_particle.get_position(ItemPosition).destroy_particle()
         destruction_contracts.destroy_position_item(
             self.get_interface_position("position<item>").particle
         )
@@ -1963,69 +1963,69 @@ import local.my_domain_com.my_lib.worker
 import local.my_domain_com.my_lib.other
 
 
-class Outer(literal.Action):
+class OuterAction(literal.Action):
     def run(self):
         source = literal.LocalPosition(
             "position<source>", constraints=(FirstChild, SecondChild, ThirdChild)
         )
         source.create_particle()
-        source.particle.get_position(FirstChild).create_particle()
-        self.on_particle.get_action(Worker).get_interface_position(
+        source.particle.get_position(FirstChildPosition).create_particle()
+        self.on_particle.get_action(WorkerAction).get_interface_position(
             "position<other_input>"
         ).create_particle()
         source.move_particle_to(
-            self.on_particle.get_action(Worker).get_interface_position(
+            self.on_particle.get_action(WorkerAction).get_interface_position(
                 "position<input>"
             )
         )
-        self.on_particle.get_action(Worker).run(WorkerDestructionContracts())
+        self.on_particle.get_action(WorkerAction).run(WorkerDestructionContracts())
         source.create_particle()
-        source.particle.get_position(SecondChild).create_particle()
-        self.on_particle.get_action(Worker).get_interface_position(
+        source.particle.get_position(SecondChildPosition).create_particle()
+        self.on_particle.get_action(WorkerAction).get_interface_position(
             "position<other_input>"
         ).create_particle()
         source.move_particle_to(
-            self.on_particle.get_action(Worker).get_interface_position(
+            self.on_particle.get_action(WorkerAction).get_interface_position(
                 "position<input>"
             )
         )
-        self.on_particle.get_action(Worker).run(WorkerDestructionContracts_2())
+        self.on_particle.get_action(WorkerAction).run(WorkerDestructionContracts_2())
         source.create_particle()
-        source.particle.get_position(ThirdChild).create_particle()
+        source.particle.get_position(ThirdChildPosition).create_particle()
         source.move_particle_to(
-            self.on_particle.get_action(Other).get_interface_position(
+            self.on_particle.get_action(OtherAction).get_interface_position(
                 "position<input>"
             )
         )
-        self.on_particle.get_action(Other).run(OtherDestructionContracts())
-        self.on_particle.get_action(Worker).get_interface_position(
+        self.on_particle.get_action(OtherAction).run(OtherDestructionContracts())
+        self.on_particle.get_action(WorkerAction).get_interface_position(
             "position<other_input>"
         ).create_particle()
-        self.on_particle.get_action(Worker).get_interface_position(
+        self.on_particle.get_action(WorkerAction).get_interface_position(
             "position<input>"
         ).create_particle()
-        self.on_particle.get_action(Worker).run()
+        self.on_particle.get_action(WorkerAction).run()
 
 
 class WorkerDestructionContracts(
     local.my_domain_com.my_lib.worker.WorkerDestructionContracts
 ):
     def destroy_position_input(self, particle):
-        particle.get_position(FirstChild).destroy_particle()
+        particle.get_position(FirstChildPosition).destroy_particle()
 
 
 class WorkerDestructionContracts_2(
     local.my_domain_com.my_lib.worker.WorkerDestructionContracts
 ):
     def destroy_position_input(self, particle):
-        particle.get_position(SecondChild).destroy_particle()
+        particle.get_position(SecondChildPosition).destroy_particle()
 
 
 class OtherDestructionContracts(
     local.my_domain_com.my_lib.other.OtherDestructionContracts
 ):
     def destroy_position_input(self, particle):
-        particle.get_position(ThirdChild).destroy_particle()
+        particle.get_position(ThirdChildPosition).destroy_particle()
 ```
 
 ### worker.dfn
@@ -2056,7 +2056,7 @@ class WorkerDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = WorkerDestructionContracts()
 
 
-class Worker(literal.Action):
+class WorkerAction(literal.Action):
     def run(self, destruction_contracts=_DEFAULT_DESTRUCTION_CONTRACTS):
         destruction_contracts.destroy_position_input(
             self.get_interface_position("position<input>").particle
@@ -2091,7 +2091,7 @@ class OtherDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = OtherDestructionContracts()
 
 
-class Other(literal.Action):
+class OtherAction(literal.Action):
     def run(self, destruction_contracts=_DEFAULT_DESTRUCTION_CONTRACTS):
         destruction_contracts.destroy_position_input(
             self.get_interface_position("position<input>").particle
@@ -2139,7 +2139,7 @@ define the potential action<my.domain.com:my_lib:/outer> {
 import local.my_domain_com.my_lib.worker
 
 
-class Outer(literal.Action):
+class OuterAction(literal.Action):
     def run(self):
         source = literal.LocalPosition(
             "position<source>", constraints=(KnownDestructor, ParentDestructor, Child)
@@ -2149,22 +2149,22 @@ class Outer(literal.Action):
         )
         source.create_particle()
         child_source.create_particle()
-        child_source.move_particle_to(source.particle.get_position(Child))
+        child_source.move_particle_to(source.particle.get_position(ChildPosition))
         source.move_particle_to(
-            self.on_particle.get_action(Worker).get_interface_position("position<input>")
+            self.on_particle.get_action(WorkerAction).get_interface_position("position<input>")
         )
-        self.on_particle.get_action(Worker).run(WorkerDestructionContracts())
+        self.on_particle.get_action(WorkerAction).run(WorkerDestructionContracts())
 
 
 class WorkerDestructionContracts(
     local.my_domain_com.my_lib.worker.WorkerDestructionContracts
 ):
     def run_destructors_position_input(self, particle):
-        particle.get_action(ParentDestructor).run()
-        particle.get_position(Child).particle.get_action(ChildDestructor).run()
+        particle.get_action(ParentDestructorAction).run()
+        particle.get_position(ChildPosition).particle.get_action(ChildDestructorAction).run()
 
     def destroy_position_input(self, particle):
-        particle.get_position(Child).destroy_particle()
+        particle.get_position(ChildPosition).destroy_particle()
 ```
 
 ### worker.dfn
@@ -2197,10 +2197,10 @@ class WorkerDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = WorkerDestructionContracts()
 
 
-class Worker(literal.Action):
+class WorkerAction(literal.Action):
     def run(self, destruction_contracts=_DEFAULT_DESTRUCTION_CONTRACTS):
         self.get_interface_position("position<input>").particle.get_action(
-            KnownDestructor
+            KnownDestructorAction
         ).run()
         destruction_contracts.run_destructors_position_input(
             self.get_interface_position("position<input>").particle
@@ -2226,7 +2226,7 @@ define the potential action<my.domain.com:my_lib:/known_destructor> {
 ```
 
 ```python
-class KnownDestructor(literal.Action):
+class KnownDestructorAction(literal.Action):
     def run(self):
         work = literal.LocalPosition("position<work>")
         work.create_particle()
@@ -2248,7 +2248,7 @@ define the potential action<my.domain.com:my_lib:/parent_destructor> {
 ```
 
 ```python
-class ParentDestructor(literal.Action):
+class ParentDestructorAction(literal.Action):
     def run(self):
         work = literal.LocalPosition("position<work>")
         work.create_particle()
@@ -2270,7 +2270,7 @@ define the potential action<my.domain.com:my_lib:/child_destructor> {
 ```
 
 ```python
-class ChildDestructor(literal.Action):
+class ChildDestructorAction(literal.Action):
     def run(self):
         work = literal.LocalPosition("position<work>")
         work.create_particle()
@@ -2320,7 +2320,7 @@ define the potential action<my.domain.com:my_lib:/outer> {
 import local.my_domain_com.my_lib.worker
 
 
-class Outer(literal.Action):
+class OuterAction(literal.Action):
     def run(self):
         first_source = literal.LocalPosition(
             "position<first_source>", constraints=(FirstChild,)
@@ -2329,20 +2329,20 @@ class Outer(literal.Action):
             "position<second_source>", constraints=(SecondChild,)
         )
         first_source.create_particle()
-        first_source.particle.get_position(FirstChild).create_particle()
+        first_source.particle.get_position(FirstChildPosition).create_particle()
         second_source.create_particle()
-        second_source.particle.get_position(SecondChild).create_particle()
+        second_source.particle.get_position(SecondChildPosition).create_particle()
         first_source.move_particle_to(
-            self.on_particle.get_action(Worker).get_interface_position("position<input>")
+            self.on_particle.get_action(WorkerAction).get_interface_position("position<input>")
         )
         second_source.move_particle_to(
-            self.on_particle.get_action(Worker).get_interface_position("position<reserve>")
+            self.on_particle.get_action(WorkerAction).get_interface_position("position<reserve>")
         )
-        self.on_particle.get_action(Worker).get_interface_position(
+        self.on_particle.get_action(WorkerAction).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.on_particle.get_action(Worker).run(WorkerDestructionContracts())
-        self.on_particle.get_action(Worker).get_interface_position(
+        self.on_particle.get_action(WorkerAction).run(WorkerDestructionContracts())
+        self.on_particle.get_action(WorkerAction).get_interface_position(
             "position<run>"
         ).destroy_particle()
 
@@ -2351,10 +2351,10 @@ class WorkerDestructionContracts(
     local.my_domain_com.my_lib.worker.WorkerDestructionContracts
 ):
     def destroy_position_input(self, particle):
-        particle.get_position(FirstChild).destroy_particle()
+        particle.get_position(FirstChildPosition).destroy_particle()
 
     def destroy_position_reserve(self, particle):
-        particle.get_position(SecondChild).destroy_particle()
+        particle.get_position(SecondChildPosition).destroy_particle()
 ```
 
 ### worker.dfn
@@ -2387,7 +2387,7 @@ class WorkerDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = WorkerDestructionContracts()
 
 
-class Worker(literal.Action):
+class WorkerAction(literal.Action):
     def run(self, destruction_contracts=_DEFAULT_DESTRUCTION_CONTRACTS):
         destruction_contracts.destroy_position_input(
             self.get_interface_position("position<input>").particle
@@ -2448,7 +2448,7 @@ define the potential action<my.domain.com:my_lib:/outer> {
 import local.my_domain_com.my_lib.worker
 
 
-class Outer(literal.Action):
+class OuterAction(literal.Action):
     def run(self):
         first_source = literal.LocalPosition(
             "position<first_source>", constraints=(FirstDestructor, Extra)
@@ -2457,20 +2457,20 @@ class Outer(literal.Action):
             "position<second_source>", constraints=(SecondDestructor, Extra)
         )
         first_source.create_particle()
-        first_source.particle.get_position(Extra).create_particle()
+        first_source.particle.get_position(ExtraPosition).create_particle()
         second_source.create_particle()
-        second_source.particle.get_position(Extra).create_particle()
+        second_source.particle.get_position(ExtraPosition).create_particle()
         first_source.move_particle_to(
-            self.on_particle.get_action(Worker).get_interface_position("position<first>")
+            self.on_particle.get_action(WorkerAction).get_interface_position("position<first>")
         )
         second_source.move_particle_to(
-            self.on_particle.get_action(Worker).get_interface_position("position<second>")
+            self.on_particle.get_action(WorkerAction).get_interface_position("position<second>")
         )
-        self.on_particle.get_action(Worker).get_interface_position(
+        self.on_particle.get_action(WorkerAction).get_interface_position(
             "position<run>"
         ).create_particle()
-        self.on_particle.get_action(Worker).run(WorkerDestructionContracts())
-        self.on_particle.get_action(Worker).get_interface_position(
+        self.on_particle.get_action(WorkerAction).run(WorkerDestructionContracts())
+        self.on_particle.get_action(WorkerAction).get_interface_position(
             "position<run>"
         ).destroy_particle()
 
@@ -2479,16 +2479,16 @@ class WorkerDestructionContracts(
     local.my_domain_com.my_lib.worker.WorkerDestructionContracts
 ):
     def run_destructors_position_first(self, particle):
-        particle.get_action(FirstDestructor).run()
+        particle.get_action(FirstDestructorAction).run()
 
     def run_destructors_position_second(self, particle):
-        particle.get_action(SecondDestructor).run()
+        particle.get_action(SecondDestructorAction).run()
 
     def destroy_position_first(self, particle):
-        particle.get_position(Extra).destroy_particle()
+        particle.get_position(ExtraPosition).destroy_particle()
 
     def destroy_position_second(self, particle):
-        particle.get_position(Extra).destroy_particle()
+        particle.get_position(ExtraPosition).destroy_particle()
 ```
 
 ### worker.dfn
@@ -2534,30 +2534,30 @@ class WorkerDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = WorkerDestructionContracts()
 
 
-class Worker(literal.Action):
+class WorkerAction(literal.Action):
     def run(self, destruction_contracts=_DEFAULT_DESTRUCTION_CONTRACTS):
         holder = literal.LocalPosition("position<holder>", constraints=(Left, Right))
         holder.create_particle()
         self.get_interface_position("position<first>").move_particle_to(
-            holder.particle.get_position(Left)
+            holder.particle.get_position(LeftPosition)
         )
         self.get_interface_position("position<second>").move_particle_to(
-            holder.particle.get_position(Right)
+            holder.particle.get_position(RightPosition)
         )
         destruction_contracts.run_destructors_position_first(
-            holder.particle.get_position(Left).particle
+            holder.particle.get_position(LeftPosition).particle
         )
         destruction_contracts.run_destructors_position_second(
-            holder.particle.get_position(Right).particle
+            holder.particle.get_position(RightPosition).particle
         )
         destruction_contracts.destroy_position_first(
-            holder.particle.get_position(Left).particle
+            holder.particle.get_position(LeftPosition).particle
         )
         destruction_contracts.destroy_position_second(
-            holder.particle.get_position(Right).particle
+            holder.particle.get_position(RightPosition).particle
         )
-        holder.particle.get_position(Left).destroy_particle()
-        holder.particle.get_position(Right).destroy_particle()
+        holder.particle.get_position(LeftPosition).destroy_particle()
+        holder.particle.get_position(RightPosition).destroy_particle()
         holder.destroy_particle()
 ```
 
@@ -2576,7 +2576,7 @@ define the potential action<my.domain.com:my_lib:/first_destructor> {
 ```
 
 ```python
-class FirstDestructor(literal.Action):
+class FirstDestructorAction(literal.Action):
     def run(self):
         work = literal.LocalPosition("position<work>")
         work.create_particle()
@@ -2598,7 +2598,7 @@ define the potential action<my.domain.com:my_lib:/second_destructor> {
 ```
 
 ```python
-class SecondDestructor(literal.Action):
+class SecondDestructorAction(literal.Action):
     def run(self):
         work = literal.LocalPosition("position<work>")
         work.create_particle()

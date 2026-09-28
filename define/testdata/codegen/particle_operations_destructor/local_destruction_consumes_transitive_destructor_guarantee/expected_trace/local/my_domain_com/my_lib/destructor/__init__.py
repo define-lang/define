@@ -8,28 +8,28 @@ import local.my_domain_com.my_lib.forwarder
 import local.my_domain_com.my_lib.implied
 
 
-class Destructor(literal.Action):
+class DestructorAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.forwarder.Forwarder,
-        local.my_domain_com.my_lib.implied.Implied,
+        local.my_domain_com.my_lib.forwarder.ForwarderAction,
+        local.my_domain_com.my_lib.implied.ImpliedPosition,
     )
 
     @override
     def run(self):
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.forwarder.Forwarder
+            local.my_domain_com.my_lib.forwarder.ForwarderAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("destructor.create(/forwarder::trigger_pos)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.forwarder.Forwarder
+            local.my_domain_com.my_lib.forwarder.ForwarderAction
         ).run()
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.implied.Implied
+            local.my_domain_com.my_lib.implied.ImpliedPosition
         ).create_particle()
         literal.record_operation("destructor.create(/implied)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.implied.Implied
+            local.my_domain_com.my_lib.implied.ImpliedPosition
         ).destroy_particle()
         literal.record_operation("destructor.destroy(/implied)")

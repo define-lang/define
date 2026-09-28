@@ -11,55 +11,55 @@ import local.my_domain_com.my_lib.intermediate
 import local.my_domain_com.my_lib.other
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.holder.Holder,
-        local.my_domain_com.my_lib.input.Input,
-        local.my_domain_com.my_lib.other.Other,
-        local.my_domain_com.my_lib.intermediate.Intermediate,
+        local.my_domain_com.my_lib.holder.HolderPosition,
+        local.my_domain_com.my_lib.input.InputPosition,
+        local.my_domain_com.my_lib.other.OtherAction,
+        local.my_domain_com.my_lib.intermediate.IntermediatePosition,
     )
 
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.input.Input
+            local.my_domain_com.my_lib.input.InputPosition
         ).create_particle()
         literal.record_operation("test.create(/input)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.input.Input
+            local.my_domain_com.my_lib.input.InputPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.a.A
+            local.my_domain_com.my_lib.a.APosition
         ).create_particle()
         literal.record_operation("test.create(/input::/a)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.input.Input
+            local.my_domain_com.my_lib.input.InputPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.a.A
+            local.my_domain_com.my_lib.a.APosition
         ).move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.holder.Holder
+                local.my_domain_com.my_lib.holder.HolderPosition
             )
         )
         literal.record_operation("test.move(/input::/a, /holder)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.holder.Holder
+            local.my_domain_com.my_lib.holder.HolderPosition
         ).move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.intermediate.Intermediate
+                local.my_domain_com.my_lib.intermediate.IntermediatePosition
             )
         )
         literal.record_operation("test.move(/holder, /intermediate)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.other.Other
+            local.my_domain_com.my_lib.other.OtherAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("test.create(/other::trigger_pos)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.other.Other
+            local.my_domain_com.my_lib.other.OtherAction
         ).run()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.other.Other
+            local.my_domain_com.my_lib.other.OtherAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

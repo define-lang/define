@@ -9,11 +9,11 @@ import local.my_domain_com.my_lib.creator_known
 import local.my_domain_com.my_lib.middle_known
 
 
-class Destructor(literal.Action):
+class DestructorAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.callee_known.CalleeKnown,
-        local.my_domain_com.my_lib.middle_known.MiddleKnown,
-        local.my_domain_com.my_lib.creator_known.CreatorKnown,
+        local.my_domain_com.my_lib.callee_known.CalleeKnownPosition,
+        local.my_domain_com.my_lib.middle_known.MiddleKnownPosition,
+        local.my_domain_com.my_lib.creator_known.CreatorKnownPosition,
     )
 
     @override
@@ -25,34 +25,34 @@ class Destructor(literal.Action):
             "position<creator_holder>",
         )
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.callee_known.CalleeKnown
+            local.my_domain_com.my_lib.callee_known.CalleeKnownPosition
         ).move_particle_to(
             callee_holder
         )
         literal.record_operation("destructor.move(/callee_known, callee_holder)")
         callee_holder.move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.callee_known.CalleeKnown
+                local.my_domain_com.my_lib.callee_known.CalleeKnownPosition
             )
         )
         literal.record_operation("destructor.move(callee_holder, /callee_known)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.middle_known.MiddleKnown
+            local.my_domain_com.my_lib.middle_known.MiddleKnownPosition
         ).create_particle()
         literal.record_operation("destructor.create(/middle_known)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.middle_known.MiddleKnown
+            local.my_domain_com.my_lib.middle_known.MiddleKnownPosition
         ).destroy_particle()
         literal.record_operation("destructor.destroy(/middle_known)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.creator_known.CreatorKnown
+            local.my_domain_com.my_lib.creator_known.CreatorKnownPosition
         ).move_particle_to(
             creator_holder
         )
         literal.record_operation("destructor.move(/creator_known, creator_holder)")
         creator_holder.move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.creator_known.CreatorKnown
+                local.my_domain_com.my_lib.creator_known.CreatorKnownPosition
             )
         )
         literal.record_operation("destructor.move(creator_holder, /creator_known)")

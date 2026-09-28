@@ -30,7 +30,7 @@ class PerformOperationDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = PerformOperationDestructionContracts()
 
 
-class PerformOperation(literal.Action):
+class PerformOperationAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -39,7 +39,7 @@ class PerformOperation(literal.Action):
                 literal.LocalPosition(
                     "position<operation_trigger>",
                     constraints=(
-                        local.my_domain_com.my_library_collection.inner_position.InnerPosition,
+                        local.my_domain_com.my_library_collection.inner_position.InnerPositionPosition,
                     ),
                 ),
                 literal.LocalPosition("position<run>"),
@@ -57,20 +57,20 @@ class PerformOperation(literal.Action):
             self.get_interface_position(
                 "position<operation_trigger>"
             ).particle.get_position(
-                local.my_domain_com.my_library_collection.inner_position.InnerPosition
+                local.my_domain_com.my_library_collection.inner_position.InnerPositionPosition
             ).particle
         )
         destruction_contracts.destroy_position_operation_trigger__position_inner_position(
             self.get_interface_position(
                 "position<operation_trigger>"
             ).particle.get_position(
-                local.my_domain_com.my_library_collection.inner_position.InnerPosition
+                local.my_domain_com.my_library_collection.inner_position.InnerPositionPosition
             ).particle
         )
         self.get_interface_position(
             "position<operation_trigger>"
         ).particle.get_position(
-            local.my_domain_com.my_library_collection.inner_position.InnerPosition
+            local.my_domain_com.my_library_collection.inner_position.InnerPositionPosition
         ).destroy_particle()
         literal.record_operation("perform_operation.destroy(operation_trigger::/inner_position)")
         destruction_contracts.run_destructors_position_operation_trigger(

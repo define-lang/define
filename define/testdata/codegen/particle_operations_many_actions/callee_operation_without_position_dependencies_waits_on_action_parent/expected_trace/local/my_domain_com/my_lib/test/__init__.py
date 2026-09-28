@@ -8,42 +8,42 @@ import local.my_domain_com.my_lib.box
 import local.my_domain_com.my_lib.worker
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.box.Box,
+        local.my_domain_com.my_lib.box.BoxPosition,
     )
 
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.box.Box
+            local.my_domain_com.my_lib.box.BoxPosition
         ).create_particle()
         literal.record_operation("test.create(/box)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.box.Box
+            local.my_domain_com.my_lib.box.BoxPosition
         ).particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("test.create(/box::/worker::trigger_pos)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.box.Box
+            local.my_domain_com.my_lib.box.BoxPosition
         ).particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).run()
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.box.Box
+            local.my_domain_com.my_lib.box.BoxPosition
         ).particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<result>"
         ).destroy_particle()
         literal.record_operation("test.destroy(/box::/worker::result)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.box.Box
+            local.my_domain_com.my_lib.box.BoxPosition
         ).particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

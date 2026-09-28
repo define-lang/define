@@ -20,10 +20,10 @@ class MiddleActionDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = MiddleActionDestructionContracts()
 
 
-class MiddleAction(literal.Action):
+class MiddleActionAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.input.Input,
-        local.my_domain_com.my_lib.inner.Inner,
+        local.my_domain_com.my_lib.input.InputPosition,
+        local.my_domain_com.my_lib.inner.InnerAction,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -37,19 +37,19 @@ class MiddleAction(literal.Action):
     @override
     def run(self, destruction_contracts: MiddleActionDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.input.Input
+            local.my_domain_com.my_lib.input.InputPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.first.First
+            local.my_domain_com.my_lib.first.FirstPosition
         ).create_particle()
         literal.record_operation("middle_action.create(/input::/first)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("middle_action.create(/inner::trigger_pos)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).run(
             InnerDestructionContracts(
                 destruction_contracts.run_destructors_global_position_input,
@@ -57,7 +57,7 @@ class MiddleAction(literal.Action):
             ),
         )
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
@@ -85,6 +85,6 @@ class InnerDestructionContracts(local.my_domain_com.my_lib.inner.InnerDestructio
             particle
         )
         particle.get_position(
-            local.my_domain_com.my_lib.first.First
+            local.my_domain_com.my_lib.first.FirstPosition
         ).destroy_particle()
         literal.record_operation("inner.destroy(holder::/first)")

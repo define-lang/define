@@ -7,14 +7,14 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.item
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.item.Item,
+        local.my_domain_com.my_lib.item.ItemPosition,
     )
 
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.item.Item
+            local.my_domain_com.my_lib.item.ItemPosition
         ).create_particle()
         literal.record_operation("test.create(/item)")

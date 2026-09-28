@@ -9,53 +9,53 @@ import local.my_domain_com.my_lib.item
 import local.my_domain_com.my_lib.other
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         gateway = literal.LocalPosition(
             "position<gateway>",
             constraints=(
-                local.my_domain_com.my_lib.other.Other,
+                local.my_domain_com.my_lib.other.OtherAction,
             ),
         )
         gateway.create_particle()
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.other.Other
+            local.my_domain_com.my_lib.other.OtherAction
         ).get_interface_position(
             "position<input>"
         ).create_particle()
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.other.Other
+            local.my_domain_com.my_lib.other.OtherAction
         ).get_interface_position(
             "position<input>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.item.Item
+            local.my_domain_com.my_lib.item.ItemPosition
         ).create_particle()
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.other.Other
+            local.my_domain_com.my_lib.other.OtherAction
         ).get_interface_position(
             "position<input>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.item.Item
+            local.my_domain_com.my_lib.item.ItemPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.deep.Deep
+            local.my_domain_com.my_lib.deep.DeepPosition
         ).create_particle()
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.other.Other
+            local.my_domain_com.my_lib.other.OtherAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.other.Other
+            local.my_domain_com.my_lib.other.OtherAction
         ).run(OtherDestructionContracts())
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.other.Other
+            local.my_domain_com.my_lib.other.OtherAction
         ).get_interface_position(
             "position<input>"
         ).destroy_particle()
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.other.Other
+            local.my_domain_com.my_lib.other.OtherAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
@@ -67,5 +67,5 @@ class OtherDestructionContracts(local.my_domain_com.my_lib.other.OtherDestructio
     @override
     def destroy_position_input__position_item(self, particle: literal.Particle):
         particle.get_position(
-            local.my_domain_com.my_lib.deep.Deep
+            local.my_domain_com.my_lib.deep.DeepPosition
         ).destroy_particle()

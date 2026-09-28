@@ -7,18 +7,18 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.host
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         box = literal.LocalPosition(
             "position<box>",
             constraints=(
-                local.my_domain_com.my_lib.host.Host,
+                local.my_domain_com.my_lib.host.HostAction,
             ),
         )
         box.create_particle()
         box.particle.get_action(
-            local.my_domain_com.my_lib.host.Host
+            local.my_domain_com.my_lib.host.HostAction
         ).run()
         box.destroy_particle()

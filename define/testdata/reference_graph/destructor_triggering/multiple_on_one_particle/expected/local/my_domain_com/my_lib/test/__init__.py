@@ -8,22 +8,22 @@ import local.my_domain_com.my_lib.destructor_a
 import local.my_domain_com.my_lib.destructor_b
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         box = literal.LocalPosition(
             "position<box>",
             constraints=(
-                local.my_domain_com.my_lib.destructor_a.DestructorA,
-                local.my_domain_com.my_lib.destructor_b.DestructorB,
+                local.my_domain_com.my_lib.destructor_a.DestructorAAction,
+                local.my_domain_com.my_lib.destructor_b.DestructorBAction,
             ),
         )
         box.create_particle()
         box.particle.get_action(
-            local.my_domain_com.my_lib.destructor_a.DestructorA
+            local.my_domain_com.my_lib.destructor_a.DestructorAAction
         ).run()
         box.particle.get_action(
-            local.my_domain_com.my_lib.destructor_b.DestructorB
+            local.my_domain_com.my_lib.destructor_b.DestructorBAction
         ).run()
         box.destroy_particle()

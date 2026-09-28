@@ -37,7 +37,7 @@ class StarterDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = StarterDestructionContracts()
 
 
-class Starter(literal.Action):
+class StarterAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -46,8 +46,8 @@ class Starter(literal.Action):
                 literal.LocalPosition(
                     "position<run>",
                     constraints=(
-                        local.my_domain_com.my_lib.wrapper.Wrapper,
-                        local.my_domain_com.my_lib.crate.Crate,
+                        local.my_domain_com.my_lib.wrapper.WrapperAction,
+                        local.my_domain_com.my_lib.crate.CratePosition,
                     ),
                 ),
             ],
@@ -58,8 +58,8 @@ class Starter(literal.Action):
         gateway = literal.LocalPosition(
             "position<gateway>",
             constraints=(
-                local.my_domain_com.my_lib.wrapper.Wrapper,
-                local.my_domain_com.my_lib.crate.Crate,
+                local.my_domain_com.my_lib.wrapper.WrapperAction,
+                local.my_domain_com.my_lib.crate.CratePosition,
             ),
         )
         self.get_interface_position(
@@ -68,16 +68,16 @@ class Starter(literal.Action):
             gateway
         )
         gateway.particle.get_position(
-            local.my_domain_com.my_lib.crate.Crate
+            local.my_domain_com.my_lib.crate.CratePosition
         ).move_particle_to(
             gateway.particle.get_action(
-                local.my_domain_com.my_lib.wrapper.Wrapper
+                local.my_domain_com.my_lib.wrapper.WrapperAction
             ).get_interface_position(
                 "position<run>"
             )
         )
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.wrapper.Wrapper
+            local.my_domain_com.my_lib.wrapper.WrapperAction
         ).run(
             WrapperDestructionContracts(
                 destruction_contracts.run_destructors_position_run__position_crate__position_carrier__position_payload,

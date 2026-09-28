@@ -8,9 +8,9 @@ import local.my_domain_com.my_lib.child
 import local.my_domain_com.my_lib.parent
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.parent.Parent,
+        local.my_domain_com.my_lib.parent.ParentPosition,
     )
 
     @override
@@ -19,21 +19,21 @@ class Test(literal.Action):
             "position<destination>",
         )
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.parent.Parent
+            local.my_domain_com.my_lib.parent.ParentPosition
         ).create_particle()
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.parent.Parent
+            local.my_domain_com.my_lib.parent.ParentPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).create_particle()
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.parent.Parent
+            local.my_domain_com.my_lib.parent.ParentPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).move_particle_to(
             destination
         )
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.parent.Parent
+            local.my_domain_com.my_lib.parent.ParentPosition
         ).destroy_particle()
         destination.destroy_particle()

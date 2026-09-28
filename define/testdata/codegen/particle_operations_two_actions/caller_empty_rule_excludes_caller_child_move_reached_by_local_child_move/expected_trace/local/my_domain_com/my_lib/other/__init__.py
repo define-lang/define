@@ -27,9 +27,9 @@ class OtherDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = OtherDestructionContracts()
 
 
-class Other(literal.Action):
+class OtherAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.input.Input,
+        local.my_domain_com.my_lib.input.InputPosition,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -44,33 +44,33 @@ class Other(literal.Action):
     @override
     def run(self, destruction_contracts: OtherDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.input.Input
+            local.my_domain_com.my_lib.input.InputPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.start.Start
+            local.my_domain_com.my_lib.start.StartPosition
         ).move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.input.Input
+                local.my_domain_com.my_lib.input.InputPosition
             ).particle.get_position(
-                local.my_domain_com.my_lib.middle.Middle
+                local.my_domain_com.my_lib.middle.MiddlePosition
             )
         )
         literal.record_operation("other.move(/input::/start, /input::/middle)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.input.Input
+            local.my_domain_com.my_lib.input.InputPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddlePosition
         ).move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.input.Input
+                local.my_domain_com.my_lib.input.InputPosition
             ).particle.get_position(
-                local.my_domain_com.my_lib.target.Target
+                local.my_domain_com.my_lib.target.TargetPosition
             )
         )
         literal.record_operation("other.move(/input::/middle, /input::/target)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.input.Input
+            local.my_domain_com.my_lib.input.InputPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.target.Target
+            local.my_domain_com.my_lib.target.TargetPosition
         ).move_particle_to(
             self.get_interface_position(
                 "position<holder>"
@@ -79,16 +79,16 @@ class Other(literal.Action):
         literal.record_operation("other.move(/input::/target, holder)")
         destruction_contracts.run_destructors_global_position_input(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.input.Input
+                local.my_domain_com.my_lib.input.InputPosition
             ).particle
         )
         destruction_contracts.destroy_global_position_input(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.input.Input
+                local.my_domain_com.my_lib.input.InputPosition
             ).particle
         )
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.input.Input
+            local.my_domain_com.my_lib.input.InputPosition
         ).destroy_particle()
         literal.record_operation("other.destroy(/input)")
         destruction_contracts.run_destructors_global_position_input__position_start(

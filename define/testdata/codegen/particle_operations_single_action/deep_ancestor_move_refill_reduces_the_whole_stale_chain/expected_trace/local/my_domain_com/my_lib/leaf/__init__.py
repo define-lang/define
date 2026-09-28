@@ -3,5 +3,5 @@
 from define.runtime import literal
 
 
-class Leaf(literal.GlobalPosition):
+class LeafPosition(literal.GlobalPosition):
     pass

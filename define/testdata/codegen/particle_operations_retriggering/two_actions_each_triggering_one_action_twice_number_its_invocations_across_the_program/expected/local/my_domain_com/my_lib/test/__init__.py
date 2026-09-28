@@ -8,47 +8,47 @@ import local.my_domain_com.my_lib.first
 import local.my_domain_com.my_lib.second
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         holder_first = literal.LocalPosition(
             "position<holder_first>",
             constraints=(
-                local.my_domain_com.my_lib.first.First,
+                local.my_domain_com.my_lib.first.FirstAction,
             ),
         )
         holder_second = literal.LocalPosition(
             "position<holder_second>",
             constraints=(
-                local.my_domain_com.my_lib.second.Second,
+                local.my_domain_com.my_lib.second.SecondAction,
             ),
         )
         holder_first.create_particle()
         holder_first.particle.get_action(
-            local.my_domain_com.my_lib.first.First
+            local.my_domain_com.my_lib.first.FirstAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         holder_first.particle.get_action(
-            local.my_domain_com.my_lib.first.First
+            local.my_domain_com.my_lib.first.FirstAction
         ).run()
         holder_first.particle.get_action(
-            local.my_domain_com.my_lib.first.First
+            local.my_domain_com.my_lib.first.FirstAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
         holder_second.create_particle()
         holder_second.particle.get_action(
-            local.my_domain_com.my_lib.second.Second
+            local.my_domain_com.my_lib.second.SecondAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         holder_second.particle.get_action(
-            local.my_domain_com.my_lib.second.Second
+            local.my_domain_com.my_lib.second.SecondAction
         ).run()
         holder_second.particle.get_action(
-            local.my_domain_com.my_lib.second.Second
+            local.my_domain_com.my_lib.second.SecondAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

@@ -26,7 +26,7 @@ class MiddleDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = MiddleDestructionContracts()
 
 
-class Middle(literal.Action):
+class MiddleAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -36,8 +36,8 @@ class Middle(literal.Action):
                 literal.LocalPosition(
                     "position<gateway>",
                     constraints=(
-                        local.my_domain_com.my_lib.inner.Inner,
-                        local.my_domain_com.my_lib.source_particle.SourceParticle,
+                        local.my_domain_com.my_lib.inner.InnerAction,
+                        local.my_domain_com.my_lib.source_particle.SourceParticlePosition,
                     ),
                 ),
             ],
@@ -48,12 +48,12 @@ class Middle(literal.Action):
         self.get_interface_position(
             "position<gateway>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.source_particle.SourceParticle
+            local.my_domain_com.my_lib.source_particle.SourceParticlePosition
         ).move_particle_to(
             self.get_interface_position(
                 "position<gateway>"
             ).particle.get_action(
-                local.my_domain_com.my_lib.inner.Inner
+                local.my_domain_com.my_lib.inner.InnerAction
             ).get_interface_position(
                 "position<source>"
             )
@@ -61,29 +61,29 @@ class Middle(literal.Action):
         self.get_interface_position(
             "position<gateway>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<source>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).create_particle()
         self.get_interface_position(
             "position<gateway>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         self.get_interface_position(
             "position<gateway>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).run()
         destruction_contracts.run_destructors_position_gateway__position_source_particle(
             self.get_interface_position(
                 "position<gateway>"
             ).particle.get_action(
-                local.my_domain_com.my_lib.inner.Inner
+                local.my_domain_com.my_lib.inner.InnerAction
             ).get_interface_position(
                 "position<destination>"
             ).particle
@@ -92,7 +92,7 @@ class Middle(literal.Action):
             self.get_interface_position(
                 "position<gateway>"
             ).particle.get_action(
-                local.my_domain_com.my_lib.inner.Inner
+                local.my_domain_com.my_lib.inner.InnerAction
             ).get_interface_position(
                 "position<destination>"
             ).particle
@@ -100,14 +100,14 @@ class Middle(literal.Action):
         self.get_interface_position(
             "position<gateway>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<destination>"
         ).destroy_particle()
         self.get_interface_position(
             "position<gateway>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

@@ -18,7 +18,7 @@ class AssignDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = AssignDestructionContracts()
 
 
-class Assign(literal.Action):
+class AssignAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -28,13 +28,13 @@ class Assign(literal.Action):
                 literal.LocalPosition(
                     "position<target>",
                     constraints=(
-                        standard.number.rational.NumberRational,
+                        standard.number.rational.NumberRationalValue,
                     ),
                 ),
                 literal.LocalPosition(
                     "position<source>",
                     constraints=(
-                        standard.number.rational.NumberRational,
+                        standard.number.rational.NumberRationalValue,
                     ),
                 ),
             ],

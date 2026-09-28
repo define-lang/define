@@ -7,16 +7,16 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.price
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.price.Price,
+        local.my_domain_com.my_lib.price.PricePosition,
     )
 
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.price.Price
+            local.my_domain_com.my_lib.price.PricePosition
         ).create_particle()
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.price.Price
+            local.my_domain_com.my_lib.price.PricePosition
         ).set_value(12.5)

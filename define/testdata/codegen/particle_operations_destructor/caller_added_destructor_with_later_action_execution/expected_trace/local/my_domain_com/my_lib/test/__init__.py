@@ -9,26 +9,26 @@ import local.my_domain_com.my_lib.destructor
 import local.my_domain_com.my_lib.later
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         box = literal.LocalPosition(
             "position<box>",
             constraints=(
-                local.my_domain_com.my_lib.callee.Callee,
+                local.my_domain_com.my_lib.callee.CalleeAction,
             ),
         )
         carrier = literal.LocalPosition(
             "position<carrier>",
             constraints=(
-                local.my_domain_com.my_lib.destructor.Destructor,
+                local.my_domain_com.my_lib.destructor.DestructorAction,
             ),
         )
         later_box = literal.LocalPosition(
             "position<later_box>",
             constraints=(
-                local.my_domain_com.my_lib.later.Later,
+                local.my_domain_com.my_lib.later.LaterAction,
             ),
         )
         box.create_particle()
@@ -39,7 +39,7 @@ class Test(literal.Action):
         literal.record_operation("test.create(carrier)")
         carrier.move_particle_to(
             box.particle.get_action(
-                local.my_domain_com.my_lib.callee.Callee
+                local.my_domain_com.my_lib.callee.CalleeAction
             ).get_interface_position(
                 "position<target>"
             )
@@ -49,32 +49,32 @@ class Test(literal.Action):
         literal.record_operation("test.create(carrier)")
         carrier.move_particle_to(
             later_box.particle.get_action(
-                local.my_domain_com.my_lib.later.Later
+                local.my_domain_com.my_lib.later.LaterAction
             ).get_interface_position(
                 "position<target>"
             )
         )
         literal.record_operation("test.move(carrier, later_box::/later::target)")
         box.particle.get_action(
-            local.my_domain_com.my_lib.callee.Callee
+            local.my_domain_com.my_lib.callee.CalleeAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         literal.record_operation("test.create(box::/callee::run)")
         box.particle.get_action(
-            local.my_domain_com.my_lib.callee.Callee
+            local.my_domain_com.my_lib.callee.CalleeAction
         ).run(CalleeDestructionContracts())
         later_box.particle.get_action(
-            local.my_domain_com.my_lib.later.Later
+            local.my_domain_com.my_lib.later.LaterAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         literal.record_operation("test.create(later_box::/later::run)")
         later_box.particle.get_action(
-            local.my_domain_com.my_lib.later.Later
+            local.my_domain_com.my_lib.later.LaterAction
         ).run(LaterDestructionContracts())
         box.particle.get_action(
-            local.my_domain_com.my_lib.callee.Callee
+            local.my_domain_com.my_lib.callee.CalleeAction
         ).get_interface_position(
             "position<run>"
         ).destroy_particle()
@@ -82,7 +82,7 @@ class Test(literal.Action):
         box.destroy_particle()
         literal.record_operation("test.destroy(box)")
         later_box.particle.get_action(
-            local.my_domain_com.my_lib.later.Later
+            local.my_domain_com.my_lib.later.LaterAction
         ).get_interface_position(
             "position<run>"
         ).destroy_particle()
@@ -96,7 +96,7 @@ class CalleeDestructionContracts(local.my_domain_com.my_lib.callee.CalleeDestruc
     @override
     def run_destructors_position_target(self, particle: literal.Particle):
         particle.get_action(
-            local.my_domain_com.my_lib.destructor.Destructor
+            local.my_domain_com.my_lib.destructor.DestructorAction
         ).run()
 
 
@@ -105,5 +105,5 @@ class LaterDestructionContracts(local.my_domain_com.my_lib.later.LaterDestructio
     @override
     def run_destructors_position_target(self, particle: literal.Particle):
         particle.get_action(
-            local.my_domain_com.my_lib.destructor.Destructor
+            local.my_domain_com.my_lib.destructor.DestructorAction
         ).run()

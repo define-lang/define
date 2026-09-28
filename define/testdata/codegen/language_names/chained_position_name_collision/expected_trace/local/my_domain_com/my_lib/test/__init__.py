@@ -10,29 +10,29 @@ import local.my_domain_com.my_lib.item.name_3
 import local.my_domain_com.my_lib.item_name
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.item.name.ItemName,
-        local.my_domain_com.my_lib.item.name_2.ItemName2,
-        local.my_domain_com.my_lib.item.name_3.ItemName3,
-        local.my_domain_com.my_lib.item_name.ItemName,
+        local.my_domain_com.my_lib.item.name.ItemNamePosition,
+        local.my_domain_com.my_lib.item.name_2.ItemName2Position,
+        local.my_domain_com.my_lib.item.name_3.ItemName3Position,
+        local.my_domain_com.my_lib.item_name.ItemNamePosition,
     )
 
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.item.name.ItemName
+            local.my_domain_com.my_lib.item.name.ItemNamePosition
         ).create_particle()
         literal.record_operation("test.create(/item/name)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.item.name_2.ItemName2
+            local.my_domain_com.my_lib.item.name_2.ItemName2Position
         ).create_particle()
         literal.record_operation("test.create(/item/name_2)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.item.name_3.ItemName3
+            local.my_domain_com.my_lib.item.name_3.ItemName3Position
         ).create_particle()
         literal.record_operation("test.create(/item/name_3)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.item_name.ItemName
+            local.my_domain_com.my_lib.item_name.ItemNamePosition
         ).create_particle()
         literal.record_operation("test.create(/item_name)")

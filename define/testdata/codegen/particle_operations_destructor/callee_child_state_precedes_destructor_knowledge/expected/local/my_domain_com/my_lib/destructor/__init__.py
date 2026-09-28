@@ -8,10 +8,10 @@ import local.my_domain_com.my_lib.empty
 import local.my_domain_com.my_lib.occupied
 
 
-class Destructor(literal.Action):
+class DestructorAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.occupied.Occupied,
-        local.my_domain_com.my_lib.empty.Empty,
+        local.my_domain_com.my_lib.occupied.OccupiedPosition,
+        local.my_domain_com.my_lib.empty.EmptyPosition,
     )
 
     @override
@@ -20,18 +20,18 @@ class Destructor(literal.Action):
             "position<holder>",
         )
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.occupied.Occupied
+            local.my_domain_com.my_lib.occupied.OccupiedPosition
         ).move_particle_to(
             holder
         )
         holder.move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.occupied.Occupied
+                local.my_domain_com.my_lib.occupied.OccupiedPosition
             )
         )
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.empty.Empty
+            local.my_domain_com.my_lib.empty.EmptyPosition
         ).create_particle()
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.empty.Empty
+            local.my_domain_com.my_lib.empty.EmptyPosition
         ).destroy_particle()

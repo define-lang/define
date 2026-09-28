@@ -8,8 +8,8 @@ import local.my_domain_com.my_lib.middle
 import local.my_domain_com.my_lib.payload
 
 
-class Carrier(literal.GlobalPosition):
+class CarrierPosition(literal.GlobalPosition):
     constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.middle.Middle,
-        local.my_domain_com.my_lib.payload.Payload,
+        local.my_domain_com.my_lib.middle.MiddleAction,
+        local.my_domain_com.my_lib.payload.PayloadPosition,
     )

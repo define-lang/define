@@ -9,10 +9,10 @@ import local.my_domain_com.my_lib.item
 import local.my_domain_com.my_lib.other
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.input.Input,
-        local.my_domain_com.my_lib.other.Other,
+        local.my_domain_com.my_lib.input.InputPosition,
+        local.my_domain_com.my_lib.other.OtherAction,
     )
 
     @override
@@ -23,13 +23,13 @@ class Test(literal.Action):
         box = literal.LocalPosition(
             "position<box>",
             constraints=(
-                local.my_domain_com.my_lib.item.Item,
+                local.my_domain_com.my_lib.item.ItemPosition,
             ),
         )
         box.create_particle()
         literal.record_operation("test.create(box)")
         box.particle.get_position(
-            local.my_domain_com.my_lib.item.Item
+            local.my_domain_com.my_lib.item.ItemPosition
         ).create_particle()
         literal.record_operation("test.create(box::/item)")
         box.move_particle_to(
@@ -38,21 +38,21 @@ class Test(literal.Action):
         literal.record_operation("test.move(box, holder_a)")
         holder_a.move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.input.Input
+                local.my_domain_com.my_lib.input.InputPosition
             )
         )
         literal.record_operation("test.move(holder_a, /input)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.other.Other
+            local.my_domain_com.my_lib.other.OtherAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("test.create(/other::trigger_pos)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.other.Other
+            local.my_domain_com.my_lib.other.OtherAction
         ).run()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.other.Other
+            local.my_domain_com.my_lib.other.OtherAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

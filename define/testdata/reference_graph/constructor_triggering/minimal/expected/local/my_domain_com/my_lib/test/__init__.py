@@ -7,22 +7,22 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.constructor
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         box = literal.LocalPosition(
             "position<box>",
             constraints=(
-                local.my_domain_com.my_lib.constructor.Constructor,
+                local.my_domain_com.my_lib.constructor.ConstructorAction,
             ),
         )
         box.create_particle()
         box.particle.get_action(
-            local.my_domain_com.my_lib.constructor.Constructor
+            local.my_domain_com.my_lib.constructor.ConstructorAction
         ).run()
         box.particle.get_action(
-            local.my_domain_com.my_lib.constructor.Constructor
+            local.my_domain_com.my_lib.constructor.ConstructorAction
         ).get_interface_position(
             "position<output>"
         ).destroy_particle()

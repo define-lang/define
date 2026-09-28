@@ -24,7 +24,7 @@ class TriggeredDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = TriggeredDestructionContracts()
 
 
-class Triggered(literal.Action):
+class TriggeredAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -33,7 +33,7 @@ class Triggered(literal.Action):
                 literal.LocalPosition(
                     "position<input>",
                     constraints=(
-                        local.my_domain_com.my_lib.child.Child,
+                        local.my_domain_com.my_lib.child.ChildPosition,
                     ),
                 ),
                 literal.LocalPosition("position<run>"),
@@ -46,20 +46,20 @@ class Triggered(literal.Action):
             self.get_interface_position(
                 "position<input>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.child.Child
+                local.my_domain_com.my_lib.child.ChildPosition
             ).particle
         )
         destruction_contracts.destroy_position_input__position_child(
             self.get_interface_position(
                 "position<input>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.child.Child
+                local.my_domain_com.my_lib.child.ChildPosition
             ).particle
         )
         self.get_interface_position(
             "position<input>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).destroy_particle()
         literal.record_operation("triggered.destroy(input::/child)")
         destruction_contracts.run_destructors_position_run(

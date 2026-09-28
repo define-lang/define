@@ -10,9 +10,9 @@ import local.my_domain_com.my_lib.known_occupied
 import local.my_domain_com.my_lib.maybe_child
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.destroyer.Destroyer,
+        local.my_domain_com.my_lib.destroyer.DestroyerAction,
     )
 
     @override
@@ -20,39 +20,39 @@ class Test(literal.Action):
         source = literal.LocalPosition(
             "position<source>",
             constraints=(
-                local.my_domain_com.my_lib.known_empty.KnownEmpty,
-                local.my_domain_com.my_lib.known_occupied.KnownOccupied,
-                local.my_domain_com.my_lib.maybe_child.MaybeChild,
+                local.my_domain_com.my_lib.known_empty.KnownEmptyPosition,
+                local.my_domain_com.my_lib.known_occupied.KnownOccupiedPosition,
+                local.my_domain_com.my_lib.maybe_child.MaybeChildPosition,
             ),
         )
         source.create_particle()
         literal.record_operation("test.create(source)")
         source.particle.get_position(
-            local.my_domain_com.my_lib.known_empty.KnownEmpty
+            local.my_domain_com.my_lib.known_empty.KnownEmptyPosition
         ).create_particle()
         literal.record_operation("test.create(source::/known_empty)")
         source.particle.get_position(
-            local.my_domain_com.my_lib.known_occupied.KnownOccupied
+            local.my_domain_com.my_lib.known_occupied.KnownOccupiedPosition
         ).create_particle()
         literal.record_operation("test.create(source::/known_occupied)")
         source.particle.get_position(
-            local.my_domain_com.my_lib.known_occupied.KnownOccupied
+            local.my_domain_com.my_lib.known_occupied.KnownOccupiedPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(source::/known_occupied)")
         source.particle.get_position(
-            local.my_domain_com.my_lib.maybe_child.MaybeChild
+            local.my_domain_com.my_lib.maybe_child.MaybeChildPosition
         ).create_particle()
         literal.record_operation("test.create(source::/maybe_child)")
         source.move_particle_to(
             self.on_particle.get_action(
-                local.my_domain_com.my_lib.destroyer.Destroyer
+                local.my_domain_com.my_lib.destroyer.DestroyerAction
             ).get_interface_position(
                 "position<run>"
             )
         )
         literal.record_operation("test.move(source, /destroyer::run)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.destroyer.Destroyer
+            local.my_domain_com.my_lib.destroyer.DestroyerAction
         ).run(DestroyerDestructionContracts())
 
 
@@ -61,6 +61,6 @@ class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.Destroy
     @override
     def destroy_position_run(self, particle: literal.Particle):
         particle.get_position(
-            local.my_domain_com.my_lib.maybe_child.MaybeChild
+            local.my_domain_com.my_lib.maybe_child.MaybeChildPosition
         ).destroy_particle()
         literal.record_operation("destroyer.destroy(local::/maybe_child)")

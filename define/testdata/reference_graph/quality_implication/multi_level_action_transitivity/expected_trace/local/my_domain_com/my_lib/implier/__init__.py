@@ -7,19 +7,19 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.implied
 
 
-class Implier(literal.Action):
+class ImplierAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.implied.Implied,
+        local.my_domain_com.my_lib.implied.ImpliedAction,
     )
 
     @override
     def run(self):
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.implied.Implied
+            local.my_domain_com.my_lib.implied.ImpliedAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         literal.record_operation("implier.create(/implied::run)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.implied.Implied
+            local.my_domain_com.my_lib.implied.ImpliedAction
         ).run()

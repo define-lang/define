@@ -1,0 +1,3 @@
+test.create(/pair::run)
+pair.create(/pair)
+pair.destroy(run)

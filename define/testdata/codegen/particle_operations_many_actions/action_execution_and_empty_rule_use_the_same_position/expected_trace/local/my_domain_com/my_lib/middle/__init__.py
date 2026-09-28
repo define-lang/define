@@ -7,7 +7,7 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.child
 
 
-class Middle(literal.Action):
+class MiddleAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -17,7 +17,7 @@ class Middle(literal.Action):
                 literal.LocalPosition(
                     "position<source>",
                     constraints=(
-                        local.my_domain_com.my_lib.child.Child,
+                        local.my_domain_com.my_lib.child.ChildAction,
                     ),
                 ),
                 literal.LocalPosition("position<holder>"),
@@ -29,7 +29,7 @@ class Middle(literal.Action):
         self.get_interface_position(
             "position<source>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
@@ -37,7 +37,7 @@ class Middle(literal.Action):
         self.get_interface_position(
             "position<source>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildAction
         ).run()
         self.get_interface_position(
             "position<source>"

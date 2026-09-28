@@ -18,9 +18,9 @@ class CallEmptyDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = CallEmptyDestructionContracts()
 
 
-class CallEmpty(literal.Action):
+class CallEmptyAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.empty_item.EmptyItem,
+        local.my_domain_com.my_lib.empty_item.EmptyItemAction,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -34,12 +34,12 @@ class CallEmpty(literal.Action):
     @override
     def run(self, destruction_contracts: CallEmptyDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.empty_item.EmptyItem
+            local.my_domain_com.my_lib.empty_item.EmptyItemAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.empty_item.EmptyItem
+            local.my_domain_com.my_lib.empty_item.EmptyItemAction
         ).run(
             EmptyItemDestructionContracts(
                 destruction_contracts.run_destructors_global_position_item,
@@ -47,7 +47,7 @@ class CallEmpty(literal.Action):
             ),
         )
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.empty_item.EmptyItem
+            local.my_domain_com.my_lib.empty_item.EmptyItemAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

@@ -3,5 +3,5 @@
 from define.runtime import literal
 
 
-class Right(literal.GlobalPosition):
+class RightPosition(literal.GlobalPosition):
     pass

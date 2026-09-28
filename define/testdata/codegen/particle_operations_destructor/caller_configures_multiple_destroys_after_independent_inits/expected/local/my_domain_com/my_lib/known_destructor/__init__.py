@@ -8,10 +8,10 @@ import local.my_domain_com.my_lib.empty_marker
 import local.my_domain_com.my_lib.marker
 
 
-class KnownDestructor(literal.Action):
+class KnownDestructorAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.marker.Marker,
-        local.my_domain_com.my_lib.empty_marker.EmptyMarker,
+        local.my_domain_com.my_lib.marker.MarkerPosition,
+        local.my_domain_com.my_lib.empty_marker.EmptyMarkerPosition,
     )
 
     @override
@@ -20,18 +20,18 @@ class KnownDestructor(literal.Action):
             "position<retained_marker>",
         )
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.marker.Marker
+            local.my_domain_com.my_lib.marker.MarkerPosition
         ).move_particle_to(
             retained_marker
         )
         retained_marker.move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.marker.Marker
+                local.my_domain_com.my_lib.marker.MarkerPosition
             )
         )
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.empty_marker.EmptyMarker
+            local.my_domain_com.my_lib.empty_marker.EmptyMarkerPosition
         ).create_particle()
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.empty_marker.EmptyMarker
+            local.my_domain_com.my_lib.empty_marker.EmptyMarkerPosition
         ).destroy_particle()

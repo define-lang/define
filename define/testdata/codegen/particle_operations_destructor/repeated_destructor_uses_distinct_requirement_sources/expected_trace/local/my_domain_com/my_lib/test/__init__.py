@@ -9,9 +9,9 @@ import local.my_domain_com.my_lib.destructor
 import local.my_domain_com.my_lib.marker
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.destroyer.Destroyer,
+        local.my_domain_com.my_lib.destroyer.DestroyerAction,
     )
 
     @override
@@ -19,50 +19,50 @@ class Test(literal.Action):
         first_source = literal.LocalPosition(
             "position<first_source>",
             constraints=(
-                local.my_domain_com.my_lib.marker.Marker,
-                local.my_domain_com.my_lib.destructor.Destructor,
+                local.my_domain_com.my_lib.marker.MarkerPosition,
+                local.my_domain_com.my_lib.destructor.DestructorAction,
             ),
         )
         second_source = literal.LocalPosition(
             "position<second_source>",
             constraints=(
-                local.my_domain_com.my_lib.marker.Marker,
-                local.my_domain_com.my_lib.destructor.Destructor,
+                local.my_domain_com.my_lib.marker.MarkerPosition,
+                local.my_domain_com.my_lib.destructor.DestructorAction,
             ),
         )
         first_source.create_particle()
         literal.record_operation("test.create(first_source)")
         first_source.particle.get_position(
-            local.my_domain_com.my_lib.marker.Marker
+            local.my_domain_com.my_lib.marker.MarkerPosition
         ).create_particle()
         literal.record_operation("test.create(first_source::/marker)")
         first_source.move_particle_to(
             self.on_particle.get_action(
-                local.my_domain_com.my_lib.destroyer.Destroyer
+                local.my_domain_com.my_lib.destroyer.DestroyerAction
             ).get_interface_position(
                 "position<target>"
             )
         )
         literal.record_operation("test.move(first_source, /destroyer::target)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.destroyer.Destroyer
+            local.my_domain_com.my_lib.destroyer.DestroyerAction
         ).run(DestroyerDestructionContracts())
         second_source.create_particle()
         literal.record_operation("test.create(second_source)")
         second_source.particle.get_position(
-            local.my_domain_com.my_lib.marker.Marker
+            local.my_domain_com.my_lib.marker.MarkerPosition
         ).create_particle()
         literal.record_operation("test.create(second_source::/marker)")
         second_source.move_particle_to(
             self.on_particle.get_action(
-                local.my_domain_com.my_lib.destroyer.Destroyer
+                local.my_domain_com.my_lib.destroyer.DestroyerAction
             ).get_interface_position(
                 "position<target>"
             )
         )
         literal.record_operation("test.move(second_source, /destroyer::target)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.destroyer.Destroyer
+            local.my_domain_com.my_lib.destroyer.DestroyerAction
         ).run(DestroyerDestructionContracts_())
 
 
@@ -71,13 +71,13 @@ class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.Destroy
     @override
     def run_destructors_position_target(self, particle: literal.Particle):
         particle.get_action(
-            local.my_domain_com.my_lib.destructor.Destructor
+            local.my_domain_com.my_lib.destructor.DestructorAction
         ).run()
 
     @override
     def destroy_position_target(self, particle: literal.Particle):
         particle.get_position(
-            local.my_domain_com.my_lib.marker.Marker
+            local.my_domain_com.my_lib.marker.MarkerPosition
         ).destroy_particle()
         literal.record_operation("destroyer.destroy(target::/marker)")
 
@@ -87,12 +87,12 @@ class DestroyerDestructionContracts_(local.my_domain_com.my_lib.destroyer.Destro
     @override
     def run_destructors_position_target(self, particle: literal.Particle):
         particle.get_action(
-            local.my_domain_com.my_lib.destructor.Destructor
+            local.my_domain_com.my_lib.destructor.DestructorAction
         ).run()
 
     @override
     def destroy_position_target(self, particle: literal.Particle):
         particle.get_position(
-            local.my_domain_com.my_lib.marker.Marker
+            local.my_domain_com.my_lib.marker.MarkerPosition
         ).destroy_particle()
         literal.record_operation("destroyer.destroy(target::/marker)")

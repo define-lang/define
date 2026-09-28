@@ -8,10 +8,10 @@ import local.my_domain_com.my_lib.destination
 import local.my_domain_com.my_lib.input
 
 
-class Inner(literal.Action):
+class InnerAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.input.Input,
-        local.my_domain_com.my_lib.destination.Destination,
+        local.my_domain_com.my_lib.input.InputPosition,
+        local.my_domain_com.my_lib.destination.DestinationPosition,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -25,9 +25,9 @@ class Inner(literal.Action):
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.input.Input
+            local.my_domain_com.my_lib.input.InputPosition
         ).move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.destination.Destination
+                local.my_domain_com.my_lib.destination.DestinationPosition
             )
         )

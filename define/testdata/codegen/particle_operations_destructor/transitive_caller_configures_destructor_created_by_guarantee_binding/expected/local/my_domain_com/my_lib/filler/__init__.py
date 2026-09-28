@@ -8,9 +8,9 @@ import local.my_domain_com.my_lib.known_destructor
 import local.my_domain_com.my_lib.target
 
 
-class Filler(literal.Action):
+class FillerAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.target.Target,
+        local.my_domain_com.my_lib.target.TargetPosition,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -20,7 +20,7 @@ class Filler(literal.Action):
                 literal.LocalPosition(
                     "position<run>",
                     constraints=(
-                        local.my_domain_com.my_lib.known_destructor.KnownDestructor,
+                        local.my_domain_com.my_lib.known_destructor.KnownDestructorAction,
                     ),
                 ),
             ],
@@ -32,6 +32,6 @@ class Filler(literal.Action):
             "position<run>"
         ).move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.target.Target
+                local.my_domain_com.my_lib.target.TargetPosition
             )
         )

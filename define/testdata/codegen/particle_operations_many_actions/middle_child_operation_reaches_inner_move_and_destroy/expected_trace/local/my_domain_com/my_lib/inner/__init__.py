@@ -18,7 +18,7 @@ class InnerDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = InnerDestructionContracts()
 
 
-class Inner(literal.Action):
+class InnerAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -28,13 +28,13 @@ class Inner(literal.Action):
                 literal.LocalPosition(
                     "position<source>",
                     constraints=(
-                        local.my_domain_com.my_lib.child.Child,
+                        local.my_domain_com.my_lib.child.ChildPosition,
                     ),
                 ),
                 literal.LocalPosition(
                     "position<destination>",
                     constraints=(
-                        local.my_domain_com.my_lib.child.Child,
+                        local.my_domain_com.my_lib.child.ChildPosition,
                     ),
                 ),
             ],
@@ -54,19 +54,19 @@ class Inner(literal.Action):
             self.get_interface_position(
                 "position<destination>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.child.Child
+                local.my_domain_com.my_lib.child.ChildPosition
             ).particle
         )
         destruction_contracts.destroy_position_source__position_child(
             self.get_interface_position(
                 "position<destination>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.child.Child
+                local.my_domain_com.my_lib.child.ChildPosition
             ).particle
         )
         self.get_interface_position(
             "position<destination>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).destroy_particle()
         literal.record_operation("inner.destroy(destination::/child)")

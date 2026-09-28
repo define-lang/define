@@ -19,7 +19,7 @@ class RunnerDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = RunnerDestructionContracts()
 
 
-class Runner(literal.Action):
+class RunnerAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -29,13 +29,13 @@ class Runner(literal.Action):
                 literal.LocalPosition(
                     "position<source>",
                     constraints=(
-                        local.my_domain_com.my_lib.implier.Implier,
+                        local.my_domain_com.my_lib.implier.ImplierAction,
                     ),
                 ),
                 literal.LocalPosition(
                     "position<dest>",
                     constraints=(
-                        local.my_domain_com.my_lib.transitive_implied.TransitiveImplied,
+                        local.my_domain_com.my_lib.transitive_implied.TransitiveImpliedPosition,
                     ),
                 ),
             ],
@@ -50,7 +50,7 @@ class Runner(literal.Action):
         self.get_interface_position(
             "position<source>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.implier.Implier
+            local.my_domain_com.my_lib.implier.ImplierAction
         ).run()
         self.get_interface_position(
             "position<source>"
@@ -63,7 +63,7 @@ class Runner(literal.Action):
         self.get_interface_position(
             "position<dest>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.transitive_implied.TransitiveImplied
+            local.my_domain_com.my_lib.transitive_implied.TransitiveImpliedPosition
         ).destroy_particle()
         literal.record_operation("runner.destroy(dest::/transitive_implied)")
         self.get_interface_position(

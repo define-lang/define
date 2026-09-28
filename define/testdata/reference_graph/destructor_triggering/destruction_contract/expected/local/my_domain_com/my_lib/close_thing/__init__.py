@@ -16,7 +16,7 @@ class CloseThingDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = CloseThingDestructionContracts()
 
 
-class CloseThing(literal.Action):
+class CloseThingAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(

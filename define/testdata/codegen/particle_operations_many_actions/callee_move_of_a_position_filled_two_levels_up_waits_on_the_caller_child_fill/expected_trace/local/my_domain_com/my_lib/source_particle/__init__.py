@@ -7,7 +7,7 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.a
 
 
-class SourceParticle(literal.GlobalPosition):
+class SourceParticlePosition(literal.GlobalPosition):
     constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.a.A,
+        local.my_domain_com.my_lib.a.APosition,
     )

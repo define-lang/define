@@ -7,7 +7,7 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.destructor
 
 
-class MakeThing(literal.Action):
+class MakeThingAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -23,7 +23,7 @@ class MakeThing(literal.Action):
         temp = literal.LocalPosition(
             "position<temp>",
             constraints=(
-                local.my_domain_com.my_lib.destructor.Destructor,
+                local.my_domain_com.my_lib.destructor.DestructorAction,
             ),
         )
         temp.create_particle()

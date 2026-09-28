@@ -9,9 +9,9 @@ import local.my_domain_com.my_lib.known_destructor
 import local.my_domain_com.my_lib.outer
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.outer.Outer,
+        local.my_domain_com.my_lib.outer.OuterAction,
     )
 
     @override
@@ -19,22 +19,22 @@ class Test(literal.Action):
         source = literal.LocalPosition(
             "position<source>",
             constraints=(
-                local.my_domain_com.my_lib.extra_destructor.ExtraDestructor,
-                local.my_domain_com.my_lib.known_destructor.KnownDestructor,
+                local.my_domain_com.my_lib.extra_destructor.ExtraDestructorAction,
+                local.my_domain_com.my_lib.known_destructor.KnownDestructorAction,
             ),
         )
         source.create_particle()
         literal.record_operation("test.create(source)")
         source.move_particle_to(
             self.on_particle.get_action(
-                local.my_domain_com.my_lib.outer.Outer
+                local.my_domain_com.my_lib.outer.OuterAction
             ).get_interface_position(
                 "position<run>"
             )
         )
         literal.record_operation("test.move(source, /outer::run)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.outer.Outer
+            local.my_domain_com.my_lib.outer.OuterAction
         ).run(OuterDestructionContracts())
 
 
@@ -43,5 +43,5 @@ class OuterDestructionContracts(local.my_domain_com.my_lib.outer.OuterDestructio
     @override
     def run_destructors_position_run(self, particle: literal.Particle):
         particle.get_action(
-            local.my_domain_com.my_lib.extra_destructor.ExtraDestructor
+            local.my_domain_com.my_lib.extra_destructor.ExtraDestructorAction
         ).run()

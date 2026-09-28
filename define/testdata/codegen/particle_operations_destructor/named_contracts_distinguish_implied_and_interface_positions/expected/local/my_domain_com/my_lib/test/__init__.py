@@ -9,10 +9,10 @@ import local.my_domain_com.my_lib.outer_child
 import local.my_domain_com.my_lib.worker
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.item.Item,
-        local.my_domain_com.my_lib.worker.Worker,
+        local.my_domain_com.my_lib.item.ItemPosition,
+        local.my_domain_com.my_lib.worker.WorkerAction,
     )
 
     @override
@@ -20,39 +20,39 @@ class Test(literal.Action):
         source = literal.LocalPosition(
             "position<source>",
             constraints=(
-                local.my_domain_com.my_lib.outer_child.OuterChild,
+                local.my_domain_com.my_lib.outer_child.OuterChildPosition,
             ),
         )
         source.create_particle()
         source.particle.get_position(
-            local.my_domain_com.my_lib.outer_child.OuterChild
+            local.my_domain_com.my_lib.outer_child.OuterChildPosition
         ).create_particle()
         source.move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.item.Item
+                local.my_domain_com.my_lib.item.ItemPosition
             )
         )
         source.create_particle()
         source.particle.get_position(
-            local.my_domain_com.my_lib.outer_child.OuterChild
+            local.my_domain_com.my_lib.outer_child.OuterChildPosition
         ).create_particle()
         source.move_particle_to(
             self.on_particle.get_action(
-                local.my_domain_com.my_lib.worker.Worker
+                local.my_domain_com.my_lib.worker.WorkerAction
             ).get_interface_position(
                 "position<item>"
             )
         )
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).run(WorkerDestructionContracts())
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<run>"
         ).destroy_particle()
@@ -63,11 +63,11 @@ class WorkerDestructionContracts(local.my_domain_com.my_lib.worker.WorkerDestruc
     @override
     def destroy_global_position_item(self, particle: literal.Particle):
         particle.get_position(
-            local.my_domain_com.my_lib.outer_child.OuterChild
+            local.my_domain_com.my_lib.outer_child.OuterChildPosition
         ).destroy_particle()
 
     @override
     def destroy_position_item(self, particle: literal.Particle):
         particle.get_position(
-            local.my_domain_com.my_lib.outer_child.OuterChild
+            local.my_domain_com.my_lib.outer_child.OuterChildPosition
         ).destroy_particle()

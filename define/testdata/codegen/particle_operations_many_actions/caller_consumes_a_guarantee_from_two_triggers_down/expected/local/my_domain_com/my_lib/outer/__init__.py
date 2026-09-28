@@ -18,7 +18,7 @@ class OuterDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = OuterDestructionContracts()
 
 
-class Outer(literal.Action):
+class OuterAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -28,7 +28,7 @@ class Outer(literal.Action):
                 literal.LocalPosition(
                     "position<gw>",
                     constraints=(
-                        local.my_domain_com.my_lib.middle.Middle,
+                        local.my_domain_com.my_lib.middle.MiddleAction,
                     ),
                 ),
                 literal.LocalPosition("position<out>"),
@@ -40,26 +40,26 @@ class Outer(literal.Action):
         self.get_interface_position(
             "position<gw>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<igw>"
         ).create_particle()
         self.get_interface_position(
             "position<gw>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         self.get_interface_position(
             "position<gw>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).run()
         self.get_interface_position(
             "position<gw>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<out>"
         ).move_particle_to(
@@ -70,7 +70,7 @@ class Outer(literal.Action):
         self.get_interface_position(
             "position<gw>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

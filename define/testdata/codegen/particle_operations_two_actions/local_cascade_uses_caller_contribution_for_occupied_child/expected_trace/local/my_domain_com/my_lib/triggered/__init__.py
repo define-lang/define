@@ -18,9 +18,9 @@ class TriggeredDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = TriggeredDestructionContracts()
 
 
-class Triggered(literal.Action):
+class TriggeredAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.target.Target,
+        local.my_domain_com.my_lib.target.TargetPosition,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -40,12 +40,12 @@ class Triggered(literal.Action):
             "position<run>"
         ).move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.target.Target
+                local.my_domain_com.my_lib.target.TargetPosition
             )
         )
         literal.record_operation("triggered.move(run, /target)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.target.Target
+            local.my_domain_com.my_lib.target.TargetPosition
         ).move_particle_to(
             local_
         )

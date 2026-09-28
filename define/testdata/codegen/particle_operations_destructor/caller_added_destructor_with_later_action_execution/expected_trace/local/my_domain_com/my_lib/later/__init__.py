@@ -16,7 +16,7 @@ class LaterDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = LaterDestructionContracts()
 
 
-class Later(literal.Action):
+class LaterAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(

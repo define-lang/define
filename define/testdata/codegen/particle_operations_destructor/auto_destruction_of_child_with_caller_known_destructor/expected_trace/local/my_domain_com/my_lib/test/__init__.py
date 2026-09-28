@@ -9,9 +9,9 @@ import local.my_domain_com.my_lib.destroyer
 import local.my_domain_com.my_lib.extra
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.destroyer.Destroyer,
+        local.my_domain_com.my_lib.destroyer.DestroyerAction,
     )
 
     @override
@@ -19,25 +19,25 @@ class Test(literal.Action):
         source = literal.LocalPosition(
             "position<source>",
             constraints=(
-                local.my_domain_com.my_lib.extra.Extra,
+                local.my_domain_com.my_lib.extra.ExtraPosition,
             ),
         )
         source.create_particle()
         literal.record_operation("test.create(source)")
         source.particle.get_position(
-            local.my_domain_com.my_lib.extra.Extra
+            local.my_domain_com.my_lib.extra.ExtraPosition
         ).create_particle()
         literal.record_operation("test.create(source::/extra)")
         source.move_particle_to(
             self.on_particle.get_action(
-                local.my_domain_com.my_lib.destroyer.Destroyer
+                local.my_domain_com.my_lib.destroyer.DestroyerAction
             ).get_interface_position(
                 "position<run>"
             )
         )
         literal.record_operation("test.move(source, /destroyer::run)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.destroyer.Destroyer
+            local.my_domain_com.my_lib.destroyer.DestroyerAction
         ).run(DestroyerDestructionContracts())
 
 
@@ -46,14 +46,14 @@ class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.Destroy
     @override
     def run_destructors_position_run(self, particle: literal.Particle):
         particle.get_position(
-            local.my_domain_com.my_lib.extra.Extra
+            local.my_domain_com.my_lib.extra.ExtraPosition
         ).particle.get_action(
-            local.my_domain_com.my_lib.child_destruct.ChildDestruct
+            local.my_domain_com.my_lib.child_destruct.ChildDestructAction
         ).run()
 
     @override
     def destroy_position_run(self, particle: literal.Particle):
         particle.get_position(
-            local.my_domain_com.my_lib.extra.Extra
+            local.my_domain_com.my_lib.extra.ExtraPosition
         ).destroy_particle()
         literal.record_operation("destroyer.destroy(local::/extra)")

@@ -7,7 +7,7 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.c
 
 
-class Maker(literal.Action):
+class MakerAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -17,7 +17,7 @@ class Maker(literal.Action):
                 literal.LocalPosition(
                     "position<held>",
                     constraints=(
-                        local.my_domain_com.my_lib.c.C,
+                        local.my_domain_com.my_lib.c.CPosition,
                     ),
                 ),
             ],
@@ -28,6 +28,6 @@ class Maker(literal.Action):
         self.get_interface_position(
             "position<held>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.c.C
+            local.my_domain_com.my_lib.c.CPosition
         ).create_particle()
         literal.record_operation("maker.create(held::/c)")

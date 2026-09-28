@@ -8,29 +8,29 @@ import local.my_domain_com.my_lib.middle
 import local.my_domain_com.my_lib.shared
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.middle.Middle,
-        local.my_domain_com.my_lib.shared.Shared,
+        local.my_domain_com.my_lib.middle.MiddleAction,
+        local.my_domain_com.my_lib.shared.SharedPosition,
     )
 
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.shared.Shared
+            local.my_domain_com.my_lib.shared.SharedPosition
         ).create_particle()
         literal.record_operation("test.create(/shared)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("test.create(/middle::trigger_pos)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).run()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

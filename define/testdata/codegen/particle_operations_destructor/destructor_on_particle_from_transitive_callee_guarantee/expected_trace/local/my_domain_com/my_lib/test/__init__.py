@@ -9,50 +9,50 @@ import local.my_domain_com.my_lib.marker
 import local.my_domain_com.my_lib.middle
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         gateway = literal.LocalPosition(
             "position<gateway>",
             constraints=(
-                local.my_domain_com.my_lib.middle.Middle,
+                local.my_domain_com.my_lib.middle.MiddleAction,
             ),
         )
         gateway.create_particle()
         literal.record_operation("test.create(gateway)")
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         literal.record_operation("test.create(gateway::/middle::run)")
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).run()
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<result>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.destructor.Destructor
+            local.my_domain_com.my_lib.destructor.DestructorAction
         ).run()
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<result>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.marker.Marker
+            local.my_domain_com.my_lib.marker.MarkerPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(gateway::/middle::result::/marker)")
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<result>"
         ).destroy_particle()
         literal.record_operation("test.destroy(gateway::/middle::result)")
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<run>"
         ).destroy_particle()

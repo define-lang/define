@@ -9,77 +9,77 @@ import local.my_domain_com.my_lib.holder
 import local.my_domain_com.my_lib.middle
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         box = literal.LocalPosition(
             "position<box>",
             constraints=(
-                local.my_domain_com.my_lib.middle.Middle,
+                local.my_domain_com.my_lib.middle.MiddleAction,
             ),
         )
         box.create_particle()
         literal.record_operation("test.create(box)")
         box.particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<gw>"
         ).create_particle()
         literal.record_operation("test.create(box::/middle::gw)")
         box.particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<gw>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.holder.Holder
+            local.my_domain_com.my_lib.holder.HolderPosition
         ).create_particle()
         literal.record_operation("test.create(box::/middle::gw::/holder)")
         box.particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<gw>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.holder.Holder
+            local.my_domain_com.my_lib.holder.HolderPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.a.A
+            local.my_domain_com.my_lib.a.APosition
         ).create_particle()
         literal.record_operation("test.create(box::/middle::gw::/holder::/a)")
         box.particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("test.create(box::/middle::trigger_pos)")
         box.particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).run()
         box.particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<gw>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.holder.Holder
+            local.my_domain_com.my_lib.holder.HolderPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.a.A
+            local.my_domain_com.my_lib.a.APosition
         ).destroy_particle()
         literal.record_operation("test.destroy(box::/middle::gw::/holder::/a)")
         box.particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<gw>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.holder.Holder
+            local.my_domain_com.my_lib.holder.HolderPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(box::/middle::gw::/holder)")
         box.particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<gw>"
         ).destroy_particle()
         literal.record_operation("test.destroy(box::/middle::gw)")
         box.particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

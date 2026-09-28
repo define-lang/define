@@ -7,7 +7,7 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.a
 
 
-class Other(literal.Action):
+class OtherAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -17,7 +17,7 @@ class Other(literal.Action):
                 literal.LocalPosition(
                     "position<output>",
                     constraints=(
-                        local.my_domain_com.my_lib.a.A,
+                        local.my_domain_com.my_lib.a.APosition,
                     ),
                 ),
             ],
@@ -28,5 +28,5 @@ class Other(literal.Action):
         self.get_interface_position(
             "position<output>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.a.A
+            local.my_domain_com.my_lib.a.APosition
         ).create_particle()

@@ -3,5 +3,5 @@
 from define.runtime import literal
 
 
-class EndSrcA(literal.GlobalPosition):
+class EndSrcAPosition(literal.GlobalPosition):
     pass

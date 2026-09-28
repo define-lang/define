@@ -8,8 +8,8 @@ import local.my_domain_com.my_lib.destructor
 import local.my_domain_com.my_lib.marker
 
 
-class Right(literal.GlobalPosition):
+class RightPosition(literal.GlobalPosition):
     constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.destructor.Destructor,
-        local.my_domain_com.my_lib.marker.Marker,
+        local.my_domain_com.my_lib.destructor.DestructorAction,
+        local.my_domain_com.my_lib.marker.MarkerPosition,
     )

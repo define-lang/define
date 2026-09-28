@@ -3,5 +3,5 @@
 from define.runtime import literal
 
 
-class KnownOccupied(literal.GlobalPosition):
+class KnownOccupiedPosition(literal.GlobalPosition):
     pass

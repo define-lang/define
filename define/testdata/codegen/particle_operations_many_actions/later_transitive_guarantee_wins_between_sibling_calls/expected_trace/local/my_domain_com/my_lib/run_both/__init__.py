@@ -8,10 +8,10 @@ import local.my_domain_com.my_lib.call_empty
 import local.my_domain_com.my_lib.call_fill
 
 
-class RunBoth(literal.Action):
+class RunBothAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.call_fill.CallFill,
-        local.my_domain_com.my_lib.call_empty.CallEmpty,
+        local.my_domain_com.my_lib.call_fill.CallFillAction,
+        local.my_domain_com.my_lib.call_empty.CallEmptyAction,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -25,31 +25,31 @@ class RunBoth(literal.Action):
     @override
     def run(self):
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.call_fill.CallFill
+            local.my_domain_com.my_lib.call_fill.CallFillAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("run_both.create(/call_fill::trigger_pos)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.call_fill.CallFill
+            local.my_domain_com.my_lib.call_fill.CallFillAction
         ).run()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.call_empty.CallEmpty
+            local.my_domain_com.my_lib.call_empty.CallEmptyAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("run_both.create(/call_empty::trigger_pos)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.call_empty.CallEmpty
+            local.my_domain_com.my_lib.call_empty.CallEmptyAction
         ).run()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.call_fill.CallFill
+            local.my_domain_com.my_lib.call_fill.CallFillAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
         literal.record_operation("run_both.destroy(/call_fill::trigger_pos)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.call_empty.CallEmpty
+            local.my_domain_com.my_lib.call_empty.CallEmptyAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

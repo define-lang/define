@@ -1,0 +1,13 @@
+# The action class refers to the position class in their shared generated
+# module while that module is still loading.
+define the potential position<my.domain.com:my_lib:/pair>.
+define the potential action<my.domain.com:my_lib:/pair> {
+    it also assigns the position</pair>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position</pair>.
+        destroy the particle in position<run>.
+    }
+}

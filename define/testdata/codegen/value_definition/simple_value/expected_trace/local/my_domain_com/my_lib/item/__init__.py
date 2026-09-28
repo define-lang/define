@@ -7,7 +7,7 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.number.rational
 
 
-class Item(literal.GlobalPosition):
+class ItemPosition(literal.GlobalPosition):
     constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.number.rational.NumberRational,
+        local.my_domain_com.my_lib.number.rational.NumberRationalValue,
     )

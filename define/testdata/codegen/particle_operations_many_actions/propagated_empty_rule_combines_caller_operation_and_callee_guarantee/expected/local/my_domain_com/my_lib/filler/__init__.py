@@ -8,9 +8,9 @@ import local.my_domain_com.my_lib.guaranteed_child
 import local.my_domain_com.my_lib.parent
 
 
-class Filler(literal.Action):
+class FillerAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.parent.Parent,
+        local.my_domain_com.my_lib.parent.ParentPosition,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -24,7 +24,7 @@ class Filler(literal.Action):
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.parent.Parent
+            local.my_domain_com.my_lib.parent.ParentPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.guaranteed_child.GuaranteedChild
+            local.my_domain_com.my_lib.guaranteed_child.GuaranteedChildPosition
         ).create_particle()

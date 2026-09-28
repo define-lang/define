@@ -10,27 +10,27 @@ import local.my_domain_com.my_lib.nested_worker
 import local.my_domain_com.my_lib.worker
 
 
-class Destructor(literal.Action):
+class DestructorAction(literal.Action):
 
     @override
     def run(self):
         worker = literal.LocalPosition(
             "position<worker>",
             constraints=(
-                local.my_domain_com.my_lib.worker.Worker,
-                local.my_domain_com.my_lib.nested_worker.NestedWorker,
+                local.my_domain_com.my_lib.worker.WorkerAction,
+                local.my_domain_com.my_lib.nested_worker.NestedWorkerAction,
             ),
         )
         source = literal.LocalPosition(
             "position<source>",
             constraints=(
-                local.my_domain_com.my_lib.child.Child,
+                local.my_domain_com.my_lib.child.ChildPosition,
             ),
         )
         contributor = literal.LocalPosition(
             "position<contributor>",
             constraints=(
-                local.my_domain_com.my_lib.inner_destructor.InnerDestructor,
+                local.my_domain_com.my_lib.inner_destructor.InnerDestructorAction,
             ),
         )
         worker.create_particle()
@@ -39,53 +39,53 @@ class Destructor(literal.Action):
         literal.record_operation("destructor.create(source)")
         source.move_particle_to(
             worker.particle.get_action(
-                local.my_domain_com.my_lib.worker.Worker
+                local.my_domain_com.my_lib.worker.WorkerAction
             ).get_interface_position(
                 "position<target>"
             )
         )
         literal.record_operation("destructor.move(source, worker::/worker::target)")
         worker.particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).run()
         source.create_particle()
         literal.record_operation("destructor.create(source)")
         source.move_particle_to(
             worker.particle.get_action(
-                local.my_domain_com.my_lib.worker.Worker
+                local.my_domain_com.my_lib.worker.WorkerAction
             ).get_interface_position(
                 "position<target>"
             )
         )
         literal.record_operation("destructor.move(source, worker::/worker::target)")
         worker.particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).run()
         contributor.create_particle()
         literal.record_operation("destructor.create(contributor)")
         contributor.move_particle_to(
             worker.particle.get_action(
-                local.my_domain_com.my_lib.nested_worker.NestedWorker
+                local.my_domain_com.my_lib.nested_worker.NestedWorkerAction
             ).get_interface_position(
                 "position<target>"
             )
         )
         literal.record_operation("destructor.move(contributor, worker::/nested_worker::target)")
         worker.particle.get_action(
-            local.my_domain_com.my_lib.nested_worker.NestedWorker
+            local.my_domain_com.my_lib.nested_worker.NestedWorkerAction
         ).run(NestedWorkerDestructionContracts())
         contributor.create_particle()
         literal.record_operation("destructor.create(contributor)")
         contributor.move_particle_to(
             worker.particle.get_action(
-                local.my_domain_com.my_lib.nested_worker.NestedWorker
+                local.my_domain_com.my_lib.nested_worker.NestedWorkerAction
             ).get_interface_position(
                 "position<target>"
             )
         )
         literal.record_operation("destructor.move(contributor, worker::/nested_worker::target)")
         worker.particle.get_action(
-            local.my_domain_com.my_lib.nested_worker.NestedWorker
+            local.my_domain_com.my_lib.nested_worker.NestedWorkerAction
         ).run(NestedWorkerDestructionContracts_())
         worker.destroy_particle()
         literal.record_operation("destructor.destroy(worker)")
@@ -96,7 +96,7 @@ class NestedWorkerDestructionContracts(local.my_domain_com.my_lib.nested_worker.
     @override
     def run_destructors_position_target(self, particle: literal.Particle):
         particle.get_action(
-            local.my_domain_com.my_lib.inner_destructor.InnerDestructor
+            local.my_domain_com.my_lib.inner_destructor.InnerDestructorAction
         ).run()
 
 
@@ -105,5 +105,5 @@ class NestedWorkerDestructionContracts_(local.my_domain_com.my_lib.nested_worker
     @override
     def run_destructors_position_target(self, particle: literal.Particle):
         particle.get_action(
-            local.my_domain_com.my_lib.inner_destructor.InnerDestructor
+            local.my_domain_com.my_lib.inner_destructor.InnerDestructorAction
         ).run()

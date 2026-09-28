@@ -18,9 +18,9 @@ class OtherDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = OtherDestructionContracts()
 
 
-class Other(literal.Action):
+class OtherAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.origin.Origin,
+        local.my_domain_com.my_lib.origin.OriginPosition,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -35,14 +35,14 @@ class Other(literal.Action):
     def run(self, destruction_contracts: OtherDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         destruction_contracts.run_destructors_global_position_origin(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.origin.Origin
+                local.my_domain_com.my_lib.origin.OriginPosition
             ).particle
         )
         destruction_contracts.destroy_global_position_origin(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.origin.Origin
+                local.my_domain_com.my_lib.origin.OriginPosition
             ).particle
         )
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.origin.Origin
+            local.my_domain_com.my_lib.origin.OriginPosition
         ).destroy_particle()

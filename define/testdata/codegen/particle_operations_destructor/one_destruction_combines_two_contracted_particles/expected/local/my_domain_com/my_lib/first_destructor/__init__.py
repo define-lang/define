@@ -5,7 +5,7 @@ from typing import override
 from define.runtime import literal
 
 
-class FirstDestructor(literal.Action):
+class FirstDestructorAction(literal.Action):
 
     @override
     def run(self):

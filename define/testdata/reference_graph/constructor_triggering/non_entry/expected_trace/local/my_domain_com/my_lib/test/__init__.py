@@ -8,23 +8,23 @@ import local.my_domain_com.my_lib.filled
 import local.my_domain_com.my_lib.other
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         box = literal.LocalPosition(
             "position<box>",
             constraints=(
-                local.my_domain_com.my_lib.other.Other,
+                local.my_domain_com.my_lib.other.OtherAction,
             ),
         )
         box.create_particle()
         literal.record_operation("test.create(box)")
         box.particle.get_action(
-            local.my_domain_com.my_lib.other.Other
+            local.my_domain_com.my_lib.other.OtherAction
         ).run()
         box.particle.get_position(
-            local.my_domain_com.my_lib.filled.Filled
+            local.my_domain_com.my_lib.filled.FilledPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(box::/filled)")
         box.destroy_particle()

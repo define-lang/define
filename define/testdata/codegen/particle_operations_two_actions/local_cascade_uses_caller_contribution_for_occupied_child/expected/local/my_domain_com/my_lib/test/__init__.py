@@ -8,9 +8,9 @@ import local.my_domain_com.my_lib.a
 import local.my_domain_com.my_lib.triggered
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.triggered.Triggered,
+        local.my_domain_com.my_lib.triggered.TriggeredAction,
     )
 
     @override
@@ -18,22 +18,22 @@ class Test(literal.Action):
         source = literal.LocalPosition(
             "position<source>",
             constraints=(
-                local.my_domain_com.my_lib.a.A,
+                local.my_domain_com.my_lib.a.APosition,
             ),
         )
         source.create_particle()
         source.particle.get_position(
-            local.my_domain_com.my_lib.a.A
+            local.my_domain_com.my_lib.a.APosition
         ).create_particle()
         source.move_particle_to(
             self.on_particle.get_action(
-                local.my_domain_com.my_lib.triggered.Triggered
+                local.my_domain_com.my_lib.triggered.TriggeredAction
             ).get_interface_position(
                 "position<run>"
             )
         )
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.triggered.Triggered
+            local.my_domain_com.my_lib.triggered.TriggeredAction
         ).run(TriggeredDestructionContracts())
 
 
@@ -42,5 +42,5 @@ class TriggeredDestructionContracts(local.my_domain_com.my_lib.triggered.Trigger
     @override
     def destroy_position_run(self, particle: literal.Particle):
         particle.get_position(
-            local.my_domain_com.my_lib.a.A
+            local.my_domain_com.my_lib.a.APosition
         ).destroy_particle()

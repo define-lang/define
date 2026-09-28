@@ -24,9 +24,9 @@ class TriggeredDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = TriggeredDestructionContracts()
 
 
-class Triggered(literal.Action):
+class TriggeredAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.implied.Implied,
+        local.my_domain_com.my_lib.implied.ImpliedPosition,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -41,16 +41,16 @@ class Triggered(literal.Action):
     def run(self, destruction_contracts: TriggeredDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         destruction_contracts.run_destructors_global_position_implied(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.implied.Implied
+                local.my_domain_com.my_lib.implied.ImpliedPosition
             ).particle
         )
         destruction_contracts.destroy_global_position_implied(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.implied.Implied
+                local.my_domain_com.my_lib.implied.ImpliedPosition
             ).particle
         )
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.implied.Implied
+            local.my_domain_com.my_lib.implied.ImpliedPosition
         ).destroy_particle()
         destruction_contracts.run_destructors_position_run(
             self.get_interface_position(

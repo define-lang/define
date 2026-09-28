@@ -9,7 +9,7 @@ import local.my_domain_com.my_lib.b
 import local.my_domain_com.my_lib.parent
 
 
-class Inner(literal.Action):
+class InnerAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -19,7 +19,7 @@ class Inner(literal.Action):
                 literal.LocalPosition(
                     "position<input>",
                     constraints=(
-                        local.my_domain_com.my_lib.parent.Parent,
+                        local.my_domain_com.my_lib.parent.ParentPosition,
                     ),
                 ),
             ],
@@ -30,14 +30,14 @@ class Inner(literal.Action):
         self.get_interface_position(
             "position<input>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.parent.Parent
+            local.my_domain_com.my_lib.parent.ParentPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.a.A
+            local.my_domain_com.my_lib.a.APosition
         ).create_particle()
         self.get_interface_position(
             "position<input>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.parent.Parent
+            local.my_domain_com.my_lib.parent.ParentPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.b.B
+            local.my_domain_com.my_lib.b.BPosition
         ).create_particle()

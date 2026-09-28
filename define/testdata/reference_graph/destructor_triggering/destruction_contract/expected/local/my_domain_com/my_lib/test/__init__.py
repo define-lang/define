@@ -8,41 +8,41 @@ import local.my_domain_com.my_lib.close_thing
 import local.my_domain_com.my_lib.destructor
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         box = literal.LocalPosition(
             "position<box>",
             constraints=(
-                local.my_domain_com.my_lib.close_thing.CloseThing,
+                local.my_domain_com.my_lib.close_thing.CloseThingAction,
             ),
         )
         source = literal.LocalPosition(
             "position<source>",
             constraints=(
-                local.my_domain_com.my_lib.destructor.Destructor,
+                local.my_domain_com.my_lib.destructor.DestructorAction,
             ),
         )
         box.create_particle()
         source.create_particle()
         source.move_particle_to(
             box.particle.get_action(
-                local.my_domain_com.my_lib.close_thing.CloseThing
+                local.my_domain_com.my_lib.close_thing.CloseThingAction
             ).get_interface_position(
                 "position<target>"
             )
         )
         box.particle.get_action(
-            local.my_domain_com.my_lib.close_thing.CloseThing
+            local.my_domain_com.my_lib.close_thing.CloseThingAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         box.particle.get_action(
-            local.my_domain_com.my_lib.close_thing.CloseThing
+            local.my_domain_com.my_lib.close_thing.CloseThingAction
         ).run(CloseThingDestructionContracts())
         box.particle.get_action(
-            local.my_domain_com.my_lib.close_thing.CloseThing
+            local.my_domain_com.my_lib.close_thing.CloseThingAction
         ).get_interface_position(
             "position<run>"
         ).destroy_particle()
@@ -54,5 +54,5 @@ class CloseThingDestructionContracts(local.my_domain_com.my_lib.close_thing.Clos
     @override
     def run_destructors_position_target(self, particle: literal.Particle):
         particle.get_action(
-            local.my_domain_com.my_lib.destructor.Destructor
+            local.my_domain_com.my_lib.destructor.DestructorAction
         ).run()

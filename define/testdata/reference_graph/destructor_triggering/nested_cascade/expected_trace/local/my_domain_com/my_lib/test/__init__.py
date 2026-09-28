@@ -9,33 +9,33 @@ import local.my_domain_com.my_lib.child_destructor
 import local.my_domain_com.my_lib.parent_destructor
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         box = literal.LocalPosition(
             "position<box>",
             constraints=(
-                local.my_domain_com.my_lib.parent_destructor.ParentDestructor,
-                local.my_domain_com.my_lib.child.Child,
+                local.my_domain_com.my_lib.parent_destructor.ParentDestructorAction,
+                local.my_domain_com.my_lib.child.ChildPosition,
             ),
         )
         box.create_particle()
         literal.record_operation("test.create(box)")
         box.particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).create_particle()
         literal.record_operation("test.create(box::/child)")
         box.particle.get_action(
-            local.my_domain_com.my_lib.parent_destructor.ParentDestructor
+            local.my_domain_com.my_lib.parent_destructor.ParentDestructorAction
         ).run()
         box.particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).particle.get_action(
-            local.my_domain_com.my_lib.child_destructor.ChildDestructor
+            local.my_domain_com.my_lib.child_destructor.ChildDestructorAction
         ).run()
         box.particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(box::/child)")
         box.destroy_particle()

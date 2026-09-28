@@ -33,9 +33,9 @@ class MiddleDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = MiddleDestructionContracts()
 
 
-class Middle(literal.Action):
+class MiddleAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.parent.Parent,
+        local.my_domain_com.my_lib.parent.ParentPosition,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -45,8 +45,8 @@ class Middle(literal.Action):
                 literal.LocalPosition(
                     "position<run>",
                     constraints=(
-                        local.my_domain_com.my_lib.marker.Marker,
-                        local.my_domain_com.my_lib.destinations.Destinations,
+                        local.my_domain_com.my_lib.marker.MarkerPosition,
+                        local.my_domain_com.my_lib.destinations.DestinationsPosition,
                     ),
                 ),
             ],
@@ -58,26 +58,26 @@ class Middle(literal.Action):
             "position<run>"
         ).move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.parent.Parent
+                local.my_domain_com.my_lib.parent.ParentPosition
             ).particle.get_action(
-                local.my_domain_com.my_lib.destroyer.Destroyer
+                local.my_domain_com.my_lib.destroyer.DestroyerAction
             ).get_interface_position(
                 "position<target>"
             )
         )
         literal.record_operation("middle.move(run, /parent::/destroyer::target)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.parent.Parent
+            local.my_domain_com.my_lib.parent.ParentPosition
         ).particle.get_action(
-            local.my_domain_com.my_lib.destroyer.Destroyer
+            local.my_domain_com.my_lib.destroyer.DestroyerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("middle.create(/parent::/destroyer::trigger_pos)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.parent.Parent
+            local.my_domain_com.my_lib.parent.ParentPosition
         ).particle.get_action(
-            local.my_domain_com.my_lib.destroyer.Destroyer
+            local.my_domain_com.my_lib.destroyer.DestroyerAction
         ).run(
             DestroyerDestructionContracts(
                 destruction_contracts.run_destructors_position_run__position_marker,
@@ -87,25 +87,25 @@ class Middle(literal.Action):
             ),
         )
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.parent.Parent
+            local.my_domain_com.my_lib.parent.ParentPosition
         ).particle.get_action(
-            local.my_domain_com.my_lib.destroyer.Destroyer
+            local.my_domain_com.my_lib.destroyer.DestroyerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
         literal.record_operation("middle.destroy(/parent::/destroyer::trigger_pos)")
         destruction_contracts.run_destructors_global_position_parent(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.parent.Parent
+                local.my_domain_com.my_lib.parent.ParentPosition
             ).particle
         )
         destruction_contracts.destroy_global_position_parent(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.parent.Parent
+                local.my_domain_com.my_lib.parent.ParentPosition
             ).particle
         )
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.parent.Parent
+            local.my_domain_com.my_lib.parent.ParentPosition
         ).destroy_particle()
         literal.record_operation("middle.destroy(/parent)")
 

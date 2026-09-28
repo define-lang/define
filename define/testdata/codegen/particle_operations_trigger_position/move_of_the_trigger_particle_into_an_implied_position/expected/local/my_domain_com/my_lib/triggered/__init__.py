@@ -7,9 +7,9 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.implied
 
 
-class Triggered(literal.Action):
+class TriggeredAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.implied.Implied,
+        local.my_domain_com.my_lib.implied.ImpliedPosition,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -26,6 +26,6 @@ class Triggered(literal.Action):
             "position<run>"
         ).move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.implied.Implied
+                local.my_domain_com.my_lib.implied.ImpliedPosition
             )
         )

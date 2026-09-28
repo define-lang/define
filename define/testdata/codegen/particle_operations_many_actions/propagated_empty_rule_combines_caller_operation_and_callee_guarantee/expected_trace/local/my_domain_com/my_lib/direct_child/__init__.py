@@ -3,5 +3,5 @@
 from define.runtime import literal
 
 
-class DirectChild(literal.GlobalPosition):
+class DirectChildPosition(literal.GlobalPosition):
     pass

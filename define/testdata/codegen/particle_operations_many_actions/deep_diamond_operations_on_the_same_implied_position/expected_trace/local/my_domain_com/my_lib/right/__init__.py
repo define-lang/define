@@ -18,9 +18,9 @@ class RightDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = RightDestructionContracts()
 
 
-class Right(literal.Action):
+class RightAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.right_child.RightChild,
+        local.my_domain_com.my_lib.right_child.RightChildAction,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -34,13 +34,13 @@ class Right(literal.Action):
     @override
     def run(self, destruction_contracts: RightDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.right_child.RightChild
+            local.my_domain_com.my_lib.right_child.RightChildAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("right.create(/right_child::trigger_pos)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.right_child.RightChild
+            local.my_domain_com.my_lib.right_child.RightChildAction
         ).run(
             RightChildDestructionContracts(
                 destruction_contracts.run_destructors_global_position_marker,
@@ -48,7 +48,7 @@ class Right(literal.Action):
             ),
         )
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.right_child.RightChild
+            local.my_domain_com.my_lib.right_child.RightChildAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

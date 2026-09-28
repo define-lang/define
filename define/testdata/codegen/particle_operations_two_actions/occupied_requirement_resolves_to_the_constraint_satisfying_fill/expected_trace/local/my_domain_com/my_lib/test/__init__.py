@@ -8,14 +8,14 @@ import local.my_domain_com.my_lib.a
 import local.my_domain_com.my_lib.move
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         box1 = literal.LocalPosition(
             "position<box1>",
             constraints=(
-                local.my_domain_com.my_lib.a.A,
+                local.my_domain_com.my_lib.a.APosition,
             ),
         )
         box2 = literal.LocalPosition(
@@ -24,13 +24,13 @@ class Test(literal.Action):
         dest = literal.LocalPosition(
             "position<dest>",
             constraints=(
-                local.my_domain_com.my_lib.a.A,
+                local.my_domain_com.my_lib.a.APosition,
             ),
         )
         action_holder = literal.LocalPosition(
             "position<action_holder>",
             constraints=(
-                local.my_domain_com.my_lib.move.Move,
+                local.my_domain_com.my_lib.move.MoveAction,
             ),
         )
         action_holder.create_particle()
@@ -41,17 +41,17 @@ class Test(literal.Action):
         literal.record_operation("test.create(box2)")
         box2.move_particle_to(
             action_holder.particle.get_action(
-                local.my_domain_com.my_lib.move.Move
+                local.my_domain_com.my_lib.move.MoveAction
             ).get_interface_position(
                 "position<input>"
             )
         )
         literal.record_operation("test.move(box2, action_holder::/move::input)")
         action_holder.particle.get_action(
-            local.my_domain_com.my_lib.move.Move
+            local.my_domain_com.my_lib.move.MoveAction
         ).run()
         action_holder.particle.get_action(
-            local.my_domain_com.my_lib.move.Move
+            local.my_domain_com.my_lib.move.MoveAction
         ).get_interface_position(
             "position<output>"
         ).move_particle_to(
@@ -60,17 +60,17 @@ class Test(literal.Action):
         literal.record_operation("test.move(action_holder::/move::output, box2)")
         box1.move_particle_to(
             action_holder.particle.get_action(
-                local.my_domain_com.my_lib.move.Move
+                local.my_domain_com.my_lib.move.MoveAction
             ).get_interface_position(
                 "position<input>"
             )
         )
         literal.record_operation("test.move(box1, action_holder::/move::input)")
         action_holder.particle.get_action(
-            local.my_domain_com.my_lib.move.Move
+            local.my_domain_com.my_lib.move.MoveAction
         ).run()
         action_holder.particle.get_action(
-            local.my_domain_com.my_lib.move.Move
+            local.my_domain_com.my_lib.move.MoveAction
         ).get_interface_position(
             "position<output>"
         ).move_particle_to(
@@ -78,13 +78,13 @@ class Test(literal.Action):
         )
         literal.record_operation("test.move(action_holder::/move::output, dest)")
         dest.particle.get_position(
-            local.my_domain_com.my_lib.a.A
+            local.my_domain_com.my_lib.a.APosition
         ).create_particle()
         literal.record_operation("test.create(dest::/a)")
         box2.destroy_particle()
         literal.record_operation("test.destroy(box2)")
         dest.particle.get_position(
-            local.my_domain_com.my_lib.a.A
+            local.my_domain_com.my_lib.a.APosition
         ).destroy_particle()
         literal.record_operation("test.destroy(dest::/a)")
         dest.destroy_particle()

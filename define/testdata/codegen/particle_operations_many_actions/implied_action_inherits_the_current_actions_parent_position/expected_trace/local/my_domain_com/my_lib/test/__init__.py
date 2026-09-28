@@ -8,45 +8,45 @@ import local.my_domain_com.my_lib.middle
 import local.my_domain_com.my_lib.parent
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         local_ = literal.LocalPosition(
             "position<local>",
             constraints=(
-                local.my_domain_com.my_lib.parent.Parent,
+                local.my_domain_com.my_lib.parent.ParentPosition,
             ),
         )
         local_.create_particle()
         literal.record_operation("test.create(local)")
         local_.particle.get_position(
-            local.my_domain_com.my_lib.parent.Parent
+            local.my_domain_com.my_lib.parent.ParentPosition
         ).create_particle()
         literal.record_operation("test.create(local::/parent)")
         local_.particle.get_position(
-            local.my_domain_com.my_lib.parent.Parent
+            local.my_domain_com.my_lib.parent.ParentPosition
         ).particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("test.create(local::/parent::/middle::trigger_pos)")
         local_.particle.get_position(
-            local.my_domain_com.my_lib.parent.Parent
+            local.my_domain_com.my_lib.parent.ParentPosition
         ).particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).run()
         local_.particle.get_position(
-            local.my_domain_com.my_lib.parent.Parent
+            local.my_domain_com.my_lib.parent.ParentPosition
         ).particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
         literal.record_operation("test.destroy(local::/parent::/middle::trigger_pos)")
         local_.particle.get_position(
-            local.my_domain_com.my_lib.parent.Parent
+            local.my_domain_com.my_lib.parent.ParentPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(local::/parent)")
         local_.destroy_particle()

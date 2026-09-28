@@ -9,9 +9,9 @@ import local.my_domain_com.my_lib.destructor
 import local.my_domain_com.my_lib.middle
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.middle.Middle,
+        local.my_domain_com.my_lib.middle.MiddleAction,
     )
 
     @override
@@ -19,13 +19,13 @@ class Test(literal.Action):
         source = literal.LocalPosition(
             "position<source>",
             constraints=(
-                local.my_domain_com.my_lib.child.Child,
+                local.my_domain_com.my_lib.child.ChildPosition,
             ),
         )
         child_source = literal.LocalPosition(
             "position<child_source>",
             constraints=(
-                local.my_domain_com.my_lib.destructor.Destructor,
+                local.my_domain_com.my_lib.destructor.DestructorAction,
             ),
         )
         source.create_particle()
@@ -34,20 +34,20 @@ class Test(literal.Action):
         literal.record_operation("test.create(child_source)")
         child_source.move_particle_to(
             source.particle.get_position(
-                local.my_domain_com.my_lib.child.Child
+                local.my_domain_com.my_lib.child.ChildPosition
             )
         )
         literal.record_operation("test.move(child_source, source::/child)")
         source.move_particle_to(
             self.on_particle.get_action(
-                local.my_domain_com.my_lib.middle.Middle
+                local.my_domain_com.my_lib.middle.MiddleAction
             ).get_interface_position(
                 "position<target>"
             )
         )
         literal.record_operation("test.move(source, /middle::target)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).run(MiddleDestructionContracts())
 
 
@@ -56,5 +56,5 @@ class MiddleDestructionContracts(local.my_domain_com.my_lib.middle.MiddleDestruc
     @override
     def run_destructors_position_target__position_child(self, particle: literal.Particle):
         particle.get_action(
-            local.my_domain_com.my_lib.destructor.Destructor
+            local.my_domain_com.my_lib.destructor.DestructorAction
         ).run()

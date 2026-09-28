@@ -7,7 +7,7 @@ from define.runtime import literal
 import standard.number.rational
 
 
-class Target(literal.GlobalPosition):
+class TargetPosition(literal.GlobalPosition):
     constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
-        standard.number.rational.NumberRational,
+        standard.number.rational.NumberRationalValue,
     )

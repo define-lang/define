@@ -16,7 +16,7 @@ class MakerDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = MakerDestructionContracts()
 
 
-class Maker(literal.Action):
+class MakerAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(

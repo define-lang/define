@@ -10,38 +10,38 @@ import local.my_domain_com.my_lib.middle
 import local.my_domain_com.my_lib.parent
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.parent.Parent,
-        local.my_domain_com.my_lib.middle.Middle,
+        local.my_domain_com.my_lib.parent.ParentPosition,
+        local.my_domain_com.my_lib.middle.MiddleAction,
     )
 
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.parent.Parent
+            local.my_domain_com.my_lib.parent.ParentPosition
         ).create_particle()
         literal.record_operation("test.create(/parent)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.parent.Parent
+            local.my_domain_com.my_lib.parent.ParentPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.a.A
+            local.my_domain_com.my_lib.a.APosition
         ).create_particle()
         literal.record_operation("test.create(/parent::/a)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.parent.Parent
+            local.my_domain_com.my_lib.parent.ParentPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.b.B
+            local.my_domain_com.my_lib.b.BPosition
         ).create_particle()
         literal.record_operation("test.create(/parent::/b)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("test.create(/middle::trigger_pos)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).run(MiddleDestructionContracts())
 
 
@@ -50,10 +50,10 @@ class MiddleDestructionContracts(local.my_domain_com.my_lib.middle.MiddleDestruc
     @override
     def destroy_global_position_parent(self, particle: literal.Particle):
         particle.get_position(
-            local.my_domain_com.my_lib.b.B
+            local.my_domain_com.my_lib.b.BPosition
         ).destroy_particle()
         literal.record_operation("inner.destroy(/parent::/b)")
         particle.get_position(
-            local.my_domain_com.my_lib.a.A
+            local.my_domain_com.my_lib.a.APosition
         ).destroy_particle()
         literal.record_operation("inner.destroy(/parent::/a)")

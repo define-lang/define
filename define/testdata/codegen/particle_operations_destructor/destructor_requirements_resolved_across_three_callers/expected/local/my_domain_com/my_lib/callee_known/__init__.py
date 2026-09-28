@@ -3,5 +3,5 @@
 from define.runtime import literal
 
 
-class CalleeKnown(literal.GlobalPosition):
+class CalleeKnownPosition(literal.GlobalPosition):
     pass

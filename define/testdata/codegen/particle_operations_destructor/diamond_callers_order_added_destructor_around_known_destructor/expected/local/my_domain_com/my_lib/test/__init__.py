@@ -8,37 +8,37 @@ import local.my_domain_com.my_lib.caller_a
 import local.my_domain_com.my_lib.caller_b
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.caller_a.CallerA,
-        local.my_domain_com.my_lib.caller_b.CallerB,
+        local.my_domain_com.my_lib.caller_a.CallerAAction,
+        local.my_domain_com.my_lib.caller_b.CallerBAction,
     )
 
     @override
     def run(self):
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.caller_a.CallerA
+            local.my_domain_com.my_lib.caller_a.CallerAAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.caller_a.CallerA
+            local.my_domain_com.my_lib.caller_a.CallerAAction
         ).run()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.caller_b.CallerB
+            local.my_domain_com.my_lib.caller_b.CallerBAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.caller_b.CallerB
+            local.my_domain_com.my_lib.caller_b.CallerBAction
         ).run()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.caller_a.CallerA
+            local.my_domain_com.my_lib.caller_a.CallerAAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.caller_b.CallerB
+            local.my_domain_com.my_lib.caller_b.CallerBAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

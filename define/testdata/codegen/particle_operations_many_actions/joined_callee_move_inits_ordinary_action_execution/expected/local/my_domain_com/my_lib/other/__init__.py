@@ -20,7 +20,7 @@ class OtherDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = OtherDestructionContracts()
 
 
-class Other(literal.Action):
+class OtherAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -29,17 +29,17 @@ class Other(literal.Action):
                 literal.LocalPosition(
                     "position<source>",
                     constraints=(
-                        local.my_domain_com.my_lib.a.A,
-                        local.my_domain_com.my_lib.b.B,
-                        local.my_domain_com.my_lib.worker.Worker,
+                        local.my_domain_com.my_lib.a.APosition,
+                        local.my_domain_com.my_lib.b.BPosition,
+                        local.my_domain_com.my_lib.worker.WorkerAction,
                     ),
                 ),
                 literal.LocalPosition(
                     "position<destination>",
                     constraints=(
-                        local.my_domain_com.my_lib.a.A,
-                        local.my_domain_com.my_lib.b.B,
-                        local.my_domain_com.my_lib.worker.Worker,
+                        local.my_domain_com.my_lib.a.APosition,
+                        local.my_domain_com.my_lib.b.BPosition,
+                        local.my_domain_com.my_lib.worker.WorkerAction,
                     ),
                 ),
                 literal.LocalPosition("position<trigger_pos>"),
@@ -54,12 +54,12 @@ class Other(literal.Action):
         self.get_interface_position(
             "position<source>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.a.A
+            local.my_domain_com.my_lib.a.APosition
         ).create_particle()
         self.get_interface_position(
             "position<source>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.b.B
+            local.my_domain_com.my_lib.b.BPosition
         ).create_particle()
         self.get_interface_position(
             "position<source>"
@@ -71,14 +71,14 @@ class Other(literal.Action):
         self.get_interface_position(
             "position<destination>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         self.get_interface_position(
             "position<destination>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).run()
         destruction_contracts.run_destructors_position_trigger_pos(
             self.get_interface_position(

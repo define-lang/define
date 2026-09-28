@@ -1,0 +1,12 @@
+# A path segment that is a Python keyword, and one that ends in an underscore,
+# need distinct importable module names.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</if>.
+    it also assigns the position</if_>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</if>.
+        create a particle in position</if_>.
+    }
+}

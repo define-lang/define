@@ -8,39 +8,39 @@ import local.my_domain_com.my_lib.destructor
 import local.my_domain_com.my_lib.make_thing
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         box = literal.LocalPosition(
             "position<box>",
             constraints=(
-                local.my_domain_com.my_lib.make_thing.MakeThing,
+                local.my_domain_com.my_lib.make_thing.MakeThingAction,
             ),
         )
         box.create_particle()
         box.particle.get_action(
-            local.my_domain_com.my_lib.make_thing.MakeThing
+            local.my_domain_com.my_lib.make_thing.MakeThingAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         box.particle.get_action(
-            local.my_domain_com.my_lib.make_thing.MakeThing
+            local.my_domain_com.my_lib.make_thing.MakeThingAction
         ).run()
         box.particle.get_action(
-            local.my_domain_com.my_lib.make_thing.MakeThing
+            local.my_domain_com.my_lib.make_thing.MakeThingAction
         ).get_interface_position(
             "position<result>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.destructor.Destructor
+            local.my_domain_com.my_lib.destructor.DestructorAction
         ).run()
         box.particle.get_action(
-            local.my_domain_com.my_lib.make_thing.MakeThing
+            local.my_domain_com.my_lib.make_thing.MakeThingAction
         ).get_interface_position(
             "position<result>"
         ).destroy_particle()
         box.particle.get_action(
-            local.my_domain_com.my_lib.make_thing.MakeThing
+            local.my_domain_com.my_lib.make_thing.MakeThingAction
         ).get_interface_position(
             "position<run>"
         ).destroy_particle()

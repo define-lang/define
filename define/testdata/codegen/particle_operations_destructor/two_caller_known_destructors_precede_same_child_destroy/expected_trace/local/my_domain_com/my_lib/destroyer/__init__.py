@@ -25,7 +25,7 @@ class DestroyerDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = DestroyerDestructionContracts()
 
 
-class Destroyer(literal.Action):
+class DestroyerAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -35,8 +35,8 @@ class Destroyer(literal.Action):
                 literal.LocalPosition(
                     "position<parent>",
                     constraints=(
-                        local.my_domain_com.my_lib.maker.Maker,
-                        local.my_domain_com.my_lib.required.Required,
+                        local.my_domain_com.my_lib.maker.MakerAction,
+                        local.my_domain_com.my_lib.required.RequiredPosition,
                     ),
                 ),
             ],
@@ -50,7 +50,7 @@ class Destroyer(literal.Action):
         self.get_interface_position(
             "position<parent>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.maker.Maker
+            local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
@@ -58,26 +58,26 @@ class Destroyer(literal.Action):
         self.get_interface_position(
             "position<parent>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.maker.Maker
+            local.my_domain_com.my_lib.maker.MakerAction
         ).run()
         self.get_interface_position(
             "position<parent>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.maker.Maker
+            local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(
             "position<result>"
         ).move_particle_to(
             self.get_interface_position(
                 "position<parent>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.required.Required
+                local.my_domain_com.my_lib.required.RequiredPosition
             )
         )
         literal.record_operation("destroyer.move(parent::/maker::result, parent::/required)")
         self.get_interface_position(
             "position<parent>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.required.Required
+            local.my_domain_com.my_lib.required.RequiredPosition
         ).move_particle_to(
             held_required
         )
@@ -86,7 +86,7 @@ class Destroyer(literal.Action):
             self.get_interface_position(
                 "position<parent>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.required.Required
+                local.my_domain_com.my_lib.required.RequiredPosition
             )
         )
         literal.record_operation("destroyer.move(held_required, parent::/required)")
@@ -103,7 +103,7 @@ class Destroyer(literal.Action):
         self.get_interface_position(
             "position<parent>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.required.Required
+            local.my_domain_com.my_lib.required.RequiredPosition
         ).destroy_particle()
         literal.record_operation("destroyer.destroy(parent::/required)")
         self.get_interface_position(

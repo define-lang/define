@@ -10,9 +10,9 @@ import local.my_domain_com.my_lib.outer
 import local.my_domain_com.my_lib.payload
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.outer.Outer,
+        local.my_domain_com.my_lib.outer.OuterAction,
     )
 
     @override
@@ -20,14 +20,14 @@ class Test(literal.Action):
         source = literal.LocalPosition(
             "position<source>",
             constraints=(
-                local.my_domain_com.my_lib.destroyer.Destroyer,
-                local.my_domain_com.my_lib.payload.Payload,
+                local.my_domain_com.my_lib.destroyer.DestroyerAction,
+                local.my_domain_com.my_lib.payload.PayloadPosition,
             ),
         )
         payload_source = literal.LocalPosition(
             "position<payload_source>",
             constraints=(
-                local.my_domain_com.my_lib.child.Child,
+                local.my_domain_com.my_lib.child.ChildPosition,
             ),
         )
         source.create_particle()
@@ -35,25 +35,25 @@ class Test(literal.Action):
         payload_source.create_particle()
         literal.record_operation("test.create(payload_source)")
         payload_source.particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).create_particle()
         literal.record_operation("test.create(payload_source::/child)")
         payload_source.move_particle_to(
             source.particle.get_position(
-                local.my_domain_com.my_lib.payload.Payload
+                local.my_domain_com.my_lib.payload.PayloadPosition
             )
         )
         literal.record_operation("test.move(payload_source, source::/payload)")
         source.move_particle_to(
             self.on_particle.get_action(
-                local.my_domain_com.my_lib.outer.Outer
+                local.my_domain_com.my_lib.outer.OuterAction
             ).get_interface_position(
                 "position<run>"
             )
         )
         literal.record_operation("test.move(source, /outer::run)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.outer.Outer
+            local.my_domain_com.my_lib.outer.OuterAction
         ).run(OuterDestructionContracts())
 
 
@@ -62,6 +62,6 @@ class OuterDestructionContracts(local.my_domain_com.my_lib.outer.OuterDestructio
     @override
     def destroy_position_run__position_payload(self, particle: literal.Particle):
         particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).destroy_particle()
         literal.record_operation("destroyer.destroy(holder::/child)")

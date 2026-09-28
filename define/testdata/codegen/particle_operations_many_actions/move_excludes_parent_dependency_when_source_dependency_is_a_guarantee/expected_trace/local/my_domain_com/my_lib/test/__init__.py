@@ -9,41 +9,41 @@ import local.my_domain_com.my_lib.destination
 import local.my_domain_com.my_lib.producer
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.box.Box,
+        local.my_domain_com.my_lib.box.BoxPosition,
     )
 
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.box.Box
+            local.my_domain_com.my_lib.box.BoxPosition
         ).create_particle()
         literal.record_operation("test.create(/box)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.box.Box
+            local.my_domain_com.my_lib.box.BoxPosition
         ).particle.get_action(
-            local.my_domain_com.my_lib.producer.Producer
+            local.my_domain_com.my_lib.producer.ProducerAction
         ).get_interface_position(
             "position<input>"
         ).create_particle()
         literal.record_operation("test.create(/box::/producer::input)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.box.Box
+            local.my_domain_com.my_lib.box.BoxPosition
         ).particle.get_action(
-            local.my_domain_com.my_lib.producer.Producer
+            local.my_domain_com.my_lib.producer.ProducerAction
         ).run()
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.box.Box
+            local.my_domain_com.my_lib.box.BoxPosition
         ).particle.get_action(
-            local.my_domain_com.my_lib.producer.Producer
+            local.my_domain_com.my_lib.producer.ProducerAction
         ).get_interface_position(
             "position<result>"
         ).move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.box.Box
+                local.my_domain_com.my_lib.box.BoxPosition
             ).particle.get_position(
-                local.my_domain_com.my_lib.destination.Destination
+                local.my_domain_com.my_lib.destination.DestinationPosition
             )
         )
         literal.record_operation("test.move(/box::/producer::result, /box::/destination)")

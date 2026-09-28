@@ -25,7 +25,7 @@ class DestroyerDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = DestroyerDestructionContracts()
 
 
-class Destroyer(literal.Action):
+class DestroyerAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -35,8 +35,8 @@ class Destroyer(literal.Action):
                 literal.LocalPosition(
                     "position<target>",
                     constraints=(
-                        local.my_domain_com.my_lib.marker.Marker,
-                        local.my_domain_com.my_lib.destinations.Destinations,
+                        local.my_domain_com.my_lib.marker.MarkerPosition,
+                        local.my_domain_com.my_lib.destinations.DestinationsPosition,
                     ),
                 ),
             ],
@@ -50,7 +50,7 @@ class Destroyer(literal.Action):
         self.get_interface_position(
             "position<target>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.marker.Marker
+            local.my_domain_com.my_lib.marker.MarkerPosition
         ).move_particle_to(
             retained_marker
         )
@@ -58,19 +58,19 @@ class Destroyer(literal.Action):
             self.get_interface_position(
                 "position<target>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.marker.Marker
+                local.my_domain_com.my_lib.marker.MarkerPosition
             )
         )
         self.get_interface_position(
             "position<target>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.destinations.Destinations
+            local.my_domain_com.my_lib.destinations.DestinationsPosition
         ).create_particle()
         destruction_contracts.run_destructors_position_target__position_marker(
             self.get_interface_position(
                 "position<target>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.marker.Marker
+                local.my_domain_com.my_lib.marker.MarkerPosition
             ).particle
         )
         destruction_contracts.run_destructors_position_target(
@@ -82,7 +82,7 @@ class Destroyer(literal.Action):
             self.get_interface_position(
                 "position<target>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.marker.Marker
+                local.my_domain_com.my_lib.marker.MarkerPosition
             ).particle
         )
         destruction_contracts.destroy_position_target(
@@ -93,12 +93,12 @@ class Destroyer(literal.Action):
         self.get_interface_position(
             "position<target>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.marker.Marker
+            local.my_domain_com.my_lib.marker.MarkerPosition
         ).destroy_particle()
         self.get_interface_position(
             "position<target>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.destinations.Destinations
+            local.my_domain_com.my_lib.destinations.DestinationsPosition
         ).destroy_particle()
         self.get_interface_position(
             "position<target>"

@@ -8,22 +8,22 @@ import local.my_domain_com.my_lib.construct_a
 import local.my_domain_com.my_lib.construct_b
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         box = literal.LocalPosition(
             "position<box>",
             constraints=(
-                local.my_domain_com.my_lib.construct_a.ConstructA,
-                local.my_domain_com.my_lib.construct_b.ConstructB,
+                local.my_domain_com.my_lib.construct_a.ConstructAAction,
+                local.my_domain_com.my_lib.construct_b.ConstructBAction,
             ),
         )
         box.create_particle()
         box.particle.get_action(
-            local.my_domain_com.my_lib.construct_a.ConstructA
+            local.my_domain_com.my_lib.construct_a.ConstructAAction
         ).run()
         box.particle.get_action(
-            local.my_domain_com.my_lib.construct_b.ConstructB
+            local.my_domain_com.my_lib.construct_b.ConstructBAction
         ).run()
         box.destroy_particle()

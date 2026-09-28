@@ -5,7 +5,7 @@ from typing import override
 from define.runtime import literal
 
 
-class ChildA(literal.Action):
+class ChildAAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(

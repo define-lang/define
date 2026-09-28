@@ -8,15 +8,15 @@ import local.my_domain_com.my_lib.destination
 import local.my_domain_com.my_lib.item
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         box = literal.LocalPosition(
             "position<box>",
             constraints=(
-                local.my_domain_com.my_lib.item.Item,
-                local.my_domain_com.my_lib.destination.Destination,
+                local.my_domain_com.my_lib.item.ItemPosition,
+                local.my_domain_com.my_lib.destination.DestinationPosition,
             ),
         )
         holder = literal.LocalPosition(
@@ -24,10 +24,10 @@ class Test(literal.Action):
         )
         box.create_particle()
         box.particle.get_position(
-            local.my_domain_com.my_lib.item.Item
+            local.my_domain_com.my_lib.item.ItemPosition
         ).create_particle()
         box.particle.get_position(
-            local.my_domain_com.my_lib.item.Item
+            local.my_domain_com.my_lib.item.ItemPosition
         ).move_particle_to(
             holder
         )
@@ -35,10 +35,10 @@ class Test(literal.Action):
         holder.create_particle()
         holder.move_particle_to(
             box.particle.get_position(
-                local.my_domain_com.my_lib.destination.Destination
+                local.my_domain_com.my_lib.destination.DestinationPosition
             )
         )
         box.particle.get_position(
-            local.my_domain_com.my_lib.destination.Destination
+            local.my_domain_com.my_lib.destination.DestinationPosition
         ).destroy_particle()
         box.destroy_particle()

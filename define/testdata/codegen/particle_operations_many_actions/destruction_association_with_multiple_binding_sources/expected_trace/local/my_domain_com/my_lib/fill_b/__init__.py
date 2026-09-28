@@ -8,9 +8,9 @@ import local.my_domain_com.my_lib.child_b
 import local.my_domain_com.my_lib.guaranteed_parent
 
 
-class FillB(literal.Action):
+class FillBAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.guaranteed_parent.GuaranteedParent,
+        local.my_domain_com.my_lib.guaranteed_parent.GuaranteedParentPosition,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -24,8 +24,8 @@ class FillB(literal.Action):
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.guaranteed_parent.GuaranteedParent
+            local.my_domain_com.my_lib.guaranteed_parent.GuaranteedParentPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.child_b.ChildB
+            local.my_domain_com.my_lib.child_b.ChildBPosition
         ).create_particle()
         literal.record_operation("fill_b.create(/guaranteed_parent::/child_b)")

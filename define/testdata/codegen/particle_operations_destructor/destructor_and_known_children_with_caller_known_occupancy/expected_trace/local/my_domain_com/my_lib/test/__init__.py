@@ -11,9 +11,9 @@ import local.my_domain_com.my_lib.maybe_empty
 import local.my_domain_com.my_lib.middle
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.middle.Middle,
+        local.my_domain_com.my_lib.middle.MiddleAction,
     )
 
     @override
@@ -21,38 +21,38 @@ class Test(literal.Action):
         source = literal.LocalPosition(
             "position<source>",
             constraints=(
-                local.my_domain_com.my_lib.marker_a.MarkerA,
-                local.my_domain_com.my_lib.marker_b.MarkerB,
-                local.my_domain_com.my_lib.maybe_empty.MaybeEmpty,
-                local.my_domain_com.my_lib.destruct.Destruct,
+                local.my_domain_com.my_lib.marker_a.MarkerAPosition,
+                local.my_domain_com.my_lib.marker_b.MarkerBPosition,
+                local.my_domain_com.my_lib.maybe_empty.MaybeEmptyPosition,
+                local.my_domain_com.my_lib.destruct.DestructAction,
             ),
         )
         source.create_particle()
         literal.record_operation("test.create(source)")
         source.particle.get_position(
-            local.my_domain_com.my_lib.marker_a.MarkerA
+            local.my_domain_com.my_lib.marker_a.MarkerAPosition
         ).create_particle()
         literal.record_operation("test.create(source::/marker_a)")
         source.particle.get_position(
-            local.my_domain_com.my_lib.marker_b.MarkerB
+            local.my_domain_com.my_lib.marker_b.MarkerBPosition
         ).create_particle()
         literal.record_operation("test.create(source::/marker_b)")
         source.particle.get_position(
-            local.my_domain_com.my_lib.maybe_empty.MaybeEmpty
+            local.my_domain_com.my_lib.maybe_empty.MaybeEmptyPosition
         ).create_particle()
         literal.record_operation("test.create(source::/maybe_empty)")
         source.particle.get_position(
-            local.my_domain_com.my_lib.maybe_empty.MaybeEmpty
+            local.my_domain_com.my_lib.maybe_empty.MaybeEmptyPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(source::/maybe_empty)")
         source.move_particle_to(
             self.on_particle.get_action(
-                local.my_domain_com.my_lib.middle.Middle
+                local.my_domain_com.my_lib.middle.MiddleAction
             ).get_interface_position(
                 "position<run>"
             )
         )
         literal.record_operation("test.move(source, /middle::run)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).run()

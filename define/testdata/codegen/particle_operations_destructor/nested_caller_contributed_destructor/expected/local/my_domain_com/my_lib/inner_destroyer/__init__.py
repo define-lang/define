@@ -16,7 +16,7 @@ class InnerDestroyerDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = InnerDestroyerDestructionContracts()
 
 
-class InnerDestroyer(literal.Action):
+class InnerDestroyerAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(

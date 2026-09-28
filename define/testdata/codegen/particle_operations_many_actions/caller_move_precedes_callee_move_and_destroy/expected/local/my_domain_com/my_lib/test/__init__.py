@@ -9,21 +9,21 @@ import local.my_domain_com.my_lib.target
 import local.my_domain_com.my_lib.worker
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         gateway = literal.LocalPosition(
             "position<gateway>",
             constraints=(
-                local.my_domain_com.my_lib.worker.Worker,
+                local.my_domain_com.my_lib.worker.WorkerAction,
             ),
         )
         state = literal.LocalPosition(
             "position<state>",
             constraints=(
-                local.my_domain_com.my_lib.occupied.Occupied,
-                local.my_domain_com.my_lib.target.Target,
+                local.my_domain_com.my_lib.occupied.OccupiedPosition,
+                local.my_domain_com.my_lib.target.TargetPosition,
             ),
         )
         source = literal.LocalPosition(
@@ -32,35 +32,35 @@ class Test(literal.Action):
         gateway.create_particle()
         state.create_particle()
         state.particle.get_position(
-            local.my_domain_com.my_lib.occupied.Occupied
+            local.my_domain_com.my_lib.occupied.OccupiedPosition
         ).create_particle()
         source.create_particle()
         source.move_particle_to(
             gateway.particle.get_action(
-                local.my_domain_com.my_lib.worker.Worker
+                local.my_domain_com.my_lib.worker.WorkerAction
             ).get_interface_position(
                 "position<source>"
             )
         )
         state.move_particle_to(
             gateway.particle.get_action(
-                local.my_domain_com.my_lib.worker.Worker
+                local.my_domain_com.my_lib.worker.WorkerAction
             ).get_interface_position(
                 "position<state>"
             )
         )
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).run()
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<state>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.target.Target
+            local.my_domain_com.my_lib.target.TargetPosition
         ).destroy_particle()
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<state>"
         ).destroy_particle()

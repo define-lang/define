@@ -9,32 +9,32 @@ import local.my_domain_com.my_lib.marker_a
 import local.my_domain_com.my_lib.marker_b
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         box = literal.LocalPosition(
             "position<box>",
             constraints=(
-                local.my_domain_com.my_lib.marker_a.MarkerA,
-                local.my_domain_com.my_lib.marker_b.MarkerB,
-                local.my_domain_com.my_lib.destruct.Destruct,
+                local.my_domain_com.my_lib.marker_a.MarkerAPosition,
+                local.my_domain_com.my_lib.marker_b.MarkerBPosition,
+                local.my_domain_com.my_lib.destruct.DestructAction,
             ),
         )
         box.create_particle()
         box.particle.get_position(
-            local.my_domain_com.my_lib.marker_a.MarkerA
+            local.my_domain_com.my_lib.marker_a.MarkerAPosition
         ).create_particle()
         box.particle.get_position(
-            local.my_domain_com.my_lib.marker_b.MarkerB
+            local.my_domain_com.my_lib.marker_b.MarkerBPosition
         ).create_particle()
         box.particle.get_action(
-            local.my_domain_com.my_lib.destruct.Destruct
+            local.my_domain_com.my_lib.destruct.DestructAction
         ).run()
         box.particle.get_position(
-            local.my_domain_com.my_lib.marker_a.MarkerA
+            local.my_domain_com.my_lib.marker_a.MarkerAPosition
         ).destroy_particle()
         box.particle.get_position(
-            local.my_domain_com.my_lib.marker_b.MarkerB
+            local.my_domain_com.my_lib.marker_b.MarkerBPosition
         ).destroy_particle()
         box.destroy_particle()

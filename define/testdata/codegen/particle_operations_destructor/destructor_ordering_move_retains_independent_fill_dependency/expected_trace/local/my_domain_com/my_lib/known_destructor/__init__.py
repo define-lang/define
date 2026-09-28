@@ -7,9 +7,9 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.shared
 
 
-class KnownDestructor(literal.Action):
+class KnownDestructorAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.shared.Shared,
+        local.my_domain_com.my_lib.shared.SharedPosition,
     )
 
     @override
@@ -18,14 +18,14 @@ class KnownDestructor(literal.Action):
             "position<holder>",
         )
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.shared.Shared
+            local.my_domain_com.my_lib.shared.SharedPosition
         ).move_particle_to(
             holder
         )
         literal.record_operation("known_destructor.move(/shared, holder)")
         holder.move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.shared.Shared
+                local.my_domain_com.my_lib.shared.SharedPosition
             )
         )
         literal.record_operation("known_destructor.move(holder, /shared)")

@@ -8,27 +8,27 @@ import local.a_b.cd.a
 import local.a_b.cd.b
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.a_b.cd.a.A,
+        local.a_b.cd.a.APosition,
     )
 
     @override
     def run(self):
         self.on_particle.get_position(
-            local.a_b.cd.a.A
+            local.a_b.cd.a.APosition
         ).create_particle()
         literal.record_operation("test.create(/a)")
         self.on_particle.get_position(
-            local.a_b.cd.a.A
+            local.a_b.cd.a.APosition
         ).particle.get_action(
-            local.a_b.cd.b.B
+            local.a_b.cd.b.BAction
         ).get_interface_position(
             "position<t>"
         ).create_particle()
         literal.record_operation("test.create(/a::/b::t)")
         self.on_particle.get_position(
-            local.a_b.cd.a.A
+            local.a_b.cd.a.APosition
         ).particle.get_action(
-            local.a_b.cd.b.B
+            local.a_b.cd.b.BAction
         ).run()

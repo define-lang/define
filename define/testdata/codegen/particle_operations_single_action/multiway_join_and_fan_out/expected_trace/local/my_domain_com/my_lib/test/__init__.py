@@ -8,33 +8,33 @@ import local.my_domain_com.my_lib.a
 import local.my_domain_com.my_lib.b
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         box = literal.LocalPosition(
             "position<box>",
             constraints=(
-                local.my_domain_com.my_lib.a.A,
-                local.my_domain_com.my_lib.b.B,
+                local.my_domain_com.my_lib.a.APosition,
+                local.my_domain_com.my_lib.b.BPosition,
             ),
         )
         box.create_particle()
         literal.record_operation("test.create(box)")
         box.particle.get_position(
-            local.my_domain_com.my_lib.a.A
+            local.my_domain_com.my_lib.a.APosition
         ).create_particle()
         literal.record_operation("test.create(box::/a)")
         box.particle.get_position(
-            local.my_domain_com.my_lib.b.B
+            local.my_domain_com.my_lib.b.BPosition
         ).create_particle()
         literal.record_operation("test.create(box::/b)")
         box.particle.get_position(
-            local.my_domain_com.my_lib.a.A
+            local.my_domain_com.my_lib.a.APosition
         ).destroy_particle()
         literal.record_operation("test.destroy(box::/a)")
         box.particle.get_position(
-            local.my_domain_com.my_lib.b.B
+            local.my_domain_com.my_lib.b.BPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(box::/b)")
         box.destroy_particle()

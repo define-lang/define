@@ -8,7 +8,7 @@ import local.my_domain_com.my_lib.destination
 import local.my_domain_com.my_lib.item
 
 
-class Other(literal.Action):
+class OtherAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -18,8 +18,8 @@ class Other(literal.Action):
                 literal.LocalPosition(
                     "position<box>",
                     constraints=(
-                        local.my_domain_com.my_lib.item.Item,
-                        local.my_domain_com.my_lib.destination.Destination,
+                        local.my_domain_com.my_lib.item.ItemPosition,
+                        local.my_domain_com.my_lib.destination.DestinationPosition,
                     ),
                 ),
             ],
@@ -30,16 +30,16 @@ class Other(literal.Action):
         self.get_interface_position(
             "position<box>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.item.Item
+            local.my_domain_com.my_lib.item.ItemPosition
         ).create_particle()
         self.get_interface_position(
             "position<box>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.item.Item
+            local.my_domain_com.my_lib.item.ItemPosition
         ).move_particle_to(
             self.get_interface_position(
                 "position<box>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.destination.Destination
+                local.my_domain_com.my_lib.destination.DestinationPosition
             )
         )

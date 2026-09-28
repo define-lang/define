@@ -8,14 +8,34 @@ struct ClassReference {
     class_name: String,
 }
 
+impl ClassReference {
+    /// Returns the name that code in `module_name` uses for this class.
+    fn name_in_module(&self, module_name: &str) -> String {
+        // A module's own classes are referenced while it is still loading, before
+        // its name is bound on its parent package.
+        if self.module_name == module_name {
+            self.class_name.clone()
+        } else {
+            format!("{}.{}", self.module_name, self.class_name)
+        }
+    }
+}
+
+#[derive(Template)]
+#[template(path = "module_header.j2", escape = "none")]
+struct ModuleHeader {
+    imports: Vec<String>,
+    needs_classvar: bool,
+    needs_override: bool,
+}
+
 #[derive(FromPyObject, Template)]
 #[template(path = "position_definition.j2", escape = "none")]
 struct PositionDefinition {
     class_name: String,
-    imports: Vec<String>,
+    module_name: String,
     constraints: Vec<ClassReference>,
     implied_qualities: Vec<ClassReference>,
-    needs_classvar: bool,
 }
 
 #[derive(Template)]
@@ -193,9 +213,8 @@ struct ContractDefinition {
 #[template(path = "action_definition.j2", escape = "none")]
 struct ActionDefinition {
     class_name: String,
-    imports: Vec<String>,
+    module_name: String,
     implied_qualities: Vec<ClassReference>,
-    needs_classvar: bool,
     interface_positions: Vec<InterfacePosition>,
     statements: Vec<Statement>,
     contract_class_name: Option<String>,
@@ -214,6 +233,19 @@ fn render(template: impl Template) -> PyResult<String> {
     template
         .render()
         .map_err(|error| PyRuntimeError::new_err(error.to_string()))
+}
+
+#[pyfunction]
+fn render_module_header(
+    imports: Vec<String>,
+    needs_classvar: bool,
+    needs_override: bool,
+) -> PyResult<String> {
+    render(ModuleHeader {
+        imports,
+        needs_classvar,
+        needs_override,
+    })
 }
 
 #[pyfunction]
@@ -241,6 +273,7 @@ fn render_entry_point(entry_reference: ClassReference, trace_operations: bool) -
 
 #[pymodule(gil_used = false)]
 fn _templates(module: &Bound<'_, PyModule>) -> PyResult<()> {
+    module.add_function(wrap_pyfunction!(render_module_header, module)?)?;
     module.add_function(wrap_pyfunction!(render_position, module)?)?;
     module.add_function(wrap_pyfunction!(render_action, module)?)?;
     module.add_function(wrap_pyfunction!(render_value, module)?)?;

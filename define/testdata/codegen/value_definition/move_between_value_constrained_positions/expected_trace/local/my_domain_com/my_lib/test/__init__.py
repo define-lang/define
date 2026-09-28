@@ -8,20 +8,20 @@ import local.my_domain_com.my_lib.number.rational
 import local.my_domain_com.my_lib.provide
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         item = literal.LocalPosition(
             "position<item>",
             constraints=(
-                local.my_domain_com.my_lib.number.rational.NumberRational,
+                local.my_domain_com.my_lib.number.rational.NumberRationalValue,
             ),
         )
         worker = literal.LocalPosition(
             "position<worker>",
             constraints=(
-                local.my_domain_com.my_lib.provide.Provide,
+                local.my_domain_com.my_lib.provide.ProvideAction,
             ),
         )
         item.create_particle()
@@ -30,17 +30,17 @@ class Test(literal.Action):
         literal.record_operation("test.create(worker)")
         item.move_particle_to(
             worker.particle.get_action(
-                local.my_domain_com.my_lib.provide.Provide
+                local.my_domain_com.my_lib.provide.ProvideAction
             ).get_interface_position(
                 "position<input>"
             )
         )
         literal.record_operation("test.move(item, worker::/provide::input)")
         worker.particle.get_action(
-            local.my_domain_com.my_lib.provide.Provide
+            local.my_domain_com.my_lib.provide.ProvideAction
         ).run()
         worker.particle.get_action(
-            local.my_domain_com.my_lib.provide.Provide
+            local.my_domain_com.my_lib.provide.ProvideAction
         ).get_interface_position(
             "position<result>"
         ).move_particle_to(

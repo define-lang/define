@@ -25,7 +25,7 @@ class MiddleDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = MiddleDestructionContracts()
 
 
-class Middle(literal.Action):
+class MiddleAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -34,7 +34,7 @@ class Middle(literal.Action):
                 literal.LocalPosition(
                     "position<input>",
                     constraints=(
-                        local.my_domain_com.my_lib.child.Child,
+                        local.my_domain_com.my_lib.child.ChildPosition,
                     ),
                 ),
                 literal.LocalPosition("position<run>"),
@@ -46,7 +46,7 @@ class Middle(literal.Action):
         inner_holder = literal.LocalPosition(
             "position<inner_holder>",
             constraints=(
-                local.my_domain_com.my_lib.inner.Inner,
+                local.my_domain_com.my_lib.inner.InnerAction,
             ),
         )
         inner_holder.create_particle()
@@ -54,18 +54,18 @@ class Middle(literal.Action):
             "position<input>"
         ).move_particle_to(
             inner_holder.particle.get_action(
-                local.my_domain_com.my_lib.inner.Inner
+                local.my_domain_com.my_lib.inner.InnerAction
             ).get_interface_position(
                 "position<input>"
             )
         )
         inner_holder.particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         inner_holder.particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).run(
             InnerDestructionContracts(
                 destruction_contracts.run_destructors_position_input__position_child,
@@ -75,7 +75,7 @@ class Middle(literal.Action):
             ),
         )
         inner_holder.particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<run>"
         ).destroy_particle()

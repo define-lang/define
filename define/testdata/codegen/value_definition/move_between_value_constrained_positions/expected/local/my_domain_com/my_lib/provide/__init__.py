@@ -7,7 +7,7 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.number.rational
 
 
-class Provide(literal.Action):
+class ProvideAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -16,13 +16,13 @@ class Provide(literal.Action):
                 literal.LocalPosition(
                     "position<input>",
                     constraints=(
-                        local.my_domain_com.my_lib.number.rational.NumberRational,
+                        local.my_domain_com.my_lib.number.rational.NumberRationalValue,
                     ),
                 ),
                 literal.LocalPosition(
                     "position<result>",
                     constraints=(
-                        local.my_domain_com.my_lib.number.rational.NumberRational,
+                        local.my_domain_com.my_lib.number.rational.NumberRationalValue,
                     ),
                 ),
             ],

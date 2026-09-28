@@ -31,7 +31,7 @@ class OuterDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = OuterDestructionContracts()
 
 
-class Outer(literal.Action):
+class OuterAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -41,7 +41,7 @@ class Outer(literal.Action):
                 literal.LocalPosition(
                     "position<input>",
                     constraints=(
-                        local.my_domain_com.my_lib.data.Data,
+                        local.my_domain_com.my_lib.data.DataPosition,
                     ),
                 ),
             ],
@@ -52,7 +52,7 @@ class Outer(literal.Action):
         middle_holder = literal.LocalPosition(
             "position<middle_holder>",
             constraints=(
-                local.my_domain_com.my_lib.middle.Middle,
+                local.my_domain_com.my_lib.middle.MiddleAction,
             ),
         )
         middle_holder.create_particle()
@@ -61,20 +61,20 @@ class Outer(literal.Action):
             "position<input>"
         ).move_particle_to(
             middle_holder.particle.get_action(
-                local.my_domain_com.my_lib.middle.Middle
+                local.my_domain_com.my_lib.middle.MiddleAction
             ).get_interface_position(
                 "position<input>"
             )
         )
         literal.record_operation("outer.move(input, middle_holder::/middle::input)")
         middle_holder.particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         literal.record_operation("outer.create(middle_holder::/middle::run)")
         middle_holder.particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).run(
             MiddleDestructionContracts(
                 destruction_contracts.run_destructors_position_input__position_data,

@@ -9,9 +9,9 @@ import local.my_domain_com.my_lib.destructor_a
 import local.my_domain_com.my_lib.destructor_b
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.destroyer.Destroyer,
+        local.my_domain_com.my_lib.destroyer.DestroyerAction,
     )
 
     @override
@@ -19,7 +19,7 @@ class Test(literal.Action):
         first_a = literal.LocalPosition(
             "position<first_a>",
             constraints=(
-                local.my_domain_com.my_lib.destructor_a.DestructorA,
+                local.my_domain_com.my_lib.destructor_a.DestructorAAction,
             ),
         )
         first_none = literal.LocalPosition(
@@ -28,14 +28,14 @@ class Test(literal.Action):
         second_b = literal.LocalPosition(
             "position<second_b>",
             constraints=(
-                local.my_domain_com.my_lib.destructor_b.DestructorB,
+                local.my_domain_com.my_lib.destructor_b.DestructorBAction,
             ),
         )
         second_a_and_b = literal.LocalPosition(
             "position<second_a_and_b>",
             constraints=(
-                local.my_domain_com.my_lib.destructor_a.DestructorA,
-                local.my_domain_com.my_lib.destructor_b.DestructorB,
+                local.my_domain_com.my_lib.destructor_a.DestructorAAction,
+                local.my_domain_com.my_lib.destructor_b.DestructorBAction,
             ),
         )
         first_a.create_particle()
@@ -44,7 +44,7 @@ class Test(literal.Action):
         literal.record_operation("test.create(first_none)")
         first_a.move_particle_to(
             self.on_particle.get_action(
-                local.my_domain_com.my_lib.destroyer.Destroyer
+                local.my_domain_com.my_lib.destroyer.DestroyerAction
             ).get_interface_position(
                 "position<first>"
             )
@@ -52,20 +52,20 @@ class Test(literal.Action):
         literal.record_operation("test.move(first_a, /destroyer::first)")
         first_none.move_particle_to(
             self.on_particle.get_action(
-                local.my_domain_com.my_lib.destroyer.Destroyer
+                local.my_domain_com.my_lib.destroyer.DestroyerAction
             ).get_interface_position(
                 "position<second>"
             )
         )
         literal.record_operation("test.move(first_none, /destroyer::second)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.destroyer.Destroyer
+            local.my_domain_com.my_lib.destroyer.DestroyerAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         literal.record_operation("test.create(/destroyer::run)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.destroyer.Destroyer
+            local.my_domain_com.my_lib.destroyer.DestroyerAction
         ).run(DestroyerDestructionContracts())
         second_b.create_particle()
         literal.record_operation("test.create(second_b)")
@@ -73,7 +73,7 @@ class Test(literal.Action):
         literal.record_operation("test.create(second_a_and_b)")
         second_b.move_particle_to(
             self.on_particle.get_action(
-                local.my_domain_com.my_lib.destroyer.Destroyer
+                local.my_domain_com.my_lib.destroyer.DestroyerAction
             ).get_interface_position(
                 "position<first>"
             )
@@ -81,20 +81,20 @@ class Test(literal.Action):
         literal.record_operation("test.move(second_b, /destroyer::first)")
         second_a_and_b.move_particle_to(
             self.on_particle.get_action(
-                local.my_domain_com.my_lib.destroyer.Destroyer
+                local.my_domain_com.my_lib.destroyer.DestroyerAction
             ).get_interface_position(
                 "position<second>"
             )
         )
         literal.record_operation("test.move(second_a_and_b, /destroyer::second)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.destroyer.Destroyer
+            local.my_domain_com.my_lib.destroyer.DestroyerAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         literal.record_operation("test.create(/destroyer::run)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.destroyer.Destroyer
+            local.my_domain_com.my_lib.destroyer.DestroyerAction
         ).run(DestroyerDestructionContracts_())
 
 
@@ -103,7 +103,7 @@ class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.Destroy
     @override
     def run_destructors_position_first(self, particle: literal.Particle):
         particle.get_action(
-            local.my_domain_com.my_lib.destructor_a.DestructorA
+            local.my_domain_com.my_lib.destructor_a.DestructorAAction
         ).run()
 
 
@@ -112,14 +112,14 @@ class DestroyerDestructionContracts_(local.my_domain_com.my_lib.destroyer.Destro
     @override
     def run_destructors_position_first(self, particle: literal.Particle):
         particle.get_action(
-            local.my_domain_com.my_lib.destructor_b.DestructorB
+            local.my_domain_com.my_lib.destructor_b.DestructorBAction
         ).run()
 
     @override
     def run_destructors_position_second(self, particle: literal.Particle):
         particle.get_action(
-            local.my_domain_com.my_lib.destructor_b.DestructorB
+            local.my_domain_com.my_lib.destructor_b.DestructorBAction
         ).run()
         particle.get_action(
-            local.my_domain_com.my_lib.destructor_a.DestructorA
+            local.my_domain_com.my_lib.destructor_a.DestructorAAction
         ).run()

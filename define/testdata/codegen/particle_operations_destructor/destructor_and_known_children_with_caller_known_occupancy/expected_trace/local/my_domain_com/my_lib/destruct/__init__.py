@@ -8,10 +8,10 @@ import local.my_domain_com.my_lib.marker_a
 import local.my_domain_com.my_lib.marker_b
 
 
-class Destruct(literal.Action):
+class DestructAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.marker_a.MarkerA,
-        local.my_domain_com.my_lib.marker_b.MarkerB,
+        local.my_domain_com.my_lib.marker_a.MarkerAPosition,
+        local.my_domain_com.my_lib.marker_b.MarkerBPosition,
     )
 
     @override
@@ -23,26 +23,26 @@ class Destruct(literal.Action):
             "position<holder_b>",
         )
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.marker_a.MarkerA
+            local.my_domain_com.my_lib.marker_a.MarkerAPosition
         ).move_particle_to(
             holder_a
         )
         literal.record_operation("destruct.move(/marker_a, holder_a)")
         holder_a.move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.marker_a.MarkerA
+                local.my_domain_com.my_lib.marker_a.MarkerAPosition
             )
         )
         literal.record_operation("destruct.move(holder_a, /marker_a)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.marker_b.MarkerB
+            local.my_domain_com.my_lib.marker_b.MarkerBPosition
         ).move_particle_to(
             holder_b
         )
         literal.record_operation("destruct.move(/marker_b, holder_b)")
         holder_b.move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.marker_b.MarkerB
+                local.my_domain_com.my_lib.marker_b.MarkerBPosition
             )
         )
         literal.record_operation("destruct.move(holder_b, /marker_b)")

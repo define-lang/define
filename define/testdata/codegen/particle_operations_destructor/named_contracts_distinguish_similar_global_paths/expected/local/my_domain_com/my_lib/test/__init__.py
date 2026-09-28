@@ -11,11 +11,11 @@ import local.my_domain_com.my_lib.second_child
 import local.my_domain_com.my_lib.worker
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.worker.Worker,
-        local.my_domain_com.my_lib.a_b.AB,
-        local.my_domain_com.my_lib.a.b.AB,
+        local.my_domain_com.my_lib.worker.WorkerAction,
+        local.my_domain_com.my_lib.a_b.ABPosition,
+        local.my_domain_com.my_lib.a.b.ABPosition,
     )
 
     @override
@@ -23,43 +23,43 @@ class Test(literal.Action):
         first_source = literal.LocalPosition(
             "position<first_source>",
             constraints=(
-                local.my_domain_com.my_lib.first_child.FirstChild,
+                local.my_domain_com.my_lib.first_child.FirstChildPosition,
             ),
         )
         second_source = literal.LocalPosition(
             "position<second_source>",
             constraints=(
-                local.my_domain_com.my_lib.second_child.SecondChild,
+                local.my_domain_com.my_lib.second_child.SecondChildPosition,
             ),
         )
         first_source.create_particle()
         first_source.particle.get_position(
-            local.my_domain_com.my_lib.first_child.FirstChild
+            local.my_domain_com.my_lib.first_child.FirstChildPosition
         ).create_particle()
         second_source.create_particle()
         second_source.particle.get_position(
-            local.my_domain_com.my_lib.second_child.SecondChild
+            local.my_domain_com.my_lib.second_child.SecondChildPosition
         ).create_particle()
         first_source.move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.a_b.AB
+                local.my_domain_com.my_lib.a_b.ABPosition
             )
         )
         second_source.move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.a.b.AB
+                local.my_domain_com.my_lib.a.b.ABPosition
             )
         )
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).run(WorkerDestructionContracts())
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<run>"
         ).destroy_particle()
@@ -70,11 +70,11 @@ class WorkerDestructionContracts(local.my_domain_com.my_lib.worker.WorkerDestruc
     @override
     def destroy_global_position_a_b(self, particle: literal.Particle):
         particle.get_position(
-            local.my_domain_com.my_lib.first_child.FirstChild
+            local.my_domain_com.my_lib.first_child.FirstChildPosition
         ).destroy_particle()
 
     @override
     def destroy_2_global_position_a_b(self, particle: literal.Particle):
         particle.get_position(
-            local.my_domain_com.my_lib.second_child.SecondChild
+            local.my_domain_com.my_lib.second_child.SecondChildPosition
         ).destroy_particle()

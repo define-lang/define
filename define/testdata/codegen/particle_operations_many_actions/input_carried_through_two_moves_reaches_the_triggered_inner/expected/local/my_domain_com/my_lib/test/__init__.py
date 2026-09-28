@@ -8,49 +8,49 @@ import local.my_domain_com.my_lib.child
 import local.my_domain_com.my_lib.outer
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         box = literal.LocalPosition(
             "position<box>",
             constraints=(
-                local.my_domain_com.my_lib.child.Child,
+                local.my_domain_com.my_lib.child.ChildPosition,
             ),
         )
         outer_holder = literal.LocalPosition(
             "position<outer_holder>",
             constraints=(
-                local.my_domain_com.my_lib.outer.Outer,
+                local.my_domain_com.my_lib.outer.OuterAction,
             ),
         )
         box.create_particle()
         box.particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).create_particle()
         outer_holder.create_particle()
         box.move_particle_to(
             outer_holder.particle.get_action(
-                local.my_domain_com.my_lib.outer.Outer
+                local.my_domain_com.my_lib.outer.OuterAction
             ).get_interface_position(
                 "position<input>"
             )
         )
         outer_holder.particle.get_action(
-            local.my_domain_com.my_lib.outer.Outer
+            local.my_domain_com.my_lib.outer.OuterAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         outer_holder.particle.get_action(
-            local.my_domain_com.my_lib.outer.Outer
+            local.my_domain_com.my_lib.outer.OuterAction
         ).run()
         outer_holder.particle.get_action(
-            local.my_domain_com.my_lib.outer.Outer
+            local.my_domain_com.my_lib.outer.OuterAction
         ).get_interface_position(
             "position<middle_holder>"
         ).destroy_particle()
         outer_holder.particle.get_action(
-            local.my_domain_com.my_lib.outer.Outer
+            local.my_domain_com.my_lib.outer.OuterAction
         ).get_interface_position(
             "position<run>"
         ).destroy_particle()

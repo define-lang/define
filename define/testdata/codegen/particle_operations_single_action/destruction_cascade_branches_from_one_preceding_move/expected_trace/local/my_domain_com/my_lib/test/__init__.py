@@ -8,15 +8,15 @@ import local.my_domain_com.my_lib.a
 import local.my_domain_com.my_lib.b
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         source = literal.LocalPosition(
             "position<source>",
             constraints=(
-                local.my_domain_com.my_lib.a.A,
-                local.my_domain_com.my_lib.b.B,
+                local.my_domain_com.my_lib.a.APosition,
+                local.my_domain_com.my_lib.b.BPosition,
             ),
         )
         destination = literal.LocalPosition(
@@ -25,11 +25,11 @@ class Test(literal.Action):
         source.create_particle()
         literal.record_operation("test.create(source)")
         source.particle.get_position(
-            local.my_domain_com.my_lib.a.A
+            local.my_domain_com.my_lib.a.APosition
         ).create_particle()
         literal.record_operation("test.create(source::/a)")
         source.particle.get_position(
-            local.my_domain_com.my_lib.b.B
+            local.my_domain_com.my_lib.b.BPosition
         ).create_particle()
         literal.record_operation("test.create(source::/b)")
         source.move_particle_to(
@@ -37,11 +37,11 @@ class Test(literal.Action):
         )
         literal.record_operation("test.move(source, destination)")
         destination.particle.get_position(
-            local.my_domain_com.my_lib.a.A
+            local.my_domain_com.my_lib.a.APosition
         ).destroy_particle()
         literal.record_operation("test.destroy(destination::/a)")
         destination.particle.get_position(
-            local.my_domain_com.my_lib.b.B
+            local.my_domain_com.my_lib.b.BPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(destination::/b)")
         destination.destroy_particle()

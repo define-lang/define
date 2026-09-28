@@ -9,37 +9,37 @@ import local.my_domain_com.my_lib.construct_b
 import local.my_domain_com.my_lib.marker
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         source = literal.LocalPosition(
             "position<source>",
             constraints=(
-                local.my_domain_com.my_lib.construct_a.ConstructA,
-                local.my_domain_com.my_lib.construct_b.ConstructB,
+                local.my_domain_com.my_lib.construct_a.ConstructAAction,
+                local.my_domain_com.my_lib.construct_b.ConstructBAction,
             ),
         )
         dest = literal.LocalPosition(
             "position<dest>",
             constraints=(
-                local.my_domain_com.my_lib.marker.Marker,
+                local.my_domain_com.my_lib.marker.MarkerPosition,
             ),
         )
         source.create_particle()
         source.particle.get_action(
-            local.my_domain_com.my_lib.construct_a.ConstructA
+            local.my_domain_com.my_lib.construct_a.ConstructAAction
         ).run()
         source.particle.get_action(
-            local.my_domain_com.my_lib.construct_b.ConstructB
+            local.my_domain_com.my_lib.construct_b.ConstructBAction
         ).run()
         source.move_particle_to(
             dest
         )
         dest.particle.get_position(
-            local.my_domain_com.my_lib.marker.Marker
+            local.my_domain_com.my_lib.marker.MarkerPosition
         ).create_particle()
         dest.particle.get_position(
-            local.my_domain_com.my_lib.marker.Marker
+            local.my_domain_com.my_lib.marker.MarkerPosition
         ).destroy_particle()
         dest.destroy_particle()

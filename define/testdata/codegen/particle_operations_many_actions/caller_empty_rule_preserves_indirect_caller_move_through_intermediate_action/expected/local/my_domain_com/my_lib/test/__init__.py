@@ -12,55 +12,55 @@ import local.my_domain_com.my_lib.intermediate
 import local.my_domain_com.my_lib.middle_action
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.holder.Holder,
-        local.my_domain_com.my_lib.input.Input,
-        local.my_domain_com.my_lib.middle_action.MiddleAction,
-        local.my_domain_com.my_lib.intermediate.Intermediate,
+        local.my_domain_com.my_lib.holder.HolderPosition,
+        local.my_domain_com.my_lib.input.InputPosition,
+        local.my_domain_com.my_lib.middle_action.MiddleActionAction,
+        local.my_domain_com.my_lib.intermediate.IntermediatePosition,
     )
 
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.input.Input
+            local.my_domain_com.my_lib.input.InputPosition
         ).create_particle()
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.input.Input
+            local.my_domain_com.my_lib.input.InputPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.a.A
+            local.my_domain_com.my_lib.a.APosition
         ).create_particle()
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.input.Input
+            local.my_domain_com.my_lib.input.InputPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.a.A
+            local.my_domain_com.my_lib.a.APosition
         ).move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.holder.Holder
+                local.my_domain_com.my_lib.holder.HolderPosition
             )
         )
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.holder.Holder
+            local.my_domain_com.my_lib.holder.HolderPosition
         ).move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.intermediate.Intermediate
+                local.my_domain_com.my_lib.intermediate.IntermediatePosition
             )
         )
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.input.Input
+            local.my_domain_com.my_lib.input.InputPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.b.B
+            local.my_domain_com.my_lib.b.BPosition
         ).create_particle()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.middle_action.MiddleAction
+            local.my_domain_com.my_lib.middle_action.MiddleActionAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.middle_action.MiddleAction
+            local.my_domain_com.my_lib.middle_action.MiddleActionAction
         ).run()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.middle_action.MiddleAction
+            local.my_domain_com.my_lib.middle_action.MiddleActionAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

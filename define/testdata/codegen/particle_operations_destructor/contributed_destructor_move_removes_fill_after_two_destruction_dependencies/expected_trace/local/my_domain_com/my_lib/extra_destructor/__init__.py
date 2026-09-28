@@ -10,43 +10,43 @@ import local.my_domain_com.my_lib.second
 import local.my_domain_com.my_lib.third
 
 
-class ExtraDestructor(literal.Action):
+class ExtraDestructorAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.marker.Marker,
-        local.my_domain_com.my_lib.destinations.Destinations,
+        local.my_domain_com.my_lib.marker.MarkerPosition,
+        local.my_domain_com.my_lib.destinations.DestinationsPosition,
     )
 
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.marker.Marker
+            local.my_domain_com.my_lib.marker.MarkerPosition
         ).move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.destinations.Destinations
+                local.my_domain_com.my_lib.destinations.DestinationsPosition
             ).particle.get_position(
-                local.my_domain_com.my_lib.second.Second
+                local.my_domain_com.my_lib.second.SecondPosition
             )
         )
         literal.record_operation("extra_destructor.move(/marker, /destinations::/second)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.destinations.Destinations
+            local.my_domain_com.my_lib.destinations.DestinationsPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.second.Second
+            local.my_domain_com.my_lib.second.SecondPosition
         ).move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.destinations.Destinations
+                local.my_domain_com.my_lib.destinations.DestinationsPosition
             ).particle.get_position(
-                local.my_domain_com.my_lib.third.Third
+                local.my_domain_com.my_lib.third.ThirdPosition
             )
         )
         literal.record_operation("extra_destructor.move(/destinations::/second, /destinations::/third)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.destinations.Destinations
+            local.my_domain_com.my_lib.destinations.DestinationsPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.third.Third
+            local.my_domain_com.my_lib.third.ThirdPosition
         ).move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.marker.Marker
+                local.my_domain_com.my_lib.marker.MarkerPosition
             )
         )
         literal.record_operation("extra_destructor.move(/destinations::/third, /marker)")

@@ -16,7 +16,7 @@ class BDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = BDestructionContracts()
 
 
-class B(literal.Action):
+class BAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(

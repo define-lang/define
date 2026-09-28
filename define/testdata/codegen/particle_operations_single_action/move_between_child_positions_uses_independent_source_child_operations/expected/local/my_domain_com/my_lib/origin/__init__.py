@@ -8,8 +8,8 @@ import local.my_domain_com.my_lib.first
 import local.my_domain_com.my_lib.second
 
 
-class Origin(literal.GlobalPosition):
+class OriginPosition(literal.GlobalPosition):
     constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.first.First,
-        local.my_domain_com.my_lib.second.Second,
+        local.my_domain_com.my_lib.first.FirstPosition,
+        local.my_domain_com.my_lib.second.SecondPosition,
     )

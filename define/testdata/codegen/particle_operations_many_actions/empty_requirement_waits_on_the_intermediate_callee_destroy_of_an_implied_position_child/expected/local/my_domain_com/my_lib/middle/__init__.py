@@ -20,7 +20,7 @@ class MiddleDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = MiddleDestructionContracts()
 
 
-class Middle(literal.Action):
+class MiddleAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -30,8 +30,8 @@ class Middle(literal.Action):
                 literal.LocalPosition(
                     "position<gw>",
                     constraints=(
-                        local.my_domain_com.my_lib.inner.Inner,
-                        local.my_domain_com.my_lib.holder.Holder,
+                        local.my_domain_com.my_lib.inner.InnerAction,
+                        local.my_domain_com.my_lib.holder.HolderPosition,
                     ),
                 ),
             ],
@@ -43,43 +43,43 @@ class Middle(literal.Action):
             self.get_interface_position(
                 "position<gw>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.holder.Holder
+                local.my_domain_com.my_lib.holder.HolderPosition
             ).particle.get_position(
-                local.my_domain_com.my_lib.a.A
+                local.my_domain_com.my_lib.a.APosition
             ).particle
         )
         destruction_contracts.destroy_position_gw__position_holder__position_a(
             self.get_interface_position(
                 "position<gw>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.holder.Holder
+                local.my_domain_com.my_lib.holder.HolderPosition
             ).particle.get_position(
-                local.my_domain_com.my_lib.a.A
+                local.my_domain_com.my_lib.a.APosition
             ).particle
         )
         self.get_interface_position(
             "position<gw>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.holder.Holder
+            local.my_domain_com.my_lib.holder.HolderPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.a.A
+            local.my_domain_com.my_lib.a.APosition
         ).destroy_particle()
         self.get_interface_position(
             "position<gw>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         self.get_interface_position(
             "position<gw>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).run()
         self.get_interface_position(
             "position<gw>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

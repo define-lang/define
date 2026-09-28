@@ -10,9 +10,9 @@ import local.my_domain_com.my_lib.middle
 import local.my_domain_com.my_lib.occupied
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.middle.Middle,
+        local.my_domain_com.my_lib.middle.MiddleAction,
     )
 
     @override
@@ -20,24 +20,24 @@ class Test(literal.Action):
         source = literal.LocalPosition(
             "position<source>",
             constraints=(
-                local.my_domain_com.my_lib.occupied.Occupied,
-                local.my_domain_com.my_lib.empty.Empty,
-                local.my_domain_com.my_lib.destructor.Destructor,
+                local.my_domain_com.my_lib.occupied.OccupiedPosition,
+                local.my_domain_com.my_lib.empty.EmptyPosition,
+                local.my_domain_com.my_lib.destructor.DestructorAction,
             ),
         )
         source.create_particle()
         source.move_particle_to(
             self.on_particle.get_action(
-                local.my_domain_com.my_lib.middle.Middle
+                local.my_domain_com.my_lib.middle.MiddleAction
             ).get_interface_position(
                 "position<target>"
             )
         )
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<trigger>"
         ).create_particle()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).run()

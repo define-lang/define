@@ -9,7 +9,7 @@ import local.my_domain_com.my_lib.inner
 import local.my_domain_com.my_lib.marker
 
 
-class Middle(literal.Action):
+class MiddleAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -18,8 +18,8 @@ class Middle(literal.Action):
                 literal.LocalPosition(
                     "position<result>",
                     constraints=(
-                        local.my_domain_com.my_lib.destructor.Destructor,
-                        local.my_domain_com.my_lib.marker.Marker,
+                        local.my_domain_com.my_lib.destructor.DestructorAction,
+                        local.my_domain_com.my_lib.marker.MarkerPosition,
                     ),
                 ),
                 literal.LocalPosition("position<run>"),
@@ -31,7 +31,7 @@ class Middle(literal.Action):
         box = literal.LocalPosition(
             "position<box>",
             constraints=(
-                local.my_domain_com.my_lib.inner.Inner,
+                local.my_domain_com.my_lib.inner.InnerAction,
             ),
         )
         held_marker = literal.LocalPosition(
@@ -39,24 +39,24 @@ class Middle(literal.Action):
         )
         box.create_particle()
         box.particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         box.particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).run()
         box.particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<result>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.marker.Marker
+            local.my_domain_com.my_lib.marker.MarkerPosition
         ).move_particle_to(
             held_marker
         )
         box.particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<result>"
         ).move_particle_to(
@@ -68,11 +68,11 @@ class Middle(literal.Action):
             self.get_interface_position(
                 "position<result>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.marker.Marker
+                local.my_domain_com.my_lib.marker.MarkerPosition
             )
         )
         box.particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<run>"
         ).destroy_particle()

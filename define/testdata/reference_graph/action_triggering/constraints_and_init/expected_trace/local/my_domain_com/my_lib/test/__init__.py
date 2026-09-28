@@ -7,19 +7,19 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.start
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.start.Start,
+        local.my_domain_com.my_lib.start.StartAction,
     )
 
     @override
     def run(self):
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.start.Start
+            local.my_domain_com.my_lib.start.StartAction
         ).get_interface_position(
             "position<pp>"
         ).create_particle()
         literal.record_operation("test.create(/start::pp)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.start.Start
+            local.my_domain_com.my_lib.start.StartAction
         ).run()

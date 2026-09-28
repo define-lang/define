@@ -8,64 +8,64 @@ import local.my_domain_com.my_lib.c
 import local.my_domain_com.my_lib.maker
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         gw = literal.LocalPosition(
             "position<gw>",
             constraints=(
-                local.my_domain_com.my_lib.maker.Maker,
+                local.my_domain_com.my_lib.maker.MakerAction,
             ),
         )
         gw.create_particle()
         gw.particle.get_action(
-            local.my_domain_com.my_lib.maker.Maker
+            local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(
             "position<held>"
         ).create_particle()
         gw.particle.get_action(
-            local.my_domain_com.my_lib.maker.Maker
+            local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         gw.particle.get_action(
-            local.my_domain_com.my_lib.maker.Maker
+            local.my_domain_com.my_lib.maker.MakerAction
         ).run()
         gw.particle.get_action(
-            local.my_domain_com.my_lib.maker.Maker
+            local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(
             "position<held>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.c.C
+            local.my_domain_com.my_lib.c.CPosition
         ).destroy_particle()
         gw.particle.get_action(
-            local.my_domain_com.my_lib.maker.Maker
+            local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
         gw.particle.get_action(
-            local.my_domain_com.my_lib.maker.Maker
+            local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         gw.particle.get_action(
-            local.my_domain_com.my_lib.maker.Maker
+            local.my_domain_com.my_lib.maker.MakerAction
         ).run()
         gw.particle.get_action(
-            local.my_domain_com.my_lib.maker.Maker
+            local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(
             "position<held>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.c.C
+            local.my_domain_com.my_lib.c.CPosition
         ).destroy_particle()
         gw.particle.get_action(
-            local.my_domain_com.my_lib.maker.Maker
+            local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(
             "position<held>"
         ).destroy_particle()
         gw.particle.get_action(
-            local.my_domain_com.my_lib.maker.Maker
+            local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

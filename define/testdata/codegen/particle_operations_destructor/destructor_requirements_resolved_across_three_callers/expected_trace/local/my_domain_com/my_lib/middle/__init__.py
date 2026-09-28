@@ -20,9 +20,9 @@ class MiddleDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = MiddleDestructionContracts()
 
 
-class Middle(literal.Action):
+class MiddleAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.destroyer.Destroyer,
+        local.my_domain_com.my_lib.destroyer.DestroyerAction,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -32,8 +32,8 @@ class Middle(literal.Action):
                 literal.LocalPosition(
                     "position<target>",
                     constraints=(
-                        local.my_domain_com.my_lib.destructor.Destructor,
-                        local.my_domain_com.my_lib.middle_known.MiddleKnown,
+                        local.my_domain_com.my_lib.destructor.DestructorAction,
+                        local.my_domain_com.my_lib.middle_known.MiddleKnownPosition,
                     ),
                 ),
             ],
@@ -44,33 +44,33 @@ class Middle(literal.Action):
         self.get_interface_position(
             "position<target>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.middle_known.MiddleKnown
+            local.my_domain_com.my_lib.middle_known.MiddleKnownPosition
         ).create_particle()
         literal.record_operation("middle.create(target::/middle_known)")
         self.get_interface_position(
             "position<target>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.middle_known.MiddleKnown
+            local.my_domain_com.my_lib.middle_known.MiddleKnownPosition
         ).destroy_particle()
         literal.record_operation("middle.destroy(target::/middle_known)")
         self.get_interface_position(
             "position<target>"
         ).move_particle_to(
             self.on_particle.get_action(
-                local.my_domain_com.my_lib.destroyer.Destroyer
+                local.my_domain_com.my_lib.destroyer.DestroyerAction
             ).get_interface_position(
                 "position<target>"
             )
         )
         literal.record_operation("middle.move(target, /destroyer::target)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.destroyer.Destroyer
+            local.my_domain_com.my_lib.destroyer.DestroyerAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         literal.record_operation("middle.create(/destroyer::run)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.destroyer.Destroyer
+            local.my_domain_com.my_lib.destroyer.DestroyerAction
         ).run(
             DestroyerDestructionContracts(
                 destruction_contracts.run_destructors_position_target,

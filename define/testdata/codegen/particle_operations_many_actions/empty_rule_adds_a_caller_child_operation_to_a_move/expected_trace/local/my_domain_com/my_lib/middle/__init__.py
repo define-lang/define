@@ -25,7 +25,7 @@ class MiddleDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = MiddleDestructionContracts()
 
 
-class Middle(literal.Action):
+class MiddleAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -35,14 +35,14 @@ class Middle(literal.Action):
                 literal.LocalPosition(
                     "position<source>",
                     constraints=(
-                        local.my_domain_com.my_lib.child.Child,
-                        local.my_domain_com.my_lib.marker.Marker,
+                        local.my_domain_com.my_lib.child.ChildAction,
+                        local.my_domain_com.my_lib.marker.MarkerPosition,
                     ),
                 ),
                 literal.LocalPosition(
                     "position<holder>",
                     constraints=(
-                        local.my_domain_com.my_lib.marker.Marker,
+                        local.my_domain_com.my_lib.marker.MarkerPosition,
                     ),
                 ),
             ],
@@ -53,7 +53,7 @@ class Middle(literal.Action):
         self.get_interface_position(
             "position<source>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
@@ -61,7 +61,7 @@ class Middle(literal.Action):
         self.get_interface_position(
             "position<source>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildAction
         ).run()
         self.get_interface_position(
             "position<source>"
@@ -75,20 +75,20 @@ class Middle(literal.Action):
             self.get_interface_position(
                 "position<holder>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.marker.Marker
+                local.my_domain_com.my_lib.marker.MarkerPosition
             ).particle
         )
         destruction_contracts.destroy_position_source__position_marker(
             self.get_interface_position(
                 "position<holder>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.marker.Marker
+                local.my_domain_com.my_lib.marker.MarkerPosition
             ).particle
         )
         self.get_interface_position(
             "position<holder>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.marker.Marker
+            local.my_domain_com.my_lib.marker.MarkerPosition
         ).destroy_particle()
         literal.record_operation("middle.destroy(holder::/marker)")
         destruction_contracts.run_destructors_position_source(

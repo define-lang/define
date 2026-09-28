@@ -10,9 +10,9 @@ import local.my_domain_com.my_lib.second_destructor
 import local.my_domain_com.my_lib.worker
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.worker.Worker,
+        local.my_domain_com.my_lib.worker.WorkerAction,
     )
 
     @override
@@ -20,32 +20,32 @@ class Test(literal.Action):
         first_source = literal.LocalPosition(
             "position<first_source>",
             constraints=(
-                local.my_domain_com.my_lib.first_destructor.FirstDestructor,
-                local.my_domain_com.my_lib.extra.Extra,
+                local.my_domain_com.my_lib.first_destructor.FirstDestructorAction,
+                local.my_domain_com.my_lib.extra.ExtraPosition,
             ),
         )
         second_source = literal.LocalPosition(
             "position<second_source>",
             constraints=(
-                local.my_domain_com.my_lib.second_destructor.SecondDestructor,
-                local.my_domain_com.my_lib.extra.Extra,
+                local.my_domain_com.my_lib.second_destructor.SecondDestructorAction,
+                local.my_domain_com.my_lib.extra.ExtraPosition,
             ),
         )
         first_source.create_particle()
         literal.record_operation("test.create(first_source)")
         first_source.particle.get_position(
-            local.my_domain_com.my_lib.extra.Extra
+            local.my_domain_com.my_lib.extra.ExtraPosition
         ).create_particle()
         literal.record_operation("test.create(first_source::/extra)")
         second_source.create_particle()
         literal.record_operation("test.create(second_source)")
         second_source.particle.get_position(
-            local.my_domain_com.my_lib.extra.Extra
+            local.my_domain_com.my_lib.extra.ExtraPosition
         ).create_particle()
         literal.record_operation("test.create(second_source::/extra)")
         first_source.move_particle_to(
             self.on_particle.get_action(
-                local.my_domain_com.my_lib.worker.Worker
+                local.my_domain_com.my_lib.worker.WorkerAction
             ).get_interface_position(
                 "position<first>"
             )
@@ -53,23 +53,23 @@ class Test(literal.Action):
         literal.record_operation("test.move(first_source, /worker::first)")
         second_source.move_particle_to(
             self.on_particle.get_action(
-                local.my_domain_com.my_lib.worker.Worker
+                local.my_domain_com.my_lib.worker.WorkerAction
             ).get_interface_position(
                 "position<second>"
             )
         )
         literal.record_operation("test.move(second_source, /worker::second)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         literal.record_operation("test.create(/worker::run)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).run(WorkerDestructionContracts())
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).get_interface_position(
             "position<run>"
         ).destroy_particle()
@@ -81,25 +81,25 @@ class WorkerDestructionContracts(local.my_domain_com.my_lib.worker.WorkerDestruc
     @override
     def run_destructors_position_first(self, particle: literal.Particle):
         particle.get_action(
-            local.my_domain_com.my_lib.first_destructor.FirstDestructor
+            local.my_domain_com.my_lib.first_destructor.FirstDestructorAction
         ).run()
 
     @override
     def destroy_position_first(self, particle: literal.Particle):
         particle.get_position(
-            local.my_domain_com.my_lib.extra.Extra
+            local.my_domain_com.my_lib.extra.ExtraPosition
         ).destroy_particle()
         literal.record_operation("worker.destroy(holder::/left::/extra)")
 
     @override
     def run_destructors_position_second(self, particle: literal.Particle):
         particle.get_action(
-            local.my_domain_com.my_lib.second_destructor.SecondDestructor
+            local.my_domain_com.my_lib.second_destructor.SecondDestructorAction
         ).run()
 
     @override
     def destroy_position_second(self, particle: literal.Particle):
         particle.get_position(
-            local.my_domain_com.my_lib.extra.Extra
+            local.my_domain_com.my_lib.extra.ExtraPosition
         ).destroy_particle()
         literal.record_operation("worker.destroy(holder::/right::/extra)")

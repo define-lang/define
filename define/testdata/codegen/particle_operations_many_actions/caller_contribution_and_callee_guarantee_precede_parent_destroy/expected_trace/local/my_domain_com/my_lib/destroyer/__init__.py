@@ -18,7 +18,7 @@ class DestroyerDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = DestroyerDestructionContracts()
 
 
-class Destroyer(literal.Action):
+class DestroyerAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -28,7 +28,7 @@ class Destroyer(literal.Action):
                 literal.LocalPosition(
                     "position<parent>",
                     constraints=(
-                        local.my_domain_com.my_lib.maker.Maker,
+                        local.my_domain_com.my_lib.maker.MakerAction,
                     ),
                 ),
             ],
@@ -39,7 +39,7 @@ class Destroyer(literal.Action):
         self.get_interface_position(
             "position<parent>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.maker.Maker
+            local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
@@ -47,7 +47,7 @@ class Destroyer(literal.Action):
         self.get_interface_position(
             "position<parent>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.maker.Maker
+            local.my_domain_com.my_lib.maker.MakerAction
         ).run()
         destruction_contracts.run_destructors_position_parent(
             self.get_interface_position(
@@ -62,7 +62,7 @@ class Destroyer(literal.Action):
         self.get_interface_position(
             "position<parent>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.maker.Maker
+            local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

@@ -27,7 +27,7 @@ class MiddleDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = MiddleDestructionContracts()
 
 
-class Middle(literal.Action):
+class MiddleAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -37,7 +37,7 @@ class Middle(literal.Action):
                 literal.LocalPosition(
                     "position<iface>",
                     constraints=(
-                        local.my_domain_com.my_lib.parent.Parent,
+                        local.my_domain_com.my_lib.parent.ParentPosition,
                     ),
                 ),
             ],
@@ -48,7 +48,7 @@ class Middle(literal.Action):
         gw = literal.LocalPosition(
             "position<gw>",
             constraints=(
-                local.my_domain_com.my_lib.inner.Inner,
+                local.my_domain_com.my_lib.inner.InnerAction,
             ),
         )
         gw.create_particle()
@@ -57,89 +57,89 @@ class Middle(literal.Action):
             "position<iface>"
         ).move_particle_to(
             gw.particle.get_action(
-                local.my_domain_com.my_lib.inner.Inner
+                local.my_domain_com.my_lib.inner.InnerAction
             ).get_interface_position(
                 "position<input>"
             )
         )
         literal.record_operation("middle.move(iface, gw::/inner::input)")
         gw.particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         literal.record_operation("middle.create(gw::/inner::run)")
         gw.particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).run()
         destruction_contracts.run_destructors_position_iface__position_parent(
             gw.particle.get_action(
-                local.my_domain_com.my_lib.inner.Inner
+                local.my_domain_com.my_lib.inner.InnerAction
             ).get_interface_position(
                 "position<input>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.parent.Parent
+                local.my_domain_com.my_lib.parent.ParentPosition
             ).particle
         )
         destruction_contracts.run_destructors_position_iface(
             gw.particle.get_action(
-                local.my_domain_com.my_lib.inner.Inner
+                local.my_domain_com.my_lib.inner.InnerAction
             ).get_interface_position(
                 "position<input>"
             ).particle
         )
         destruction_contracts.destroy_position_iface__position_parent(
             gw.particle.get_action(
-                local.my_domain_com.my_lib.inner.Inner
+                local.my_domain_com.my_lib.inner.InnerAction
             ).get_interface_position(
                 "position<input>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.parent.Parent
+                local.my_domain_com.my_lib.parent.ParentPosition
             ).particle
         )
         destruction_contracts.destroy_position_iface(
             gw.particle.get_action(
-                local.my_domain_com.my_lib.inner.Inner
+                local.my_domain_com.my_lib.inner.InnerAction
             ).get_interface_position(
                 "position<input>"
             ).particle
         )
         gw.particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<run>"
         ).destroy_particle()
         literal.record_operation("middle.destroy(gw::/inner::run)")
         gw.particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<input>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.parent.Parent
+            local.my_domain_com.my_lib.parent.ParentPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.a.A
+            local.my_domain_com.my_lib.a.APosition
         ).destroy_particle()
         literal.record_operation("middle.destroy(gw::/inner::input::/parent::/a)")
         gw.particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<input>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.parent.Parent
+            local.my_domain_com.my_lib.parent.ParentPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.b.B
+            local.my_domain_com.my_lib.b.BPosition
         ).destroy_particle()
         literal.record_operation("middle.destroy(gw::/inner::input::/parent::/b)")
         gw.particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<input>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.parent.Parent
+            local.my_domain_com.my_lib.parent.ParentPosition
         ).destroy_particle()
         literal.record_operation("middle.destroy(gw::/inner::input::/parent)")
         gw.particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<input>"
         ).destroy_particle()

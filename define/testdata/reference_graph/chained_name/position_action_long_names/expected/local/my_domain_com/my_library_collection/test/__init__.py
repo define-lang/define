@@ -8,25 +8,25 @@ import local.my_domain_com.my_library_collection.outer_position
 import local.my_domain_com.my_library_collection.perform_operation
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_library_collection.outer_position.OuterPosition,
+        local.my_domain_com.my_library_collection.outer_position.OuterPositionPosition,
     )
 
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_library_collection.outer_position.OuterPosition
+            local.my_domain_com.my_library_collection.outer_position.OuterPositionPosition
         ).create_particle()
         self.on_particle.get_position(
-            local.my_domain_com.my_library_collection.outer_position.OuterPosition
+            local.my_domain_com.my_library_collection.outer_position.OuterPositionPosition
         ).particle.get_action(
-            local.my_domain_com.my_library_collection.perform_operation.PerformOperation
+            local.my_domain_com.my_library_collection.perform_operation.PerformOperationAction
         ).get_interface_position(
             "position<operation_trigger>"
         ).create_particle()
         self.on_particle.get_position(
-            local.my_domain_com.my_library_collection.outer_position.OuterPosition
+            local.my_domain_com.my_library_collection.outer_position.OuterPositionPosition
         ).particle.get_action(
-            local.my_domain_com.my_library_collection.perform_operation.PerformOperation
+            local.my_domain_com.my_library_collection.perform_operation.PerformOperationAction
         ).run()

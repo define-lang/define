@@ -9,45 +9,45 @@ import local.my_domain_com.my_lib.input
 import local.my_domain_com.my_lib.producer
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.input.Input,
-        local.my_domain_com.my_lib.producer.Producer,
-        local.my_domain_com.my_lib.consumer.Consumer,
+        local.my_domain_com.my_lib.input.InputPosition,
+        local.my_domain_com.my_lib.producer.ProducerAction,
+        local.my_domain_com.my_lib.consumer.ConsumerAction,
     )
 
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.input.Input
+            local.my_domain_com.my_lib.input.InputPosition
         ).create_particle()
         literal.record_operation("test.create(/input)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.producer.Producer
+            local.my_domain_com.my_lib.producer.ProducerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("test.create(/producer::trigger_pos)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.producer.Producer
+            local.my_domain_com.my_lib.producer.ProducerAction
         ).run()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.consumer.Consumer
+            local.my_domain_com.my_lib.consumer.ConsumerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("test.create(/consumer::trigger_pos)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.consumer.Consumer
+            local.my_domain_com.my_lib.consumer.ConsumerAction
         ).run()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.producer.Producer
+            local.my_domain_com.my_lib.producer.ProducerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
         literal.record_operation("test.destroy(/producer::trigger_pos)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.consumer.Consumer
+            local.my_domain_com.my_lib.consumer.ConsumerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

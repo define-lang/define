@@ -9,7 +9,7 @@ import local.my_domain_com.my_lib.extra_destructor
 import local.my_domain_com.my_lib.known_destructor
 
 
-class CallerA(literal.Action):
+class CallerAAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -24,35 +24,35 @@ class CallerA(literal.Action):
         destroyer_particle = literal.LocalPosition(
             "position<destroyer_particle>",
             constraints=(
-                local.my_domain_com.my_lib.destroyer.Destroyer,
+                local.my_domain_com.my_lib.destroyer.DestroyerAction,
             ),
         )
         carrier = literal.LocalPosition(
             "position<carrier>",
             constraints=(
-                local.my_domain_com.my_lib.known_destructor.KnownDestructor,
-                local.my_domain_com.my_lib.extra_destructor.ExtraDestructor,
+                local.my_domain_com.my_lib.known_destructor.KnownDestructorAction,
+                local.my_domain_com.my_lib.extra_destructor.ExtraDestructorAction,
             ),
         )
         destroyer_particle.create_particle()
         carrier.create_particle()
         carrier.move_particle_to(
             destroyer_particle.particle.get_action(
-                local.my_domain_com.my_lib.destroyer.Destroyer
+                local.my_domain_com.my_lib.destroyer.DestroyerAction
             ).get_interface_position(
                 "position<target>"
             )
         )
         destroyer_particle.particle.get_action(
-            local.my_domain_com.my_lib.destroyer.Destroyer
+            local.my_domain_com.my_lib.destroyer.DestroyerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         destroyer_particle.particle.get_action(
-            local.my_domain_com.my_lib.destroyer.Destroyer
+            local.my_domain_com.my_lib.destroyer.DestroyerAction
         ).run(DestroyerDestructionContracts())
         destroyer_particle.particle.get_action(
-            local.my_domain_com.my_lib.destroyer.Destroyer
+            local.my_domain_com.my_lib.destroyer.DestroyerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
@@ -64,5 +64,5 @@ class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.Destroy
     @override
     def run_destructors_position_target(self, particle: literal.Particle):
         particle.get_action(
-            local.my_domain_com.my_lib.extra_destructor.ExtraDestructor
+            local.my_domain_com.my_lib.extra_destructor.ExtraDestructorAction
         ).run()

@@ -16,7 +16,7 @@ class BrewDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = BrewDestructionContracts()
 
 
-class Brew(literal.Action):
+class BrewAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(

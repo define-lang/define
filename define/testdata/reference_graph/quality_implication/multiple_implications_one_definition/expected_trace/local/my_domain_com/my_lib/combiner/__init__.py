@@ -8,19 +8,19 @@ import local.my_domain_com.my_lib.first_marker
 import local.my_domain_com.my_lib.second_marker
 
 
-class Combiner(literal.Action):
+class CombinerAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.first_marker.FirstMarker,
-        local.my_domain_com.my_lib.second_marker.SecondMarker,
+        local.my_domain_com.my_lib.first_marker.FirstMarkerPosition,
+        local.my_domain_com.my_lib.second_marker.SecondMarkerPosition,
     )
 
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.first_marker.FirstMarker
+            local.my_domain_com.my_lib.first_marker.FirstMarkerPosition
         ).create_particle()
         literal.record_operation("combiner.create(/first_marker)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.second_marker.SecondMarker
+            local.my_domain_com.my_lib.second_marker.SecondMarkerPosition
         ).create_particle()
         literal.record_operation("combiner.create(/second_marker)")

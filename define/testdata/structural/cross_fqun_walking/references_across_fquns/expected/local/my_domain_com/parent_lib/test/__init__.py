@@ -8,27 +8,27 @@ import local.my_domain_com.child_lib.do_thing
 import local.my_domain_com.parent_lib.do_thing
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.parent_lib.do_thing.DoThing,
-        local.my_domain_com.child_lib.do_thing.DoThing,
+        local.my_domain_com.parent_lib.do_thing.DoThingAction,
+        local.my_domain_com.child_lib.do_thing.DoThingAction,
     )
 
     @override
     def run(self):
         self.on_particle.get_action(
-            local.my_domain_com.parent_lib.do_thing.DoThing
+            local.my_domain_com.parent_lib.do_thing.DoThingAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         self.on_particle.get_action(
-            local.my_domain_com.parent_lib.do_thing.DoThing
+            local.my_domain_com.parent_lib.do_thing.DoThingAction
         ).run()
         self.on_particle.get_action(
-            local.my_domain_com.child_lib.do_thing.DoThing
+            local.my_domain_com.child_lib.do_thing.DoThingAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         self.on_particle.get_action(
-            local.my_domain_com.child_lib.do_thing.DoThing
+            local.my_domain_com.child_lib.do_thing.DoThingAction
         ).run()

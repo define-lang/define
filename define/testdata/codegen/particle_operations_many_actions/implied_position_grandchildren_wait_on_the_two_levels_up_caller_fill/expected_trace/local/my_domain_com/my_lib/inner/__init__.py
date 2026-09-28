@@ -10,9 +10,9 @@ import local.my_domain_com.my_lib.grandchild2
 import local.my_domain_com.my_lib.parent
 
 
-class Inner(literal.Action):
+class InnerAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.parent.Parent,
+        local.my_domain_com.my_lib.parent.ParentPosition,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -26,18 +26,18 @@ class Inner(literal.Action):
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.parent.Parent
+            local.my_domain_com.my_lib.parent.ParentPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.grandchild1.Grandchild1
+            local.my_domain_com.my_lib.grandchild1.Grandchild1Position
         ).create_particle()
         literal.record_operation("inner.create(/parent::/child::/grandchild1)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.parent.Parent
+            local.my_domain_com.my_lib.parent.ParentPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.grandchild2.Grandchild2
+            local.my_domain_com.my_lib.grandchild2.Grandchild2Position
         ).create_particle()
         literal.record_operation("inner.create(/parent::/child::/grandchild2)")

@@ -7,7 +7,7 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.result_value
 
 
-class Inner(literal.Action):
+class InnerAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -17,7 +17,7 @@ class Inner(literal.Action):
                 literal.LocalPosition(
                     "position<input>",
                     constraints=(
-                        local.my_domain_com.my_lib.result_value.ResultValue,
+                        local.my_domain_com.my_lib.result_value.ResultValuePosition,
                     ),
                 ),
             ],
@@ -28,5 +28,5 @@ class Inner(literal.Action):
         self.get_interface_position(
             "position<input>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.result_value.ResultValue
+            local.my_domain_com.my_lib.result_value.ResultValuePosition
         ).create_particle()

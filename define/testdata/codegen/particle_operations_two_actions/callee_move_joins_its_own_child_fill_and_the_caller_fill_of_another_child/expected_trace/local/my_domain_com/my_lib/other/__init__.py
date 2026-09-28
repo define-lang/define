@@ -8,7 +8,7 @@ import local.my_domain_com.my_lib.a
 import local.my_domain_com.my_lib.b
 
 
-class Other(literal.Action):
+class OtherAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -18,15 +18,15 @@ class Other(literal.Action):
                 literal.LocalPosition(
                     "position<source>",
                     constraints=(
-                        local.my_domain_com.my_lib.a.A,
-                        local.my_domain_com.my_lib.b.B,
+                        local.my_domain_com.my_lib.a.APosition,
+                        local.my_domain_com.my_lib.b.BPosition,
                     ),
                 ),
                 literal.LocalPosition(
                     "position<holder>",
                     constraints=(
-                        local.my_domain_com.my_lib.a.A,
-                        local.my_domain_com.my_lib.b.B,
+                        local.my_domain_com.my_lib.a.APosition,
+                        local.my_domain_com.my_lib.b.BPosition,
                     ),
                 ),
             ],
@@ -37,7 +37,7 @@ class Other(literal.Action):
         self.get_interface_position(
             "position<source>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.b.B
+            local.my_domain_com.my_lib.b.BPosition
         ).create_particle()
         literal.record_operation("other.create(source::/b)")
         self.get_interface_position(

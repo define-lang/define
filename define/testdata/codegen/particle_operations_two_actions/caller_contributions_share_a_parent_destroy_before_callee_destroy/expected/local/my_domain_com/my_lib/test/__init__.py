@@ -10,9 +10,9 @@ import local.my_domain_com.my_lib.branch
 import local.my_domain_com.my_lib.destroyer
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.destroyer.Destroyer,
+        local.my_domain_com.my_lib.destroyer.DestroyerAction,
     )
 
     @override
@@ -20,40 +20,40 @@ class Test(literal.Action):
         source = literal.LocalPosition(
             "position<source>",
             constraints=(
-                local.my_domain_com.my_lib.branch.Branch,
+                local.my_domain_com.my_lib.branch.BranchPosition,
             ),
         )
         source.create_particle()
         source.particle.get_position(
-            local.my_domain_com.my_lib.branch.Branch
+            local.my_domain_com.my_lib.branch.BranchPosition
         ).create_particle()
         source.particle.get_position(
-            local.my_domain_com.my_lib.branch.Branch
+            local.my_domain_com.my_lib.branch.BranchPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.a.A
+            local.my_domain_com.my_lib.a.APosition
         ).create_particle()
         source.particle.get_position(
-            local.my_domain_com.my_lib.branch.Branch
+            local.my_domain_com.my_lib.branch.BranchPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.b.B
+            local.my_domain_com.my_lib.b.BPosition
         ).create_particle()
         source.move_particle_to(
             self.on_particle.get_action(
-                local.my_domain_com.my_lib.destroyer.Destroyer
+                local.my_domain_com.my_lib.destroyer.DestroyerAction
             ).get_interface_position(
                 "position<parent>"
             )
         )
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.destroyer.Destroyer
+            local.my_domain_com.my_lib.destroyer.DestroyerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.destroyer.Destroyer
+            local.my_domain_com.my_lib.destroyer.DestroyerAction
         ).run(DestroyerDestructionContracts())
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.destroyer.Destroyer
+            local.my_domain_com.my_lib.destroyer.DestroyerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
@@ -64,15 +64,15 @@ class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.Destroy
     @override
     def destroy_position_parent(self, particle: literal.Particle):
         particle.get_position(
-            local.my_domain_com.my_lib.branch.Branch
+            local.my_domain_com.my_lib.branch.BranchPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.b.B
+            local.my_domain_com.my_lib.b.BPosition
         ).destroy_particle()
         particle.get_position(
-            local.my_domain_com.my_lib.branch.Branch
+            local.my_domain_com.my_lib.branch.BranchPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.a.A
+            local.my_domain_com.my_lib.a.APosition
         ).destroy_particle()
         particle.get_position(
-            local.my_domain_com.my_lib.branch.Branch
+            local.my_domain_com.my_lib.branch.BranchPosition
         ).destroy_particle()

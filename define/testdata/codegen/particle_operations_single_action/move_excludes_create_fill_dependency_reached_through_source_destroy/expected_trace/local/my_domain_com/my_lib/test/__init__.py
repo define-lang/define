@@ -9,53 +9,53 @@ import local.my_domain_com.my_lib.item
 import local.my_domain_com.my_lib.payload
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         box = literal.LocalPosition(
             "position<box>",
             constraints=(
-                local.my_domain_com.my_lib.item.Item,
-                local.my_domain_com.my_lib.destination.Destination,
+                local.my_domain_com.my_lib.item.ItemPosition,
+                local.my_domain_com.my_lib.destination.DestinationPosition,
             ),
         )
         holder = literal.LocalPosition(
             "position<holder>",
             constraints=(
-                local.my_domain_com.my_lib.payload.Payload,
+                local.my_domain_com.my_lib.payload.PayloadPosition,
             ),
         )
         box.create_particle()
         literal.record_operation("test.create(box)")
         box.particle.get_position(
-            local.my_domain_com.my_lib.item.Item
+            local.my_domain_com.my_lib.item.ItemPosition
         ).create_particle()
         literal.record_operation("test.create(box::/item)")
         box.particle.get_position(
-            local.my_domain_com.my_lib.item.Item
+            local.my_domain_com.my_lib.item.ItemPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.payload.Payload
+            local.my_domain_com.my_lib.payload.PayloadPosition
         ).create_particle()
         literal.record_operation("test.create(box::/item::/payload)")
         box.particle.get_position(
-            local.my_domain_com.my_lib.item.Item
+            local.my_domain_com.my_lib.item.ItemPosition
         ).move_particle_to(
             holder
         )
         literal.record_operation("test.move(box::/item, holder)")
         holder.particle.get_position(
-            local.my_domain_com.my_lib.payload.Payload
+            local.my_domain_com.my_lib.payload.PayloadPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(holder::/payload)")
         holder.move_particle_to(
             box.particle.get_position(
-                local.my_domain_com.my_lib.destination.Destination
+                local.my_domain_com.my_lib.destination.DestinationPosition
             )
         )
         literal.record_operation("test.move(holder, box::/destination)")
         box.particle.get_position(
-            local.my_domain_com.my_lib.destination.Destination
+            local.my_domain_com.my_lib.destination.DestinationPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(box::/destination)")
         box.destroy_particle()

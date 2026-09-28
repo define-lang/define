@@ -3,5 +3,5 @@
 from define.runtime import literal
 
 
-class Required(literal.GlobalPosition):
+class RequiredPosition(literal.GlobalPosition):
     pass

@@ -8,10 +8,10 @@ import local.my_domain_com.my_lib.first
 import local.my_domain_com.my_lib.marker
 
 
-class FirstDestructor(literal.Action):
+class FirstDestructorAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.first.First,
-        local.my_domain_com.my_lib.marker.Marker,
+        local.my_domain_com.my_lib.first.FirstPosition,
+        local.my_domain_com.my_lib.marker.MarkerPosition,
     )
 
     @override
@@ -20,18 +20,18 @@ class FirstDestructor(literal.Action):
             "position<holder>",
         )
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.first.First
+            local.my_domain_com.my_lib.first.FirstPosition
         ).move_particle_to(
             holder
         )
         holder.move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.first.First
+                local.my_domain_com.my_lib.first.FirstPosition
             )
         )
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.marker.Marker
+            local.my_domain_com.my_lib.marker.MarkerPosition
         ).create_particle()
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.marker.Marker
+            local.my_domain_com.my_lib.marker.MarkerPosition
         ).destroy_particle()

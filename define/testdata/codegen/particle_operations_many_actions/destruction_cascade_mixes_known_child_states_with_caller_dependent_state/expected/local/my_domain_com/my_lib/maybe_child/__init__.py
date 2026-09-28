@@ -3,5 +3,5 @@
 from define.runtime import literal
 
 
-class MaybeChild(literal.GlobalPosition):
+class MaybeChildPosition(literal.GlobalPosition):
     pass

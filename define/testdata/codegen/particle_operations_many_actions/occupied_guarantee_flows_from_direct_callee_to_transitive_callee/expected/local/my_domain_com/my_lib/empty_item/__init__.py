@@ -18,9 +18,9 @@ class EmptyItemDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = EmptyItemDestructionContracts()
 
 
-class EmptyItem(literal.Action):
+class EmptyItemAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.item.Item,
+        local.my_domain_com.my_lib.item.ItemPosition,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -35,14 +35,14 @@ class EmptyItem(literal.Action):
     def run(self, destruction_contracts: EmptyItemDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         destruction_contracts.run_destructors_global_position_item(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.item.Item
+                local.my_domain_com.my_lib.item.ItemPosition
             ).particle
         )
         destruction_contracts.destroy_global_position_item(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.item.Item
+                local.my_domain_com.my_lib.item.ItemPosition
             ).particle
         )
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.item.Item
+            local.my_domain_com.my_lib.item.ItemPosition
         ).destroy_particle()

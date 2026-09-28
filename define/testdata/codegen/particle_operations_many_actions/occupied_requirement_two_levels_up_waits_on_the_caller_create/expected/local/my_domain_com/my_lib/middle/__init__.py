@@ -25,7 +25,7 @@ class MiddleDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = MiddleDestructionContracts()
 
 
-class Middle(literal.Action):
+class MiddleAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -35,8 +35,8 @@ class Middle(literal.Action):
                 literal.LocalPosition(
                     "position<gw>",
                     constraints=(
-                        local.my_domain_com.my_lib.inner.Inner,
-                        local.my_domain_com.my_lib.value.Value,
+                        local.my_domain_com.my_lib.inner.InnerAction,
+                        local.my_domain_com.my_lib.value.ValuePosition,
                     ),
                 ),
             ],
@@ -47,12 +47,12 @@ class Middle(literal.Action):
         self.get_interface_position(
             "position<gw>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.value.Value
+            local.my_domain_com.my_lib.value.ValuePosition
         ).move_particle_to(
             self.get_interface_position(
                 "position<gw>"
             ).particle.get_action(
-                local.my_domain_com.my_lib.inner.Inner
+                local.my_domain_com.my_lib.inner.InnerAction
             ).get_interface_position(
                 "position<slot>"
             )
@@ -60,14 +60,14 @@ class Middle(literal.Action):
         self.get_interface_position(
             "position<gw>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         self.get_interface_position(
             "position<gw>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).run(
             InnerDestructionContracts(
                 destruction_contracts.run_destructors_position_gw__position_value,
@@ -77,7 +77,7 @@ class Middle(literal.Action):
         self.get_interface_position(
             "position<gw>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

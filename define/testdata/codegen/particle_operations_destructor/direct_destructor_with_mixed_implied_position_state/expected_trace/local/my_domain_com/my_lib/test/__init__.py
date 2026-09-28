@@ -11,9 +11,9 @@ import local.my_domain_com.my_lib.occupied_last
 import local.my_domain_com.my_lib.transitive
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.destroyer.Destroyer,
+        local.my_domain_com.my_lib.destroyer.DestroyerAction,
     )
 
     @override
@@ -21,37 +21,37 @@ class Test(literal.Action):
         source = literal.LocalPosition(
             "position<source>",
             constraints=(
-                local.my_domain_com.my_lib.destructor.Destructor,
-                local.my_domain_com.my_lib.occupied_first.OccupiedFirst,
-                local.my_domain_com.my_lib.occupied_last.OccupiedLast,
+                local.my_domain_com.my_lib.destructor.DestructorAction,
+                local.my_domain_com.my_lib.occupied_first.OccupiedFirstPosition,
+                local.my_domain_com.my_lib.occupied_last.OccupiedLastPosition,
             ),
         )
         source.create_particle()
         literal.record_operation("test.create(source)")
         source.particle.get_position(
-            local.my_domain_com.my_lib.occupied_first.OccupiedFirst
+            local.my_domain_com.my_lib.occupied_first.OccupiedFirstPosition
         ).create_particle()
         literal.record_operation("test.create(source::/occupied_first)")
         source.particle.get_position(
-            local.my_domain_com.my_lib.occupied_first.OccupiedFirst
+            local.my_domain_com.my_lib.occupied_first.OccupiedFirstPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.transitive.Transitive
+            local.my_domain_com.my_lib.transitive.TransitivePosition
         ).create_particle()
         literal.record_operation("test.create(source::/occupied_first::/transitive)")
         source.particle.get_position(
-            local.my_domain_com.my_lib.occupied_last.OccupiedLast
+            local.my_domain_com.my_lib.occupied_last.OccupiedLastPosition
         ).create_particle()
         literal.record_operation("test.create(source::/occupied_last)")
         source.move_particle_to(
             self.on_particle.get_action(
-                local.my_domain_com.my_lib.destroyer.Destroyer
+                local.my_domain_com.my_lib.destroyer.DestroyerAction
             ).get_interface_position(
                 "position<target>"
             )
         )
         literal.record_operation("test.move(source, /destroyer::target)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.destroyer.Destroyer
+            local.my_domain_com.my_lib.destroyer.DestroyerAction
         ).run(DestroyerDestructionContracts())
 
 
@@ -60,16 +60,16 @@ class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.Destroy
     @override
     def destroy_position_target(self, particle: literal.Particle):
         particle.get_position(
-            local.my_domain_com.my_lib.occupied_last.OccupiedLast
+            local.my_domain_com.my_lib.occupied_last.OccupiedLastPosition
         ).destroy_particle()
         literal.record_operation("destroyer.destroy(target::/occupied_last)")
         particle.get_position(
-            local.my_domain_com.my_lib.occupied_first.OccupiedFirst
+            local.my_domain_com.my_lib.occupied_first.OccupiedFirstPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.transitive.Transitive
+            local.my_domain_com.my_lib.transitive.TransitivePosition
         ).destroy_particle()
         literal.record_operation("destroyer.destroy(target::/occupied_first::/transitive)")
         particle.get_position(
-            local.my_domain_com.my_lib.occupied_first.OccupiedFirst
+            local.my_domain_com.my_lib.occupied_first.OccupiedFirstPosition
         ).destroy_particle()
         literal.record_operation("destroyer.destroy(target::/occupied_first)")

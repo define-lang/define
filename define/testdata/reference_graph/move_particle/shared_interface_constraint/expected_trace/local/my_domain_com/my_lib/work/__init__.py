@@ -18,7 +18,7 @@ class WorkDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = WorkDestructionContracts()
 
 
-class Work(literal.Action):
+class WorkAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -28,13 +28,13 @@ class Work(literal.Action):
                 literal.LocalPosition(
                     "position<source>",
                     constraints=(
-                        local.my_domain_com.my_lib.shared.Shared,
+                        local.my_domain_com.my_lib.shared.SharedPosition,
                     ),
                 ),
                 literal.LocalPosition(
                     "position<dest>",
                     constraints=(
-                        local.my_domain_com.my_lib.shared.Shared,
+                        local.my_domain_com.my_lib.shared.SharedPosition,
                     ),
                 ),
             ],
@@ -49,7 +49,7 @@ class Work(literal.Action):
         self.get_interface_position(
             "position<source>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.shared.Shared
+            local.my_domain_com.my_lib.shared.SharedPosition
         ).create_particle()
         literal.record_operation("work.create(source::/shared)")
         self.get_interface_position(
@@ -63,7 +63,7 @@ class Work(literal.Action):
         self.get_interface_position(
             "position<dest>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.shared.Shared
+            local.my_domain_com.my_lib.shared.SharedPosition
         ).destroy_particle()
         literal.record_operation("work.destroy(dest::/shared)")
         self.get_interface_position(

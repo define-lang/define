@@ -8,22 +8,22 @@ import local.my_domain_com.my_lib.required
 import local.my_domain_com.my_lib.work
 
 
-class Destruct(literal.Action):
+class DestructAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.required.Required,
+        local.my_domain_com.my_lib.required.RequiredPosition,
     )
 
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.required.Required
+            local.my_domain_com.my_lib.required.RequiredPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.work.Work
+            local.my_domain_com.my_lib.work.WorkPosition
         ).create_particle()
         literal.record_operation("destruct.create(/required::/work)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.required.Required
+            local.my_domain_com.my_lib.required.RequiredPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.work.Work
+            local.my_domain_com.my_lib.work.WorkPosition
         ).destroy_particle()
         literal.record_operation("destruct.destroy(/required::/work)")

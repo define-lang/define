@@ -8,9 +8,9 @@ import local.my_domain_com.my_lib.child
 import local.my_domain_com.my_lib.destructor
 
 
-class Maker(literal.Action):
+class MakerAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.child.Child,
+        local.my_domain_com.my_lib.child.ChildPosition,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -26,12 +26,12 @@ class Maker(literal.Action):
         temp = literal.LocalPosition(
             "position<temp>",
             constraints=(
-                local.my_domain_com.my_lib.destructor.Destructor,
+                local.my_domain_com.my_lib.destructor.DestructorAction,
             ),
         )
         temp.create_particle()
         temp.move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.child.Child
+                local.my_domain_com.my_lib.child.ChildPosition
             )
         )

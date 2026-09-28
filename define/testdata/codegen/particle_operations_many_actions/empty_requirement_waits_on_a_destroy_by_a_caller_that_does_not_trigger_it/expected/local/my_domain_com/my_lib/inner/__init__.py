@@ -7,9 +7,9 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.slot
 
 
-class Inner(literal.Action):
+class InnerAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.slot.Slot,
+        local.my_domain_com.my_lib.slot.SlotPosition,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -23,5 +23,5 @@ class Inner(literal.Action):
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.slot.Slot
+            local.my_domain_com.my_lib.slot.SlotPosition
         ).create_particle()

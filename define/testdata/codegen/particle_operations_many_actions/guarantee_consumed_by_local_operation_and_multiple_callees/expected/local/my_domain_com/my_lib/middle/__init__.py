@@ -10,9 +10,9 @@ import local.my_domain_com.my_lib.marker
 import local.my_domain_com.my_lib.shared
 
 
-class Middle(literal.Action):
+class MiddleAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.shared.Shared,
+        local.my_domain_com.my_lib.shared.SharedPosition,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -26,45 +26,45 @@ class Middle(literal.Action):
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.shared.Shared
+            local.my_domain_com.my_lib.shared.SharedPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.marker.Marker
+            local.my_domain_com.my_lib.marker.MarkerPosition
         ).create_particle()
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.shared.Shared
+            local.my_domain_com.my_lib.shared.SharedPosition
         ).particle.get_action(
-            local.my_domain_com.my_lib.child_a.ChildA
+            local.my_domain_com.my_lib.child_a.ChildAAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.shared.Shared
+            local.my_domain_com.my_lib.shared.SharedPosition
         ).particle.get_action(
-            local.my_domain_com.my_lib.child_a.ChildA
+            local.my_domain_com.my_lib.child_a.ChildAAction
         ).run()
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.shared.Shared
+            local.my_domain_com.my_lib.shared.SharedPosition
         ).particle.get_action(
-            local.my_domain_com.my_lib.child_b.ChildB
+            local.my_domain_com.my_lib.child_b.ChildBAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.shared.Shared
+            local.my_domain_com.my_lib.shared.SharedPosition
         ).particle.get_action(
-            local.my_domain_com.my_lib.child_b.ChildB
+            local.my_domain_com.my_lib.child_b.ChildBAction
         ).run()
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.shared.Shared
+            local.my_domain_com.my_lib.shared.SharedPosition
         ).particle.get_action(
-            local.my_domain_com.my_lib.child_a.ChildA
+            local.my_domain_com.my_lib.child_a.ChildAAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.shared.Shared
+            local.my_domain_com.my_lib.shared.SharedPosition
         ).particle.get_action(
-            local.my_domain_com.my_lib.child_b.ChildB
+            local.my_domain_com.my_lib.child_b.ChildBAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

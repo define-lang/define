@@ -3,5 +3,5 @@
 from define.runtime import literal
 
 
-class Implied(literal.GlobalPosition):
+class ImpliedPosition(literal.GlobalPosition):
     pass

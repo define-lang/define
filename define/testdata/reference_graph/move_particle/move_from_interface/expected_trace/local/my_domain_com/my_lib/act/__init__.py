@@ -31,7 +31,7 @@ class ActDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = ActDestructionContracts()
 
 
-class Act(literal.Action):
+class ActAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -45,7 +45,7 @@ class Act(literal.Action):
                 literal.LocalPosition(
                     "position<chain_dest>",
                     constraints=(
-                        local.my_domain_com.my_lib.mid_dest.MidDest,
+                        local.my_domain_com.my_lib.mid_dest.MidDestPosition,
                     ),
                 ),
             ],
@@ -88,9 +88,9 @@ class Act(literal.Action):
             self.get_interface_position(
                 "position<chain_dest>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.mid_dest.MidDest
+                local.my_domain_com.my_lib.mid_dest.MidDestPosition
             ).particle.get_position(
-                local.my_domain_com.my_lib.end_dest.EndDest
+                local.my_domain_com.my_lib.end_dest.EndDestPosition
             )
         )
         literal.record_operation("act.move(src_c, chain_dest::/mid_dest::/end_dest)")
@@ -102,7 +102,7 @@ class Act(literal.Action):
             self.get_interface_position(
                 "position<chain_dest>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.mid_dest.MidDest
+                local.my_domain_com.my_lib.mid_dest.MidDestPosition
             ).particle
         )
         destruction_contracts.run_destructors_position_chain_dest(
@@ -114,7 +114,7 @@ class Act(literal.Action):
             self.get_interface_position(
                 "position<chain_dest>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.mid_dest.MidDest
+                local.my_domain_com.my_lib.mid_dest.MidDestPosition
             ).particle
         )
         destruction_contracts.destroy_position_chain_dest(
@@ -125,15 +125,15 @@ class Act(literal.Action):
         self.get_interface_position(
             "position<chain_dest>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.mid_dest.MidDest
+            local.my_domain_com.my_lib.mid_dest.MidDestPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.end_dest.EndDest
+            local.my_domain_com.my_lib.end_dest.EndDestPosition
         ).destroy_particle()
         literal.record_operation("act.destroy(chain_dest::/mid_dest::/end_dest)")
         self.get_interface_position(
             "position<chain_dest>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.mid_dest.MidDest
+            local.my_domain_com.my_lib.mid_dest.MidDestPosition
         ).destroy_particle()
         literal.record_operation("act.destroy(chain_dest::/mid_dest)")
         self.get_interface_position(

@@ -8,19 +8,19 @@ import local.my_domain_com.my_lib.construct_c
 import local.my_domain_com.my_lib.inner
 
 
-class ConstructB(literal.Action):
+class ConstructBAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.inner.Inner,
+        local.my_domain_com.my_lib.inner.InnerPosition,
     )
 
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerPosition
         ).create_particle()
         literal.record_operation("construct_b.create(/inner)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerPosition
         ).particle.get_action(
-            local.my_domain_com.my_lib.construct_c.ConstructC
+            local.my_domain_com.my_lib.construct_c.ConstructCAction
         ).run()

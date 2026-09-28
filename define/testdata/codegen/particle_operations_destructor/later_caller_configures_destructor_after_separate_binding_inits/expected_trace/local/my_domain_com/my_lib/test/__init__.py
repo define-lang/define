@@ -10,9 +10,9 @@ import local.my_domain_com.my_lib.known_destructor
 import local.my_domain_com.my_lib.later_destructor
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.caller.Caller,
+        local.my_domain_com.my_lib.caller.CallerAction,
     )
 
     @override
@@ -20,23 +20,23 @@ class Test(literal.Action):
         source = literal.LocalPosition(
             "position<source>",
             constraints=(
-                local.my_domain_com.my_lib.later_destructor.LaterDestructor,
-                local.my_domain_com.my_lib.extra_destructor.ExtraDestructor,
-                local.my_domain_com.my_lib.known_destructor.KnownDestructor,
+                local.my_domain_com.my_lib.later_destructor.LaterDestructorAction,
+                local.my_domain_com.my_lib.extra_destructor.ExtraDestructorAction,
+                local.my_domain_com.my_lib.known_destructor.KnownDestructorAction,
             ),
         )
         source.create_particle()
         literal.record_operation("test.create(source)")
         source.move_particle_to(
             self.on_particle.get_action(
-                local.my_domain_com.my_lib.caller.Caller
+                local.my_domain_com.my_lib.caller.CallerAction
             ).get_interface_position(
                 "position<run>"
             )
         )
         literal.record_operation("test.move(source, /caller::run)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.caller.Caller
+            local.my_domain_com.my_lib.caller.CallerAction
         ).run(CallerDestructionContracts())
 
 
@@ -45,5 +45,5 @@ class CallerDestructionContracts(local.my_domain_com.my_lib.caller.CallerDestruc
     @override
     def run_destructors_position_run(self, particle: literal.Particle):
         particle.get_action(
-            local.my_domain_com.my_lib.later_destructor.LaterDestructor
+            local.my_domain_com.my_lib.later_destructor.LaterDestructorAction
         ).run()

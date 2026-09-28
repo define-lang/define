@@ -7,9 +7,9 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.marker
 
 
-class LeftChild(literal.Action):
+class LeftChildAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.marker.Marker,
+        local.my_domain_com.my_lib.marker.MarkerPosition,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -23,6 +23,6 @@ class LeftChild(literal.Action):
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.marker.Marker
+            local.my_domain_com.my_lib.marker.MarkerPosition
         ).create_particle()
         literal.record_operation("left_child.create(/marker)")

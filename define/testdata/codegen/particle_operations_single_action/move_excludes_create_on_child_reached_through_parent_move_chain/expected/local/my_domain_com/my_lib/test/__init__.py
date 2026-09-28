@@ -7,7 +7,7 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.item
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
@@ -20,18 +20,18 @@ class Test(literal.Action):
         holder_c = literal.LocalPosition(
             "position<holder_c>",
             constraints=(
-                local.my_domain_com.my_lib.item.Item,
+                local.my_domain_com.my_lib.item.ItemPosition,
             ),
         )
         box = literal.LocalPosition(
             "position<box>",
             constraints=(
-                local.my_domain_com.my_lib.item.Item,
+                local.my_domain_com.my_lib.item.ItemPosition,
             ),
         )
         box.create_particle()
         box.particle.get_position(
-            local.my_domain_com.my_lib.item.Item
+            local.my_domain_com.my_lib.item.ItemPosition
         ).create_particle()
         box.move_particle_to(
             holder_a
@@ -43,6 +43,6 @@ class Test(literal.Action):
             holder_c
         )
         holder_c.particle.get_position(
-            local.my_domain_com.my_lib.item.Item
+            local.my_domain_com.my_lib.item.ItemPosition
         ).destroy_particle()
         holder_c.destroy_particle()

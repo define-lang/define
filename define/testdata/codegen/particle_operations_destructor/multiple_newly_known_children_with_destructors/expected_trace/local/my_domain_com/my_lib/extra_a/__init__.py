@@ -7,7 +7,7 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.destruct_a
 
 
-class ExtraA(literal.GlobalPosition):
+class ExtraAPosition(literal.GlobalPosition):
     constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.destruct_a.DestructA,
+        local.my_domain_com.my_lib.destruct_a.DestructAAction,
     )

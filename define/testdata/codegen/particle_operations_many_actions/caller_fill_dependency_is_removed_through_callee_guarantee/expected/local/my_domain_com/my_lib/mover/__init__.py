@@ -9,11 +9,11 @@ import local.my_domain_com.my_lib.helper
 import local.my_domain_com.my_lib.out
 
 
-class Mover(literal.Action):
+class MoverAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.destination.Destination,
-        local.my_domain_com.my_lib.out.Out,
-        local.my_domain_com.my_lib.helper.Helper,
+        local.my_domain_com.my_lib.destination.DestinationPosition,
+        local.my_domain_com.my_lib.out.OutPosition,
+        local.my_domain_com.my_lib.helper.HelperAction,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -27,22 +27,22 @@ class Mover(literal.Action):
     @override
     def run(self):
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.helper.Helper
+            local.my_domain_com.my_lib.helper.HelperAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.helper.Helper
+            local.my_domain_com.my_lib.helper.HelperAction
         ).run()
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.out.Out
+            local.my_domain_com.my_lib.out.OutPosition
         ).move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.destination.Destination
+                local.my_domain_com.my_lib.destination.DestinationPosition
             )
         )
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.helper.Helper
+            local.my_domain_com.my_lib.helper.HelperAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

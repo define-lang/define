@@ -7,7 +7,7 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.marker
 
 
-class Input(literal.GlobalPosition):
+class InputPosition(literal.GlobalPosition):
     constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.marker.Marker,
+        local.my_domain_com.my_lib.marker.MarkerPosition,
     )

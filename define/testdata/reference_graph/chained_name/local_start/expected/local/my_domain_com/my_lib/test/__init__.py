@@ -9,45 +9,45 @@ import local.my_domain_com.my_lib.c
 import local.my_domain_com.my_lib.d
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         a = literal.LocalPosition(
             "position<a>",
             constraints=(
-                local.my_domain_com.my_lib.b.B,
+                local.my_domain_com.my_lib.b.BPosition,
             ),
         )
         a.create_particle()
         a.particle.get_position(
-            local.my_domain_com.my_lib.b.B
+            local.my_domain_com.my_lib.b.BPosition
         ).create_particle()
         a.particle.get_position(
-            local.my_domain_com.my_lib.b.B
+            local.my_domain_com.my_lib.b.BPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.c.C
+            local.my_domain_com.my_lib.c.CPosition
         ).create_particle()
         a.particle.get_position(
-            local.my_domain_com.my_lib.b.B
+            local.my_domain_com.my_lib.b.BPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.c.C
+            local.my_domain_com.my_lib.c.CPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.d.D
+            local.my_domain_com.my_lib.d.DPosition
         ).create_particle()
         a.particle.get_position(
-            local.my_domain_com.my_lib.b.B
+            local.my_domain_com.my_lib.b.BPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.c.C
+            local.my_domain_com.my_lib.c.CPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.d.D
+            local.my_domain_com.my_lib.d.DPosition
         ).destroy_particle()
         a.particle.get_position(
-            local.my_domain_com.my_lib.b.B
+            local.my_domain_com.my_lib.b.BPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.c.C
+            local.my_domain_com.my_lib.c.CPosition
         ).destroy_particle()
         a.particle.get_position(
-            local.my_domain_com.my_lib.b.B
+            local.my_domain_com.my_lib.b.BPosition
         ).destroy_particle()
         a.destroy_particle()

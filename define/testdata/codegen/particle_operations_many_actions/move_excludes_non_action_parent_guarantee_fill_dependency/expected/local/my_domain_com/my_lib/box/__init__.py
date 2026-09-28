@@ -8,8 +8,8 @@ import local.my_domain_com.my_lib.destination
 import local.my_domain_com.my_lib.item
 
 
-class Box(literal.GlobalPosition):
+class BoxPosition(literal.GlobalPosition):
     constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.item.Item,
-        local.my_domain_com.my_lib.destination.Destination,
+        local.my_domain_com.my_lib.item.ItemPosition,
+        local.my_domain_com.my_lib.destination.DestinationPosition,
     )

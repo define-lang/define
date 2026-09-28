@@ -8,7 +8,7 @@ import local.my_domain_com.my_lib.inner
 import local.my_domain_com.my_lib.result_value
 
 
-class Middle(literal.Action):
+class MiddleAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -18,7 +18,7 @@ class Middle(literal.Action):
                 literal.LocalPosition(
                     "position<inner_parent>",
                     constraints=(
-                        local.my_domain_com.my_lib.result_value.ResultValue,
+                        local.my_domain_com.my_lib.result_value.ResultValuePosition,
                     ),
                 ),
             ],
@@ -29,7 +29,7 @@ class Middle(literal.Action):
         inner_holder = literal.LocalPosition(
             "position<inner_holder>",
             constraints=(
-                local.my_domain_com.my_lib.inner.Inner,
+                local.my_domain_com.my_lib.inner.InnerAction,
             ),
         )
         result_holder = literal.LocalPosition(
@@ -41,33 +41,33 @@ class Middle(literal.Action):
             "position<inner_parent>"
         ).move_particle_to(
             inner_holder.particle.get_action(
-                local.my_domain_com.my_lib.inner.Inner
+                local.my_domain_com.my_lib.inner.InnerAction
             ).get_interface_position(
                 "position<input>"
             )
         )
         literal.record_operation("middle.move(inner_parent, inner_holder::/inner::input)")
         inner_holder.particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("middle.create(inner_holder::/inner::trigger_pos)")
         inner_holder.particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).run()
         inner_holder.particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<input>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.result_value.ResultValue
+            local.my_domain_com.my_lib.result_value.ResultValuePosition
         ).move_particle_to(
             result_holder
         )
         literal.record_operation("middle.move(inner_holder::/inner::input::/result_value, result_holder)")
         inner_holder.particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<input>"
         ).move_particle_to(
@@ -80,12 +80,12 @@ class Middle(literal.Action):
             self.get_interface_position(
                 "position<inner_parent>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.result_value.ResultValue
+                local.my_domain_com.my_lib.result_value.ResultValuePosition
             )
         )
         literal.record_operation("middle.move(result_holder, inner_parent::/result_value)")
         inner_holder.particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

@@ -25,7 +25,7 @@ class OuterDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = OuterDestructionContracts()
 
 
-class Outer(literal.Action):
+class OuterAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -34,13 +34,13 @@ class Outer(literal.Action):
                 literal.LocalPosition(
                     "position<input>",
                     constraints=(
-                        local.my_domain_com.my_lib.child.Child,
+                        local.my_domain_com.my_lib.child.ChildPosition,
                     ),
                 ),
                 literal.LocalPosition(
                     "position<middle_holder>",
                     constraints=(
-                        local.my_domain_com.my_lib.middle.Middle,
+                        local.my_domain_com.my_lib.middle.MiddleAction,
                     ),
                 ),
                 literal.LocalPosition("position<run>"),
@@ -59,7 +59,7 @@ class Outer(literal.Action):
             self.get_interface_position(
                 "position<middle_holder>"
             ).particle.get_action(
-                local.my_domain_com.my_lib.middle.Middle
+                local.my_domain_com.my_lib.middle.MiddleAction
             ).get_interface_position(
                 "position<input>"
             )
@@ -68,7 +68,7 @@ class Outer(literal.Action):
         self.get_interface_position(
             "position<middle_holder>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
@@ -76,7 +76,7 @@ class Outer(literal.Action):
         self.get_interface_position(
             "position<middle_holder>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).run(
             MiddleDestructionContracts(
                 destruction_contracts.run_destructors_position_input__position_child,
@@ -88,7 +88,7 @@ class Outer(literal.Action):
         self.get_interface_position(
             "position<middle_holder>"
         ).particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(
             "position<run>"
         ).destroy_particle()

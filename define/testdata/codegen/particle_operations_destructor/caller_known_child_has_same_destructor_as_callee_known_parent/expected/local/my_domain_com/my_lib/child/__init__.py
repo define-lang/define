@@ -7,7 +7,7 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.destructor
 
 
-class Child(literal.GlobalPosition):
+class ChildPosition(literal.GlobalPosition):
     constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.destructor.Destructor,
+        local.my_domain_com.my_lib.destructor.DestructorAction,
     )

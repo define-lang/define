@@ -8,7 +8,7 @@ import local.my_domain_com.my_lib.outer
 import local.my_domain_com.my_lib.result_value
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
@@ -18,39 +18,39 @@ class Test(literal.Action):
         gateway = literal.LocalPosition(
             "position<gateway>",
             constraints=(
-                local.my_domain_com.my_lib.outer.Outer,
+                local.my_domain_com.my_lib.outer.OuterAction,
             ),
         )
         gateway.create_particle()
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.outer.Outer
+            local.my_domain_com.my_lib.outer.OuterAction
         ).get_interface_position(
             "position<source>"
         ).create_particle()
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.outer.Outer
+            local.my_domain_com.my_lib.outer.OuterAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.outer.Outer
+            local.my_domain_com.my_lib.outer.OuterAction
         ).run()
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.outer.Outer
+            local.my_domain_com.my_lib.outer.OuterAction
         ).get_interface_position(
             "position<destination>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.result_value.ResultValue
+            local.my_domain_com.my_lib.result_value.ResultValuePosition
         ).move_particle_to(
             result
         )
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.outer.Outer
+            local.my_domain_com.my_lib.outer.OuterAction
         ).get_interface_position(
             "position<destination>"
         ).destroy_particle()
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.outer.Outer
+            local.my_domain_com.my_lib.outer.OuterAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

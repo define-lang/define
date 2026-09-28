@@ -6,7 +6,7 @@ import local.my_domain_com.my_lib.test
 
 
 def main():
-    literal.start(local.my_domain_com.my_lib.test.Test, trace_operations=True)
+    literal.start(local.my_domain_com.my_lib.test.TestAction, trace_operations=True)
 
 
 if __name__ == "__main__":

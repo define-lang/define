@@ -9,26 +9,26 @@ import local.my_domain_com.my_lib.inner
 import local.my_domain_com.my_lib.leaf
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         box = literal.LocalPosition(
             "position<box>",
             constraints=(
-                local.my_domain_com.my_lib.construct_b.ConstructB,
+                local.my_domain_com.my_lib.construct_b.ConstructBAction,
             ),
         )
         box.create_particle()
         box.particle.get_action(
-            local.my_domain_com.my_lib.construct_b.ConstructB
+            local.my_domain_com.my_lib.construct_b.ConstructBAction
         ).run()
         box.particle.get_position(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.leaf.Leaf
+            local.my_domain_com.my_lib.leaf.LeafPosition
         ).destroy_particle()
         box.particle.get_position(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerPosition
         ).destroy_particle()
         box.destroy_particle()

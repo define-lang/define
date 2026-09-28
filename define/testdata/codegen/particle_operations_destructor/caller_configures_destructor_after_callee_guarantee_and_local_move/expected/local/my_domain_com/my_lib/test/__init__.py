@@ -12,10 +12,10 @@ import local.my_domain_com.my_lib.payload
 import local.my_domain_com.my_lib.seeder
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.outer.Outer,
-        local.my_domain_com.my_lib.seeder.Seeder,
+        local.my_domain_com.my_lib.outer.OuterAction,
+        local.my_domain_com.my_lib.seeder.SeederAction,
     )
 
     @override
@@ -23,46 +23,46 @@ class Test(literal.Action):
         source = literal.LocalPosition(
             "position<source>",
             constraints=(
-                local.my_domain_com.my_lib.middle.Middle,
-                local.my_domain_com.my_lib.payload.Payload,
+                local.my_domain_com.my_lib.middle.MiddleAction,
+                local.my_domain_com.my_lib.payload.PayloadPosition,
             ),
         )
         payload_source = literal.LocalPosition(
             "position<payload_source>",
             constraints=(
-                local.my_domain_com.my_lib.extra_destructor.ExtraDestructor,
-                local.my_domain_com.my_lib.known_destructor.KnownDestructor,
+                local.my_domain_com.my_lib.extra_destructor.ExtraDestructorAction,
+                local.my_domain_com.my_lib.known_destructor.KnownDestructorAction,
             ),
         )
         source.create_particle()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.seeder.Seeder
+            local.my_domain_com.my_lib.seeder.SeederAction
         ).get_interface_position(
             "position<run>"
         ).create_particle()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.seeder.Seeder
+            local.my_domain_com.my_lib.seeder.SeederAction
         ).run()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.seeder.Seeder
+            local.my_domain_com.my_lib.seeder.SeederAction
         ).get_interface_position(
             "position<run>"
         ).destroy_particle()
         payload_source.create_particle()
         payload_source.move_particle_to(
             source.particle.get_position(
-                local.my_domain_com.my_lib.payload.Payload
+                local.my_domain_com.my_lib.payload.PayloadPosition
             )
         )
         source.move_particle_to(
             self.on_particle.get_action(
-                local.my_domain_com.my_lib.outer.Outer
+                local.my_domain_com.my_lib.outer.OuterAction
             ).get_interface_position(
                 "position<run>"
             )
         )
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.outer.Outer
+            local.my_domain_com.my_lib.outer.OuterAction
         ).run(OuterDestructionContracts())
 
 
@@ -71,5 +71,5 @@ class OuterDestructionContracts(local.my_domain_com.my_lib.outer.OuterDestructio
     @override
     def run_destructors_position_run__position_payload(self, particle: literal.Particle):
         particle.get_action(
-            local.my_domain_com.my_lib.extra_destructor.ExtraDestructor
+            local.my_domain_com.my_lib.extra_destructor.ExtraDestructorAction
         ).run()

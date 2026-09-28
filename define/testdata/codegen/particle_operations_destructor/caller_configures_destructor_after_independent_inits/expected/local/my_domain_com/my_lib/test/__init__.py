@@ -11,10 +11,10 @@ import local.my_domain_com.my_lib.known_destructor
 import local.my_domain_com.my_lib.parent
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.caller.Caller,
-        local.my_domain_com.my_lib.parent.Parent,
+        local.my_domain_com.my_lib.caller.CallerAction,
+        local.my_domain_com.my_lib.parent.ParentPosition,
     )
 
     @override
@@ -22,30 +22,30 @@ class Test(literal.Action):
         source = literal.LocalPosition(
             "position<source>",
             constraints=(
-                local.my_domain_com.my_lib.extra_destructor.ExtraDestructor,
-                local.my_domain_com.my_lib.known_destructor.KnownDestructor,
+                local.my_domain_com.my_lib.extra_destructor.ExtraDestructorAction,
+                local.my_domain_com.my_lib.known_destructor.KnownDestructorAction,
             ),
         )
         parent_source = literal.LocalPosition(
             "position<parent_source>",
             constraints=(
-                local.my_domain_com.my_lib.destroyer.Destroyer,
+                local.my_domain_com.my_lib.destroyer.DestroyerAction,
             ),
         )
         source.create_particle()
         parent_source.create_particle()
         parent_source.move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.parent.Parent
+                local.my_domain_com.my_lib.parent.ParentPosition
             )
         )
         source.move_particle_to(
             self.on_particle.get_action(
-                local.my_domain_com.my_lib.caller.Caller
+                local.my_domain_com.my_lib.caller.CallerAction
             ).get_interface_position(
                 "position<run>"
             )
         )
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.caller.Caller
+            local.my_domain_com.my_lib.caller.CallerAction
         ).run()

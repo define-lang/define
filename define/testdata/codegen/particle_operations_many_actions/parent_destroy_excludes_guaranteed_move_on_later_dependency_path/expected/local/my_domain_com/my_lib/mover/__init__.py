@@ -16,7 +16,7 @@ class MoverDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = MoverDestructionContracts()
 
 
-class Mover(literal.Action):
+class MoverAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(

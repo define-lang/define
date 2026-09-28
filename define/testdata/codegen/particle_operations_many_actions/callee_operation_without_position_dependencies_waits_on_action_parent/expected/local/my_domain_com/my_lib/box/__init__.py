@@ -7,7 +7,7 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.worker
 
 
-class Box(literal.GlobalPosition):
+class BoxPosition(literal.GlobalPosition):
     constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.worker.Worker,
+        local.my_domain_com.my_lib.worker.WorkerAction,
     )

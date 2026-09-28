@@ -7,14 +7,14 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.child
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         box = literal.LocalPosition(
             "position<box>",
             constraints=(
-                local.my_domain_com.my_lib.child.Child,
+                local.my_domain_com.my_lib.child.ChildPosition,
             ),
         )
         basket = literal.LocalPosition(
@@ -25,7 +25,7 @@ class Test(literal.Action):
         )
         box.create_particle()
         box.particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).create_particle()
         box.move_particle_to(
             basket
@@ -34,6 +34,6 @@ class Test(literal.Action):
             crate
         )
         crate.particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).destroy_particle()
         crate.destroy_particle()

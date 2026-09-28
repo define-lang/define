@@ -25,7 +25,7 @@ class MiddleDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = MiddleDestructionContracts()
 
 
-class Middle(literal.Action):
+class MiddleAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -35,7 +35,7 @@ class Middle(literal.Action):
                 literal.LocalPosition(
                     "position<source>",
                     constraints=(
-                        local.my_domain_com.my_lib.item.Item,
+                        local.my_domain_com.my_lib.item.ItemPosition,
                     ),
                 ),
                 literal.LocalPosition("position<holder>"),
@@ -47,7 +47,7 @@ class Middle(literal.Action):
         inner_holder = literal.LocalPosition(
             "position<inner_holder>",
             constraints=(
-                local.my_domain_com.my_lib.inner.Inner,
+                local.my_domain_com.my_lib.inner.InnerAction,
             ),
         )
         self.get_interface_position(
@@ -68,20 +68,20 @@ class Middle(literal.Action):
             "position<holder>"
         ).move_particle_to(
             inner_holder.particle.get_action(
-                local.my_domain_com.my_lib.inner.Inner
+                local.my_domain_com.my_lib.inner.InnerAction
             ).get_interface_position(
                 "position<input>"
             )
         )
         literal.record_operation("middle.move(holder, inner_holder::/inner::input)")
         inner_holder.particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("middle.create(inner_holder::/inner::trigger_pos)")
         inner_holder.particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).run(
             InnerDestructionContracts(
                 destruction_contracts.run_destructors_position_source__position_item,
@@ -91,13 +91,13 @@ class Middle(literal.Action):
         self.get_interface_position(
             "position<source>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.item.Item
+            local.my_domain_com.my_lib.item.ItemPosition
         ).create_particle()
         literal.record_operation("middle.create(source::/item)")
         self.get_interface_position(
             "position<source>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.item.Item
+            local.my_domain_com.my_lib.item.ItemPosition
         ).destroy_particle()
         literal.record_operation("middle.destroy(source::/item)")
         self.get_interface_position(
@@ -106,26 +106,26 @@ class Middle(literal.Action):
         literal.record_operation("middle.destroy(source)")
         destruction_contracts.run_destructors_position_source(
             inner_holder.particle.get_action(
-                local.my_domain_com.my_lib.inner.Inner
+                local.my_domain_com.my_lib.inner.InnerAction
             ).get_interface_position(
                 "position<input>"
             ).particle
         )
         destruction_contracts.destroy_position_source(
             inner_holder.particle.get_action(
-                local.my_domain_com.my_lib.inner.Inner
+                local.my_domain_com.my_lib.inner.InnerAction
             ).get_interface_position(
                 "position<input>"
             ).particle
         )
         inner_holder.particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
         literal.record_operation("middle.destroy(inner_holder::/inner::trigger_pos)")
         inner_holder.particle.get_action(
-            local.my_domain_com.my_lib.inner.Inner
+            local.my_domain_com.my_lib.inner.InnerAction
         ).get_interface_position(
             "position<input>"
         ).destroy_particle()

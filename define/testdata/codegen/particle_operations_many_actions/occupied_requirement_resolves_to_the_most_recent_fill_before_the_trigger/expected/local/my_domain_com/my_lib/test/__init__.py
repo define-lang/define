@@ -8,7 +8,7 @@ import local.my_domain_com.my_lib.helper
 import local.my_domain_com.my_lib.worker
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
@@ -18,13 +18,13 @@ class Test(literal.Action):
         gw_a = literal.LocalPosition(
             "position<gw_a>",
             constraints=(
-                local.my_domain_com.my_lib.worker.Worker,
+                local.my_domain_com.my_lib.worker.WorkerAction,
             ),
         )
         gw_b = literal.LocalPosition(
             "position<gw_b>",
             constraints=(
-                local.my_domain_com.my_lib.helper.Helper,
+                local.my_domain_com.my_lib.helper.HelperAction,
             ),
         )
         source.create_particle()
@@ -32,38 +32,38 @@ class Test(literal.Action):
         gw_b.create_particle()
         source.move_particle_to(
             gw_a.particle.get_action(
-                local.my_domain_com.my_lib.worker.Worker
+                local.my_domain_com.my_lib.worker.WorkerAction
             ).get_interface_position(
                 "position<slot>"
             )
         )
         gw_a.particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).run()
         source.create_particle()
         source.move_particle_to(
             gw_b.particle.get_action(
-                local.my_domain_com.my_lib.helper.Helper
+                local.my_domain_com.my_lib.helper.HelperAction
             ).get_interface_position(
                 "position<slot>"
             )
         )
         gw_b.particle.get_action(
-            local.my_domain_com.my_lib.helper.Helper
+            local.my_domain_com.my_lib.helper.HelperAction
         ).run()
         gw_b.particle.get_action(
-            local.my_domain_com.my_lib.helper.Helper
+            local.my_domain_com.my_lib.helper.HelperAction
         ).get_interface_position(
             "position<out>"
         ).move_particle_to(
             gw_a.particle.get_action(
-                local.my_domain_com.my_lib.worker.Worker
+                local.my_domain_com.my_lib.worker.WorkerAction
             ).get_interface_position(
                 "position<slot>"
             )
         )
         gw_a.particle.get_action(
-            local.my_domain_com.my_lib.worker.Worker
+            local.my_domain_com.my_lib.worker.WorkerAction
         ).run()
         gw_a.destroy_particle()
         gw_b.destroy_particle()

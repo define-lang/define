@@ -10,11 +10,11 @@ import local.my_domain_com.my_lib.occupied_last
 import local.my_domain_com.my_lib.transitive
 
 
-class Destructor(literal.Action):
+class DestructorAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.occupied_first.OccupiedFirst,
-        local.my_domain_com.my_lib.empty.Empty,
-        local.my_domain_com.my_lib.occupied_last.OccupiedLast,
+        local.my_domain_com.my_lib.occupied_first.OccupiedFirstPosition,
+        local.my_domain_com.my_lib.empty.EmptyPosition,
+        local.my_domain_com.my_lib.occupied_last.OccupiedLastPosition,
     )
 
     @override
@@ -29,42 +29,42 @@ class Destructor(literal.Action):
             "position<last_holder>",
         )
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.occupied_first.OccupiedFirst
+            local.my_domain_com.my_lib.occupied_first.OccupiedFirstPosition
         ).move_particle_to(
             first_holder
         )
         first_holder.move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.occupied_first.OccupiedFirst
+                local.my_domain_com.my_lib.occupied_first.OccupiedFirstPosition
             )
         )
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.occupied_first.OccupiedFirst
+            local.my_domain_com.my_lib.occupied_first.OccupiedFirstPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.transitive.Transitive
+            local.my_domain_com.my_lib.transitive.TransitivePosition
         ).move_particle_to(
             transitive_holder
         )
         transitive_holder.move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.occupied_first.OccupiedFirst
+                local.my_domain_com.my_lib.occupied_first.OccupiedFirstPosition
             ).particle.get_position(
-                local.my_domain_com.my_lib.transitive.Transitive
+                local.my_domain_com.my_lib.transitive.TransitivePosition
             )
         )
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.empty.Empty
+            local.my_domain_com.my_lib.empty.EmptyPosition
         ).create_particle()
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.empty.Empty
+            local.my_domain_com.my_lib.empty.EmptyPosition
         ).destroy_particle()
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.occupied_last.OccupiedLast
+            local.my_domain_com.my_lib.occupied_last.OccupiedLastPosition
         ).move_particle_to(
             last_holder
         )
         last_holder.move_particle_to(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.occupied_last.OccupiedLast
+                local.my_domain_com.my_lib.occupied_last.OccupiedLastPosition
             )
         )

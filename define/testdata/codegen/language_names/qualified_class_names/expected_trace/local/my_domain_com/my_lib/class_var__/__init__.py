@@ -16,7 +16,7 @@ class ClassVarDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = ClassVarDestructionContracts()
 
 
-class ClassVar_(literal.Action):
+class ClassVarAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(

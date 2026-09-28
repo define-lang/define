@@ -18,7 +18,7 @@ class InnerDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = InnerDestructionContracts()
 
 
-class Inner(literal.Action):
+class InnerAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -28,13 +28,13 @@ class Inner(literal.Action):
                 literal.LocalPosition(
                     "position<input>",
                     constraints=(
-                        local.my_domain_com.my_lib.implier.Implier,
+                        local.my_domain_com.my_lib.implier.ImplierAction,
                     ),
                 ),
                 literal.LocalPosition(
                     "position<output>",
                     constraints=(
-                        local.my_domain_com.my_lib.implier.Implier,
+                        local.my_domain_com.my_lib.implier.ImplierAction,
                     ),
                 ),
             ],

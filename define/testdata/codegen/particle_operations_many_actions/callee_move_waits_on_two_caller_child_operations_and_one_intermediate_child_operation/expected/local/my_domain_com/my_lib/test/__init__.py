@@ -10,10 +10,10 @@ import local.my_domain_com.my_lib.second
 import local.my_domain_com.my_lib.third
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.input.Input,
-        local.my_domain_com.my_lib.middle_action.MiddleAction,
+        local.my_domain_com.my_lib.input.InputPosition,
+        local.my_domain_com.my_lib.middle_action.MiddleActionAction,
     )
 
     @override
@@ -25,44 +25,44 @@ class Test(literal.Action):
             "position<third_holder>",
         )
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.input.Input
+            local.my_domain_com.my_lib.input.InputPosition
         ).create_particle()
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.input.Input
+            local.my_domain_com.my_lib.input.InputPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.second.Second
+            local.my_domain_com.my_lib.second.SecondPosition
         ).create_particle()
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.input.Input
+            local.my_domain_com.my_lib.input.InputPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.second.Second
+            local.my_domain_com.my_lib.second.SecondPosition
         ).move_particle_to(
             second_holder
         )
         second_holder.destroy_particle()
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.input.Input
+            local.my_domain_com.my_lib.input.InputPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.third.Third
+            local.my_domain_com.my_lib.third.ThirdPosition
         ).create_particle()
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.input.Input
+            local.my_domain_com.my_lib.input.InputPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.third.Third
+            local.my_domain_com.my_lib.third.ThirdPosition
         ).move_particle_to(
             third_holder
         )
         third_holder.destroy_particle()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.middle_action.MiddleAction
+            local.my_domain_com.my_lib.middle_action.MiddleActionAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.middle_action.MiddleAction
+            local.my_domain_com.my_lib.middle_action.MiddleActionAction
         ).run()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.middle_action.MiddleAction
+            local.my_domain_com.my_lib.middle_action.MiddleActionAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

@@ -8,25 +8,25 @@ import local.my_domain_com.my_lib.destructor
 import local.my_domain_com.my_lib.marker
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         box = literal.LocalPosition(
             "position<box>",
             constraints=(
-                local.my_domain_com.my_lib.destructor.Destructor,
-                local.my_domain_com.my_lib.marker.Marker,
+                local.my_domain_com.my_lib.destructor.DestructorAction,
+                local.my_domain_com.my_lib.marker.MarkerPosition,
             ),
         )
         box.create_particle()
         box.particle.get_position(
-            local.my_domain_com.my_lib.marker.Marker
+            local.my_domain_com.my_lib.marker.MarkerPosition
         ).create_particle()
         box.particle.get_action(
-            local.my_domain_com.my_lib.destructor.Destructor
+            local.my_domain_com.my_lib.destructor.DestructorAction
         ).run()
         box.particle.get_position(
-            local.my_domain_com.my_lib.marker.Marker
+            local.my_domain_com.my_lib.marker.MarkerPosition
         ).destroy_particle()
         box.destroy_particle()

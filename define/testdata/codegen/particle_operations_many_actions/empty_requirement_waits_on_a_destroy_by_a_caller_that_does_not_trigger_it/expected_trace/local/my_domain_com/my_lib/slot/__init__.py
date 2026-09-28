@@ -3,5 +3,5 @@
 from define.runtime import literal
 
 
-class Slot(literal.GlobalPosition):
+class SlotPosition(literal.GlobalPosition):
     pass

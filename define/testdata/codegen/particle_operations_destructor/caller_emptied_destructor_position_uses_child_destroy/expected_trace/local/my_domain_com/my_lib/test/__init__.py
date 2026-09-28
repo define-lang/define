@@ -9,21 +9,21 @@ import local.my_domain_com.my_lib.destructor
 import local.my_domain_com.my_lib.marker
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         carrier = literal.LocalPosition(
             "position<carrier>",
             constraints=(
-                local.my_domain_com.my_lib.callee.Callee,
+                local.my_domain_com.my_lib.callee.CalleeAction,
             ),
         )
         source = literal.LocalPosition(
             "position<source>",
             constraints=(
-                local.my_domain_com.my_lib.marker.Marker,
-                local.my_domain_com.my_lib.destructor.Destructor,
+                local.my_domain_com.my_lib.marker.MarkerPosition,
+                local.my_domain_com.my_lib.destructor.DestructorAction,
             ),
         )
         carrier.create_particle()
@@ -31,32 +31,32 @@ class Test(literal.Action):
         source.create_particle()
         literal.record_operation("test.create(source)")
         source.particle.get_position(
-            local.my_domain_com.my_lib.marker.Marker
+            local.my_domain_com.my_lib.marker.MarkerPosition
         ).create_particle()
         literal.record_operation("test.create(source::/marker)")
         source.particle.get_position(
-            local.my_domain_com.my_lib.marker.Marker
+            local.my_domain_com.my_lib.marker.MarkerPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(source::/marker)")
         source.move_particle_to(
             carrier.particle.get_action(
-                local.my_domain_com.my_lib.callee.Callee
+                local.my_domain_com.my_lib.callee.CalleeAction
             ).get_interface_position(
                 "position<src>"
             )
         )
         literal.record_operation("test.move(source, carrier::/callee::src)")
         carrier.particle.get_action(
-            local.my_domain_com.my_lib.callee.Callee
+            local.my_domain_com.my_lib.callee.CalleeAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("test.create(carrier::/callee::trigger_pos)")
         carrier.particle.get_action(
-            local.my_domain_com.my_lib.callee.Callee
+            local.my_domain_com.my_lib.callee.CalleeAction
         ).run()
         carrier.particle.get_action(
-            local.my_domain_com.my_lib.callee.Callee
+            local.my_domain_com.my_lib.callee.CalleeAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

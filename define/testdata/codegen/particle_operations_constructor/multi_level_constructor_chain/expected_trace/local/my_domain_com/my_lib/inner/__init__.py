@@ -7,7 +7,7 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.construct_c
 
 
-class Inner(literal.GlobalPosition):
+class InnerPosition(literal.GlobalPosition):
     constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.construct_c.ConstructC,
+        local.my_domain_com.my_lib.construct_c.ConstructCAction,
     )

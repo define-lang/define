@@ -18,9 +18,9 @@ class DestroyerDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = DestroyerDestructionContracts()
 
 
-class Destroyer(literal.Action):
+class DestroyerAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.mover.Mover,
+        local.my_domain_com.my_lib.mover.MoverAction,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -37,30 +37,30 @@ class Destroyer(literal.Action):
             "position<run>"
         ).move_particle_to(
             self.on_particle.get_action(
-                local.my_domain_com.my_lib.mover.Mover
+                local.my_domain_com.my_lib.mover.MoverAction
             ).get_interface_position(
                 "position<run>"
             )
         )
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.mover.Mover
+            local.my_domain_com.my_lib.mover.MoverAction
         ).run()
         destruction_contracts.run_destructors_position_run(
             self.on_particle.get_action(
-                local.my_domain_com.my_lib.mover.Mover
+                local.my_domain_com.my_lib.mover.MoverAction
             ).get_interface_position(
                 "position<result>"
             ).particle
         )
         destruction_contracts.destroy_position_run(
             self.on_particle.get_action(
-                local.my_domain_com.my_lib.mover.Mover
+                local.my_domain_com.my_lib.mover.MoverAction
             ).get_interface_position(
                 "position<result>"
             ).particle
         )
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.mover.Mover
+            local.my_domain_com.my_lib.mover.MoverAction
         ).get_interface_position(
             "position<result>"
         ).destroy_particle()

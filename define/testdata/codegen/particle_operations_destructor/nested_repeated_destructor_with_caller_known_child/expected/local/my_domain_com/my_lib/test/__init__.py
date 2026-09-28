@@ -7,18 +7,18 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.outer_destructor
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         outer = literal.LocalPosition(
             "position<outer>",
             constraints=(
-                local.my_domain_com.my_lib.outer_destructor.OuterDestructor,
+                local.my_domain_com.my_lib.outer_destructor.OuterDestructorAction,
             ),
         )
         outer.create_particle()
         outer.particle.get_action(
-            local.my_domain_com.my_lib.outer_destructor.OuterDestructor
+            local.my_domain_com.my_lib.outer_destructor.OuterDestructorAction
         ).run()
         outer.destroy_particle()

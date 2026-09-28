@@ -7,13 +7,13 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.filled
 
 
-class Other(literal.Action):
+class OtherAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.filled.Filled,
+        local.my_domain_com.my_lib.filled.FilledPosition,
     )
 
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.filled.Filled
+            local.my_domain_com.my_lib.filled.FilledPosition
         ).create_particle()

@@ -7,7 +7,7 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.extra
 
 
-class Known(literal.GlobalPosition):
+class KnownPosition(literal.GlobalPosition):
     constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.extra.Extra,
+        local.my_domain_com.my_lib.extra.ExtraPosition,
     )

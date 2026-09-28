@@ -8,20 +8,20 @@ import local.my_domain_com.my_lib.item
 import local.my_domain_com.my_lib.other
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         gateway = literal.LocalPosition(
             "position<gateway>",
             constraints=(
-                local.my_domain_com.my_lib.other.Other,
+                local.my_domain_com.my_lib.other.OtherAction,
             ),
         )
         box = literal.LocalPosition(
             "position<box>",
             constraints=(
-                local.my_domain_com.my_lib.item.Item,
+                local.my_domain_com.my_lib.item.ItemPosition,
             ),
         )
         destination = literal.LocalPosition(
@@ -37,17 +37,17 @@ class Test(literal.Action):
         literal.record_operation("test.move(box, destination)")
         destination.move_particle_to(
             gateway.particle.get_action(
-                local.my_domain_com.my_lib.other.Other
+                local.my_domain_com.my_lib.other.OtherAction
             ).get_interface_position(
                 "position<box>"
             )
         )
         literal.record_operation("test.move(destination, gateway::/other::box)")
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.other.Other
+            local.my_domain_com.my_lib.other.OtherAction
         ).run()
         gateway.particle.get_action(
-            local.my_domain_com.my_lib.other.Other
+            local.my_domain_com.my_lib.other.OtherAction
         ).get_interface_position(
             "position<destination>"
         ).destroy_particle()

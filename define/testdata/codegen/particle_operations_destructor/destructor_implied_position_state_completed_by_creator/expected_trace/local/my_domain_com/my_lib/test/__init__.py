@@ -11,44 +11,44 @@ import local.my_domain_com.my_lib.occupied_first
 import local.my_domain_com.my_lib.transitive
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.middle.Middle,
-        local.my_domain_com.my_lib.bundle.Bundle,
+        local.my_domain_com.my_lib.middle.MiddleAction,
+        local.my_domain_com.my_lib.bundle.BundlePosition,
     )
 
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.bundle.Bundle
+            local.my_domain_com.my_lib.bundle.BundlePosition
         ).create_particle()
         literal.record_operation("test.create(/bundle)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.bundle.Bundle
+            local.my_domain_com.my_lib.bundle.BundlePosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.occupied_first.OccupiedFirst
+            local.my_domain_com.my_lib.occupied_first.OccupiedFirstPosition
         ).create_particle()
         literal.record_operation("test.create(/bundle::/occupied_first)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.bundle.Bundle
+            local.my_domain_com.my_lib.bundle.BundlePosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.occupied_first.OccupiedFirst
+            local.my_domain_com.my_lib.occupied_first.OccupiedFirstPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.transitive.Transitive
+            local.my_domain_com.my_lib.transitive.TransitivePosition
         ).create_particle()
         literal.record_operation("test.create(/bundle::/occupied_first::/transitive)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.bundle.Bundle
+            local.my_domain_com.my_lib.bundle.BundlePosition
         ).move_particle_to(
             self.on_particle.get_action(
-                local.my_domain_com.my_lib.middle.Middle
+                local.my_domain_com.my_lib.middle.MiddleAction
             ).get_interface_position(
                 "position<target>"
             )
         )
         literal.record_operation("test.move(/bundle, /middle::target)")
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.middle.Middle
+            local.my_domain_com.my_lib.middle.MiddleAction
         ).run(MiddleDestructionContracts())
 
 
@@ -57,18 +57,18 @@ class MiddleDestructionContracts(local.my_domain_com.my_lib.middle.MiddleDestruc
     @override
     def run_destructors_position_target(self, particle: literal.Particle):
         particle.get_action(
-            local.my_domain_com.my_lib.destructor.Destructor
+            local.my_domain_com.my_lib.destructor.DestructorAction
         ).run()
 
     @override
     def destroy_position_target(self, particle: literal.Particle):
         particle.get_position(
-            local.my_domain_com.my_lib.occupied_first.OccupiedFirst
+            local.my_domain_com.my_lib.occupied_first.OccupiedFirstPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.transitive.Transitive
+            local.my_domain_com.my_lib.transitive.TransitivePosition
         ).destroy_particle()
         literal.record_operation("destroyer.destroy(target::/occupied_first::/transitive)")
         particle.get_position(
-            local.my_domain_com.my_lib.occupied_first.OccupiedFirst
+            local.my_domain_com.my_lib.occupied_first.OccupiedFirstPosition
         ).destroy_particle()
         literal.record_operation("destroyer.destroy(target::/occupied_first)")

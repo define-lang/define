@@ -13,25 +13,25 @@ import local.my_domain_com.my_lib.second_destructor
 import local.my_domain_com.my_lib.third_destructor
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         destroyer_particle = literal.LocalPosition(
             "position<destroyer_particle>",
             constraints=(
-                local.my_domain_com.my_lib.destroyer.Destroyer,
+                local.my_domain_com.my_lib.destroyer.DestroyerAction,
             ),
         )
         carrier = literal.LocalPosition(
             "position<carrier>",
             constraints=(
-                local.my_domain_com.my_lib.first_destructor.FirstDestructor,
-                local.my_domain_com.my_lib.second_destructor.SecondDestructor,
-                local.my_domain_com.my_lib.third_destructor.ThirdDestructor,
-                local.my_domain_com.my_lib.fourth_destructor.FourthDestructor,
-                local.my_domain_com.my_lib.fifth_destructor.FifthDestructor,
-                local.my_domain_com.my_lib.marker.Marker,
+                local.my_domain_com.my_lib.first_destructor.FirstDestructorAction,
+                local.my_domain_com.my_lib.second_destructor.SecondDestructorAction,
+                local.my_domain_com.my_lib.third_destructor.ThirdDestructorAction,
+                local.my_domain_com.my_lib.fourth_destructor.FourthDestructorAction,
+                local.my_domain_com.my_lib.fifth_destructor.FifthDestructorAction,
+                local.my_domain_com.my_lib.marker.MarkerPosition,
             ),
         )
         destroyer_particle.create_particle()
@@ -40,23 +40,23 @@ class Test(literal.Action):
         literal.record_operation("test.create(carrier)")
         carrier.move_particle_to(
             destroyer_particle.particle.get_action(
-                local.my_domain_com.my_lib.destroyer.Destroyer
+                local.my_domain_com.my_lib.destroyer.DestroyerAction
             ).get_interface_position(
                 "position<target>"
             )
         )
         literal.record_operation("test.move(carrier, destroyer_particle::/destroyer::target)")
         destroyer_particle.particle.get_action(
-            local.my_domain_com.my_lib.destroyer.Destroyer
+            local.my_domain_com.my_lib.destroyer.DestroyerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("test.create(destroyer_particle::/destroyer::trigger_pos)")
         destroyer_particle.particle.get_action(
-            local.my_domain_com.my_lib.destroyer.Destroyer
+            local.my_domain_com.my_lib.destroyer.DestroyerAction
         ).run(DestroyerDestructionContracts())
         destroyer_particle.particle.get_action(
-            local.my_domain_com.my_lib.destroyer.Destroyer
+            local.my_domain_com.my_lib.destroyer.DestroyerAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()
@@ -70,11 +70,11 @@ class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.Destroy
     @override
     def run_destructors_position_target(self, particle: literal.Particle):
         particle.get_action(
-            local.my_domain_com.my_lib.fifth_destructor.FifthDestructor
+            local.my_domain_com.my_lib.fifth_destructor.FifthDestructorAction
         ).run()
         particle.get_action(
-            local.my_domain_com.my_lib.third_destructor.ThirdDestructor
+            local.my_domain_com.my_lib.third_destructor.ThirdDestructorAction
         ).run()
         particle.get_action(
-            local.my_domain_com.my_lib.first_destructor.FirstDestructor
+            local.my_domain_com.my_lib.first_destructor.FirstDestructorAction
         ).run()

@@ -18,9 +18,9 @@ class MiddleDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = MiddleDestructionContracts()
 
 
-class Middle(literal.Action):
+class MiddleAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.empty_item.EmptyItem,
+        local.my_domain_com.my_lib.empty_item.EmptyItemAction,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -34,12 +34,12 @@ class Middle(literal.Action):
     @override
     def run(self, destruction_contracts: MiddleDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.empty_item.EmptyItem
+            local.my_domain_com.my_lib.empty_item.EmptyItemAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.empty_item.EmptyItem
+            local.my_domain_com.my_lib.empty_item.EmptyItemAction
         ).run(
             EmptyItemDestructionContracts(
                 destruction_contracts.run_destructors_global_position_item,
@@ -47,7 +47,7 @@ class Middle(literal.Action):
             ),
         )
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.empty_item.EmptyItem
+            local.my_domain_com.my_lib.empty_item.EmptyItemAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

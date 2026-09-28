@@ -7,7 +7,7 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.item
 
 
-class Input(literal.GlobalPosition):
+class InputPosition(literal.GlobalPosition):
     constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.item.Item,
+        local.my_domain_com.my_lib.item.ItemPosition,
     )

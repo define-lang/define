@@ -7,7 +7,7 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.known_destructor
 
 
-class Target(literal.GlobalPosition):
+class TargetPosition(literal.GlobalPosition):
     constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.known_destructor.KnownDestructor,
+        local.my_domain_com.my_lib.known_destructor.KnownDestructorAction,
     )

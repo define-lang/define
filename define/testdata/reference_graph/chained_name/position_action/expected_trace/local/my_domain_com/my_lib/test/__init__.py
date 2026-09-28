@@ -8,27 +8,27 @@ import local.my_domain_com.my_lib.a
 import local.my_domain_com.my_lib.act
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.a.A,
+        local.my_domain_com.my_lib.a.APosition,
     )
 
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.a.A
+            local.my_domain_com.my_lib.a.APosition
         ).create_particle()
         literal.record_operation("test.create(/a)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.a.A
+            local.my_domain_com.my_lib.a.APosition
         ).particle.get_action(
-            local.my_domain_com.my_lib.act.Act
+            local.my_domain_com.my_lib.act.ActAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         literal.record_operation("test.create(/a::/act::trigger_pos)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.a.A
+            local.my_domain_com.my_lib.a.APosition
         ).particle.get_action(
-            local.my_domain_com.my_lib.act.Act
+            local.my_domain_com.my_lib.act.ActAction
         ).run()

@@ -8,32 +8,32 @@ import local.my_domain_com.my_lib.first
 import local.my_domain_com.my_lib.second
 
 
-class Test(literal.Action):
+class TestAction(literal.Action):
 
     @override
     def run(self):
         box = literal.LocalPosition(
             "position<box>",
             constraints=(
-                local.my_domain_com.my_lib.first.First,
-                local.my_domain_com.my_lib.second.Second,
+                local.my_domain_com.my_lib.first.FirstAction,
+                local.my_domain_com.my_lib.second.SecondAction,
             ),
         )
         box.create_particle()
         box.particle.get_action(
-            local.my_domain_com.my_lib.first.First
+            local.my_domain_com.my_lib.first.FirstAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         box.particle.get_action(
-            local.my_domain_com.my_lib.first.First
+            local.my_domain_com.my_lib.first.FirstAction
         ).run()
         box.particle.get_action(
-            local.my_domain_com.my_lib.second.Second
+            local.my_domain_com.my_lib.second.SecondAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         box.particle.get_action(
-            local.my_domain_com.my_lib.second.Second
+            local.my_domain_com.my_lib.second.SecondAction
         ).run()
         box.destroy_particle()

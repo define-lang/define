@@ -3,5 +3,5 @@
 from define.runtime import literal
 
 
-class NumberRational(literal.Value):
+class NumberRationalValue(literal.Value):
     pass

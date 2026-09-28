@@ -18,9 +18,9 @@ class CalleeDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = CalleeDestructionContracts()
 
 
-class Callee(literal.Action):
+class CalleeAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.implied.Implied,
+        local.my_domain_com.my_lib.implied.ImpliedPosition,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -34,7 +34,7 @@ class Callee(literal.Action):
     @override
     def run(self, destruction_contracts: CalleeDestructionContracts = _DEFAULT_DESTRUCTION_CONTRACTS):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.implied.Implied
+            local.my_domain_com.my_lib.implied.ImpliedPosition
         ).create_particle()
         destruction_contracts.run_destructors_position_run(
             self.get_interface_position(

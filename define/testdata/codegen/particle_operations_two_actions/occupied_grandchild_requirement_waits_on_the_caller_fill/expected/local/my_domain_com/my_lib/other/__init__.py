@@ -19,7 +19,7 @@ class OtherDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = OtherDestructionContracts()
 
 
-class Other(literal.Action):
+class OtherAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -29,7 +29,7 @@ class Other(literal.Action):
                 literal.LocalPosition(
                     "position<box>",
                     constraints=(
-                        local.my_domain_com.my_lib.child.Child,
+                        local.my_domain_com.my_lib.child.ChildPosition,
                     ),
                 ),
             ],
@@ -41,24 +41,24 @@ class Other(literal.Action):
             self.get_interface_position(
                 "position<box>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.child.Child
+                local.my_domain_com.my_lib.child.ChildPosition
             ).particle.get_position(
-                local.my_domain_com.my_lib.grandchild.Grandchild
+                local.my_domain_com.my_lib.grandchild.GrandchildPosition
             ).particle
         )
         destruction_contracts.destroy_position_box__position_child__position_grandchild(
             self.get_interface_position(
                 "position<box>"
             ).particle.get_position(
-                local.my_domain_com.my_lib.child.Child
+                local.my_domain_com.my_lib.child.ChildPosition
             ).particle.get_position(
-                local.my_domain_com.my_lib.grandchild.Grandchild
+                local.my_domain_com.my_lib.grandchild.GrandchildPosition
             ).particle
         )
         self.get_interface_position(
             "position<box>"
         ).particle.get_position(
-            local.my_domain_com.my_lib.child.Child
+            local.my_domain_com.my_lib.child.ChildPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.grandchild.Grandchild
+            local.my_domain_com.my_lib.grandchild.GrandchildPosition
         ).destroy_particle()

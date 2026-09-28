@@ -7,9 +7,9 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.result
 
 
-class Child(literal.Action):
+class ChildAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.result.Result,
+        local.my_domain_com.my_lib.result.ResultPosition,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -30,6 +30,6 @@ class Child(literal.Action):
         scratch.destroy_particle()
         literal.record_operation("child.destroy(scratch)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.result.Result
+            local.my_domain_com.my_lib.result.ResultPosition
         ).create_particle()
         literal.record_operation("child.create(/result)")

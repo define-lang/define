@@ -7,9 +7,9 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.left_child
 
 
-class Left(literal.Action):
+class LeftAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.left_child.LeftChild,
+        local.my_domain_com.my_lib.left_child.LeftChildAction,
     )
 
     def __init__(self, on_particle: literal.Particle):
@@ -23,15 +23,15 @@ class Left(literal.Action):
     @override
     def run(self):
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.left_child.LeftChild
+            local.my_domain_com.my_lib.left_child.LeftChildAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).create_particle()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.left_child.LeftChild
+            local.my_domain_com.my_lib.left_child.LeftChildAction
         ).run()
         self.on_particle.get_action(
-            local.my_domain_com.my_lib.left_child.LeftChild
+            local.my_domain_com.my_lib.left_child.LeftChildAction
         ).get_interface_position(
             "position<trigger_pos>"
         ).destroy_particle()

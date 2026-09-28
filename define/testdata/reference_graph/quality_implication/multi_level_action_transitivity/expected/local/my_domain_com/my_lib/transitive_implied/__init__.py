@@ -3,5 +3,5 @@
 from define.runtime import literal
 
 
-class TransitiveImplied(literal.GlobalPosition):
+class TransitiveImpliedPosition(literal.GlobalPosition):
     pass

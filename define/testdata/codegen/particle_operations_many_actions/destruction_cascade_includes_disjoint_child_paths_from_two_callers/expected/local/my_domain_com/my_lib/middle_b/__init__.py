@@ -19,7 +19,7 @@ class MiddleBDestructionContracts:
 _DEFAULT_DESTRUCTION_CONTRACTS = MiddleBDestructionContracts()
 
 
-class MiddleB(literal.Action):
+class MiddleBAction(literal.Action):
 
     def __init__(self, on_particle: literal.Particle):
         super().__init__(
@@ -34,29 +34,29 @@ class MiddleB(literal.Action):
         box = literal.LocalPosition(
             "position<box>",
             constraints=(
-                local.my_domain_com.my_lib.b.B,
+                local.my_domain_com.my_lib.b.BPosition,
             ),
         )
         destroyer_holder = literal.LocalPosition(
             "position<destroyer_holder>",
             constraints=(
-                local.my_domain_com.my_lib.destroyer.Destroyer,
+                local.my_domain_com.my_lib.destroyer.DestroyerAction,
             ),
         )
         destroyer_holder.create_particle()
         box.create_particle()
         box.particle.get_position(
-            local.my_domain_com.my_lib.b.B
+            local.my_domain_com.my_lib.b.BPosition
         ).create_particle()
         box.move_particle_to(
             destroyer_holder.particle.get_action(
-                local.my_domain_com.my_lib.destroyer.Destroyer
+                local.my_domain_com.my_lib.destroyer.DestroyerAction
             ).get_interface_position(
                 "position<run>"
             )
         )
         destroyer_holder.particle.get_action(
-            local.my_domain_com.my_lib.destroyer.Destroyer
+            local.my_domain_com.my_lib.destroyer.DestroyerAction
         ).run(DestroyerDestructionContracts())
         destroyer_holder.destroy_particle()
         destruction_contracts.run_destructors_position_run(
@@ -79,5 +79,5 @@ class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.Destroy
     @override
     def destroy_position_run(self, particle: literal.Particle):
         particle.get_position(
-            local.my_domain_com.my_lib.b.B
+            local.my_domain_com.my_lib.b.BPosition
         ).destroy_particle()

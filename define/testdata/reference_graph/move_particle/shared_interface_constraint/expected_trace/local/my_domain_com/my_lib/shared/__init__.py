@@ -3,5 +3,5 @@
 from define.runtime import literal
 
 
-class Shared(literal.GlobalPosition):
+class SharedPosition(literal.GlobalPosition):
     pass
