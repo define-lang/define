@@ -1410,6 +1410,14 @@ def _build_value_copy_project(universe_name: str, copies: int) -> ProjectCase:
         statements.append(
             "        set the value of position<source> to position<target>.\n"
         )
+    # A value write is dead unless something uses the value, so the action
+    # guarantees the final value on its own particle's implied position.
+    statements.extend(
+        [
+            _create_particle_statement("position</copy>", indent="        "),
+            "        set the value of position</copy> to position<source>.\n",
+        ]
+    )
     files = {
         "test.dfn": _action_with_block(
             universe_name,
@@ -1417,6 +1425,14 @@ def _build_value_copy_project(universe_name: str, copies: int) -> ProjectCase:
             trigger_kind="constructor",
             outer_locals=[],
             inner_locals=statements,
+            quality_implications=[("position", "/copy")],
+        ),
+        "copy.dfn": (
+            f"define the potential position<{universe_name}:/copy> {{\n"
+            "    it may only contain particles where {\n"
+            "        it has the value<standard:/number/rational>.\n"
+            "    }\n"
+            "}\n"
         ),
         "decimal.dfn": (
             f"define the potential literal<{universe_name}:/decimal> {{\n"
