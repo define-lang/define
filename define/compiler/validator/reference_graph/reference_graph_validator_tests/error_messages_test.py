@@ -1,5 +1,8 @@
 # pyright: reportUnusedCallResult=false
 
+# Message format tests exist only for complex diagnostics, such as multi-line
+# messages or messages with many fields. Behavioral tests cover simple ones.
+
 from __future__ import annotations
 
 import textwrap

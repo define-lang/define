@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 
 _CHILD = "action<my.domain.com:my_lib:/child>"
 _CONSTRUCT = "action<my.domain.com:my_lib:/construct>"
+_FOO = "action<my.domain.com:my_lib:/foo>"
 _HELPER = "action<my.domain.com:my_lib:/helper>"
 _INNER = "action<my.domain.com:my_lib:/inner>"
 _OUTER = "action<my.domain.com:my_lib:/outer>"
@@ -242,6 +243,79 @@ def test_local_parent_auto_destruction_consumes_action_interface_particle(
     assert action_graph(result.reference_graph_result) == [(_TEST, _WORKER)]
 
 
+def test_moved_particle_callee_interface_must_be_consumed_in_interface_position(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    )
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    diagnostic = all_diags[0]
+    assert isinstance(diagnostic, diagnostics.UnconsumedActionInterfaceDiagnostic)
+    assert diagnostic.action_name == "action</worker>"
+    assert (
+        diagnostic.position_name
+        == "position<destination>::action</worker>::position<result>"
+    )
+    assert diagnostic.location.line == 16
+    assert diagnostic.location.column == 45
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert action_graph(result.reference_graph_result) == [(_TEST, _WORKER)]
+
+
+def test_moved_particle_callee_interface_must_be_consumed_in_implied_position(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    diagnostic = all_diags[0]
+    assert isinstance(diagnostic, diagnostics.UnconsumedActionInterfaceDiagnostic)
+    assert diagnostic.action_name == "action</worker>"
+    assert (
+        diagnostic.position_name
+        == "position</store>::action</worker>::position<result>"
+    )
+    assert diagnostic.location.line == 12
+    assert diagnostic.location.column == 45
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert action_graph(result.reference_graph_result) == [(_TEST, _WORKER)]
+
+
+def test_implied_action_interface_must_be_consumed_by_implying_action(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    diagnostic = all_diags[0]
+    assert isinstance(diagnostic, diagnostics.UnconsumedActionInterfaceDiagnostic)
+    assert diagnostic.action_name == "action</foo>"
+    assert diagnostic.position_name == "action</foo>::position<result>"
+    assert diagnostic.location.line == 7
+    assert diagnostic.location.column == 30
+    assert diagnostic.location.file_path == PurePosixPath("outer.dfn")
+    assert action_graph(result.reference_graph_result) == [
+        (_OUTER, _FOO),
+        (_TEST, _OUTER),
+    ]
+
+
+def test_consumed_implied_action_interface_allows_implying_action_to_end(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert action_graph(result.reference_graph_result) == [
+        (_OUTER, _FOO),
+        (_TEST, _OUTER),
+    ]
+
+
 def test_deeper_action_implied_position_can_leave_with_interface_particle(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -253,6 +327,16 @@ def test_deeper_action_implied_position_can_leave_with_interface_particle(
         (_TEST, _PARENT),
         (_TEST, _CHILD),
     ]
+
+
+def test_callee_implied_position_on_interface_particle_may_stay_occupied(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    )
+    assert_no_errors(result.program_result)
+    assert action_graph(result.reference_graph_result) == [(_TEST, _FOO)]
 
 
 def test_child_guarantee_must_be_consumed_before_parent_triggers(
@@ -605,6 +689,48 @@ def test_action_on_deeper_position_descendant_must_be_clean_before_parent_trigge
     assert action_graph(result.reference_graph_result) == [
         (_PARENT, _CHILD),
         (_TEST, _CHILD),
+        (_TEST, _PARENT),
+    ]
+
+
+def test_action_interface_two_actions_below_callee_interface_occupied_when_callee_triggers(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diagnostics = result.program_result.all_diagnostics
+    assert len(all_diagnostics) == 2
+    first_diagnostic = all_diagnostics[0]
+    assert isinstance(
+        first_diagnostic,
+        diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
+    )
+    assert first_diagnostic.action_name == "action</parent>"
+    assert (
+        first_diagnostic.position_name
+        == "position<box>::action</parent>::position<iface>::action</child>::position<holder>"
+    )
+    assert first_diagnostic.location.line == 12
+    assert first_diagnostic.location.column == 30
+    assert first_diagnostic.location.file_path == PurePosixPath("test.dfn")
+    second_diagnostic = all_diagnostics[1]
+    assert isinstance(
+        second_diagnostic,
+        diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
+    )
+    assert second_diagnostic.action_name == "action</parent>"
+    assert (
+        second_diagnostic.position_name
+        == "position<box>::action</parent>::position<iface>::action</child>::position<holder>::action</worker>::position<result>"
+    )
+    assert second_diagnostic.location.line == 14
+    assert second_diagnostic.location.column == 113
+    assert second_diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert action_graph(result.reference_graph_result) == [
+        (_CHILD, _WORKER),
+        (_PARENT, _CHILD),
+        (_TEST, _CHILD),
+        (_TEST, _WORKER),
         (_TEST, _PARENT),
     ]
 

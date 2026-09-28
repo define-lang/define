@@ -7,6 +7,9 @@ unmet requirements (p1 is filled, so d1's empty-requirement is violated; p2 is
 emptied, so d2's occupied-requirement is violated). The chain must trace every
 trigger hop from the verifying definition down to the destruction, the same way
 ordinary requirement propagation does.
+
+Message format tests exist only for complex diagnostics, such as multi-line
+messages or messages with many fields. Behavioral tests cover simple ones.
 """
 
 from __future__ import annotations

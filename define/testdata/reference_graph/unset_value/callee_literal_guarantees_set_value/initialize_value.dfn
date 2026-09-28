@@ -1,0 +1,12 @@
+define the potential action<my.domain.com:my_lib:/initialize_value> {
+    define the position<recipient> {
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+        }
+    }
+    it happens when {
+        the position<recipient> has a particle.
+    } and it does {
+        set the value of position<recipient> to literal<standard:/number>"5".
+    }
+}

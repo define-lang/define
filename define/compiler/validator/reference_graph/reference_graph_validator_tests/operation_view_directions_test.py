@@ -212,3 +212,38 @@ def test_callee_output_view_sets_caller_value(
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
     assert_no_errors(result)
+
+
+def test_output_view_in_destructor_changes_contracted_value(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
+    assert len(result.all_diagnostics) == 1
+    diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.DestructorChangesValueDiagnostic)
+    assert diagnostic.location.file_path is None
+    assert diagnostic.location.line == 32
+    assert diagnostic.location.column == 42
+    assert diagnostic.position_name == "position</value>"
+
+
+def test_callee_output_view_sets_implied_value(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert_no_errors(result)
+
+
+def test_callee_without_output_view_leaves_implied_value_unset(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
+    assert len(result.all_diagnostics) == 1
+    diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
+    assert diagnostic.location.file_path is None
+    assert diagnostic.location.line == 35
+    assert diagnostic.location.column == 44
+    assert diagnostic.position_name == "position<box>::position</value>"

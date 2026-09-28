@@ -1,0 +1,21 @@
+# The caller reads a value that the callee guarantees it set from a literal.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<worker> {
+            it may only contain particles where {
+                it has the action</initialize_value>.
+            }
+        }
+        create a particle in position<worker>.
+        define the position<copy> {
+            it may only contain particles where {
+                it has the value<standard:/number/rational>.
+            }
+        }
+        create a particle in position<copy>.
+        create a particle in position<worker>::action</initialize_value>::position<recipient>.
+        set the value of position<copy> to position<worker>::action</initialize_value>::position<recipient>.
+    }
+}

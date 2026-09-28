@@ -37,6 +37,13 @@ def test_literal_initializes_value(
     assert_no_errors(result)
 
 
+def test_callee_literal_guarantees_set_value(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph().program_result
+    assert_no_errors(result)
+
+
 def test_move_preserves_set(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):

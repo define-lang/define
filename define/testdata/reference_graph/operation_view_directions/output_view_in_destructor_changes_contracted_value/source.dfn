@@ -1,0 +1,50 @@
+# A destructor that writes to a contracted position through an output view changes its value.
+define the operation<my.domain.com:my_lib:/copy> {
+    define the view<source> {
+        it is read.
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+        }
+    }
+    define the view<target> {
+        it is written.
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+        }
+    }
+
+    it does {
+        execute the encoding operation.
+    }
+}
+define the potential position<my.domain.com:my_lib:/value> {
+    it may only contain particles where {
+        it has the value<standard:/number/rational>.
+    }
+}
+define the potential action<my.domain.com:my_lib:/cleanup> {
+    it also assigns the position</value>.
+    it happens when {
+        this particle is being destroyed.
+    } and it does {
+        execute the operation</copy> {
+            with view<source> looking at literal<standard:/number>"5".
+            with view<target> looking at position</value>.
+        }
+    }
+}
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</cleanup>.
+                it has the position</value>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<box>::position</value>.
+        destroy the particle in position<box>.
+    }
+}
