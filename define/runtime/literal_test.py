@@ -76,7 +76,8 @@ class TestGlobalPosition:
         pos = MyPosition(literal.Particle())
         pos.create_particle()
 
-        assert pos.particle.quality_types == frozenset()
+        assert pos.particle._assigned_qualities == []
+        assert pos.particle.value_type is None
 
     def test_create_particle_assigns_constraint_qualities(self):
         class ConstraintPosition(literal.GlobalPosition):
@@ -156,13 +157,16 @@ class TestLocalPosition:
         pos = literal.LocalPosition("test", constraints=(ConstraintPosition,))
         pos.create_particle()
 
-        assert pos.particle.quality_types == frozenset((ConstraintPosition,))
+        quality_types = [type(quality) for quality in pos.particle._assigned_qualities]
+        assert quality_types == [ConstraintPosition]
+        assert pos.particle.value_type is None
 
     def test_constraints_defaults_to_empty(self):
         pos = literal.LocalPosition("test")
         pos.create_particle()
 
-        assert pos.particle.quality_types == frozenset()
+        assert pos.particle._assigned_qualities == []
+        assert pos.particle.value_type is None
 
     def test_create_particle_assigns_constraint_qualities(self):
         class ConstraintPosition(literal.GlobalPosition):
@@ -649,7 +653,9 @@ class TestImpliedQualities:
         particle = literal.Particle()
         particle.assign_action(ImplyingAction)
 
-        assert particle.quality_types == frozenset((ImpliedPosition, ImplyingAction))
+        quality_types = [type(quality) for quality in particle._assigned_qualities]
+        assert quality_types == [ImpliedPosition, ImplyingAction]
+        assert particle.value_type is None
 
     def test_position_can_imply_action(self):
         class ImpliedAction(literal.Action):
@@ -663,7 +669,9 @@ class TestImpliedQualities:
         particle = literal.Particle()
         particle.assign_position(ImplyingPosition)
 
-        assert particle.quality_types == frozenset((ImpliedAction, ImplyingPosition))
+        quality_types = [type(quality) for quality in particle._assigned_qualities]
+        assert quality_types == [ImpliedAction, ImplyingPosition]
+        assert particle.value_type is None
 
     def test_assign_position_twice_is_idempotent(self):
         class MyPosition(literal.GlobalPosition):
@@ -700,7 +708,11 @@ class TestImpliedQualities:
         container = Container(literal.Particle())
         container.create_particle()
 
-        assert container.particle.quality_types == frozenset((Outer, Inner))
+        quality_types = [
+            type(quality) for quality in container.particle._assigned_qualities
+        ]
+        assert quality_types == [Inner, Outer]
+        assert container.particle.value_type is None
 
     def test_move_succeeds_via_transitive_implied_quality(self):
         class Implied(literal.GlobalPosition):
@@ -731,14 +743,14 @@ class TestImpliedQualities:
         quality_types = [type(quality) for quality in particle._assigned_qualities]
         assert quality_types == [A, B]
 
-    def test_assign_action_contributes_to_quality_types(self):
+    def test_assign_action_satisfies_its_quality_type(self):
         class MyAction(literal.Action):
             pass
 
         particle = literal.Particle()
         particle.assign_action(MyAction)
 
-        assert MyAction in particle.quality_types
+        assert particle.has_quality_type(MyAction)
 
 
 class _Worker(literal.Action):
@@ -811,7 +823,8 @@ class TestValueConstraints:
         particle = source.particle
         source.move_particle_to(destination)
         assert destination.particle is particle
-        assert particle.quality_types == frozenset({Number})
+        assert particle._assigned_qualities == []
+        assert particle.value_type is Number
         assert not source.has_particle
 
     def test_move_rejects_different_value_type(self):
@@ -839,7 +852,11 @@ class TestValueConstraints:
 
         position = literal.LocalPosition("position", constraints=(NumberPosition,))
         position.create_particle()
-        assert position.particle.quality_types == frozenset({NumberPosition, Number})
+        quality_types = [
+            type(quality) for quality in position.particle._assigned_qualities
+        ]
+        assert quality_types == [NumberPosition]
+        assert position.particle.value_type is Number
 
     def test_move_rejects_missing_value_type(self):
         class Number(literal.Value):
@@ -866,7 +883,8 @@ class TestValueConstraints:
         source.move_particle_to(intermediate)
         intermediate.move_particle_to(destination)
         assert destination.particle is particle
-        assert particle.quality_types == frozenset({Number})
+        assert particle._assigned_qualities == []
+        assert particle.value_type is Number
         assert not source.has_particle
         assert not intermediate.has_particle
 

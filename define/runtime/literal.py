@@ -156,14 +156,13 @@ class Particle:
         """Return the assigned action of the given type."""
         return cast("ActionType", self._actions[action_class])
 
-    # TODO: Cache this?
-    @property
-    def quality_types(self) -> frozenset[type[Quality]]:
-        """Return the set of constraint types satisfied by this particle."""
-        qualities = frozenset(type(q) for q in self._assigned_qualities)
-        if self.value_type is not None:
-            return qualities | {self.value_type}
-        return qualities
+    def has_quality_type(self, quality_type: type[Quality]) -> bool:
+        """Return whether this particle satisfies a constraint of the given type."""
+        return (
+            quality_type in self._positions
+            or quality_type in self._actions
+            or quality_type is self.value_type
+        )
 
 
 class Position(ABC):
@@ -212,7 +211,7 @@ class Position(ABC):
         if destination._particle is not None:
             raise ParticleExistsError(destination.name)
         for constraint_type in destination._get_constraints():
-            if constraint_type not in self._particle.quality_types:
+            if not self._particle.has_quality_type(constraint_type):
                 raise UnsatisfiedConstraintError(
                     destination.name, constraint_type.full_name()
                 )
