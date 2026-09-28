@@ -480,12 +480,6 @@ class ActionDefinitionValidator:
         position = statement.target_position
         particle = self._tracker.get_occupant(position)
         action = action_chain.get_last_action()
-        parent_position = action_chain.parent_position()
-        parent_particle = (
-            self._tracker.get_occupant(parent_position)
-            if parent_position is not None
-            else None
-        )
         contract = self._validation_state.get_contract_or_none(action)
         if contract is None:
             return
@@ -499,11 +493,17 @@ class ActionDefinitionValidator:
         if trigger_element.full_typed_name != contract.trigger_position_name:
             return
 
-        self._dead_constraint_validator.mark_action_alive(
-            action,
-            parent_position,
-            parent_particle,
-        )
+        parent_position = action_chain.parent_position()
+        parent_particle = None
+        # A chain with no parent position starts with one of this action's
+        # implied actions, which triggers on the current particle.
+        if parent_position is None:
+            self._dead_constraint_validator.mark_implied_action_alive(action)
+        else:
+            parent_particle = self._tracker.get_occupant(parent_position)
+            self._dead_constraint_validator.mark_action_alive(
+                action, parent_position, parent_particle
+            )
         self._dead_constraint_validator.mark_contract_position_constraints_alive(
             position, particle, scope
         )

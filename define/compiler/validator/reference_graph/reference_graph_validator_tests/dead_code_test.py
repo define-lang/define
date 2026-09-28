@@ -15,6 +15,7 @@ _MIDDLE = "action<my.domain.com:my_lib:/middle>"
 _GRANDCHILD = "action<my.domain.com:my_lib:/grandchild>"
 _TEST = "action<my.domain.com:my_lib:/test>"
 _WORKER = "action<my.domain.com:my_lib:/worker>"
+_INIT = "action<my.domain.com:my_lib:/init>"
 
 # --- Dead Child Positions ---
 
@@ -958,6 +959,69 @@ def test_nested_non_trigger_marks_no_implied_action_alive(
     assert all_diags[2].location.column == 64
     assert all_diags[2].location.file_path == PurePosixPath("test.dfn")
     assert action_graph(result.reference_graph_result) == [(_RUNNER, _WORKER)]
+
+
+def test_implied_action_triggered_on_another_particle_is_dead(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 2
+    assert isinstance(all_diags[0], diagnostics.UntriggeredImpliedActionDiagnostic)
+    assert all_diags[0].implied_action_name == "action</worker>"
+    assert all_diags[0].location.line == 2
+    assert all_diags[0].location.column == 25
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert isinstance(all_diags[1], diagnostics.UntriggeredActionInterfaceDiagnostic)
+    assert all_diags[1].action_name == "action</worker>"
+    assert all_diags[1].position_name == "action</worker>::position<input>"
+    assert all_diags[1].location.line == 14
+    assert all_diags[1].location.column == 30
+    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert action_graph(result.reference_graph_result) == [(_TEST, _WORKER)]
+
+
+def test_implied_constructor_is_dead(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 2
+    assert isinstance(all_diags[0], diagnostics.UntriggeredImpliedActionDiagnostic)
+    assert all_diags[0].implied_action_name == "action</init>"
+    assert all_diags[0].location.line == 2
+    assert all_diags[0].location.column == 25
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert isinstance(all_diags[1], diagnostics.UntriggeredActionInterfaceDiagnostic)
+    assert all_diags[1].action_name == "action</init>"
+    assert all_diags[1].position_name == "action</init>::position<result>"
+    assert all_diags[1].location.line == 6
+    assert all_diags[1].location.column == 30
+    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert action_graph(result.reference_graph_result) == []
+
+
+def test_implied_constructor_fired_on_another_particle_is_dead(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 2
+    assert isinstance(all_diags[0], diagnostics.UntriggeredImpliedActionDiagnostic)
+    assert all_diags[0].implied_action_name == "action</init>"
+    assert all_diags[0].location.line == 2
+    assert all_diags[0].location.column == 25
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert isinstance(all_diags[1], diagnostics.UntriggeredActionInterfaceDiagnostic)
+    assert all_diags[1].action_name == "action</init>"
+    assert all_diags[1].position_name == "action</init>::position<result>"
+    assert all_diags[1].location.line == 14
+    assert all_diags[1].location.column == 30
+    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert action_graph(result.reference_graph_result) == [(_TEST, _INIT)]
 
 
 def test_action_required_by_move_destination_is_alive(

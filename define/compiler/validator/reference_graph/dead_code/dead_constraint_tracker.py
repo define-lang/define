@@ -133,12 +133,6 @@ class DeadConstraintTracker:
         # and total sampled compiler CPU by 5.66% in one profile pair.
         return constraint.full_typed_name in self._position_constraint_candidate_counts
 
-    def _has_action_trigger_candidates(self) -> bool:
-        """Whether there are any remaining implied or child actions to check."""
-        return bool(
-            self._action_constraint_candidates or self._implied_action_candidates
-        )
-
     def has_constraint_candidates(self) -> bool:
         """Whether there are any remaining constraints to check."""
         return bool(
@@ -193,22 +187,24 @@ class DeadConstraintTracker:
         else:
             del self._position_constraint_candidate_counts[constraint_name]
 
+    def mark_implied_action_alive(self, action: ast.GlobalTypedNameReference):
+        """Keep an implied action alive when it is triggered on the current particle."""
+        _ = self._implied_action_candidates.pop(action.full_typed_name, None)
+
     def mark_action_alive(
         self,
         action: ast.GlobalTypedNameReference,
-        current_position: ast.PositionReference | None,
-        origin_position: ast.PositionReference | None,
+        current_position: ast.PositionReference,
+        origin_position: ast.PositionReference,
     ):
-        """Keep an action constraint or implication alive when it is triggered.
+        """Keep an action constraint alive when it is triggered.
 
         ``action`` is the action that actually triggered. ``current_position`` is
-        the position holding the particle to which the action is assigned, or None
-        when the action is implied by the current action. ``origin_position`` is
-        that particle's origin position, or None for an implied action.
+        the position holding the particle to which the action is assigned, and
+        ``origin_position`` is that particle's origin position.
         """
-        if not self._has_action_trigger_candidates():
+        if not self._action_constraint_candidates:
             return
-        _ = self._implied_action_candidates.pop(action.full_typed_name, None)
         self._mark_constraint_alive(
             self._action_constraint_candidates,
             current_position,

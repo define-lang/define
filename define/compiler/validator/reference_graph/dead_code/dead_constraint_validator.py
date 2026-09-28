@@ -61,17 +61,19 @@ class DeadConstraintValidator:
             position, self._definition_results
         )
 
+    def mark_implied_action_alive(self, action: ast.GlobalTypedNameReference):
+        """Keep an implied Action alive when it triggers on the current particle."""
+        self._dead_constraint_tracker.mark_implied_action_alive(action)
+
     def mark_action_alive(
         self,
         action: ast.GlobalTypedNameReference,
-        position: ast.PositionReference | None,
-        parent_particle: particle_info.ParticleInfo | None,
+        position: ast.PositionReference,
+        parent_particle: particle_info.ParticleInfo,
     ):
-        """Keep implied Actions and constraints alive when the Action triggers."""
+        """Keep Action constraints alive when the Action triggers on the particle in position."""
         self._dead_constraint_tracker.mark_action_alive(
-            action,
-            position,
-            parent_particle.origin_position if parent_particle is not None else None,
+            action, position, parent_particle.origin_position
         )
 
     def mark_value_and_encoding_constraints_alive(
