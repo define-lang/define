@@ -18,6 +18,18 @@ py_library(
 )
 
 py_library(
+    name = "guarantee_generation",
+    srcs = ["guarantee_generation.py"],
+    deps = [
+        ":particle_info",
+        ":particle_state_store",
+        "//define/compiler:ast",
+        "//define/compiler/validator/reference_graph:action_contract",
+        "//define/compiler/validator/reference_graph:position_occupancy",
+    ],
+)
+
+py_library(
     name = "particle_info",
     srcs = ["particle_info.py"],
     visibility = ["//define/compiler/validator/reference_graph:__subpackages__"],
@@ -49,8 +61,10 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         ":callee_guarantee_applier",
+        ":guarantee_generation",
         ":particle_info",
         ":particle_state_store",
+        ":requirement_resolution",
         "//define/compiler:ast",
         "//define/compiler/validator:codegen_input",
         "//define/compiler/validator/reference_graph:action_contract",
@@ -59,6 +73,19 @@ py_library(
         "//define/compiler/validator/reference_graph:position_occupancy",
         "//define/compiler/validator/reference_graph:quality_assignment",
         "//define/compiler/validator/reference_graph/dead_code:dead_interface_tracker",
+        "@pypi//msgspec",
+    ],
+)
+
+py_library(
+    name = "requirement_resolution",
+    srcs = ["requirement_resolution.py"],
+    deps = [
+        ":particle_info",
+        ":particle_state_store",
+        "//define/compiler:ast",
+        "//define/compiler/validator/reference_graph:action_contract",
+        "//define/compiler/validator/reference_graph:position_occupancy",
         "@pypi//msgspec",
     ],
 )
@@ -73,9 +100,11 @@ pyright_test(
     name = "pyright_test",
     deps = [
         ":callee_guarantee_applier",
+        ":guarantee_generation",
         ":particle_info",
         ":particle_state_store",
         ":particle_tracker",
+        ":requirement_resolution",
     ],
 )
 

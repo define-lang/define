@@ -8,20 +8,13 @@ import typing
 import msgspec
 
 from define.compiler import ast
-from define.compiler.validator.reference_graph import (
-    action_contract,
-    child_state,
-    position_occupancy,
-    quality_assignment,
-)
-from define.compiler.validator.reference_graph import (
-    destruction_contract as destruction_contract_types,
-)
 from define.compiler.validator.reference_graph.dead_code import dead_interface_tracker
 from define.compiler.validator.reference_graph.particles import (
     callee_guarantee_applier,
+    guarantee_generation,
     particle_info,
     particle_state_store,
+    requirement_resolution,
 )
 
 if typing.TYPE_CHECKING:
@@ -32,6 +25,15 @@ if typing.TYPE_CHECKING:
     )
 
     from define.compiler.validator import codegen_input
+    from define.compiler.validator.reference_graph import (
+        action_contract,
+        child_state,
+        position_occupancy,
+        quality_assignment,
+    )
+    from define.compiler.validator.reference_graph import (
+        destruction_contract as destruction_contract_types,
+    )
 
 
 class ParticleDestruction(msgspec.Struct, frozen=True):
@@ -55,23 +57,6 @@ class OccupancyInfo(msgspec.Struct, frozen=True):
     occupant: particle_info.ParticleInfo | None
 
 
-class ResolvedRequirementPosition(msgspec.Struct, frozen=True):
-    """A local requirement position and the contracted position it resolves to."""
-
-    local_position: ast.PositionReference
-    contracted_position: ast.PositionReference
-    required_state: position_occupancy.PositionOccupancyState
-
-
-class PropagatedRequirement(msgspec.Struct, frozen=True):
-    """A callee requirement that must be propagated into the current contract."""
-
-    requirement_in_caller: action_contract.PositionRequirementInCaller[
-        action_contract.PositionOccupancyRequirement
-    ]
-    contracted_position: ast.PositionReference
-
-
 @typing.final
 class ParticleTracker:
     """Tracks which positions contain particles and what qualities those particles currently have."""
@@ -83,6 +68,10 @@ class ParticleTracker:
         self._callee_guarantees = callee_guarantee_applier.CalleeGuaranteeApplier(
             self._store, self._dead_interfaces
         )
+        self._requirement_resolver = requirement_resolution.RequirementResolver(
+            self._store
+        )
+        self._guarantee_generator = guarantee_generation.GuaranteeGenerator(self._store)
         self._body_operation_number = 0
 
     def _delete_subtree(self, key: ast.ChainedNameTuple):
@@ -185,56 +174,15 @@ class ParticleTracker:
         position: ast.PositionReference,
         required_state: position_occupancy.PositionOccupancyState,
         interface_position_names: Collection[str],
-    ) -> list[ResolvedRequirementPosition]:
+    ) -> list[requirement_resolution.ResolvedRequirementPosition]:
         """Infer direct requirements needed by this action."""
         self._callee_guarantees.apply_pending_guarantees_up_to(
             position.canonical_chained_name_tuple
         )
-        position_is_contracted = (
-            position.starts_with_global
-            or position.typed_names[0].full_typed_name in interface_position_names
+        return self._requirement_resolver.infer_direct_requirements(
+            position, required_state, interface_position_names
         )
-        canonical_position_prefixes: list[ast.ChainedNameTuple] = []
-        canonical_position = position.canonical_chained_name_tuple
-        for name_index, typed_name in enumerate(position.typed_names):
-            if typed_name.name_type == ast.NameType.ACTION:
-                break
-            canonical_position_prefixes.append(canonical_position[: name_index + 1])
-        resolved_positions: list[ResolvedRequirementPosition] = []
-        for requirement_index, nearest_particle in self._requirement_indices_for_caller(
-            canonical_position_prefixes
-        ):
-            # A non-contracted position contributes an Action Requirement only
-            # when a parent position has a particle passed in by the caller.
-            # We do this check early before constructing PositionReference objects
-            # or doing any other work. This is an important performance improvement.
-            if nearest_particle is None and not position_is_contracted:
-                continue
-            requirement_position = position.position_prefix(
-                len(canonical_position_prefixes[requirement_index])
-            )
-            contracted_position = self._contracted_position_for_requirement(
-                requirement_position, nearest_particle
-            )
-            requirement_state = (
-                required_state
-                if requirement_position is position
-                else position_occupancy.PositionOccupancyState.OCCUPIED
-            )
-            resolved_positions.append(
-                ResolvedRequirementPosition(
-                    local_position=requirement_position,
-                    contracted_position=contracted_position,
-                    required_state=requirement_state,
-                )
-            )
-        return resolved_positions
 
-    # Requirement propagation can query dozens or hundreds of positions for each
-    # triggered action and millions over a large action call graph. Keeping this
-    # operation batched lets trie lookup reuse common position prefixes instead
-    # of repeating the ancestor search for every requirement. This is an important
-    # performance optimization in the design of the compiler.
     def propagate_requirements(
         self,
         requirements_in_caller: Sequence[
@@ -242,103 +190,13 @@ class ParticleTracker:
                 action_contract.PositionOccupancyRequirement
             ]
         ],
-    ) -> list[PropagatedRequirement]:
-        """Propagate requirements that the current action does not satisfy.
-
-        There are two different propagation situations:
-        1. The callee's parent position was created by our caller, in which case
-           we propagate all requirements that the current action did not satisfy.
-        2. The callee's parent position was created by us (the current action) in
-           which case we only propagate requirements when one of the particles
-           in the callee's contracted positions came from our caller.
-
-        To understand Case 2: it happens when the _parent_ particle of one of our
-        contracted positions was moved by us (the current action) from one of our
-        _own_ contracted positions. For example, let's say the requirement is on
-        interface::b::c. We had our_interface with ::b::c as child positions, but
-        all we did in this action is "move our_interface to interface." We don't
-        actually _know_ the state of "b" and its child "c". Only our caller knows.
-        """
-        canonical_positions = [
+    ) -> list[requirement_resolution.PropagatedRequirement]:
+        """Propagate requirements that the current action does not satisfy."""
+        self._callee_guarantees.apply_pending_guarantees_up_to_all(
             requirement.caller_position.canonical_chained_name_tuple
             for requirement in requirements_in_caller
-        ]
-        self._callee_guarantees.apply_pending_guarantees_up_to_all(canonical_positions)
-        propagated_requirements: list[PropagatedRequirement] = []
-        for requirement_index, nearest_particle in self._requirement_indices_for_caller(
-            canonical_positions
-        ):
-            requirement_in_caller = requirements_in_caller[requirement_index]
-            position = requirement_in_caller.caller_position
-            contracted_position = self._contracted_position_for_requirement(
-                position, nearest_particle
-            )
-            # Interfaces stop inference: no caller may occupy an action
-            # interface position before triggering this action, so this action
-            # must satisfy the requirement itself.
-            if contracted_position.get_last_action() is not None:
-                continue
-            propagated_requirements.append(
-                PropagatedRequirement(
-                    requirement_in_caller=requirement_in_caller,
-                    contracted_position=contracted_position,
-                )
-            )
-        return propagated_requirements
-
-    def _requirement_indices_for_caller(
-        self,
-        canonical_positions: Sequence[ast.ChainedNameTuple],
-    ) -> Iterator[
-        tuple[int, tuple[tuple[str, ...], particle_info.ParticleInfo] | None]
-    ]:
-        """Yield indices of requirements that the caller must fulfill.
-
-        Each requirement index is paired with the nearest particle passed in by
-        the caller, or ``None`` when no parent position is occupied.
-        """
-        parent_positions: list[ast.ChainedNameTuple] = []
-        unresolved_requirements: list[tuple[int, ast.ChainedNameTuple | None]] = []
-        for requirement_index, canonical_position in enumerate(canonical_positions):
-            # If we have touched a position, then the current action overrides any
-            # requirements from its callees.
-            if self._store.has_error_in_chain(
-                canonical_position
-            ) or self._store.has_known_occupancy(canonical_position):
-                continue
-            parent_position = (
-                canonical_position[:-1] if len(canonical_position) > 1 else None
-            )
-            unresolved_requirements.append((requirement_index, parent_position))
-            if parent_position is not None:
-                parent_positions.append(parent_position)
-        nearest_ancestors = self._store.nearest_occupied_ancestors(parent_positions)
-        for requirement_index, parent_position in unresolved_requirements:
-            nearest_particle = (
-                nearest_ancestors[parent_position]
-                if parent_position is not None
-                else None
-            )
-            if nearest_particle is None or nearest_particle[1].from_caller:
-                yield requirement_index, nearest_particle
-
-    def _contracted_position_for_requirement(
-        self,
-        position: ast.PositionReference,
-        nearest_particle: tuple[tuple[str, ...], particle_info.ParticleInfo] | None,
-    ) -> ast.PositionReference:
-        if nearest_particle is None:
-            return position
-        owner_key, owner = nearest_particle
-        if owner_key == owner.origin_position.canonical_chained_name_tuple:
-            return position
-        return ast.PositionReference(
-            location=position.location,
-            typed_names=(
-                *owner.origin_position.typed_names,
-                *position.typed_names[len(owner_key) :],
-            ),
         )
+        return self._requirement_resolver.propagate_requirements(requirements_in_caller)
 
     def get_occupant(
         self, in_position: ast.PositionReference
@@ -575,7 +433,7 @@ class ParticleTracker:
         interface or implied quality. ``requirements`` is the validator's
         inferred-requirements dict.
         """
-        return self._collect_contracted_position_guarantees(
+        return self._guarantee_generator.contracted_position_guarantees(
             interface_names,
             implied_quality_names,
             requirements,
@@ -595,165 +453,11 @@ class ParticleTracker:
         into the destructor's state rather than deferred.
         """
         self._callee_guarantees.fully_resolve_pending_guarantees(())
-        return self._collect_contracted_position_guarantees(
+        return self._guarantee_generator.contracted_position_guarantees(
             interface_names,
             implied_quality_names,
             requirements,
             is_destructor=True,
-        )
-
-    def _collect_contracted_position_guarantees(
-        self,
-        interface_names: tuple[ast.TypedName[ast.NameContent], ...],
-        implied_quality_names: tuple[ast.GlobalTypedNameReference, ...],
-        requirements: dict[
-            tuple[str, ...], action_contract.PositionOccupancyRequirement
-        ],
-        *,
-        is_destructor: bool = False,
-    ) -> dict[ast.ChainedNameTuple, action_contract.PositionGuarantee]:
-        """Collect and sort the guarantees for every contracted key, excluding the ones _guarantee_for_key reports as no-ops."""
-        include_names = {
-            name.full_typed_name for name in (*interface_names, *implied_quality_names)
-        }
-
-        # generate_own_guarantees excludes keys that came only from our caleees.
-        # generate_destructor_guarantees includes callee-derived keys.
-        all_keys = self._store.keys_for_guarantees(include_callee_derived=is_destructor)
-
-        guarantees: list[
-            tuple[ast.ChainedNameTuple, action_contract.PositionGuarantee]
-        ] = []
-        for key in all_keys:
-            # Consuming a callee's Interface Position must also override its
-            # nested Guarantee when our caller later applies that Guarantee.
-            # Destructors resolve all nested Guarantees here, and their callees'
-            # Interface Positions are not Positions they must preserve.
-            if is_destructor and any(ast.is_action_key(name) for name in key):
-                continue
-            first_element = key[0]
-            # Any position that starts with a global is contracted, even if it was updated
-            # by an implied action and we can't see it directly.
-            if first_element not in include_names and not ast.chain_starts_with_global(
-                key
-            ):
-                continue
-            guarantee = self._guarantee_for_key(key, requirements)
-            if guarantee is None:
-                continue
-            guarantees.append((key, guarantee))
-
-        # Parent-before-child ordering: Our first sort is by the key length
-        # (the number of names in a chain). To understand why this is necessary,
-        # imagine we do this:
-        #
-        #   move position<item> to position<dest>.
-        #   create a particle in position<dest>::position</child>.
-        #
-        # We have to process the move from item to dest first, to understand
-        # that what's in dest is the particle that was originally in
-        # item. Only _then_ should we process the creation in position</child>,
-        # so that we understand that we are creating a particle in a child
-        # of what was originally in "item." Sorting by key length guarantees this
-        # property.
-        #
-        # Execution order: Within the same key length, sorting
-        # by caused_by (source position) is also required. For example, if
-        # an action does:
-        #
-        #   move position<item>::position</child> to position<dest>.
-        #   move position<item> to position<_sink>.
-        #
-        # Both of these show up as guarantees in the final output about
-        # single-item positions: position<dest> has a guarantee that it
-        # contains what was originally in position<item>::position</child>,
-        # and position<item> has a guarantee that it's empty. (Remember that
-        # guarantees show up entirely using the names of the _final destinations_,
-        # so there is no guarantee emitted here about position<item>::position</child>---
-        # it's automatically emptied by position<item> being emptied.)
-        #
-        # Thus, we must process position</child> being in position<dest> before
-        # we process that position<item> is empty. Otherwise we would delete
-        # the particle in position</child> incorrectly.
-        guarantees.sort(
-            key=lambda item: (
-                len(item[0]),
-                item[1].caused_by.location.line,
-                item[1].caused_by.location.column,
-            ),
-        )
-        return dict(guarantees)
-
-    def _guarantee_for_key(
-        self,
-        key: tuple[str, ...],
-        requirements: dict[
-            tuple[str, ...], action_contract.PositionOccupancyRequirement
-        ],
-    ) -> action_contract.PositionGuarantee | None:
-        """Build a guarantee describing the current tracker state, or None for no-ops.
-
-        A position whose state is identical to the action's starting state, but
-        that the action operated on, gets an UnchangedGuarantee. A position that
-        was left in its assumed starting state without ever being written produces None.
-        """
-        error_caused_by = self._store.error_caused_by(key)
-        if error_caused_by is not None:
-            return action_contract.ErrorGuarantee(
-                caused_by=error_caused_by,
-            )
-
-        info = self._store.occupant_or_none(key)
-        if info is not None:
-            if not info.from_caller:
-                return action_contract.OccupiedByNewGuarantee(
-                    qualities=info.qualities,
-                    origin_position=info.origin_position,
-                    caused_by=info.last_position,
-                    value_effect=typing.cast(
-                        "particle_info.ParticleValueState", info.value_state
-                    ),
-                )
-            if (
-                key != info.origin_position.canonical_chained_name_tuple
-                or info.value_written_at is not None
-                or info.value_state == particle_info.ParticleValueState.ERROR
-            ):
-                return action_contract.OccupiedByExistingGuarantee(
-                    origin_position=info.origin_position,
-                    caused_by=info.last_position,
-                    value_effect=info.value_effect(),
-                )
-            # The caller's particle is right where it started.
-            if self._store.was_written(key):
-                return action_contract.UnchangedGuarantee(
-                    caused_by=info.last_position,
-                )
-            # An assumed particle can remain untouched, including the trigger particle.
-            #
-            # TODO: Should we simply require people to always touch the trigger
-            # position? It eliminates a lot of "more than one way to do it."
-            return None
-
-        # keys_for_guarantees returns an unoccupied Position without error
-        # state only when it is known to be empty.
-        caused_by = typing.cast("ast.PositionReference", self._store.emptied_by(key))
-        requirement = requirements.get(key)
-        if (
-            requirement is not None
-            and requirement.required_state
-            == position_occupancy.PositionOccupancyState.EMPTY
-        ):
-            # A requirement propagated from a callee doesn't mean the callee
-            # operated on that position directly. (It could have been a transitive
-            # callee that did it.)
-            if self._store.was_written(key):
-                return action_contract.UnchangedGuarantee(
-                    caused_by=caused_by,
-                )
-            return None
-        return action_contract.EmptyGuarantee(
-            caused_by=caused_by,
         )
 
     def trigger_action(
