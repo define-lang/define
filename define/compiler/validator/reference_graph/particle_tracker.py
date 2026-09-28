@@ -1341,6 +1341,13 @@ class ParticleTracker:
             moved_value_callback=update_interface_occupancy,
         )
         self._store.state[from_key] = _NodeState(emptied_by=source)
+        # Neither position has error state itself, but their child positions
+        # can. The particle's children keep their unknown state as they move,
+        # and whatever was below the target no longer exists.
+        if to_key in self._store.error:
+            self._store.error.delete_subtree(to_key)
+        if from_key in self._store.error:
+            self._store.error.move_subtree(from_key, to_key)
         self._store.rekey_records_for_move(from_key, to_key)
         self._nested_guarantees.move(from_key, to_key)
         self._dead_interfaces.register_explicit_action_interface_arrival(
