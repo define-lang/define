@@ -1950,6 +1950,25 @@ _actions_ of interface positions are their own callee---putting values into
 their interface positions requires triggering them, but does not require
 triggering their parent action.
 
+### Dead Value Writes
+
+Any line of code that writes to a particle's value is dead code unless that
+value is used before that particle's value is written again. Values are written
+by:
+
+- Value Setting Statements
+- Output views in Operation Argument Statements
+
+A value is "used" if:
+
+- The value is read: it is the source of a Value Setting Statement, or an input
+  view of an Operation Execution Statement looks at it.
+- The particle is in a contracted position of a callee that requires its value
+  to be set, at the time that callee is triggered. This includes destructors
+  triggered when the particle is destroyed.
+- This action's Action Particle Value Guarantees provide a guarantee about the
+  value.
+
 ## Starting Define Programs
 
 Proposals:

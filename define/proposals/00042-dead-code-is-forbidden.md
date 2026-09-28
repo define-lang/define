@@ -187,16 +187,39 @@ for that constraint on `position<b>` to be considered alive.
 
 ### Dead Value Setting Statements
 
-A Value Setting Statement is dead code unless the particle on the left side (the
-one that was written to) is either:
+A Value Setting Statement is dead code unless, before the particle on the left
+side (the one that was written to) has its value written again, it is either:
 
-1. Passed as an input particle to a value operation in the same action.
-2. Passed into a contracted position of a callee that requires the value be set.
+1. Read, either as the right side of a Value Setting Statement or as an input
+   particle to a value operation in the same action.
+2. Passed into a contracted position of a callee that requires the value be set,
+   including a destructor that runs when the particle is destroyed.
 3. Provided as a guarantee of this action in a position with the relevant value
    constraint.
 
 Points 2 and 3 are essentially the same exception as The Contracted Position
 Exception above, except applied to set values rather than constraints.
+
+### Dead Value Operation Outputs
+
+Every particle that a value operation writes to via an output view must be used,
+following the same rules as a particle written by a Value Setting Statement. If
+the operation writes more than one particle, each of them must be used. If these
+rules are not followed, the execution of the value operation is dead code. (The
+compiler would point to the specific operation argument statement that was at
+fault, though---like the specific output view that is dead code.)
+
+For example, this is invalid if nothing ever uses the value of
+`position<remainder>` or `position</remainder>`:
+
+```define
+execute the operation</divide> {
+    with view<dividend> looking at position<a>.
+    with view<divisor> looking at position<b>.
+    with view<quotient> looking at position<quotient>.
+    with view<remainder> looking at position<remainder>.
+}
+```
 
 ### Untriggered Implied Actions
 
