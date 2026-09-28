@@ -1,0 +1,27 @@
+# view<input> only reads view<number>, which is only written and never written to.
+define the operation<my.domain.com:my_lib:/show> {
+    define the view<input> {
+        it is read.
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+        }
+    }
+
+    it does {
+        execute the encoding operation.
+    }
+}
+define the operation<my.domain.com:my_lib:/bump> {
+    define the view<number> {
+        it is written.
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+        }
+    }
+
+    it does {
+        execute the operation</show> {
+            with view<input> looking at view<number>.
+        }
+    }
+}

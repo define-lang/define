@@ -87,6 +87,38 @@ def test_read_from_unwritten_output_view(
     assert diagnostic.operation_name == "operation</increment_by>"
 
 
+def test_write_to_input_only_view_is_not_also_unread(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
+    assert len(result.all_diagnostics) == 1
+    diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.WriteToInputOnlyViewDiagnostic)
+    assert diagnostic.location.file_path is None
+    assert diagnostic.location.line == 24
+    assert diagnostic.location.column == 42
+    assert diagnostic.looked_at_name == "view<number>"
+    assert diagnostic.view_name == "view<result>"
+    assert diagnostic.operation_name == "operation</store>"
+
+
+def test_read_from_unwritten_output_view_is_not_also_unwritten(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
+    assert len(result.all_diagnostics) == 1
+    diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.ReadFromUnwrittenOutputViewDiagnostic)
+    assert diagnostic.location.file_path is None
+    assert diagnostic.location.line == 24
+    assert diagnostic.location.column == 41
+    assert diagnostic.looked_at_name == "view<number>"
+    assert diagnostic.view_name == "view<input>"
+    assert diagnostic.operation_name == "operation</show>"
+
+
 def test_output_view_looks_at_literal(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):

@@ -26,6 +26,10 @@ class OperationDefinitionValidator:
     # Views looked at by a view the executed operation does not define, so
     # whether they are read or written is unknown.
     _views_with_unknown_use: set[str]
+    # Views a statement read or wrote against their direction. Fixing that
+    # statement also fixes the view's unread or unwritten direction, so the
+    # mistake is reported only once.
+    _misused_views: set[str]
 
     def __init__(
         self,
@@ -41,6 +45,7 @@ class OperationDefinitionValidator:
         self._read_views = set()
         self._written_views = set()
         self._views_with_unknown_use = set()
+        self._misused_views = set()
         enclosing_fqun = definition.typed_name.name_content.fqun
         self._arguments_validator = (
             operation_arguments_validator.OperationArgumentsValidator(
@@ -75,7 +80,10 @@ class OperationDefinitionValidator:
             # Structural validation reports duplicate views.
             if self._definition.view_index(view_name) != index:
                 continue
-            if view_name in self._views_with_unknown_use:
+            if (
+                view_name in self._views_with_unknown_use
+                or view_name in self._misused_views
+            ):
                 continue
             # Structural validation reports views that are never referenced.
             if (
@@ -129,6 +137,7 @@ class OperationDefinitionValidator:
             if executed_view.is_input:
                 self._read_views.add(view_name)
                 if not looked_at_view.is_input and view_name not in self._written_views:
+                    self._misused_views.add(view_name)
                     self._diagnostics.append(
                         diagnostics.ReadFromUnwrittenOutputViewDiagnostic(
                             location=looking_at.location,
@@ -140,6 +149,7 @@ class OperationDefinitionValidator:
             if executed_view.is_output:
                 self._written_views.add(view_name)
                 if not looked_at_view.is_output:
+                    self._misused_views.add(view_name)
                     self._diagnostics.append(
                         diagnostics.WriteToInputOnlyViewDiagnostic(
                             location=looking_at.location,
