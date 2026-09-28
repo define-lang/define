@@ -102,7 +102,7 @@ def test_automatic_destruction_snapshots_each_target_before_destructors(
     first_contracts, second_contracts = published_contracts[
         "action<my.domain.com:my_lib:/middle>"
     ].destruction_contracts
-    first, child = first_contracts.particles
+    child, first = first_contracts.particles
     (second,) = second_contracts.particles
     assert (
         first.propagated_destruction.contracted_position.canonical_chained_name_tuple
@@ -328,7 +328,7 @@ def test_shared_state_uses_each_moved_particles_own_origin(
     (contracts,) = published_contracts[
         "action<my.domain.com:my_lib:/middle>"
     ].destruction_contracts
-    parent, child = contracts.particles
+    child, parent = contracts.particles
     assert (
         parent.propagated_destruction.contracted_position.canonical_chained_name_tuple
         == ("position<run>",)

@@ -8,16 +8,16 @@ import local.my_domain_com.my_lib.child
 
 
 class DestroyerDestructionContracts:
-    def run_destructors_position_run(self, _particle: literal.Particle):
-        pass
-
-    def destroy_position_run(self, _particle: literal.Particle):
-        pass
-
     def run_destructors_position_run__position_child(self, _particle: literal.Particle):
         pass
 
     def destroy_position_run__position_child(self, _particle: literal.Particle):
+        pass
+
+    def run_destructors_position_run(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_run(self, _particle: literal.Particle):
         pass
 
 
@@ -60,11 +60,6 @@ class Destroyer(literal.Action):
             )
         )
         literal.record_operation("destroyer.move(keeper, run::/child)")
-        destruction_contracts.run_destructors_position_run(
-            self.get_interface_position(
-                "position<run>"
-            ).particle
-        )
         destruction_contracts.run_destructors_position_run__position_child(
             self.get_interface_position(
                 "position<run>"
@@ -72,7 +67,7 @@ class Destroyer(literal.Action):
                 local.my_domain_com.my_lib.child.Child
             ).particle
         )
-        destruction_contracts.destroy_position_run(
+        destruction_contracts.run_destructors_position_run(
             self.get_interface_position(
                 "position<run>"
             ).particle
@@ -82,6 +77,11 @@ class Destroyer(literal.Action):
                 "position<run>"
             ).particle.get_position(
                 local.my_domain_com.my_lib.child.Child
+            ).particle
+        )
+        destruction_contracts.destroy_position_run(
+            self.get_interface_position(
+                "position<run>"
             ).particle
         )
         self.get_interface_position(

@@ -15,22 +15,16 @@ import local.my_domain_com.my_lib.mid_src_c
 
 
 class ActDestructionContracts:
-    def run_destructors_position_chain_src_a(self, _particle: literal.Particle):
-        pass
-
-    def destroy_position_chain_src_a(self, _particle: literal.Particle):
-        pass
-
     def run_destructors_position_chain_src_a__position_mid_src_a(self, _particle: literal.Particle):
         pass
 
     def destroy_position_chain_src_a__position_mid_src_a(self, _particle: literal.Particle):
         pass
 
-    def run_destructors_position_chain_src_b(self, _particle: literal.Particle):
+    def run_destructors_position_chain_src_a(self, _particle: literal.Particle):
         pass
 
-    def destroy_position_chain_src_b(self, _particle: literal.Particle):
+    def destroy_position_chain_src_a(self, _particle: literal.Particle):
         pass
 
     def run_destructors_position_chain_src_b__position_mid_src_b(self, _particle: literal.Particle):
@@ -39,10 +33,10 @@ class ActDestructionContracts:
     def destroy_position_chain_src_b__position_mid_src_b(self, _particle: literal.Particle):
         pass
 
-    def run_destructors_position_chain_src_c(self, _particle: literal.Particle):
+    def run_destructors_position_chain_src_b(self, _particle: literal.Particle):
         pass
 
-    def destroy_position_chain_src_c(self, _particle: literal.Particle):
+    def destroy_position_chain_src_b(self, _particle: literal.Particle):
         pass
 
     def run_destructors_position_chain_src_c__position_mid_src_c(self, _particle: literal.Particle):
@@ -51,16 +45,22 @@ class ActDestructionContracts:
     def destroy_position_chain_src_c__position_mid_src_c(self, _particle: literal.Particle):
         pass
 
+    def run_destructors_position_chain_src_c(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_chain_src_c(self, _particle: literal.Particle):
+        pass
+
     def run_destructors_position_chain_src_b__position_mid_src_b__position_end_src_b(self, _particle: literal.Particle):
         pass
 
     def destroy_position_chain_src_b__position_mid_src_b__position_end_src_b(self, _particle: literal.Particle):
         pass
 
-    def run_destructors_position_chain_dest(self, _particle: literal.Particle):
+    def run_destructors_position_chain_src_c__position_mid_src_c__position_end_src_c(self, _particle: literal.Particle):
         pass
 
-    def destroy_position_chain_dest(self, _particle: literal.Particle):
+    def destroy_position_chain_src_c__position_mid_src_c__position_end_src_c(self, _particle: literal.Particle):
         pass
 
     def run_destructors_position_chain_dest__position_mid_dest(self, _particle: literal.Particle):
@@ -69,10 +69,10 @@ class ActDestructionContracts:
     def destroy_position_chain_dest__position_mid_dest(self, _particle: literal.Particle):
         pass
 
-    def run_destructors_position_chain_src_c__position_mid_src_c__position_end_src_c(self, _particle: literal.Particle):
+    def run_destructors_position_chain_dest(self, _particle: literal.Particle):
         pass
 
-    def destroy_position_chain_src_c__position_mid_src_c__position_end_src_c(self, _particle: literal.Particle):
+    def destroy_position_chain_dest(self, _particle: literal.Particle):
         pass
 
     def run_destructors_position_trigger(self, _particle: literal.Particle):
@@ -169,11 +169,6 @@ class Act(literal.Action):
             )
         )
         literal.record_operation("act.move(chain_src_c::/mid_src_c::/end_src_c, chain_dest::/mid_dest::/end_dest)")
-        destruction_contracts.run_destructors_position_chain_src_a(
-            self.get_interface_position(
-                "position<chain_src_a>"
-            ).particle
-        )
         destruction_contracts.run_destructors_position_chain_src_a__position_mid_src_a(
             self.get_interface_position(
                 "position<chain_src_a>"
@@ -181,7 +176,7 @@ class Act(literal.Action):
                 local.my_domain_com.my_lib.mid_src_a.MidSrcA
             ).particle
         )
-        destruction_contracts.destroy_position_chain_src_a(
+        destruction_contracts.run_destructors_position_chain_src_a(
             self.get_interface_position(
                 "position<chain_src_a>"
             ).particle
@@ -191,6 +186,11 @@ class Act(literal.Action):
                 "position<chain_src_a>"
             ).particle.get_position(
                 local.my_domain_com.my_lib.mid_src_a.MidSrcA
+            ).particle
+        )
+        destruction_contracts.destroy_position_chain_src_a(
+            self.get_interface_position(
+                "position<chain_src_a>"
             ).particle
         )
         self.get_interface_position(
@@ -203,11 +203,6 @@ class Act(literal.Action):
             "position<chain_src_a>"
         ).destroy_particle()
         literal.record_operation("act.destroy(chain_src_a)")
-        destruction_contracts.run_destructors_position_chain_src_b(
-            self.get_interface_position(
-                "position<chain_src_b>"
-            ).particle
-        )
         destruction_contracts.run_destructors_position_chain_src_b__position_mid_src_b(
             self.get_interface_position(
                 "position<chain_src_b>"
@@ -215,7 +210,7 @@ class Act(literal.Action):
                 local.my_domain_com.my_lib.mid_src_b.MidSrcB
             ).particle
         )
-        destruction_contracts.destroy_position_chain_src_b(
+        destruction_contracts.run_destructors_position_chain_src_b(
             self.get_interface_position(
                 "position<chain_src_b>"
             ).particle
@@ -225,6 +220,11 @@ class Act(literal.Action):
                 "position<chain_src_b>"
             ).particle.get_position(
                 local.my_domain_com.my_lib.mid_src_b.MidSrcB
+            ).particle
+        )
+        destruction_contracts.destroy_position_chain_src_b(
+            self.get_interface_position(
+                "position<chain_src_b>"
             ).particle
         )
         self.get_interface_position(
@@ -237,11 +237,6 @@ class Act(literal.Action):
             "position<chain_src_b>"
         ).destroy_particle()
         literal.record_operation("act.destroy(chain_src_b)")
-        destruction_contracts.run_destructors_position_chain_src_c(
-            self.get_interface_position(
-                "position<chain_src_c>"
-            ).particle
-        )
         destruction_contracts.run_destructors_position_chain_src_c__position_mid_src_c(
             self.get_interface_position(
                 "position<chain_src_c>"
@@ -249,7 +244,7 @@ class Act(literal.Action):
                 local.my_domain_com.my_lib.mid_src_c.MidSrcC
             ).particle
         )
-        destruction_contracts.destroy_position_chain_src_c(
+        destruction_contracts.run_destructors_position_chain_src_c(
             self.get_interface_position(
                 "position<chain_src_c>"
             ).particle
@@ -259,6 +254,11 @@ class Act(literal.Action):
                 "position<chain_src_c>"
             ).particle.get_position(
                 local.my_domain_com.my_lib.mid_src_c.MidSrcC
+            ).particle
+        )
+        destruction_contracts.destroy_position_chain_src_c(
+            self.get_interface_position(
+                "position<chain_src_c>"
             ).particle
         )
         self.get_interface_position(
@@ -285,18 +285,6 @@ class Act(literal.Action):
             "position<iface_dest>"
         ).destroy_particle()
         literal.record_operation("act.destroy(iface_dest)")
-        destruction_contracts.run_destructors_position_chain_dest(
-            self.get_interface_position(
-                "position<chain_dest>"
-            ).particle
-        )
-        destruction_contracts.run_destructors_position_chain_dest__position_mid_dest(
-            self.get_interface_position(
-                "position<chain_dest>"
-            ).particle.get_position(
-                local.my_domain_com.my_lib.mid_dest.MidDest
-            ).particle
-        )
         destruction_contracts.run_destructors_position_chain_src_c__position_mid_src_c__position_end_src_c(
             self.get_interface_position(
                 "position<chain_dest>"
@@ -306,16 +294,16 @@ class Act(literal.Action):
                 local.my_domain_com.my_lib.end_dest.EndDest
             ).particle
         )
-        destruction_contracts.destroy_position_chain_dest(
-            self.get_interface_position(
-                "position<chain_dest>"
-            ).particle
-        )
-        destruction_contracts.destroy_position_chain_dest__position_mid_dest(
+        destruction_contracts.run_destructors_position_chain_dest__position_mid_dest(
             self.get_interface_position(
                 "position<chain_dest>"
             ).particle.get_position(
                 local.my_domain_com.my_lib.mid_dest.MidDest
+            ).particle
+        )
+        destruction_contracts.run_destructors_position_chain_dest(
+            self.get_interface_position(
+                "position<chain_dest>"
             ).particle
         )
         destruction_contracts.destroy_position_chain_src_c__position_mid_src_c__position_end_src_c(
@@ -325,6 +313,18 @@ class Act(literal.Action):
                 local.my_domain_com.my_lib.mid_dest.MidDest
             ).particle.get_position(
                 local.my_domain_com.my_lib.end_dest.EndDest
+            ).particle
+        )
+        destruction_contracts.destroy_position_chain_dest__position_mid_dest(
+            self.get_interface_position(
+                "position<chain_dest>"
+            ).particle.get_position(
+                local.my_domain_com.my_lib.mid_dest.MidDest
+            ).particle
+        )
+        destruction_contracts.destroy_position_chain_dest(
+            self.get_interface_position(
+                "position<chain_dest>"
             ).particle
         )
         self.get_interface_position(

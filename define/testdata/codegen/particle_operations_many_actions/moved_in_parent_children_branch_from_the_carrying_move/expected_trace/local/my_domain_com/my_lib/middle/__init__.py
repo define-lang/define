@@ -11,16 +11,16 @@ import local.my_domain_com.my_lib.parent
 
 
 class MiddleDestructionContracts:
-    def run_destructors_position_iface(self, _particle: literal.Particle):
-        pass
-
-    def destroy_position_iface(self, _particle: literal.Particle):
-        pass
-
     def run_destructors_position_iface__position_parent(self, _particle: literal.Particle):
         pass
 
     def destroy_position_iface__position_parent(self, _particle: literal.Particle):
+        pass
+
+    def run_destructors_position_iface(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_iface(self, _particle: literal.Particle):
         pass
 
 
@@ -72,13 +72,6 @@ class Middle(literal.Action):
         gw.particle.get_action(
             local.my_domain_com.my_lib.inner.Inner
         ).run()
-        destruction_contracts.run_destructors_position_iface(
-            gw.particle.get_action(
-                local.my_domain_com.my_lib.inner.Inner
-            ).get_interface_position(
-                "position<input>"
-            ).particle
-        )
         destruction_contracts.run_destructors_position_iface__position_parent(
             gw.particle.get_action(
                 local.my_domain_com.my_lib.inner.Inner
@@ -88,7 +81,7 @@ class Middle(literal.Action):
                 local.my_domain_com.my_lib.parent.Parent
             ).particle
         )
-        destruction_contracts.destroy_position_iface(
+        destruction_contracts.run_destructors_position_iface(
             gw.particle.get_action(
                 local.my_domain_com.my_lib.inner.Inner
             ).get_interface_position(
@@ -102,6 +95,13 @@ class Middle(literal.Action):
                 "position<input>"
             ).particle.get_position(
                 local.my_domain_com.my_lib.parent.Parent
+            ).particle
+        )
+        destruction_contracts.destroy_position_iface(
+            gw.particle.get_action(
+                local.my_domain_com.my_lib.inner.Inner
+            ).get_interface_position(
+                "position<input>"
             ).particle
         )
         gw.particle.get_action(

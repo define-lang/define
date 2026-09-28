@@ -8,16 +8,16 @@ import local.my_domain_com.my_lib.known
 
 
 class DestroyerDestructionContracts:
-    def run_destructors_position_run(self, _particle: literal.Particle):
-        pass
-
-    def destroy_position_run(self, _particle: literal.Particle):
-        pass
-
     def run_destructors_position_run__position_known(self, _particle: literal.Particle):
         pass
 
     def destroy_position_run__position_known(self, _particle: literal.Particle):
+        pass
+
+    def run_destructors_position_run(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_run(self, _particle: literal.Particle):
         pass
 
 
@@ -75,21 +75,21 @@ class Destroyer(literal.Action):
             )
         )
         literal.record_operation("destroyer.move(holder, parent::/known)")
-        destruction_contracts.run_destructors_position_run(
-            parent.particle
-        )
         destruction_contracts.run_destructors_position_run__position_known(
             parent.particle.get_position(
                 local.my_domain_com.my_lib.known.Known
             ).particle
         )
-        destruction_contracts.destroy_position_run(
+        destruction_contracts.run_destructors_position_run(
             parent.particle
         )
         destruction_contracts.destroy_position_run__position_known(
             parent.particle.get_position(
                 local.my_domain_com.my_lib.known.Known
             ).particle
+        )
+        destruction_contracts.destroy_position_run(
+            parent.particle
         )
         parent.particle.get_position(
             local.my_domain_com.my_lib.known.Known

@@ -20,6 +20,9 @@ if typing.TYPE_CHECKING:
 class QualityAssignments:
     """An immutable, ordered collection of qualities assigned to a particle."""
 
+    # Quality assignments are retained for the whole compilation. A tuple is
+    # smaller than the list it is built from, and every empty tuple is the same
+    # shared object.
     assignments: tuple[ast.GlobalTypedNameReference, ...]
 
     def __init__(self, assignments: tuple[ast.GlobalTypedNameReference, ...]):

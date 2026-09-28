@@ -53,6 +53,7 @@ class _PendingDestructionContract(msgspec.Struct, frozen=True):
 
     particle: particle_info.ParticleInfo
     destruction_fact: destruction_contract_types.DestructionFact
+    verified_destructors: quality_assignment.QualityAssignments
 
 
 class ActionDefinitionValidator:
@@ -278,9 +279,7 @@ class ActionDefinitionValidator:
             contracts = action_contract.DestructionContracts(child_state=shared_state)
             for pending_contract in pending_contracts:
                 propagated = self._record_destruction_contract(
-                    pending_contract.particle,
-                    contracts,
-                    pending_contract.destruction_fact,
+                    pending_contract, contracts
                 )
                 step.contract_destructions.append(propagated)
             self._destruction_contracts.append(contracts)
@@ -304,13 +303,7 @@ class ActionDefinitionValidator:
             destroyed_position_in_destroyer=position,
         )
         destruction_facts.append(destruction_fact)
-        if particle.from_caller:
-            pending_contracts.append(
-                _PendingDestructionContract(
-                    particle=particle,
-                    destruction_fact=destruction_fact,
-                )
-            )
+        destructor_qualities: list[ast.GlobalTypedNameReference] = []
 
         # A particle keeps its own qualities across Moves, so its qualities—not
         # the current Position's constraints—determine its child Positions and
@@ -328,12 +321,15 @@ class ActionDefinitionValidator:
                 )
             elif quality.name_type == ast.NameType.ACTION:
                 definition_result = self._definition_results.get(quality)
+                # Reference validation has already reported unresolved qualities;
+                # their absence must not prevent checking the remaining Destructors.
                 if definition_result is None:
                     continue
                 definition = typing.cast(
                     "ast.ActionDefinition", definition_result.definition
                 )
                 if definition.is_destructor:
+                    destructor_qualities.append(quality)
                     destructors.append(
                         (
                             action_contract.Destructor(
@@ -357,6 +353,16 @@ class ActionDefinitionValidator:
                         destruction,
                     )
 
+        if particle.from_caller:
+            pending_contracts.append(
+                _PendingDestructionContract(
+                    particle=particle,
+                    destruction_fact=destruction_fact,
+                    verified_destructors=quality_assignment.QualityAssignments(
+                        tuple(destructor_qualities)
+                    ),
+                )
+            )
         # Children must remain accessible until their own Destroy executes.
         destruction.append(position)
 
@@ -387,14 +393,14 @@ class ActionDefinitionValidator:
 
     def _record_destruction_contract(
         self,
-        particle: particle_info.ParticleInfo,
+        pending_contract: _PendingDestructionContract,
         contracts: action_contract.DestructionContracts,
-        destruction_fact: destruction_contract_types.DestructionFact,
     ) -> destruction_contract_types.PropagatedDestruction:
         """Record the Destruction Contract for one caller-passed particle."""
+        destruction_fact = pending_contract.destruction_fact
         propagated = destruction_contract_types.PropagatedDestruction(
             destruction_fact=destruction_fact,
-            contracted_position=particle.origin_position,
+            contracted_position=pending_contract.particle.origin_position,
         )
         contracts.append(
             action_contract.DestructionContract(
@@ -412,9 +418,7 @@ class ActionDefinitionValidator:
                 # handled through the normal requirements mechanism (fired and
                 # propagated as this action's own requirements), not through the
                 # Destruction Contract's requirement-verification mechanism.
-                verified_destructors=self._destructor_quality_assignments(
-                    particle.qualities
-                ),
+                verified_destructors=pending_contract.verified_destructors,
             )
         )
         return propagated
@@ -617,28 +621,6 @@ class ActionDefinitionValidator:
                     ),
                 )
             )
-
-    def _destructor_quality_assignments(
-        self, qualities: quality_assignment.QualityAssignments
-    ) -> quality_assignment.QualityAssignments:
-        """Return the destructor assignments among a particle's qualities."""
-        # TODO: This feels inefficient to do every time, but let's wait for actual
-        # profiling data to tell us if that's important.
-        result: list[ast.GlobalTypedNameReference] = []
-        for quality in qualities.assignments:
-            if quality.name_type != ast.NameType.ACTION:
-                continue
-            definition_result = self._definition_results.get(quality)
-            # Reference validation has already reported unresolved qualities;
-            # their absence must not prevent checking the remaining Destructors.
-            if definition_result is None:
-                continue
-            definition = typing.cast(
-                "ast.ActionDefinition", definition_result.definition
-            )
-            if definition.is_destructor:
-                result.append(quality)
-        return quality_assignment.QualityAssignments(tuple(result))
 
     def _analyze_statements(
         self,

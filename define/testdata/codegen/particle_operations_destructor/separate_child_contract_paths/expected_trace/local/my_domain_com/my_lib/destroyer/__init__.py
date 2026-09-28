@@ -9,12 +9,6 @@ import local.my_domain_com.my_lib.right
 
 
 class DestroyerDestructionContracts:
-    def run_destructors_position_target(self, _particle: literal.Particle):
-        pass
-
-    def destroy_position_target(self, _particle: literal.Particle):
-        pass
-
     def run_destructors_position_target__position_left(self, _particle: literal.Particle):
         pass
 
@@ -25,6 +19,12 @@ class DestroyerDestructionContracts:
         pass
 
     def destroy_position_target__position_right(self, _particle: literal.Particle):
+        pass
+
+    def run_destructors_position_target(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_target(self, _particle: literal.Particle):
         pass
 
 
@@ -87,11 +87,6 @@ class Destroyer(literal.Action):
             )
         )
         literal.record_operation("destroyer.move(right_holder, target::/right)")
-        destruction_contracts.run_destructors_position_target(
-            self.get_interface_position(
-                "position<target>"
-            ).particle
-        )
         destruction_contracts.run_destructors_position_target__position_left(
             self.get_interface_position(
                 "position<target>"
@@ -106,7 +101,7 @@ class Destroyer(literal.Action):
                 local.my_domain_com.my_lib.right.Right
             ).particle
         )
-        destruction_contracts.destroy_position_target(
+        destruction_contracts.run_destructors_position_target(
             self.get_interface_position(
                 "position<target>"
             ).particle
@@ -123,6 +118,11 @@ class Destroyer(literal.Action):
                 "position<target>"
             ).particle.get_position(
                 local.my_domain_com.my_lib.right.Right
+            ).particle
+        )
+        destruction_contracts.destroy_position_target(
+            self.get_interface_position(
+                "position<target>"
             ).particle
         )
         self.get_interface_position(

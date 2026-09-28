@@ -12,12 +12,6 @@ import local.my_domain_com.my_lib.maybe_empty
 
 
 class MiddleDestructionContracts:
-    def run_destructors_position_run(self, _particle: literal.Particle):
-        pass
-
-    def destroy_position_run(self, _particle: literal.Particle):
-        pass
-
     def run_destructors_position_run__position_marker_a(self, _particle: literal.Particle):
         pass
 
@@ -28,6 +22,12 @@ class MiddleDestructionContracts:
         pass
 
     def destroy_position_run__position_marker_b(self, _particle: literal.Particle):
+        pass
+
+    def run_destructors_position_run(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_run(self, _particle: literal.Particle):
         pass
 
 
@@ -121,12 +121,12 @@ class Middle(literal.Action):
             local.my_domain_com.my_lib.destroyer.Destroyer
         ).run(
             DestroyerDestructionContracts(
-                destruction_contracts.run_destructors_position_run,
-                destruction_contracts.destroy_position_run,
                 destruction_contracts.run_destructors_position_run__position_marker_a,
                 destruction_contracts.destroy_position_run__position_marker_a,
                 destruction_contracts.run_destructors_position_run__position_marker_b,
                 destruction_contracts.destroy_position_run__position_marker_b,
+                destruction_contracts.run_destructors_position_run,
+                destruction_contracts.destroy_position_run,
             ),
         )
 
@@ -134,31 +134,19 @@ class Middle(literal.Action):
 class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.DestroyerDestructionContracts):
     def __init__(
         self,
-        run_destructors_position_run: literal.DestructionContribution,
-        destroy_position_run: literal.DestructionContribution,
         run_destructors_position_run__position_marker_a: literal.DestructionContribution,
         destroy_position_run__position_marker_a: literal.DestructionContribution,
         run_destructors_position_run__position_marker_b: literal.DestructionContribution,
         destroy_position_run__position_marker_b: literal.DestructionContribution,
+        run_destructors_position_run: literal.DestructionContribution,
+        destroy_position_run: literal.DestructionContribution,
     ):
-        self._run_destructors_position_run: literal.DestructionContribution = run_destructors_position_run
-        self._destroy_position_run: literal.DestructionContribution = destroy_position_run
         self._run_destructors_position_run__position_marker_a: literal.DestructionContribution = run_destructors_position_run__position_marker_a
         self._destroy_position_run__position_marker_a: literal.DestructionContribution = destroy_position_run__position_marker_a
         self._run_destructors_position_run__position_marker_b: literal.DestructionContribution = run_destructors_position_run__position_marker_b
         self._destroy_position_run__position_marker_b: literal.DestructionContribution = destroy_position_run__position_marker_b
-
-    @override
-    def run_destructors_position_run(self, particle: literal.Particle):
-        self._run_destructors_position_run(
-            particle
-        )
-
-    @override
-    def destroy_position_run(self, particle: literal.Particle):
-        self._destroy_position_run(
-            particle
-        )
+        self._run_destructors_position_run: literal.DestructionContribution = run_destructors_position_run
+        self._destroy_position_run: literal.DestructionContribution = destroy_position_run
 
     @override
     def run_destructors_position_run__position_marker_a(self, particle: literal.Particle):
@@ -181,5 +169,17 @@ class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.Destroy
     @override
     def destroy_position_run__position_marker_b(self, particle: literal.Particle):
         self._destroy_position_run__position_marker_b(
+            particle
+        )
+
+    @override
+    def run_destructors_position_run(self, particle: literal.Particle):
+        self._run_destructors_position_run(
+            particle
+        )
+
+    @override
+    def destroy_position_run(self, particle: literal.Particle):
+        self._destroy_position_run(
             particle
         )

@@ -15,16 +15,16 @@ class ActDestructionContracts:
     def destroy_position_chain_src__position_mid__position_end(self, _particle: literal.Particle):
         pass
 
-    def run_destructors_position_chain_src(self, _particle: literal.Particle):
-        pass
-
-    def destroy_position_chain_src(self, _particle: literal.Particle):
-        pass
-
     def run_destructors_position_chain_src__position_mid(self, _particle: literal.Particle):
         pass
 
     def destroy_position_chain_src__position_mid(self, _particle: literal.Particle):
+        pass
+
+    def run_destructors_position_chain_src(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_chain_src(self, _particle: literal.Particle):
         pass
 
     def run_destructors_position_trigger(self, _particle: literal.Particle):
@@ -80,11 +80,6 @@ class Act(literal.Action):
         ).particle.get_position(
             local.my_domain_com.my_lib.end.End
         ).destroy_particle()
-        destruction_contracts.run_destructors_position_chain_src(
-            self.get_interface_position(
-                "position<chain_src>"
-            ).particle
-        )
         destruction_contracts.run_destructors_position_chain_src__position_mid(
             self.get_interface_position(
                 "position<chain_src>"
@@ -92,7 +87,7 @@ class Act(literal.Action):
                 local.my_domain_com.my_lib.mid.Mid
             ).particle
         )
-        destruction_contracts.destroy_position_chain_src(
+        destruction_contracts.run_destructors_position_chain_src(
             self.get_interface_position(
                 "position<chain_src>"
             ).particle
@@ -102,6 +97,11 @@ class Act(literal.Action):
                 "position<chain_src>"
             ).particle.get_position(
                 local.my_domain_com.my_lib.mid.Mid
+            ).particle
+        )
+        destruction_contracts.destroy_position_chain_src(
+            self.get_interface_position(
+                "position<chain_src>"
             ).particle
         )
         self.get_interface_position(

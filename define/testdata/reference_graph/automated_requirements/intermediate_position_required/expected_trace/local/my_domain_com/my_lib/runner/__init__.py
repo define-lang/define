@@ -15,16 +15,16 @@ class RunnerDestructionContracts:
     def destroy_position_wrap__position_mid__position_leaf(self, _particle: literal.Particle):
         pass
 
-    def run_destructors_position_wrap(self, _particle: literal.Particle):
-        pass
-
-    def destroy_position_wrap(self, _particle: literal.Particle):
-        pass
-
     def run_destructors_position_wrap__position_mid(self, _particle: literal.Particle):
         pass
 
     def destroy_position_wrap__position_mid(self, _particle: literal.Particle):
+        pass
+
+    def run_destructors_position_wrap(self, _particle: literal.Particle):
+        pass
+
+    def destroy_position_wrap(self, _particle: literal.Particle):
         pass
 
     def run_destructors_position_run(self, _particle: literal.Particle):
@@ -81,11 +81,6 @@ class Runner(literal.Action):
             local.my_domain_com.my_lib.leaf.Leaf
         ).destroy_particle()
         literal.record_operation("runner.destroy(wrap::/mid::/leaf)")
-        destruction_contracts.run_destructors_position_wrap(
-            self.get_interface_position(
-                "position<wrap>"
-            ).particle
-        )
         destruction_contracts.run_destructors_position_wrap__position_mid(
             self.get_interface_position(
                 "position<wrap>"
@@ -93,7 +88,7 @@ class Runner(literal.Action):
                 local.my_domain_com.my_lib.mid.Mid
             ).particle
         )
-        destruction_contracts.destroy_position_wrap(
+        destruction_contracts.run_destructors_position_wrap(
             self.get_interface_position(
                 "position<wrap>"
             ).particle
@@ -103,6 +98,11 @@ class Runner(literal.Action):
                 "position<wrap>"
             ).particle.get_position(
                 local.my_domain_com.my_lib.mid.Mid
+            ).particle
+        )
+        destruction_contracts.destroy_position_wrap(
+            self.get_interface_position(
+                "position<wrap>"
             ).particle
         )
         self.get_interface_position(
