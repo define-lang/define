@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import os
+import queue
 import typing
 from collections import deque
-from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
+from concurrent.futures import Future, ThreadPoolExecutor
 
 if typing.TYPE_CHECKING:
     from array import array
@@ -35,6 +36,7 @@ class _WorkPool[ResultT]:
         self._max_in_flight = max_workers
         self._order = order
         self._process_definition = process_definition
+        self._completed: queue.SimpleQueue[Future[ResultT]] = queue.SimpleQueue()
 
     def __enter__(self) -> typing.Self:
         return self
@@ -53,24 +55,20 @@ class _WorkPool[ResultT]:
         while ready_definitions or in_flight:
             self._submit_ready_definitions(ready_definitions, in_flight)
 
-            completed_futures, _ = wait(
-                in_flight,
-                return_when=FIRST_COMPLETED,
+            future = self._completed.get()
+            definition_index = in_flight.pop(future)
+            exception = future.exception()
+            if exception is None:
+                results[definition_index] = future.result()
+            else:
+                exceptions[definition_index] = exception
+            self._complete_dependents(
+                definition_index,
+                exception,
+                remaining_references,
+                ready_definitions,
+                exceptions,
             )
-            for future in completed_futures:
-                definition_index = in_flight.pop(future)
-                exception = future.exception()
-                if exception is None:
-                    results[definition_index] = future.result()
-                else:
-                    exceptions[definition_index] = exception
-                self._complete_dependents(
-                    definition_index,
-                    exception,
-                    remaining_references,
-                    ready_definitions,
-                    exceptions,
-                )
 
         return self._ordered_results(results, exceptions)
 
@@ -87,6 +85,7 @@ class _WorkPool[ResultT]:
                 self._order.definitions[definition_index],
             )
             in_flight[future] = definition_index
+            future.add_done_callback(self._completed.put)
 
     @staticmethod
     def _ordered_results(
