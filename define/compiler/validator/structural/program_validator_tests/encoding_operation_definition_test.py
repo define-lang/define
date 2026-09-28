@@ -9,7 +9,10 @@ from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler import ast, diagnostics
-from define.compiler.validator.test_helpers import assert_no_errors
+from define.compiler.validator.test_helpers import (
+    BUILT_IN_DEFINITION_COUNT,
+    assert_no_errors,
+)
 
 if TYPE_CHECKING:
     from define.compiler.conftest import (
@@ -23,7 +26,7 @@ def test_valid_encoding_operation(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert_no_errors(result)
-    assert len(result.definition_results) == 2
+    assert len(result.definition_results) == 2 + BUILT_IN_DEFINITION_COUNT
 
 
 def test_computer_operation_references_every_view(
@@ -222,7 +225,7 @@ def test_encoding_operation_in_other_file(
     result = validate_testdata_structural()
     assert_no_errors(result)
     assert len(result.file_results) == 2
-    assert len(result.definition_results) == 2
+    assert len(result.definition_results) == 2 + BUILT_IN_DEFINITION_COUNT
 
 
 def test_executes_value_operation(

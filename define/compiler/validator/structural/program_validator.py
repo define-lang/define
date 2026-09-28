@@ -19,6 +19,7 @@ if typing.TYPE_CHECKING:
 
 from define.compiler import (
     ast,
+    built_in_definitions,
     config,
     constants,
     diagnostics,
@@ -108,6 +109,7 @@ class ProgramStructuralValidator:
     _path_tracker: path_tracker.PathTracker[validation_result.FileValidationResult]
     _reference_graph: reference_graph.ReferenceGraph
     _deferred_edges: dict[define_path.DefinePath, list[_DeferredReferenceEdge]]
+    _built_in_definitions_registered: bool
     _definition_results: typed_name_dict.TypedNameDict[
         ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
         validation_result.DefinitionValidationResult,
@@ -137,6 +139,7 @@ class ProgramStructuralValidator:
         self._reference_graph = reference_graph.ReferenceGraph()
         self._deferred_edges = {}
         self._definition_results = typed_name_dict.TypedNameDict()
+        self._built_in_definitions_registered = False
         self._config_loading_time_ns = 0
         self._allow_entry_action_interface_positions = (
             allow_entry_action_interface_positions
@@ -316,6 +319,16 @@ class ProgramStructuralValidator:
         self._reference_graph.add_definition(definition_result.definition)
         self._validate_outgoing_reference_edges(result.root_prefix, definition_result)
 
+    def _register_built_in_definitions(self):
+        """Load every built-in definition, once per program, as though the standard universe were one file."""
+        if self._built_in_definitions_registered:
+            return
+        self._built_in_definitions_registered = True
+        for definition in built_in_definitions.definitions():
+            self._definition_results[definition.typed_name] = (
+                validation_result.DefinitionValidationResult(definition=definition)
+            )
+
     def _submit_referenced_file_from_configured_root(
         self,
         result: validation_result.FileValidationResult,
@@ -452,13 +465,15 @@ class ProgramStructuralValidator:
 
         When root config loading fails entirely, every cross-universe FQUN is
         unresolvable. Same-universe edges are kept so that same-file validation
-        (e.g. cycle detection) still runs.
+        (e.g. cycle detection) still runs, and so are standard universe edges,
+        whose definitions need no config.
         """
         for definition_result in result.definition_results:
             definition_result.reference_edges = [
                 ref_edge
                 for ref_edge in definition_result.reference_edges
                 if ref_edge.global_name_reference.name_content.fqun is None
+                or ref_edge.targets_standard_universe
             ]
 
     def _load_config_in_non_filesystem_context(
@@ -497,6 +512,11 @@ class ProgramStructuralValidator:
     ):
         """Try to add edges to the reference graph, validate targets we already know about, and enqueue those we don't."""
         for ref_edge in source_definition.reference_edges:
+            # TODO: Remove this special case once the Define Standard Library
+            # defines the built-in names.
+            if ref_edge.targets_standard_universe:
+                self._add_built_in_reference_edge(ref_edge, source_definition)
+                continue
             # A definition from the supplied source has no file path to resolve.
             if self._references_non_filesystem_definition(ref_edge):
                 _ = self._add_reference_edge(ref_edge, source_definition)
@@ -532,6 +552,26 @@ class ProgramStructuralValidator:
                 self._deferred_edges.setdefault(target_file, []).append(
                     _DeferredReferenceEdge(ref_edge, source_definition)
                 )
+
+    def _add_built_in_reference_edge(
+        self,
+        ref_edge: reference_graph.ReferenceEdge,
+        source_definition: validation_result.DefinitionValidationResult,
+    ):
+        self._register_built_in_definitions()
+        target = self._definition_results.get(ref_edge.global_name_reference)
+        if target is None:
+            source_definition.add_diagnostic(
+                diagnostics.StandardDefinitionNotFoundDiagnostic(
+                    location=ref_edge.global_name_reference.name_content.location,
+                    definition_name=ref_edge.target_full_typed_name,
+                )
+            )
+            return
+        # Only referenced built-in definitions join the reference graph, just
+        # as only referenced files are loaded.
+        self._reference_graph.add_definition(target.definition)
+        _ = self._add_reference_edge(ref_edge, source_definition)
 
     def _add_reference_edge(
         self,

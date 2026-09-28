@@ -396,3 +396,35 @@ def test_non_filesystem_cross_universe_back_reference(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.all_exceptions == []
+
+
+def test_standard_reference_does_not_load_a_file_non_filesystem(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert_no_errors(result)
+    assert len(result.file_results) == 3
+    assert str(result.file_results[0].file_path) == "<string>"
+    assert result.file_results[1].file_path == define_path.DefinePath("target.dfn")
+    assert result.file_results[2].file_path == define_path.DefinePath("leaf.dfn")
+
+
+def test_config_failure_keeps_standard_references(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert result.all_exceptions == []
+    assert len(result.all_diagnostics) == 2
+    first = result.all_diagnostics[0]
+    assert isinstance(first, diagnostics.StandardDefinitionNotFoundDiagnostic)
+    assert first.location.file_path is None
+    assert first.location.line == 5
+    assert first.location.column == 26
+    assert first.definition_name == "value<standard:/number/missing>"
+    second = result.all_diagnostics[1]
+    assert isinstance(second, diagnostics.NoProjectRootInNonFilesystemContextDiagnostic)
+    assert second.location.file_path is None
+    assert second.location.line == 4
+    assert second.location.column == 29
+    assert second.universe == "other.example.com:other_universe"
+    assert second.config_path == ".define/project/config.defcl"

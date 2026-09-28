@@ -751,6 +751,15 @@ class ReferencedDefinitionNotFoundDiagnostic(Diagnostic):
     )
 
 
+class StandardDefinitionNotFoundDiagnostic(Diagnostic):
+    """Diagnostic for a reference to a name the standard universe does not define."""
+
+    definition_name: str
+    message_format: ClassVar[str] = (
+        "the standard universe does not define '{self.definition_name}'"
+    )
+
+
 class ReferencedFileNotFoundDiagnostic(Diagnostic):
     """Diagnostic for when a referenced file does not exist."""
 

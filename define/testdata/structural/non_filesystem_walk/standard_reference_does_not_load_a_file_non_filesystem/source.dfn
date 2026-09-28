@@ -1,0 +1,7 @@
+# A reference into the standard universe uses the built-in definitions instead of loading a file.
+define the potential position<my.domain.com:my_lib:/test> {
+    it may only contain particles where {
+        it has the position</target>.
+        it has the value<standard:/number/rational>.
+    }
+}

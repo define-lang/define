@@ -1032,11 +1032,6 @@ class DefinitionStructuralValidator:
         typed_global_name: ast.GlobalTypedNameReference,
     ):
         """Record a reference edge for a global name reference."""
-        # Built-in names have no definition file to load or depend on.
-        # TODO: Remove this special case once the Define Standard Library
-        # defines the built-in names.
-        if typed_global_name.full_typed_name in constants.BUILT_IN_GLOBAL_NAMES:
-            return
         global_name = typed_global_name.name_content
 
         is_self_reference = (
@@ -1055,9 +1050,13 @@ class DefinitionStructuralValidator:
         )
         # Process a cross-FQUN reference in a filesystem context. References
         # that resolve within this same file skip the sub-root check so that
-        # they still get edges for same-file validation.
+        # they still get edges for same-file validation. The standard universe
+        # is built into the compiler, so it has no sub-root.
+        # TODO: Stop exempting the standard universe once the Define Standard
+        # Library defines the built-in names.
         if (
             global_name.fqun is not None
+            and global_name.fqun.canonical != constants.STANDARD_UNIVERSE
             and not is_same_file_reference
             and self._context.is_filesystem_context
         ):

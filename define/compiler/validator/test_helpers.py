@@ -4,13 +4,20 @@
 from __future__ import annotations
 
 from pprint import pformat
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Final, Protocol
+
+from define.compiler import built_in_definitions
 
 if TYPE_CHECKING:
     from pathlib import Path
 
     from define.compiler import diagnostics
     from define.compiler.validator import validation_result
+
+
+# A program that references the standard universe has every built-in
+# definition in its definition results.
+BUILT_IN_DEFINITION_COUNT: Final = len(built_in_definitions.definitions())
 
 
 class _ValidationErrors(Protocol):

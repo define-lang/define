@@ -54,7 +54,12 @@ py_test(
         ":constants",
         ":diagnostics",
         ":parser",
+        "//define/compiler/data_structures:typed_name_dict",
+        "//define/compiler/graphs:reference_graph",
+        "//define/compiler/graphs:reference_graph_order",
+        "//define/compiler/validator:validation_result",
         "//define/compiler/validator/reference_graph:reference_graph_validator",
+        "//define/compiler/validator/structural:file_validator",
         "//define/compiler/validator/structural:program_validator",
     ],
 )

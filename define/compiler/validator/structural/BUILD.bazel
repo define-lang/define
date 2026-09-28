@@ -105,6 +105,7 @@ py_library(
         ":file_validator",
         ":path_tracker",
         "//define/compiler:ast",
+        "//define/compiler:built_in_definitions",
         "//define/compiler:config",
         "//define/compiler:constants",
         "//define/compiler:diagnostics",

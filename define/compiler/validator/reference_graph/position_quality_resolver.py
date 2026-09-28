@@ -157,6 +157,9 @@ class PositionQualityResolver:
     def _implications_for(
         self, quality: ast.GlobalTypedNameReference
     ) -> tuple[ast.GlobalTypedNameReference, ...]:
+        # Encodings are not qualities, so they imply nothing.
+        if quality.name_type == ast.NameType.ENCODING:
+            return ()
         definition_result = self._definition_results.get(quality)
         if definition_result is None:
             return ()

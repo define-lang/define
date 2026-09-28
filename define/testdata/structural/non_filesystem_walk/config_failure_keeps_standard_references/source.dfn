@@ -1,0 +1,7 @@
+# Without a project config, references into the standard universe are still checked.
+define the potential position<my.domain.com:my_lib:/test> {
+    it may only contain particles where {
+        it has the position<other.example.com:other_universe:/target>.
+        it has the value<standard:/number/missing>.
+    }
+}

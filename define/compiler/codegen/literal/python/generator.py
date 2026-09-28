@@ -63,11 +63,6 @@ class _DefinitionGenerator:
         ):
             if package_dir is not None:
                 package_dirs.add(package_dir)
-        # TODO: Remove this special case once the Define Standard Library
-        # defines the built-in names.
-        for reference in self._converter.built_in_value_references:
-            content = _templates.render_value(reference.class_name)
-            package_dirs.add(self._write_definition_file(content, reference))
         return self._entry_definition, package_dirs
 
     def _generate_definition(self, definition: ast.GlobalDefinition) -> Path | None:

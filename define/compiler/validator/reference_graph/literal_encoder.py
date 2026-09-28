@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import typing
 
-import msgspec
-
 from define.compiler import ast, constants, diagnostics, literal_parsers
 
 if typing.TYPE_CHECKING:
@@ -13,17 +11,6 @@ if typing.TYPE_CHECKING:
 
     from define.compiler.data_structures import typed_name_dict
     from define.compiler.validator import validation_result
-
-
-# TODO: Replace this with the encoding's definition once the Define Standard
-# Library defines the built-in encodings.
-class _LiteralEncodingName(msgspec.Struct, frozen=True):
-    """The name of the encoding a Potential Literal's literals are written in."""
-
-    full_name: str
-    # How the name appears in diagnostics about the definition containing the
-    # literal.
-    source_name: str
 
 
 class LiteralEncoder:
@@ -70,7 +57,7 @@ class LiteralEncoder:
                 )
             ]
         parser = literal_parsers.LITERAL_PARSERS.get(
-            (literal_encoding.full_name, value_encoding)
+            (literal_encoding.full_typed_name, value_encoding)
         )
         if parser is None:
             return None, [
@@ -79,7 +66,9 @@ class LiteralEncoder:
                     potential_literal=potential_literal.source_form_in_universe(
                         self._enclosing_fqun
                     ),
-                    literal_encoding=literal_encoding.source_name,
+                    literal_encoding=literal_encoding.source_form_in_universe(
+                        self._enclosing_fqun
+                    ),
                     value_type=value_type.source_form_in_universe(self._enclosing_fqun),
                     supported_encodings=_supported_encodings(value_encoding),
                 )
@@ -97,7 +86,7 @@ class LiteralEncoder:
         if literal_encoding is None:
             return []
         parser = literal_parsers.LITERAL_PARSERS.get(
-            (literal_encoding.full_name, encoding.full_typed_name)
+            (literal_encoding.full_typed_name, encoding.full_typed_name)
         )
         if parser is None:
             return [
@@ -106,7 +95,9 @@ class LiteralEncoder:
                     potential_literal=potential_literal.source_form_in_universe(
                         self._enclosing_fqun
                     ),
-                    literal_encoding=literal_encoding.source_name,
+                    literal_encoding=literal_encoding.source_form_in_universe(
+                        self._enclosing_fqun
+                    ),
                     encoding=encoding.source_form_in_universe(self._enclosing_fqun),
                     supported_encodings=_supported_encodings(encoding.full_typed_name),
                 )
@@ -116,29 +107,15 @@ class LiteralEncoder:
 
     def _literal_encoding(
         self, potential_literal: ast.GlobalTypedNameReference
-    ) -> _LiteralEncodingName | None:
-        """Return the name of the Potential Literal's encoding, if the Potential Literal is defined."""
-        # TODO: Remove this special case once the Define Standard Library
-        # defines the built-in names.
-        built_in_encoding = constants.BUILT_IN_LITERAL_ENCODINGS.get(
-            potential_literal.full_typed_name
-        )
-        if built_in_encoding is not None:
-            return _LiteralEncodingName(
-                full_name=built_in_encoding, source_name=built_in_encoding
-            )
+    ) -> ast.GlobalTypedNameReference | None:
+        """Return the Potential Literal's encoding, if the Potential Literal is defined."""
         definition_result = self._definition_results.get(potential_literal)
         if definition_result is None:
             return None
         definition = typing.cast(
             "ast.PotentialLiteralDefinition", definition_result.definition
         )
-        return _LiteralEncodingName(
-            full_name=definition.encoding.full_typed_name,
-            source_name=definition.encoding.source_form_in_universe(
-                self._enclosing_fqun
-            ),
-        )
+        return definition.encoding
 
     def _parse(
         self,

@@ -6,7 +6,10 @@ from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler import diagnostics
-from define.compiler.validator.test_helpers import assert_no_errors
+from define.compiler.validator.test_helpers import (
+    BUILT_IN_DEFINITION_COUNT,
+    assert_no_errors,
+)
 
 if TYPE_CHECKING:
     from define.compiler.conftest import (
@@ -155,7 +158,7 @@ def test_built_in_literal(
     result = validate_testdata_structural_non_filesystem()
     assert_no_errors(result)
     assert len(result.file_results) == 1
-    assert len(result.definition_results) == 1
+    assert len(result.definition_results) == 1 + BUILT_IN_DEFINITION_COUNT
 
 
 def test_undefined_standard_literal(
@@ -165,9 +168,8 @@ def test_undefined_standard_literal(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert isinstance(diagnostic, diagnostics.StandardDefinitionNotFoundDiagnostic)
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert diagnostic.universe == "standard"
-    assert diagnostic.current_universe_name == "my.domain.com:my_lib"
     assert diagnostic.location.line == 7
     assert diagnostic.location.column == 52
+    assert diagnostic.definition_name == "literal<standard:/text>"

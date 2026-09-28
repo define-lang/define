@@ -1,5 +1,13 @@
 # The compiler provides these definitions until the Define Standard Library
 # defines them.
+define the encoding<standard:/number/decimal/ascii>.
+
+define the potential literal<standard:/number> {
+    it has the encoding</number/decimal/ascii>.
+}
+
+define the potential value<standard:/number/rational>.
+
 define the operation<standard:/number/rational/add> {
     define the view<a> {
         it is read.

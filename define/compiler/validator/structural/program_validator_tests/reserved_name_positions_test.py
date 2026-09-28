@@ -128,12 +128,11 @@ def test_reserved_universe_name_reference(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert isinstance(diagnostic, diagnostics.StandardDefinitionNotFoundDiagnostic)
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert diagnostic.universe == "standard"
-    assert diagnostic.current_universe_name == "my.domain.com:my_lib"
     assert diagnostic.location.line == 4
     assert diagnostic.location.column == 26
+    assert diagnostic.definition_name == "value<standard:/number>"
 
 
 def test_reserved_universe_name_with_authority_position(

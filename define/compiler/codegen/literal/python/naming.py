@@ -118,7 +118,6 @@ class NameConverter:
     _class_references: dict[str, ClassReference]
     _authority_names: dict[str, str]
     _used_authority_names: set[str]
-    _built_in_value_references: dict[str, ClassReference]
 
     def __init__(self):
         """Initialize with empty name caches."""
@@ -126,12 +125,6 @@ class NameConverter:
         self._class_references = {}
         self._authority_names = {}
         self._used_authority_names = set()
-        self._built_in_value_references = {}
-
-    @property
-    def built_in_value_references(self) -> list[ClassReference]:
-        """Return the built-in value classes that generated code references."""
-        return list(self._built_in_value_references.values())
 
     def class_name(self, path: define_path.DefinePath) -> str:
         """Convert a definition path to a PascalCase class name.
@@ -238,11 +231,6 @@ class NameConverter:
         module_name = ".".join(self._module_name_parts(fqun, name_content.path))
         class_reference = ClassReference(class_name=cls_name, module_name=module_name)
         self._class_references[canonical_name] = class_reference
-        # Built-in values have no definition to generate their class from.
-        # TODO: Remove this special case once the Define Standard Library
-        # defines the built-in names.
-        if canonical_name in constants.BUILT_IN_VALUE_ENCODINGS:
-            self._built_in_value_references[canonical_name] = class_reference
         return class_reference
 
     @staticmethod

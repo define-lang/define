@@ -16,31 +16,11 @@ NON_FILESYSTEM_PATH: Final = define_path.InvalidDefinePath("<string>")
 DEFAULT_MULTIVERSE: Final = "local"
 DEFAULT_OUTPUT_DIR: Final = pathlib.Path("define-out")
 STANDARD_UNIVERSE: Final = "standard"
-# The compiler provides these standard universe names itself until the Define
-# Standard Library exists. They have no definitions, so code that looks up
-# definitions has special cases for them.
-# TODO: Remove these, and every special case marked with a TODO that refers to
-# them, once the Define Standard Library defines these names.
+# built_in_definitions.dfn defines this encoding until the Define Standard
+# Library exists.
 DECIMAL_ASCII_ENCODING: Final = f"encoding<{STANDARD_UNIVERSE}:/number/decimal/ascii>"
-BUILT_IN_LITERAL_ENCODINGS: Final = {
-    f"literal<{STANDARD_UNIVERSE}:/number>": DECIMAL_ASCII_ENCODING
-}
 # TODO: Read value encodings from encodings configuration (DLP 47) once it
 # exists.
 BUILT_IN_VALUE_ENCODINGS: Final = {
     f"value<{STANDARD_UNIVERSE}:/number/rational>": DECIMAL_ASCII_ENCODING
 }
-# built_in_definitions.dfn defines these.
-RATIONAL_ADD_OPERATION: Final = f"operation<{STANDARD_UNIVERSE}:/number/rational/add>"
-DECIMAL_ASCII_INFIX_ADD_ENCODING_OPERATION: Final = (
-    f"encoding_operation<{STANDARD_UNIVERSE}:/number/decimal/ascii/infix_add>"
-)
-BUILT_IN_GLOBAL_NAMES: Final = frozenset(
-    {
-        DECIMAL_ASCII_ENCODING,
-        *BUILT_IN_LITERAL_ENCODINGS,
-        *BUILT_IN_VALUE_ENCODINGS,
-        RATIONAL_ADD_OPERATION,
-        DECIMAL_ASCII_INFIX_ADD_ENCODING_OPERATION,
-    }
-)
