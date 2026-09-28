@@ -177,9 +177,9 @@ def test_mixed_block_and_terminator(parse: Parse):
     ]
 
 
-def test_missing_block_close(parse: Parse):
+def test_file_ending_after_block_open(parse: Parse):
     with pytest.raises(
-        parser_exceptions.InvalidPotentialPositionDefinitionBlock
+        parser_exceptions.MissingPotentialPositionDefinitionContent
     ) as exc_info:
         parse("define the potential position<standard:/path> {\n")
     assert exc_info.value.line == 1

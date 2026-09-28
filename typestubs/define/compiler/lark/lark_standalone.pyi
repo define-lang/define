@@ -69,7 +69,8 @@ class ParserState:
 class InteractiveParser:
     parser_state: ParserState
 
-    def feed_token(self, token: Token) -> None: ...
+    def feed_token(self, token: lark_cython.Token) -> None: ...
+    def accepts(self) -> set[str]: ...
 
 class UnexpectedCharacters(UnexpectedInput):
     allowed: set[str]
@@ -83,6 +84,13 @@ class UnexpectedToken(UnexpectedInput):
     token_history: list[lark_cython.Token] | None
     interactive_parser: InteractiveParser | None
 
+    def __init__(
+        self,
+        token: lark_cython.Token,
+        expected: set[str],
+        *,
+        interactive_parser: InteractiveParser | None = None,
+    ) -> None: ...
     @property
     def accepts(self) -> set[str]: ...
 

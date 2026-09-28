@@ -175,7 +175,7 @@ def test_missing_open_angle_with_close_angle_colon(parse: Parse):
 
 def test_global_position_block_open_without_content(parse: Parse):
     with pytest.raises(
-        parser_exceptions.InvalidPotentialPositionDefinitionBlock
+        parser_exceptions.MissingPotentialPositionDefinitionContent
     ) as exc_info:
         parse("define the potential position<mv:define-lang.org:parser:/path> {\n")
     assert exc_info.value.token == ""
@@ -184,7 +184,7 @@ def test_global_position_block_open_without_content(parse: Parse):
 
 
 def test_global_action_block_open_without_content(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidActionDefinitionsBlock) as exc_info:
+    with pytest.raises(parser_exceptions.MissingActionDefinitionSyntax) as exc_info:
         parse("define the potential action<mv:define-lang.org:parser:/path> {\n")
     assert exc_info.value.token == ""
     assert exc_info.value.line == 1
@@ -289,6 +289,119 @@ def test_action_and_it_does_block_missing_close_brace(parse: Parse):
     assert exc_info.value.token == ""
     assert exc_info.value.line == 6
     assert exc_info.value.column == 2
+
+
+def test_position_constraint_block_truncated_without_final_newline(parse: Parse):
+    with pytest.raises(parser_exceptions.MissingCloseBrace) as exc_info:
+        parse(
+            "define the potential position<mv:define-lang.org:parser:/path> {\n"
+            + "    it may only contain particles where {\n"
+            + "        it has the position<mv:define-lang.org:parser:/q>."
+        )
+    assert exc_info.value.token == ""
+    assert exc_info.value.line == 3
+    assert exc_info.value.column == 58
+
+
+def test_position_constraint_block_truncated_after_statement(parse: Parse):
+    with pytest.raises(parser_exceptions.MissingCloseBrace) as exc_info:
+        parse(
+            "define the potential position<mv:define-lang.org:parser:/path> {\n"
+            + "    it may only contain particles where {\n"
+            + "        it has the position<mv:define-lang.org:parser:/q>.\n"
+        )
+    assert exc_info.value.token == ""
+    assert exc_info.value.line == 3
+    assert exc_info.value.column == 59
+
+
+def test_action_statements_block_truncated_without_final_newline(parse: Parse):
+    with pytest.raises(parser_exceptions.MissingCloseBrace) as exc_info:
+        parse(
+            "define the potential action<mv:define-lang.org:parser:/path> {\n"
+            + "    define the position<run>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a particle.\n"
+            + "    } and it does {\n"
+            + "        create a particle in position<run>."
+        )
+    assert exc_info.value.token == ""
+    assert exc_info.value.line == 6
+    assert exc_info.value.column == 43
+
+
+def test_block_truncated_after_open_brace_without_final_newline(parse: Parse):
+    with pytest.raises(
+        parser_exceptions.MissingPotentialPositionDefinitionContent
+    ) as exc_info:
+        parse("define the potential position<mv:define-lang.org:parser:/path> {")
+    assert exc_info.value.token == ""
+    assert exc_info.value.line == 1
+    assert exc_info.value.column == 63
+
+
+def test_action_truncated_before_trigger_block_without_final_newline(parse: Parse):
+    with pytest.raises(parser_exceptions.MissingActionDefinitionSyntax) as exc_info:
+        parse(
+            "define the potential action<mv:define-lang.org:parser:/path> {\n"
+            + "    define the position<run>."
+        )
+    assert exc_info.value.token == ""
+    assert exc_info.value.line == 2
+    assert exc_info.value.column == 29
+
+
+def test_trigger_conditions_block_truncated_after_open(parse: Parse):
+    with pytest.raises(parser_exceptions.MissingTriggerConditionContent) as exc_info:
+        parse(
+            "define the potential action<mv:define-lang.org:parser:/path> {\n"
+            + "    define the position<run>.\n"
+            + "    it happens when {\n"
+        )
+    assert exc_info.value.token == ""
+    assert exc_info.value.line == 3
+    assert exc_info.value.column == 22
+
+
+def test_position_constraint_block_truncated_after_open_without_final_newline(
+    parse: Parse,
+):
+    with pytest.raises(parser_exceptions.MissingPositionConstraintContent) as exc_info:
+        parse(
+            "define the potential position<mv:define-lang.org:parser:/path> {\n"
+            + "    it may only contain particles where {"
+        )
+    assert exc_info.value.token == ""
+    assert exc_info.value.line == 2
+    assert exc_info.value.column == 40
+
+
+def test_local_position_block_truncated_after_open(parse: Parse):
+    with pytest.raises(parser_exceptions.MissingPositionDefinitionContent) as exc_info:
+        parse(
+            "define the potential action<mv:define-lang.org:parser:/path> {\n"
+            + "    define the position<run> {\n"
+        )
+    assert exc_info.value.token == ""
+    assert exc_info.value.line == 2
+    assert exc_info.value.column == 31
+
+
+def test_block_truncated_mid_statement_reports_the_statement(parse: Parse):
+    with pytest.raises(
+        parser_exceptions.ExpectedChainSeparatorOrTerminator
+    ) as exc_info:
+        parse(
+            "define the potential action<mv:define-lang.org:parser:/path> {\n"
+            + "    define the position<run>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a particle.\n"
+            + "    } and it does {\n"
+            + "        create a particle in position<run>"
+        )
+    assert exc_info.value.token == ""
+    assert exc_info.value.line == 6
+    assert exc_info.value.column == 42
 
 
 def test_local_position_keyword_without_name_in_action_definition_block(

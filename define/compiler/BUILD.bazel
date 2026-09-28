@@ -447,6 +447,7 @@ py_test(
     deps = [
         ":ast",
         ":parser",
+        ":parser_exceptions",
         ":test_helpers",
     ],
 )

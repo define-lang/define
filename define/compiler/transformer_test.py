@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from pathlib import PurePosixPath
 
-from define.compiler import ast, parser, test_helpers
+from define.compiler import ast, parser, parser_exceptions, test_helpers
 
 
 def _require_fqun(name: ast.GlobalNameContent[ast.Fqun | None]) -> ast.Fqun:
@@ -1574,3 +1574,19 @@ def test_action_operation_execution_statement_with_arguments_fields():
         _slice(_OPERATION_EXECUTING_ACTION, literal_argument.location)
         == 'with view<b> looking at literal</number>"12".'
     )
+
+
+def test_truncated_block_reports_missing_close_brace_while_transforming():
+    source = (
+        "define the potential action<mv:define-lang.org:parser:/path> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "        create a particle in position<run>."
+    )
+    result = parser.Parser().parse_and_transform(source)
+    assert isinstance(result.exception, parser_exceptions.MissingCloseBrace)
+    assert result.exception.token == ""
+    assert result.exception.line == 6
+    assert result.exception.column == 43

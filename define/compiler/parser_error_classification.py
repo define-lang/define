@@ -10,11 +10,10 @@ import typing
 import lark_cython
 
 from define.compiler import parser_exceptions
+from define.compiler.lark import lark_standalone
 
 if typing.TYPE_CHECKING:
     import pathlib
-
-    from define.compiler.lark import lark_standalone
 
 _CHAR_ERRORS: dict[str, type[parser_exceptions.DefineCharError]] = {
     "\ufeff": parser_exceptions.ByteOrderMarkError,
@@ -56,6 +55,39 @@ def _is_in_view_definition(e: lark_standalone.UnexpectedToken) -> bool:
     return False
 
 
+def _end_of_file_error_with_final_newline(
+    e: lark_standalone.UnexpectedToken,
+    source: str,
+    file_path: pathlib.PurePosixPath | None,
+) -> lark_standalone.UnexpectedToken:
+    """Return the end-of-file error as it would be if the file ended with a newline.
+
+    Raises MissingNewlineAtEof if the final newline is the only thing missing.
+    """
+    # Classify as though the file ended with its required newline, so that a
+    # missing final newline does not hide a more important error.
+    if source.endswith("\n") or "NEWLINE" not in e.accepts:
+        return e
+    interactive_parser = typing.cast(
+        "lark_standalone.InteractiveParser", e.interactive_parser
+    )
+    interactive_parser.feed_token(
+        lark_cython.Token.new_borrow_pos("NEWLINE", "\n", e.token)
+    )
+    accepts = interactive_parser.accepts()
+    if "$END" in accepts:
+        raise parser_exceptions.MissingNewlineAtEof(e, source, file_path)
+    return lark_standalone.UnexpectedToken(
+        lark_cython.Token.new_borrow_pos("$END", "", e.token),
+        accepts,
+        interactive_parser=interactive_parser,
+    )
+
+
+def _ends_block(token: lark_cython.Token) -> bool:
+    return token.type in {"CLOSE_BRACE", "$END"}
+
+
 def raise_token_error(
     e: lark_standalone.UnexpectedToken,
     source: str,
@@ -85,6 +117,17 @@ def raise_token_error(
     # TODO: Raise ExtraWhitespace when the unexpected token is a space that
     # follows another space and SPACE is not in e.accepts. Today a doubled space
     # before a keyword or name falls through to an "expected X" error below.
+
+    ################################
+    ## End of File Classification ##
+    ################################
+
+    if e.token.type == "$END":
+        # We classify an EOF like a '}' at the same point, so a
+        # block that still needs content reports the missing content.
+        e = _end_of_file_error_with_final_newline(e, source, file_path)
+        if "CLOSE_BRACE" in e.accepts:
+            raise parser_exceptions.MissingCloseBrace(e, source, file_path)
 
     ###############################
     ## e.accepts Classification ##
@@ -159,28 +202,24 @@ def raise_token_error(
     if e.accepts == {"SPACE"}:
         raise parser_exceptions.MissingWhitespace(e, source, file_path)
 
-    if e.accepts == {"NEWLINE"}:
-        # TODO: This EOF one shows up sometimes when we really want MissingCloseBrace.
-        if e.token.type == "$END":
-            raise parser_exceptions.MissingNewlineAtEof(e, source, file_path)
-        if e.token_history:
-            match e.token_history[-1].type:
-                case "DOT":
-                    raise parser_exceptions.MissingNewlineAfterTerminator(
-                        e, source, file_path
-                    )
-                case "SPACE_AND_OPEN_BRACE":
-                    if e.token.value == "}":
-                        raise parser_exceptions.EmptyBlock(e, source, file_path)
-                    raise parser_exceptions.MissingNewlineAfterOpenBrace(
-                        e, source, file_path
-                    )
-                case "CLOSE_BRACE":
-                    raise parser_exceptions.MissingNewlineAfterCloseBrace(
-                        e, source, file_path
-                    )
-                case _:
-                    pass
+    if e.accepts == {"NEWLINE"} and e.token_history:
+        match e.token_history[-1].type:
+            case "DOT":
+                raise parser_exceptions.MissingNewlineAfterTerminator(
+                    e, source, file_path
+                )
+            case "SPACE_AND_OPEN_BRACE":
+                if e.token.value == "}":
+                    raise parser_exceptions.EmptyBlock(e, source, file_path)
+                raise parser_exceptions.MissingNewlineAfterOpenBrace(
+                    e, source, file_path
+                )
+            case "CLOSE_BRACE":
+                raise parser_exceptions.MissingNewlineAfterCloseBrace(
+                    e, source, file_path
+                )
+            case _:
+                pass
 
     if e.accepts == {"NEWLINE", "CLOSE_BRACE"}:
         # TODO: This may be fragile when we allow this in other places.
@@ -273,7 +312,7 @@ def raise_token_error(
         raise parser_exceptions.ExpectedChainSeparatorOrTerminator(e, source, file_path)
 
     if e.accepts == {"NEWLINE", "THE", "CONSTRUCTOR_STATEMENT", "DESTRUCTOR_STATEMENT"}:
-        if e.token.value == "}":
+        if _ends_block(e.token):
             raise parser_exceptions.MissingTriggerConditionContent(e, source, file_path)
         if e.token.type == "IT_ALSO_ASSIGNS_THE":
             raise parser_exceptions.QualityImplicationInWrongLocation(
@@ -321,7 +360,7 @@ def raise_token_error(
 
     # A relatively broad fallback for random nonsense inside an Action Definition Block.
     if "IT_HAPPENS_WHEN" in e.accepts:
-        if e.token.value == "}":
+        if _ends_block(e.token):
             # TODO: Needs more context to see the start of the block, not the end of it.
             raise parser_exceptions.MissingActionDefinitionSyntax(e, source, file_path)
         raise parser_exceptions.InvalidActionDefinitionsBlock(e, source, file_path)
@@ -337,7 +376,7 @@ def raise_token_error(
     # because IT_ALSO_ASSIGNS_THE (quality implications are only allowed in a
     # potential position block) distinguishes the potential block from local.
     if "IT_ALSO_ASSIGNS_THE" in e.accepts:
-        if e.token.value == "}":
+        if _ends_block(e.token):
             raise parser_exceptions.MissingPotentialPositionDefinitionContent(
                 e, source, file_path
             )
@@ -359,7 +398,7 @@ def raise_token_error(
 
     # We are in a position definition block.
     if "IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE" in e.accepts:
-        if e.token.value == "}":
+        if _ends_block(e.token):
             raise parser_exceptions.MissingPositionDefinitionContent(
                 e, source, file_path
             )
@@ -378,7 +417,7 @@ def raise_token_error(
                 raise parser_exceptions.InvalidPotentialLiteralDefinitionBlock(
                     e, source, file_path
                 )
-        if e.token.value == "}":
+        if _ends_block(e.token):
             raise parser_exceptions.MissingPositionConstraintContent(
                 e, source, file_path
             )
