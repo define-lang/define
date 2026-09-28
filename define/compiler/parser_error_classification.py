@@ -270,16 +270,20 @@ def raise_token_error(
     if e.accepts == {"LOOKING_AT"}:
         raise parser_exceptions.InvalidOperationArgumentSyntax(e, source, file_path)
 
-    if e.accepts == {"WITH", "NEWLINE"}:
+    # These blocks also accept '}' once they contain at least one statement or
+    # argument.
+    accepts_in_block = e.accepts - {"CLOSE_BRACE"}
+
+    if accepts_in_block == {"WITH", "NEWLINE"}:
         raise parser_exceptions.InvalidOperationArgumentsBlock(e, source, file_path)
 
     if e.accepts == {"DEFINE_THE_VIEW", "IT_DOES", "NEWLINE"}:
         raise parser_exceptions.InvalidOperationDefinitionBlock(e, source, file_path)
 
-    if e.accepts == {"EXECUTE_THE", "EXECUTE_THE_ENCODING_OPERATION", "NEWLINE"}:
+    if accepts_in_block == {"EXECUTE_THE", "EXECUTE_THE_ENCODING_OPERATION", "NEWLINE"}:
         raise parser_exceptions.InvalidOperationStatementsBlock(e, source, file_path)
 
-    if e.accepts == {"EXECUTE_THE", "EXECUTE_THE_COMPUTER_OPERATION", "NEWLINE"}:
+    if accepts_in_block == {"EXECUTE_THE", "EXECUTE_THE_COMPUTER_OPERATION", "NEWLINE"}:
         raise parser_exceptions.InvalidEncodingOperationStatementsBlock(
             e, source, file_path
         )

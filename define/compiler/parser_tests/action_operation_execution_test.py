@@ -154,6 +154,23 @@ def test_arguments_block_disallows_action_statement(parse: Parse):
     assert error.value.token == "create a particle in "
 
 
+def test_arguments_block_disallows_action_statement_after_first_argument(
+    parse: Parse,
+):
+    with pytest.raises(parser_exceptions.InvalidOperationArgumentsBlock) as error:
+        parse(
+            _ACTION_PREFIX
+            + "        execute the operation</add> {\n"
+            + "            with view<a> looking at position<p>.\n"
+            + "            create a particle in position<p>.\n"
+            + "        }\n"
+            + _ACTION_SUFFIX
+        )
+    assert error.value.line == 8
+    assert error.value.column == 13
+    assert error.value.token == "create a particle in "
+
+
 def test_argument_cannot_look_at_value(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedValueSource) as error:
         parse(

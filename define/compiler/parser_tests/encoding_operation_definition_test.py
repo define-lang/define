@@ -244,6 +244,21 @@ def test_disallows_action_statement(parse: Parse):
     assert error.value.token == "create a particle in "
 
 
+def test_disallows_action_statement_after_first_statement(parse: Parse):
+    with pytest.raises(
+        parser_exceptions.InvalidEncodingOperationStatementsBlock
+    ) as error:
+        parse(
+            _ENCODING_OPERATION_PREFIX
+            + "        execute the computer operation.\n"
+            + "        create a particle in position<p>.\n"
+            + _ENCODING_OPERATION_SUFFIX
+        )
+    assert error.value.line == 4
+    assert error.value.column == 9
+    assert error.value.token == "create a particle in "
+
+
 def test_disallows_encoding_operation_statement(parse: Parse):
     with pytest.raises(
         parser_exceptions.InvalidEncodingOperationStatementsBlock
