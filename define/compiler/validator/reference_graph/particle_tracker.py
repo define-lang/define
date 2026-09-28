@@ -648,33 +648,6 @@ class _ParticleStateStore:
         ):
             values[position] = particle.value_state
 
-    def interface_parent_names_on_particles(
-        self, position: ast.ChainedNameTuple
-    ) -> tuple[
-        list[dead_interface_tracker.QualityOnParticle],
-        list[dead_interface_tracker.QualityOnParticle],
-    ]:
-        """Pair each callee and interface parent quality in this position's chained name with the particle it is on."""
-        callee_indexes, interface_parent_quality_indexes = (
-            dead_interface_tracker.interface_parent_name_indexes(position)
-        )
-        callees: list[dead_interface_tracker.QualityOnParticle] = []
-        for name_index in callee_indexes:
-            callees.append(self._quality_on_particle(position, name_index))
-        interface_parent_qualities: list[dead_interface_tracker.QualityOnParticle] = []
-        for name_index in interface_parent_quality_indexes:
-            interface_parent_qualities.append(
-                self._quality_on_particle(position, name_index)
-            )
-        return callees, interface_parent_qualities
-
-    def _quality_on_particle(
-        self, position: ast.ChainedNameTuple, name_index: int
-    ) -> dead_interface_tracker.QualityOnParticle:
-        """Pair the name at ``name_index`` with its particle, or None for this action's parent particle."""
-        particle = None if name_index == 0 else self.occupant(position[:name_index])
-        return particle, position[name_index]
-
     def emptied_by(self, key: tuple[str, ...]) -> ast.PositionReference | None:
         """Return the position reference that emptied this position, if it is known-empty."""
         state = self._state.get(key)
@@ -844,71 +817,15 @@ class ParticleTracker:
     def __init__(self):
         """Initialize an empty particle tracker."""
         self._store = _ParticleStateStore()
-        self._interface_arrival_tracker = (
-            dead_interface_tracker.InterfaceArrivalTracker()
-        )
-        self._interface_child_tracker = (
-            dead_interface_tracker.OccupiedInterfaceChildPositionTracker()
-        )
+        self._dead_interfaces = dead_interface_tracker.DeadInterfaceTracker(self._store)
         self._pending = _PendingNestedGuarantees()
         self._nested_guarantees = _CurrentActionNestedGuarantees()
         self._body_operation_number = 0
 
-    def _register_occupied_interface_child_position(
-        self,
-        position: ast.ChainedNameTuple,
-        particle: particle_info.ParticleInfo,
-        location: ast.SourceLocation,
-    ):
-        """Register relevant interface occupancy for a new particle."""
-        callees, interface_parent_qualities = (
-            self._store.interface_parent_names_on_particles(position)
-        )
-        if not callees and not interface_parent_qualities:
-            return
-        self._interface_child_tracker.register(
-            particle, position, location, callees, interface_parent_qualities
-        )
-
-    def _replace_occupied_interface_child_position(
-        self,
-        position: ast.ChainedNameTuple,
-        particle: particle_info.ParticleInfo,
-        location: ast.SourceLocation,
-    ):
-        """Replace relevant interface occupancy for an existing particle."""
-        callees, interface_parent_qualities = (
-            self._store.interface_parent_names_on_particles(position)
-        )
-        self._interface_child_tracker.replace(
-            particle, position, location, callees, interface_parent_qualities
-        )
-
-    def _register_explicit_action_interface_arrival(
-        self,
-        position: ast.PositionReference,
-        particle: particle_info.ParticleInfo,
-    ):
-        """Register a body Create or Move whose target names an action interface."""
-        action_chain = position.get_chain_to_last_action()
-        if action_chain is None:
-            return
-        parent_position = action_chain.parent_position()
-        parent_particle = (
-            self.get_occupant(parent_position) if parent_position is not None else None
-        )
-        self._interface_arrival_tracker.register(
-            action_chain.get_last_action().full_typed_name,
-            position,
-            parent_particle,
-            particle,
-        )
-
     def _mark_removed_occupant_destroyed(self, state: _NodeState):
         """Mark the particle at a removed position as destroyed."""
         if state.particle_info is not None:
-            self._interface_arrival_tracker.mark_particle_departed(state.particle_info)
-            self._interface_child_tracker.mark_particle_destroyed(state.particle_info)
+            self._dead_interfaces.mark_particle_destroyed(state.particle_info)
 
     def _delete_particle_state_subtree(self, key: ast.ChainedNameTuple):
         """Delete particle state while preserving interface-rule history."""
@@ -994,26 +911,7 @@ class ParticleTracker:
 
     def dead_action_interface_arrivals(self) -> Iterator[ast.PositionReference]:
         """Yield explicit interface arrivals not satisfied by a callee trigger."""
-        return self._interface_arrival_tracker.dead_arrivals()
-
-    def _new_occupied_interface_child_position_violations(
-        self,
-        action: ast.GlobalTypedNameReference,
-        implied_quality_names: frozenset[str],
-        parent_particle: particle_info.ParticleInfo | None,
-    ) -> list[tuple[ast.ChainedNameTuple, ast.SourceLocation]]:
-        """Return newly reportable occupied interface child positions for one trigger."""
-        violations: list[tuple[ast.ChainedNameTuple, ast.SourceLocation]] = []
-        occupied_positions = (
-            self._interface_child_tracker.pop_occupied_interface_child_positions(
-                action.full_typed_name, implied_quality_names, parent_particle
-            )
-        )
-        for position, location in occupied_positions:
-            if self._store.has_error_in_chain(position):
-                continue
-            violations.append((position, location))
-        return violations
+        return self._dead_interfaces.dead_arrivals()
 
     def is_occupied(self, in_position: ast.PositionReference) -> bool:
         """Return whether a particle exists at this position."""
@@ -1305,7 +1203,9 @@ class ParticleTracker:
             value_state=particle_info.ParticleValueState.UNSET,
         )
         self._set_occupied(in_position, info)
-        self._register_explicit_action_interface_arrival(in_position, info)
+        self._dead_interfaces.register_explicit_action_interface_arrival(
+            in_position, info
+        )
 
     def assume_occupied(
         self,
@@ -1342,7 +1242,7 @@ class ParticleTracker:
             existing.emptied_by = None
         else:
             self._store.state[key] = _NodeState(particle_info=info)
-        self._register_occupied_interface_child_position(
+        self._dead_interfaces.register_occupied_interface_child_position(
             key, info, in_position.location
         )
 
@@ -1412,7 +1312,7 @@ class ParticleTracker:
         source_info = self._store.state[from_key].particle_info
         if source_info is None:
             raise ValueError(f"source position {from_key} is empty")
-        self._interface_arrival_tracker.mark_particle_departed(source_info)
+        self._dead_interfaces.mark_particle_departed(source_info)
         # Both positions are touched by this one move statement, so they share a
         # body operation number.
         self._record_write(from_key, to_key)
@@ -1431,7 +1331,7 @@ class ParticleTracker:
             moved_state: _NodeState,
         ):
             if moved_state.particle_info is not None:
-                self._replace_occupied_interface_child_position(
+                self._dead_interfaces.replace_occupied_interface_child_position(
                     moved_position, moved_state.particle_info, target.location
                 )
 
@@ -1443,7 +1343,9 @@ class ParticleTracker:
         self._store.state[from_key] = _NodeState(emptied_by=source)
         self._store.rekey_records_for_move(from_key, to_key)
         self._nested_guarantees.move(from_key, to_key)
-        self._register_explicit_action_interface_arrival(target, source_info)
+        self._dead_interfaces.register_explicit_action_interface_arrival(
+            target, source_info
+        )
 
     def generate_own_guarantees(
         self,
@@ -1682,12 +1584,9 @@ class ParticleTracker:
         action_chain_key = execution.action.canonical_chained_name_tuple
         action = execution.action.get_last_action()
         occupied_interface_child_position_violations = (
-            self._new_occupied_interface_child_position_violations(
+            self._dead_interfaces.mark_action_triggered(
                 action, contract.implied_quality_names, parent_particle
             )
-        )
-        self._interface_arrival_tracker.mark_action_triggered(
-            action.full_typed_name, parent_particle
         )
         self._body_operation_number += 1
         callee_guarantees = _PendingGuarantee(
@@ -1970,7 +1869,7 @@ class ParticleTracker:
                 )
                 new_info.set_value_state(guarantee.value_effect)
                 self._store.state[key] = _NodeState(particle_info=new_info)
-                self._register_occupied_interface_child_position(
+                self._dead_interfaces.register_occupied_interface_child_position(
                     key,
                     new_info,
                     pending_guarantee.execution.action.get_last_action().location,
@@ -2024,7 +1923,7 @@ class ParticleTracker:
         moved_info = origin_state.particle_info
         moved_info.set_value_state(guarantee.value_effect)
         moved_info.last_position = guarantee.caused_by
-        self._interface_arrival_tracker.mark_particle_departed(moved_info)
+        self._dead_interfaces.mark_particle_departed(moved_info)
         source_location = pending_guarantee.execution.action.get_last_action().location
 
         def record_guaranteed_position(
@@ -2032,7 +1931,7 @@ class ParticleTracker:
             state: _NodeState,
         ):
             if state.particle_info is not None:
-                self._replace_occupied_interface_child_position(
+                self._dead_interfaces.replace_occupied_interface_child_position(
                     position, state.particle_info, source_location
                 )
 

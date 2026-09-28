@@ -256,3 +256,139 @@ class OccupiedInterfaceChildPositionTracker:
             self._particles_by_interface_parent_quality[interface_parent_quality].add(
                 particle
             )
+
+
+class ParticleLookup(typing.Protocol):
+    """Current particle state, as seen by the action being validated."""
+
+    def occupant(self, key: ast.ChainedNameTuple) -> particle_info.ParticleInfo:
+        """Return the particle at this position, raising KeyError if it is empty."""
+        ...
+
+    def has_error_in_chain(self, key: ast.ChainedNameTuple) -> bool:
+        """Return whether this position or any parent position has error occupancy state."""
+        ...
+
+
+@typing.final
+class DeadInterfaceTracker:
+    """Tracks the particle events that determine dead action-interface diagnostics."""
+
+    def __init__(self, particles: ParticleLookup):
+        """Initialize without interface arrivals or occupied interface child positions."""
+        self._particles = particles
+        self._arrivals = InterfaceArrivalTracker()
+        self._occupied_child_positions = OccupiedInterfaceChildPositionTracker()
+
+    def register_occupied_interface_child_position(
+        self,
+        position: ast.ChainedNameTuple,
+        particle: particle_info.ParticleInfo,
+        location: ast.SourceLocation,
+    ):
+        """Record a new particle's occupied interface child position, if it has one."""
+        callees, interface_parent_qualities = self._interface_parent_names_on_particles(
+            position
+        )
+        if not callees and not interface_parent_qualities:
+            return
+        self._occupied_child_positions.register(
+            particle, position, location, callees, interface_parent_qualities
+        )
+
+    def replace_occupied_interface_child_position(
+        self,
+        position: ast.ChainedNameTuple,
+        particle: particle_info.ParticleInfo,
+        location: ast.SourceLocation,
+    ):
+        """Replace an existing particle's occupied interface child position."""
+        callees, interface_parent_qualities = self._interface_parent_names_on_particles(
+            position
+        )
+        self._occupied_child_positions.replace(
+            particle, position, location, callees, interface_parent_qualities
+        )
+
+    def register_explicit_action_interface_arrival(
+        self,
+        position: ast.PositionReference,
+        particle: particle_info.ParticleInfo,
+    ):
+        """Record a body Create or Move whose target names an action interface."""
+        action_chain = position.get_chain_to_last_action()
+        if action_chain is None:
+            return
+        parent_position = action_chain.parent_position()
+        # The caller has already resolved the target position, which also
+        # resolves each of its parent positions.
+        parent_particle = (
+            self._particles.occupant(parent_position.canonical_chained_name_tuple)
+            if parent_position is not None
+            else None
+        )
+        self._arrivals.register(
+            action_chain.get_last_action().full_typed_name,
+            position,
+            parent_particle,
+            particle,
+        )
+
+    def mark_particle_departed(self, particle: particle_info.ParticleInfo):
+        """Record that a particle left its position."""
+        self._arrivals.mark_particle_departed(particle)
+
+    def mark_particle_destroyed(self, particle: particle_info.ParticleInfo):
+        """Record that a particle no longer exists."""
+        self._arrivals.mark_particle_departed(particle)
+        self._occupied_child_positions.mark_particle_destroyed(particle)
+
+    def mark_action_triggered(
+        self,
+        action: ast.GlobalTypedNameReference,
+        implied_quality_names: frozenset[str],
+        parent_particle: particle_info.ParticleInfo | None,
+    ) -> list[tuple[ast.ChainedNameTuple, ast.SourceLocation]]:
+        """Record an Action Execution and return the occupied interface child positions it violates."""
+        violations: list[tuple[ast.ChainedNameTuple, ast.SourceLocation]] = []
+        occupied_positions = (
+            self._occupied_child_positions.pop_occupied_interface_child_positions(
+                action.full_typed_name, implied_quality_names, parent_particle
+            )
+        )
+        for position, location in occupied_positions:
+            if self._particles.has_error_in_chain(position):
+                continue
+            violations.append((position, location))
+        self._arrivals.mark_action_triggered(action.full_typed_name, parent_particle)
+        return violations
+
+    def dead_arrivals(self) -> Iterator[ast.PositionReference]:
+        """Yield explicit arrivals not satisfied by their callees' triggers."""
+        return self._arrivals.dead_arrivals()
+
+    def _interface_parent_names_on_particles(
+        self, position: ast.ChainedNameTuple
+    ) -> tuple[list[QualityOnParticle], list[QualityOnParticle]]:
+        """Pair each callee and interface parent quality in this position's chained name with the particle it is on."""
+        callee_indexes, interface_parent_quality_indexes = (
+            interface_parent_name_indexes(position)
+        )
+        callees: list[QualityOnParticle] = []
+        for name_index in callee_indexes:
+            callees.append(self._quality_on_particle(position, name_index))
+        interface_parent_qualities: list[QualityOnParticle] = []
+        for name_index in interface_parent_quality_indexes:
+            interface_parent_qualities.append(
+                self._quality_on_particle(position, name_index)
+            )
+        return callees, interface_parent_qualities
+
+    def _quality_on_particle(
+        self, position: ast.ChainedNameTuple, name_index: int
+    ) -> QualityOnParticle:
+        """Pair the name at ``name_index`` with its particle, or None for this action's parent particle."""
+        particle = (
+            None if name_index == 0 else self._particles.occupant(position[:name_index])
+        )
+        return particle, position[name_index]
