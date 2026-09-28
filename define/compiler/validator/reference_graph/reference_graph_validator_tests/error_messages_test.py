@@ -755,6 +755,96 @@ def test_literal_cannot_set_value_format(validate_project: ValidateProject):
             encoding<standard:/number/decimal/ascii>""")
 
 
+def test_literal_cannot_be_converted_format(validate_project: ValidateProject):
+    source = (
+        "define the encoding_operation<my.domain.com:my_lib:/test> {\n"
+        "\n"
+        "    it does {\n"
+        "        execute the encoding_operation</increment> {\n"
+        '            with view<number> looking at literal</text>"5".\n'
+        "        }\n"
+        "    }\n"
+        "}\n"
+    )
+    result = validate_project(
+        {
+            "test.dfn": source,
+            "text.dfn": "define the potential literal<my.domain.com:my_lib:/text> {\n    it has the encoding</text_encoding>.\n}\n",
+            "text_encoding.dfn": "define the encoding<my.domain.com:my_lib:/text_encoding>.\n",
+            "increment.dfn": (
+                "define the encoding_operation<my.domain.com:my_lib:/increment> {\n"
+                "    define the view<number> {\n"
+                "        it is read.\n"
+                "        it may only contain particles where {\n"
+                "            it has the encoding<standard:/number/decimal/ascii>.\n"
+                "        }\n"
+                "    }\n"
+                "\n"
+                "    it does {\n"
+                "        execute the computer operation.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    formatted = all_diags[0].format(source.splitlines())
+    assert formatted == textwrap.dedent("""\
+        File "test.dfn", line 5, column 42
+                    with view<number> looking at literal</text>"5".
+                                                 ^
+        literal</text> cannot be looked at as encoding<standard:/number/decimal/ascii>, because literals with the encoding</text_encoding> cannot be translated into encoding<standard:/number/decimal/ascii>.
+        To look at a literal as encoding<standard:/number/decimal/ascii>, use a literal with one of these encodings:
+            encoding<standard:/number/decimal/ascii>""")
+
+
+def test_literal_cannot_be_converted_to_any_literal_encoding_format(
+    validate_project: ValidateProject,
+):
+    source = (
+        "define the encoding_operation<my.domain.com:my_lib:/test> {\n"
+        "\n"
+        "    it does {\n"
+        "        execute the encoding_operation</append> {\n"
+        '            with view<text> looking at literal<standard:/number>"5".\n'
+        "        }\n"
+        "    }\n"
+        "}\n"
+    )
+    result = validate_project(
+        {
+            "test.dfn": source,
+            "text_encoding.dfn": "define the encoding<my.domain.com:my_lib:/text_encoding>.\n",
+            "append.dfn": (
+                "define the encoding_operation<my.domain.com:my_lib:/append> {\n"
+                "    define the view<text> {\n"
+                "        it is read.\n"
+                "        it may only contain particles where {\n"
+                "            it has the encoding</text_encoding>.\n"
+                "        }\n"
+                "    }\n"
+                "\n"
+                "    it does {\n"
+                "        execute the computer operation.\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    formatted = all_diags[0].format(source.splitlines())
+    assert formatted == textwrap.dedent("""\
+        File "test.dfn", line 5, column 40
+                    with view<text> looking at literal<standard:/number>"5".
+                                               ^
+        literal<standard:/number> cannot be looked at as encoding</text_encoding>, because literals with the encoding<standard:/number/decimal/ascii> cannot be translated into encoding</text_encoding>.
+        In fact, encoding</text_encoding> cannot be set by a literal at all.""")
+
+
 def test_move_violates_constraints_error_message(
     validate_project: ValidateProject,
 ):
@@ -1382,16 +1472,16 @@ def test_operation_argument_violates_constraints_format(
     validate_project: ValidateProject,
 ):
     source = (
-        "define the operation<my.domain.com:my_lib:/test> {\n"
+        "define the encoding_operation<my.domain.com:my_lib:/test> {\n"
         "    define the view<number> {\n"
         "        it is read.\n"
         "        it may only contain particles where {\n"
-        "            it has the value<standard:/number/rational>.\n"
+        "            it has the encoding</text>.\n"
         "        }\n"
         "    }\n"
         "\n"
         "    it does {\n"
-        "        execute the operation</encoded> {\n"
+        "        execute the encoding_operation</encoded> {\n"
         "            with view<source> looking at view<number>.\n"
         "        }\n"
         "    }\n"
@@ -1400,18 +1490,18 @@ def test_operation_argument_violates_constraints_format(
     result = validate_project(
         {
             "test.dfn": source,
+            "text.dfn": "define the encoding<my.domain.com:my_lib:/text>.\n",
             "encoded.dfn": (
-                "define the operation<my.domain.com:my_lib:/encoded> {\n"
+                "define the encoding_operation<my.domain.com:my_lib:/encoded> {\n"
                 "    define the view<source> {\n"
                 "        it is read.\n"
                 "        it may only contain particles where {\n"
-                "            it has the value<standard:/number/rational>.\n"
                 "            it has the encoding<standard:/number/decimal/ascii>.\n"
                 "        }\n"
                 "    }\n"
                 "\n"
                 "    it does {\n"
-                "        execute the encoding operation.\n"
+                "        execute the computer operation.\n"
                 "    }\n"
                 "}\n"
             ),

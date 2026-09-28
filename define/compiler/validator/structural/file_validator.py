@@ -441,8 +441,17 @@ class DefinitionStructuralValidator:
                     )
                 )
                 continue
-            # TODO: Report encoding constraints on Value Operation views, which
-            # may not have them.
+            if (
+                isinstance(definition, ast.ValueOperationDefinition)
+                and constraint.name_type == ast.NameType.ENCODING
+            ):
+                self._diagnostics.append(
+                    diagnostics.ValueOperationViewEncodingConstraintDiagnostic(
+                        location=constraint.location,
+                        constraint_name=constraint.source_typed_name,
+                    )
+                )
+                continue
             constraint_types.add(constraint.name_type)
             requirements.append(requirement)
         self._validate_position_requirements(

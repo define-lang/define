@@ -4,7 +4,6 @@ define the operation<my.domain.com:my_lib:/copy> {
         it is read.
         it may only contain particles where {
             it has the value<standard:/number/rational>.
-            it has the encoding<standard:/number/decimal/ascii>.
         }
     }
     define the view<target> {

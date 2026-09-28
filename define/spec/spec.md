@@ -1741,7 +1741,7 @@ with the type `view`, followed by a View Definition Block.
 
 A View Definition Block starts with View Direction Statements, followed by a
 Position Constraint Block. Its Position Requirement Statements may not reference
-positions or actions.
+positions, actions, or encodings.
 
 Each Interface View on a Value Operation must have a `value` constraint.
 

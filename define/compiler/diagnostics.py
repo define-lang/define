@@ -268,6 +268,16 @@ class EncodingOperationViewValueConstraintDiagnostic(Diagnostic):
     )
 
 
+class ValueOperationViewEncodingConstraintDiagnostic(Diagnostic):
+    """Diagnostic for an encoding constraint on an interface view of a value operation."""
+
+    constraint_name: str
+    message_format: ClassVar[str] = (
+        "interface views on a value operation may not have encoding "
+        "constraints, but '{self.constraint_name}' is an encoding"
+    )
+
+
 class OperationArgumentPositionDiagnostic(Diagnostic):
     """Diagnostic for an Operation Argument Statement in an operation definition that looks at a position."""
 
@@ -1069,15 +1079,20 @@ class LiteralCannotSetValueDiagnostic(Diagnostic):
     supported_encodings: Sequence[str]
 
     @property
-    def supported_encoding_list(self) -> str:
-        """Format the supported encodings as an indented list."""
-        return "\n    ".join(self.supported_encodings)
+    def supported_encodings_advice(self) -> str:
+        """Say which literal encodings could set the value type, if any can."""
+        if not self.supported_encodings:
+            return f"In fact, {self.value_type} cannot be set by a literal at all."
+        encoding_list = "\n    ".join(self.supported_encodings)
+        return (
+            f"To set a {self.value_type}, use a literal with one of these"
+            f" encodings:\n    {encoding_list}"
+        )
 
     message_format: ClassVar[str] = (
         "{self.potential_literal} cannot set a {self.value_type}, because literals"
         " with the {self.literal_encoding} cannot be read as {self.value_type}.\n"
-        "To set a {self.value_type}, use a literal with one of these encodings:\n"
-        "    {self.supported_encoding_list}"
+        "{self.supported_encodings_advice}"
     )
 
 
@@ -1090,17 +1105,21 @@ class LiteralCannotBeConvertedDiagnostic(Diagnostic):
     supported_encodings: Sequence[str]
 
     @property
-    def supported_encoding_list(self) -> str:
-        """Format the supported encodings as an indented list."""
-        return "\n    ".join(self.supported_encodings)
+    def supported_encodings_advice(self) -> str:
+        """Say which literal encodings could be translated into the encoding, if any can."""
+        if not self.supported_encodings:
+            return f"In fact, {self.encoding} cannot be set by a literal at all."
+        encoding_list = "\n    ".join(self.supported_encodings)
+        return (
+            f"To look at a literal as {self.encoding}, use a literal with one of"
+            f" these encodings:\n    {encoding_list}"
+        )
 
     message_format: ClassVar[str] = (
         "{self.potential_literal} cannot be looked at as {self.encoding}, because"
         " literals with the {self.literal_encoding} cannot be translated into"
         " {self.encoding}.\n"
-        "To look at a literal as {self.encoding}, use a literal with one of these"
-        " encodings:\n"
-        "    {self.supported_encoding_list}"
+        "{self.supported_encodings_advice}"
     )
 
 

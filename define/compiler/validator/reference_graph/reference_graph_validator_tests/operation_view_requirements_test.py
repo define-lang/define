@@ -29,7 +29,7 @@ def test_duplicate_caller_view(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.LocalNameConflictDiagnostic)
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 29
+    assert diagnostic.location.line == 28
     assert diagnostic.location.column == 21
     assert diagnostic.local_name == "number"
     assert diagnostic.first_definition_line == 22
@@ -52,32 +52,6 @@ def test_value_mismatch(
     assert diagnostic.looked_at_name == "view<number>"
     assert diagnostic.looked_at_kind == diagnostics.LookedAtKind.VIEW
     assert diagnostic.missing_qualities == ["value<standard:/number/rational>"]
-
-
-def test_missing_encoding(
-    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
-):
-    result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(
-        diagnostic, diagnostics.OperationArgumentViolatesConstraintsDiagnostic
-    )
-    assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 37
-    assert diagnostic.location.column == 42
-    assert diagnostic.view_name == "view<source>"
-    assert diagnostic.looked_at_name == "view<number>"
-    assert diagnostic.looked_at_kind == diagnostics.LookedAtKind.VIEW
-    assert diagnostic.missing_qualities == ["encoding<standard:/number/decimal/ascii>"]
-
-
-def test_literal_with_encoding_constraint(
-    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
-):
-    result = validate_testdata_non_filesystem_with_reference_graph()
-    assert_no_errors(result)
 
 
 def test_invalid_literal_content(
@@ -116,13 +90,21 @@ def test_literal_for_view_without_value(
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
     assert result.all_exceptions == []
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.ViewMissingValueConstraintDiagnostic)
-    assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 3
-    assert diagnostic.location.column == 21
-    assert diagnostic.view_name == "view<source>"
+    assert len(result.all_diagnostics) == 2
+    first = result.all_diagnostics[0]
+    assert isinstance(first, diagnostics.ViewMissingValueConstraintDiagnostic)
+    assert first.location.file_path is None
+    assert first.location.line == 3
+    assert first.location.column == 21
+    assert first.view_name == "view<source>"
+    second = result.all_diagnostics[1]
+    assert isinstance(
+        second, diagnostics.ValueOperationViewEncodingConstraintDiagnostic
+    )
+    assert second.location.file_path is None
+    assert second.location.line == 6
+    assert second.location.column == 24
+    assert second.constraint_name == "encoding<standard:/number/decimal/ascii>"
 
 
 def test_looks_at_undefined_view(
@@ -206,32 +188,6 @@ def test_position_value_mismatch(
     assert diagnostic.looked_at_name == "position<second>"
     assert diagnostic.looked_at_kind == diagnostics.LookedAtKind.POSITION
     assert diagnostic.missing_qualities == ["value<standard:/number/rational>"]
-
-
-def test_position_missing_encoding(
-    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
-):
-    result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(
-        diagnostic, diagnostics.OperationArgumentViolatesConstraintsDiagnostic
-    )
-    assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 39
-    assert diagnostic.location.column == 42
-    assert diagnostic.view_name == "view<source>"
-    assert diagnostic.looked_at_name == "position<first>"
-    assert diagnostic.looked_at_kind == diagnostics.LookedAtKind.POSITION
-    assert diagnostic.missing_qualities == ["encoding<standard:/number/decimal/ascii>"]
-
-
-def test_position_matching_encoding(
-    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
-):
-    result = validate_testdata_non_filesystem_with_reference_graph()
-    assert_no_errors(result)
 
 
 def test_particle_qualities_in_unconstrained_position(

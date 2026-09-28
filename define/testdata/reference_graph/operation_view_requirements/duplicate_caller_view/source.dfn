@@ -1,46 +1,45 @@
-# operation</double> defines view<number> twice; arguments look at the first one.
-define the operation<my.domain.com:my_lib:/copy> {
+# encoding_operation</double> defines view<number> twice; arguments look at the first one.
+define the encoding<my.domain.com:my_lib:/text>.
+define the encoding_operation<my.domain.com:my_lib:/copy> {
     define the view<source> {
         it is read.
         it may only contain particles where {
-            it has the value<standard:/number/rational>.
             it has the encoding<standard:/number/decimal/ascii>.
         }
     }
     define the view<target> {
         it is written.
         it may only contain particles where {
-            it has the value<standard:/number/rational>.
+            it has the encoding<standard:/number/decimal/ascii>.
         }
     }
 
     it does {
-        execute the encoding operation.
+        execute the computer operation.
     }
 }
-define the operation<my.domain.com:my_lib:/double> {
+define the encoding_operation<my.domain.com:my_lib:/double> {
     define the view<number> {
         it is read.
         it may only contain particles where {
-            it has the value<standard:/number/rational>.
             it has the encoding<standard:/number/decimal/ascii>.
         }
     }
     define the view<number> {
         it is read.
         it may only contain particles where {
-            it has the value<standard:/number/rational>.
+            it has the encoding</text>.
         }
     }
     define the view<result> {
         it is written.
         it may only contain particles where {
-            it has the value<standard:/number/rational>.
+            it has the encoding<standard:/number/decimal/ascii>.
         }
     }
 
     it does {
-        execute the operation</copy> {
+        execute the encoding_operation</copy> {
             with view<source> looking at view<number>.
             with view<target> looking at view<result>.
         }
