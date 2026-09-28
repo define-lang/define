@@ -467,6 +467,11 @@ class ActionDefinitionValidator:
         )
         self._record_occupied_interface_child_position_violations(
             destructor_name,
+            (
+                destructor.position.location
+                if auto_destruction_target is None
+                else auto_destruction_target.location
+            ),
             occupied_interface_child_position_violations,
         )
 
@@ -576,21 +581,24 @@ class ActionDefinitionValidator:
         )
         self._record_occupied_interface_child_position_violations(
             action,
+            acting_on_position.location,
             occupied_interface_child_position_violations,
         )
 
     def _record_occupied_interface_child_position_violations(
         self,
         action: ast.GlobalTypedNameReference,
+        trigger_location: ast.SourceLocation,
         occupied_interface_child_position_violations: Sequence[
             tuple[ast.ChainedNameTuple, ast.SourceLocation]
         ],
     ):
         """Record occupied interface child positions found when one callee triggers."""
-        for position, location in occupied_interface_child_position_violations:
+        for position, arrived_at in occupied_interface_child_position_violations:
             self._diagnostics.append(
                 diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic(
-                    location=location,
+                    location=trigger_location,
+                    arrived_at=arrived_at,
                     action_name=action.source_typed_name,
                     position_name=ast.source_form_chained_name(
                         position, self._enclosing_fqun.canonical

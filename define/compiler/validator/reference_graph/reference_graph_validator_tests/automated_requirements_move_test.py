@@ -390,9 +390,12 @@ def test_caller_cannot_occupy_implied_action_interface_when_implied_moved_to_loc
     assert isinstance(
         all_diags[0], diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic
     )
-    assert all_diags[0].location.line == 13
-    assert all_diags[0].location.column == 65
+    assert all_diags[0].location.line == 14
+    assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].arrived_at.line == 13
+    assert all_diags[0].arrived_at.column == 65
+    assert all_diags[0].arrived_at.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].action_name == "action</outer>"
     assert (
         all_diags[0].position_name

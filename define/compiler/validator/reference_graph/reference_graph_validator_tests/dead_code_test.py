@@ -694,27 +694,30 @@ def test_transitive_action_interface_occupied_without_trigger_is_dead(
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
-    assert isinstance(
-        all_diags[0],
-        diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
-    )
-    assert all_diags[0].action_name == "action</middle>"
+    assert isinstance(all_diags[0], diagnostics.UntriggeredActionInterfaceDiagnostic)
+    assert all_diags[0].action_name == "action</worker>"
     assert (
         all_diags[0].position_name
         == "position<wrapper>::action</middle>::position<box>::action</worker>::position<input>"
     )
     assert all_diags[0].location.line == 12
-    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.column == 81
     assert all_diags[0].location.file_path == PurePosixPath("runner.dfn")
-    assert isinstance(all_diags[1], diagnostics.UntriggeredActionInterfaceDiagnostic)
-    assert all_diags[1].action_name == "action</worker>"
+    assert isinstance(
+        all_diags[1],
+        diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
+    )
+    assert all_diags[1].action_name == "action</middle>"
     assert (
         all_diags[1].position_name
         == "position<wrapper>::action</middle>::position<box>::action</worker>::position<input>"
     )
-    assert all_diags[1].location.line == 12
-    assert all_diags[1].location.column == 81
+    assert all_diags[1].location.line == 13
+    assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == PurePosixPath("runner.dfn")
+    assert all_diags[1].arrived_at.line == 12
+    assert all_diags[1].arrived_at.column == 30
+    assert all_diags[1].arrived_at.file_path == PurePosixPath("runner.dfn")
     assert action_graph(result.reference_graph_result) == [
         (_MIDDLE, _WORKER),
         (_RUNNER, _MIDDLE),

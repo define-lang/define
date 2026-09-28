@@ -1478,3 +1478,66 @@ def test_operation_argument_position_violates_constraints_format(
                                                  ^
         'view<source>' cannot look at 'position<number>' because the particle in 'position<number>' does not have the required qualities:
           value<standard:/number/rational>""")
+
+
+def test_occupied_action_interface_when_action_triggers_format(
+    validate_project: ValidateProject,
+):
+    files = {
+        "child.dfn": (
+            "define the potential action<my.domain.com:my_lib:/child> {\n"
+            "    define the position<run>.\n"
+            "    define the position<result>.\n"
+            "    it happens when {\n"
+            "        the position<run> has a particle.\n"
+            "    } and it does {\n"
+            "        create a particle in position<result>.\n"
+            "        destroy the particle in position<run>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "parent.dfn": (
+            "define the potential action<my.domain.com:my_lib:/parent> {\n"
+            "    define the position<run>.\n"
+            "    define the position<iface> {\n"
+            "        it may only contain particles where {\n"
+            "            it has the action</child>.\n"
+            "        }\n"
+            "    }\n"
+            "    it happens when {\n"
+            "        the position<run> has a particle.\n"
+            "    } and it does {\n"
+            "        create a particle in position<iface>::action</child>::position<run>.\n"
+            "        destroy the particle in position<iface>.\n"
+            "        destroy the particle in position<run>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "test.dfn": (
+            "define the potential action<my.domain.com:my_lib:/test> {\n"
+            "    it happens when {\n"
+            "        this particle is created.\n"
+            "    } and it does {\n"
+            "        define the position<box> {\n"
+            "            it may only contain particles where {\n"
+            "                it has the action</parent>.\n"
+            "            }\n"
+            "        }\n"
+            "        create a particle in position<box>.\n"
+            "        create a particle in position<box>::action</parent>::position<iface>.\n"
+            "        create a particle in position<box>::action</parent>::position<iface>::action</child>::position<run>.\n"
+            "        create a particle in position<box>::action</parent>::position<run>.\n"
+            "    }\n"
+            "}\n"
+        ),
+    }
+    result = validate_project(files)
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    formatted = all_diags[0].format(files["test.dfn"].splitlines())
+    assert formatted == textwrap.dedent("""\
+        File "test.dfn", line 13, column 30
+                create a particle in position<box>::action</parent>::position<run>.
+                                     ^
+        'position<box>::action</parent>::position<iface>::action</child>::position<result>' contains a particle when 'action</parent>' triggers here; move or destroy the particle before triggering that action. The particle arrived at:
+        File "test.dfn", line 12, column 79""")

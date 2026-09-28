@@ -519,10 +519,19 @@ class OccupiedActionInterfaceWhenActionTriggersDiagnostic(Diagnostic):
 
     action_name: str
     position_name: str
-    message_format: ClassVar[str] = (
-        "'{self.position_name}' contains a particle when '{self.action_name}' "
-        "triggers; move or destroy the particle before triggering that action."
-    )
+    # Where the particle arrived in the position, so the developer can find
+    # the particle that has to move or be destroyed before the trigger.
+    arrived_at: ast.SourceLocation
+
+    @property
+    @typing.override
+    def message(self) -> str:
+        """Render the diagnostic message with where the particle arrived."""
+        return (
+            f"'{self.position_name}' contains a particle when '{self.action_name}' "
+            "triggers here; move or destroy the particle before triggering that "
+            f"action. The particle arrived at:\n{_format_location(self.arrived_at)}"
+        )
 
 
 class FqunMismatchDiagnostic(Diagnostic):

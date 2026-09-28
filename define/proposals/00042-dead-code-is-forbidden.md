@@ -141,14 +141,19 @@ never is, it is a dead constraint. For example, `action</foo>` has a trigger on
 
 #### The Move Use Exception
 
-When a child position is directly referenced on a particle, a value operation or
-value setting statement acts on a particle, or an action assigned to that
-particle is triggered, the matching constraint is alive both on the position
-currently holding the particle and on the position where the particle originated
-(where it was created or arrived via an Automatic Action Requirement).
+When a child position is directly referenced on a particle or an action assigned
+to that particle is triggered, the matching constraint is alive both on the
+position currently holding the particle and on the position where the particle
+originated (where it was created or arrived via an Automatic Action
+Requirement).
 
 This handles cases where you move a particle from A to B and then reference
 children on B only.
+
+Whenever a value operation or value setting statement acts on a particle, that
+particle's value and encoding constraints are alive in the position where the
+particle originated (where it was created or arrived via an Automatic Action
+Requirement).
 
 #### The Contracted Position Exception
 

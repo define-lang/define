@@ -310,7 +310,6 @@ define the potential action<example.com:example:/child> {
     it happens when {
         the position<run> has a particle.
     } and it does {
-        destroy the particle in position<result>.
         create a particle in position<result>.
         destroy the particle in position<run>.
     }
@@ -347,9 +346,8 @@ define the potential action<example.com:example:/invalid_parent_call> {
         destroy the particle in position<run>.
         create a particle in position<box>::action</parent>::position<iface>.
 
-        # This fills action</child>::position<result>, which must be emptied
-        # before action</parent> triggers.
-        create a particle in position<box>::action</parent>::position<iface>::action</child>::position<result>.
+        # action</child> fills action</child>::position<result>, which must be
+        # emptied before action</parent> triggers.
         create a particle in position<box>::action</parent>::position<iface>::action</child>::position<run>.
 
         # INVALID: action</child>::position<result> is occupied when
