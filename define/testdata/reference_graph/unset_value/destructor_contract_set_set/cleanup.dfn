@@ -3,12 +3,14 @@ define the potential action<my.domain.com:my_lib:/cleanup> {
     it happens when {
         this particle is being destroyed.
     } and it does {
-        define the position<copy> {
+        define the position<reader> {
             it may only contain particles where {
-                it has the value<standard:/number/rational>.
+                it has the action</keep>.
             }
         }
-        create a particle in position<copy>.
-        set the value of position<copy> to position</value>.
+        create a particle in position<reader>.
+        create a particle in position<reader>::action</keep>::position<input>.
+        set the value of position<reader>::action</keep>::position<input> to position</value>.
+        create a particle in position<reader>::action</keep>::position<run>.
     }
 }

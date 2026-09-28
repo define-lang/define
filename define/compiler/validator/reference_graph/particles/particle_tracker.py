@@ -214,6 +214,12 @@ class ParticleTracker:
         self._callee_guarantees.apply_pending_guarantees_up_to(key)
         return self._store.occupant_or_none(key)
 
+    def get_occupant_or_none_by_key(
+        self, key: ast.ChainedNameTuple
+    ) -> particle_info.ParticleInfo | None:
+        """Get the particle at this position, if one exists."""
+        return self._store.occupant_or_none(key)
+
     def set_value(
         self,
         position: ast.PositionReference,
@@ -260,17 +266,19 @@ class ParticleTracker:
         self,
         occupancies: child_state.ChildOccupancyMap,
         values: child_state.ChildValueMap,
+        particles: dict[ast.ChainedNameTuple, particle_info.ParticleInfo],
         snapshot: child_state.ChildState,
         for_position: ast.PositionReference,
         position_in_child_state: tuple[str, ...],
         contract_positions: set[tuple[str, ...]],
-    ) -> dict[ast.ChainedNameTuple, particle_info.ParticleInfo]:
-        """Collect caller particles and additional Child State."""
+    ):
+        """Collect caller particles and additional Child State, keyed by Child State position."""
         key = for_position.canonical_chained_name_tuple
         self._callee_guarantees.fully_resolve_pending_guarantees(key)
-        return self._store.collect_caller_destruction_state(
+        self._store.collect_caller_destruction_state(
             occupancies,
             values,
+            particles,
             snapshot,
             key,
             position_in_child_state,

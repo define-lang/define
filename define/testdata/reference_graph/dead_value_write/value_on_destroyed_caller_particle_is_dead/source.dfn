@@ -1,0 +1,37 @@
+# action</close> writes position</value> and destroys it without knowing any destructor that reads it.
+define the potential position<my.domain.com:my_lib:/value> {
+    it may only contain particles where {
+        it has the value<standard:/number/rational>.
+    }
+}
+define the potential action<my.domain.com:my_lib:/close> {
+    define the position<run>.
+    define the position<input> {
+        it may only contain particles where {
+            it has the position</value>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        set the value of position<input>::position</value> to literal<standard:/number>"5".
+        destroy the particle in position<input>.
+        destroy the particle in position<run>.
+    }
+}
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</close>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<box>::action</close>::position<input>.
+        create a particle in position<box>::action</close>::position<input>::position</value>.
+        create a particle in position<box>::action</close>::position<run>.
+        destroy the particle in position<box>.
+    }
+}

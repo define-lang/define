@@ -11,7 +11,6 @@ define the potential action<my.domain.com:my_lib:/consume> {
         the position<trigger> has a particle.
     } and it does {
         set the value of position<input> to literal<standard:/number>"1".
-        destroy the particle in position<input>.
         destroy the particle in position<trigger>.
     }
 }

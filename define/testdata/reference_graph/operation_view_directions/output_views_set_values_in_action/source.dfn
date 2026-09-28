@@ -17,7 +17,19 @@ define the operation<my.domain.com:my_lib:/fill_both> {
         execute the encoding operation.
     }
 }
+define the potential position<my.domain.com:my_lib:/first_copy> {
+    it may only contain particles where {
+        it has the value<standard:/number/rational>.
+    }
+}
+define the potential position<my.domain.com:my_lib:/second_copy> {
+    it may only contain particles where {
+        it has the value<standard:/number/rational>.
+    }
+}
 define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</first_copy>.
+    it also assigns the position</second_copy>.
     it happens when {
         this particle is created.
     } and it does {
@@ -33,11 +45,13 @@ define the potential action<my.domain.com:my_lib:/test> {
         }
         create a particle in position<first>.
         create a particle in position<second>.
+        create a particle in position</first_copy>.
+        create a particle in position</second_copy>.
         execute the operation</fill_both> {
             with view<first> looking at position<first>.
             with view<second> looking at position<second>.
         }
-        set the value of position<first> to position<second>.
-        set the value of position<second> to position<first>.
+        set the value of position</first_copy> to position<first>.
+        set the value of position</second_copy> to position<second>.
     }
 }

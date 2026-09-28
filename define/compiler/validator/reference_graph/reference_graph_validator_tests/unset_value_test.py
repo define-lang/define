@@ -59,8 +59,8 @@ def test_move_preserves_unset(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert diagnostic.location.line == 20
-    assert diagnostic.location.column == 46
+    assert diagnostic.location.line == 16
+    assert diagnostic.location.column == 47
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.position_name == "position<moved>"
 
@@ -73,7 +73,7 @@ def test_replacement_is_unset(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert diagnostic.location.line == 21
+    assert diagnostic.location.line == 24
     assert diagnostic.location.column == 46
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.position_name == "position<source>"
@@ -126,8 +126,8 @@ def test_trigger_requires_unset(
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/consume>",
             "triggered_quality_name": None,
-            "line": 16,
-            "column": 44,
+            "line": 12,
+            "column": 45,
             "file_path": "consume.dfn",
         },
     )
@@ -187,8 +187,8 @@ def test_transitive_requirement_unset(
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/consume>",
             "triggered_quality_name": None,
-            "line": 16,
-            "column": 44,
+            "line": 12,
+            "column": 45,
             "file_path": "consume.dfn",
         },
     )
@@ -246,8 +246,8 @@ def test_transitive_implied_requirement_unset(
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/read>",
             "triggered_quality_name": None,
-            "line": 13,
-            "column": 44,
+            "line": 9,
+            "column": 45,
             "file_path": "read.dfn",
         },
     )
@@ -297,8 +297,8 @@ def test_implied_requirement_after_move(
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/read>",
             "triggered_quality_name": None,
-            "line": 15,
-            "column": 44,
+            "line": 11,
+            "column": 45,
             "file_path": "read.dfn",
         },
     )
@@ -319,8 +319,8 @@ def test_guarantee_new_unset(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert diagnostic.location.line == 19
-    assert diagnostic.location.column == 44
+    assert diagnostic.location.line == 15
+    assert diagnostic.location.column == 45
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert (
         diagnostic.position_name == "position<worker>::action</provide>::position<item>"
@@ -339,15 +339,21 @@ def test_guarantee_existing_unset(
 ):
     result = validate_testdata_project_with_reference_graph().program_result
     assert result.all_exceptions == []
-    assert len(result.all_diagnostics) == 1
+    assert len(result.all_diagnostics) == 2
     diagnostic = result.all_diagnostics[0]
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert diagnostic.location.line == 20
-    assert diagnostic.location.column == 44
+    assert diagnostic.location.line == 16
+    assert diagnostic.location.column == 45
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert (
         diagnostic.position_name == "position<worker>::action</provide>::position<item>"
     )
+    diagnostic = result.all_diagnostics[1]
+    assert isinstance(diagnostic, diagnostics.DeadValueWriteDiagnostic)
+    assert diagnostic.location.file_path == PurePosixPath("provide.dfn")
+    assert diagnostic.location.line == 11
+    assert diagnostic.location.column == 26
+    assert diagnostic.position_name == "position<item>"
 
 
 def test_guarantee_unchanged_set(
@@ -365,8 +371,8 @@ def test_guarantee_unchanged_unset(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert diagnostic.location.line == 20
-    assert diagnostic.location.column == 44
+    assert diagnostic.location.line == 16
+    assert diagnostic.location.column == 45
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert (
         diagnostic.position_name == "position<worker>::action</provide>::position<item>"
@@ -388,8 +394,8 @@ def test_guarantee_moved_unset(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert diagnostic.location.line == 20
-    assert diagnostic.location.column == 44
+    assert diagnostic.location.line == 16
+    assert diagnostic.location.column == 45
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert (
         diagnostic.position_name == "position<worker>::action</provide>::position<item>"
@@ -456,8 +462,8 @@ def test_destructor_direct_unset(
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
-            "line": 12,
-            "column": 44,
+            "line": 13,
+            "column": 78,
             "file_path": "cleanup.dfn",
         },
     )
@@ -526,8 +532,8 @@ def test_destructor_contract_unset(
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
-            "line": 12,
-            "column": 44,
+            "line": 13,
+            "column": 78,
             "file_path": "cleanup.dfn",
         },
     )
@@ -537,14 +543,28 @@ def test_destructor_contract_set_set(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert_no_errors(result)
+    assert result.all_exceptions == []
+    assert len(result.all_diagnostics) == 1
+    diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.DeadValueWriteDiagnostic)
+    assert diagnostic.location.file_path == PurePosixPath("close.dfn")
+    assert diagnostic.location.line == 10
+    assert diagnostic.location.column == 26
+    assert diagnostic.position_name == "position<input>::position</value>"
 
 
 def test_destructor_contract_set_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert_no_errors(result)
+    assert result.all_exceptions == []
+    assert len(result.all_diagnostics) == 1
+    diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.DeadValueWriteDiagnostic)
+    assert diagnostic.location.file_path == PurePosixPath("close.dfn")
+    assert diagnostic.location.line == 10
+    assert diagnostic.location.column == 26
+    assert diagnostic.position_name == "position<input>::position</value>"
 
 
 def test_destructor_contract_replace_set(
@@ -552,7 +572,7 @@ def test_destructor_contract_replace_set(
 ):
     result = validate_testdata_project_with_reference_graph().program_result
     assert result.all_exceptions == []
-    assert len(result.all_diagnostics) == 1
+    assert len(result.all_diagnostics) == 2
     diagnostic = result.all_diagnostics[0]
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 21
@@ -603,11 +623,17 @@ def test_destructor_contract_replace_set(
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
-            "line": 12,
-            "column": 44,
+            "line": 13,
+            "column": 78,
             "file_path": "cleanup.dfn",
         },
     )
+    diagnostic = result.all_diagnostics[1]
+    assert isinstance(diagnostic, diagnostics.DeadValueWriteDiagnostic)
+    assert diagnostic.location.file_path == PurePosixPath("close.dfn")
+    assert diagnostic.location.line == 10
+    assert diagnostic.location.column == 26
+    assert diagnostic.position_name == "position<input>::position</value>"
 
 
 def test_destructor_contract_replace_unset(
@@ -615,7 +641,7 @@ def test_destructor_contract_replace_unset(
 ):
     result = validate_testdata_project_with_reference_graph().program_result
     assert result.all_exceptions == []
-    assert len(result.all_diagnostics) == 1
+    assert len(result.all_diagnostics) == 2
     diagnostic = result.all_diagnostics[0]
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 20
@@ -666,11 +692,17 @@ def test_destructor_contract_replace_unset(
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
-            "line": 12,
-            "column": 44,
+            "line": 13,
+            "column": 78,
             "file_path": "cleanup.dfn",
         },
     )
+    diagnostic = result.all_diagnostics[1]
+    assert isinstance(diagnostic, diagnostics.DeadValueWriteDiagnostic)
+    assert diagnostic.location.file_path == PurePosixPath("close.dfn")
+    assert diagnostic.location.line == 10
+    assert diagnostic.location.column == 26
+    assert diagnostic.position_name == "position<input>::position</value>"
 
 
 def test_destructor_contract_untouched_set(
@@ -736,8 +768,8 @@ def test_destructor_contract_untouched_unset(
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
-            "line": 12,
-            "column": 44,
+            "line": 13,
+            "column": 78,
             "file_path": "cleanup.dfn",
         },
     )
@@ -758,8 +790,8 @@ def test_transitive_implied_guarantee_unset(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert diagnostic.location.line == 20
-    assert diagnostic.location.column == 44
+    assert diagnostic.location.line == 16
+    assert diagnostic.location.column == 45
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.position_name == "position<worker>::position</value>"
 
@@ -779,8 +811,8 @@ def test_constructor_guarantee_unset(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert diagnostic.location.line == 19
-    assert diagnostic.location.column == 44
+    assert diagnostic.location.line == 15
+    assert diagnostic.location.column == 45
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.position_name == "position<worker>::position</value>"
 
@@ -832,8 +864,8 @@ def test_requirement_after_move_unset(
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/consume>",
             "triggered_quality_name": None,
-            "line": 18,
-            "column": 44,
+            "line": 14,
+            "column": 45,
             "file_path": "consume.dfn",
         },
     )
@@ -910,8 +942,8 @@ def test_destructor_transitive_requirement_unset(
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
-            "line": 12,
-            "column": 44,
+            "line": 13,
+            "column": 78,
             "file_path": "cleanup.dfn",
         },
     )
@@ -988,8 +1020,8 @@ def test_destructor_untouched_requirement_unset(
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
-            "line": 12,
-            "column": 44,
+            "line": 13,
+            "column": 78,
             "file_path": "cleanup.dfn",
         },
     )
@@ -1010,7 +1042,7 @@ def test_destructor_replaced_child_identity_unset(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert diagnostic.location.line == 28
+    assert diagnostic.location.line == 31
     assert diagnostic.location.column == 47
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert (
@@ -1026,7 +1058,7 @@ def test_destructor_replaced_child_identity_unset(
             "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
-            "line": 8,
+            "line": 9,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -1034,7 +1066,7 @@ def test_destructor_replaced_child_identity_unset(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<worker>::action</close>::position<input>",
             "triggered_quality_name": None,
-            "line": 12,
+            "line": 13,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -1042,7 +1074,7 @@ def test_destructor_replaced_child_identity_unset(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/close>",
-            "line": 28,
+            "line": 31,
             "column": 47,
             "file_path": "test.dfn",
         },
@@ -1058,8 +1090,8 @@ def test_destructor_replaced_child_identity_unset(
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
-            "line": 12,
-            "column": 44,
+            "line": 13,
+            "column": 78,
             "file_path": "cleanup.dfn",
         },
     )
@@ -1136,8 +1168,8 @@ def test_multiple_value_requirements(
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/consume>",
             "triggered_quality_name": None,
-            "line": 21,
-            "column": 44,
+            "line": 19,
+            "column": 45,
             "file_path": "consume.dfn",
         },
     )
@@ -1165,8 +1197,8 @@ def test_multiple_value_requirements(
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/consume>",
             "triggered_quality_name": None,
-            "line": 22,
-            "column": 44,
+            "line": 20,
+            "column": 51,
             "file_path": "consume.dfn",
         },
     )
@@ -1220,8 +1252,8 @@ def test_interfaces_stop_value_inference(
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/consume>",
             "triggered_quality_name": None,
-            "line": 17,
-            "column": 44,
+            "line": 13,
+            "column": 45,
             "file_path": "consume.dfn",
         },
     )
@@ -1242,7 +1274,7 @@ def test_destructor_transitive_replaced_identity_unset(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert diagnostic.location.line == 28
+    assert diagnostic.location.line == 31
     assert diagnostic.location.column == 47
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.required_value is True
@@ -1258,7 +1290,7 @@ def test_destructor_transitive_replaced_identity_unset(
             "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
-            "line": 8,
+            "line": 9,
             "column": 28,
             "file_path": "test.dfn",
         },
@@ -1266,7 +1298,7 @@ def test_destructor_transitive_replaced_identity_unset(
             "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
             "enclosing_quality_name": "position<worker>::action</relay>::position<input>",
             "triggered_quality_name": None,
-            "line": 12,
+            "line": 13,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -1274,7 +1306,7 @@ def test_destructor_transitive_replaced_identity_unset(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/relay>",
-            "line": 28,
+            "line": 31,
             "column": 47,
             "file_path": "test.dfn",
         },
@@ -1298,8 +1330,8 @@ def test_destructor_transitive_replaced_identity_unset(
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
-            "line": 12,
-            "column": 44,
+            "line": 13,
+            "column": 78,
             "file_path": "cleanup.dfn",
         },
     )
@@ -1385,8 +1417,8 @@ def test_multiple_destructor_requirements_unset(
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
-            "line": 12,
-            "column": 44,
+            "line": 13,
+            "column": 78,
             "file_path": "cleanup.dfn",
         },
     )
@@ -1438,8 +1470,8 @@ def test_multiple_destructor_requirements_unset(
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/other_cleanup>",
             "triggered_quality_name": None,
-            "line": 12,
-            "column": 44,
+            "line": 13,
+            "column": 78,
             "file_path": "other_cleanup.dfn",
         },
     )
@@ -1518,8 +1550,8 @@ def test_destructor_multiple_value_requirements(
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
-            "line": 13,
-            "column": 44,
+            "line": 14,
+            "column": 78,
             "file_path": "cleanup.dfn",
         },
     )
@@ -1571,8 +1603,8 @@ def test_destructor_multiple_value_requirements(
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
-            "line": 14,
-            "column": 44,
+            "line": 23,
+            "column": 84,
             "file_path": "cleanup.dfn",
         },
     )
@@ -1649,8 +1681,8 @@ def test_destructor_value_requirement_deferred_unset(
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
             "triggered_quality_name": None,
-            "line": 15,
-            "column": 44,
+            "line": 16,
+            "column": 78,
             "file_path": "cleanup.dfn",
         },
     )
@@ -1665,8 +1697,8 @@ def test_repeated_unset_reads(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert diagnostic.location.line == 18
-    assert diagnostic.location.column == 46
+    assert diagnostic.location.line == 17
+    assert diagnostic.location.column == 47
     assert diagnostic.position_name == "position<source>"
 
 
@@ -1700,7 +1732,7 @@ def test_repeated_interface_value_requirement(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert diagnostic.location.line == 12
+    assert diagnostic.location.line == 13
     assert diagnostic.location.column == 30
     assert (
         diagnostic.position_name == "position<input>::action</consume>::position<input>"
@@ -1714,7 +1746,7 @@ def test_repeated_interface_value_requirement(
             "kind": action_contract.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<input>::action</consume>::position<input>",
             "triggered_quality_name": None,
-            "line": 11,
+            "line": 12,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -1722,7 +1754,7 @@ def test_repeated_interface_value_requirement(
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/consume>",
-            "line": 12,
+            "line": 13,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -1730,8 +1762,8 @@ def test_repeated_interface_value_requirement(
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/consume>",
             "triggered_quality_name": None,
-            "line": 17,
-            "column": 44,
+            "line": 13,
+            "column": 45,
             "file_path": "consume.dfn",
         },
     )

@@ -1,3 +1,2 @@
-test.create(count)
-test.set_value(count, 42)
-test.destroy(count)
+test.create(/count)
+test.set_value(/count, 42)

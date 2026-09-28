@@ -1218,6 +1218,7 @@ def test_propagated_value_requirement_format(validate_project: ValidateProject):
         ),
         "consume.dfn": (
             "define the potential action<my.domain.com:my_lib:/consume> {\n"
+            "    it also assigns the position</copy>.\n"
             "    define the position<input> {\n"
             "        it may only contain particles where {\n"
             "            it has the value</number>.\n"
@@ -1226,14 +1227,16 @@ def test_propagated_value_requirement_format(validate_project: ValidateProject):
             "    it happens when {\n"
             "        the position<input> has a particle.\n"
             "    } and it does {\n"
-            "        define the position<copy> {\n"
-            "            it may only contain particles where {\n"
-            "                it has the value</number>.\n"
-            "            }\n"
-            "        }\n"
-            "        create a particle in position<copy>.\n"
-            "        set the value of position<copy> to position<input>.\n"
+            "        create a particle in position</copy>.\n"
+            "        set the value of position</copy> to position<input>.\n"
             "        destroy the particle in position<input>.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "copy.dfn": (
+            "define the potential position<my.domain.com:my_lib:/copy> {\n"
+            "    it may only contain particles where {\n"
+            "        it has the value</number>.\n"
             "    }\n"
             "}\n"
         ),
@@ -1258,7 +1261,7 @@ def test_propagated_value_requirement_format(validate_project: ValidateProject):
           'action<my.domain.com:my_lib:/relay>' triggers 'action<my.domain.com:my_lib:/consume>':
             File "relay.dfn", line 16, column 49
           'action<my.domain.com:my_lib:/consume>' infers this requirement:
-            File "consume.dfn", line 16, column 44""")
+            File "consume.dfn", line 12, column 45""")
 
 
 def test_destructor_changes_value_after_move_format(validate_project: ValidateProject):

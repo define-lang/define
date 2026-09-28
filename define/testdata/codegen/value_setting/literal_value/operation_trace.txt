@@ -1,3 +1,2 @@
-test.create(price)
-test.set_value(price, 12.5)
-test.destroy(price)
+test.create(/price)
+test.set_value(/price, 12.5)

@@ -27,7 +27,6 @@ define the potential action<my.domain.com:my_lib:/test> {
             }
         }
         create a particle in position<first>.
-        set the value of position<first> to literal<standard:/number>"1".
         execute the operation</copy> {
             with view<source> looking at literal<standard:/number>"x".
             with view<target> looking at position<first>.

@@ -1,5 +1,6 @@
 # Assigned value types survive moves to unconstrained positions.
 define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</left>.
     it happens when {
         this particle is created.
     } and it does {
@@ -17,11 +18,10 @@ define the potential action<my.domain.com:my_lib:/test> {
         create a particle in position<target>.
         create a particle in position<target>::position</child>.
         create a particle in position<source>.
-        define the position<left>.
         define the position<right>.
-        move the particle in position<target> to position<left>.
+        move the particle in position<target> to position</left>.
         move the particle in position<source> to position<right>.
         set the value of position<right> to literal<standard:/number>"5".
-        set the value of position<left> to position<right>.
+        set the value of position</left> to position<right>.
     }
 }

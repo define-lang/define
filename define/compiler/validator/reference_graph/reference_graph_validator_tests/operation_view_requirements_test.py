@@ -162,7 +162,7 @@ def test_invalid_literal_content_in_action(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InvalidLiteralContentDiagnostic)
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 32
+    assert diagnostic.location.line == 31
     assert diagnostic.location.column == 68
     assert diagnostic.content == "x"
     assert diagnostic.potential_literal == "literal<standard:/number>"
@@ -219,7 +219,7 @@ def test_position_missing_encoding(
         diagnostic, diagnostics.OperationArgumentViolatesConstraintsDiagnostic
     )
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 40
+    assert diagnostic.location.line == 39
     assert diagnostic.location.column == 42
     assert diagnostic.view_name == "view<source>"
     assert diagnostic.looked_at_name == "position<first>"

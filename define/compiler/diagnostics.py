@@ -490,6 +490,20 @@ class UntriggeredImpliedActionDiagnostic(Diagnostic):
     )
 
 
+class DeadValueWriteDiagnostic(Diagnostic):
+    """Diagnostic for a value written to a particle that nothing uses."""
+
+    position_name: str
+    message_format: ClassVar[str] = (
+        "the value written to '{self.position_name}' here is never used; it needs to be"
+        " used before it is written again. To use it, you can do any of these:\n"
+        "  - read it in this action"
+        "  - trigger an action that uses its value"
+        "  - put it into an interface position or implied position and leave it there"
+        " at the end of this action"
+    )
+
+
 class UntriggeredActionInterfaceDiagnostic(Diagnostic):
     """Diagnostic for an interface particle not present when its action triggers."""
 

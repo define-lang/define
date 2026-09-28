@@ -3,6 +3,7 @@ define the potential action<my.domain.com:my_lib:/test> {
     define the position<input> {
         it may only contain particles where {
             it has the action</consume>.
+            it has the position</copy>.
         }
     }
     it happens when {
@@ -10,6 +11,7 @@ define the potential action<my.domain.com:my_lib:/test> {
     } and it does {
         create a particle in position<input>::action</consume>::position<input>.
         create a particle in position<input>::action</consume>::position<trigger>.
+        destroy the particle in position<input>::position</copy>.
         create a particle in position<input>::action</consume>::position<trigger>.
         destroy the particle in position<input>::action</consume>::position<input>.
     }

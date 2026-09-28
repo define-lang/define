@@ -1,22 +1,18 @@
 # Value setting references keep child position constraints alive.
 define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</parent>.
     it happens when {
         this particle is created.
     } and it does {
-        define the position<parent> {
-            it may only contain particles where {
-                it has the position</child>.
-            }
-        }
         define the position<source> {
             it may only contain particles where {
                 it has the value<standard:/number/rational>.
             }
         }
-        create a particle in position<parent>.
-        create a particle in position<parent>::position</child>.
+        create a particle in position</parent>.
+        create a particle in position</parent>::position</child>.
         create a particle in position<source>.
         set the value of position<source> to literal<standard:/number>"5".
-        set the value of position<parent>::position</child> to position<source>.
+        set the value of position</parent>::position</child> to position<source>.
     }
 }

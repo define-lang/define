@@ -27,6 +27,7 @@ from define.compiler.validator.reference_graph import (
 )
 from define.compiler.validator.reference_graph.dead_code import (
     dead_constraint_validator,
+    dead_value_write_validator,
 )
 from define.compiler.validator.reference_graph.particles import (
     particle_info,
@@ -136,6 +137,7 @@ class ActionDefinitionValidator:
             self._definition_results,
             self._validation_state,
             self._tracker,
+            self._dead_value_write_validator,
         )
 
     @cached_property
@@ -147,6 +149,12 @@ class ActionDefinitionValidator:
             self._definition_results,
             self._validation_state,
         )
+
+    @cached_property
+    def _dead_value_write_validator(
+        self,
+    ) -> dead_value_write_validator.DeadValueWriteValidator:
+        return dead_value_write_validator.DeadValueWriteValidator(self._tracker)
 
     @cached_property
     def _dead_constraint_validator(
@@ -452,6 +460,7 @@ class ActionDefinitionValidator:
         self._requirement_validator.propagate_value_requirements(
             action_chain, value_requirements, destructor.action_assignment()
         )
+        self._dead_value_write_validator.mark_required_values_used(value_requirements)
         self._diagnostics.extend(
             self._requirement_validator.check_value_requirements(
                 value_requirements,
@@ -562,6 +571,7 @@ class ActionDefinitionValidator:
         self._requirement_validator.propagate_value_requirements(
             action_chain, value_requirements, action_assignment
         )
+        self._dead_value_write_validator.mark_required_values_used(value_requirements)
         self._diagnostics.extend(
             self._requirement_validator.check_value_requirements(
                 value_requirements,
@@ -732,6 +742,7 @@ class ActionDefinitionValidator:
             self._requirement_validator.infer_value_requirement(
                 stmt.source, inferred_at=stmt.source.location
             )
+            self._dead_value_write_validator.mark_used(stmt.source)
         value_diagnostics, value_state, target_type = (
             self._operation_validator.validate_value_setting(
                 stmt.target_position, stmt.source
@@ -771,6 +782,12 @@ class ActionDefinitionValidator:
                 self._tracker.mark_value_error(stmt.target_position)
             return
         self._tracker.set_value(stmt.target_position, value_state)
+        # Copying a value that already has an error does not write a new value,
+        # so it is not reported again as a dead write.
+        if value_state != particle_info.ParticleValueState.ERROR:
+            self._diagnostics.extend(
+                self._dead_value_write_validator.record_write(stmt.target_position)
+            )
 
     def _analyze_operation_execution(
         self,
@@ -820,6 +837,9 @@ class ActionDefinitionValidator:
                 self._tracker.mark_value_error(position)
             else:
                 self._tracker.set_value(position, particle_info.ParticleValueState.SET)
+                self._diagnostics.extend(
+                    self._dead_value_write_validator.record_write(position)
+                )
         # TODO: Record a step for code generation once value operations have
         # code generation.
 
@@ -853,6 +873,7 @@ class ActionDefinitionValidator:
             self._requirement_validator.infer_value_requirement(
                 position, inferred_at=position.location
             )
+            self._dead_value_write_validator.mark_used(position)
         diagnostic = self._operation_validator.validate_looked_at(
             position, is_read=is_read
         )
@@ -1095,6 +1116,9 @@ class ActionDefinitionValidator:
         contract = self._generate_contract()
         self._diagnostics.extend(
             self._dead_constraint_validator.validate(contract.guarantees, scope)
+        )
+        self._diagnostics.extend(
+            self._dead_value_write_validator.validate(contract.guarantees)
         )
         return contract
 

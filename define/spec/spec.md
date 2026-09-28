@@ -1964,8 +1964,8 @@ A value is "used" if:
 - The value is read: it is the source of a Value Setting Statement, or an input
   view of an Operation Execution Statement looks at it.
 - The particle is in a contracted position of a callee that requires its value
-  to be set, at the time that callee is triggered. This includes destructors
-  triggered when the particle is destroyed.
+  to be set, at the time that callee is triggered. This includes any destructors
+  the action knows about that trigger when the particle is destroyed.
 - This action's Action Particle Value Guarantees provide a guarantee about the
   value.
 

@@ -1,5 +1,6 @@
 # Destructors read the value state immediately before destruction.
 define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</copy>.
     it happens when {
         this particle is created.
     } and it does {
@@ -12,6 +13,8 @@ define the potential action<my.domain.com:my_lib:/test> {
         create a particle in position<box>.
         create a particle in position<box>::position</value>.
         set the value of position<box>::position</value> to literal<standard:/number>"5".
+        create a particle in position</copy>.
+        set the value of position</copy> to position<box>::position</value>.
         define the position<worker> {
             it may only contain particles where {
                 it has the action</relay>.

@@ -25,6 +25,9 @@ if typing.TYPE_CHECKING:
 
     from define.compiler.data_structures import typed_name_dict
     from define.compiler.validator import validation_result
+    from define.compiler.validator.reference_graph.dead_code import (
+        dead_value_write_validator,
+    )
     from define.compiler.validator.reference_graph.particles import (
         particle_info,
         particle_tracker,
@@ -48,6 +51,8 @@ class _ResolvedRequirement(msgspec.Struct, frozen=True):
 
     requirement: action_contract.PositionRequirement
     position: ast.PositionReference
+    # The required position's name in the shared Child State.
+    state_key: ast.ChainedNameTuple
     occupancy: position_occupancy.ChildOccupancy
     value_state: particle_info.ParticleValueState | None
 
@@ -58,7 +63,6 @@ class _DestructionContractInCaller(msgspec.Struct, frozen=True):
     contract: action_contract.DestructionContract
     position: ast.PositionReference
     connection: destruction_contract_types.DestructionConnection
-    particles: dict[ast.ChainedNameTuple, particle_info.ParticleInfo]
 
 
 class DestructionContractValidator:
@@ -71,6 +75,7 @@ class DestructionContractValidator:
     ]
     _validation_state: reference_graph_validation_state.ReferenceGraphValidationState
     _tracker: particle_tracker.ParticleTracker
+    _dead_value_write_validator: dead_value_write_validator.DeadValueWriteValidator
 
     def __init__(
         self,
@@ -81,12 +86,14 @@ class DestructionContractValidator:
         ],
         validation_state: reference_graph_validation_state.ReferenceGraphValidationState,
         tracker: particle_tracker.ParticleTracker,
+        dead_value_write_validator: dead_value_write_validator.DeadValueWriteValidator,
     ):
         """Initialize with the caller's definition, particle state, and known definitions."""
         self._definition = definition
         self._definition_results = definition_results
         self._validation_state = validation_state
         self._tracker = tracker
+        self._dead_value_write_validator = dead_value_write_validator
 
     def validate(
         self,
@@ -120,11 +127,15 @@ class DestructionContractValidator:
         list[_DestructionContractInCaller],
         child_state.ChildOccupancyMap,
         child_state.ChildValueMap,
+        dict[ast.ChainedNameTuple, particle_info.ParticleInfo],
     ]:
-        """Resolve contracted positions and collect the caller's Child State."""
+        """Resolve contracted positions and collect the caller's Child State and particles."""
         caller_contracts: list[_DestructionContractInCaller] = []
         caller_knowledge: child_state.ChildOccupancyMap = {}
         caller_values: child_state.ChildValueMap = {}
+        # Every Destruction Contract from one destruction shares these, so a
+        # destructor can find a particle that another of those contracts collected.
+        caller_particles: dict[ast.ChainedNameTuple, particle_info.ParticleInfo] = {}
         for destruction_contract in callee_contracts.particles:
             connection = destruction_contract_types.DestructionConnection(
                 callee_destruction=destruction_contract.propagated_destruction,
@@ -138,20 +149,19 @@ class DestructionContractValidator:
             occupancy = self._tracker.get_occupancy_info(position)
             if occupancy.occupant is None:
                 continue
-            particles = self._tracker.collect_caller_destruction_state(
+            self._tracker.collect_caller_destruction_state(
                 caller_knowledge,
                 caller_values,
+                caller_particles,
                 callee_contracts.child_state,
                 position,
                 destruction_contract.position_in_child_state,
                 callee_contracts.positions,
             )
             caller_contracts.append(
-                _DestructionContractInCaller(
-                    destruction_contract, position, connection, particles
-                )
+                _DestructionContractInCaller(destruction_contract, position, connection)
             )
-        return caller_contracts, caller_knowledge, caller_values
+        return caller_contracts, caller_knowledge, caller_values, caller_particles
 
     def _check_destruction_contract_group(
         self,
@@ -161,7 +171,7 @@ class DestructionContractValidator:
         result: DestructionContractValidationResult,
     ):
         """Verify particles sharing Child State and record their contributions."""
-        caller_contracts, caller_knowledge, caller_values = (
+        caller_contracts, caller_knowledge, caller_values, caller_particles = (
             self._destruction_contracts_in_caller(
                 callee_contracts, action_chain, result.connections
             )
@@ -180,6 +190,7 @@ class DestructionContractValidator:
                 trigger_step,
                 callee_contracts,
                 propagated_contracts,
+                caller_particles,
                 result.diagnostics,
             )
         if propagated_contracts.particles:
@@ -191,6 +202,7 @@ class DestructionContractValidator:
         trigger_step: action_contract.PropagationStep,
         callee_contracts: action_contract.DestructionContracts,
         propagated_contracts: action_contract.DestructionContracts,
+        caller_particles: dict[ast.ChainedNameTuple, particle_info.ParticleInfo],
         validation_diagnostics: list[diagnostics.Diagnostic],
     ):
         destruction_contract = caller_contract.contract
@@ -207,7 +219,7 @@ class DestructionContractValidator:
             caller_particle_position,
             (),
             destruction_contract.position_in_child_state,
-            caller_particles=caller_contract.particles,
+            caller_particles=caller_particles,
             destruction_contract=destruction_contract,
             destroying_definition=destroying_definition,
             caller_prefix_length=len(caller_particle_position.typed_names),
@@ -374,6 +386,7 @@ class DestructionContractValidator:
                         caller_prefix_length=caller_prefix_length,
                         trigger_step=trigger_step,
                         merged_child_state=propagated_contracts.child_state,
+                        caller_particles=caller_particles,
                         created_in_this_action=created_in_this_action,
                         newly_verified=newly_verified,
                         validation_diagnostics=validation_diagnostics,
@@ -437,6 +450,7 @@ class DestructionContractValidator:
         caller_prefix_length: int,
         trigger_step: action_contract.PropagationStep,
         merged_child_state: child_state.ChildState,
+        caller_particles: dict[ast.ChainedNameTuple, particle_info.ParticleInfo],
         created_in_this_action: bool,
         newly_verified: list[ast.GlobalTypedNameReference],
         validation_diagnostics: list[diagnostics.Diagnostic],
@@ -470,6 +484,14 @@ class DestructionContractValidator:
                 return None
             resolved_requirements.append(resolution)
         for resolved_requirement in resolved_requirements:
+            if isinstance(
+                resolved_requirement.requirement, action_contract.ValueRequirement
+            ):
+                required_particle = caller_particles.get(resolved_requirement.state_key)
+                if required_particle is not None:
+                    self._dead_value_write_validator.mark_particle_used(
+                        required_particle
+                    )
             occupancy = resolved_requirement.occupancy
             if not requirement_violation.is_violated(
                 resolved_requirement.requirement,
@@ -543,6 +565,7 @@ class DestructionContractValidator:
         return _ResolvedRequirement(
             requirement=inner_req,
             position=required_position,
+            state_key=state_key,
             occupancy=occupancy,
             value_state=value_state,
         )

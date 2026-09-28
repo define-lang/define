@@ -467,14 +467,15 @@ class ParticleStateStore:
         self,
         occupancies: child_state.ChildOccupancyMap,
         values: child_state.ChildValueMap,
+        particles: dict[ast.ChainedNameTuple, particle_info.ParticleInfo],
         snapshot: child_state.ChildState,
         key: tuple[str, ...],
         position_in_child_state: tuple[str, ...],
         contract_positions: set[tuple[str, ...]],
-    ) -> dict[ast.ChainedNameTuple, particle_info.ParticleInfo]:
-        """Collect caller particles and additional Child State."""
+    ):
+        """Collect caller particles and additional Child State, keyed by Child State position."""
         particle = self.occupant(key)
-        particles = {position_in_child_state: particle}
+        particles[position_in_child_state] = particle
         known_occupancy = snapshot.occupancy.get(position_in_child_state)
         # The walk below visits only child positions. For the particle itself,
         # use its original position in the caller, even if the callee moved it.
@@ -527,7 +528,6 @@ class ParticleStateStore:
                 continue
             if error.caused_by is not None:
                 occupancies[state_position] = position_occupancy.ERROR_OCCUPANCY
-        return particles
 
     @staticmethod
     def _collect_caller_value(

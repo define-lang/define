@@ -1,4 +1,5 @@
 define the potential action<my.domain.com:my_lib:/consume> {
+    it also assigns the position</copy>.
     define the position<input> {
         it may only contain particles where {
             it has the value</text>.
@@ -7,14 +8,8 @@ define the potential action<my.domain.com:my_lib:/consume> {
     it happens when {
         the position<input> has a particle.
     } and it does {
-        define the position<copy> {
-            it may only contain particles where {
-                it has the value</text>.
-            }
-        }
-        create a particle in position<copy>.
-        set the value of position<copy> to position<input>.
-        destroy the particle in position<copy>.
+        create a particle in position</copy>.
+        set the value of position</copy> to position<input>.
         destroy the particle in position<input>.
     }
 }

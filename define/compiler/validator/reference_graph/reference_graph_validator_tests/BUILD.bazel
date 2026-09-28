@@ -544,6 +544,18 @@ py_test(
 )
 
 py_test(
+    name = "dead_value_write_test",
+    size = "small",
+    srcs = ["dead_value_write_test.py"],
+    data = ["//define/testdata/reference_graph/dead_value_write"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+    ],
+)
+
+py_test(
     name = "destroy_particle_test",
     size = "small",
     srcs = ["destroy_particle_test.py"],
@@ -1047,6 +1059,7 @@ pyright_test(
         ":create_particle_test",
         ":create_without_parent_test",
         ":dead_code_test",
+        ":dead_value_write_test",
         ":destroy_particle_test",
         ":destruction_contract_caller_verification_test",
         ":destruction_contract_propagation_test",

@@ -30,7 +30,7 @@ def test_built_in_literal(
 ):
     result = validate_testdata_project_with_reference_graph().program_result
     assert_no_errors(result)
-    assert len(result.file_results) == 1
+    assert len(result.file_results) == 2
 
 
 def test_defined_literal_with_built_in_encoding(
@@ -38,7 +38,7 @@ def test_defined_literal_with_built_in_encoding(
 ):
     result = validate_testdata_project_with_reference_graph().program_result
     assert_no_errors(result)
-    assert len(result.file_results) == 2
+    assert len(result.file_results) == 3
 
 
 def test_empty_literal_content(
@@ -173,8 +173,8 @@ def test_missing_potential_literal(
     assert isinstance(diagnostic, diagnostics.ReferencedFileNotFoundDiagnostic)
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.file_path == "missing.dfn"
-    assert diagnostic.location.line == 12
-    assert diagnostic.location.column == 54
+    assert diagnostic.location.line == 8
+    assert diagnostic.location.column == 55
 
 
 def test_target_missing_type(
@@ -200,9 +200,9 @@ def test_target_empty(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ValueSettingEmptyPositionDiagnostic)
-    assert diagnostic.position_name == "position<target>"
+    assert diagnostic.position_name == "position</target>"
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert diagnostic.location.line == 14
+    assert diagnostic.location.line == 9
     assert diagnostic.location.column == 26
 
 
@@ -216,7 +216,7 @@ def test_undefined_position(
     assert isinstance(diagnostic, diagnostics.UndefinedLocalNameDiagnostic)
     assert diagnostic.local_name == "position<missing>"
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert diagnostic.location.line == 20
+    assert diagnostic.location.line == 16
     assert diagnostic.location.column == 26
 
 
@@ -232,7 +232,7 @@ def test_prior_error(
     assert diagnostic.is_action_interface_position is False
     assert diagnostic.inferred_at is None
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert diagnostic.location.line == 15
+    assert diagnostic.location.line == 10
     assert diagnostic.location.column == 30
 
 

@@ -1,0 +1,27 @@
+# After reading position<source> reports its unset value, copying it again into position<target> is not a dead write.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<source> {
+            it may only contain particles where {
+                it has the value<standard:/number/rational>.
+            }
+        }
+        define the position<first> {
+            it may only contain particles where {
+                it has the value<standard:/number/rational>.
+            }
+        }
+        define the position<target> {
+            it may only contain particles where {
+                it has the value<standard:/number/rational>.
+            }
+        }
+        create a particle in position<source>.
+        create a particle in position<first>.
+        create a particle in position<target>.
+        set the value of position<first> to position<source>.
+        set the value of position<target> to position<source>.
+    }
+}

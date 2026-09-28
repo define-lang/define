@@ -1,13 +1,9 @@
 # A failed move suppresses further errors about that particle.
 define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</target>.
     it happens when {
         this particle is created.
     } and it does {
-        define the position<target> {
-            it may only contain particles where {
-                it has the value<standard:/number/rational>.
-            }
-        }
         define the position<source> {
             it may only contain particles where {
                 it has the value<standard:/number/rational>.
@@ -15,11 +11,10 @@ define the potential action<my.domain.com:my_lib:/test> {
         }
         define the position<empty>.
         create a particle in position<source>.
-        create a particle in position<target>.
+        create a particle in position</target>.
         set the value of position<source> to literal<standard:/number>"5".
-        set the value of position<target> to position<source>.
-        destroy the particle in position<target>.
-        move the particle in position<empty> to position<target>.
-        set the value of position<target> to position<source>.
+        destroy the particle in position</target>.
+        move the particle in position<empty> to position</target>.
+        set the value of position</target> to position<source>.
     }
 }

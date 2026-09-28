@@ -1,0 +1,16 @@
+# The first value written to position</number> is overwritten before anything uses it.
+define the potential position<my.domain.com:my_lib:/number> {
+    it may only contain particles where {
+        it has the value<standard:/number/rational>.
+    }
+}
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</number>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</number>.
+        set the value of position</number> to literal<standard:/number>"5".
+        set the value of position</number> to literal<standard:/number>"6".
+    }
+}

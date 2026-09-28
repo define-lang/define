@@ -1,5 +1,6 @@
 # Replacing a set particle creates a fresh unset value.
 define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</copy>.
     it happens when {
         this particle is created.
     } and it does {
@@ -15,7 +16,9 @@ define the potential action<my.domain.com:my_lib:/test> {
         }
         create a particle in position<source>.
         create a particle in position<target>.
+        create a particle in position</copy>.
         set the value of position<source> to literal<standard:/number>"5".
+        set the value of position</copy> to position<source>.
         destroy the particle in position<source>.
         create a particle in position<source>.
         set the value of position<target> to position<source>.

@@ -1,0 +1,17 @@
+define the potential action<my.domain.com:my_lib:/keep> {
+    it also assigns the position</kept>.
+    define the position<run>.
+    define the position<input> {
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position</kept>.
+        set the value of position</kept> to position<input>.
+        destroy the particle in position<input>.
+        destroy the particle in position<run>.
+    }
+}

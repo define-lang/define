@@ -1,0 +1,39 @@
+# action</consume> requires the value of its position<input>, so writing it before the trigger is a use.
+define the potential position<my.domain.com:my_lib:/copy> {
+    it may only contain particles where {
+        it has the value<standard:/number/rational>.
+    }
+}
+define the potential action<my.domain.com:my_lib:/consume> {
+    it also assigns the position</copy>.
+    define the position<run>.
+    define the position<input> {
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position</copy>.
+        set the value of position</copy> to position<input>.
+        destroy the particle in position<input>.
+        destroy the particle in position<run>.
+    }
+}
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</consume>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<box>::action</consume>::position<input>.
+        set the value of position<box>::action</consume>::position<input> to literal<standard:/number>"5".
+        create a particle in position<box>::action</consume>::position<run>.
+        destroy the particle in position<box>.
+    }
+}

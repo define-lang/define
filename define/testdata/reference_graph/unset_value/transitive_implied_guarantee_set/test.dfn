@@ -1,5 +1,6 @@
 # Implied value guarantees propagate through an intermediate action.
 define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</copy>.
     it happens when {
         this particle is created.
     } and it does {
@@ -11,12 +12,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         }
         create a particle in position<worker>.
         create a particle in position<worker>::action</relay>::position<trigger>.
-        define the position<copy> {
-            it may only contain particles where {
-                it has the value<standard:/number/rational>.
-            }
-        }
-        create a particle in position<copy>.
-        set the value of position<copy> to position<worker>::position</value>.
+        create a particle in position</copy>.
+        set the value of position</copy> to position<worker>::position</value>.
     }
 }

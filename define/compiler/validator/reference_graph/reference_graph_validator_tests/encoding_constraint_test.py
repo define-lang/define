@@ -58,7 +58,7 @@ def test_unconstrained_callee_does_not_keep_encoding_alive(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.DeadEncodingConstraintDiagnostic)
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 29
+    assert diagnostic.location.line == 28
     assert diagnostic.location.column == 28
     assert diagnostic.constraint_name == "encoding<standard:/number/decimal/ascii>"
     assert diagnostic.position_name == "position<number>"

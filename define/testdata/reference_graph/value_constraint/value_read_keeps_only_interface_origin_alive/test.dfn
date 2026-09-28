@@ -1,5 +1,6 @@
 # A value read keeps the interface origin alive without any earlier value write.
 define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</copy>.
     define the position<input> {
         it may only contain particles where {
             it has the value</number>.
@@ -13,13 +14,8 @@ define the potential action<my.domain.com:my_lib:/test> {
                 it has the value</number>.
             }
         }
-        define the position<copy> {
-            it may only contain particles where {
-                it has the value</number>.
-            }
-        }
-        create a particle in position<copy>.
+        create a particle in position</copy>.
         move the particle in position<input> to position<moved>.
-        set the value of position<copy> to position<moved>.
+        set the value of position</copy> to position<moved>.
     }
 }

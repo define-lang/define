@@ -1,5 +1,8 @@
 # A diagnosed value error follows a moved particle and suppresses repeated reads.
 define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</target>.
+    it also assigns the position</other_target>.
+    it also assigns the position</moved>.
     it happens when {
         this particle is created.
     } and it does {
@@ -8,18 +11,13 @@ define the potential action<my.domain.com:my_lib:/test> {
                 it has the value</number>.
             }
         }
-        define the position<target> {
-            it may only contain particles where {
-                it has the value</number>.
-            }
-        }
         create a particle in position<source>.
-        create a particle in position<target>.
-        set the value of position<target> to position<source>.
-        set the value of position<target> to position<source>.
-        define the position<moved>.
-        move the particle in position<source> to position<moved>.
-        set the value of position<target> to position<moved>.
-        set the value of position<moved> to position<target>.
+        create a particle in position</target>.
+        create a particle in position</other_target>.
+        set the value of position</target> to position<source>.
+        set the value of position</other_target> to position<source>.
+        move the particle in position<source> to position</moved>.
+        set the value of position</target> to position</moved>.
+        set the value of position</moved> to position</target>.
     }
 }

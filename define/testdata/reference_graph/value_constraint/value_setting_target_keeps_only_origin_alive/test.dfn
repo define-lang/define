@@ -22,6 +22,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         create a particle in position<copy>.
         move the particle in position<source> to position<target>.
         set the value of position<copy> to literal<standard:/number>"5".
+        # Any use of this written value would also keep the origin constraint alive, so it stays unused.
         set the value of position<target> to position<copy>.
     }
 }

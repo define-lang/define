@@ -1,0 +1,82 @@
+# action</close> creates position</value> itself, so the caller has no write of that value to track; close's own write is dead.
+define the potential position<my.domain.com:my_lib:/value> {
+    it may only contain particles where {
+        it has the value<standard:/number/rational>.
+    }
+}
+define the potential position<my.domain.com:my_lib:/kept> {
+    it may only contain particles where {
+        it has the value<standard:/number/rational>.
+    }
+}
+define the potential action<my.domain.com:my_lib:/keep> {
+    it also assigns the position</kept>.
+    define the position<run>.
+    define the position<input> {
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position</kept>.
+        set the value of position</kept> to position<input>.
+        destroy the particle in position<input>.
+        destroy the particle in position<run>.
+    }
+}
+define the potential action<my.domain.com:my_lib:/cleanup> {
+    it also assigns the position</value>.
+    it happens when {
+        this particle is being destroyed.
+    } and it does {
+        define the position<reader> {
+            it may only contain particles where {
+                it has the action</keep>.
+            }
+        }
+        create a particle in position<reader>.
+        create a particle in position<reader>::action</keep>::position<input>.
+        set the value of position<reader>::action</keep>::position<input> to position</value>.
+        create a particle in position<reader>::action</keep>::position<run>.
+    }
+}
+define the potential action<my.domain.com:my_lib:/close> {
+    define the position<run>.
+    define the position<input> {
+        it may only contain particles where {
+            it has the position</value>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        create a particle in position<input>::position</value>.
+        set the value of position<input>::position</value> to literal<standard:/number>"5".
+        destroy the particle in position<input>.
+        destroy the particle in position<run>.
+    }
+}
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<worker> {
+            it may only contain particles where {
+                it has the action</close>.
+            }
+        }
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</cleanup>.
+                it has the position</value>.
+            }
+        }
+        create a particle in position<worker>.
+        create a particle in position<box>.
+        move the particle in position<box> to position<worker>::action</close>::position<input>.
+        create a particle in position<worker>::action</close>::position<run>.
+        destroy the particle in position<worker>.
+    }
+}

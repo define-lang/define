@@ -1,4 +1,5 @@
 define the potential action<my.domain.com:my_lib:/consume> {
+    it also assigns the position</copy>.
     define the position<input> {
         it may only contain particles where {
             it has the value<standard:/number/rational>.
@@ -9,12 +10,7 @@ define the potential action<my.domain.com:my_lib:/consume> {
     } and it does {
         define the position<moved>.
         move the particle in position<input> to position<moved>.
-        define the position<copy> {
-            it may only contain particles where {
-                it has the value<standard:/number/rational>.
-            }
-        }
-        create a particle in position<copy>.
-        set the value of position<copy> to position<moved>.
+        create a particle in position</copy>.
+        set the value of position</copy> to position<moved>.
     }
 }

@@ -71,7 +71,7 @@ def test_unset_value_reported_once(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 39
+    assert diagnostic.location.line == 40
     assert diagnostic.location.column == 41
     assert diagnostic.position_name == "position<second>"
 

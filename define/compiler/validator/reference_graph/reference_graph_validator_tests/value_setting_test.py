@@ -49,7 +49,7 @@ def test_mismatched_type_target_is_not_reported_unset(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ValueSettingTypeMismatchDiagnostic)
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert diagnostic.location.line == 19
+    assert diagnostic.location.line == 20
     assert diagnostic.location.column == 46
     assert diagnostic.target_position == "position<target>"
     assert diagnostic.source_position == "position<source>"
@@ -100,9 +100,9 @@ def test_target_empty(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ValueSettingEmptyPositionDiagnostic)
-    assert diagnostic.position_name == "position<target>"
+    assert diagnostic.position_name == "position</target>"
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert diagnostic.location.line == 21
+    assert diagnostic.location.line == 16
     assert diagnostic.location.column == 26
 
 
@@ -131,8 +131,8 @@ def test_source_empty(
     assert isinstance(diagnostic, diagnostics.ValueSettingEmptyPositionDiagnostic)
     assert diagnostic.position_name == "position<source>"
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert diagnostic.location.line == 21
-    assert diagnostic.location.column == 46
+    assert diagnostic.location.line == 17
+    assert diagnostic.location.column == 47
 
 
 def test_both_missing_types(
@@ -167,13 +167,13 @@ def test_both_empty(
     assert isinstance(diagnostic, diagnostics.ValueSettingEmptyPositionDiagnostic)
     assert diagnostic.position_name == "position<target>"
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert diagnostic.location.line == 30
+    assert diagnostic.location.line == 26
     assert diagnostic.location.column == 26
     diagnostic = result.all_diagnostics[1]
     assert isinstance(diagnostic, diagnostics.ValueSettingEmptyPositionDiagnostic)
     assert diagnostic.position_name == "position<source>"
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert diagnostic.location.line == 30
+    assert diagnostic.location.line == 26
     assert diagnostic.location.column == 46
 
 
@@ -208,8 +208,8 @@ def test_undefined_position(
     assert isinstance(diagnostic, diagnostics.UndefinedLocalNameDiagnostic)
     assert diagnostic.local_name == "position<source>"
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert diagnostic.location.line == 20
-    assert diagnostic.location.column == 46
+    assert diagnostic.location.line == 16
+    assert diagnostic.location.column == 47
 
 
 def test_prior_error(
@@ -224,7 +224,7 @@ def test_prior_error(
     assert diagnostic.is_action_interface_position is False
     assert diagnostic.inferred_at is None
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert diagnostic.location.line == 22
+    assert diagnostic.location.line == 17
     assert diagnostic.location.column == 30
 
 
