@@ -11,8 +11,6 @@ from define.compiler import ast
 from define.compiler.validator.reference_graph import (
     action_contract,
     child_state,
-    particle_info,
-    particle_state_store,
     position_occupancy,
     quality_assignment,
 )
@@ -20,6 +18,10 @@ from define.compiler.validator.reference_graph import (
     destruction_contract as destruction_contract_types,
 )
 from define.compiler.validator.reference_graph.dead_code import dead_interface_tracker
+from define.compiler.validator.reference_graph.particles import (
+    particle_info,
+    particle_state_store,
+)
 
 if typing.TYPE_CHECKING:
     from collections.abc import (

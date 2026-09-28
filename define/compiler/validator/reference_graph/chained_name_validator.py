@@ -9,7 +9,7 @@ from define.compiler import ast, diagnostics
 if typing.TYPE_CHECKING:
     from define.compiler.data_structures import typed_name_dict
     from define.compiler.validator import scope_tracker, validation_result
-    from define.compiler.validator.reference_graph import particle_tracker
+    from define.compiler.validator.reference_graph.particles import particle_tracker
 
 
 class ChainedNameValidator:

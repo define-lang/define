@@ -27,20 +27,23 @@ py_library(
         "//define/compiler/validator:scope_tracker",
         "//define/compiler/validator:validation_result",
         "//define/compiler/validator/reference_graph:action_contract",
-        "//define/compiler/validator/reference_graph:particle_info",
-        "//define/compiler/validator/reference_graph:particle_tracker",
         "//define/compiler/validator/reference_graph:position_occupancy",
         "//define/compiler/validator/reference_graph:position_quality_resolver",
+        "//define/compiler/validator/reference_graph/particles:particle_info",
+        "//define/compiler/validator/reference_graph/particles:particle_tracker",
     ],
 )
 
 py_library(
     name = "dead_interface_tracker",
     srcs = ["dead_interface_tracker.py"],
-    visibility = ["//define/compiler/validator/reference_graph:__pkg__"],
+    visibility = [
+        "//define/compiler/validator/reference_graph:__pkg__",
+        "//define/compiler/validator/reference_graph/particles:__pkg__",
+    ],
     deps = [
         "//define/compiler:ast",
-        "//define/compiler/validator/reference_graph:particle_info",
+        "//define/compiler/validator/reference_graph/particles:particle_info",
         "@pypi//msgspec",
     ],
 )

@@ -19,9 +19,9 @@ import msgspec
 from define.compiler import ast, diagnostics
 from define.compiler.validator.reference_graph import (
     action_contract,
-    particle_info,
     position_occupancy,
 )
+from define.compiler.validator.reference_graph.particles import particle_info
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterable

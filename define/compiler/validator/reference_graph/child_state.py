@@ -8,10 +8,8 @@ import typing
 import msgspec
 
 if typing.TYPE_CHECKING:
-    from define.compiler.validator.reference_graph import (
-        particle_info,
-        position_occupancy,
-    )
+    from define.compiler.validator.reference_graph import position_occupancy
+    from define.compiler.validator.reference_graph.particles import particle_info
 
 # In our initial experiments, we saw that memory starts to grow quite a bit
 # with _very_ large child states (more than 255 tracked positions, over thousands

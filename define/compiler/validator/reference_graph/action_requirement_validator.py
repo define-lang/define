@@ -6,18 +6,16 @@ import typing
 
 from define.compiler.validator.reference_graph import (
     action_contract,
-    particle_info,
     position_occupancy,
     requirement_violation,
 )
+from define.compiler.validator.reference_graph.particles import particle_info
 
 if typing.TYPE_CHECKING:
     from define.compiler import ast, diagnostics
     from define.compiler.validator import scope_tracker
-    from define.compiler.validator.reference_graph import (
-        particle_tracker,
-        position_quality_resolver,
-    )
+    from define.compiler.validator.reference_graph import position_quality_resolver
+    from define.compiler.validator.reference_graph.particles import particle_tracker
 
 
 class ActionRequirementValidator:

@@ -11,8 +11,6 @@ from define.compiler import ast, diagnostics
 from define.compiler.validator.reference_graph import (
     action_contract,
     child_state,
-    particle_info,
-    particle_tracker,
     position_occupancy,
     quality_assignment,
     reference_graph_validation_state,
@@ -27,6 +25,10 @@ if typing.TYPE_CHECKING:
 
     from define.compiler.data_structures import typed_name_dict
     from define.compiler.validator import validation_result
+    from define.compiler.validator.reference_graph.particles import (
+        particle_info,
+        particle_tracker,
+    )
 
 
 class DestructionContractValidationResult(msgspec.Struct):

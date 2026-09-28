@@ -1,0 +1,66 @@
+load("@aspect_rules_py//py:defs.bzl", "py_library")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+load("//tools/bzl:format.bzl", "format_test")
+load("//tools/bzl:pyright.bzl", "pyright_test")
+
+py_library(
+    name = "particle_info",
+    srcs = ["particle_info.py"],
+    visibility = ["//define/compiler/validator/reference_graph:__subpackages__"],
+    deps = [
+        "//define/compiler:ast",
+        "//define/compiler/validator/reference_graph:quality_assignment",
+        "@pypi//msgspec",
+    ],
+)
+
+py_library(
+    name = "particle_state_store",
+    srcs = ["particle_state_store.py"],
+    deps = [
+        ":particle_info",
+        "//define/compiler:ast",
+        "//define/compiler/data_structures:trie",
+        "//define/compiler/validator:codegen_input",
+        "//define/compiler/validator/reference_graph:action_contract",
+        "//define/compiler/validator/reference_graph:child_state",
+        "//define/compiler/validator/reference_graph:position_occupancy",
+        "@pypi//msgspec",
+    ],
+)
+
+py_library(
+    name = "particle_tracker",
+    srcs = ["particle_tracker.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        ":particle_info",
+        ":particle_state_store",
+        "//define/compiler:ast",
+        "//define/compiler/validator:codegen_input",
+        "//define/compiler/validator/reference_graph:action_contract",
+        "//define/compiler/validator/reference_graph:child_state",
+        "//define/compiler/validator/reference_graph:destruction_contract",
+        "//define/compiler/validator/reference_graph:position_occupancy",
+        "//define/compiler/validator/reference_graph:quality_assignment",
+        "//define/compiler/validator/reference_graph/dead_code:dead_interface_tracker",
+        "@pypi//msgspec",
+    ],
+)
+
+format_test(
+    name = "format_test",
+    srcs = glob(["*.py"]),
+    python = "@multitool//tools/ruff",
+)
+
+pyright_test(
+    name = "pyright_test",
+    deps = [
+        ":particle_info",
+        ":particle_state_store",
+        ":particle_tracker",
+    ],
+)
+
+check_build_file()

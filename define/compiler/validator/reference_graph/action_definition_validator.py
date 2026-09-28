@@ -16,9 +16,7 @@ from define.compiler.validator.reference_graph import (
     destruction_contract_validator,
     literal_encoder,
     operation_arguments_validator,
-    particle_info,
     particle_operation_validator,
-    particle_tracker,
     position_occupancy,
     position_quality_resolver,
     quality_assignment,
@@ -29,6 +27,10 @@ from define.compiler.validator.reference_graph import (
 )
 from define.compiler.validator.reference_graph.dead_code import (
     dead_constraint_validator,
+)
+from define.compiler.validator.reference_graph.particles import (
+    particle_info,
+    particle_tracker,
 )
 
 if typing.TYPE_CHECKING:

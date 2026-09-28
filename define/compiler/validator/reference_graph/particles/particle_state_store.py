@@ -11,7 +11,6 @@ from define.compiler.data_structures import trie
 from define.compiler.validator.reference_graph import (
     action_contract,
     child_state,
-    particle_info,
     position_occupancy,
 )
 
@@ -19,6 +18,7 @@ if typing.TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Sequence
 
     from define.compiler.validator import codegen_input
+    from define.compiler.validator.reference_graph.particles import particle_info
 
 
 class _NodeState(msgspec.Struct):

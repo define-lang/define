@@ -8,7 +8,7 @@ import typing
 import msgspec
 
 from define.compiler import ast
-from define.compiler.validator.reference_graph import particle_info
+from define.compiler.validator.reference_graph.particles import particle_info
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterator

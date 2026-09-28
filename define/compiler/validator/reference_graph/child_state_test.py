@@ -3,11 +3,8 @@ from __future__ import annotations
 import random
 
 from define.compiler import ast
-from define.compiler.validator.reference_graph import (
-    child_state,
-    particle_info,
-    position_occupancy,
-)
+from define.compiler.validator.reference_graph import child_state, position_occupancy
+from define.compiler.validator.reference_graph.particles import particle_info
 
 
 def test_independent_callers():

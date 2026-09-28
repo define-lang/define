@@ -13,9 +13,11 @@ if typing.TYPE_CHECKING:
     from define.compiler.validator import scope_tracker, validation_result
     from define.compiler.validator.reference_graph import (
         action_contract,
+        position_quality_resolver,
+    )
+    from define.compiler.validator.reference_graph.particles import (
         particle_info,
         particle_tracker,
-        position_quality_resolver,
     )
 
 
