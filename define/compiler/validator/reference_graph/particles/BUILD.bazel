@@ -4,6 +4,20 @@ load("//tools/bzl:format.bzl", "format_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
 py_library(
+    name = "callee_guarantee_applier",
+    srcs = ["callee_guarantee_applier.py"],
+    deps = [
+        ":particle_info",
+        ":particle_state_store",
+        "//define/compiler:ast",
+        "//define/compiler/validator:codegen_input",
+        "//define/compiler/validator/reference_graph:action_contract",
+        "//define/compiler/validator/reference_graph/dead_code:dead_interface_tracker",
+        "@pypi//msgspec",
+    ],
+)
+
+py_library(
     name = "particle_info",
     srcs = ["particle_info.py"],
     visibility = ["//define/compiler/validator/reference_graph:__subpackages__"],
@@ -34,6 +48,7 @@ py_library(
     srcs = ["particle_tracker.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
+        ":callee_guarantee_applier",
         ":particle_info",
         ":particle_state_store",
         "//define/compiler:ast",
@@ -57,6 +72,7 @@ format_test(
 pyright_test(
     name = "pyright_test",
     deps = [
+        ":callee_guarantee_applier",
         ":particle_info",
         ":particle_state_store",
         ":particle_tracker",
