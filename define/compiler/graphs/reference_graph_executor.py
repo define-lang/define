@@ -21,13 +21,16 @@ class _ReferencedDefinitionError(Exception):
 
 
 @typing.final
-class _WorkPool[ResultT]:
+class _WorkPool[DefinitionT: ast.GlobalDefinition, ResultT]:
     """Runs definitions after their referenced definitions complete."""
 
     def __init__(
         self,
         order: reference_graph_order.ReferenceGraphOrder,
-        process_definition: Callable[[ast.GlobalDefinition], ResultT],
+        requires_processing: Callable[
+            [ast.GlobalDefinition], typing.TypeIs[DefinitionT]
+        ],
+        process_definition: Callable[[DefinitionT], ResultT],
         max_workers: int | None,
     ):
         if max_workers is None:
@@ -35,6 +38,7 @@ class _WorkPool[ResultT]:
         self._executor = ThreadPoolExecutor(max_workers=max_workers)
         self._max_in_flight = max_workers
         self._order = order
+        self._requires_processing = requires_processing
         self._process_definition = process_definition
         self._completed: queue.SimpleQueue[Future[ResultT]] = queue.SimpleQueue()
 
@@ -45,11 +49,21 @@ class _WorkPool[ResultT]:
         self._executor.shutdown(wait=True, cancel_futures=True)
 
     def process(self) -> list[ResultT]:
-        """Process every definition and return results in definition order."""
+        """Return the results of processed definitions in definition order."""
         remaining_references = self._order.new_reference_counts()
-        ready_definitions = self._order.leaf_definition_indexes()
+        ready_definitions: deque[int] = deque()
+        unprocessed_definitions: list[int] = []
+        for definition_index in self._order.leaf_definition_indexes():
+            self._release_definition(
+                definition_index, ready_definitions, unprocessed_definitions
+            )
+        self._complete_definitions(
+            unprocessed_definitions, remaining_references, ready_definitions
+        )
         in_flight: dict[Future[ResultT], int] = {}
         results: list[ResultT | None] = [None] * len(self._order.definitions)
+        # Kept apart from results because None is a valid result.
+        processed = bytearray(len(self._order.definitions))
         exceptions: list[BaseException | None] = [None] * len(self._order.definitions)
 
         while ready_definitions or in_flight:
@@ -60,6 +74,7 @@ class _WorkPool[ResultT]:
             exception = future.exception()
             if exception is None:
                 results[definition_index] = future.result()
+                processed[definition_index] = True
             else:
                 exceptions[definition_index] = exception
             self._complete_dependents(
@@ -70,7 +85,7 @@ class _WorkPool[ResultT]:
                 exceptions,
             )
 
-        return self._ordered_results(results, exceptions)
+        return self._ordered_results(results, processed, exceptions)
 
     def _submit_ready_definitions(
         self,
@@ -82,7 +97,9 @@ class _WorkPool[ResultT]:
             definition_index = ready_definitions.popleft()
             future = self._executor.submit(
                 self._process_definition,
-                self._order.definitions[definition_index],
+                # _release_definition only queues definitions that
+                # requires_processing narrowed to DefinitionT.
+                typing.cast("DefinitionT", self._order.definitions[definition_index]),
             )
             in_flight[future] = definition_index
             future.add_done_callback(self._completed.put)
@@ -90,15 +107,52 @@ class _WorkPool[ResultT]:
     @staticmethod
     def _ordered_results(
         results: list[ResultT | None],
+        processed: bytearray,
         exceptions: list[BaseException | None],
     ) -> list[ResultT]:
-        """Return results or raise the first error in definition order."""
+        """Return processed results or raise the first error in definition order."""
         ordered_results: list[ResultT] = []
-        for result, exception in zip(results, exceptions, strict=True):
+        for result, was_processed, exception in zip(
+            results, processed, exceptions, strict=True
+        ):
             if exception is not None:
                 raise exception
-            ordered_results.append(typing.cast("ResultT", result))
+            if was_processed:
+                ordered_results.append(typing.cast("ResultT", result))
         return ordered_results
+
+    def _release_definition(
+        self,
+        definition_index: int,
+        ready_definitions: deque[int],
+        unprocessed_definitions: list[int],
+    ):
+        """Queue a definition whose references have all completed."""
+        if self._requires_processing(self._order.definitions[definition_index]):
+            ready_definitions.append(definition_index)
+        else:
+            unprocessed_definitions.append(definition_index)
+
+    def _complete_definitions(
+        self,
+        completed_definitions: list[int],
+        remaining_references: array[int],
+        ready_definitions: deque[int],
+    ):
+        """Release dependents of completed definitions.
+
+        Dependents that do not require processing complete immediately.
+        """
+        while completed_definitions:
+            completed_index = completed_definitions.pop()
+            for dependent_index in self._order.dependent_definition_indexes(
+                completed_index
+            ):
+                remaining_references[dependent_index] -= 1
+                if remaining_references[dependent_index] == 0:
+                    self._release_definition(
+                        dependent_index, ready_definitions, completed_definitions
+                    )
 
     def _complete_dependents(
         self,
@@ -109,12 +163,9 @@ class _WorkPool[ResultT]:
         exceptions: list[BaseException | None],
     ):
         if exception is None:
-            for dependent_index in self._order.dependent_definition_indexes(
-                definition_index
-            ):
-                remaining_references[dependent_index] -= 1
-                if remaining_references[dependent_index] == 0:
-                    ready_definitions.append(dependent_index)
+            self._complete_definitions(
+                [definition_index], remaining_references, ready_definitions
+            )
             return
 
         failed_definitions = deque(
@@ -130,6 +181,12 @@ class _WorkPool[ResultT]:
             )
 
 
+def _requires_every_definition(
+    _definition: ast.GlobalDefinition,
+) -> typing.TypeIs[ast.GlobalDefinition]:
+    return True
+
+
 def process_definitions[ResultT](
     order: reference_graph_order.ReferenceGraphOrder,
     process_definition: Callable[[ast.GlobalDefinition], ResultT],
@@ -137,5 +194,25 @@ def process_definitions[ResultT](
     max_workers: int | None = None,
 ) -> list[ResultT]:
     """Process definitions concurrently after their references complete."""
-    with _WorkPool(order, process_definition, max_workers) as pool:
+    return process_selected_definitions(
+        order,
+        _requires_every_definition,
+        process_definition,
+        max_workers=max_workers,
+    )
+
+
+def process_selected_definitions[DefinitionT: ast.GlobalDefinition, ResultT](
+    order: reference_graph_order.ReferenceGraphOrder,
+    requires_processing: Callable[[ast.GlobalDefinition], typing.TypeIs[DefinitionT]],
+    process_definition: Callable[[DefinitionT], ResultT],
+    *,
+    max_workers: int | None = None,
+) -> list[ResultT]:
+    """Process selected definitions concurrently after their references complete.
+
+    Definitions that do not require processing still complete in reference
+    order, but produce no results.
+    """
+    with _WorkPool(order, requires_processing, process_definition, max_workers) as pool:
         return pool.process()

@@ -22,9 +22,11 @@ from define.compiler.validator.reference_graph import (
 if typing.TYPE_CHECKING:
     from define.compiler.data_structures import typed_name_dict
 
-# Definitions that are neither actions nor operations get no validation and so
-# produce None.
-type _PostorderResult = validation_result.PostorderValidationResult | None
+
+def _requires_validation(
+    definition: ast.GlobalDefinition,
+) -> typing.TypeIs[ast.ActionDefinition | ast.OperationDefinition]:
+    return isinstance(definition, ast.ActionDefinition | ast.OperationDefinition)
 
 
 class ReferenceGraphValidationResult(msgspec.Struct, frozen=True):
@@ -84,22 +86,17 @@ class ReferenceGraphValidator:
     ) -> ReferenceGraphValidationResult:
         """Validate every definition in direct-reference-first order."""
         definition_order = self._definition_order
-        results = reference_graph_executor.process_definitions(
+        results = reference_graph_executor.process_selected_definitions(
             definition_order,
+            _requires_validation,
             self._validate_definition,
             max_workers=max_workers,
         )
 
         actions: dict[str, codegen_input.ActionCodegenInput] = {}
-        for definition, result in zip(
-            definition_order.definitions, results, strict=True
-        ):
-            if result is None:
-                continue
-            definition_result = self._definition_results[definition.typed_name]
-            for d in result.diagnostics:
-                definition_result.add_diagnostic(d)
+        for result in results:
             if isinstance(result, validation_result.ActionPostorderValidationResult):
+                definition = result.codegen_input.definition
                 actions[definition.typed_name.full_typed_name] = result.codegen_input
         if (
             self._entry_action is not None
@@ -114,17 +111,19 @@ class ReferenceGraphValidator:
         )
 
     def _validate_definition(
-        self, definition: ast.GlobalDefinition
-    ) -> _PostorderResult:
+        self, definition: ast.ActionDefinition | ast.OperationDefinition
+    ) -> validation_result.PostorderValidationResult:
         match definition:
             case ast.ActionDefinition():
-                return self._validate_action(definition)
+                result = self._validate_action(definition)
             case ast.OperationDefinition():
-                return operation_definition_validator.OperationDefinitionValidator(
+                result = operation_definition_validator.OperationDefinitionValidator(
                     definition, self._definition_results
                 ).analyze()
-            case _:
-                return None
+        definition_result = self._definition_results[definition.typed_name]
+        for d in result.diagnostics:
+            definition_result.add_diagnostic(d)
+        return result
 
     def _validate_action(
         self, definition: ast.ActionDefinition
