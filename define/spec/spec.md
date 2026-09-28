@@ -205,11 +205,13 @@ The valid name types are currently:
 - `encoding`
 - `literal`
 - `operation`
+- `encoding_operation`
 - `view`
 
 ```ebnf
 typed_name = name_type, "<", name_content, ">" ;
-name_type  = "position" | "action" | "value" | "encoding" | "literal" | "operation" | "view" ;
+name_type  = "position" | "action" | "value" | "encoding" | "literal" | "operation"
+    | "encoding_operation" | "view" ;
 ```
 
 Define Language Proposals sometimes sometimes use the term "name" to mean
@@ -682,7 +684,8 @@ global_definition =
     quality_definition
     | encoding_definition
     | potential_literal_definition
-    | operation_definition ;
+    | operation_definition
+    | encoding_operation_definition ;
 ```
 
 ## Statements
@@ -1783,7 +1786,7 @@ This block may contain only two types of statements:
 
 1. Value Operation Execution Statements
 2. The statement `execute the encoding operation.` which determines and executes
-   the correct encoding operation for this value operation.
+   the correct Encoding Operation for this Value Operation.
 
 ```ebnf
 operation_statements_block = "it does", block_open, operation_statements_contents, block_close ;
@@ -1795,8 +1798,9 @@ encoding_operation_execution_statement = "execute the encoding operation", termi
 ### Operations Must Obey Their Directions
 
 Input views must be read in the Operation Statements Block, and output views
-must be written to. The statement `execute the encoding operation.` is
-considered to read from all input views and write to all output views.
+must be written to. The statements `execute the encoding operation.` and
+`execute the computer operation.` are considered to read from all input views
+and write to all output views.
 
 Value Operations executed in an Operation Statements Block must not write to any
 input-only view. They also may not read from any output-only view unless an
@@ -1871,6 +1875,51 @@ For each executed value operation, the compiler determines the correct Encoding
 Operation based on the encodings of any input views, and that Encoding Operation
 is what occurs at runtime in the program.
 
+## Encoding Operations
+
+Proposals:
+
+- [DLP 40: Value Operations](../proposals/00040-value-operations.md)
+- [DLP 46: Value Encodings](../proposals/00046-value-encodings.md)
+
+An Encoding Operation has syntax and rules identical to those of Value
+Operations, except as described below.
+
+An Encoding Operation is defined by `define the ` followed by a global typed
+name with the type `encoding_operation`, followed by an Encoding Operation
+Definition Block.
+
+```ebnf
+fully_qualified_encoding_operation_name =
+    "encoding_operation", "<", fully_qualified_global_name, ">" ;
+encoding_operation_definition =
+    "define the", " ",
+    fully_qualified_encoding_operation_name,
+    encoding_operation_definition_block ;
+```
+
+### Encoding Operation Interface Views
+
+Each Interface View on an Encoding Operation must have an `encoding` constraint,
+and may not have a `value` constraint.
+
+### Encoding Operation Statements Block
+
+An Encoding Operation Statements Block may contain only two types of statements:
+
+1. Encoding Operation Execution Statements
+2. The statement `execute the computer operation.` which executes native code
+   that the compiler understands how to execute for this Encoding Operation.
+
+An Encoding Operation Execution Statement is identical to an Operation Execution
+Statement, except that it uses `encoding_operation` instead of `operation`.
+
+```ebnf
+encoding_operation_name = "encoding_operation", "<", global_name, ">" ;
+encoding_operation_statement = operation_execution_statement | computer_operation_execution_statement ;
+computer_operation_execution_statement = "execute the computer operation", terminator ;
+```
+
 ## Dead Code
 
 Proposals:
@@ -1888,8 +1937,8 @@ The following are all dead code:
 - A local position never referenced within the block where it is defined.
 - An implied quality that is not referenced within the action that implies it.
 - An implied action that is not triggered within the action that implies it.
-- An interface view that is never referenced within its value operation or
-  encoding operation definition, unless that definition contains
+- An interface view that is never referenced within its Value Operation or
+  Encoding Operation definition, unless that definition contains
   `execute the encoding operation` or `execute the computer operation`.
 
 ### Dead Constraints

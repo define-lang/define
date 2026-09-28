@@ -240,8 +240,6 @@ define the encoding<mv:example.com:example:/integer/twos_complement/little_endia
 }
 
 define the encoding_operation<mv:example.com:example:/integer/twos_complement/little_endian/add/33to64> {
-    it implements the operation<standard:/number/integer/add>.
-
     define the view<a> {
         it may only contain particles where {
             it has the encoding</integer/twos_complement/little_endian> {

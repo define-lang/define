@@ -7,8 +7,8 @@
 
 ## Problems
 
-When the compiler sees a Value Operation, it does not know if the values being
-looked at are read or written.
+When the compiler sees a Value Operation or an Encoding Operation, it does not
+know if the values being looked at are read or written.
 
 As a result, it cannot keep track of whether a particle is set or needs to be
 set.
@@ -19,12 +19,14 @@ parallel all you want as long as there are no writes.)
 
 ## Solution
 
-In the definition of an interface view of a Value Operation, you can specify one
-or both of: `it is read.` or `it is written.`. These go onto their own line
-before the Position Constraint Block. When both are specified, `it is read.`
-must come before `it is written.`. Each may only appear once.
+In the definition of an interface view of a Value Operation or an Encoding
+Operation, you can specify one or both of: `it is read.` or `it is written.`.
+These go onto their own line before the Position Constraint Block. When both are
+specified, `it is read.` must come before `it is written.`. Each may only appear
+once.
 
-Specifying at least one of these is mandatory for views on Value Operations.
+Specifying at least one of these is mandatory for views on Value Operations and
+Encoding Operations.
 
 A view that reads its value is called an "input view," and a view that writes to
 its value is called an "output view." A single view can be both an input view
@@ -35,14 +37,14 @@ or "output" view).
 
 ### Operations Must Fulfill Their Read/Write Contract
 
-If a Value Operation does `execute the encoding operation.` then it is
-considered that the operation reads from all input views and writes to all
-output views.
+If a Value Operation does `execute the encoding operation.`, or an Encoding
+Operation does `execute the computer operation.`, then it is considered that the
+operation reads from all input views and writes to all output views.
 
-Otherwise, a Value Operation must actually fulfill its contract. If it is
-composed only of executing other Value Operations, it must at least
-_potentially_ read from all the views it claims to read from, and _must_ write
-to all the views it claims to write to.
+Otherwise, the operation must actually fulfill its contract. If it is composed
+only of executing other operations, it must at least _potentially_ read from all
+the views it claims to read from, and _must_ write to all the views it claims to
+write to.
 
 ### Restrictions
 
@@ -54,17 +56,18 @@ to all the views it claims to write to.
 
 ### Transitive Executions
 
-A value operation executed by another value operation cannot violate this
-contract. In other words, if I am `operation</a>` and I execute `operation</b>`
-inside of my Operation Statements Block, `operation</b>` must not do something
-that would violate `operation</a>`'s contract in terms of which particles
-`operation</a>` reads from or writes to.
+A Value Operation executed by another Value Operation, or an Encoding Operation
+executed by another Encoding Operation, cannot violate this contract. In other
+words, if I am `operation</a>` and I execute `operation</b>` inside of my
+Operation Statements Block, `operation</b>` must not do something that would
+violate `operation</a>`'s contract in terms of which particles `operation</a>`
+reads from or writes to.
 
 In most circumstances, this means that transitive operations must not read from
 write-only views and must not write to read-only views. However, a transitive
 operation _may_ read from a write-only view if another operation within this
 same Operation Statements Block has already written to it (as now the state is
-guaranteed to be owned by this Value Operation).
+guaranteed to be owned by this operation).
 
 ## A Real Program
 
@@ -176,10 +179,14 @@ define the potential action<define-lang.org:counter:/main> {
 ## Why This is the Right Solution
 
 At first I thought maybe we could somehow infer that things are read or written,
-but because encoding operations are separated from value operations, there's
+but because Encoding Operations are separated from Value Operations, there's
 nothing to infer from. You can certainly infer it when you're calling other
 value operations, but even then it's probably easier to prevent bugs with the
 explicit declarations here.
+
+I also wasn't sure that Encoding Operations needed this. But since they can
+execute other Encoding Operations directly, it seemed prudent to be able to
+verify their contracts at compile time.
 
 The other question I had was about CRDT-like behavior---are "read" and "write"
 enough? The answer is that they are enough at the moment, but in the future we
