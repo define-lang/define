@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typing
 
-from define.compiler import ast, diagnostics
+from define.compiler import ast, built_in_definitions, diagnostics
 from define.compiler.validator.structural import name_validators
 
 if typing.TYPE_CHECKING:
@@ -91,6 +91,13 @@ class OperationArgumentsValidator:
         self, statement: ast.OperationExecutionStatement
     ) -> ast.OperationDefinition | None:
         """Return the operation the statement executes, if it is defined."""
+        # TODO: Remove this special case once the Define Standard Library
+        # defines the built-in names.
+        built_in_operation = built_in_definitions.get_operation(
+            statement.operation.full_typed_name
+        )
+        if built_in_operation is not None:
+            return built_in_operation
         definition_result = self._definition_results.get(statement.operation)
         # A missing operation, or a definition of another type, was already
         # reported when its reference was resolved.

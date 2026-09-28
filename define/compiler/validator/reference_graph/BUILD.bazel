@@ -167,6 +167,7 @@ py_library(
     deps = [
         ":literal_encoder",
         "//define/compiler:ast",
+        "//define/compiler:built_in_definitions",
         "//define/compiler:diagnostics",
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/validator:validation_result",

@@ -34,6 +34,32 @@ py_test(
 )
 
 py_library(
+    name = "built_in_definitions",
+    srcs = ["built_in_definitions.py"],
+    data = ["built_in_definitions.dfn"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        ":ast",
+        ":parser",
+    ],
+)
+
+py_test(
+    name = "built_in_definitions_test",
+    size = "small",
+    srcs = ["built_in_definitions_test.py"],
+    deps = [
+        ":ast",
+        ":built_in_definitions",
+        ":constants",
+        ":diagnostics",
+        ":parser",
+        "//define/compiler/validator/reference_graph:reference_graph_validator",
+        "//define/compiler/validator/structural:program_validator",
+    ],
+)
+
+py_library(
     name = "compiler",
     srcs = ["__init__.py"],
     deps = ["//define"],
@@ -440,6 +466,8 @@ pyright_test(
     deps = [
         ":ast",
         ":ast_test",
+        ":built_in_definitions",
+        ":built_in_definitions_test",
         ":compiler",
         ":config",
         ":config_test",

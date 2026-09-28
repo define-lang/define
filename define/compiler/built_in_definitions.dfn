@@ -1,0 +1,51 @@
+# The compiler provides these definitions until the Define Standard Library
+# defines them.
+define the operation<standard:/number/rational/add> {
+    define the view<a> {
+        it is read.
+        it may only contain particles where {
+            it has the value</number/rational>.
+        }
+    }
+    define the view<b> {
+        it is read.
+        it may only contain particles where {
+            it has the value</number/rational>.
+        }
+    }
+    define the view<sum> {
+        it is written.
+        it may only contain particles where {
+            it has the value</number/rational>.
+        }
+    }
+
+    it does {
+        execute the encoding operation.
+    }
+}
+
+define the encoding_operation<standard:/number/decimal/ascii/infix_add> {
+    define the view<a> {
+        it is read.
+        it may only contain particles where {
+            it has the encoding</number/decimal/ascii>.
+        }
+    }
+    define the view<b> {
+        it is read.
+        it may only contain particles where {
+            it has the encoding</number/decimal/ascii>.
+        }
+    }
+    define the view<sum> {
+        it is written.
+        it may only contain particles where {
+            it has the encoding</number/decimal/ascii>.
+        }
+    }
+
+    it does {
+        execute the computer operation.
+    }
+}

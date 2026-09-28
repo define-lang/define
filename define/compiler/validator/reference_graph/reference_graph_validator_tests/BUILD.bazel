@@ -445,6 +445,18 @@ py_test(
 )
 
 py_test(
+    name = "built_in_operations_test",
+    size = "small",
+    srcs = ["built_in_operations_test.py"],
+    data = ["//define/testdata/reference_graph/built_in_operations"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+    ],
+)
+
+py_test(
     name = "chained_name_constraint_test",
     size = "small",
     srcs = ["chained_name_constraint_test.py"],
@@ -1065,6 +1077,7 @@ pyright_test(
         ":automated_requirements_nested_implied_test",
         ":automated_requirements_override_test",
         ":automated_requirements_test",
+        ":built_in_operations_test",
         ":chained_name_constraint_test",
         ":chained_name_global_start_test",
         ":chained_name_multi_element_test",

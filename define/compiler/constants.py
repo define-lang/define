@@ -30,6 +30,17 @@ BUILT_IN_LITERAL_ENCODINGS: Final = {
 BUILT_IN_VALUE_ENCODINGS: Final = {
     f"value<{STANDARD_UNIVERSE}:/number/rational>": DECIMAL_ASCII_ENCODING
 }
+# built_in_definitions.dfn defines these.
+RATIONAL_ADD_OPERATION: Final = f"operation<{STANDARD_UNIVERSE}:/number/rational/add>"
+DECIMAL_ASCII_INFIX_ADD_ENCODING_OPERATION: Final = (
+    f"encoding_operation<{STANDARD_UNIVERSE}:/number/decimal/ascii/infix_add>"
+)
 BUILT_IN_GLOBAL_NAMES: Final = frozenset(
-    {DECIMAL_ASCII_ENCODING, *BUILT_IN_LITERAL_ENCODINGS, *BUILT_IN_VALUE_ENCODINGS}
+    {
+        DECIMAL_ASCII_ENCODING,
+        *BUILT_IN_LITERAL_ENCODINGS,
+        *BUILT_IN_VALUE_ENCODINGS,
+        RATIONAL_ADD_OPERATION,
+        DECIMAL_ASCII_INFIX_ADD_ENCODING_OPERATION,
+    }
 )

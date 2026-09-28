@@ -1,0 +1,23 @@
+# An Encoding Operation executes the built-in infix addition.
+define the encoding_operation<my.domain.com:my_lib:/increment> {
+    define the view<number> {
+        it is read.
+        it may only contain particles where {
+            it has the encoding<standard:/number/decimal/ascii>.
+        }
+    }
+    define the view<result> {
+        it is written.
+        it may only contain particles where {
+            it has the encoding<standard:/number/decimal/ascii>.
+        }
+    }
+
+    it does {
+        execute the encoding_operation<standard:/number/decimal/ascii/infix_add> {
+            with view<a> looking at view<number>.
+            with view<b> looking at literal<standard:/number>"1".
+            with view<sum> looking at view<result>.
+        }
+    }
+}
