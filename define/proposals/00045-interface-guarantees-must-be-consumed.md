@@ -109,8 +109,37 @@ populated.
 
 Thus, we need another rule to cover this:
 
-**Before triggering a Callee, no transitive action reachable from its interface
-positions may have a particle in _its_ interface positions.**
+**Before triggering a Callee, no transitive child action reachable from its
+interface positions may have a particle in _its_ interface positions.**
+
+### Implications Must Not Carry Action Interface Particles Into Callees
+
+Implied positions can be used as a "mule" for action interface particles, just
+like interface positions can. For example, this code should be invalid:
+
+```define
+create a particle in position<box>.
+create a particle in position<box>::position</implied>.
+# Trigger action</inner>.
+# This creates a particle in position<box>::position</implied>::action</inner>::position<input>.
+create a particle in position<box>::position</implied>::action</inner>::position<run>.
+# Trigger action</outer>, which implies position</implied> and triggers action</inner>.
+create a particle in position<box>::action</outer>::position<run>.
+```
+
+This code satisfies our rule about interface positions: it doesn't see anything
+in `action</outer>`'s interface positions before `action</outer>` is triggered!
+But there is something in `action</inner>`'s interface positions that wasn't
+consumed and now that action will be triggered again.
+
+This also applies to transitively-implied actions or positions, because our
+general dead code rules mean they _will_ be triggered.
+
+So, here comes yet another rule we have to state:
+
+**Before triggering a Callee, none of its transitively implied actions, and no
+transitive child action reachable from its transitively implied positions or
+actions, may have a particle in _its_ interface positions.**
 
 ### Never Infer Occupied on Action Interface Positions
 

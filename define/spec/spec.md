@@ -1275,8 +1275,12 @@ must be no particles remaining in any interface position of any action that was
 triggered in this Action Statements Block.
 
 Before triggering a callee action in an Action Statements Block, no particle may
-occupy a child position of that callee's interface position where the chained
-name of the child (starting at the interface position) contains an action.
+occupy:
+
+- A child position of one of the callee's interface positions or transitively
+  implied positions, if an action appears in the chained name between that
+  interface or implied position and the child position.
+- An interface position of any of the callee's transitively implied actions.
 
 ### Depth-First Post-Order Reference Graph Traversal
 
