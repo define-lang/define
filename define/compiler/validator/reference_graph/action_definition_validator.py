@@ -728,6 +728,7 @@ class ActionDefinitionValidator:
             )
         )
         self._diagnostics.extend(value_diagnostics)
+        has_errors = bool(value_diagnostics)
         match stmt.source:
             case ast.Literal():
                 # A literal can only be encoded once the value type it sets is
@@ -737,6 +738,7 @@ class ActionDefinitionValidator:
                         stmt.source, target_type
                     )
                     self._diagnostics.extend(literal_diagnostics)
+                    has_errors = has_errors or bool(literal_diagnostics)
                     if value is not None:
                         self._steps.append(
                             codegen_input.LiteralValueSetting(
@@ -750,10 +752,15 @@ class ActionDefinitionValidator:
                         source_position=stmt.source,
                     )
                 )
-        if not value_diagnostics and all(
-            not self._tracker.has_error_state(position) for position in positions
-        ):
-            self._tracker.set_value(stmt.target_position, value_state)
+        if any(self._tracker.has_error_state(position) for position in positions):
+            return
+        # A failed statement still counts as writing its target, so later
+        # reads do not report the same mistake again as an unset value.
+        if has_errors:
+            if target_type is not None:
+                self._tracker.mark_value_error(stmt.target_position)
+            return
+        self._tracker.set_value(stmt.target_position, value_state)
 
     def _analyze_operation_execution(
         self,
@@ -761,6 +768,7 @@ class ActionDefinitionValidator:
         looked_at_validity: Iterator[bool],
         scope: scope_tracker.ScopeTracker,
     ):
+        diagnostic_count = len(self._diagnostics)
         executed = self._operation_arguments_validator.get_executed_operation(stmt)
         looked_at_qualities: dict[ast.OperationArgumentStatement, frozenset[str]] = {}
         written_positions: list[ast.PositionReference] = []
@@ -794,8 +802,14 @@ class ActionDefinitionValidator:
         self._diagnostics.extend(
             self._operation_arguments_validator.validate(stmt, looked_at_qualities)
         )
+        # A failed statement still counts as writing its output views, so
+        # later reads do not report the same mistake again as an unset value.
+        has_errors = len(self._diagnostics) > diagnostic_count
         for position in written_positions:
-            self._tracker.set_value(position, particle_info.ParticleValueState.SET)
+            if has_errors:
+                self._tracker.mark_value_error(position)
+            else:
+                self._tracker.set_value(position, particle_info.ParticleValueState.SET)
         # TODO: Record a step for code generation once value operations have
         # code generation.
 

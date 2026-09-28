@@ -75,6 +75,23 @@ def test_invalid_literal_content(
     assert diagnostic.location.column == 72
 
 
+def test_invalid_literal_in_destructor_does_not_report_changed_value(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph().program_result
+    assert result.all_exceptions == []
+    assert len(result.all_diagnostics) == 1
+    diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.InvalidLiteralContentDiagnostic)
+    assert diagnostic.location.file_path == PurePosixPath("cleanup.dfn")
+    assert diagnostic.content == "+5"
+    assert diagnostic.potential_literal == "literal<standard:/number>"
+    assert diagnostic.value_encoding == "encoding<standard:/number/decimal/ascii>"
+    assert diagnostic.reason == "positive numbers are written without a +"
+    assert diagnostic.location.line == 6
+    assert diagnostic.location.column == 72
+
+
 def test_invalid_literal_content_with_undefined_target(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):

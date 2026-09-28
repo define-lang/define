@@ -40,6 +40,23 @@ def test_mismatched_types(
     assert diagnostic.source_value_type == "value<standard:/number/rational>"
 
 
+def test_mismatched_type_target_is_not_reported_unset(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph().program_result
+    assert result.all_exceptions == []
+    assert len(result.all_diagnostics) == 1
+    diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.ValueSettingTypeMismatchDiagnostic)
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.location.line == 19
+    assert diagnostic.location.column == 46
+    assert diagnostic.target_position == "position<target>"
+    assert diagnostic.source_position == "position<source>"
+    assert diagnostic.target_value_type == "value</text>"
+    assert diagnostic.source_value_type == "value<standard:/number/rational>"
+
+
 def test_target_missing_type(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):

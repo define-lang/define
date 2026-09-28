@@ -146,6 +146,25 @@ def test_output_view_sets_value_in_action(
     assert_no_errors(result)
 
 
+def test_output_view_argument_error_in_destructor_does_not_report_changed_value(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
+    assert len(result.all_diagnostics) == 1
+    diagnostic = result.all_diagnostics[0]
+    assert isinstance(
+        diagnostic, diagnostics.OperationArgumentViolatesConstraintsDiagnostic
+    )
+    assert diagnostic.location.file_path is None
+    assert diagnostic.location.line == 33
+    assert diagnostic.location.column == 42
+    assert diagnostic.view_name == "view<target>"
+    assert diagnostic.looked_at_name == "position</value>"
+    assert diagnostic.looked_at_kind == diagnostics.LookedAtKind.POSITION
+    assert diagnostic.missing_qualities == ["value<standard:/number/rational>"]
+
+
 def test_read_and_written_view_requires_set_value_in_action(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):

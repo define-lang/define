@@ -1,0 +1,31 @@
+# A target whose Value Setting Statement failed is not reported again as unset.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<target> {
+            it may only contain particles where {
+                it has the value</text>.
+            }
+        }
+        define the position<source> {
+            it may only contain particles where {
+                it has the value<standard:/number/rational>.
+            }
+        }
+        create a particle in position<target>.
+        create a particle in position<source>.
+        set the value of position<source> to literal<standard:/number>"5".
+        set the value of position<target> to position<source>.
+        define the position<copy> {
+            it may only contain particles where {
+                it has the value</text>.
+            }
+        }
+        create a particle in position<copy>.
+        set the value of position<copy> to position<target>.
+        destroy the particle in position<copy>.
+        destroy the particle in position<target>.
+        destroy the particle in position<source>.
+    }
+}
