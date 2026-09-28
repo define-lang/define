@@ -328,6 +328,388 @@ class _GuaranteeApplicationState(msgspec.Struct, frozen=True):
 
 
 @typing.final
+class _CalleeGuaranteeApplier:
+    """Applies callee Guarantees to the particle state store.
+
+    A triggered action's own Guarantees are applied as soon as it triggers. Its
+    nested Guarantees wait until an operation needs a Position they describe.
+    """
+
+    def __init__(
+        self,
+        store: particle_state_store.ParticleStateStore,
+        dead_interfaces: dead_interface_tracker.DeadInterfaceTracker,
+    ):
+        """Apply Guarantees to ``store``, recording particle changes in ``dead_interfaces``."""
+        self._store = store
+        self._dead_interfaces = dead_interfaces
+        self._pending = _PendingNestedGuarantees()
+
+    def apply_triggered_action(
+        self,
+        execution: codegen_input.ActionExecution,
+        contract: action_contract.ActionContract,
+        body_operation_number: int,
+    ):
+        """Apply a triggered action's own Guarantees and defer its nested Guarantees."""
+        # Profiles make eager guarantee application look like duplicated work
+        # that can simply be deferred. Experiments in July 2026 showed that much
+        # of this work represents ordering that the particle state and operation
+        # graph must both observe, rather than redundant computation:
+        # - Deferring callee guarantees in a lazy overlay improved dense action
+        #   call graphs by 7-12%, but produced incorrect operation graphs.
+        #   Superseded GuaranteeNodes, parent dependencies,
+        #   OccupiedByExisting swaps, and nested or implied guarantees depend on
+        #   guarantees becoming visible in their precise application order.
+        # - Expanding every nested guarantee prefix before applying it preserved
+        #   more ordering, but exhausted memory on the largest dense action call
+        #   graph.
+        # - Passing each accepted guarantee directly to the operation graph
+        #   looked like it would remove duplicated work: it eliminated the
+        #   temporary accepted-guarantee list, the second recording pass, and the
+        #   operation-node association pass. Creating a shared-effect object for
+        #   each guarantee instead made validation 3.1% slower, so the prototype
+        #   was rejected.
+        # Do not repeat these deferral experiments unless the prototype preserves
+        # the ordering behavior above and remains memory-efficient on the largest
+        # dense action call graph.
+        # These measurements predate operation-graph removal; graph-specific
+        # failures describe the former implementation, not current requirements.
+        action_chain_key = execution.action.canonical_chained_name_tuple
+        callee_guarantees = _PendingGuarantee(
+            action_chain_key,
+            contract,
+            body_operation_number,
+            execution,
+        )
+        self._store.record_triggered_action(action_chain_key, execution, contract)
+        self._apply_pending_guarantee(callee_guarantees)
+
+    def _apply_pending_guarantee(self, pending_guarantee: _PendingGuarantee):
+        """Apply a callee's guarantees and add one child name to nested guarantee prefixes."""
+        application = _GuaranteeApplicationState.for_callee(pending_guarantee)
+
+        # A preceding Guarantee may create or move a later Guarantee's parent,
+        # so acceptance checks must alternate with occupancy updates.
+        for position, guarantee in pending_guarantee.contract.guarantees.items():
+            key = pending_guarantee.key_for(position)
+
+            # A later-running statement already finalized this key, so this
+            # guarantee must not override it.
+            if self._store.is_superseded(
+                key,
+                pending_guarantee.body_operation_number,
+                pending_guarantee.call_chain_depth,
+            ):
+                continue
+
+            # An interface-position guarantee needs a tracker entry for the
+            # callee's action name as its immediate parent name. That entry
+            # usually does not exist yet, so creating it here is the common path.
+            # Implied-position guarantees omit that action name.
+            missing_key = self._store.try_add_action_parent(key)
+            if missing_key is not None:
+                # For example, the caller triggers without filling position<a>,
+                # but the callee moves from position<a>::position</c1>. Applying
+                # that child's EmptyGuarantee finds no entry for position<a>.
+                # Requirement checking already reported the missing particle;
+                # mark the parent as error so later operations on it or its
+                # child positions do not produce cascading diagnostics.
+                self._store.mark_error(missing_key, guarantee.caused_by)
+                continue
+
+            self._update_store_from_callee_direct_guarantee(
+                pending_guarantee, key, guarantee, application
+            )
+
+        for child in pending_guarantee.contract.callees:
+            # The original triggering chain is the full chain the action had from
+            # the perspective of its caller, when it was triggered. CalleeContract
+            # does not retain that chain; the examples below show it for comparison.
+            #
+            # child.action_chain is where that action was, from the
+            # perspective of its caller, when that caller finally generated its
+            # guarantees.
+            #
+            # However, nested guarantees can _also_ be moved without their
+            # more-deeply nested guarantees being applied in the callee. Composing
+            # child.action_chain with pending_guarantee.action_chain places those
+            # deeper guarantees at the moved particle's current chain when we
+            # apply them in the current action.
+            #
+            # Thus, pending_guarantee.action_chain is the callee's current chained
+            # name, where its guarantees apply, from this action's perspective.
+            #
+            # We have this system to avoid the same potentially exponential work that
+            # pending guarantees exist to avoid.
+            #
+            # -------
+            # Example
+            # -------
+            #
+            # Consider these operations, with each chained name written from the
+            # perspective of the action performing that operation:
+            #
+            # 1. This action creates a particle in local position<gateway>.
+            #
+            # 2. This action creates a particle in:
+            #    position<gateway>::action</relocate_particle>::position<source>.
+            #
+            # 3. This action creates a particle in:
+            #    position<gateway>::action</relocate_particle>::position<source>::action</process_particle>::position<marker_parent>.
+            #
+            # 4. This action creates a particle in:
+            #    position<gateway>::action</relocate_particle>::position<trigger_pos>.
+            #    This triggers:
+            #    position<gateway>::action</relocate_particle>.
+            #
+            # 5. action</relocate_particle>
+            #    creates a particle in its interface:
+            #    position<stationary>.
+            #
+            # 6. action</relocate_particle>
+            #    creates a particle in its interface:
+            #    position<source>::action</process_particle>::position<trigger_pos>.
+            #    This triggers:
+            #    position<source>::action</process_particle>.
+            #
+            # 7. action</process_particle>
+            #    creates a particle in its interface:
+            #    position<marker_parent>::action</fill_marker>::position<trigger_pos>.
+            #    This triggers:
+            #    position<marker_parent>::action</fill_marker>.
+            #
+            # 8. action</fill_marker>
+            #    creates a particle in:
+            #    position<result>.
+            #
+            # 9. action</relocate_particle>
+            #    creates a particle in its interface:
+            #    position<stationary>::action</inspect_particle>::position<trigger_pos>.
+            #    This triggers:
+            #    position<stationary>::action</inspect_particle>.
+            #
+            # 10. action</inspect_particle>
+            #     creates a particle in its interface:
+            #     position<result>.
+            #
+            # 11. action</relocate_particle>
+            #     moves the particle in its interface:
+            #     position<source>
+            #     to:
+            #     position<destination>.
+            #
+            # This action applies the guarantees of:
+            # position<gateway>::action</relocate_particle>
+            # which adds the pending guarantees of:
+            # position<gateway>::action</relocate_particle>::position<stationary>::action</inspect_particle>.
+            #
+            # pending_guarantee.action_chain =
+            #     position<gateway>::action</relocate_particle>
+            # child.action_chain =
+            #     position<stationary>::action</inspect_particle>
+            # Original triggering chain (for comparison):
+            #     position<stationary>::action</inspect_particle>
+            # child_action_chain_in_caller =
+            #     position<gateway>::action</relocate_particle>::position<stationary>::action</inspect_particle>
+            #
+            # This action applies the guarantees of:
+            # position<gateway>::action</relocate_particle>
+            # which adds the pending guarantees of:
+            # position<gateway>::action</relocate_particle>::position<destination>::action</process_particle>.
+            #
+            # pending_guarantee.action_chain =
+            #     position<gateway>::action</relocate_particle>
+            # child.action_chain =
+            #     position<destination>::action</process_particle>
+            # Original triggering chain (for comparison):
+            #     position<source>::action</process_particle>
+            # child_action_chain_in_caller =
+            #     position<gateway>::action</relocate_particle>::position<destination>::action</process_particle>
+            #
+            # This action applies the pending guarantees of:
+            # position<gateway>::action</relocate_particle>::position<destination>::action</process_particle>
+            # which adds the pending guarantees of:
+            # position<gateway>::action</relocate_particle>::position<destination>::action</process_particle>::position<marker_parent>::action</fill_marker>.
+            #
+            # pending_guarantee.action_chain =
+            #     position<gateway>::action</relocate_particle>::position<destination>::action</process_particle>
+            # child.action_chain =
+            #     position<marker_parent>::action</fill_marker>
+            # Original triggering chain (for comparison):
+            #     position<marker_parent>::action</fill_marker>
+            # child_action_chain_in_caller =
+            #     position<gateway>::action</relocate_particle>::position<destination>::action</process_particle>::position<marker_parent>::action</fill_marker>
+            child_action_chain_in_caller = pending_guarantee.key_for(child.action_chain)
+            child_nested_guarantee = _PendingGuarantee(
+                child_action_chain_in_caller,
+                child.contract,
+                pending_guarantee.body_operation_number,
+                pending_guarantee.execution,
+                call_chain_depth=pending_guarantee.call_chain_depth + 1,
+            )
+            self._pending.add(child_nested_guarantee)
+
+    def apply_pending_guarantees_up_to(self, key: tuple[str, ...]):
+        """Apply any nested guarantee on the path from root to ``key``."""
+        for pending_guarantee in self._pending.drain_shortest_first(key):
+            self._apply_pending_guarantee(pending_guarantee)
+
+    def apply_pending_guarantees_up_to_all(self, keys: Iterable[tuple[str, ...]]):
+        """Apply nested guarantees on the paths to any of ``keys``."""
+        for pending_guarantee in self._pending.drain_shortest_first_for(keys):
+            self._apply_pending_guarantee(pending_guarantee)
+
+    def fully_resolve_pending_guarantees(self, *keys: tuple[str, ...]):
+        """Apply guarantees affecting any of the equally long keys or their children."""
+        self.apply_pending_guarantees_up_to_all(keys)
+        for pending_guarantee in self._pending.drain_at_or_below_for(keys):
+            self._apply_pending_guarantee(pending_guarantee)
+
+    def _update_store_from_callee_direct_guarantee(
+        self,
+        pending_guarantee: _PendingGuarantee,
+        key: ast.ChainedNameTuple,
+        guarantee: action_contract.PositionGuarantee,
+        application: _GuaranteeApplicationState,
+    ):
+        """Update particle state from one applicable callee guarantee."""
+        # OccupiedByExisting depends on caller-passed particle identity, so
+        # it must be resolved here (a distant caller can't reconstruct it)
+        # and emitted as this block's own guarantee. Other guarantee types
+        # are re-derivable in any caller, so they stay behind the nested guarantee.
+        self._store.record_callee_write(
+            key,
+            pending_guarantee.body_operation_number,
+            pending_guarantee.call_chain_depth,
+            include_in_own_guarantees=isinstance(
+                guarantee, action_contract.OccupiedByExistingGuarantee
+            ),
+        )
+
+        # The same particle remains at this position. Apply its value effect
+        # without the replacement logic below deleting its child positions.
+        if isinstance(
+            guarantee, action_contract.OccupiedByExistingGuarantee
+        ) and key == pending_guarantee.key_for(
+            guarantee.origin_position.canonical_chained_name_tuple
+        ):
+            occupant = self._store.occupant_or_none(key)
+            if occupant is not None:
+                occupant.set_value_state(guarantee.value_effect)
+            return
+
+        overwrites_subtree = key in application.origin_keys or (
+            self._store.has_state(key)
+            and not isinstance(guarantee, action_contract.UnchangedGuarantee)
+        )
+        # We are about to overwrite this key's subtree, and a later guarantee still
+        # needs to read a particle from an origin position that may have it as
+        # a parent name.
+        if application.origin_keys and overwrites_subtree:
+            application.save_origins_at_or_below(key, self._store)
+
+        # We are overwriting this key's subtree, and this key is not itself an origin
+        # position that a later guarantee reads from, so its old contents can just be
+        # dropped.
+        if key not in application.origin_keys and overwrites_subtree:
+            # Subtree cleanup: If an action empties position<item> (EmptyGuarantee)
+            # or creates in position<item> (OccupiedByNewGuarantee), any children
+            # the caller had at child names of position<item> must disappear. We
+            # achieve this by deleting each key's entire subtree before applying
+            # its guarantee.
+            # An UnchangedGuarantee leaves the caller's state as it found it, so
+            # it keeps whatever subtree is there.
+            self._store.delete_subtree(
+                key, self._dead_interfaces.mark_particle_destroyed
+            )
+
+        match guarantee:
+            case action_contract.OccupiedByExistingGuarantee():
+                self._apply_existing_guarantee(
+                    key,
+                    pending_guarantee,
+                    guarantee,
+                    application,
+                )
+            case action_contract.EmptyGuarantee():
+                self._store.mark_emptied(key, guarantee.caused_by)
+            case action_contract.OccupiedByNewGuarantee():
+                new_info = particle_info.ParticleInfo(
+                    last_position=guarantee.caused_by,
+                    qualities=guarantee.qualities,
+                    origin_position=guarantee.origin_position,
+                )
+                new_info.set_value_state(guarantee.value_effect)
+                self._store.mark_occupied(key, new_info)
+                self._dead_interfaces.register_occupied_interface_child_position(
+                    key,
+                    new_info,
+                    pending_guarantee.execution.action.get_last_action().location,
+                )
+            case action_contract.ErrorGuarantee():
+                self._store.mark_error(key, guarantee.caused_by)
+            case action_contract.UnchangedGuarantee():
+                # The position is unchanged from before the callee triggered,
+                # which the caller's store already reflects (the cleanup above
+                # kept any occupant). A later Move of its parent must still
+                # collect the callee's operations on an otherwise-untracked
+                # empty child position. The write record above still supersedes
+                # a conflicting nested guarantee.
+                self._store.mark_unchanged(key)
+            case _:
+                raise TypeError(f"Unexpected guarantee type: {type(guarantee)}")
+
+    def _apply_existing_guarantee(
+        self,
+        dest_key: tuple[str, ...],
+        pending_guarantee: _PendingGuarantee,
+        guarantee: action_contract.OccupiedByExistingGuarantee,
+        application: _GuaranteeApplicationState,
+    ):
+        """Apply an OccupiedByExisting guarantee at dest_key."""
+        origin_tuple = guarantee.origin_position.canonical_chained_name_tuple
+        origin_key = pending_guarantee.key_for(origin_tuple)
+
+        # Get origin's particle_info — from saved copy if already processed,
+        # else from the live trie.
+        if application.detached.has_state(origin_key):
+            moved_info = application.detached.occupant_or_none(origin_key)
+        elif self._store.has_state(origin_key):
+            moved_info = self._store.occupant_or_none(origin_key)
+        else:
+            # The caller never filled the origin position, so the callee's Move
+            # cannot supply a particle at the destination.
+            self._store.mark_error(dest_key, guarantee.caused_by)
+            return
+
+        # The caller never filled the Interface Position. The callee moves the
+        # particle to another position. Thus, the origin_state _exists_ but the
+        # position got EmptyGuarantee instead of being filled by something (and
+        # there's nothing in application.detached).
+        if moved_info is None:
+            self._store.mark_error(dest_key, guarantee.caused_by)
+            return
+
+        moved_info.set_value_state(guarantee.value_effect)
+        moved_info.last_position = guarantee.caused_by
+        self._dead_interfaces.mark_particle_departed(moved_info)
+        source_location = pending_guarantee.execution.action.get_last_action().location
+
+        def record_guaranteed_position(
+            position: ast.ChainedNameTuple,
+            particle: particle_info.ParticleInfo,
+        ):
+            self._dead_interfaces.replace_occupied_interface_child_position(
+                position, particle, source_location
+            )
+
+        self._store.move_guaranteed_particle(
+            origin_key, dest_key, application.detached, record_guaranteed_position
+        )
+
+
+@typing.final
 class ParticleTracker:
     """Tracks which positions contain particles and what qualities those particles currently have."""
 
@@ -335,7 +717,9 @@ class ParticleTracker:
         """Initialize an empty particle tracker."""
         self._store = particle_state_store.ParticleStateStore()
         self._dead_interfaces = dead_interface_tracker.DeadInterfaceTracker(self._store)
-        self._pending = _PendingNestedGuarantees()
+        self._callee_guarantees = _CalleeGuaranteeApplier(
+            self._store, self._dead_interfaces
+        )
         self._body_operation_number = 0
 
     def _delete_subtree(self, key: ast.ChainedNameTuple):
@@ -351,21 +735,21 @@ class ParticleTracker:
     def mark_error(self, in_position: ast.PositionReference):
         """Mark a position as having error occupancy state."""
         key = in_position.canonical_chained_name_tuple
-        self._apply_pending_guarantees_up_to(key)
+        self._callee_guarantees.apply_pending_guarantees_up_to(key)
         self._record_write(key)
         self._store.mark_error(key, in_position)
 
     def assume_empty(self, in_position: ast.PositionReference):
         """Record that a required position starts empty."""
         key = in_position.canonical_chained_name_tuple
-        self._apply_pending_guarantees_up_to(key)
+        self._callee_guarantees.apply_pending_guarantees_up_to(key)
         self._store.ensure_action_parent(key)
         self._store.mark_emptied(key, in_position)
 
     def has_error_state(self, in_position: ast.PositionReference) -> bool:
         """Return whether a position or any ancestor has error occupancy state."""
         key = in_position.canonical_chained_name_tuple
-        self._apply_pending_guarantees_up_to(key)
+        self._callee_guarantees.apply_pending_guarantees_up_to(key)
         return self._store.has_error_in_chain(key)
 
     def get_occupancy_info(self, in_position: ast.PositionReference) -> OccupancyInfo:
@@ -381,7 +765,7 @@ class ParticleTracker:
         position rather than reusing an earlier result.
         """
         key = in_position.canonical_chained_name_tuple
-        self._apply_pending_guarantees_up_to(key)
+        self._callee_guarantees.apply_pending_guarantees_up_to(key)
         if self._store.has_error_in_chain(key):
             return OccupancyInfo(has_error=True, occupant=None)
         return OccupancyInfo(
@@ -402,7 +786,7 @@ class ParticleTracker:
     def is_occupied(self, in_position: ast.PositionReference) -> bool:
         """Return whether a particle exists at this position."""
         key = in_position.canonical_chained_name_tuple
-        self._apply_pending_guarantees_up_to(key)
+        self._callee_guarantees.apply_pending_guarantees_up_to(key)
         return self._store.is_occupied(key)
 
     def first_unoccupied_parent(
@@ -416,7 +800,7 @@ class ParticleTracker:
         if immediate_parent is None:
             return None
         parent_key = immediate_parent.canonical_chained_name_tuple
-        self._apply_pending_guarantees_up_to(parent_key)
+        self._callee_guarantees.apply_pending_guarantees_up_to(parent_key)
         deepest_occupied_parent = self._store.longest_occupied_prefix(parent_key)
         occupied_name_count = (
             len(deepest_occupied_parent) if deepest_occupied_parent is not None else 0
@@ -440,7 +824,9 @@ class ParticleTracker:
         interface_position_names: Collection[str],
     ) -> list[ResolvedRequirementPosition]:
         """Infer direct requirements needed by this action."""
-        self._apply_pending_guarantees_up_to(position.canonical_chained_name_tuple)
+        self._callee_guarantees.apply_pending_guarantees_up_to(
+            position.canonical_chained_name_tuple
+        )
         position_is_contracted = (
             position.starts_with_global
             or position.typed_names[0].full_typed_name in interface_position_names
@@ -514,7 +900,7 @@ class ParticleTracker:
             requirement.caller_position.canonical_chained_name_tuple
             for requirement in requirements_in_caller
         ]
-        self._apply_pending_guarantees_up_to_all(canonical_positions)
+        self._callee_guarantees.apply_pending_guarantees_up_to_all(canonical_positions)
         propagated_requirements: list[PropagatedRequirement] = []
         for requirement_index, nearest_particle in self._requirement_indices_for_caller(
             canonical_positions
@@ -596,7 +982,7 @@ class ParticleTracker:
     ) -> particle_info.ParticleInfo:
         """Return the info for the particle at this position."""
         key = in_position.canonical_chained_name_tuple
-        self._apply_pending_guarantees_up_to(key)
+        self._callee_guarantees.apply_pending_guarantees_up_to(key)
         return self._store.occupant(key)
 
     def get_occupant_or_none(
@@ -604,7 +990,7 @@ class ParticleTracker:
     ) -> particle_info.ParticleInfo | None:
         """Get the particle at this position, if one exists."""
         key = in_position.canonical_chained_name_tuple
-        self._apply_pending_guarantees_up_to(key)
+        self._callee_guarantees.apply_pending_guarantees_up_to(key)
         return self._store.occupant_or_none(key)
 
     def set_value(
@@ -639,7 +1025,7 @@ class ParticleTracker:
         keys = [position.canonical_chained_name_tuple for position in for_positions]
         # TODO: Not sure we actually need to fully resolve this; I think there's a world
         # in which we use references somehow here just like we do with normal guarantees.
-        self._fully_resolve_pending_guarantees(*keys)
+        self._callee_guarantees.fully_resolve_pending_guarantees(*keys)
         return [self._store.snapshot_child_state(key) for key in keys]
 
     def collect_caller_destruction_state(
@@ -653,7 +1039,7 @@ class ParticleTracker:
     ) -> dict[ast.ChainedNameTuple, particle_info.ParticleInfo]:
         """Collect caller particles and additional Child State."""
         key = for_position.canonical_chained_name_tuple
-        self._fully_resolve_pending_guarantees(key)
+        self._callee_guarantees.fully_resolve_pending_guarantees(key)
         return self._store.collect_caller_destruction_state(
             occupancies,
             values,
@@ -677,7 +1063,7 @@ class ParticleTracker:
         Raises ValueError if the position is already occupied.
         """
         key = in_position.canonical_chained_name_tuple
-        self._apply_pending_guarantees_up_to(key)
+        self._callee_guarantees.apply_pending_guarantees_up_to(key)
         self._store.ensure_action_parent(key)
         self._record_write(key)
         info = particle_info.ParticleInfo(
@@ -700,7 +1086,7 @@ class ParticleTracker:
     ):
         """Record that a required position starts occupied."""
         key = in_position.canonical_chained_name_tuple
-        self._apply_pending_guarantees_up_to(key)
+        self._callee_guarantees.apply_pending_guarantees_up_to(key)
         self._store.ensure_action_parent(key)
         self._set_occupied(
             in_position,
@@ -733,7 +1119,7 @@ class ParticleTracker:
         have disjoint state subtrees.
         """
         positions = (destruction.positions() for destruction in destructions)
-        self._apply_pending_guarantees_up_to_all(
+        self._callee_guarantees.apply_pending_guarantees_up_to_all(
             position.canonical_chained_name_tuple
             for position in itertools.chain.from_iterable(positions)
         )
@@ -763,7 +1149,7 @@ class ParticleTracker:
     ) -> ast.PositionReference | None:
         """Return the position reference that emptied this position, if any."""
         key = position.canonical_chained_name_tuple
-        self._apply_pending_guarantees_up_to(key)
+        self._callee_guarantees.apply_pending_guarantees_up_to(key)
         return self._store.emptied_by(key)
 
     def move(self, source: ast.PositionReference, target: ast.PositionReference):
@@ -774,8 +1160,8 @@ class ParticleTracker:
         """
         from_key = source.canonical_chained_name_tuple
         to_key = target.canonical_chained_name_tuple
-        self._fully_resolve_pending_guarantees(from_key)
-        self._apply_pending_guarantees_up_to(to_key)
+        self._callee_guarantees.fully_resolve_pending_guarantees(from_key)
+        self._callee_guarantees.apply_pending_guarantees_up_to(to_key)
         self._store.ensure_action_parent(to_key)
         source_info = self._store.occupant(from_key)
         self._dead_interfaces.mark_particle_departed(source_info)
@@ -838,7 +1224,7 @@ class ParticleTracker:
         Guarantees about implied positions from triggered actions are expanded
         into the destructor's state rather than deferred.
         """
-        self._fully_resolve_pending_guarantees(())
+        self._callee_guarantees.fully_resolve_pending_guarantees(())
         return self._collect_contracted_position_guarantees(
             interface_names,
             implied_quality_names,
@@ -1012,30 +1398,6 @@ class ParticleTracker:
         The callee's own guarantees are applied immediately. Any nested guarantees
         from the callee will be applied lazily during later operations.
         """
-        # Profiles make eager guarantee application look like duplicated work
-        # that can simply be deferred. Experiments in July 2026 showed that much
-        # of this work represents ordering that the particle state and operation
-        # graph must both observe, rather than redundant computation:
-        # - Deferring callee guarantees in a lazy overlay improved dense action
-        #   call graphs by 7-12%, but produced incorrect operation graphs.
-        #   Superseded GuaranteeNodes, parent dependencies,
-        #   OccupiedByExisting swaps, and nested or implied guarantees depend on
-        #   guarantees becoming visible in their precise application order.
-        # - Expanding every nested guarantee prefix before applying it preserved
-        #   more ordering, but exhausted memory on the largest dense action call
-        #   graph.
-        # - Passing each accepted guarantee directly to the operation graph
-        #   looked like it would remove duplicated work: it eliminated the
-        #   temporary accepted-guarantee list, the second recording pass, and the
-        #   operation-node association pass. Creating a shared-effect object for
-        #   each guarantee instead made validation 3.1% slower, so the prototype
-        #   was rejected.
-        # Do not repeat these deferral experiments unless the prototype preserves
-        # the ordering behavior above and remains memory-efficient on the largest
-        # dense action call graph.
-        # These measurements predate operation-graph removal; graph-specific
-        # failures describe the former implementation, not current requirements.
-        action_chain_key = execution.action.canonical_chained_name_tuple
         action = execution.action.get_last_action()
         occupied_interface_child_position_violations = (
             self._dead_interfaces.mark_action_triggered(
@@ -1043,14 +1405,9 @@ class ParticleTracker:
             )
         )
         self._body_operation_number += 1
-        callee_guarantees = _PendingGuarantee(
-            action_chain_key,
-            contract,
-            self._body_operation_number,
-            execution,
+        self._callee_guarantees.apply_triggered_action(
+            execution, contract, self._body_operation_number
         )
-        self._store.record_triggered_action(action_chain_key, execution, contract)
-        self._apply_pending_guarantee(callee_guarantees)
         return occupied_interface_child_position_violations
 
     def nested_guarantees(
@@ -1058,324 +1415,3 @@ class ParticleTracker:
     ) -> list[action_contract.CalleeContract]:
         """Return the guarantees of actions this action triggered."""
         return self._store.nested_guarantees()
-
-    def _apply_pending_guarantee(self, pending_guarantee: _PendingGuarantee):
-        """Apply a callee's guarantees and add one child name to nested guarantee prefixes."""
-        application = _GuaranteeApplicationState.for_callee(pending_guarantee)
-
-        # A preceding Guarantee may create or move a later Guarantee's parent,
-        # so acceptance checks must alternate with occupancy updates.
-        for position, guarantee in pending_guarantee.contract.guarantees.items():
-            key = pending_guarantee.key_for(position)
-
-            # A later-running statement already finalized this key, so this
-            # guarantee must not override it.
-            if self._store.is_superseded(
-                key,
-                pending_guarantee.body_operation_number,
-                pending_guarantee.call_chain_depth,
-            ):
-                continue
-
-            # An interface-position guarantee needs a tracker entry for the
-            # callee's action name as its immediate parent name. That entry
-            # usually does not exist yet, so creating it here is the common path.
-            # Implied-position guarantees omit that action name.
-            missing_key = self._store.try_add_action_parent(key)
-            if missing_key is not None:
-                # For example, the caller triggers without filling position<a>,
-                # but the callee moves from position<a>::position</c1>. Applying
-                # that child's EmptyGuarantee finds no entry for position<a>.
-                # Requirement checking already reported the missing particle;
-                # mark the parent as error so later operations on it or its
-                # child positions do not produce cascading diagnostics.
-                self._store.mark_error(missing_key, guarantee.caused_by)
-                continue
-
-            self._update_store_from_callee_direct_guarantee(
-                pending_guarantee, key, guarantee, application
-            )
-
-        for child in pending_guarantee.contract.callees:
-            # The original triggering chain is the full chain the action had from
-            # the perspective of its caller, when it was triggered. CalleeContract
-            # does not retain that chain; the examples below show it for comparison.
-            #
-            # child.action_chain is where that action was, from the
-            # perspective of its caller, when that caller finally generated its
-            # guarantees.
-            #
-            # However, nested guarantees can _also_ be moved without their
-            # more-deeply nested guarantees being applied in the callee. Composing
-            # child.action_chain with pending_guarantee.action_chain places those
-            # deeper guarantees at the moved particle's current chain when we
-            # apply them in the current action.
-            #
-            # Thus, pending_guarantee.action_chain is the callee's current chained
-            # name, where its guarantees apply, from this action's perspective.
-            #
-            # We have this system to avoid the same potentially exponential work that
-            # pending guarantees exist to avoid.
-            #
-            # -------
-            # Example
-            # -------
-            #
-            # Consider these operations, with each chained name written from the
-            # perspective of the action performing that operation:
-            #
-            # 1. This action creates a particle in local position<gateway>.
-            #
-            # 2. This action creates a particle in:
-            #    position<gateway>::action</relocate_particle>::position<source>.
-            #
-            # 3. This action creates a particle in:
-            #    position<gateway>::action</relocate_particle>::position<source>::action</process_particle>::position<marker_parent>.
-            #
-            # 4. This action creates a particle in:
-            #    position<gateway>::action</relocate_particle>::position<trigger_pos>.
-            #    This triggers:
-            #    position<gateway>::action</relocate_particle>.
-            #
-            # 5. action</relocate_particle>
-            #    creates a particle in its interface:
-            #    position<stationary>.
-            #
-            # 6. action</relocate_particle>
-            #    creates a particle in its interface:
-            #    position<source>::action</process_particle>::position<trigger_pos>.
-            #    This triggers:
-            #    position<source>::action</process_particle>.
-            #
-            # 7. action</process_particle>
-            #    creates a particle in its interface:
-            #    position<marker_parent>::action</fill_marker>::position<trigger_pos>.
-            #    This triggers:
-            #    position<marker_parent>::action</fill_marker>.
-            #
-            # 8. action</fill_marker>
-            #    creates a particle in:
-            #    position<result>.
-            #
-            # 9. action</relocate_particle>
-            #    creates a particle in its interface:
-            #    position<stationary>::action</inspect_particle>::position<trigger_pos>.
-            #    This triggers:
-            #    position<stationary>::action</inspect_particle>.
-            #
-            # 10. action</inspect_particle>
-            #     creates a particle in its interface:
-            #     position<result>.
-            #
-            # 11. action</relocate_particle>
-            #     moves the particle in its interface:
-            #     position<source>
-            #     to:
-            #     position<destination>.
-            #
-            # This action applies the guarantees of:
-            # position<gateway>::action</relocate_particle>
-            # which adds the pending guarantees of:
-            # position<gateway>::action</relocate_particle>::position<stationary>::action</inspect_particle>.
-            #
-            # pending_guarantee.action_chain =
-            #     position<gateway>::action</relocate_particle>
-            # child.action_chain =
-            #     position<stationary>::action</inspect_particle>
-            # Original triggering chain (for comparison):
-            #     position<stationary>::action</inspect_particle>
-            # child_action_chain_in_caller =
-            #     position<gateway>::action</relocate_particle>::position<stationary>::action</inspect_particle>
-            #
-            # This action applies the guarantees of:
-            # position<gateway>::action</relocate_particle>
-            # which adds the pending guarantees of:
-            # position<gateway>::action</relocate_particle>::position<destination>::action</process_particle>.
-            #
-            # pending_guarantee.action_chain =
-            #     position<gateway>::action</relocate_particle>
-            # child.action_chain =
-            #     position<destination>::action</process_particle>
-            # Original triggering chain (for comparison):
-            #     position<source>::action</process_particle>
-            # child_action_chain_in_caller =
-            #     position<gateway>::action</relocate_particle>::position<destination>::action</process_particle>
-            #
-            # This action applies the pending guarantees of:
-            # position<gateway>::action</relocate_particle>::position<destination>::action</process_particle>
-            # which adds the pending guarantees of:
-            # position<gateway>::action</relocate_particle>::position<destination>::action</process_particle>::position<marker_parent>::action</fill_marker>.
-            #
-            # pending_guarantee.action_chain =
-            #     position<gateway>::action</relocate_particle>::position<destination>::action</process_particle>
-            # child.action_chain =
-            #     position<marker_parent>::action</fill_marker>
-            # Original triggering chain (for comparison):
-            #     position<marker_parent>::action</fill_marker>
-            # child_action_chain_in_caller =
-            #     position<gateway>::action</relocate_particle>::position<destination>::action</process_particle>::position<marker_parent>::action</fill_marker>
-            child_action_chain_in_caller = pending_guarantee.key_for(child.action_chain)
-            child_nested_guarantee = _PendingGuarantee(
-                child_action_chain_in_caller,
-                child.contract,
-                pending_guarantee.body_operation_number,
-                pending_guarantee.execution,
-                call_chain_depth=pending_guarantee.call_chain_depth + 1,
-            )
-            self._pending.add(child_nested_guarantee)
-
-    def _apply_pending_guarantees_up_to(self, key: tuple[str, ...]):
-        """Apply any nested guarantee on the path from root to ``key``."""
-        for pending_guarantee in self._pending.drain_shortest_first(key):
-            self._apply_pending_guarantee(pending_guarantee)
-
-    def _apply_pending_guarantees_up_to_all(self, keys: Iterable[tuple[str, ...]]):
-        """Apply nested guarantees on the paths to any of ``keys``."""
-        for pending_guarantee in self._pending.drain_shortest_first_for(keys):
-            self._apply_pending_guarantee(pending_guarantee)
-
-    def _fully_resolve_pending_guarantees(self, *keys: tuple[str, ...]):
-        """Apply guarantees affecting any of the equally long keys or their children."""
-        self._apply_pending_guarantees_up_to_all(keys)
-        for pending_guarantee in self._pending.drain_at_or_below_for(keys):
-            self._apply_pending_guarantee(pending_guarantee)
-
-    def _update_store_from_callee_direct_guarantee(
-        self,
-        pending_guarantee: _PendingGuarantee,
-        key: ast.ChainedNameTuple,
-        guarantee: action_contract.PositionGuarantee,
-        application: _GuaranteeApplicationState,
-    ):
-        """Update particle state from one applicable callee guarantee."""
-        # OccupiedByExisting depends on caller-passed particle identity, so
-        # it must be resolved here (a distant caller can't reconstruct it)
-        # and emitted as this block's own guarantee. Other guarantee types
-        # are re-derivable in any caller, so they stay behind the nested guarantee.
-        self._store.record_callee_write(
-            key,
-            pending_guarantee.body_operation_number,
-            pending_guarantee.call_chain_depth,
-            include_in_own_guarantees=isinstance(
-                guarantee, action_contract.OccupiedByExistingGuarantee
-            ),
-        )
-
-        # The same particle remains at this position. Apply its value effect
-        # without the replacement logic below deleting its child positions.
-        if isinstance(
-            guarantee, action_contract.OccupiedByExistingGuarantee
-        ) and key == pending_guarantee.key_for(
-            guarantee.origin_position.canonical_chained_name_tuple
-        ):
-            occupant = self._store.occupant_or_none(key)
-            if occupant is not None:
-                occupant.set_value_state(guarantee.value_effect)
-            return
-
-        overwrites_subtree = key in application.origin_keys or (
-            self._store.has_state(key)
-            and not isinstance(guarantee, action_contract.UnchangedGuarantee)
-        )
-        # We are about to overwrite this key's subtree, and a later guarantee still
-        # needs to read a particle from an origin position that may have it as
-        # a parent name.
-        if application.origin_keys and overwrites_subtree:
-            application.save_origins_at_or_below(key, self._store)
-
-        # We are overwriting this key's subtree, and this key is not itself an origin
-        # position that a later guarantee reads from, so its old contents can just be
-        # dropped.
-        if key not in application.origin_keys and overwrites_subtree:
-            # Subtree cleanup: If an action empties position<item> (EmptyGuarantee)
-            # or creates in position<item> (OccupiedByNewGuarantee), any children
-            # the caller had at child names of position<item> must disappear. We
-            # achieve this by deleting each key's entire subtree before applying
-            # its guarantee.
-            # An UnchangedGuarantee leaves the caller's state as it found it, so
-            # it keeps whatever subtree is there.
-            self._delete_subtree(key)
-
-        match guarantee:
-            case action_contract.OccupiedByExistingGuarantee():
-                self._apply_existing_guarantee(
-                    key,
-                    pending_guarantee,
-                    guarantee,
-                    application,
-                )
-            case action_contract.EmptyGuarantee():
-                self._store.mark_emptied(key, guarantee.caused_by)
-            case action_contract.OccupiedByNewGuarantee():
-                new_info = particle_info.ParticleInfo(
-                    last_position=guarantee.caused_by,
-                    qualities=guarantee.qualities,
-                    origin_position=guarantee.origin_position,
-                )
-                new_info.set_value_state(guarantee.value_effect)
-                self._store.mark_occupied(key, new_info)
-                self._dead_interfaces.register_occupied_interface_child_position(
-                    key,
-                    new_info,
-                    pending_guarantee.execution.action.get_last_action().location,
-                )
-            case action_contract.ErrorGuarantee():
-                self._store.mark_error(key, guarantee.caused_by)
-            case action_contract.UnchangedGuarantee():
-                # The position is unchanged from before the callee triggered,
-                # which the caller's store already reflects (the cleanup above
-                # kept any occupant). A later Move of its parent must still
-                # collect the callee's operations on an otherwise-untracked
-                # empty child position. The write record above still supersedes
-                # a conflicting nested guarantee.
-                self._store.mark_unchanged(key)
-            case _:
-                raise TypeError(f"Unexpected guarantee type: {type(guarantee)}")
-
-    def _apply_existing_guarantee(
-        self,
-        dest_key: tuple[str, ...],
-        pending_guarantee: _PendingGuarantee,
-        guarantee: action_contract.OccupiedByExistingGuarantee,
-        application: _GuaranteeApplicationState,
-    ):
-        """Apply an OccupiedByExisting guarantee at dest_key."""
-        origin_tuple = guarantee.origin_position.canonical_chained_name_tuple
-        origin_key = pending_guarantee.key_for(origin_tuple)
-
-        # Get origin's particle_info — from saved copy if already processed,
-        # else from the live trie.
-        if application.detached.has_state(origin_key):
-            moved_info = application.detached.occupant_or_none(origin_key)
-        elif self._store.has_state(origin_key):
-            moved_info = self._store.occupant_or_none(origin_key)
-        else:
-            # The caller never filled the origin position, so the callee's Move
-            # cannot supply a particle at the destination.
-            self._store.mark_error(dest_key, guarantee.caused_by)
-            return
-
-        # The caller never filled the Interface Position. The callee moves the
-        # particle to another position. Thus, the origin_state _exists_ but the
-        # position got EmptyGuarantee instead of being filled by something (and
-        # there's nothing in application.detached).
-        if moved_info is None:
-            self._store.mark_error(dest_key, guarantee.caused_by)
-            return
-
-        moved_info.set_value_state(guarantee.value_effect)
-        moved_info.last_position = guarantee.caused_by
-        self._dead_interfaces.mark_particle_departed(moved_info)
-        source_location = pending_guarantee.execution.action.get_last_action().location
-
-        def record_guaranteed_position(
-            position: ast.ChainedNameTuple,
-            particle: particle_info.ParticleInfo,
-        ):
-            self._dead_interfaces.replace_occupied_interface_child_position(
-                position, particle, source_location
-            )
-
-        self._store.move_guaranteed_particle(
-            origin_key, dest_key, application.detached, record_guaranteed_position
-        )
