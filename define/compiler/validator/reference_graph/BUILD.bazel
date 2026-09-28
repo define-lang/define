@@ -208,6 +208,21 @@ py_library(
 )
 
 py_library(
+    name = "particle_state_store",
+    srcs = ["particle_state_store.py"],
+    deps = [
+        ":action_contract",
+        ":child_state",
+        ":particle_info",
+        ":position_occupancy",
+        "//define/compiler:ast",
+        "//define/compiler/data_structures:trie",
+        "//define/compiler/validator:codegen_input",
+        "@pypi//msgspec",
+    ],
+)
+
+py_library(
     name = "particle_tracker",
     srcs = ["particle_tracker.py"],
     visibility = ["//define/compiler:__subpackages__"],
@@ -216,10 +231,10 @@ py_library(
         ":child_state",
         ":destruction_contract",
         ":particle_info",
+        ":particle_state_store",
         ":position_occupancy",
         ":quality_assignment",
         "//define/compiler:ast",
-        "//define/compiler/data_structures:trie",
         "//define/compiler/validator:codegen_input",
         "//define/compiler/validator/reference_graph/dead_code:dead_interface_tracker",
         "@pypi//msgspec",
@@ -389,6 +404,7 @@ pyright_test(
         ":operation_definition_validator",
         ":particle_info",
         ":particle_operation_validator",
+        ":particle_state_store",
         ":particle_tracker",
         ":position_occupancy",
         ":position_quality_resolver",
