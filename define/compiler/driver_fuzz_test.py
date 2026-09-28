@@ -798,6 +798,30 @@ def operation_definitions(draw: st.DrawFn) -> str:
 
 
 @st.composite
+def encoding_operation_definitions(draw: st.DrawFn) -> str:
+    name = draw(global_names())
+    encoding_name = draw(global_names())
+    operation_name = draw(global_names())
+    return (
+        f"define the encoding_operation<{name}> {{\n"
+        f"    define the view<number> {{\n"
+        f"        it is read.\n"
+        f"        it may only contain particles where {{\n"
+        f"            it has the encoding<{encoding_name}>.\n"
+        f"        }}\n"
+        f"    }}\n"
+        f"\n"
+        f"    it does {{\n"
+        f"        execute the encoding_operation<{operation_name}> {{\n"
+        f"            with view<number> looking at view<number>.\n"
+        f"        }}\n"
+        f"        execute the computer operation.\n"
+        f"    }}\n"
+        f"}}\n"
+    )
+
+
+@st.composite
 def syntactic_sources(draw: st.DrawFn) -> str:
     """Generate definition-shaped sources without enforcing source validity."""
     num_defs = draw(st.integers(min_value=1, max_value=5))
@@ -816,6 +840,7 @@ def syntactic_sources(draw: st.DrawFn) -> str:
                     "position_implication",
                     "action_implication",
                     "operation",
+                    "encoding_operation",
                 ]
             )
         )
@@ -840,6 +865,8 @@ def syntactic_sources(draw: st.DrawFn) -> str:
             defs.append(draw(position_definitions_with_implications()))
         elif kind == "operation":
             defs.append(draw(operation_definitions()))
+        elif kind == "encoding_operation":
+            defs.append(draw(encoding_operation_definitions()))
         else:
             defs.append(draw(action_definitions_with_implications()))
     return "".join(defs)
@@ -893,6 +920,10 @@ _SYNTAX_FRAGMENTS = [
     "execute the operation</o>.\n",
     "execute the operation</o> {\n",
     "execute the encoding operation.\n",
+    "define the encoding_operation</o> {\n",
+    "execute the encoding_operation</o>.\n",
+    "execute the encoding_operation</o> {\n",
+    "execute the computer operation.\n",
     "with view<v> looking at view<w>.\n",
     "position<p>",
     "action</a>::position<p>",
@@ -989,6 +1020,7 @@ def _apply_source_mutation(source: str, draw: st.DrawFn, mutation: str) -> str:
             "literal",
             "encoding",
             "operation",
+            "encoding_operation",
             "view",
             "create a particle in",
             "move the particle in",

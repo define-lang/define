@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler import diagnostics
+from define.compiler import ast, diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -41,12 +41,14 @@ def test_unreferenced_views(
     assert first.location.line == 27
     assert first.location.column == 21
     assert first.view_name == "view<unused>"
+    assert first.operation_name_type == ast.NameType.OPERATION
     second = result.all_diagnostics[1]
     assert isinstance(second, diagnostics.UnreferencedViewDiagnostic)
     assert second.location.file_path is None
     assert second.location.line == 33
     assert second.location.column == 21
     assert second.view_name == "view<also_unused>"
+    assert second.operation_name_type == ast.NameType.OPERATION
 
 
 def test_duplicate_view(

@@ -1,0 +1,14 @@
+# An interface view of an encoding operation may not have a value constraint, even alongside an encoding constraint.
+define the encoding_operation<my.domain.com:my_lib:/copy> {
+    define the view<number> {
+        it is read.
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+            it has the encoding<standard:/number/decimal/ascii>.
+        }
+    }
+
+    it does {
+        execute the computer operation.
+    }
+}

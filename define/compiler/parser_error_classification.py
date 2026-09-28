@@ -222,6 +222,9 @@ def raise_token_error(
     if e.accepts == {"OPERATION"}:
         raise parser_exceptions.ExpectedOperation(e, source, file_path)
 
+    if e.accepts == {"ENCODING_OPERATION"}:
+        raise parser_exceptions.ExpectedEncodingOperation(e, source, file_path)
+
     if e.accepts == {"VIEW"}:
         raise parser_exceptions.ExpectedView(e, source, file_path)
 
@@ -236,6 +239,11 @@ def raise_token_error(
 
     if e.accepts == {"EXECUTE_THE", "EXECUTE_THE_ENCODING_OPERATION", "NEWLINE"}:
         raise parser_exceptions.InvalidOperationStatementsBlock(e, source, file_path)
+
+    if e.accepts == {"EXECUTE_THE", "EXECUTE_THE_COMPUTER_OPERATION", "NEWLINE"}:
+        raise parser_exceptions.InvalidEncodingOperationStatementsBlock(
+            e, source, file_path
+        )
 
     if e.accepts == {"ENCODING"}:
         raise parser_exceptions.InvalidPotentialLiteralDefinitionBlock(

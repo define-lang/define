@@ -1,0 +1,13 @@
+# Every interface view of an encoding operation must have an encoding constraint.
+define the encoding_operation<my.domain.com:my_lib:/copy> {
+    define the view<number> {
+        it is read.
+        it may only contain particles where {
+            it has the position</box>.
+        }
+    }
+
+    it does {
+        execute the computer operation.
+    }
+}

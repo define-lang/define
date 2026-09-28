@@ -255,7 +255,8 @@ class ExpectedGlobalDefinition(DefineTokenError):
         + "    - define the potential value\n"
         + "    - define the potential literal\n"
         + "    - define the encoding\n"
-        + "    - define the operation"
+        + "    - define the operation\n"
+        + "    - define the encoding_operation"
     )
 
 
@@ -263,6 +264,12 @@ class ExpectedOperation(DefineTokenError):
     """Expected an operation name in an Operation Execution Statement."""
 
     message_format: ClassVar[str] = "Expected 'operation'."
+
+
+class ExpectedEncodingOperation(DefineTokenError):
+    """Expected an Encoding Operation name in an Encoding Operation Execution Statement."""
+
+    message_format: ClassVar[str] = "Expected 'encoding_operation'."
 
 
 class ExpectedPositionOrAction(DefineTokenError):
@@ -407,6 +414,16 @@ class InvalidOperationStatementsBlock(DefineTokenError):
     message_format: ClassVar[str] = (
         "Operation statements blocks must contain one or more"
         " 'execute the operation<...>' or 'execute the encoding operation.' statements."
+    )
+
+
+class InvalidEncodingOperationStatementsBlock(DefineTokenError):
+    """Wrote something other than an Encoding Operation statement in an Encoding Operation Statements Block."""
+
+    message_format: ClassVar[str] = (
+        "Encoding operation statements blocks must contain one or more"
+        " 'execute the encoding_operation<...>' or"
+        " 'execute the computer operation.' statements."
     )
 
 

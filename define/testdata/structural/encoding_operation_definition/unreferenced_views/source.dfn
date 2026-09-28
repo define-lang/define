@@ -1,0 +1,46 @@
+# view<unused> and view<also_unused> are never referenced and the computer operation is never executed.
+define the encoding_operation<my.domain.com:my_lib:/copy> {
+    define the view<source> {
+        it is read.
+        it may only contain particles where {
+            it has the encoding<standard:/number/decimal/ascii>.
+        }
+    }
+    define the view<target> {
+        it is written.
+        it may only contain particles where {
+            it has the encoding<standard:/number/decimal/ascii>.
+        }
+    }
+
+    it does {
+        execute the computer operation.
+    }
+}
+define the encoding_operation<my.domain.com:my_lib:/double> {
+    define the view<number> {
+        it is read.
+        it may only contain particles where {
+            it has the encoding<standard:/number/decimal/ascii>.
+        }
+    }
+    define the view<unused> {
+        it is read.
+        it may only contain particles where {
+            it has the encoding<standard:/number/decimal/ascii>.
+        }
+    }
+    define the view<also_unused> {
+        it is read.
+        it may only contain particles where {
+            it has the encoding<standard:/number/decimal/ascii>.
+        }
+    }
+
+    it does {
+        execute the encoding_operation</copy> {
+            with view<source> looking at view<number>.
+            with view<target> looking at literal<standard:/number>"2".
+        }
+    }
+}

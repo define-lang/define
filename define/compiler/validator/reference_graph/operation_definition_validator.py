@@ -61,12 +61,15 @@ class OperationDefinitionValidator:
             match statement:
                 case ast.OperationExecutionStatement():
                     self._analyze_execution(statement)
-                case ast.EncodingOperationExecutionStatement():
-                    self._analyze_encoding_operation_execution()
+                case (
+                    ast.EncodingOperationExecutionStatement()
+                    | ast.ComputerOperationExecutionStatement()
+                ):
+                    self._analyze_encoding_or_computer_operation_execution()
         self._check_view_directions_fulfilled()
         return validation_result.PostorderValidationResult(self._diagnostics)
 
-    def _analyze_encoding_operation_execution(self):
+    def _analyze_encoding_or_computer_operation_execution(self):
         for view in self._definition.views:
             view_name = view.typed_name.source_typed_name
             if view.is_input:

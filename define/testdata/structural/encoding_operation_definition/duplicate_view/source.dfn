@@ -1,0 +1,19 @@
+# view<number> is defined twice.
+define the encoding_operation<my.domain.com:my_lib:/copy> {
+    define the view<number> {
+        it is read.
+        it may only contain particles where {
+            it has the encoding<standard:/number/decimal/ascii>.
+        }
+    }
+    define the view<number> {
+        it is read.
+        it may only contain particles where {
+            it has the encoding<standard:/number/decimal/ascii>.
+        }
+    }
+
+    it does {
+        execute the computer operation.
+    }
+}

@@ -364,8 +364,8 @@ class DefinitionStructuralValidator:
             ast.LocalTypedNameReference, ast.ViewDefinition
         ] = typed_name_dict.TypedNameDict()
         for view in definition.views:
-            self._validate_view_definition(view, views, unreferenced_views)
-        executes_encoding_operation = False
+            self._validate_view_definition(definition, view, views, unreferenced_views)
+        executes_all_views = False
         for statement in definition.operation_statements:
             match statement:
                 case ast.OperationExecutionStatement():
@@ -375,22 +375,27 @@ class DefinitionStructuralValidator:
                             looking_at, views, unreferenced_views
                         ),
                     )
-                case ast.EncodingOperationExecutionStatement():
-                    executes_encoding_operation = True
-        # The encoding operation receives every interface view, so executing it
-        # references all of them.
-        if executes_encoding_operation:
+                case (
+                    ast.EncodingOperationExecutionStatement()
+                    | ast.ComputerOperationExecutionStatement()
+                ):
+                    executes_all_views = True
+        # The encoding operation or computer operation receives every interface
+        # view, so executing it references all of them.
+        if executes_all_views:
             return
         for view in unreferenced_views.values():
             self._diagnostics.append(
                 diagnostics.UnreferencedViewDiagnostic(
                     location=view.typed_name.name_content.location,
                     view_name=view.typed_name.source_typed_name,
+                    operation_name_type=definition.typed_name.name_type,
                 )
             )
 
     def _validate_view_definition(
         self,
+        definition: ast.OperationDefinition,
         view: ast.ViewDefinition,
         views: typed_name_dict.TypedNameDict[
             ast.LocalTypedNameReference, ast.ViewDefinition
@@ -414,7 +419,7 @@ class DefinitionStructuralValidator:
             views[view.typed_name] = view
             unreferenced_views[view.typed_name] = view
         requirements: list[ast.PositionRequirementStatement] = []
-        has_value_constraint = False
+        constraint_types: set[ast.NameType] = set()
         for requirement in view.constraints.requirements:
             constraint = requirement.typed_global_name
             if constraint.name_type in (ast.NameType.POSITION, ast.NameType.ACTION):
@@ -425,14 +430,34 @@ class DefinitionStructuralValidator:
                     )
                 )
                 continue
-            if constraint.name_type == ast.NameType.VALUE:
-                has_value_constraint = True
+            if (
+                isinstance(definition, ast.EncodingOperationDefinition)
+                and constraint.name_type == ast.NameType.VALUE
+            ):
+                self._diagnostics.append(
+                    diagnostics.EncodingOperationViewValueConstraintDiagnostic(
+                        location=constraint.location,
+                        constraint_name=constraint.source_typed_name,
+                    )
+                )
+                continue
+            # TODO: Report encoding constraints on Value Operation views, which
+            # may not have them.
+            constraint_types.add(constraint.name_type)
             requirements.append(requirement)
         self._validate_position_requirements(
             requirements,
             multiple_values_diagnostic=diagnostics.ViewMultipleValueConstraintsDiagnostic,
         )
-        if not has_value_constraint:
+        if isinstance(definition, ast.EncodingOperationDefinition):
+            if ast.NameType.ENCODING not in constraint_types:
+                self._diagnostics.append(
+                    diagnostics.ViewMissingEncodingConstraintDiagnostic(
+                        location=view.typed_name.name_content.location,
+                        view_name=view.typed_name.source_typed_name,
+                    )
+                )
+        elif ast.NameType.VALUE not in constraint_types:
             self._diagnostics.append(
                 diagnostics.ViewMissingValueConstraintDiagnostic(
                     location=view.typed_name.name_content.location,

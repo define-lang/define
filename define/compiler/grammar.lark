@@ -28,12 +28,14 @@ DEFINE_THE_POTENTIAL_VALUE: "define the potential value"
 DEFINE_THE_POTENTIAL_LITERAL: "define the potential literal"
 DEFINE_THE_ENCODING: "define the encoding"
 DEFINE_THE_OPERATION: "define the operation"
+DEFINE_THE_ENCODING_OPERATION: "define the encoding_operation"
 DEFINE_THE_VIEW: "define the view"
 ENCODING: "encoding"
 POSITION_OR_ACTION: "position" | "action"
 VALUE: "value"
 LITERAL: "literal"
 OPERATION: "operation"
+ENCODING_OPERATION: "encoding_operation"
 VIEW: "view"
 IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE: "it may only contain particles where"
 IT_HAS_THE: "it has the"
@@ -56,6 +58,7 @@ IT_ALSO_ASSIGNS_THE: "it also assigns the"
 IT_DOES: "it does"
 EXECUTE_THE: "execute the"
 EXECUTE_THE_ENCODING_OPERATION: "execute the encoding operation"
+EXECUTE_THE_COMPUTER_OPERATION: "execute the computer operation"
 WITH: "with"
 LOOKING_AT: "looking at"
 IT_IS_READ: "it is read"
@@ -92,6 +95,7 @@ typed_global_name_reference: POSITION_OR_ACTION global_name_reference_content
 typed_value_name_reference: VALUE global_name_reference_content -> typed_global_name_reference
 typed_encoding_name_reference: ENCODING global_name_reference_content -> typed_global_name_reference
 typed_operation_name_reference: OPERATION global_name_reference_content -> typed_global_name_reference
+typed_encoding_operation_name_reference: ENCODING_OPERATION global_name_reference_content -> typed_global_name_reference
 typed_local_name_reference: POSITION_OR_ACTION local_name_content
 typed_view_name_reference: VIEW local_name_content -> typed_local_name_reference
 ?typed_name_reference: typed_local_name_reference | typed_global_name_reference
@@ -169,6 +173,18 @@ _view_definitions: (view_definition NEWLINE*)*
 operation_definition_block: _block_open NEWLINE* _view_definitions operation_statements_block NEWLINE* _block_close
 operation_definition: DEFINE_THE_OPERATION global_name_definition_content operation_definition_block
 
+# Encoding Operation Definition Syntax
+
+# Encoding Operations share the AST of Value Operations for everything except
+# their definition and "execute the computer operation.", so their other rules
+# are aliases of the Value Operation rules.
+operation_execution_in_encoding_operation: EXECUTE_THE " " typed_encoding_operation_name_reference (terminator | operation_arguments_block) -> operation_execution_statement
+computer_operation_execution_statement: EXECUTE_THE_COMPUTER_OPERATION terminator
+_encoding_operation_statements: NEWLINE* ((operation_execution_in_encoding_operation | computer_operation_execution_statement) NEWLINE*)+
+encoding_operation_statements_block: IT_DOES _block_open _encoding_operation_statements _block_close -> operation_statements_block
+encoding_operation_definition_block: _block_open NEWLINE* _view_definitions encoding_operation_statements_block NEWLINE* _block_close -> operation_definition_block
+encoding_operation_definition: DEFINE_THE_ENCODING_OPERATION global_name_definition_content encoding_operation_definition_block
+
 # Root Syntax
 
 value_definition: DEFINE_THE_POTENTIAL_VALUE global_name_definition_content terminator
@@ -183,4 +199,5 @@ definition: position_definition
     | encoding_definition
     | potential_literal_definition
     | operation_definition
+    | encoding_operation_definition
 start: NEWLINE* definition (NEWLINE* definition)* NEWLINE*

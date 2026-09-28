@@ -103,6 +103,19 @@ py_test(
 )
 
 py_test(
+    name = "encoding_operation_definition_test",
+    size = "small",
+    srcs = ["encoding_operation_definition_test.py"],
+    data = ["//define/testdata/structural/encoding_operation_definition"],
+    deps = [
+        "//define/compiler:ast",
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+    ],
+)
+
+py_test(
     name = "entry_action_test",
     size = "small",
     srcs = ["entry_action_test.py"],
@@ -241,6 +254,7 @@ py_test(
     srcs = ["operation_definition_test.py"],
     data = ["//define/testdata/structural/operation_definition"],
     deps = [
+        "//define/compiler:ast",
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:test_helpers",
@@ -491,6 +505,7 @@ pyright_test(
         ":duplicate_definitions_test",
         ":duplicate_position_constraint_test",
         ":encoding_definition_test",
+        ":encoding_operation_definition_test",
         ":entry_action_test",
         ":error_messages_test",
         ":file_not_found_test",

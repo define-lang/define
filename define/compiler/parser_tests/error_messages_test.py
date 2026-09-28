@@ -36,7 +36,8 @@ def test_empty_source_error_message(parse: Parse):
             - define the potential value
             - define the potential literal
             - define the encoding
-            - define the operation""")
+            - define the operation
+            - define the encoding_operation""")
 
 
 def test_error_message_without_path(parse: Parse):

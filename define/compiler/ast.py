@@ -7,6 +7,7 @@ import enum
 import sys
 from typing import (
     TYPE_CHECKING,
+    ClassVar,
     Final,
     Generic,
     Self,
@@ -35,6 +36,7 @@ class NameType(enum.StrEnum):
     ENCODING = "encoding"
     LITERAL = "literal"
     OPERATION = "operation"
+    ENCODING_OPERATION = "encoding_operation"
     VIEW = "view"
 
 
@@ -193,7 +195,9 @@ class PotentialLiteralDefinition(GlobalDefinition):
 
 
 class OperationDefinition(GlobalDefinition):
-    """Represents a value operation definition."""
+    """Base class for Value Operation and Encoding Operation definitions."""
+
+    definition_name_type: ClassVar[NameType]
 
     views: tuple[ViewDefinition, ...]
     operation_statements: tuple[OperationStatement, ...]
@@ -210,9 +214,11 @@ class OperationDefinition(GlobalDefinition):
         """Initialize with a global name, its views, and its statements."""
         return cls(
             typed_name=GlobalTypedNameInDefinition(
-                name_type=NameType.OPERATION,
+                name_type=cls.definition_name_type,
                 name_content=name,
-                location=SourceLocation.from_definition_name(name, NameType.OPERATION),
+                location=SourceLocation.from_definition_name(
+                    name, cls.definition_name_type
+                ),
             ),
             views=views,
             operation_statements=operation_statements,
@@ -237,6 +243,18 @@ class OperationDefinition(GlobalDefinition):
         if index is None:
             return None
         return self.views[index]
+
+
+class ValueOperationDefinition(OperationDefinition):
+    """Represents a Value Operation definition."""
+
+    definition_name_type: ClassVar[NameType] = NameType.OPERATION
+
+
+class EncodingOperationDefinition(OperationDefinition):
+    """Represents an Encoding Operation definition."""
+
+    definition_name_type: ClassVar[NameType] = NameType.ENCODING_OPERATION
 
 
 class ValueDefinition(QualityDefinition):
@@ -842,7 +860,7 @@ class OperationArgumentStatement(ASTNode):
 
 
 class OperationExecutionStatement(ASTNode):
-    """Represents an 'execute the operation<...>' statement."""
+    """Represents an 'execute the operation<...>' or 'execute the encoding_operation<...>' statement."""
 
     operation: GlobalTypedNameReference
     arguments: tuple[OperationArgumentStatement, ...]
@@ -852,8 +870,14 @@ class EncodingOperationExecutionStatement(ASTNode):
     """Represents the 'execute the encoding operation' statement."""
 
 
+class ComputerOperationExecutionStatement(ASTNode):
+    """Represents the 'execute the computer operation' statement."""
+
+
 type OperationStatement = (
-    OperationExecutionStatement | EncodingOperationExecutionStatement
+    OperationExecutionStatement
+    | EncodingOperationExecutionStatement
+    | ComputerOperationExecutionStatement
 )
 
 

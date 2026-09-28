@@ -235,12 +235,35 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
             | ast.DefinitionGlobalNameContent
             | _OperationDefinitionBlockData
         ],
-    ) -> ast.OperationDefinition:
-        """Transform a value operation definition."""
+    ) -> ast.ValueOperationDefinition:
+        """Transform a Value Operation definition."""
+        return self._operation_definition(ast.ValueOperationDefinition, items)
+
+    @_strip_discard
+    def encoding_operation_definition(
+        self,
+        items: list[
+            lark_cython.Token
+            | ast.DefinitionGlobalNameContent
+            | _OperationDefinitionBlockData
+        ],
+    ) -> ast.EncodingOperationDefinition:
+        """Transform an Encoding Operation definition."""
+        return self._operation_definition(ast.EncodingOperationDefinition, items)
+
+    def _operation_definition[OperationDefinitionT: ast.OperationDefinition](
+        self,
+        definition_type: type[OperationDefinitionT],
+        items: list[
+            lark_cython.Token
+            | ast.DefinitionGlobalNameContent
+            | _OperationDefinitionBlockData
+        ],
+    ) -> OperationDefinitionT:
         keyword = cast("lark_cython.Token", items[0])
         name = cast("ast.DefinitionGlobalNameContent", items[1])
         block = cast("_OperationDefinitionBlockData", items[2])
-        return ast.OperationDefinition.from_name(
+        return definition_type.from_name(
             name=name,
             views=block.views,
             operation_statements=block.operation_statements,
@@ -384,6 +407,16 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
         """Transform the encoding operation execution statement."""
         keyword = items[0]
         return ast.EncodingOperationExecutionStatement(
+            location=self._location_with_terminator(start=keyword, end=keyword),
+        )
+
+    @_strip_discard
+    def computer_operation_execution_statement(
+        self, items: list[lark_cython.Token]
+    ) -> ast.ComputerOperationExecutionStatement:
+        """Transform the computer operation execution statement."""
+        keyword = items[0]
+        return ast.ComputerOperationExecutionStatement(
             location=self._location_with_terminator(start=keyword, end=keyword),
         )
 
@@ -619,6 +652,10 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
     def OPERATION(self, _token: lark_cython.Token) -> ast.NameType:  # noqa: N802
         """Transform the operation name type."""
         return ast.NameType.OPERATION
+
+    def ENCODING_OPERATION(self, _token: lark_cython.Token) -> ast.NameType:  # noqa: N802
+        """Transform the encoding operation name type."""
+        return ast.NameType.ENCODING_OPERATION
 
     def VIEW(self, _token: lark_cython.Token) -> ast.NameType:  # noqa: N802
         """Transform the view name type."""

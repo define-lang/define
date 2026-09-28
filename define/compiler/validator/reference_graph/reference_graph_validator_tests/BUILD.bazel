@@ -846,6 +846,7 @@ py_test(
     srcs = ["operation_view_directions_test.py"],
     data = ["//define/testdata/reference_graph/operation_view_directions"],
     deps = [
+        "//define/compiler:ast",
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:test_helpers",

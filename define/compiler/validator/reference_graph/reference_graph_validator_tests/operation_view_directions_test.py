@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler import diagnostics
+from define.compiler import ast, diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -230,6 +230,7 @@ def test_unreferenced_view(
     assert diagnostic.location.line == 21
     assert diagnostic.location.column == 21
     assert diagnostic.view_name == "view<unused>"
+    assert diagnostic.operation_name_type == ast.NameType.OPERATION
 
 
 def test_output_views_set_values_in_action(

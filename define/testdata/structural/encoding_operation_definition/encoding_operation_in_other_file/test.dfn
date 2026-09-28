@@ -1,0 +1,16 @@
+# The executed encoding operation is defined in another file.
+define the encoding_operation<my.domain.com:my_lib:/test> {
+    define the view<number> {
+        it is read.
+        it may only contain particles where {
+            it has the encoding<standard:/number/decimal/ascii>.
+        }
+    }
+
+    it does {
+        execute the encoding_operation</copy> {
+            with view<source> looking at view<number>.
+            with view<target> looking at literal<standard:/number>"2".
+        }
+    }
+}

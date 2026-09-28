@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import enum
 import typing
-from typing import ClassVar
+from typing import ClassVar, Final
 
 import msgspec
 
@@ -22,6 +22,14 @@ def _format_location(location: ast.SourceLocation) -> str:
     if location.file_path is not None:
         return f'File "{location.file_path}", line {location.line}, column {location.column}'
     return f"line {location.line}, column {location.column}"
+
+
+# The statement that reads every input view and writes every output view of
+# each type of operation.
+_ALL_VIEWS_STATEMENTS: Final = {
+    ast.NameType.OPERATION: "execute the encoding operation",
+    ast.NameType.ENCODING_OPERATION: "execute the computer operation",
+}
 
 
 class Diagnostic(msgspec.Struct):
@@ -203,13 +211,20 @@ class UnreferencedPositionDiagnostic(Diagnostic):
 
 
 class UnreferencedViewDiagnostic(Diagnostic):
-    """Diagnostic for an interface view never referenced in its value operation."""
+    """Diagnostic for an interface view never referenced in its operation."""
 
     view_name: str
+    operation_name_type: ast.NameType
+
+    @property
+    def all_views_statement(self) -> str:
+        """The statement that references every view of this operation."""
+        return _ALL_VIEWS_STATEMENTS[self.operation_name_type]
+
     message_format: ClassVar[str] = (
         "'{self.view_name}' is defined here, but it is never referenced "
         "within this definition; either remove the definition, reference "
-        "'{self.view_name}', or execute the encoding operation."
+        "'{self.view_name}', or {self.all_views_statement}."
     )
 
 
@@ -233,12 +248,32 @@ class ViewMissingValueConstraintDiagnostic(Diagnostic):
     )
 
 
+class ViewMissingEncodingConstraintDiagnostic(Diagnostic):
+    """Diagnostic for an interface view of an encoding operation without an encoding constraint."""
+
+    view_name: str
+    message_format: ClassVar[str] = (
+        "'{self.view_name}' must have an encoding constraint, because every "
+        "interface view on an encoding operation must have one"
+    )
+
+
+class EncodingOperationViewValueConstraintDiagnostic(Diagnostic):
+    """Diagnostic for a value constraint on an interface view of an encoding operation."""
+
+    constraint_name: str
+    message_format: ClassVar[str] = (
+        "interface views on an encoding operation may not have value "
+        "constraints, but '{self.constraint_name}' is a value"
+    )
+
+
 class OperationArgumentPositionDiagnostic(Diagnostic):
-    """Diagnostic for an Operation Argument Statement in a value operation that looks at a position."""
+    """Diagnostic for an Operation Argument Statement in an operation definition that looks at a position."""
 
     position_name: str
     message_format: ClassVar[str] = (
-        "within a value operation, a view may only look at a view or a "
+        "within an operation, a view may only look at a view or a "
         "literal, but this is looking at '{self.position_name}'"
     )
 

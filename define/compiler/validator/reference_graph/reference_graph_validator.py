@@ -23,10 +23,11 @@ if typing.TYPE_CHECKING:
     from define.compiler.data_structures import typed_name_dict
 
 
+# TODO: Validate Encoding Operation definitions in the reference graph.
 def _requires_validation(
     definition: ast.GlobalDefinition,
-) -> typing.TypeIs[ast.ActionDefinition | ast.OperationDefinition]:
-    return isinstance(definition, ast.ActionDefinition | ast.OperationDefinition)
+) -> typing.TypeIs[ast.ActionDefinition | ast.ValueOperationDefinition]:
+    return isinstance(definition, ast.ActionDefinition | ast.ValueOperationDefinition)
 
 
 class ReferenceGraphValidationResult(msgspec.Struct, frozen=True):
@@ -111,12 +112,12 @@ class ReferenceGraphValidator:
         )
 
     def _validate_definition(
-        self, definition: ast.ActionDefinition | ast.OperationDefinition
+        self, definition: ast.ActionDefinition | ast.ValueOperationDefinition
     ) -> validation_result.PostorderValidationResult:
         match definition:
             case ast.ActionDefinition():
                 result = self._validate_action(definition)
-            case ast.OperationDefinition():
+            case ast.ValueOperationDefinition():
                 result = operation_definition_validator.OperationDefinitionValidator(
                     definition, self._definition_results
                 ).analyze()

@@ -1094,16 +1094,17 @@ _FULL_OPERATION = (
 )
 
 
-def _only_operation(source: str) -> ast.OperationDefinition:
+def _only_operation(source: str) -> ast.ValueOperationDefinition:
     program = test_helpers.parse_and_transform(source)
     definition = program.definitions[0]
-    assert isinstance(definition, ast.OperationDefinition)
+    assert isinstance(definition, ast.ValueOperationDefinition)
     return definition
 
 
 def test_operation_definition_fields():
     definition = _only_operation(_FULL_OPERATION)
     assert not isinstance(definition, ast.QualityDefinition)
+    assert not isinstance(definition, ast.EncodingOperationDefinition)
     assert definition.typed_name.name_type == ast.NameType.OPERATION
     assert (
         definition.typed_name.name_content.source_name == "mv:example.com:example:/add"
@@ -1362,6 +1363,143 @@ def test_operation_definitions_update_reference_fqun():
     assert (
         second_statement.operation.full_typed_name
         == "operation<mv:example.com:second:/other>"
+    )
+
+
+_FULL_ENCODING_OPERATION = (
+    "define the encoding_operation<mv:example.com:example:/add_decimal> {\n"
+    + "    define the view<left> {\n"
+    + "        it is read.\n"
+    + "        it may only contain particles where {\n"
+    + "            it has the encoding<standard:/decimal>.\n"
+    + "        }\n"
+    + "    }\n"
+    + "    it does {\n"
+    + "        execute the encoding_operation</other>.\n"
+    + "        execute the encoding_operation<standard:/sum> {\n"
+    + "            with view<a> looking at view<left>.\n"
+    + "        }\n"
+    + "        execute the computer operation.\n"
+    + "    }\n"
+    + "}\n"
+)
+
+
+def _only_encoding_operation(source: str) -> ast.EncodingOperationDefinition:
+    program = test_helpers.parse_and_transform(source)
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.EncodingOperationDefinition)
+    return definition
+
+
+def test_encoding_operation_definition_fields():
+    definition = _only_encoding_operation(_FULL_ENCODING_OPERATION)
+    assert not isinstance(definition, ast.ValueOperationDefinition)
+    assert definition.typed_name.name_type == ast.NameType.ENCODING_OPERATION
+    assert (
+        definition.typed_name.name_content.source_name
+        == "mv:example.com:example:/add_decimal"
+    )
+    assert (
+        definition.typed_name.full_typed_name
+        == "encoding_operation<mv:example.com:example:/add_decimal>"
+    )
+    assert definition.location == ast.SourceLocation(
+        line=1, column=1, end_line=15, end_column=2
+    )
+    assert _slice(
+        _FULL_ENCODING_OPERATION, definition.location
+    ) == _FULL_ENCODING_OPERATION.rstrip("\n")
+    assert (
+        _slice(_FULL_ENCODING_OPERATION, definition.typed_name.location)
+        == "encoding_operation<mv:example.com:example:/add_decimal>"
+    )
+    assert [view.typed_name.source_typed_name for view in definition.views] == [
+        "view<left>"
+    ]
+    assert len(definition.operation_statements) == 3
+
+
+def test_encoding_operation_definition_without_views_fields():
+    source = (
+        "define the encoding_operation<mv:example.com:example:/add_decimal> {\n"
+        + "    it does {\n"
+        + "        execute the computer operation.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = _only_encoding_operation(source)
+    assert definition.views == ()
+    assert len(definition.operation_statements) == 1
+    assert definition.location == ast.SourceLocation(
+        line=1, column=1, end_line=5, end_column=2
+    )
+    assert _slice(source, definition.location) == source.rstrip("\n")
+
+
+def test_encoding_operation_execution_without_arguments_fields():
+    definition = _only_encoding_operation(_FULL_ENCODING_OPERATION)
+    statement = definition.operation_statements[0]
+    assert isinstance(statement, ast.OperationExecutionStatement)
+    assert statement.arguments == ()
+    assert statement.operation.name_type == ast.NameType.ENCODING_OPERATION
+    assert statement.operation.source_typed_name == "encoding_operation</other>"
+    assert (
+        statement.operation.full_typed_name
+        == "encoding_operation<mv:example.com:example:/other>"
+    )
+    assert (
+        _slice(_FULL_ENCODING_OPERATION, statement.operation.location)
+        == "encoding_operation</other>"
+    )
+    assert statement.location == ast.SourceLocation(
+        line=9, column=9, end_line=9, end_column=48
+    )
+    assert (
+        _slice(_FULL_ENCODING_OPERATION, statement.location)
+        == "execute the encoding_operation</other>."
+    )
+
+
+def test_encoding_operation_execution_with_arguments_fields():
+    definition = _only_encoding_operation(_FULL_ENCODING_OPERATION)
+    statement = definition.operation_statements[1]
+    assert isinstance(statement, ast.OperationExecutionStatement)
+    assert statement.operation.name_type == ast.NameType.ENCODING_OPERATION
+    assert statement.operation.full_typed_name == "encoding_operation<standard:/sum>"
+    assert statement.location == ast.SourceLocation(
+        line=10, column=9, end_line=12, end_column=10
+    )
+    assert _slice(_FULL_ENCODING_OPERATION, statement.location) == (
+        "execute the encoding_operation<standard:/sum> {\n"
+        "            with view<a> looking at view<left>.\n"
+        "        }"
+    )
+    (argument,) = statement.arguments
+    assert argument.view.source_typed_name == "view<a>"
+    looking_at = argument.looking_at
+    assert isinstance(looking_at, ast.LocalTypedNameReference)
+    assert looking_at.name_type == ast.NameType.VIEW
+    assert looking_at.source_typed_name == "view<left>"
+    assert argument.location == ast.SourceLocation(
+        line=11, column=13, end_line=11, end_column=48
+    )
+    assert (
+        _slice(_FULL_ENCODING_OPERATION, argument.location)
+        == "with view<a> looking at view<left>."
+    )
+
+
+def test_computer_operation_execution_statement_fields():
+    definition = _only_encoding_operation(_FULL_ENCODING_OPERATION)
+    statement = definition.operation_statements[2]
+    assert isinstance(statement, ast.ComputerOperationExecutionStatement)
+    assert statement.location == ast.SourceLocation(
+        line=13, column=9, end_line=13, end_column=40
+    )
+    assert (
+        _slice(_FULL_ENCODING_OPERATION, statement.location)
+        == "execute the computer operation."
     )
 
 
