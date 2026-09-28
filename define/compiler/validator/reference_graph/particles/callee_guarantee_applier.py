@@ -55,6 +55,30 @@ class _PendingGuarantee(msgspec.Struct, frozen=True):
         """Return the absolute key for a guarantee this action names ``name``."""
         return ast.chain_in_caller(self.action_chain, name)
 
+    @property
+    def identity(self) -> _PendingGuaranteeIdentity:
+        """Fields that make two pending guarantees apply identical effects."""
+        return _PendingGuaranteeIdentity(
+            self.action_chain,
+            id(self.contract),
+            self.body_operation_number,
+            self.execution,
+            self.call_chain_depth,
+        )
+
+
+class _PendingGuaranteeIdentity(msgspec.Struct, frozen=True):
+    """Fields that make two pending guarantees apply identical effects."""
+
+    action_chain: tuple[str, ...]
+    # Contracts are compared by identity because comparing their contents
+    # would walk every guarantee, and each definition has one contract.
+    contract_id: int
+    body_operation_number: int
+    # Action Executions already compare by identity.
+    execution: codegen_input.ActionExecution
+    call_chain_depth: int
+
 
 # Nested guarantees are deferred here instead of being flattened into every
 # caller's state, and this laziness is a critical performance optimization.
@@ -87,10 +111,14 @@ class _PendingNestedGuarantees:
     # _by_requested_prefix[("a", "b")] contain the key ("a", "b"). A query
     # for ("a",) can therefore find those guarantees without examining unrelated
     # names. The index holds keys rather than guarantees, so adding another
-    # guarantee at an existing name needs only an append to its list.
+    # guarantee at an existing name needs only an insertion into its ordered set.
 
     def __init__(self):
-        self._by_prefix: dict[tuple[str, ...], list[_PendingGuarantee]] = {}
+        # Each inner dictionary is an ordered set of the guarantees stored at
+        # that name.
+        self._by_prefix: dict[
+            tuple[str, ...], dict[_PendingGuaranteeIdentity, _PendingGuarantee]
+        ] = {}
         # Queries must skip unrelated guarantees even when many share a parent name.
         self._by_requested_prefix: dict[tuple[str, ...], set[tuple[str, ...]]] = {}
         # Draining several indexed names must preserve their original insertion order.
@@ -118,16 +146,26 @@ class _PendingNestedGuarantees:
                     matching.add(prefix)
             self._prefix_order[prefix] = self._next_prefix_order
             self._next_prefix_order += 1
-            self._by_prefix[prefix] = [nested_guarantee]
+            self._by_prefix[prefix] = {nested_guarantee.identity: nested_guarantee}
         else:
-            guarantees.append(nested_guarantee)
+            # When several implying qualities imply the same quality, each of
+            # them adds that quality's action as a nested guarantee. From the
+            # caller's perspective, an implied action's chain drops the action
+            # that implied it, so all of those copies have the same chain. Over
+            # layers of shared implied qualities, the copies multiply with every
+            # layer. Applying each copy would take exponential time. Keeping
+            # only the latest copy preserves which guarantee writes each
+            # position last.
+            identity = nested_guarantee.identity
+            _ = guarantees.pop(identity, None)
+            guarantees[identity] = nested_guarantee
         self._longest_pending_guarantee_key = max(
             self._longest_pending_guarantee_key, len(prefix)
         )
 
-    def _pop_prefix(self, prefix: tuple[str, ...]) -> list[_PendingGuarantee]:
+    def _pop_prefix(self, prefix: tuple[str, ...]) -> Iterable[_PendingGuarantee]:
         # Every drain must remove the index entries before yielding the guarantees:
-        # applying one can query the index again or add a new list at this same name.
+        # applying one can query the index again or add new guarantees at this same name.
         guarantees = self._by_prefix.pop(prefix)
         for length in range(1, len(prefix) + 1):
             requested_prefix = prefix[:length]
@@ -136,7 +174,7 @@ class _PendingNestedGuarantees:
             if not matching:
                 del self._by_requested_prefix[requested_prefix]
         del self._prefix_order[prefix]
-        return guarantees
+        return guarantees.values()
 
     def drain_shortest_first(self, key: tuple[str, ...]) -> Iterator[_PendingGuarantee]:
         """Yield and remove the pending nested guarantees on the path to ``key``, shortest prefix first."""

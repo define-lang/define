@@ -58,6 +58,16 @@ class ReferenceGraph:
         # three references each.
         self._depth_by_name: dict[str, int] = {}
         self._next_definition_depth: int = 0
+        # Files are validated in the order their names are first referenced,
+        # so a newly referenced name usually has no references yet when an
+        # earlier-referenced name references it. Giving each newly referenced
+        # name a smaller depth than the names a definition referenced before it
+        # means that references between those names rarely require increasing
+        # the depth of a name that already has references. If they shared one
+        # depth, a chain of references among them would be renumbered for each
+        # new reference. The offset stays positive because 2**32 names would
+        # need hundreds of gigabytes of memory.
+        self._next_referenced_name_depth_offset: int = 2**32
         self._definition_by_name: dict[str, ast.GlobalDefinition] = {}
 
     def add_definition(self, definition: ast.GlobalDefinition):
@@ -85,8 +95,10 @@ class ReferenceGraph:
             # that references it.
             self._references_by_name[referenced_name] = {}
             self._depth_by_name[referenced_name] = (
-                self._depth_by_name[referencing_name] + 1
+                self._depth_by_name[referencing_name]
+                + self._next_referenced_name_depth_offset
             )
+            self._next_referenced_name_depth_offset -= 1
         elif self._depth_by_name[referencing_name] >= self._depth_by_name[
             referenced_name
         ] and self._increase_depths_or_find_cycle(referencing_name, referenced_name):

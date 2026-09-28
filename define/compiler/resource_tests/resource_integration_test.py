@@ -173,11 +173,6 @@ def test_retained_memory(case: MemoryCase, tmp_path: Path):
                 maximum_ratio=2,
             ),
             id="reference_depth_updates",
-            marks=pytest.mark.xfail(
-                strict=True,
-                raises=resource_test_runner.CpuGrowthExceededError,
-                reason="Reference insertion repeatedly traverses prior dependencies in adversarial order.",
-            ),
         ),
         pytest.param(
             CpuGrowthCase(
@@ -187,11 +182,6 @@ def test_retained_memory(case: MemoryCase, tmp_path: Path):
                 maximum_ratio=4,
             ),
             id="shared_quality_implications",
-            marks=pytest.mark.xfail(
-                strict=True,
-                raises=resource_test_runner.CpuGrowthExceededError,
-                reason="Shared Quality Implications grow rapidly between 12 and 32 layers.",
-            ),
         ),
     ],
 )
