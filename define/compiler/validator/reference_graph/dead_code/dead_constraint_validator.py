@@ -62,7 +62,7 @@ class DeadConstraintValidator:
         )
 
     def mark_implied_action_alive(self, action: ast.GlobalTypedNameReference):
-        """Keep an implied Action alive when it triggers on the current particle."""
+        """Keep an implied Action alive when it triggers on this Action's parent particle."""
         self._dead_constraint_tracker.mark_implied_action_alive(action)
 
     def mark_action_alive(

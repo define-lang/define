@@ -544,6 +544,11 @@ def chain_in_callee(
 _ACTION_TYPED_NAME_PREFIX: Final = f"{NameType.ACTION.value}<"
 
 
+def is_action_key(typed_name: str) -> bool:
+    """Return whether a canonical typed name in a chained-name key is an action."""
+    return typed_name.startswith(_ACTION_TYPED_NAME_PREFIX)
+
+
 def chain_parent_position(key: ChainedNameTuple) -> ChainedNameTuple | None:
     """Return the nearest parent position key, skipping actions, or None.
 

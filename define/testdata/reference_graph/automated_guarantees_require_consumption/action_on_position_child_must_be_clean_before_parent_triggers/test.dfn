@@ -10,7 +10,6 @@ define the potential action<my.domain.com:my_lib:/test> {
         create a particle in position<box>.
         create a particle in position<box>::action</parent>::position<iface>.
         create a particle in position<box>::action</parent>::position<iface>::position</branch>.
-        create a particle in position<box>::action</parent>::position<iface>::position</branch>::action</child>::position<result>.
         create a particle in position<box>::action</parent>::position<iface>::position</branch>::action</child>::position<run>.
         create a particle in position<box>::action</parent>::position<run>.
     }

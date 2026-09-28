@@ -27,7 +27,7 @@ _IMPLIED_ACTION = "action<my.domain.com:my_lib:/implied_action>"
 _P = "action<my.domain.com:my_lib:/p>"
 
 
-def test_action_occupied_requirement_for_interface_position_propagates_via_constructor_implied_action(
+def test_action_occupied_requirement_for_interface_position_does_not_propagate_via_constructor_implied_action(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -36,46 +36,27 @@ def test_action_occupied_requirement_for_interface_position_propagates_via_const
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
-    assert all_diags[0].location.line == 10
+    assert all_diags[0].location.line == 6
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.end_line == 10
-    assert all_diags[0].location.end_column == 43
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == _P
+    assert all_diags[0].location.end_line == 6
+    assert all_diags[0].location.end_column == 76
+    assert all_diags[0].location.file_path == PurePosixPath("p.dfn")
+    assert all_diags[0].action_name == _IMPLIED_ACTION
     assert all_diags[0].required_empty is False
-    assert (
-        all_diags[0].position_name
-        == "position<box>::action</implied_action>::position<item>"
-    )
+    assert all_diags[0].position_name == "action</implied_action>::position<item>"
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
-            "enclosing_quality_name": "position<box>",
-            "triggered_quality_name": "action<my.domain.com:my_lib:/p>",
-            "line": 7,
-            "column": 28,
-            "file_path": "test.dfn",
-        },
-        {
-            "kind": action_contract.PropagationKind.CONSTRUCTOR_TRIGGER,
-            "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
-            "triggered_quality_name": "action<my.domain.com:my_lib:/p>",
-            "line": 10,
-            "column": 30,
-            "file_path": "test.dfn",
-        },
-        {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
-            "enclosing_quality_name": "action<my.domain.com:my_lib:/p>",
-            "triggered_quality_name": "action<my.domain.com:my_lib:/implied_action>",
+            "enclosing_quality_name": _P,
+            "triggered_quality_name": _IMPLIED_ACTION,
             "line": 6,
             "column": 30,
             "file_path": "p.dfn",
         },
         {
             "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
-            "enclosing_quality_name": "action<my.domain.com:my_lib:/implied_action>",
+            "enclosing_quality_name": _IMPLIED_ACTION,
             "triggered_quality_name": None,
             "line": 7,
             "column": 33,

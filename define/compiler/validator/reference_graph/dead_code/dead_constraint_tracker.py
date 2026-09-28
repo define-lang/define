@@ -188,7 +188,7 @@ class DeadConstraintTracker:
             del self._position_constraint_candidate_counts[constraint_name]
 
     def mark_implied_action_alive(self, action: ast.GlobalTypedNameReference):
-        """Keep an implied action alive when it is triggered on the current particle."""
+        """Keep an implied action alive when it is triggered on this action's parent particle."""
         _ = self._implied_action_candidates.pop(action.full_typed_name, None)
 
     def mark_action_alive(

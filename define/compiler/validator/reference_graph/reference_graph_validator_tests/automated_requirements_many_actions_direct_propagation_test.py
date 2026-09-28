@@ -109,7 +109,7 @@ def test_inner_chained_action_empty_requirement_satisfied(
     ]
 
 
-def test_inner_chained_action_occupied_requirement_propagates(
+def test_inner_chained_action_occupied_requirement_is_reported_where_inner_action_triggers(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -118,25 +118,16 @@ def test_inner_chained_action_occupied_requirement_propagates(
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
-    assert all_diags[0].location.line == 16
+    assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/outer>"
+    assert all_diags[0].location.file_path == PurePosixPath("outer.dfn")
+    assert all_diags[0].action_name == _INNER
     assert all_diags[0].required_empty is False
     assert (
-        all_diags[0].position_name
-        == "position<box>::action</outer>::position<iface>::action</inner>::position<item>"
+        all_diags[0].position_name == "position<iface>::action</inner>::position<item>"
     )
     assert_propagation_chain(
         all_diags[0],
-        {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
-            "enclosing_quality_name": _TEST,
-            "triggered_quality_name": _OUTER,
-            "line": 16,
-            "column": 30,
-            "file_path": "test.dfn",
-        },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _OUTER,

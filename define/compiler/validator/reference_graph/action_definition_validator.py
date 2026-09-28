@@ -496,7 +496,7 @@ class ActionDefinitionValidator:
         parent_position = action_chain.parent_position()
         parent_particle = None
         # A chain with no parent position starts with one of this action's
-        # implied actions, which triggers on the current particle.
+        # implied actions, which triggers on this action's parent particle.
         if parent_position is None:
             self._dead_constraint_validator.mark_implied_action_alive(action)
         else:
@@ -1108,6 +1108,11 @@ class ActionDefinitionValidator:
             callees=callees,
             destruction_contracts=self._destruction_contracts,
             trigger_position_name=self._trigger_position_name or "",
+            implied_quality_names=(
+                self._position_quality_resolver.get_transitive_implied_quality_names(
+                    self._implied_quality_list
+                )
+            ),
         )
 
     def _check_destructor_guarantees(

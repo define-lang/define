@@ -125,21 +125,45 @@ class PositionQualityResolver:
         self, direct: tuple[ast.GlobalTypedNameReference, ...]
     ) -> quality_assignment.QualityAssignments:
         """Build assigned qualities in source-order depth-first assignment order."""
-
-        def implications_for(
-            typed_name: ast.GlobalTypedNameReference,
-        ) -> tuple[ast.GlobalTypedNameReference, ...]:
-            defn_result = self._definition_results.get(typed_name)
-            if defn_result is None:
-                return ()
-            definition = typing.cast("ast.QualityDefinition", defn_result.definition)
-            return tuple(
-                implication.typed_global_name
-                for implication in definition.quality_implications
-            )
-
         return quality_assignment.QualityAssignments.expand_implications(
-            direct, implications_for
+            direct, self._implications_for
+        )
+
+    def get_transitive_implied_quality_names(
+        self, implied_qualities: tuple[ast.GlobalTypedNameReference, ...]
+    ) -> frozenset[str]:
+        """Return the names of the implied qualities and everything they transitively imply."""
+        names: set[str] = set()
+        pending = list(implied_qualities)
+        while pending:
+            quality = pending.pop()
+            if quality.full_typed_name in names:
+                continue
+            names.add(quality.full_typed_name)
+            if quality.name_type == ast.NameType.ACTION:
+                # Implied actions are validated first, so their contracts
+                # already hold their transitive implications. A rejected
+                # circular reference leaves no contract; it is reported elsewhere.
+                contract = self._validation_state.get_contract_or_none(quality)
+                if contract is not None:
+                    names.update(contract.implied_quality_names)
+                continue
+            pending.extend(self._implications_for(quality))
+        # A rejected circular implication can lead back to this action, which
+        # must not count as implying itself.
+        names.discard(self._definition.typed_name.full_typed_name)
+        return frozenset(names)
+
+    def _implications_for(
+        self, quality: ast.GlobalTypedNameReference
+    ) -> tuple[ast.GlobalTypedNameReference, ...]:
+        definition_result = self._definition_results.get(quality)
+        if definition_result is None:
+            return ()
+        definition = typing.cast("ast.QualityDefinition", definition_result.definition)
+        return tuple(
+            implication.typed_global_name
+            for implication in definition.quality_implications
         )
 
     def _local_definition_cache_key(

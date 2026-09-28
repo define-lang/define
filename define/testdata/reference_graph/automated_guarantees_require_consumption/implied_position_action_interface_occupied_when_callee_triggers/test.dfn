@@ -1,4 +1,3 @@
-# An interface requirement from /inner propagates two levels up through /middle and /outer when each is reached as an implied action of its caller.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.
@@ -6,9 +5,13 @@ define the potential action<my.domain.com:my_lib:/test> {
         define the position<box> {
             it may only contain particles where {
                 it has the action</outer>.
+                it has the position</implied>.
             }
         }
         create a particle in position<box>.
-        create a particle in position<box>::action</outer>::position<trigger_pos>.
+        create a particle in position<box>::position</implied>.
+        create a particle in position<box>::position</implied>::action</inner>::position<run>.
+        create a particle in position<box>::action</outer>::position<run>.
+        destroy the particle in position<box>.
     }
 }

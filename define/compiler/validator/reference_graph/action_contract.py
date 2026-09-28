@@ -313,6 +313,8 @@ class ActionContract(msgspec.Struct, frozen=True):
     destruction_contracts: list[DestructionContracts]
     # TODO: Support triggering on chained names?
     trigger_position_name: str
+    # The action's transitively implied qualities.
+    implied_quality_names: frozenset[str]
 
     def occupancy_requirements_in_caller(
         self, action_chain: ast.ActionReference

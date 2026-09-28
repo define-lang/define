@@ -14,7 +14,6 @@ define the potential action<my.domain.com:my_lib:/test> {
         }
         create a particle in position<box>.
         create a particle in position<source>.
-        create a particle in position<source>::action</child>::position<result>.
         create a particle in position<source>::action</child>::position<run>.
         move the particle in position<source> to position<box>::action</parent>::position<iface>.
         create a particle in position<box>::action</parent>::position<run>.

@@ -1,7 +1,4 @@
-# /inner requires position<item> occupied. /outer triggers /inner without filling it.
-#
-# The OCCUPIED requirement propagates from /inner through /outer to /test.
-# /test doesn't fill position<item> either, so the diagnostic appears at /test.
+# An interface requirement from /inner does not propagate up through /middle and /outer when each is reached as an implied action of its caller.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.
@@ -12,7 +9,6 @@ define the potential action<my.domain.com:my_lib:/test> {
             }
         }
         create a particle in position<box>.
-        create a particle in position<box>::action</outer>::position<iface>.
         create a particle in position<box>::action</outer>::position<trigger_pos>.
     }
 }

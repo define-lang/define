@@ -1168,7 +1168,7 @@ def test_interfaces_stop_value_inference(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert diagnostic.location.line == 11
+    assert diagnostic.location.line == 12
     assert diagnostic.location.column == 30
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.required_value is True
@@ -1183,15 +1183,15 @@ def test_interfaces_stop_value_inference(
             "kind": action_contract.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<input>::action</consume>::position<input>",
             "triggered_quality_name": None,
-            "line": 17,
-            "column": 44,
-            "file_path": "consume.dfn",
+            "line": 11,
+            "column": 30,
+            "file_path": "test.dfn",
         },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/consume>",
-            "line": 11,
+            "line": 12,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -1679,7 +1679,7 @@ def test_repeated_interface_value_requirement(
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert diagnostic.location.line == 11
+    assert diagnostic.location.line == 12
     assert diagnostic.location.column == 30
     assert (
         diagnostic.position_name == "position<input>::action</consume>::position<input>"
@@ -1693,15 +1693,15 @@ def test_repeated_interface_value_requirement(
             "kind": action_contract.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<input>::action</consume>::position<input>",
             "triggered_quality_name": None,
-            "line": 17,
-            "column": 44,
-            "file_path": "consume.dfn",
+            "line": 11,
+            "column": 30,
+            "file_path": "test.dfn",
         },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
             "triggered_quality_name": "action<my.domain.com:my_lib:/consume>",
-            "line": 11,
+            "line": 12,
             "column": 30,
             "file_path": "test.dfn",
         },

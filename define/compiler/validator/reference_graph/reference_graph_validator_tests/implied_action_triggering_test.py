@@ -58,7 +58,7 @@ def test_constructor_triggers_implied_action(
     assert action_graph(result.reference_graph_result) == [(_TEST, _IMPLIED)]
 
 
-def test_implied_action_iface_requirement_propagates_to_caller(
+def test_implied_action_iface_requirement_does_not_propagate_to_caller(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -68,24 +68,14 @@ def test_implied_action_iface_requirement_propagates_to_caller(
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
     assert diag.required_value is False
-    assert diag.location.line == 11
+    assert diag.location.line == 7
     assert diag.location.column == 30
-    assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.action_name == _MIDDLE
+    assert diag.location.file_path == PurePosixPath("middle.dfn")
+    assert diag.action_name == _IMPLIED
     assert diag.required_empty is False
-    assert (
-        diag.position_name == "position<box>::action</implied_action>::position<extra>"
-    )
+    assert diag.position_name == "action</implied_action>::position<extra>"
     assert_propagation_chain(
         diag,
-        {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
-            "enclosing_quality_name": _TEST,
-            "triggered_quality_name": _MIDDLE,
-            "line": 11,
-            "column": 30,
-            "file_path": "test.dfn",
-        },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _MIDDLE,

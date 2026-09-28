@@ -250,7 +250,7 @@ _INNER_REQUIRES_ITEM_OCCUPIED = (
 )
 
 
-def test_caller_filled_implied_position_propagates_inner_action_requirement(
+def test_caller_filled_implied_position_does_not_propagate_inner_action_requirement(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -259,25 +259,14 @@ def test_caller_filled_implied_position_propagates_inner_action_requirement(
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
-    assert all_diags[0].location.line == 14
+    assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].action_name == _MIDDLE
+    assert all_diags[0].location.file_path == PurePosixPath("middle.dfn")
+    assert all_diags[0].action_name == _INNER
     assert all_diags[0].required_empty is False
-    assert (
-        all_diags[0].position_name
-        == "position<box>::position</x>::action</inner>::position<item>"
-    )
+    assert all_diags[0].position_name == "position</x>::action</inner>::position<item>"
     assert_propagation_chain(
         all_diags[0],
-        {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
-            "enclosing_quality_name": _TEST,
-            "triggered_quality_name": _MIDDLE,
-            "line": 14,
-            "column": 30,
-            "file_path": "test.dfn",
-        },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _MIDDLE,
@@ -385,7 +374,7 @@ def test_grandchild_requirement_below_locally_created_particle_does_not_propagat
     ]
 
 
-def test_doubly_nested_implied_action_chain_propagates(
+def test_doubly_nested_implied_action_requirement_is_reported_where_inner_action_triggers(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -395,30 +384,14 @@ def test_doubly_nested_implied_action_chain_propagates(
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
     assert diag.required_value is False
-    assert diag.location.line == 12
+    assert diag.location.line == 7
     assert diag.location.column == 30
-    assert diag.location.file_path == PurePosixPath("test.dfn")
-    assert diag.action_name == _OUTER
+    assert diag.location.file_path == PurePosixPath("middle.dfn")
+    assert diag.action_name == _INNER
     assert diag.required_empty is False
-    assert diag.position_name == "position<box>::action</inner>::position<extra>"
+    assert diag.position_name == "action</inner>::position<extra>"
     assert_propagation_chain(
         diag,
-        {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
-            "enclosing_quality_name": _TEST,
-            "triggered_quality_name": _OUTER,
-            "line": 12,
-            "column": 30,
-            "file_path": "test.dfn",
-        },
-        {
-            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
-            "enclosing_quality_name": _OUTER,
-            "triggered_quality_name": _MIDDLE,
-            "line": 7,
-            "column": 30,
-            "file_path": "outer.dfn",
-        },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _MIDDLE,

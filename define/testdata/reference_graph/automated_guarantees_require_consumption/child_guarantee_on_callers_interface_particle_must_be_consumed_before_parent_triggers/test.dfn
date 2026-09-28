@@ -8,7 +8,6 @@ define the potential action<my.domain.com:my_lib:/test> {
         this particle is created.
     } and it does {
         create a particle in position<box>::action</parent>::position<iface>.
-        create a particle in position<box>::action</parent>::position<iface>::action</child>::position<result>.
         create a particle in position<box>::action</parent>::position<iface>::action</child>::position<run>.
         create a particle in position<box>::action</parent>::position<run>.
     }

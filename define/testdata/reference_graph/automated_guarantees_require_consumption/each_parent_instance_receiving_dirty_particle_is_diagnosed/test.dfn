@@ -14,12 +14,10 @@ define the potential action<my.domain.com:my_lib:/test> {
         }
         create a particle in position<box_a>.
         create a particle in position<box_a>::action</parent>::position<iface>.
-        create a particle in position<box_a>::action</parent>::position<iface>::action</child>::position<result>.
         create a particle in position<box_a>::action</parent>::position<iface>::action</child>::position<run>.
         create a particle in position<box_a>::action</parent>::position<run>.
         create a particle in position<box_b>.
         create a particle in position<box_b>::action</parent>::position<iface>.
-        create a particle in position<box_b>::action</parent>::position<iface>::action</child>::position<result>.
         create a particle in position<box_b>::action</parent>::position<iface>::action</child>::position<run>.
         create a particle in position<box_b>::action</parent>::position<run>.
     }

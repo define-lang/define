@@ -128,11 +128,9 @@ py_test(
     srcs = ["automated_guarantees_require_consumption_test.py"],
     data = ["//define/testdata/reference_graph/automated_guarantees_require_consumption"],
     deps = [
-        ":test_helpers",
         "//define/compiler:conftest",
         "//define/compiler:diagnostics",
         "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:action_contract",
         "//define/compiler/validator/reference_graph:test_helpers",
     ],
 )

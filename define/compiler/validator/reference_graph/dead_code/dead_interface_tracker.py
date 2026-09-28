@@ -7,14 +7,55 @@ import typing
 
 import msgspec
 
+from define.compiler import ast
 from define.compiler.validator.reference_graph import particle_info
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from define.compiler import ast
+# A quality on a particle, where None is the current action's parent particle.
+type QualityOnParticle = tuple[particle_info.ParticleInfo | None, str]
+type _Callee = QualityOnParticle
 
-type _Callee = tuple[particle_info.ParticleInfo | None, str]
+
+def interface_parent_name_indexes(
+    position: ast.ChainedNameTuple,
+) -> tuple[list[int], list[int]]:
+    """Return the name indexes of the callees and interface parent qualities in a chained name.
+
+    Returns:
+        Two lists of indexes into ``position``:
+
+        - Callees: each action that is followed by another action.
+        - Interface parent qualities: each child name of a particle that is an
+          action or is followed by one.
+    """
+    callee_indexes: list[int] = []
+    interface_parent_quality_indexes: list[int] = []
+    last_action_index: int | None = None
+    for name_index, name in enumerate(position):
+        if ast.is_action_key(name):
+            last_action_index = name_index
+    if last_action_index is None:
+        return callee_indexes, interface_parent_quality_indexes
+    previous_action_index: int | None = None
+    for name_index, name in enumerate(position[: last_action_index + 1]):
+        # Only a child name of a particle can be implied by a callee. The other
+        # names are interface positions, which follow an action, and the
+        # action's local positions, which start a chain.
+        is_particle_child_name = (
+            ast.chain_starts_with_global(position)
+            if name_index == 0
+            else not ast.is_action_key(position[name_index - 1])
+        )
+        if is_particle_child_name:
+            interface_parent_quality_indexes.append(name_index)
+        if not ast.is_action_key(name):
+            continue
+        if previous_action_index is not None:
+            callee_indexes.append(previous_action_index)
+        previous_action_index = name_index
+    return callee_indexes, interface_parent_quality_indexes
 
 
 class _PendingArrival(msgspec.Struct):
@@ -25,11 +66,17 @@ class _PendingArrival(msgspec.Struct):
 
 
 class _OccupiedInterfaceChildPosition(msgspec.Struct):
-    """An occupied interface child position and the callees it prevents from triggering."""
+    """An occupied interface child position and the triggers that are invalid while it stays occupied.
+
+    While the position is occupied, triggering one of ``callees``, or any
+    callee that transitively implies one of ``interface_parent_qualities`` on
+    the same particle, is a violation.
+    """
 
     position: ast.ChainedNameTuple
     location: ast.SourceLocation
     callees: list[_Callee]
+    interface_parent_qualities: list[QualityOnParticle]
 
 
 class InterfaceArrivalTracker:
@@ -97,6 +144,9 @@ class OccupiedInterfaceChildPositionTracker:
         self._particles_by_callee: collections.defaultdict[
             _Callee, set[particle_info.ParticleInfo]
         ] = collections.defaultdict(set)
+        self._particles_by_interface_parent_quality: collections.defaultdict[
+            QualityOnParticle, set[particle_info.ParticleInfo]
+        ] = collections.defaultdict(set)
 
     def register(
         self,
@@ -104,9 +154,10 @@ class OccupiedInterfaceChildPositionTracker:
         position: ast.ChainedNameTuple,
         location: ast.SourceLocation,
         callees: list[_Callee],
+        interface_parent_qualities: list[QualityOnParticle],
     ):
         """Register an occupied interface child position for a new particle."""
-        self._set(particle, position, location, callees)
+        self._set(particle, position, location, callees, interface_parent_qualities)
 
     def replace(
         self,
@@ -114,14 +165,15 @@ class OccupiedInterfaceChildPositionTracker:
         position: ast.ChainedNameTuple,
         location: ast.SourceLocation,
         callees: list[_Callee],
+        interface_parent_qualities: list[QualityOnParticle],
     ):
         """Replace an existing particle's occupied interface child position."""
         occupied_position = self._by_particle.pop(particle, None)
         if occupied_position is not None:
             self._remove(particle, occupied_position)
-        if not callees:
+        if not callees and not interface_parent_qualities:
             return
-        self._set(particle, position, location, callees)
+        self._set(particle, position, location, callees, interface_parent_qualities)
 
     def mark_particle_destroyed(self, particle: particle_info.ParticleInfo):
         """Discard an occupied position after its particle is destroyed."""
@@ -132,20 +184,28 @@ class OccupiedInterfaceChildPositionTracker:
     def pop_occupied_interface_child_positions(
         self,
         action_name: str,
+        implied_quality_names: frozenset[str],
         parent_particle: particle_info.ParticleInfo | None,
     ) -> list[tuple[ast.ChainedNameTuple, ast.SourceLocation]]:
         """Remove and return occupied interface child positions for one callee."""
-        callee = (parent_particle, action_name)
+        particles: set[particle_info.ParticleInfo] = set()
+        callee_particles = self._particles_by_callee.get((parent_particle, action_name))
+        if callee_particles is not None:
+            particles.update(callee_particles)
+        if self._particles_by_interface_parent_quality:
+            for quality_name in implied_quality_names:
+                quality_particles = self._particles_by_interface_parent_quality.get(
+                    (parent_particle, quality_name)
+                )
+                if quality_particles is not None:
+                    particles.update(quality_particles)
         occupied_positions: list[tuple[ast.ChainedNameTuple, ast.SourceLocation]] = []
-        particles = self._particles_by_callee.pop(callee, None)
-        if particles is None:
-            return occupied_positions
         for particle in particles:
             occupied_position = self._by_particle.pop(particle)
             occupied_positions.append(
                 (occupied_position.position, occupied_position.location)
             )
-            self._remove(particle, occupied_position, removed_callee=callee)
+            self._remove(particle, occupied_position)
         # This sort keeps multiple diagnostics on the same line/column in deterministic
         # order, and only fires in the error path.
         occupied_positions.sort(key=lambda occupied_position: occupied_position[0])
@@ -155,16 +215,29 @@ class OccupiedInterfaceChildPositionTracker:
         self,
         particle: particle_info.ParticleInfo,
         occupied_position: _OccupiedInterfaceChildPosition,
-        *,
-        removed_callee: _Callee | None = None,
     ):
-        for callee in occupied_position.callees:
-            if callee == removed_callee:
-                continue
-            occupied_particles = self._particles_by_callee[callee]
+        self._remove_from(
+            self._particles_by_callee, particle, occupied_position.callees
+        )
+        self._remove_from(
+            self._particles_by_interface_parent_quality,
+            particle,
+            occupied_position.interface_parent_qualities,
+        )
+
+    @staticmethod
+    def _remove_from(
+        particles_by_parent_name: collections.defaultdict[
+            QualityOnParticle, set[particle_info.ParticleInfo]
+        ],
+        particle: particle_info.ParticleInfo,
+        parent_names: list[QualityOnParticle],
+    ):
+        for parent_name in parent_names:
+            occupied_particles = particles_by_parent_name[parent_name]
             occupied_particles.remove(particle)
             if not occupied_particles:
-                del self._particles_by_callee[callee]
+                del particles_by_parent_name[parent_name]
 
     def _set(
         self,
@@ -172,9 +245,14 @@ class OccupiedInterfaceChildPositionTracker:
         position: ast.ChainedNameTuple,
         location: ast.SourceLocation,
         callees: list[_Callee],
+        interface_parent_qualities: list[QualityOnParticle],
     ):
         self._by_particle[particle] = _OccupiedInterfaceChildPosition(
-            position, location, callees
+            position, location, callees, interface_parent_qualities
         )
         for callee in callees:
             self._particles_by_callee[callee].add(particle)
+        for interface_parent_quality in interface_parent_qualities:
+            self._particles_by_interface_parent_quality[interface_parent_quality].add(
+                particle
+            )

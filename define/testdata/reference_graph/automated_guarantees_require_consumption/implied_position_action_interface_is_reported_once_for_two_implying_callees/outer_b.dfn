@@ -1,0 +1,12 @@
+define the potential action<my.domain.com:my_lib:/outer_b> {
+    it also assigns the position</implied>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<temporary>.
+        move the particle in position</implied> to position<temporary>.
+        move the particle in position<temporary> to position</implied>.
+        destroy the particle in position<run>.
+    }
+}
