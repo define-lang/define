@@ -1,0 +1,16 @@
+# A missing Potential Literal is only reported as a missing file.
+define the encoding_operation<my.domain.com:my_lib:/test> {
+    define the view<result> {
+        it is written.
+        it may only contain particles where {
+            it has the encoding<standard:/number/decimal/ascii>.
+        }
+    }
+
+    it does {
+        execute the encoding_operation</copy> {
+            with view<source> looking at literal</missing>"5".
+            with view<target> looking at view<result>.
+        }
+    }
+}

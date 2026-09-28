@@ -1,0 +1,35 @@
+# view<number> says it is read, but nothing reads it.
+define the encoding_operation<my.domain.com:my_lib:/copy> {
+    define the view<source> {
+        it is read.
+        it may only contain particles where {
+            it has the encoding<standard:/number/decimal/ascii>.
+        }
+    }
+    define the view<target> {
+        it is written.
+        it may only contain particles where {
+            it has the encoding<standard:/number/decimal/ascii>.
+        }
+    }
+
+    it does {
+        execute the computer operation.
+    }
+}
+define the encoding_operation<my.domain.com:my_lib:/overwrite> {
+    define the view<number> {
+        it is read.
+        it is written.
+        it may only contain particles where {
+            it has the encoding<standard:/number/decimal/ascii>.
+        }
+    }
+
+    it does {
+        execute the encoding_operation</copy> {
+            with view<source> looking at literal<standard:/number>"1".
+            with view<target> looking at view<number>.
+        }
+    }
+}

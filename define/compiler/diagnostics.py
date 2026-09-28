@@ -383,24 +383,38 @@ class OutputViewLooksAtLiteralDiagnostic(Diagnostic):
 
 
 class UnreadInputViewDiagnostic(Diagnostic):
-    """Diagnostic for an input view that its value operation never reads."""
+    """Diagnostic for an input view that its operation never reads."""
 
     view_name: str
+    operation_name_type: ast.NameType
+
+    @property
+    def all_views_statement(self) -> str:
+        """The statement that reads every input view of this operation."""
+        return _ALL_VIEWS_STATEMENTS[self.operation_name_type]
+
     message_format: ClassVar[str] = (
         "'{self.view_name}' has 'it is read.', but nothing in this operation"
-        " reads it. Either have an operation read it, execute the"
-        " encoding operation, or remove 'it is read.'"
+        " reads it. Either have an operation read it,"
+        " {self.all_views_statement}, or remove 'it is read.'"
     )
 
 
 class UnwrittenOutputViewDiagnostic(Diagnostic):
-    """Diagnostic for an output view that its value operation never writes to."""
+    """Diagnostic for an output view that its operation never writes to."""
 
     view_name: str
+    operation_name_type: ast.NameType
+
+    @property
+    def all_views_statement(self) -> str:
+        """The statement that writes to every output view of this operation."""
+        return _ALL_VIEWS_STATEMENTS[self.operation_name_type]
+
     message_format: ClassVar[str] = (
         "'{self.view_name}' has 'it is written.', but nothing in this operation"
-        " writes to it. Either have an operation write to it, execute"
-        " the encoding operation, or remove 'it is written.'"
+        " writes to it. Either have an operation write to it,"
+        " {self.all_views_statement}, or remove 'it is written.'"
     )
 
 
@@ -1054,6 +1068,29 @@ class LiteralCannotSetValueDiagnostic(Diagnostic):
         "{self.potential_literal} cannot set a {self.value_type}, because literals"
         " with the {self.literal_encoding} cannot be read as {self.value_type}.\n"
         "To set a {self.value_type}, use a literal with one of these encodings:\n"
+        "    {self.supported_encoding_list}"
+    )
+
+
+class LiteralCannotBeConvertedDiagnostic(Diagnostic):
+    """A literal's encoding cannot be translated into the encoding a view requires."""
+
+    potential_literal: str
+    literal_encoding: str
+    encoding: str
+    supported_encodings: Sequence[str]
+
+    @property
+    def supported_encoding_list(self) -> str:
+        """Format the supported encodings as an indented list."""
+        return "\n    ".join(self.supported_encodings)
+
+    message_format: ClassVar[str] = (
+        "{self.potential_literal} cannot be looked at as {self.encoding}, because"
+        " literals with the {self.literal_encoding} cannot be translated into"
+        " {self.encoding}.\n"
+        "To look at a literal as {self.encoding}, use a literal with one of these"
+        " encodings:\n"
         "    {self.supported_encoding_list}"
     )
 

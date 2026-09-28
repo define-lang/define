@@ -1,7 +1,8 @@
-"""Reference graph validation of View Direction Statements."""
+"""Reference graph validation of Encoding Operations."""
 
 from __future__ import annotations
 
+from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler import ast, diagnostics
@@ -10,6 +11,7 @@ from define.compiler.validator.test_helpers import assert_no_errors
 if TYPE_CHECKING:
     from define.compiler.conftest import (
         ValidateTestdataNonFilesystemWithReferenceGraph,
+        ValidateTestdataProjectWithReferenceGraph,
     )
 
 
@@ -20,7 +22,7 @@ def test_valid_composition(
     assert_no_errors(result)
 
 
-def test_read_after_encoding_operation(
+def test_computer_operation_fulfills_directions(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
@@ -39,7 +41,7 @@ def test_unread_input_view(
     assert diagnostic.location.line == 21
     assert diagnostic.location.column == 21
     assert diagnostic.view_name == "view<number>"
-    assert diagnostic.operation_name_type == ast.NameType.OPERATION
+    assert diagnostic.operation_name_type == ast.NameType.ENCODING_OPERATION
 
 
 def test_unwritten_output_view(
@@ -54,7 +56,7 @@ def test_unwritten_output_view(
     assert diagnostic.location.line == 15
     assert diagnostic.location.column == 21
     assert diagnostic.view_name == "view<number>"
-    assert diagnostic.operation_name_type == ast.NameType.OPERATION
+    assert diagnostic.operation_name_type == ast.NameType.ENCODING_OPERATION
 
 
 def test_write_to_input_only_view(
@@ -70,7 +72,7 @@ def test_write_to_input_only_view(
     assert diagnostic.location.column == 41
     assert diagnostic.looked_at_name == "view<number>"
     assert diagnostic.view_name == "view<total>"
-    assert diagnostic.operation_name == "operation</increment_by>"
+    assert diagnostic.operation_name == "encoding_operation</increment_by>"
 
 
 def test_read_from_unwritten_output_view(
@@ -86,39 +88,98 @@ def test_read_from_unwritten_output_view(
     assert diagnostic.location.column == 41
     assert diagnostic.looked_at_name == "view<number>"
     assert diagnostic.view_name == "view<total>"
-    assert diagnostic.operation_name == "operation</increment_by>"
+    assert diagnostic.operation_name == "encoding_operation</increment_by>"
 
 
-def test_write_to_input_only_view_is_not_also_unread(
+def test_out_of_order(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.WriteToInputOnlyViewDiagnostic)
+    assert isinstance(diagnostic, diagnostics.OperationArgumentOrderDiagnostic)
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 24
+    assert diagnostic.location.line == 37
+    assert diagnostic.location.column == 18
+    assert diagnostic.view_name == "view<source>"
+    assert diagnostic.operation_name == "encoding_operation</copy>"
+    assert diagnostic.expected_order == ["view<source>", "view<target>"]
+
+
+def test_missing_argument(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
+    assert len(result.all_diagnostics) == 1
+    diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.MissingOperationArgumentDiagnostic)
+    assert diagnostic.location.file_path is None
+    assert diagnostic.location.line == 29
+    assert diagnostic.location.column == 21
+    assert diagnostic.view_name == "view<target>"
+    assert diagnostic.operation_name == "encoding_operation</copy>"
+
+
+def test_missing_encoding_constraint(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
+    assert len(result.all_diagnostics) == 1
+    diagnostic = result.all_diagnostics[0]
+    assert isinstance(
+        diagnostic, diagnostics.OperationArgumentViolatesConstraintsDiagnostic
+    )
+    assert diagnostic.location.file_path is None
+    assert diagnostic.location.line == 38
     assert diagnostic.location.column == 42
+    assert diagnostic.view_name == "view<source>"
     assert diagnostic.looked_at_name == "view<number>"
-    assert diagnostic.view_name == "view<result>"
-    assert diagnostic.operation_name == "operation</store>"
+    assert diagnostic.looked_at_kind == diagnostics.LookedAtKind.VIEW
+    assert diagnostic.missing_qualities == ["encoding</text>"]
 
 
-def test_read_from_unwritten_output_view_is_not_also_unwritten(
+def test_literal_in_decimal_ascii_encoding(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert_no_errors(result)
+
+
+def test_literal_without_literal_parser(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.ReadFromUnwrittenOutputViewDiagnostic)
+    assert isinstance(diagnostic, diagnostics.LiteralCannotBeConvertedDiagnostic)
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 24
-    assert diagnostic.location.column == 41
-    assert diagnostic.looked_at_name == "view<number>"
-    assert diagnostic.view_name == "view<input>"
-    assert diagnostic.operation_name == "operation</show>"
+    assert diagnostic.location.line == 31
+    assert diagnostic.location.column == 42
+    assert diagnostic.potential_literal == "literal<standard:/number>"
+    assert diagnostic.literal_encoding == "encoding<standard:/number/decimal/ascii>"
+    assert diagnostic.encoding == "encoding</text>"
+    assert diagnostic.supported_encodings == []
+
+
+def test_invalid_literal_content(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
+    assert len(result.all_diagnostics) == 1
+    diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.InvalidLiteralContentDiagnostic)
+    assert diagnostic.location.file_path is None
+    assert diagnostic.location.line == 30
+    assert diagnostic.location.column == 68
+    assert diagnostic.content == "abc"
+    assert diagnostic.potential_literal == "literal<standard:/number>"
+    assert diagnostic.value_encoding == "encoding<standard:/number/decimal/ascii>"
+    assert diagnostic.reason == "'a' is not allowed in a number"
 
 
 def test_output_view_looks_at_literal(
@@ -133,54 +194,48 @@ def test_output_view_looks_at_literal(
     assert diagnostic.location.line == 31
     assert diagnostic.location.column == 42
     assert diagnostic.view_name == "view<target>"
-    assert diagnostic.operation_name == "operation</copy>"
+    assert diagnostic.operation_name == "encoding_operation</copy>"
 
 
-def test_output_view_looks_at_literal_in_action(
-    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
-):
-    result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.OutputViewLooksAtLiteralDiagnostic)
-    assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 33
-    assert diagnostic.location.column == 42
-    assert diagnostic.view_name == "view<target>"
-    assert diagnostic.operation_name == "operation</copy>"
-
-
-def test_unknown_view_use(
-    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
-):
-    result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
-    assert len(result.all_diagnostics) == 2
-    missing, undefined = result.all_diagnostics
-    assert isinstance(missing, diagnostics.MissingOperationArgumentDiagnostic)
-    assert missing.location.file_path is None
-    assert missing.location.line == 25
-    assert missing.location.column == 21
-    assert missing.view_name == "view<value>"
-    assert missing.operation_name == "operation</inspect>"
-    assert isinstance(undefined, diagnostics.UndefinedOperationViewDiagnostic)
-    assert undefined.location.file_path is None
-    assert undefined.location.line == 26
-    assert undefined.location.column == 18
-    assert undefined.view_name == "view<other>"
-    assert undefined.operation_name == "operation</inspect>"
-    assert undefined.interface_view_names == ["view<value>"]
-
-
-def test_output_view_sets_value_in_action(
+def test_statement_after_computer_operation(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
     assert_no_errors(result)
 
 
-def test_output_view_argument_error_in_destructor_does_not_report_changed_value(
+def test_literal_in_every_view_encoding(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_exceptions == []
+    assert len(result.all_diagnostics) == 1
+    diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.LiteralCannotBeConvertedDiagnostic)
+    assert diagnostic.location.file_path is None
+    assert diagnostic.location.line == 32
+    assert diagnostic.location.column == 42
+    assert diagnostic.potential_literal == "literal<standard:/number>"
+    assert diagnostic.literal_encoding == "encoding<standard:/number/decimal/ascii>"
+    assert diagnostic.encoding == "encoding</text>"
+    assert diagnostic.supported_encodings == []
+
+
+def test_missing_potential_literal(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph().program_result
+    assert result.all_exceptions == []
+    assert len(result.all_diagnostics) == 1
+    diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.file_path == "missing.dfn"
+    assert diagnostic.location.line == 12
+    assert diagnostic.location.column == 50
+
+
+def test_literal_for_view_with_value_constraint(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
@@ -188,97 +243,9 @@ def test_output_view_argument_error_in_destructor_does_not_report_changed_value(
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(
-        diagnostic, diagnostics.OperationArgumentViolatesConstraintsDiagnostic
+        diagnostic, diagnostics.EncodingOperationViewValueConstraintDiagnostic
     )
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 33
-    assert diagnostic.location.column == 42
-    assert diagnostic.view_name == "view<target>"
-    assert diagnostic.looked_at_name == "position</value>"
-    assert diagnostic.looked_at_kind == diagnostics.LookedAtKind.POSITION
-    assert diagnostic.missing_qualities == ["value<standard:/number/rational>"]
-
-
-def test_read_and_written_view_requires_set_value_in_action(
-    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
-):
-    result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
-    assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 32
-    assert diagnostic.location.column == 41
-    assert diagnostic.position_name == "position<total>"
-
-
-def test_output_view_requires_no_caller_value(
-    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
-):
-    result = validate_testdata_non_filesystem_with_reference_graph()
-    assert_no_errors(result)
-
-
-def test_unreferenced_view(
-    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
-):
-    result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.UnreferencedViewDiagnostic)
-    assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 21
-    assert diagnostic.location.column == 21
-    assert diagnostic.view_name == "view<unused>"
-    assert diagnostic.operation_name_type == ast.NameType.OPERATION
-
-
-def test_output_views_set_values_in_action(
-    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
-):
-    result = validate_testdata_non_filesystem_with_reference_graph()
-    assert_no_errors(result)
-
-
-def test_callee_output_view_sets_caller_value(
-    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
-):
-    result = validate_testdata_non_filesystem_with_reference_graph()
-    assert_no_errors(result)
-
-
-def test_output_view_in_destructor_changes_contracted_value(
-    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
-):
-    result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.DestructorChangesValueDiagnostic)
-    assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 32
-    assert diagnostic.location.column == 42
-    assert diagnostic.position_name == "position</value>"
-
-
-def test_callee_output_view_sets_implied_value(
-    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
-):
-    result = validate_testdata_non_filesystem_with_reference_graph()
-    assert_no_errors(result)
-
-
-def test_callee_without_output_view_leaves_implied_value_unset(
-    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
-):
-    result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_exceptions == []
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
-    assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 35
-    assert diagnostic.location.column == 44
-    assert diagnostic.position_name == "position<box>::position</value>"
+    assert diagnostic.location.line == 6
+    assert diagnostic.location.column == 24
+    assert diagnostic.constraint_name == "value<standard:/number/rational>"

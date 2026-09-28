@@ -1,0 +1,35 @@
+# view<total> writes to view<number>, which is only read.
+define the encoding_operation<my.domain.com:my_lib:/increment_by> {
+    define the view<total> {
+        it is read.
+        it is written.
+        it may only contain particles where {
+            it has the encoding<standard:/number/decimal/ascii>.
+        }
+    }
+    define the view<amount> {
+        it is read.
+        it may only contain particles where {
+            it has the encoding<standard:/number/decimal/ascii>.
+        }
+    }
+
+    it does {
+        execute the computer operation.
+    }
+}
+define the encoding_operation<my.domain.com:my_lib:/bump> {
+    define the view<number> {
+        it is read.
+        it may only contain particles where {
+            it has the encoding<standard:/number/decimal/ascii>.
+        }
+    }
+
+    it does {
+        execute the encoding_operation</increment_by> {
+            with view<total> looking at view<number>.
+            with view<amount> looking at literal<standard:/number>"1".
+        }
+    }
+}

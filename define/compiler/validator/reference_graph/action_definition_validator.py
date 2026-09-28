@@ -787,7 +787,7 @@ class ActionDefinitionValidator:
                 continue
             if not next(looked_at_validity):
                 continue
-            executed_view = (
+            interface_view = (
                 None
                 if executed is None
                 else executed.get_view(argument.view.source_typed_name)
@@ -795,7 +795,7 @@ class ActionDefinitionValidator:
             # A missing operation or an undefined interface view is reported
             # when the arguments are validated, so its position is neither
             # read nor written.
-            is_read = executed_view is not None and executed_view.is_input
+            is_read = interface_view is not None and interface_view.is_input
             particle = self._analyze_looked_at_position(
                 position, scope, statement_diagnostics, is_read=is_read
             )
@@ -803,8 +803,8 @@ class ActionDefinitionValidator:
                 continue
             looked_at_qualities[argument] = particle.qualities.names
             if (
-                executed_view is not None
-                and executed_view.is_output
+                interface_view is not None
+                and interface_view.is_output
                 and particle.qualities.value_type is not None
             ):
                 written_positions.append(position)

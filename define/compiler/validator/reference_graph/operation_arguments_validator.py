@@ -79,6 +79,7 @@ class OperationArgumentsValidator:
         for index, argument in arguments.items():
             self._check_view_requirements(
                 argument,
+                executed,
                 executed.views[index],
                 operation_name,
                 looked_at_qualities,
@@ -180,16 +181,17 @@ class OperationArgumentsValidator:
     def _check_view_requirements(
         self,
         argument: ast.OperationArgumentStatement,
-        executed_view: ast.ViewDefinition,
+        executed: ast.OperationDefinition,
+        interface_view: ast.ViewDefinition,
         operation_name: str,
         looked_at_qualities: Mapping[ast.OperationArgumentStatement, frozenset[str]],
         validation_diagnostics: list[diagnostics.Diagnostic],
     ):
-        """Check that the particle the argument looks at meets the executed view's constraints."""
+        """Check that the particle the argument looks at meets the constraints of the executed operation's interface view."""
         looking_at = argument.looking_at
         match looking_at:
             case ast.Literal():
-                if executed_view.is_output:
+                if interface_view.is_output:
                     validation_diagnostics.append(
                         diagnostics.OutputViewLooksAtLiteralDiagnostic(
                             location=looking_at.location,
@@ -199,7 +201,7 @@ class OperationArgumentsValidator:
                     )
                     return
                 self._check_literal_translation(
-                    looking_at, executed_view, validation_diagnostics
+                    looking_at, executed, interface_view, validation_diagnostics
                 )
                 return
             case ast.LocalTypedNameReference():
@@ -212,7 +214,7 @@ class OperationArgumentsValidator:
         if qualities is None:
             return
         missing: list[str] = []
-        for requirement in executed_view.constraints.requirements:
+        for requirement in interface_view.constraints.requirements:
             constraint = requirement.typed_global_name
             if constraint.full_typed_name not in qualities:
                 missing.append(constraint.source_form_in_universe(self._enclosing_fqun))
@@ -230,15 +232,24 @@ class OperationArgumentsValidator:
     def _check_literal_translation(
         self,
         literal: ast.Literal,
-        executed_view: ast.ViewDefinition,
+        executed: ast.OperationDefinition,
+        interface_view: ast.ViewDefinition,
         validation_diagnostics: list[diagnostics.Diagnostic],
     ):
-        """Check that the literal can be translated into the executed view's value."""
-        value_type = executed_view.constraints.value_constraint
+        """Check that the literal can be translated into what the executed operation's interface view requires."""
+        # The literal is translated into whatever the view requires, so it
+        # always has the view's qualities; only that translation can fail.
+        if isinstance(executed, ast.EncodingOperationDefinition):
+            for requirement in interface_view.constraints.requirements:
+                constraint = requirement.typed_global_name
+                if constraint.name_type == ast.NameType.ENCODING:
+                    validation_diagnostics.extend(
+                        self._literal_encoder.encode_in_encoding(literal, constraint)
+                    )
+            return
+        value_type = interface_view.constraints.value_constraint
         # Structural validation reports views without a value constraint.
         if value_type is None:
             return
-        # The literal is translated into whatever the view requires, so it
-        # always has the view's qualities; only that translation can fail.
         _, literal_diagnostics = self._literal_encoder.encode(literal, value_type)
         validation_diagnostics.extend(literal_diagnostics)

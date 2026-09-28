@@ -699,6 +699,19 @@ py_test(
 )
 
 py_test(
+    name = "encoding_operation_test",
+    size = "small",
+    srcs = ["encoding_operation_test.py"],
+    data = ["//define/testdata/reference_graph/encoding_operation"],
+    deps = [
+        "//define/compiler:ast",
+        "//define/compiler:conftest",
+        "//define/compiler:diagnostics",
+        "//define/compiler/validator:test_helpers",
+    ],
+)
+
+py_test(
     name = "error_messages_complex_test",
     size = "small",
     srcs = ["error_messages_complex_test.py"],
@@ -1071,6 +1084,7 @@ pyright_test(
         ":destructor_cascade_test",
         ":destructor_triggering_test",
         ":encoding_constraint_test",
+        ":encoding_operation_test",
         ":error_messages_complex_test",
         ":error_messages_destruction_test",
         ":error_messages_test",

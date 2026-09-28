@@ -157,6 +157,7 @@ py_library(
         "//define/compiler:literal_parsers",
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/validator:validation_result",
+        "@pypi//msgspec",
     ],
 )
 

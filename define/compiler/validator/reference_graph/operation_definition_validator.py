@@ -1,4 +1,4 @@
-"""Reference graph validation of a value operation definition."""
+"""Reference graph validation of a Value Operation or Encoding Operation definition."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ if typing.TYPE_CHECKING:
 
 
 class OperationDefinitionValidator:
-    """Validates the Operation Execution Statements of a value operation against the operations they execute."""
+    """Validates the Operation Execution Statements of an operation definition against the operations they execute."""
 
     _definition: ast.OperationDefinition
     _diagnostics: list[diagnostics.Diagnostic]
@@ -99,6 +99,7 @@ class OperationDefinitionValidator:
                     diagnostics.UnreadInputViewDiagnostic(
                         location=view.typed_name.name_content.location,
                         view_name=view_name,
+                        operation_name_type=self._definition.typed_name.name_type,
                     )
                 )
             if view.is_output and view_name not in self._written_views:
@@ -106,6 +107,7 @@ class OperationDefinitionValidator:
                     diagnostics.UnwrittenOutputViewDiagnostic(
                         location=view.typed_name.name_content.location,
                         view_name=view_name,
+                        operation_name_type=self._definition.typed_name.name_type,
                     )
                 )
 
@@ -117,8 +119,8 @@ class OperationDefinitionValidator:
         looked_at_qualities: dict[ast.OperationArgumentStatement, frozenset[str]] = {}
         for argument in statement.arguments:
             looking_at = argument.looking_at
-            # Structural validation reports views looking at positions within a
-            # value operation.
+            # Structural validation reports views looking at positions within an
+            # operation definition.
             if not isinstance(looking_at, ast.LocalTypedNameReference):
                 continue
             looked_at_view = self._definition.get_view(looking_at.source_typed_name)
@@ -127,17 +129,17 @@ class OperationDefinitionValidator:
                 continue
             looked_at_qualities[argument] = looked_at_view.constraints.as_set
             view_name = looked_at_view.typed_name.source_typed_name
-            executed_view = (
+            interface_view = (
                 None
                 if executed is None
                 else executed.get_view(argument.view.source_typed_name)
             )
             # A missing operation or an undefined interface view is reported
             # when the arguments are validated.
-            if executed_view is None:
+            if interface_view is None:
                 self._views_with_unknown_use.add(view_name)
                 continue
-            if executed_view.is_input:
+            if interface_view.is_input:
                 self._read_views.add(view_name)
                 if not looked_at_view.is_input and view_name not in self._written_views:
                     self._misused_views.add(view_name)
@@ -149,7 +151,7 @@ class OperationDefinitionValidator:
                             operation_name=operation_name,
                         )
                     )
-            if executed_view.is_output:
+            if interface_view.is_output:
                 self._written_views.add(view_name)
                 if not looked_at_view.is_output:
                     self._misused_views.add(view_name)
