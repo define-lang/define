@@ -1,0 +1,16 @@
+# position</copy> has no definition, so the guarantee this action makes about it
+# cannot keep any of its constraints alive.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</copy>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the value<standard:/number/rational>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position</copy>.
+    }
+}

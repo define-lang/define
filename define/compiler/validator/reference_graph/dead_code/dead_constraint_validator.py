@@ -247,9 +247,9 @@ class DeadConstraintValidator:
             constraints = self._position_quality_resolver.get_direct_required_qualities(
                 final_position, scope
             )
-            constraints = typing.cast(
-                "tuple[ast.GlobalTypedNameReference, ...]", constraints
-            )
+            # A position without a loaded definition was already reported.
+            if constraints is None:
+                continue
             self._dead_constraint_tracker.mark_contract_constraints_alive(
                 final_position, origin_position, constraints
             )

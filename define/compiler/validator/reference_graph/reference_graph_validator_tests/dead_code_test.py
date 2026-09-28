@@ -66,6 +66,26 @@ def test_unresolved_constraint_is_not_reported_as_dead(
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
 
 
+def test_guarantee_on_unresolved_implied_position_is_ignored(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 2
+    assert isinstance(all_diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert all_diags[0].file_path == "copy.dfn"
+    assert all_diags[0].location.line == 4
+    assert all_diags[0].location.column == 34
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert isinstance(all_diags[1], diagnostics.DeadValueConstraintDiagnostic)
+    assert all_diags[1].constraint_name == "value<standard:/number/rational>"
+    assert all_diags[1].position_name == "position<box>"
+    assert all_diags[1].location.line == 10
+    assert all_diags[1].location.column == 28
+    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+
+
 def test_child_position_referenced_by_create_is_alive(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
