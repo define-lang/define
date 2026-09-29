@@ -82,7 +82,7 @@ def test_invalid_name(
     assert diagnostic.location.column == 55
     assert diagnostic.location.file_path is None
     assert diagnostic.segment == "bad-name"
-    assert diagnostic.char == "-"
+    assert diagnostic.chars == ("-",)
 
 
 def test_invalid_encoding_name(
@@ -96,7 +96,7 @@ def test_invalid_encoding_name(
     assert diagnostic.location.column == 29
     assert diagnostic.location.file_path is None
     assert diagnostic.segment == "bad-name"
-    assert diagnostic.char == "-"
+    assert diagnostic.chars == ("-",)
     assert diagnostic.location.line == 3
 
 

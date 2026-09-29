@@ -110,7 +110,7 @@ def test_invalid_argument_view_name(
     assert diagnostic.location.line == 27
     assert diagnostic.location.column == 23
     assert diagnostic.local_name == "Source"
-    assert diagnostic.char == "S"
+    assert diagnostic.chars == ("S",)
 
 
 def test_duplicate_argument(
@@ -140,7 +140,7 @@ def test_invalid_literal_name(
     assert diagnostic.location.line == 27
     assert diagnostic.location.column == 63
     assert diagnostic.segment == "bad-name"
-    assert diagnostic.char == "-"
+    assert diagnostic.chars == ("-",)
 
 
 def test_invalid_operation_name(
@@ -155,4 +155,4 @@ def test_invalid_operation_name(
     assert diagnostic.location.line == 26
     assert diagnostic.location.column == 35
     assert diagnostic.segment == "bad-name"
-    assert diagnostic.char == "-"
+    assert diagnostic.chars == ("-",)

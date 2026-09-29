@@ -85,7 +85,7 @@ def test_position_constraint_reference_with_invalid_path(
     assert isinstance(diags[0], diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
     assert diags[0].location.file_path is None
     assert diags[0].segment == "Bad"
-    assert diags[0].char == "B"
+    assert diags[0].chars == ("B",)
     assert diags[0].location.line == 3
     assert diags[0].location.column == 30
 
@@ -130,7 +130,7 @@ def test_invalid_constraint_does_not_skip_remaining_constraints(
     assert isinstance(diags[0], diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
     assert diags[0].location.file_path == PurePosixPath("test.dfn")
     assert diags[0].segment == "Bad"
-    assert diags[0].char == "B"
+    assert diags[0].chars == ("B",)
     assert diags[0].location.line == 3
     assert diags[0].location.column == 30
     assert result.file_results[1].file_path == define_path.DefinePath("valid.dfn")

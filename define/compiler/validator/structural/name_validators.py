@@ -74,6 +74,43 @@ _AUTHORITY_PATH_CONTINUE_CHARS = _AUTHORITY_PATH_START_CHARS | frozenset(".")
 # ---------------------------------------------------------------------------
 
 
+def _invalid_character_indexes(
+    name: str,
+    first_chars: frozenset[str],
+    middle_chars: frozenset[str],
+    last_chars: frozenset[str],
+) -> list[int]:
+    """Return the index of every character of ``name`` that its position does not allow."""
+    last_index = len(name) - 1
+    invalid_indexes: list[int] = []
+    for index, char in enumerate(name):
+        if index == 0:
+            allowed = first_chars
+        elif index == last_index:
+            allowed = last_chars
+        else:
+            allowed = middle_chars
+        if char not in allowed:
+            invalid_indexes.append(index)
+    return invalid_indexes
+
+
+def _distinct_characters(name: str, indexes: list[int]) -> tuple[str, ...]:
+    return tuple(dict.fromkeys(name[index] for index in indexes))
+
+
+def _character_location(
+    line: int, column: int, file_path: PurePosixPath | None
+) -> ast.SourceLocation:
+    return ast.SourceLocation(
+        line=line,
+        column=column,
+        end_line=line,
+        end_column=column + 1,
+        file_path=file_path,
+    )
+
+
 def _validate_multiverse_name_format(
     multiverse: ast.Multiverse,
 ) -> list[diagnostics.Diagnostic]:
@@ -87,27 +124,24 @@ def _validate_multiverse_name_format(
                 multiverse_name=name,
             )
         )
-    for i, char in enumerate(name):
-        if i == 0 or i == len(name) - 1:
-            allowed = _MULTIVERSE_BOUNDARY_CHARS
-        else:
-            allowed = _MULTIVERSE_CONTINUE_CHARS
-        if char not in allowed:
-            location = ast.SourceLocation(
-                line=multiverse.location.line,
-                column=multiverse.location.column + i,
-                end_line=multiverse.location.end_line,
-                end_column=multiverse.location.end_column,
-                file_path=multiverse.location.file_path,
+    invalid_indexes = _invalid_character_indexes(
+        name,
+        _MULTIVERSE_BOUNDARY_CHARS,
+        _MULTIVERSE_CONTINUE_CHARS,
+        _MULTIVERSE_BOUNDARY_CHARS,
+    )
+    if invalid_indexes:
+        result.append(
+            diagnostics.MultiverseNameInvalidCharDiagnostic(
+                location=_character_location(
+                    multiverse.location.line,
+                    multiverse.location.column + invalid_indexes[0],
+                    multiverse.location.file_path,
+                ),
+                multiverse_name=name,
+                chars=_distinct_characters(name, invalid_indexes),
             )
-            result.append(
-                diagnostics.MultiverseNameInvalidCharDiagnostic(
-                    location=location,
-                    multiverse_name=name,
-                    char=char,
-                )
-            )
-            return result
+        )
     return result
 
 
@@ -149,28 +183,24 @@ def _validate_authority_domain_format(
                 domain=domain,
             )
         )
-    for i, char in enumerate(domain):
-        if i == 0 or i == len(domain) - 1:
-            allowed = _AUTHORITY_DOMAIN_BOUNDARY_CHARS
-        else:
-            allowed = _AUTHORITY_DOMAIN_CONTINUE_CHARS
-        if char not in allowed:
-            location = ast.SourceLocation(
-                line=authority.location.line,
-                column=authority.location.column + i,
-                end_line=authority.location.end_line,
-                end_column=authority.location.end_column,
-                file_path=authority.location.file_path,
+    invalid_indexes = _invalid_character_indexes(
+        domain,
+        _AUTHORITY_DOMAIN_BOUNDARY_CHARS,
+        _AUTHORITY_DOMAIN_CONTINUE_CHARS,
+        _AUTHORITY_DOMAIN_BOUNDARY_CHARS,
+    )
+    if invalid_indexes:
+        result.append(
+            diagnostics.AuthorityDomainInvalidCharDiagnostic(
+                location=_character_location(
+                    authority.location.line,
+                    authority.location.column + invalid_indexes[0],
+                    authority.location.file_path,
+                ),
+                domain=domain,
+                chars=_distinct_characters(domain, invalid_indexes),
             )
-            result.append(
-                diagnostics.AuthorityDomainInvalidCharDiagnostic(
-                    location=location,
-                    domain=domain,
-                    char=char,
-                )
-            )
-            # TODO: We should probably just return a diagnostic for every invalid character.
-            return result
+        )
     return result
 
 
@@ -213,23 +243,19 @@ def _validate_authority_path_segment(
             ),
             authority=authority_name,
         )
-    for i, char in enumerate(segment):
-        allowed = (
-            _AUTHORITY_PATH_START_CHARS if i == 0 else _AUTHORITY_PATH_CONTINUE_CHARS
-        )
-        if char not in allowed:
-            return diagnostics.InvalidAuthorityPathSegmentDiagnostic(
-                location=ast.SourceLocation(
-                    line=line,
-                    column=column + i,
-                    end_line=line,
-                    end_column=column + len(segment),
-                    file_path=file_path,
-                ),
-                segment=segment,
-                char=char,
-            )
-    return None
+    invalid_indexes = _invalid_character_indexes(
+        segment,
+        _AUTHORITY_PATH_START_CHARS,
+        _AUTHORITY_PATH_CONTINUE_CHARS,
+        _AUTHORITY_PATH_CONTINUE_CHARS,
+    )
+    if not invalid_indexes:
+        return None
+    return diagnostics.InvalidAuthorityPathSegmentDiagnostic(
+        location=_character_location(line, column + invalid_indexes[0], file_path),
+        segment=segment,
+        chars=_distinct_characters(segment, invalid_indexes),
+    )
 
 
 def _validate_authority_reserved(
@@ -296,27 +322,24 @@ def _validate_universe_name_format(
                 universe_name=name,
             )
         )
-    for i, char in enumerate(name):
-        if i == 0 or i == len(name) - 1:
-            allowed = _UNIVERSE_BOUNDARY_CHARS
-        else:
-            allowed = _UNIVERSE_CONTINUE_CHARS
-        if char not in allowed:
-            location = ast.SourceLocation(
-                line=universe.location.line,
-                column=universe.location.column + i,
-                end_line=universe.location.end_line,
-                end_column=universe.location.end_column,
-                file_path=universe.location.file_path,
+    invalid_indexes = _invalid_character_indexes(
+        name,
+        _UNIVERSE_BOUNDARY_CHARS,
+        _UNIVERSE_CONTINUE_CHARS,
+        _UNIVERSE_BOUNDARY_CHARS,
+    )
+    if invalid_indexes:
+        result.append(
+            diagnostics.UniverseNameInvalidCharDiagnostic(
+                location=_character_location(
+                    universe.location.line,
+                    universe.location.column + invalid_indexes[0],
+                    universe.location.file_path,
+                ),
+                universe_name=name,
+                chars=_distinct_characters(name, invalid_indexes),
             )
-            result.append(
-                diagnostics.UniverseNameInvalidCharDiagnostic(
-                    location=location,
-                    universe_name=name,
-                    char=char,
-                )
-            )
-            return result
+        )
     return result
 
 
@@ -452,26 +475,24 @@ def _validate_global_name_path(
                     path=path_name,
                 )
             )
-        for i, char in enumerate(segment):
-            allowed = (
-                _PATH_SEGMENT_START_CHARS if i == 0 else _PATH_SEGMENT_CONTINUE_CHARS
-            )
-            if char not in allowed:
-                result.append(
-                    diagnostics.InvalidGlobalNamePathCharacterDiagnostic(
-                        location=ast.SourceLocation(
-                            line=path.location.line,
-                            column=path.location.column + segment_start + i,
-                            end_line=path.location.end_line,
-                            end_column=path.location.end_column,
-                            file_path=path.location.file_path,
-                        ),
-                        segment=segment,
-                        char=char,
-                    )
+        invalid_indexes = _invalid_character_indexes(
+            segment,
+            _PATH_SEGMENT_START_CHARS,
+            _PATH_SEGMENT_CONTINUE_CHARS,
+            _PATH_SEGMENT_CONTINUE_CHARS,
+        )
+        if invalid_indexes:
+            result.append(
+                diagnostics.InvalidGlobalNamePathCharacterDiagnostic(
+                    location=_character_location(
+                        path.location.line,
+                        path.location.column + segment_start + invalid_indexes[0],
+                        path.location.file_path,
+                    ),
+                    segment=segment,
+                    chars=_distinct_characters(segment, invalid_indexes),
                 )
-                # TODO: Report every invalid character.
-                break
+            )
         if slash_index == -1:
             break
         segment_start = slash_index + 1
@@ -488,24 +509,25 @@ def validate_local_name_format(
 ) -> list[diagnostics.InvalidLocalNameFormatDiagnostic]:
     """Validate local name character format."""
     name = local_name.name
-    for i, char in enumerate(name):
-        allowed = _LOCAL_NAME_START_CHARS if i == 0 else _LOCAL_NAME_CONTINUE_CHARS
-        if char not in allowed:
-            location = ast.SourceLocation(
-                line=local_name.location.line,
-                column=local_name.location.column + i,
-                end_line=local_name.location.end_line,
-                end_column=local_name.location.end_column,
-                file_path=local_name.location.file_path,
-            )
-            return [
-                diagnostics.InvalidLocalNameFormatDiagnostic(
-                    location=location,
-                    local_name=name,
-                    char=char,
-                )
-            ]
-    return []
+    invalid_indexes = _invalid_character_indexes(
+        name,
+        _LOCAL_NAME_START_CHARS,
+        _LOCAL_NAME_CONTINUE_CHARS,
+        _LOCAL_NAME_CONTINUE_CHARS,
+    )
+    if not invalid_indexes:
+        return []
+    return [
+        diagnostics.InvalidLocalNameFormatDiagnostic(
+            location=_character_location(
+                local_name.location.line,
+                local_name.location.column + invalid_indexes[0],
+                local_name.location.file_path,
+            ),
+            local_name=name,
+            chars=_distinct_characters(name, invalid_indexes),
+        )
+    ]
 
 
 # ---------------------------------------------------------------------------

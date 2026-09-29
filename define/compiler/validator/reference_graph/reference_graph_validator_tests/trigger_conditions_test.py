@@ -50,6 +50,6 @@ class TestTriggerConditionValidation:
         assert isinstance(diags[1], diagnostics.InvalidLocalNameFormatDiagnostic)
         assert diags[1].location.file_path is None
         assert diags[1].local_name == "BAD"
-        assert diags[1].char == "B"
+        assert diags[1].chars == ("B", "A", "D")
         assert diags[1].location.line == 3
         assert diags[1].location.column == 22

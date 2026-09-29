@@ -165,7 +165,7 @@ def test_invalid_argument_view_name(
     assert diagnostic.location.line == 36
     assert diagnostic.location.column == 23
     assert diagnostic.local_name == "Source"
-    assert diagnostic.char == "S"
+    assert diagnostic.chars == ("S",)
 
 
 def test_missing_operation(
@@ -279,7 +279,7 @@ def test_invalid_argument_view_name_in_action(
     assert diagnostic.location.line == 23
     assert diagnostic.location.column == 23
     assert diagnostic.local_name == "B"
-    assert diagnostic.char == "B"
+    assert diagnostic.chars == ("B",)
 
 
 def test_looks_at_view_in_action(

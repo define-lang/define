@@ -72,7 +72,7 @@ def test_looks_at_invalid_view_name(
     assert diagnostic.location.line == 37
     assert diagnostic.location.column == 47
     assert diagnostic.local_name == "Result"
-    assert diagnostic.char == "R"
+    assert diagnostic.chars == ("R",)
 
 
 def test_aliased_views(
@@ -116,7 +116,7 @@ def test_invalid_argument_view_name(
     assert diagnostic.location.line == 36
     assert diagnostic.location.column == 23
     assert diagnostic.local_name == "Source"
-    assert diagnostic.char == "S"
+    assert diagnostic.chars == ("S",)
 
 
 def test_invalid_literal_name(
@@ -131,7 +131,7 @@ def test_invalid_literal_name(
     assert diagnostic.location.line == 30
     assert diagnostic.location.column == 63
     assert diagnostic.segment == "bad-name"
-    assert diagnostic.char == "-"
+    assert diagnostic.chars == ("-",)
 
 
 def test_invalid_operation_name(
@@ -146,7 +146,7 @@ def test_invalid_operation_name(
     assert diagnostic.location.line == 5
     assert diagnostic.location.column == 35
     assert diagnostic.segment == "bad-name"
-    assert diagnostic.char == "-"
+    assert diagnostic.chars == ("-",)
 
 
 def test_requires_short_operation_name(

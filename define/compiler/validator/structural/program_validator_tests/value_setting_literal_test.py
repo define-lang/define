@@ -32,7 +32,7 @@ def test_invalid_literal_name(
     assert isinstance(diagnostic, diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.segment == "bad-name"
-    assert diagnostic.char == "-"
+    assert diagnostic.chars == ("-",)
     assert diagnostic.location.line == 11
     assert diagnostic.location.column == 56
 
@@ -80,7 +80,7 @@ def test_invalid_target_and_literal(
     assert isinstance(literal, diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
     assert literal.location.file_path is None
     assert literal.segment == "bad-name"
-    assert literal.char == "-"
+    assert literal.chars == ("-",)
     assert literal.location.line == 10
     assert literal.location.column == 59
 

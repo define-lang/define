@@ -95,7 +95,7 @@ def test_invalid_name_does_not_count_as_value_constraint(
     assert diagnostic.location.column == 27
     assert diagnostic.location.file_path is None
     assert diagnostic.segment == "Bad"
-    assert diagnostic.char == "B"
+    assert diagnostic.chars == ("B",)
 
 
 def test_same_fqun_requires_short_form(

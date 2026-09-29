@@ -464,7 +464,7 @@ class TestParticleReferenceEdges:
             diagnostics.InvalidGlobalNamePathCharacterDiagnostic,
         )
         assert result.diagnostics[0].segment == "Bad"
-        assert result.diagnostics[0].char == "B"
+        assert result.diagnostics[0].chars == ("B",)
         assert result.diagnostics[0].location.line == 4
         assert result.diagnostics[0].location.column == 34
         assert isinstance(
@@ -472,7 +472,7 @@ class TestParticleReferenceEdges:
             diagnostics.InvalidGlobalNamePathCharacterDiagnostic,
         )
         assert result.diagnostics[1].segment == "Bad"
-        assert result.diagnostics[1].char == "B"
+        assert result.diagnostics[1].chars == ("B",)
         assert result.diagnostics[1].location.line == 10
         assert result.diagnostics[1].location.column == 58
         assert _reference_edges(result) == []

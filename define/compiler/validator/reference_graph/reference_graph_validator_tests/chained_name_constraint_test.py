@@ -243,7 +243,7 @@ class TestCreateParticle:
         assert isinstance(diags[1], diagnostics.InvalidLocalNameFormatDiagnostic)
         assert diags[1].location.file_path is None
         assert diags[1].local_name == "Bad"
-        assert diags[1].char == "B"
+        assert diags[1].chars == ("B",)
         assert diags[1].location.line == 10
         assert diags[1].location.column == 54
         assert isinstance(

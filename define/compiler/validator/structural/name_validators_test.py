@@ -123,6 +123,10 @@ class TestMultiverseNameFormat:
         assert result[0].multiverse_name == "_mv"
         assert result[0].location.line == 1
         assert result[0].location.column == 10
+        assert result[0].chars == ("_",)
+        assert result[0].location.end_line == 1
+        assert result[0].location.end_column == 11
+        assert result[0].location.file_path is None
 
     def test_trailing_underscore(self):
         result = _validate_multiverse_name(_multiverse("mv_"))
@@ -131,6 +135,10 @@ class TestMultiverseNameFormat:
         assert result[0].multiverse_name == "mv_"
         assert result[0].location.line == 1
         assert result[0].location.column == 12
+        assert result[0].chars == ("_",)
+        assert result[0].location.end_line == 1
+        assert result[0].location.end_column == 13
+        assert result[0].location.file_path is None
 
     def test_single_char(self):
         result = _validate_multiverse_name(_multiverse("x"))
@@ -147,6 +155,10 @@ class TestMultiverseNameFormat:
         assert result[0].location.column == 10
         assert isinstance(result[1], diagnostics.MultiverseNameInvalidCharDiagnostic)
         assert result[1].location.column == 10
+        assert result[1].chars == ("_",)
+        assert result[1].location.end_line == 1
+        assert result[1].location.end_column == 11
+        assert result[1].location.file_path is None
 
     def test_uppercase(self):
         result = _validate_multiverse_name(_multiverse("Mv"))
@@ -155,6 +167,10 @@ class TestMultiverseNameFormat:
         assert result[0].multiverse_name == "Mv"
         assert result[0].location.line == 1
         assert result[0].location.column == 10
+        assert result[0].chars == ("M",)
+        assert result[0].location.end_line == 1
+        assert result[0].location.end_column == 11
+        assert result[0].location.file_path is None
 
     def test_non_ascii(self):
         result = _validate_multiverse_name(_multiverse("muv\u00e9"))
@@ -163,6 +179,10 @@ class TestMultiverseNameFormat:
         assert result[0].multiverse_name == "muv\u00e9"
         assert result[0].location.line == 1
         assert result[0].location.column == 13
+        assert result[0].chars == ("\u00e9",)
+        assert result[0].location.end_line == 1
+        assert result[0].location.end_column == 14
+        assert result[0].location.file_path is None
 
 
 class TestAuthorityDomainFormat:
@@ -177,6 +197,10 @@ class TestAuthorityDomainFormat:
         assert result[0].domain == "-example.com"
         assert result[0].location.line == 1
         assert result[0].location.column == 10
+        assert result[0].chars == ("-",)
+        assert result[0].location.end_line == 1
+        assert result[0].location.end_column == 11
+        assert result[0].location.file_path is None
 
     def test_trailing_dot(self):
         result = _validate_authority_format(_authority("example.com."))
@@ -185,6 +209,10 @@ class TestAuthorityDomainFormat:
         assert result[0].domain == "example.com."
         assert result[0].location.line == 1
         assert result[0].location.column == 21
+        assert result[0].chars == (".",)
+        assert result[0].location.end_line == 1
+        assert result[0].location.end_column == 22
+        assert result[0].location.file_path is None
 
     def test_single_char(self):
         result = _validate_authority_format(_authority("a"))
@@ -205,6 +233,10 @@ class TestAuthorityDomainFormat:
         assert result[0].domain == "example.com-"
         assert result[0].location.line == 1
         assert result[0].location.column == 21
+        assert result[0].chars == ("-",)
+        assert result[0].location.end_line == 1
+        assert result[0].location.end_column == 22
+        assert result[0].location.file_path is None
 
     def test_leading_dot(self):
         result = _validate_authority_format(_authority(".example.com"))
@@ -213,6 +245,10 @@ class TestAuthorityDomainFormat:
         assert result[0].domain == ".example.com"
         assert result[0].location.line == 1
         assert result[0].location.column == 10
+        assert result[0].chars == (".",)
+        assert result[0].location.end_line == 1
+        assert result[0].location.end_column == 11
+        assert result[0].location.file_path is None
 
     def test_single_char_invalid(self):
         result = _validate_authority_format(_authority("-"))
@@ -221,6 +257,10 @@ class TestAuthorityDomainFormat:
         assert result[0].location.column == 10
         assert isinstance(result[1], diagnostics.AuthorityDomainInvalidCharDiagnostic)
         assert result[1].location.column == 10
+        assert result[1].chars == ("-",)
+        assert result[1].location.end_line == 1
+        assert result[1].location.end_column == 11
+        assert result[1].location.file_path is None
 
     def test_uppercase(self):
         result = _validate_authority_format(_authority("Something.Com"))
@@ -229,6 +269,10 @@ class TestAuthorityDomainFormat:
         assert result[0].domain == "Something.Com"
         assert result[0].location.line == 1
         assert result[0].location.column == 10
+        assert result[0].chars == ("S", "C")
+        assert result[0].location.end_line == 1
+        assert result[0].location.end_column == 11
+        assert result[0].location.file_path is None
 
     def test_non_ascii(self):
         result = _validate_authority_format(_authority("ex\u00e4mple.com"))
@@ -237,6 +281,10 @@ class TestAuthorityDomainFormat:
         assert result[0].domain == "ex\u00e4mple.com"
         assert result[0].location.line == 1
         assert result[0].location.column == 12
+        assert result[0].chars == ("\u00e4",)
+        assert result[0].location.end_line == 1
+        assert result[0].location.end_column == 13
+        assert result[0].location.file_path is None
 
 
 class TestAuthorityPathFormat:
@@ -251,6 +299,10 @@ class TestAuthorityPathFormat:
         assert result[0].segment == ".hidden"
         assert result[0].location.line == 1
         assert result[0].location.column == 22
+        assert result[0].chars == (".",)
+        assert result[0].location.end_line == 1
+        assert result[0].location.end_column == 23
+        assert result[0].location.file_path is None
 
     def test_uppercase(self):
         result = _validate_authority_format(_authority("example.org/Bad"))
@@ -259,6 +311,10 @@ class TestAuthorityPathFormat:
         assert result[0].segment == "Bad"
         assert result[0].location.line == 1
         assert result[0].location.column == 22
+        assert result[0].chars == ("B",)
+        assert result[0].location.end_line == 1
+        assert result[0].location.end_column == 23
+        assert result[0].location.file_path is None
 
     def test_multiple_invalid_segments(self):
         result = _validate_authority_format(_authority("example.org/Bad/.hidden"))
@@ -266,9 +322,17 @@ class TestAuthorityPathFormat:
         assert isinstance(result[0], diagnostics.InvalidAuthorityPathSegmentDiagnostic)
         assert result[0].segment == "Bad"
         assert result[0].location.column == 22
+        assert result[0].chars == ("B",)
+        assert result[0].location.end_line == 1
+        assert result[0].location.end_column == 23
+        assert result[0].location.file_path is None
         assert isinstance(result[1], diagnostics.InvalidAuthorityPathSegmentDiagnostic)
         assert result[1].segment == ".hidden"
         assert result[1].location.column == 26
+        assert result[1].chars == (".",)
+        assert result[1].location.end_line == 1
+        assert result[1].location.end_column == 27
+        assert result[1].location.file_path is None
 
     def test_empty_segment(self):
         result = _validate_authority_format(_authority("example.org//repo"))
@@ -296,6 +360,10 @@ class TestUniverseNameFormat:
         assert result[0].universe_name == "_my_lib"
         assert result[0].location.line == 1
         assert result[0].location.column == 10
+        assert result[0].chars == ("_",)
+        assert result[0].location.end_line == 1
+        assert result[0].location.end_column == 11
+        assert result[0].location.file_path is None
 
     def test_trailing_underscore(self):
         result = _validate_universe_name(_universe("my_lib_"))
@@ -304,6 +372,10 @@ class TestUniverseNameFormat:
         assert result[0].universe_name == "my_lib_"
         assert result[0].location.line == 1
         assert result[0].location.column == 16
+        assert result[0].chars == ("_",)
+        assert result[0].location.end_line == 1
+        assert result[0].location.end_column == 17
+        assert result[0].location.file_path is None
 
     def test_single_char(self):
         result = _validate_universe_name(_universe("x"))
@@ -324,6 +396,10 @@ class TestUniverseNameFormat:
         assert result[0].location.column == 10
         assert isinstance(result[1], diagnostics.UniverseNameInvalidCharDiagnostic)
         assert result[1].location.column == 10
+        assert result[1].chars == ("_",)
+        assert result[1].location.end_line == 1
+        assert result[1].location.end_column == 11
+        assert result[1].location.file_path is None
 
     def test_uppercase(self):
         result = _validate_universe_name(_universe("MyLib"))
@@ -332,6 +408,10 @@ class TestUniverseNameFormat:
         assert result[0].universe_name == "MyLib"
         assert result[0].location.line == 1
         assert result[0].location.column == 10
+        assert result[0].chars == ("M", "L")
+        assert result[0].location.end_line == 1
+        assert result[0].location.end_column == 11
+        assert result[0].location.file_path is None
 
     def test_non_ascii(self):
         result = _validate_universe_name(_universe("m\u00fclib"))
@@ -340,6 +420,10 @@ class TestUniverseNameFormat:
         assert result[0].universe_name == "m\u00fclib"
         assert result[0].location.line == 1
         assert result[0].location.column == 11
+        assert result[0].chars == ("\u00fc",)
+        assert result[0].location.end_line == 1
+        assert result[0].location.end_column == 12
+        assert result[0].location.file_path is None
 
 
 class TestGlobalNamePath:
@@ -355,11 +439,19 @@ class TestGlobalNamePath:
         )
         assert result[0].segment == "Bad"
         assert result[0].location.column == 11
+        assert result[0].chars == ("B",)
+        assert result[0].location.end_line == 1
+        assert result[0].location.end_column == 12
+        assert result[0].location.file_path is None
         assert isinstance(
             result[1], diagnostics.InvalidGlobalNamePathCharacterDiagnostic
         )
         assert result[1].segment == "2bad"
         assert result[1].location.column == 15
+        assert result[1].chars == ("2",)
+        assert result[1].location.end_line == 1
+        assert result[1].location.end_column == 16
+        assert result[1].location.file_path is None
 
     def test_missing_leading_slash(self):
         result = _validate_global_name_path(_global_path_name("invalid/path"))
@@ -399,6 +491,10 @@ class TestGlobalNamePath:
         )
         assert result[0].segment == ".hidden"
         assert result[0].location.column == 11
+        assert result[0].chars == (".",)
+        assert result[0].location.end_line == 1
+        assert result[0].location.end_column == 12
+        assert result[0].location.file_path is None
 
     def test_all_diagnostic_types(self):
         result = _validate_global_name_path(_global_path_name("Bad//2bad/"))
@@ -465,6 +561,12 @@ class TestMultiverseNameReserved:
         result = _validate_multiverse_name(_multiverse("Python"))
         assert len(result) == 2
         assert isinstance(result[0], diagnostics.MultiverseNameInvalidCharDiagnostic)
+        assert result[0].location.line == 1
+        assert result[0].location.column == 10
+        assert result[0].chars == ("P",)
+        assert result[0].location.end_line == 1
+        assert result[0].location.end_column == 11
+        assert result[0].location.file_path is None
         assert isinstance(result[1], diagnostics.ReservedMultiverseNameDiagnostic)
         assert result[1].reserved_name == "Python"
 
@@ -506,6 +608,12 @@ class TestAuthorityReserved:
         result = _validate_authority(_authority("Example.Com"), None)
         assert len(result) == 2
         assert isinstance(result[0], diagnostics.AuthorityDomainInvalidCharDiagnostic)
+        assert result[0].location.line == 1
+        assert result[0].location.column == 10
+        assert result[0].chars == ("E", "C")
+        assert result[0].location.end_line == 1
+        assert result[0].location.end_column == 11
+        assert result[0].location.file_path is None
         assert isinstance(result[1], diagnostics.ReservedAuthorityDomainDiagnostic)
         assert result[1].reserved_name == "Example.Com"
 
@@ -565,6 +673,10 @@ class TestLocalNameFormat:
         assert result[0].local_name == "my-pos"
         assert result[0].location.line == 1
         assert result[0].location.column == 12
+        assert result[0].chars == ("-",)
+        assert result[0].location.end_line == 1
+        assert result[0].location.end_column == 13
+        assert result[0].location.file_path is None
 
     def test_digit_start(self):
         result = name_validators.validate_local_name_format(_local_name("2bad"))
@@ -573,6 +685,10 @@ class TestLocalNameFormat:
         assert result[0].local_name == "2bad"
         assert result[0].location.line == 1
         assert result[0].location.column == 10
+        assert result[0].chars == ("2",)
+        assert result[0].location.end_line == 1
+        assert result[0].location.end_column == 11
+        assert result[0].location.file_path is None
 
     def test_uppercase(self):
         result = name_validators.validate_local_name_format(_local_name("MyPos"))
@@ -581,6 +697,10 @@ class TestLocalNameFormat:
         assert result[0].local_name == "MyPos"
         assert result[0].location.line == 1
         assert result[0].location.column == 10
+        assert result[0].chars == ("M", "P")
+        assert result[0].location.end_line == 1
+        assert result[0].location.end_column == 11
+        assert result[0].location.file_path is None
 
     def test_slash(self):
         result = name_validators.validate_local_name_format(_local_name("my/pos"))
@@ -589,6 +709,22 @@ class TestLocalNameFormat:
         assert result[0].local_name == "my/pos"
         assert result[0].location.line == 1
         assert result[0].location.column == 12
+        assert result[0].chars == ("/",)
+        assert result[0].location.end_line == 1
+        assert result[0].location.end_column == 13
+        assert result[0].location.file_path is None
+
+    def test_repeated_invalid_character_is_listed_once(self):
+        result = name_validators.validate_local_name_format(_local_name("my@po@s"))
+        assert len(result) == 1
+        assert isinstance(result[0], diagnostics.InvalidLocalNameFormatDiagnostic)
+        assert result[0].local_name == "my@po@s"
+        assert result[0].chars == ("@",)
+        assert result[0].location.line == 1
+        assert result[0].location.column == 12
+        assert result[0].location.end_line == 1
+        assert result[0].location.end_column == 13
+        assert result[0].location.file_path is None
 
 
 class TestValidateFqun:
@@ -621,6 +757,12 @@ class TestValidateFqun:
         assert len(result) == 4
         assert isinstance(result[0], diagnostics.MultiverseNameTooShortDiagnostic)
         assert isinstance(result[1], diagnostics.MultiverseNameInvalidCharDiagnostic)
+        assert result[1].location.line == 1
+        assert result[1].location.column == 10
+        assert result[1].chars == ("_",)
+        assert result[1].location.end_line == 1
+        assert result[1].location.end_column == 11
+        assert result[1].location.file_path is None
         assert isinstance(result[2], diagnostics.ReservedAuthorityDomainDiagnostic)
         assert isinstance(result[3], diagnostics.ReservedUniverseNameDiagnostic)
 
@@ -804,3 +946,9 @@ class TestValidateTypedName:
         )
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.InvalidLocalNameFormatDiagnostic)
+        assert result[0].location.line == 1
+        assert result[0].location.column == 10
+        assert result[0].chars == ("M", "-")
+        assert result[0].location.end_line == 1
+        assert result[0].location.end_column == 11
+        assert result[0].location.file_path is None

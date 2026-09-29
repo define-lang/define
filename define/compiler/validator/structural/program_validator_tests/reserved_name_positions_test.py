@@ -26,11 +26,11 @@ def test_case_insensitive_reserved_universe_position(
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.UniverseNameInvalidCharDiagnostic)
     assert diags[0].universe_name == "STANDARD"
-    assert diags[0].char == "S"
+    assert diags[0].chars == ("S", "T", "A", "N", "D", "R")
     assert diags[0].location.line == 1
     assert diags[0].location.column == 50
     assert diags[0].location.end_line == 1
-    assert diags[0].location.end_column == 58
+    assert diags[0].location.end_column == 51
     assert diags[0].location.file_path is None
     assert isinstance(diags[1], diagnostics.ReservedUniverseNameDiagnostic)
     assert diags[1].reserved_name == "STANDARD"

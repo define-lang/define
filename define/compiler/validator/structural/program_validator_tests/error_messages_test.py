@@ -252,6 +252,62 @@ def test_move_to_same_position_format():
     )
 
 
+def test_invalid_local_name_character_format():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    it happens when {\n"
+        "        this particle is created.\n"
+        "    } and it does {\n"
+        "        define the position<my-pos>.\n"
+        "        create a particle in position<my-pos>.\n"
+        "    }\n"
+        "}\n"
+    )
+    program_result = (
+        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
+            source
+        )
+    )
+    diags = program_result.file_results[0].diagnostics
+    assert len(diags) == 2
+    assert isinstance(diags[0], diagnostics.InvalidLocalNameFormatDiagnostic)
+    assert isinstance(diags[1], diagnostics.InvalidLocalNameFormatDiagnostic)
+    formatted = diags[0].format(program_result.source_map)
+    assert formatted == textwrap.dedent("""\
+        line 5, column 31
+            define the position<my-pos>.
+                                  ^
+        invalid character '-' in local name 'my-pos'""")
+
+
+def test_invalid_local_name_characters_format():
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    it happens when {\n"
+        "        this particle is created.\n"
+        "    } and it does {\n"
+        "        define the position<Bad-Name>.\n"
+        "        create a particle in position<Bad-Name>.\n"
+        "    }\n"
+        "}\n"
+    )
+    program_result = (
+        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
+            source
+        )
+    )
+    diags = program_result.file_results[0].diagnostics
+    assert len(diags) == 2
+    assert isinstance(diags[0], diagnostics.InvalidLocalNameFormatDiagnostic)
+    assert isinstance(diags[1], diagnostics.InvalidLocalNameFormatDiagnostic)
+    formatted = diags[0].format(program_result.source_map)
+    assert formatted == textwrap.dedent("""\
+        line 5, column 29
+            define the position<Bad-Name>.
+                                ^
+        invalid characters 'B', '-' and 'N' in local name 'Bad-Name'""")
+
+
 def test_move_into_defining_position_format(validate_project: ValidateProject):
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"

@@ -78,7 +78,7 @@ def test_invalid_view_name(
     assert diagnostic.location.line == 3
     assert diagnostic.location.column == 21
     assert diagnostic.local_name == "Number"
-    assert diagnostic.char == "N"
+    assert diagnostic.chars == ("N",)
 
 
 def test_view_position_constraint(

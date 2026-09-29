@@ -613,23 +613,36 @@ class AuthorityDomainTooShortDiagnostic(Diagnostic):
     )
 
 
-class AuthorityDomainInvalidCharDiagnostic(Diagnostic):
-    """Diagnostic for when an authority domain has an invalid character."""
+class InvalidNameCharactersDiagnostic(Diagnostic):
+    """Base class for diagnostics about characters that a part of a name may not contain."""
+
+    # Each invalid character once, in the order it first appears.
+    chars: tuple[str, ...]
+
+    @property
+    def invalid_characters(self) -> str:
+        """The invalid characters, quoted, as a phrase for the message."""
+        quoted = [f"'{char}'" for char in self.chars]
+        if len(quoted) == 1:
+            return f"invalid character {quoted[0]}"
+        return f"invalid characters {', '.join(quoted[:-1])} and {quoted[-1]}"
+
+
+class AuthorityDomainInvalidCharDiagnostic(InvalidNameCharactersDiagnostic):
+    """Diagnostic for when an authority domain has invalid characters."""
 
     domain: str
-    char: str
     message_format: ClassVar[str] = (
-        "invalid character '{self.char}' in authority domain '{self.domain}'"
+        "{self.invalid_characters} in authority domain '{self.domain}'"
     )
 
 
-class InvalidAuthorityPathSegmentDiagnostic(Diagnostic):
-    """Diagnostic for when an authority path segment has invalid format."""
+class InvalidAuthorityPathSegmentDiagnostic(InvalidNameCharactersDiagnostic):
+    """Diagnostic for when an authority path segment has invalid characters."""
 
     segment: str
-    char: str
     message_format: ClassVar[str] = (
-        "invalid character '{self.char}' in authority path segment '{self.segment}'"
+        "{self.invalid_characters} in authority path segment '{self.segment}'"
     )
 
 
@@ -642,13 +655,12 @@ class AuthorityPathEmptySegmentDiagnostic(Diagnostic):
     )
 
 
-class InvalidGlobalNamePathCharacterDiagnostic(Diagnostic):
-    """Diagnostic for when a global name path segment has invalid format."""
+class InvalidGlobalNamePathCharacterDiagnostic(InvalidNameCharactersDiagnostic):
+    """Diagnostic for when a global name path segment has invalid characters."""
 
     segment: str
-    char: str
     message_format: ClassVar[str] = (
-        "invalid character '{self.char}' in path segment '{self.segment}'"
+        "{self.invalid_characters} in path segment '{self.segment}'"
     )
 
 
@@ -677,13 +689,12 @@ class GlobalNamePathEmptySegmentDiagnostic(Diagnostic):
     )
 
 
-class InvalidLocalNameFormatDiagnostic(Diagnostic):
-    """Diagnostic for when a local name has invalid format."""
+class InvalidLocalNameFormatDiagnostic(InvalidNameCharactersDiagnostic):
+    """Diagnostic for when a local name has invalid characters."""
 
     local_name: str
-    char: str
     message_format: ClassVar[str] = (
-        "invalid character '{self.char}' in local name '{self.local_name}'"
+        "{self.invalid_characters} in local name '{self.local_name}'"
     )
 
 
@@ -696,13 +707,12 @@ class MultiverseNameTooShortDiagnostic(Diagnostic):
     )
 
 
-class MultiverseNameInvalidCharDiagnostic(Diagnostic):
-    """Diagnostic for when a multiverse name has an invalid character."""
+class MultiverseNameInvalidCharDiagnostic(InvalidNameCharactersDiagnostic):
+    """Diagnostic for when a multiverse name has invalid characters."""
 
     multiverse_name: str
-    char: str
     message_format: ClassVar[str] = (
-        "invalid character '{self.char}' in multiverse name '{self.multiverse_name}'"
+        "{self.invalid_characters} in multiverse name '{self.multiverse_name}'"
     )
 
 
@@ -715,13 +725,12 @@ class UniverseNameTooShortDiagnostic(Diagnostic):
     )
 
 
-class UniverseNameInvalidCharDiagnostic(Diagnostic):
-    """Diagnostic for when a universe name has an invalid character."""
+class UniverseNameInvalidCharDiagnostic(InvalidNameCharactersDiagnostic):
+    """Diagnostic for when a universe name has invalid characters."""
 
     universe_name: str
-    char: str
     message_format: ClassVar[str] = (
-        "invalid character '{self.char}' in universe name '{self.universe_name}'"
+        "{self.invalid_characters} in universe name '{self.universe_name}'"
     )
 
 

@@ -37,7 +37,7 @@ def test_invalid_name(
     assert diagnostic.location.column == 53
     assert diagnostic.location.file_path is None
     assert diagnostic.segment == "bad-name"
-    assert diagnostic.char == "-"
+    assert diagnostic.chars == ("-",)
 
 
 def test_duplicate_value(
