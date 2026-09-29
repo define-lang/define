@@ -21,7 +21,7 @@ bazel_dep(name = "re2", version = "2025-11-05")
 bazel_dep(name = "aspect_rules_py", version = "2.0.0-alpha.6")
 bazel_dep(name = "rules_buf", version = "0.5.4")
 bazel_dep(name = "rules_multitool", version = "1.11.1")
-bazel_dep(name = "aspect_rules_lint", version = "2.9.0")
+bazel_dep(name = "aspect_rules_lint", version = "2.9.1")
 bazel_dep(name = "aspect_rules_js", version = "3.5.0")
 bazel_dep(name = "rules_nodejs", version = "6.7.5")
 
@@ -38,7 +38,7 @@ local_path_override(
 # TODO: Upgrade to an aspect_rules_py release with PR #1538 and remove this override.
 git_override(
     module_name = "aspect_rules_py",
-    commit = "e88321be110fbf2ed94f6e474297ad534c9a74d8",
+    commit = "150926f1f9f2b49df2e0c7d8801edb3f95eadb07",
     remote = "https://github.com/aspect-build/rules_py.git",
 )
 
