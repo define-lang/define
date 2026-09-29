@@ -1,0 +1,3 @@
+test.create(/distance)
+test.set_value(/distance, -2.5)
+test.execute(operation<standard:/number/rational/absolute_value>, /distance)

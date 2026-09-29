@@ -38,11 +38,48 @@ class _Negation(msgspec.Struct, frozen=True):
     view: str
 
 
+class _FunctionCall(msgspec.Struct, frozen=True):
+    """A computer operation that calls a Python library function."""
+
+    function: naming.FunctionReference
+    argument_views: tuple[str, ...]
+    result_view: str
+
+
+def _unary_function_call(module_name: str, function_name: str) -> _FunctionCall:
+    return _FunctionCall(
+        function=naming.FunctionReference(
+            function_name=function_name, module_name=module_name
+        ),
+        argument_views=("view<value>",),
+        result_view="view<value>",
+    )
+
+
+def _binary_function_call(module_name: str, function_name: str) -> _FunctionCall:
+    return _FunctionCall(
+        function=naming.FunctionReference(
+            function_name=function_name, module_name=module_name
+        ),
+        argument_views=("view<a>", "view<b>"),
+        result_view="view<result>",
+    )
+
+
 # The computer operations that the compiler knows how to perform, by the
 # Encoding Operation that executes them.
 _COMPUTER_OPERATIONS: Final[
-    dict[str, _BinaryOperation | _LiteralOperation | _Negation]
+    dict[str, _BinaryOperation | _LiteralOperation | _Negation | _FunctionCall]
 ] = {
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/absolute_value>": _unary_function_call(
+        "builtins", "abs"
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/ceiling>": _unary_function_call(
+        "math", "ceil"
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/floor>": _unary_function_call(
+        "math", "floor"
+    ),
     f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/infix_add>": _BinaryOperation(
         operator=template_context.BinaryOperator.ADD,
         left_view="view<a>",
@@ -65,6 +102,12 @@ _COMPUTER_OPERATIONS: Final[
         right_view="view<b>",
         result_view="view<result>",
     ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/maximum>": _binary_function_call(
+        "builtins", "max"
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/minimum>": _binary_function_call(
+        "builtins", "min"
+    ),
     f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/infix_subtract>": _BinaryOperation(
         operator=template_context.BinaryOperator.SUBTRACT,
         left_view="view<from>",
@@ -73,6 +116,9 @@ _COMPUTER_OPERATIONS: Final[
     ),
     f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/prefix_negate>": _Negation(
         view="view<value>"
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/truncate>": _unary_function_call(
+        "math", "trunc"
     ),
 }
 
@@ -100,6 +146,10 @@ class EncodingOperationDefinitionGenerator:
                 callees.append(
                     self._converter.function_reference(step.encoding_operation)
                 )
+            else:
+                computer_operation = _lookup_computer_operation(definition)
+                if isinstance(computer_operation, _FunctionCall):
+                    callees.append(computer_operation.function)
         imports = {
             callee.module_name
             for callee in callees
@@ -181,9 +231,7 @@ class EncodingOperationDefinitionGenerator:
         definition: ast.EncodingOperationDefinition, view_names: dict[str, str]
     ) -> tuple[template_context.EncodingOperationStatementContext, list[str]]:
         """Return the statement that performs the Encoding Operation's computer operation, and the local names it assigns."""
-        # Code generation relies on validation to report computer operations
-        # that the compiler cannot perform.
-        computer_operation = _COMPUTER_OPERATIONS[definition.typed_name.full_typed_name]
+        computer_operation = _lookup_computer_operation(definition)
         match computer_operation:
             case _BinaryOperation():
                 result = view_names[computer_operation.result_view]
@@ -206,3 +254,20 @@ class EncodingOperationDefinitionGenerator:
                 return template_context.NegationContext(operand=value, result=value), [
                     value
                 ]
+            case _FunctionCall():
+                result = view_names[computer_operation.result_view]
+                return template_context.CallContext(
+                    function=computer_operation.function,
+                    arguments=[
+                        view_names[view] for view in computer_operation.argument_views
+                    ],
+                    results=[result],
+                ), [result]
+
+
+def _lookup_computer_operation(
+    definition: ast.EncodingOperationDefinition,
+) -> _BinaryOperation | _LiteralOperation | _Negation | _FunctionCall:
+    # Code generation relies on validation to report computer operations that
+    # the compiler cannot perform.
+    return _COMPUTER_OPERATIONS[definition.typed_name.full_typed_name]

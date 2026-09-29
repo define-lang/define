@@ -1,0 +1,18 @@
+# TODO: Let executions choose what happens when the absolute value does not fit
+# in an encoding with a fixed width, such as the most negative integer:
+#   - Wrap around to the same negative value.
+#   - Saturate to the largest positive value.
+#   - Report an error.
+define the operation<standard:/number/rational/absolute_value> {
+    define the view<value> {
+        it is read.
+        it is written.
+        it may only contain particles where {
+            it has the value</number/rational>.
+        }
+    }
+
+    it does {
+        execute the encoding operation.
+    }
+}

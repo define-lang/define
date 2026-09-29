@@ -1,0 +1,13 @@
+# An action rounds a position's value up with the built-in rational ceiling.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</level>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</level>.
+        set the value of position</level> to literal<standard:/number>"2.5".
+        execute the operation<standard:/number/rational/ceiling> {
+            with view<value> looking at position</level>.
+        }
+    }
+}

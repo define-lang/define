@@ -74,7 +74,7 @@ class ClassReference(msgspec.Struct):
 
 
 class FunctionReference(msgspec.Struct):
-    """A reference to a generated function, including its module location."""
+    """A reference to a Python function, including its module location."""
 
     function_name: str
     module_name: str

@@ -1,0 +1,17 @@
+# An action finds the larger of a position's value and a literal with the built-in rational maximum.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</reading>.
+    it also assigns the position</larger>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</reading>.
+        create a particle in position</larger>.
+        set the value of position</reading> to literal<standard:/number>"1.5".
+        execute the operation<standard:/number/rational/maximum> {
+            with view<a> looking at position</reading>.
+            with view<b> looking at literal<standard:/number>"4".
+            with view<result> looking at position</larger>.
+        }
+    }
+}

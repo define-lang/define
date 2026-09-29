@@ -1,0 +1,4 @@
+test.create(/reading)
+test.create(/larger)
+test.set_value(/reading, 1.5)
+test.execute(operation<standard:/number/rational/maximum>, /reading, 4, /larger)

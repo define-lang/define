@@ -14,6 +14,16 @@ define the potential position<my.domain.com:my_lib:/product> {
         it has the value<standard:/number/rational>.
     }
 }
+define the potential position<my.domain.com:my_lib:/smaller> {
+    it may only contain particles where {
+        it has the value<standard:/number/rational>.
+    }
+}
+define the potential position<my.domain.com:my_lib:/larger> {
+    it may only contain particles where {
+        it has the value<standard:/number/rational>.
+    }
+}
 define the encoding_operation<my.domain.com:my_lib:/increment> {
     define the view<number> {
         it is read.
@@ -40,12 +50,16 @@ define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the position</total>.
     it also assigns the position</remaining>.
     it also assigns the position</product>.
+    it also assigns the position</smaller>.
+    it also assigns the position</larger>.
     it happens when {
         this particle is created.
     } and it does {
         create a particle in position</total>.
         create a particle in position</remaining>.
         create a particle in position</product>.
+        create a particle in position</smaller>.
+        create a particle in position</larger>.
         execute the operation<standard:/number/rational/add> {
             with view<a> looking at literal<standard:/number>"1".
             with view<b> looking at literal<standard:/number>"2".
@@ -69,6 +83,28 @@ define the potential action<my.domain.com:my_lib:/test> {
             with view<a> looking at position</total>.
             with view<b> looking at literal<standard:/number>"2".
             with view<result> looking at position</product>.
+        }
+        execute the operation<standard:/number/rational/absolute_value> {
+            with view<value> looking at position</total>.
+        }
+        execute the operation<standard:/number/rational/floor> {
+            with view<value> looking at position</total>.
+        }
+        execute the operation<standard:/number/rational/ceiling> {
+            with view<value> looking at position</total>.
+        }
+        execute the operation<standard:/number/rational/truncate> {
+            with view<value> looking at position</total>.
+        }
+        execute the operation<standard:/number/rational/minimum> {
+            with view<a> looking at position</total>.
+            with view<b> looking at literal<standard:/number>"2".
+            with view<result> looking at position</smaller>.
+        }
+        execute the operation<standard:/number/rational/maximum> {
+            with view<a> looking at position</total>.
+            with view<b> looking at literal<standard:/number>"2".
+            with view<result> looking at position</larger>.
         }
     }
 }

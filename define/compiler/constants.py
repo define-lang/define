@@ -37,14 +37,29 @@ BUILT_IN_VALUE_ENCODINGS: Final = {
 # TODO: Read Encoding Operation associations from configuration (DLP 48) once
 # it exists.
 BUILT_IN_ENCODING_OPERATIONS: Final = {
+    f"operation<{STANDARD_UNIVERSE}:/number/rational/absolute_value>": (
+        "/number/decimal/ascii/absolute_value"
+    ),
     f"operation<{STANDARD_UNIVERSE}:/number/rational/add>": (
         "/number/decimal/ascii/infix_add"
+    ),
+    f"operation<{STANDARD_UNIVERSE}:/number/rational/ceiling>": (
+        "/number/decimal/ascii/ceiling"
     ),
     f"operation<{STANDARD_UNIVERSE}:/number/rational/decrement>": (
         "/number/decimal/ascii/infix_decrement"
     ),
+    f"operation<{STANDARD_UNIVERSE}:/number/rational/floor>": (
+        "/number/decimal/ascii/floor"
+    ),
     f"operation<{STANDARD_UNIVERSE}:/number/rational/increment>": (
         "/number/decimal/ascii/infix_increment"
+    ),
+    f"operation<{STANDARD_UNIVERSE}:/number/rational/maximum>": (
+        "/number/decimal/ascii/maximum"
+    ),
+    f"operation<{STANDARD_UNIVERSE}:/number/rational/minimum>": (
+        "/number/decimal/ascii/minimum"
     ),
     f"operation<{STANDARD_UNIVERSE}:/number/rational/multiply>": (
         "/number/decimal/ascii/infix_multiply"
@@ -54,5 +69,8 @@ BUILT_IN_ENCODING_OPERATIONS: Final = {
     ),
     f"operation<{STANDARD_UNIVERSE}:/number/rational/subtract>": (
         "/number/decimal/ascii/infix_subtract"
+    ),
+    f"operation<{STANDARD_UNIVERSE}:/number/rational/truncate>": (
+        "/number/decimal/ascii/truncate"
     ),
 }

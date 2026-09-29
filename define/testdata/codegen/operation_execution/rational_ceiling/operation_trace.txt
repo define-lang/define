@@ -1,0 +1,3 @@
+test.create(/level)
+test.set_value(/level, 2.5)
+test.execute(operation<standard:/number/rational/ceiling>, /level)

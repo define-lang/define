@@ -1,0 +1,13 @@
+# An action replaces a position's value with its absolute value using the built-in rational absolute value.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</distance>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</distance>.
+        set the value of position</distance> to literal<standard:/number>"-2.5".
+        execute the operation<standard:/number/rational/absolute_value> {
+            with view<value> looking at position</distance>.
+        }
+    }
+}

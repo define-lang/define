@@ -1,0 +1,15 @@
+# TODO: Forbid executing this operation on a value whose denominator is 1,
+# because the floor of an integer is always the integer itself.
+define the operation<standard:/number/rational/floor> {
+    define the view<value> {
+        it is read.
+        it is written.
+        it may only contain particles where {
+            it has the value</number/rational>.
+        }
+    }
+
+    it does {
+        execute the encoding operation.
+    }
+}
