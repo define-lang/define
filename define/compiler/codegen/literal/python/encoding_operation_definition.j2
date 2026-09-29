@@ -1,9 +1,16 @@
 {% macro expression(statement, module_name) -%}
     {%- match statement -%}
-        {%- when EncodingOperationStatement::InfixAdd with (statement) -%}
-{{ statement.left }} + {{ statement.right }}
-        {%- when EncodingOperationStatement::InfixIncrement with (statement) -%}
-{{ statement.value }} + 1
+        {%- when EncodingOperationStatement::BinaryOperation with (statement) -%}
+{{ statement.left }} {% match statement.operator -%}
+            {%- when BinaryOperator::Add -%}
++
+            {%- when BinaryOperator::Subtract -%}
+-
+            {%- when BinaryOperator::Multiply -%}
+*
+            {%- endmatch %} {{ statement.right }}
+        {%- when EncodingOperationStatement::Negation with (statement) -%}
+-{{ statement.operand }}
         {%- when EncodingOperationStatement::Call with (statement) -%}
 {{ statement.function.name_in_module(module_name) }}({{ statement.arguments|join(", ") }})
     {%- endmatch -%}
@@ -28,10 +35,10 @@ def {{ self.function_name }}(
     return {{ expression(statement, module_name) }}
     {%- else %}
         {%- match statement %}
-            {%- when EncodingOperationStatement::InfixAdd with (infix_add) %}
-    {{ infix_add.result }} = {{ expression(statement, module_name) }}
-            {%- when EncodingOperationStatement::InfixIncrement with (infix_increment) %}
-    {{ infix_increment.value }} = {{ expression(statement, module_name) }}
+            {%- when EncodingOperationStatement::BinaryOperation with (binary_operation) %}
+    {{ binary_operation.result }} = {{ expression(statement, module_name) }}
+            {%- when EncodingOperationStatement::Negation with (negation) %}
+    {{ negation.result }} = {{ expression(statement, module_name) }}
             {%- when EncodingOperationStatement::Call with (call) %}
     {% if !call.results.is_empty() %}{{ call.results|join(", ") }} = {% endif -%}
     {{ expression(statement, module_name) }}

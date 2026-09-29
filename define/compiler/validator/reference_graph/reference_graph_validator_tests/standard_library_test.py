@@ -28,9 +28,17 @@ def test_every_definition_is_valid(
             standard_library_file("number.dfn"),
             standard_library_file("number/decimal/ascii.dfn"),
             standard_library_file("number/decimal/ascii/infix_add.dfn"),
+            standard_library_file("number/decimal/ascii/infix_decrement.dfn"),
             standard_library_file("number/decimal/ascii/infix_increment.dfn"),
+            standard_library_file("number/decimal/ascii/infix_multiply.dfn"),
+            standard_library_file("number/decimal/ascii/infix_subtract.dfn"),
+            standard_library_file("number/decimal/ascii/prefix_negate.dfn"),
             standard_library_file("number/rational.dfn"),
             standard_library_file("number/rational/add.dfn"),
+            standard_library_file("number/rational/decrement.dfn"),
             standard_library_file("number/rational/increment.dfn"),
+            standard_library_file("number/rational/multiply.dfn"),
+            standard_library_file("number/rational/negate.dfn"),
+            standard_library_file("number/rational/subtract.dfn"),
         ]
     )

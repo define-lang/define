@@ -11,7 +11,7 @@ define the encoding_operation<standard:/number/decimal/ascii/infix_add> {
             it has the encoding</number/decimal/ascii>.
         }
     }
-    define the view<sum> {
+    define the view<result> {
         it is written.
         it may only contain particles where {
             it has the encoding</number/decimal/ascii>.

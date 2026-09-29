@@ -250,16 +250,39 @@ struct ActionDefinition {
     contract_definitions: Vec<ContractDefinition>,
 }
 
+enum BinaryOperator {
+    Add,
+    Subtract,
+    Multiply,
+}
+
+impl<'a, 'py> FromPyObject<'a, 'py> for BinaryOperator {
+    type Error = PyErr;
+    fn extract(object: pyo3::Borrowed<'a, 'py, PyAny>) -> PyResult<Self> {
+        let name: String = object.getattr("name")?.extract()?;
+        match name.as_str() {
+            "ADD" => Ok(Self::Add),
+            "SUBTRACT" => Ok(Self::Subtract),
+            "MULTIPLY" => Ok(Self::Multiply),
+            _ => Err(PyRuntimeError::new_err(format!(
+                "Unknown binary operator: {name}"
+            ))),
+        }
+    }
+}
+
 #[derive(FromPyObject)]
-struct InfixAdd {
+struct BinaryOperation {
+    operator: BinaryOperator,
     left: String,
     right: String,
     result: String,
 }
 
 #[derive(FromPyObject)]
-struct InfixIncrement {
-    value: String,
+struct Negation {
+    operand: String,
+    result: String,
 }
 
 #[derive(FromPyObject)]
@@ -270,8 +293,8 @@ struct Call {
 }
 
 enum EncodingOperationStatement {
-    InfixAdd(InfixAdd),
-    InfixIncrement(InfixIncrement),
+    BinaryOperation(BinaryOperation),
+    Negation(Negation),
     Call(Call),
 }
 
@@ -280,8 +303,8 @@ impl<'a, 'py> FromPyObject<'a, 'py> for EncodingOperationStatement {
     fn extract(object: pyo3::Borrowed<'a, 'py, PyAny>) -> PyResult<Self> {
         let kind: String = object.getattr("kind")?.getattr("name")?.extract()?;
         match kind.as_str() {
-            "INFIX_ADD" => Ok(Self::InfixAdd(object.extract()?)),
-            "INFIX_INCREMENT" => Ok(Self::InfixIncrement(object.extract()?)),
+            "BINARY_OPERATION" => Ok(Self::BinaryOperation(object.extract()?)),
+            "NEGATION" => Ok(Self::Negation(object.extract()?)),
             "CALL" => Ok(Self::Call(object.extract()?)),
             _ => Err(PyRuntimeError::new_err(format!(
                 "Unknown Encoding Operation statement kind: {kind}"

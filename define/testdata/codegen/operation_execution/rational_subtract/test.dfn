@@ -1,0 +1,17 @@
+# An action subtracts a literal from a position's value with the built-in rational subtraction.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</balance>.
+    it also assigns the position</remaining>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</balance>.
+        create a particle in position</remaining>.
+        set the value of position</balance> to literal<standard:/number>"3.5".
+        execute the operation<standard:/number/rational/subtract> {
+            with view<from> looking at position</balance>.
+            with view<take_away> looking at literal<standard:/number>"2".
+            with view<result> looking at position</remaining>.
+        }
+    }
+}

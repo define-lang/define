@@ -1,0 +1,4 @@
+test.create(/balance)
+test.create(/remaining)
+test.set_value(/balance, 3.5)
+test.execute(operation<standard:/number/rational/subtract>, /balance, 2, /remaining)

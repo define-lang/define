@@ -1,0 +1,3 @@
+test.create(/count)
+test.set_value(/count, 2)
+test.execute(operation<standard:/number/rational/decrement>, /count)

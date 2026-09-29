@@ -22,7 +22,7 @@ define the potential action<my.domain.com:my_lib:/test> {
             with view<a> looking at position</first>.
             with view<a> looking at literal<standard:/number>"3".
             with view<b> looking at literal<standard:/number>"2".
-            with view<sum> looking at position</second>.
+            with view<result> looking at position</second>.
         }
     }
 }

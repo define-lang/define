@@ -1,0 +1,3 @@
+test.create(/balance)
+test.set_value(/balance, 2.5)
+test.execute(operation<standard:/number/rational/negate>, /balance)

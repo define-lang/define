@@ -239,8 +239,8 @@ class ExecuteOperationContext(ActionStatementContext):
 class EncodingOperationStatementKind(enum.Enum):
     """Discriminator for statement types in Encoding Operation functions."""
 
-    INFIX_ADD = enum.auto()
-    INFIX_INCREMENT = enum.auto()
+    BINARY_OPERATION = enum.auto()
+    NEGATION = enum.auto()
     CALL = enum.auto()
 
 
@@ -250,24 +250,35 @@ class EncodingOperationStatementContext(msgspec.Struct):
     kind: ClassVar[EncodingOperationStatementKind]
 
 
-class InfixAddContext(EncodingOperationStatementContext):
-    """Add two values with infix addition."""
+class BinaryOperator(enum.Enum):
+    """An arithmetic operator that combines two values."""
+
+    ADD = enum.auto()
+    SUBTRACT = enum.auto()
+    MULTIPLY = enum.auto()
+
+
+class BinaryOperationContext(EncodingOperationStatementContext):
+    """Combine two values with an infix arithmetic operator."""
 
     kind: ClassVar[EncodingOperationStatementKind] = (
-        EncodingOperationStatementKind.INFIX_ADD
+        EncodingOperationStatementKind.BINARY_OPERATION
     )
+    operator: BinaryOperator
+    # Local names, or literals already in the value's encoding.
     left: str
     right: str
     result: str
 
 
-class InfixIncrementContext(EncodingOperationStatementContext):
-    """Add one to a value with infix addition."""
+class NegationContext(EncodingOperationStatementContext):
+    """Negate a value with the prefix negation operator."""
 
     kind: ClassVar[EncodingOperationStatementKind] = (
-        EncodingOperationStatementKind.INFIX_INCREMENT
+        EncodingOperationStatementKind.NEGATION
     )
-    value: str
+    operand: str
+    result: str
 
 
 class CallContext(EncodingOperationStatementContext):

@@ -1,0 +1,13 @@
+# An action negates a position's value with the built-in rational negation.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</balance>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</balance>.
+        set the value of position</balance> to literal<standard:/number>"2.5".
+        execute the operation<standard:/number/rational/negate> {
+            with view<value> looking at position</balance>.
+        }
+    }
+}

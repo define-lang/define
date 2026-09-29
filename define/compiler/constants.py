@@ -40,7 +40,19 @@ BUILT_IN_ENCODING_OPERATIONS: Final = {
     f"operation<{STANDARD_UNIVERSE}:/number/rational/add>": (
         "/number/decimal/ascii/infix_add"
     ),
+    f"operation<{STANDARD_UNIVERSE}:/number/rational/decrement>": (
+        "/number/decimal/ascii/infix_decrement"
+    ),
     f"operation<{STANDARD_UNIVERSE}:/number/rational/increment>": (
         "/number/decimal/ascii/infix_increment"
+    ),
+    f"operation<{STANDARD_UNIVERSE}:/number/rational/multiply>": (
+        "/number/decimal/ascii/infix_multiply"
+    ),
+    f"operation<{STANDARD_UNIVERSE}:/number/rational/negate>": (
+        "/number/decimal/ascii/prefix_negate"
+    ),
+    f"operation<{STANDARD_UNIVERSE}:/number/rational/subtract>": (
+        "/number/decimal/ascii/infix_subtract"
     ),
 }

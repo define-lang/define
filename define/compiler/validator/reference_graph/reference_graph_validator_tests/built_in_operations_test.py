@@ -31,7 +31,7 @@ def test_rational_add_missing_argument(
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 14
     assert diagnostic.location.column == 21
-    assert diagnostic.view_name == "view<sum>"
+    assert diagnostic.view_name == "view<result>"
     assert diagnostic.operation_name == "operation<standard:/number/rational/add>"
 
 

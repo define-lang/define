@@ -2626,7 +2626,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         execute the operation<standard:/number/rational/add> {
             with view<a> looking at position</augend>.
             with view<b> looking at literal<standard:/number>"2".
-            with view<sum> looking at position</total>.
+            with view<result> looking at position</total>.
         }
     }
 }
@@ -2651,6 +2651,5 @@ class TestAction(literal.Action):
 ```python
 # standard/number/decimal/ascii/__init__.py
 def infix_add(a: float, b: float) -> float:
-    sum = a + b
-    return sum
+    return a + b
 ```

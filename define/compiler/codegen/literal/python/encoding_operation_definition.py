@@ -14,27 +14,64 @@ if TYPE_CHECKING:
     from define.compiler import ast
 
 
-class _InfixAdd(msgspec.Struct, frozen=True):
-    """A computer operation that adds two views with infix addition."""
+class _BinaryOperation(msgspec.Struct, frozen=True):
+    """A computer operation that combines two views with an infix operator."""
 
+    operator: template_context.BinaryOperator
     left_view: str
     right_view: str
     result_view: str
 
 
-class _InfixIncrement(msgspec.Struct, frozen=True):
-    """A computer operation that adds one to a view with infix addition."""
+class _LiteralOperation(msgspec.Struct, frozen=True):
+    """A computer operation that combines a view with a literal and writes the result back to the view."""
+
+    operator: template_context.BinaryOperator
+    view: str
+    # Already in the view's encoding.
+    literal: str
+
+
+class _Negation(msgspec.Struct, frozen=True):
+    """A computer operation that negates a view and writes the result back to the view."""
 
     view: str
 
 
 # The computer operations that the compiler knows how to perform, by the
 # Encoding Operation that executes them.
-_COMPUTER_OPERATIONS: Final[dict[str, _InfixAdd | _InfixIncrement]] = {
-    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/infix_add>": _InfixAdd(
-        left_view="view<a>", right_view="view<b>", result_view="view<sum>"
+_COMPUTER_OPERATIONS: Final[
+    dict[str, _BinaryOperation | _LiteralOperation | _Negation]
+] = {
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/infix_add>": _BinaryOperation(
+        operator=template_context.BinaryOperator.ADD,
+        left_view="view<a>",
+        right_view="view<b>",
+        result_view="view<result>",
     ),
-    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/infix_increment>": _InfixIncrement(
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/infix_decrement>": _LiteralOperation(
+        operator=template_context.BinaryOperator.SUBTRACT,
+        view="view<value>",
+        literal="1",
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/infix_increment>": _LiteralOperation(
+        operator=template_context.BinaryOperator.ADD,
+        view="view<value>",
+        literal="1",
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/infix_multiply>": _BinaryOperation(
+        operator=template_context.BinaryOperator.MULTIPLY,
+        left_view="view<a>",
+        right_view="view<b>",
+        result_view="view<result>",
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/infix_subtract>": _BinaryOperation(
+        operator=template_context.BinaryOperator.SUBTRACT,
+        left_view="view<from>",
+        right_view="view<take_away>",
+        result_view="view<result>",
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/prefix_negate>": _Negation(
         view="view<value>"
     ),
 }
@@ -148,13 +185,24 @@ class EncodingOperationDefinitionGenerator:
         # that the compiler cannot perform.
         computer_operation = _COMPUTER_OPERATIONS[definition.typed_name.full_typed_name]
         match computer_operation:
-            case _InfixAdd():
+            case _BinaryOperation():
                 result = view_names[computer_operation.result_view]
-                return template_context.InfixAddContext(
+                return template_context.BinaryOperationContext(
+                    operator=computer_operation.operator,
                     left=view_names[computer_operation.left_view],
                     right=view_names[computer_operation.right_view],
                     result=result,
                 ), [result]
-            case _InfixIncrement():
+            case _LiteralOperation():
                 value = view_names[computer_operation.view]
-                return template_context.InfixIncrementContext(value=value), [value]
+                return template_context.BinaryOperationContext(
+                    operator=computer_operation.operator,
+                    left=value,
+                    right=computer_operation.literal,
+                    result=value,
+                ), [value]
+            case _Negation():
+                value = view_names[computer_operation.view]
+                return template_context.NegationContext(operand=value, result=value), [
+                    value
+                ]

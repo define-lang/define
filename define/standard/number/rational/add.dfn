@@ -11,7 +11,7 @@ define the operation<standard:/number/rational/add> {
             it has the value</number/rational>.
         }
     }
-    define the view<sum> {
+    define the view<result> {
         it is written.
         it may only contain particles where {
             it has the value</number/rational>.

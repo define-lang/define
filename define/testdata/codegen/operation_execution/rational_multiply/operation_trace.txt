@@ -1,0 +1,4 @@
+test.create(/factor)
+test.create(/product)
+test.set_value(/factor, 1.5)
+test.execute(operation<standard:/number/rational/multiply>, /factor, 4, /product)
