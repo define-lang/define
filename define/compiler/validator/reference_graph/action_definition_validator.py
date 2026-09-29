@@ -7,7 +7,12 @@ from functools import cached_property
 
 import msgspec
 
-from define.compiler import ast, chained_name, name_types
+from define.compiler import (
+    ast,
+    chained_name,
+    encoding_operation_associations,
+    name_types,
+)
 from define.compiler.errors import diagnostics
 from define.compiler.validator import codegen_input, scope_tracker, validation_result
 from define.compiler.validator.reference_graph import (
@@ -809,9 +814,10 @@ class ActionDefinitionValidator:
                 and particle.qualities.value_type is not None
             ):
                 written_positions.append(position)
-        statement_diagnostics.extend(
+        argument_diagnostics, literal_values = (
             self._operation_arguments_validator.validate(stmt, looked_at_qualities)
         )
+        statement_diagnostics.extend(argument_diagnostics)
         self._diagnostics.extend(statement_diagnostics)
         # A failed statement still counts as writing its output views, so
         # later reads do not report the same mistake again as an unset value.
@@ -823,8 +829,30 @@ class ActionDefinitionValidator:
                 self._diagnostics.extend(
                     self._dead_value_write_validator.record_write(position)
                 )
-        # TODO: Record a step for code generation once value operations have
-        # code generation.
+        if executed is None or statement_diagnostics:
+            return
+        encoding_operation = (
+            encoding_operation_associations.encoding_operation_reference(
+                # Actions can only execute Value Operations.
+                typing.cast("ast.ValueOperationDefinition", executed)
+            )
+        )
+        # TODO: Report executing a Value Operation that no Encoding Operation
+        # performs. Code generation relies on every executed Value Operation
+        # having one.
+        if encoding_operation is None:
+            return
+        arguments = self._operation_arguments_validator.operation_arguments(
+            stmt, executed, literal_values, ast.PositionReference
+        )
+        if arguments is not None:
+            self._steps.append(
+                codegen_input.ActionOperationExecution(
+                    operation=stmt.operation,
+                    encoding_operation=encoding_operation,
+                    arguments=arguments,
+                )
+            )
 
     def _analyze_looked_at_position(
         self,

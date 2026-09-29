@@ -78,19 +78,19 @@ class LiteralEncoder:
 
     def encode_in_encoding(
         self, literal: ast.Literal, encoding: ast.GlobalTypedNameReference
-    ) -> list[diagnostics.Diagnostic]:
-        """Return the diagnostics explaining why the literal cannot be translated into the encoding."""
+    ) -> tuple[str | None, list[diagnostics.Diagnostic]]:
+        """Return the literal in the encoding, if it can be translated, and the diagnostics explaining why not."""
         potential_literal = literal.potential_literal
         literal_encoding = self._literal_encoding(potential_literal)
         # A missing Potential Literal was already reported when its reference
         # was resolved.
         if literal_encoding is None:
-            return []
+            return None, []
         parser = literal_parsers.LITERAL_PARSERS.get(
             (literal_encoding.full_typed_name, encoding.full_typed_name)
         )
         if parser is None:
-            return [
+            return None, [
                 diagnostics.LiteralCannotBeConvertedDiagnostic(
                     location=potential_literal.location,
                     potential_literal=potential_literal.source_form_in_universe(
@@ -103,8 +103,7 @@ class LiteralEncoder:
                     supported_encodings=_supported_encodings(encoding.full_typed_name),
                 )
             ]
-        _, literal_diagnostics = self._parse(literal, parser, encoding.full_typed_name)
-        return literal_diagnostics
+        return self._parse(literal, parser, encoding.full_typed_name)
 
     def _literal_encoding(
         self, potential_literal: ast.GlobalTypedNameReference

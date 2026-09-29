@@ -13,6 +13,7 @@ py_library(
         "//define/compiler:ast",
         "//define/compiler:config",
         "//define/compiler:constants",
+        "//define/compiler:encoding_operation_associations",
         "//define/compiler:name_types",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/data_structures:typed_name_dict",

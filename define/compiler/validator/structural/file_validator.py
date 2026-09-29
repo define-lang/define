@@ -13,7 +13,13 @@ from typing import TYPE_CHECKING
 
 import msgspec
 
-from define.compiler import ast, config, constants, name_types
+from define.compiler import (
+    ast,
+    config,
+    constants,
+    encoding_operation_associations,
+    name_types,
+)
 from define.compiler.data_structures import define_path, typed_name_dict
 from define.compiler.errors import diagnostics, exceptions, source_map
 from define.compiler.graphs import reference_graph
@@ -368,6 +374,15 @@ class DefinitionStructuralValidator:
         self._check_unused_quality_implications()
 
     def _validate_operation_definition(self, definition: ast.OperationDefinition):
+        if isinstance(definition, ast.ValueOperationDefinition):
+            # Executing a Value Operation executes the Encoding Operation that
+            # performs it, so the Value Operation references that Encoding
+            # Operation.
+            encoding_operation = (
+                encoding_operation_associations.encoding_operation_reference(definition)
+            )
+            if encoding_operation is not None:
+                self._process_reference(encoding_operation)
         views: typed_name_dict.TypedNameDict[
             ast.LocalTypedNameReference, ast.ViewDefinition
         ] = typed_name_dict.TypedNameDict()

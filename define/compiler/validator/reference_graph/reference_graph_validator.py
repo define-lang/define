@@ -26,8 +26,17 @@ if typing.TYPE_CHECKING:
 
 def _requires_validation(
     definition: ast.GlobalDefinition,
-) -> typing.TypeIs[ast.ActionDefinition | ast.OperationDefinition]:
-    return isinstance(definition, ast.ActionDefinition | ast.OperationDefinition)
+) -> typing.TypeIs[
+    ast.ActionDefinition
+    | ast.ValueOperationDefinition
+    | ast.EncodingOperationDefinition
+]:
+    return isinstance(
+        definition,
+        ast.ActionDefinition
+        | ast.ValueOperationDefinition
+        | ast.EncodingOperationDefinition,
+    )
 
 
 class ReferenceGraphValidationResult(msgspec.Struct, frozen=True):
@@ -95,10 +104,21 @@ class ReferenceGraphValidator:
         )
 
         actions: dict[str, codegen_input.ActionCodegenInput] = {}
+        encoding_operations: dict[str, codegen_input.EncodingOperationCodegenInput] = {}
         for result in results:
-            if isinstance(result, validation_result.ActionPostorderValidationResult):
-                definition = result.codegen_input.definition
-                actions[definition.typed_name.full_typed_name] = result.codegen_input
+            match result:
+                case validation_result.ActionPostorderValidationResult():
+                    definition = result.codegen_input.definition
+                    actions[definition.typed_name.full_typed_name] = (
+                        result.codegen_input
+                    )
+                case validation_result.EncodingOperationPostorderValidationResult():
+                    definition = result.codegen_input.definition
+                    encoding_operations[definition.typed_name.full_typed_name] = (
+                        result.codegen_input
+                    )
+                case _:
+                    pass
         if (
             self._entry_action is not None
             and not self._allow_entry_action_occupied_implied_position_requirements
@@ -108,19 +128,31 @@ class ReferenceGraphValidator:
             codegen_input=codegen_input.CodegenInput(
                 definition_order=definition_order,
                 actions=actions,
+                encoding_operations=encoding_operations,
             ),
         )
 
     def _validate_definition(
-        self, definition: ast.ActionDefinition | ast.OperationDefinition
+        self,
+        definition: ast.ActionDefinition
+        | ast.ValueOperationDefinition
+        | ast.EncodingOperationDefinition,
     ) -> validation_result.PostorderValidationResult:
         match definition:
             case ast.ActionDefinition():
                 result = self._validate_action(definition)
-            case ast.OperationDefinition():
-                result = operation_definition_validator.OperationDefinitionValidator(
-                    definition, self._definition_results
-                ).analyze()
+            case ast.ValueOperationDefinition():
+                result = (
+                    operation_definition_validator.ValueOperationDefinitionValidator(
+                        definition, self._definition_results
+                    ).analyze()
+                )
+            case ast.EncodingOperationDefinition():
+                result = (
+                    operation_definition_validator.EncodingOperationDefinitionValidator(
+                        definition, self._definition_results
+                    ).analyze()
+                )
         definition_result = self._definition_results[definition.typed_name]
         for d in result.diagnostics:
             definition_result.add_diagnostic(d)

@@ -32,3 +32,12 @@ DECIMAL_ASCII_ENCODING: Final = f"encoding<{STANDARD_UNIVERSE}:/number/decimal/a
 BUILT_IN_VALUE_ENCODINGS: Final = {
     f"value<{STANDARD_UNIVERSE}:/number/rational>": DECIMAL_ASCII_ENCODING
 }
+# The path, in the standard universe, of the Encoding Operation that performs
+# each Value Operation for the encodings of its input views.
+# TODO: Read Encoding Operation associations from configuration (DLP 48) once
+# it exists.
+BUILT_IN_ENCODING_OPERATIONS: Final = {
+    f"operation<{STANDARD_UNIVERSE}:/number/rational/add>": (
+        "/number/decimal/ascii/infix_add"
+    )
+}

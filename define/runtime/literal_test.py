@@ -340,43 +340,22 @@ class TestDestroyParticle:
         assert iface2.has_particle
 
 
-class TestSetValue:
-    def test_set_value(self):
-        position = literal.LocalPosition("position<a>")
-        position.create_particle()
-        position.set_value(-12.5)
-        assert position.particle.value == -12.5
+class TestValue:
+    def test_value(self):
+        particle = literal.Particle()
+        particle.value = -12.5
+        assert particle.value == -12.5
 
-    def test_set_value_on_empty_raises(self):
-        position = literal.LocalPosition("position<a>")
-        with pytest.raises(literal.NoParticleError):
-            position.set_value(5)
-
-    def test_set_value_from(self):
-        source = literal.LocalPosition("position<source>")
-        target = literal.LocalPosition("position<target>")
-        source.create_particle()
-        target.create_particle()
-        source.set_value(5)
-        target.set_value_from(source)
-        assert target.particle.value == 5
-        assert source.particle.value == 5
-
-    def test_set_value_from_unset_raises(self):
-        source = literal.LocalPosition("position<source>")
-        target = literal.LocalPosition("position<target>")
-        source.create_particle()
-        target.create_particle()
-        with pytest.raises(literal.UnsetValueError) as error:
-            target.set_value_from(source)
-        assert error.value.position_name == "position<source>"
-        assert target.particle.value is None
+    def test_unset_value_raises(self):
+        particle = literal.Particle()
+        with pytest.raises(literal.UnsetValueError):
+            _ = particle.value
 
     def test_moved_particle_keeps_value(self):
         source = literal.LocalPosition("position<source>")
         target = literal.LocalPosition("position<target>")
         source.create_particle()
-        source.set_value(5)
+        source.particle.value = 5
         source.move_particle_to(target)
         assert target.particle.value == 5
 

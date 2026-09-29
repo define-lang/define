@@ -1,0 +1,4 @@
+test.create(/augend)
+test.create(/total)
+test.set_value(/augend, 1.5)
+test.execute(operation<standard:/number/rational/add>, /augend, 2, /total)

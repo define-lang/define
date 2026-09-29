@@ -53,6 +53,33 @@ class PositionValueSetting(ValueSetting):
     source_position: ast.PositionReference
 
 
+class OperationArgument[LookedAt](msgspec.Struct):
+    """What one interface view of an executed operation looks at."""
+
+    interface_view: ast.ViewDefinition
+    # A literal is already in the interface view's encoding, so code generation
+    # never parses it.
+    looking_at: LookedAt | str
+
+
+class ActionOperationExecution(msgspec.Struct):
+    """A validated Operation Execution Statement in an action."""
+
+    operation: ast.GlobalTypedNameReference
+    # Executing a Value Operation runs the Encoding Operation that performs it.
+    encoding_operation: ast.GlobalTypedNameReference
+    # In the order of the executed operation's interface views.
+    arguments: list[OperationArgument[ast.PositionReference]]
+
+
+class EncodingOperationExecution(msgspec.Struct):
+    """A validated Operation Execution Statement in an Encoding Operation."""
+
+    encoding_operation: ast.GlobalTypedNameReference
+    # In the order of the executed Encoding Operation's interface views.
+    arguments: list[OperationArgument[ast.LocalTypedNameReference]]
+
+
 type ActionStep = (
     ast.LocalPositionDefinition
     | ast.CreateParticleStatement
@@ -61,6 +88,11 @@ type ActionStep = (
     | PositionValueSetting
     | ActionExecution
     | Destruction
+    | ActionOperationExecution
+)
+
+type EncodingOperationStep = (
+    EncodingOperationExecution | ast.ComputerOperationExecutionStatement
 )
 
 
@@ -72,8 +104,16 @@ class ActionCodegenInput(msgspec.Struct):
     propagated_destructions: list[destruction_contract.PropagatedDestruction]
 
 
+class EncodingOperationCodegenInput(msgspec.Struct):
+    """An Encoding Operation's source-ordered steps."""
+
+    definition: ast.EncodingOperationDefinition
+    steps: list[EncodingOperationStep]
+
+
 class CodegenInput(msgspec.Struct):
-    """Validated definitions and ordered action steps for code generation."""
+    """Validated definitions and ordered steps for code generation."""
 
     definition_order: reference_graph_order.ReferenceGraphOrder
     actions: dict[str, ActionCodegenInput]
+    encoding_operations: dict[str, EncodingOperationCodegenInput]

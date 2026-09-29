@@ -2,7 +2,9 @@
     {%- if needs_classvar || needs_override -%}
 {{ "\n\n" }}from typing import {% if needs_classvar %}ClassVar{% if needs_override %}, {% endif %}{% endif %}{% if needs_override %}override{% endif %}
     {%- endif -%}
+    {%- if needs_runtime_import -%}
 {{ "\n\n" }}from define.runtime import literal
+    {%- endif -%}
     {%- if !imports.is_empty() -%}
 {{ "\n\n" }}
         {%- for module_name in imports -%}

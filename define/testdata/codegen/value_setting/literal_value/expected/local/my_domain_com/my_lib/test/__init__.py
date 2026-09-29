@@ -19,4 +19,4 @@ class TestAction(literal.Action):
         ).create_particle()
         self.on_particle.get_position(
             local.my_domain_com.my_lib.price.PricePosition
-        ).set_value(12.5)
+        ).particle.value = 12.5

@@ -20,5 +20,5 @@ class TestAction(literal.Action):
         literal.record_operation("test.create(/count)")
         self.on_particle.get_position(
             local.my_domain_com.my_lib.count.CountPosition
-        ).set_value(42)
+        ).particle.value = 42
         literal.record_operation("test.set_value(/count, 42)")

@@ -19,4 +19,4 @@ class TestAction(literal.Action):
         ).create_particle()
         self.on_particle.get_position(
             local.my_domain_com.my_lib.count.CountPosition
-        ).set_value(42)
+        ).particle.value = 42

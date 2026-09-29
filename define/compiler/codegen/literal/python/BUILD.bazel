@@ -74,6 +74,20 @@ py_library(
 )
 
 py_library(
+    name = "encoding_operation_definition",
+    srcs = ["encoding_operation_definition.py"],
+    visibility = ["//define/compiler/codegen:__subpackages__"],
+    deps = [
+        ":naming",
+        ":template_context",
+        "//define/compiler:ast",
+        "//define/compiler:constants",
+        "//define/compiler/validator:codegen_input",
+        "@pypi//msgspec",
+    ],
+)
+
+py_library(
     name = "generator",
     srcs = ["generator.py"],
     visibility = ["//define/compiler/codegen:__subpackages__"],
@@ -81,6 +95,7 @@ py_library(
         ":_templates",
         ":action_context",
         ":action_definition",
+        ":encoding_operation_definition",
         ":naming",
         ":position_definition",
         "//define/compiler:ast",
@@ -121,6 +136,7 @@ py_library(
     deps = [
         ":template_context",
         "//define/compiler:ast",
+        "//define/compiler/validator:codegen_input",
     ],
 )
 
@@ -209,6 +225,7 @@ pyright_test(
         ":action_definition",
         ":action_statements",
         ":destruction_contracts",
+        ":encoding_operation_definition",
         ":generator",
         ":naming",
         ":naming_test",

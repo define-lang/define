@@ -151,6 +151,76 @@ def test_module_name_distinct_long_components_stay_distinct():
     assert first != second
 
 
+def _encoding_operation_name(path: str) -> ast.GlobalTypedNameInDefinition:
+    return _typed_name(name_types.NameType.ENCODING_OPERATION, path)
+
+
+def test_function_reference_is_in_parent_module():
+    converter = naming.NameConverter()
+    assert converter.function_reference(
+        _encoding_operation_name("/number/add")
+    ) == naming.FunctionReference(
+        function_name="add", module_name="local.my_domain_com.my_lib.number"
+    )
+
+
+def test_function_reference_at_universe_root():
+    converter = naming.NameConverter()
+    assert converter.function_reference(
+        _encoding_operation_name("/add")
+    ) == naming.FunctionReference(
+        function_name="add", module_name="local.my_domain_com.my_lib"
+    )
+
+
+def test_function_name_escapes_keyword():
+    converter = naming.NameConverter()
+    assert (
+        converter.function_reference(
+            _encoding_operation_name("/number/if")
+        ).function_name
+        == "if_"
+    )
+
+
+def test_package_named_like_function_gets_underscore():
+    converter = naming.NameConverter()
+    converter.reserve_function_name(_encoding_operation_name("/number/add"))
+    count = _typed_name(name_types.NameType.POSITION, "/number/add/count").name_content
+    assert (
+        converter.module_name(count) == "local.my_domain_com.my_lib.number.add_.count"
+    )
+
+
+def test_definition_at_function_path_gets_underscore():
+    converter = naming.NameConverter()
+    converter.reserve_function_name(_encoding_operation_name("/number/add"))
+    position = _typed_name(name_types.NameType.POSITION, "/number/add").name_content
+    assert converter.module_name(position) == "local.my_domain_com.my_lib.number.add_"
+
+
+def test_package_under_function_with_underscored_sibling_stays_distinct():
+    converter = naming.NameConverter()
+    converter.reserve_function_name(_encoding_operation_name("/number/if"))
+    keyword_package = _typed_name(name_types.NameType.POSITION, "/number/if/count")
+    underscored_package = _typed_name(name_types.NameType.POSITION, "/number/if_/count")
+    assert (
+        converter.module_name(keyword_package.name_content)
+        == "local.my_domain_com.my_lib.number.if__.count"
+    )
+    assert (
+        converter.module_name(underscored_package.name_content)
+        == "local.my_domain_com.my_lib.number.if___.count"
+    )
+
+
+def test_package_without_function_keeps_its_name():
+    converter = naming.NameConverter()
+    converter.reserve_function_name(_encoding_operation_name("/other/add"))
+    count = _typed_name(name_types.NameType.POSITION, "/number/add/count").name_content
+    assert converter.module_name(count) == "local.my_domain_com.my_lib.number.add.count"
+
+
 def test_file_path_for_module_basic():
     assert naming.file_path_for_module("a.b.c") == Path("a", "b", "c", "__init__.py")
 

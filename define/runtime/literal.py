@@ -19,13 +19,21 @@ class DefineRuntimeError(Exception):
 
     message_format: ClassVar[str]
 
-    def __init__(self, position_name: str):
-        """Initialize with the position name and format the message."""
-        self.position_name: str = position_name
+    def __init__(self):
+        """Format the message."""
         super().__init__(self.message_format.format(self=self))
 
 
-class ParticleExistsError(DefineRuntimeError):
+class PositionError(DefineRuntimeError):
+    """Base class for Define runtime errors about a position."""
+
+    def __init__(self, position_name: str):
+        """Initialize with the position name and format the message."""
+        self.position_name: str = position_name
+        super().__init__()
+
+
+class ParticleExistsError(PositionError):
     """Raised when creating a particle in a position that already has one."""
 
     message_format: ClassVar[str] = (
@@ -33,7 +41,7 @@ class ParticleExistsError(DefineRuntimeError):
     )
 
 
-class NoParticleError(DefineRuntimeError):
+class NoParticleError(PositionError):
     """Raised when moving a particle from a position that has none."""
 
     message_format: ClassVar[str] = (
@@ -42,14 +50,12 @@ class NoParticleError(DefineRuntimeError):
 
 
 class UnsetValueError(DefineRuntimeError):
-    """Raised when setting a value from a particle whose value is not set."""
+    """Raised when reading the value of a particle whose value is not set."""
 
-    message_format: ClassVar[str] = (
-        "The particle in position '{self.position_name}' does not have a set value."
-    )
+    message_format: ClassVar[str] = "The particle does not have a set value."
 
 
-class UnsatisfiedConstraintError(DefineRuntimeError):
+class UnsatisfiedConstraintError(PositionError):
     """Raised when moving a particle to a position whose constraints are not met."""
 
     message_format: ClassVar[str] = (
@@ -63,7 +69,7 @@ class UnsatisfiedConstraintError(DefineRuntimeError):
         super().__init__(position_name)
 
 
-class DuplicateConstraintError(DefineRuntimeError):
+class DuplicateConstraintError(PositionError):
     """Raised when a position declares the same quality as a constraint twice."""
 
     message_format: ClassVar[str] = (
@@ -112,7 +118,7 @@ class Particle:
         self._actions: dict[type[Action], Action] = {}
         self._assigned_qualities: list[Quality] = []
         self.value_type: type[Value] | None = None
-        self.value: float | None = None
+        self._value: float | None = None
 
     def assign_position(self, position_class: type[GlobalPosition]):
         """Assign a position to this particle, or do nothing if already present."""
@@ -143,6 +149,17 @@ class Particle:
                 self.assign_action(implied_class)
             elif issubclass(implied_class, Value):
                 self.value_type = implied_class
+
+    @property
+    def value(self) -> float:
+        """Return this particle's value, raising UnsetValueError if it is not set."""
+        if self._value is None:
+            raise UnsetValueError
+        return self._value
+
+    @value.setter
+    def value(self, value: float):
+        self._value = value
 
     def get_position[PositionType: GlobalPosition](
         self, position_class: type[PositionType]
@@ -217,17 +234,6 @@ class Position(ABC):
                 )
         destination._particle = self._particle
         self._particle = None
-
-    def set_value(self, value: float):
-        """Set the value of the particle in this position."""
-        self.particle.value = value
-
-    def set_value_from(self, source: Position):
-        """Set the value of this position's particle to the source particle's value."""
-        value = source.particle.value
-        if value is None:
-            raise UnsetValueError(source.name)
-        self.particle.value = value
 
     def destroy_particle(self):
         """Destroy the particle in this position."""

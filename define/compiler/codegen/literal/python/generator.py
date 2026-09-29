@@ -13,13 +13,14 @@ from define.compiler.codegen.literal.python import (
     _templates,
     action_context,
     action_definition,
+    encoding_operation_definition,
     naming,
     position_definition,
 )
 from define.compiler.graphs import reference_graph_executor
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Sequence
 
     from define.compiler.validator import codegen_input as codegen_input_types
 
@@ -34,6 +35,7 @@ class _ModulePart(msgspec.Struct, frozen=True):
     imports: list[str]
     needs_classvar: bool
     needs_override: bool
+    needs_runtime_import: bool
 
 
 @typing.final
@@ -64,10 +66,24 @@ class _SharedModule:
 
 def _generates_module_part(definition: ast.GlobalDefinition) -> bool:
     # Literals are already in their values' encodings in generated code, so
-    # encodings and Potential Literals need no code of their own.
+    # encodings and Potential Literals need no code of their own. Executing a
+    # Value Operation runs the Encoding Operation that performs it, so Value
+    # Operations need no code either.
     return not isinstance(
-        definition, ast.EncodingDefinition | ast.PotentialLiteralDefinition
+        definition,
+        ast.EncodingDefinition
+        | ast.PotentialLiteralDefinition
+        | ast.ValueOperationDefinition,
     )
+
+
+def _module_name(
+    definition: ast.GlobalDefinition, converter: naming.NameConverter
+) -> str:
+    """Return the name of the module that holds a definition's generated code."""
+    if isinstance(definition, ast.EncodingOperationDefinition):
+        return converter.function_reference(definition.typed_name).module_name
+    return converter.module_name(definition.typed_name.name_content)
 
 
 class _ModulePlan(msgspec.Struct, frozen=True):
@@ -81,16 +97,21 @@ class _ModulePlan(msgspec.Struct, frozen=True):
     @classmethod
     def from_definitions(
         cls,
-        definitions: Iterable[ast.GlobalDefinition],
+        definitions: Sequence[ast.GlobalDefinition],
         converter: naming.NameConverter,
     ) -> _ModulePlan:
         """Assign definitions to modules, in definition order."""
         definition_indexes: dict[str, int] = {}
         definition_counts: dict[str, int] = {}
-        # Authority-name collisions are assigned by first use, so this runs in
-        # definition order before workers share the converter.
+        # A package must not get the name of a function in its parent package,
+        # so every function name is reserved before any module is named.
+        for definition in definitions:
+            if isinstance(definition, ast.EncodingOperationDefinition):
+                converter.reserve_function_name(definition.typed_name)
+        # Authority-name and package-name collisions are assigned by first use,
+        # so this runs in definition order before workers share the converter.
         for index, definition in enumerate(definitions):
-            module_name = converter.module_name(definition.typed_name.name_content)
+            module_name = _module_name(definition, converter)
             if _generates_module_part(definition):
                 definition_indexes[definition.typed_name.full_typed_name] = index
                 definition_counts[module_name] = (
@@ -157,6 +178,7 @@ class _DefinitionGenerator:
                 imports=action.imports,
                 needs_classvar=action.needs_classvar,
                 needs_override=True,
+                needs_runtime_import=True,
             )
         elif isinstance(definition, ast.ValueDefinition):
             value = self._converter.class_reference(definition.typed_name)
@@ -167,9 +189,26 @@ class _DefinitionGenerator:
                 imports=[],
                 needs_classvar=False,
                 needs_override=False,
+                needs_runtime_import=True,
             )
-        elif isinstance(definition, ast.OperationDefinition):
-            raise NotImplementedError("Operation code generation is not implemented")
+        elif isinstance(definition, ast.EncodingOperationDefinition):
+            encoding_operation = (
+                encoding_operation_definition.EncodingOperationDefinitionGenerator(
+                    self._codegen_input.encoding_operations[
+                        definition.typed_name.full_typed_name
+                    ],
+                    self._converter,
+                ).generate()
+            )
+            module_name = encoding_operation.module_name
+            part = _ModulePart(
+                definition_index=definition_index,
+                body=_templates.render_encoding_operation(encoding_operation),
+                imports=encoding_operation.imports,
+                needs_classvar=False,
+                needs_override=False,
+                needs_runtime_import=False,
+            )
         else:
             position = position_definition.PositionDefinitionGenerator(
                 typing.cast("ast.PositionDefinition", definition),
@@ -182,6 +221,7 @@ class _DefinitionGenerator:
                 imports=position.imports,
                 needs_classvar=position.needs_classvar,
                 needs_override=False,
+                needs_runtime_import=True,
             )
         shared_module = self._module_plan.shared_modules.get(module_name)
         if shared_module is None:
@@ -213,6 +253,7 @@ class _DefinitionGenerator:
             sorted(imports),
             any(part.needs_classvar for part in parts),
             any(part.needs_override for part in parts),
+            any(part.needs_runtime_import for part in parts),
         )
         for part in parts:
             content += "\n\n" + part.body

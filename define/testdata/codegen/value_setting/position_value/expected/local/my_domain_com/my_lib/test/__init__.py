@@ -25,10 +25,10 @@ class TestAction(literal.Action):
         self.on_particle.get_position(
             local.my_domain_com.my_lib.target.TargetPosition
         ).create_particle()
-        source.set_value(-5)
+        source.particle.value = -5
         self.on_particle.get_position(
             local.my_domain_com.my_lib.target.TargetPosition
-        ).set_value_from(
-            source
+        ).particle.value = (
+            source.particle.value
         )
         source.destroy_particle()

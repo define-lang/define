@@ -190,6 +190,17 @@ filegroup(
 )
 
 py_library(
+    name = "encoding_operation_associations",
+    srcs = ["encoding_operation_associations.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        ":ast",
+        ":constants",
+        ":name_types",
+    ],
+)
+
+py_library(
     name = "literal_parsers",
     srcs = ["literal_parsers.py"],
     visibility = [":__subpackages__"],
@@ -310,6 +321,7 @@ pyright_test(
         ":driver_fuzz_test",
         ":driver_run_test",
         ":driver_test",
+        ":encoding_operation_associations",
         ":literal_parsers",
         ":literal_parsers_test",
         ":main",

@@ -1,4 +1,16 @@
 {% import "position_expression.j2" as expressions -%}
+{% macro operation_call(statement, extra_indent, argument_indent, module_name) -%}
+{{ statement.function.name_in_module(module_name) }}(
+    {%- for argument in statement.arguments %}
+        {%- match argument %}
+            {%- when OperationArgument::Position with (position) %}
+{{ extra_indent }}            {{ expressions::position_expression(position, argument_indent, module_name) }}.particle.value,
+            {%- when OperationArgument::Literal with (value) %}
+{{ extra_indent }}            {{ value }},
+        {%- endmatch %}
+    {%- endfor %}
+{{ extra_indent }}        )
+{%- endmacro %}
 {% macro action_statements(statements, module_name) -%}
     {%- for statement in statements.iter() %}
         {%- match statement.kind %}
@@ -22,10 +34,10 @@
             {%- when StatementKind::DestroyParticle with (statement) %}
         {{ expressions::position_expression(statement.position, "", module_name) }}.destroy_particle()
             {%- when StatementKind::SetValue with (statement) %}
-        {{ expressions::position_expression(statement.position, "", module_name) }}.set_value({{ statement.value }})
+        {{ expressions::position_expression(statement.position, "", module_name) }}.particle.value = {{ statement.value }}
             {%- when StatementKind::SetValueFrom with (statement) %}
-        {{ expressions::position_expression(statement.position, "", module_name) }}.set_value_from(
-            {{ expressions::position_expression(statement.source_position, "    ", module_name) }}
+        {{ expressions::position_expression(statement.position, "", module_name) }}.particle.value = (
+            {{ expressions::position_expression(statement.source_position, "    ", module_name) }}.particle.value
         )
             {%- when StatementKind::RunAction with (statement) %}
                 {%- if let Some(contract) = statement.destruction_contract %}
@@ -47,6 +59,17 @@
         destruction_contracts.{{ statement.contract_method }}(
             {{ expressions::position_expression(statement.position, "    ", module_name) }}.particle
         )
+            {%- when StatementKind::ExecuteOperation with (statement) %}
+                {%- if statement.outputs.len() == 1 %}
+        {{ expressions::position_expression(statement.outputs[0], "", module_name) }}.particle.value = {{ operation_call(statement, "", "    ", module_name) }}
+                {%- else if statement.outputs.is_empty() %}
+        {{ operation_call(statement, "", "    ", module_name) }}
+                {%- else %}
+        {{ statement.result_names|join(", ") }} = {{ operation_call(statement, "", "    ", module_name) }}
+                    {%- for (output, result_name) in statement.outputs.iter().zip(statement.result_names.iter()) %}
+        {{ expressions::position_expression(output, "", module_name) }}.particle.value = {{ result_name }}
+                    {%- endfor %}
+                {%- endif %}
         {%- endmatch %}
         {%- if let Some(label) = statement.operation_label %}
         literal.record_operation("{{ label }}")

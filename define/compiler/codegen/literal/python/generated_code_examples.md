@@ -2604,3 +2604,53 @@ class SecondDestructorAction(literal.Action):
         work.create_particle()
         work.destroy_particle()
 ```
+
+## An action executes a Value Operation
+
+Executing a Value Operation calls the function of the Encoding Operation that
+performs it. The function is named after the last segment of the Encoding
+Operation's path, and lives in the module of the rest of its path.
+
+### test.dfn
+
+```define
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</augend>.
+    it also assigns the position</total>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</augend>.
+        create a particle in position</total>.
+        set the value of position</augend> to literal<standard:/number>"1.5".
+        execute the operation<standard:/number/rational/add> {
+            with view<a> looking at position</augend>.
+            with view<b> looking at literal<standard:/number>"2".
+            with view<sum> looking at position</total>.
+        }
+    }
+}
+```
+
+```python
+class TestAction(literal.Action):
+    def run(self):
+        self.on_particle.get_position(AugendPosition).create_particle()
+        self.on_particle.get_position(TotalPosition).create_particle()
+        self.on_particle.get_position(AugendPosition).particle.value = 1.5
+        self.on_particle.get_position(
+            TotalPosition
+        ).particle.value = standard.number.decimal.ascii.infix_add(
+            self.on_particle.get_position(AugendPosition).particle.value,
+            2,
+        )
+```
+
+### encoding_operation<standard:/number/decimal/ascii/infix_add>
+
+```python
+# standard/number/decimal/ascii/__init__.py
+def infix_add(a: float, b: float) -> float:
+    sum = a + b
+    return sum
+```

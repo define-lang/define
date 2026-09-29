@@ -25,6 +25,7 @@ class StatementKind(enum.Enum):
     RUN_ACTION = enum.auto()
     RUN_CONTRACT_DESTRUCTORS = enum.auto()
     DESTROY_CONTRACT_CHILDREN = enum.auto()
+    EXECUTE_OPERATION = enum.auto()
 
 
 class ChainAccessor(enum.Enum):
@@ -218,6 +219,70 @@ class DestroyContractChildrenContext(ContractContributionContext):
     """Destroy caller-contributed child particles."""
 
     kind: ClassVar[StatementKind] = StatementKind.DESTROY_CONTRACT_CHILDREN
+
+
+class ExecuteOperationContext(ActionStatementContext):
+    """Call the function of the Encoding Operation that an Operation Execution Statement runs."""
+
+    kind: ClassVar[StatementKind] = StatementKind.EXECUTE_OPERATION
+    function: naming.FunctionReference
+    # A position whose value is read, or a literal already in the view's
+    # encoding.
+    arguments: list[PositionExpr | str]
+    # The positions whose values are set, in the order the function returns
+    # them.
+    outputs: list[PositionExpr]
+    # Local names that hold the returned values when there is more than one.
+    result_names: list[str]
+
+
+class EncodingOperationStatementKind(enum.Enum):
+    """Discriminator for statement types in Encoding Operation functions."""
+
+    INFIX_ADD = enum.auto()
+    CALL = enum.auto()
+
+
+class EncodingOperationStatementContext(msgspec.Struct):
+    """Template-friendly statement in an Encoding Operation function."""
+
+    kind: ClassVar[EncodingOperationStatementKind]
+
+
+class InfixAddContext(EncodingOperationStatementContext):
+    """Add two values with infix addition."""
+
+    kind: ClassVar[EncodingOperationStatementKind] = (
+        EncodingOperationStatementKind.INFIX_ADD
+    )
+    left: str
+    right: str
+    result: str
+
+
+class CallContext(EncodingOperationStatementContext):
+    """Call the function of another Encoding Operation."""
+
+    kind: ClassVar[EncodingOperationStatementKind] = EncodingOperationStatementKind.CALL
+    function: naming.FunctionReference
+    # Local names, or literals already in each view's encoding.
+    arguments: list[str]
+    # The local names that receive the returned values.
+    results: list[str]
+
+
+class EncodingOperationDefinitionContext(msgspec.Struct):
+    """Template context for rendering an Encoding Operation's function."""
+
+    function_name: str
+    module_name: str
+    parameters: list[str]
+    statements: list[EncodingOperationStatementContext]
+    results: list[str]
+    # Whether the last statement writes exactly the results, so the function
+    # returns its expression instead.
+    return_last_statement: bool
+    imports: list[str]
 
 
 class InterfacePositionContext(msgspec.Struct):

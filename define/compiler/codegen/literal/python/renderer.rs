@@ -21,12 +21,30 @@ impl ClassReference {
     }
 }
 
+#[derive(FromPyObject)]
+struct FunctionReference {
+    module_name: String,
+    function_name: String,
+}
+
+impl FunctionReference {
+    /// Returns the name that code in `module_name` uses for this function.
+    fn name_in_module(&self, module_name: &str) -> String {
+        if self.module_name == module_name {
+            self.function_name.clone()
+        } else {
+            format!("{}.{}", self.module_name, self.function_name)
+        }
+    }
+}
+
 #[derive(Template)]
 #[template(path = "module_header.j2", escape = "none")]
 struct ModuleHeader {
     imports: Vec<String>,
     needs_classvar: bool,
     needs_override: bool,
+    needs_runtime_import: bool,
 }
 
 #[derive(FromPyObject, Template)]
@@ -134,6 +152,20 @@ struct ContractContribution {
     contract_method: String,
 }
 
+#[derive(FromPyObject)]
+enum OperationArgument {
+    Position(PositionExpression),
+    Literal(String),
+}
+
+#[derive(FromPyObject)]
+struct ExecuteOperation {
+    function: FunctionReference,
+    arguments: Vec<OperationArgument>,
+    outputs: Vec<PositionExpression>,
+    result_names: Vec<String>,
+}
+
 struct Statement {
     kind: StatementKind,
     operation_label: Option<String>,
@@ -148,6 +180,7 @@ enum StatementKind {
     SetValueFrom(SetValueFrom),
     RunAction(RunAction),
     ContractContribution(ContractContribution),
+    ExecuteOperation(ExecuteOperation),
 }
 
 impl<'a, 'py> FromPyObject<'a, 'py> for Statement {
@@ -175,6 +208,7 @@ impl<'a, 'py> FromPyObject<'a, 'py> for StatementKind {
             "RUN_CONTRACT_DESTRUCTORS" | "DESTROY_CONTRACT_CHILDREN" => {
                 Ok(Self::ContractContribution(object.extract()?))
             }
+            "EXECUTE_OPERATION" => Ok(Self::ExecuteOperation(object.extract()?)),
             _ => Err(PyRuntimeError::new_err(format!(
                 "Unknown statement kind: {kind}"
             ))),
@@ -222,6 +256,50 @@ struct ActionDefinition {
     contract_definitions: Vec<ContractDefinition>,
 }
 
+#[derive(FromPyObject)]
+struct InfixAdd {
+    left: String,
+    right: String,
+    result: String,
+}
+
+#[derive(FromPyObject)]
+struct Call {
+    function: FunctionReference,
+    arguments: Vec<String>,
+    results: Vec<String>,
+}
+
+enum EncodingOperationStatement {
+    InfixAdd(InfixAdd),
+    Call(Call),
+}
+
+impl<'a, 'py> FromPyObject<'a, 'py> for EncodingOperationStatement {
+    type Error = PyErr;
+    fn extract(object: pyo3::Borrowed<'a, 'py, PyAny>) -> PyResult<Self> {
+        let kind: String = object.getattr("kind")?.getattr("name")?.extract()?;
+        match kind.as_str() {
+            "INFIX_ADD" => Ok(Self::InfixAdd(object.extract()?)),
+            "CALL" => Ok(Self::Call(object.extract()?)),
+            _ => Err(PyRuntimeError::new_err(format!(
+                "Unknown Encoding Operation statement kind: {kind}"
+            ))),
+        }
+    }
+}
+
+#[derive(FromPyObject, Template)]
+#[template(path = "encoding_operation_definition.j2", escape = "none")]
+struct EncodingOperationDefinition {
+    function_name: String,
+    module_name: String,
+    parameters: Vec<String>,
+    statements: Vec<EncodingOperationStatement>,
+    results: Vec<String>,
+    return_last_statement: bool,
+}
+
 #[derive(Template)]
 #[template(path = "entry_point.j2", escape = "none")]
 struct EntryPoint {
@@ -240,11 +318,13 @@ fn render_module_header(
     imports: Vec<String>,
     needs_classvar: bool,
     needs_override: bool,
+    needs_runtime_import: bool,
 ) -> PyResult<String> {
     render(ModuleHeader {
         imports,
         needs_classvar,
         needs_override,
+        needs_runtime_import,
     })
 }
 
@@ -264,6 +344,11 @@ fn render_action(definition: ActionDefinition) -> PyResult<String> {
 }
 
 #[pyfunction]
+fn render_encoding_operation(definition: EncodingOperationDefinition) -> PyResult<String> {
+    render(definition)
+}
+
+#[pyfunction]
 fn render_entry_point(entry_reference: ClassReference, trace_operations: bool) -> PyResult<String> {
     render(EntryPoint {
         entry_reference,
@@ -277,5 +362,6 @@ fn _templates(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_function(wrap_pyfunction!(render_position, module)?)?;
     module.add_function(wrap_pyfunction!(render_action, module)?)?;
     module.add_function(wrap_pyfunction!(render_value, module)?)?;
+    module.add_function(wrap_pyfunction!(render_encoding_operation, module)?)?;
     module.add_function(wrap_pyfunction!(render_entry_point, module)?)
 }

@@ -89,6 +89,17 @@ class ActionStatementsGenerator:
                         modules.update(self._converter.referenced_modules(action))
                     for position in step.positions:
                         modules.update(self._converter.referenced_modules(position))
+                case codegen_input.ActionOperationExecution():
+                    modules.add(
+                        self._converter.function_reference(
+                            step.encoding_operation
+                        ).module_name
+                    )
+                    for argument in step.arguments:
+                        if not isinstance(argument.looking_at, str):
+                            modules.update(
+                                self._converter.referenced_modules(argument.looking_at)
+                            )
         return modules
 
     def generate(self) -> GeneratedActionStatements:
@@ -199,6 +210,10 @@ class ActionStatementsGenerator:
                     statements.append(execution)
                     if contract is not None:
                         contract_definitions.append(contract)
+                case codegen_input.ActionOperationExecution():
+                    statements.append(
+                        self._execute_operation(statement, positions, names)
+                    )
         return GeneratedActionStatements(
             statements=statements,
             imports=imports,
@@ -272,6 +287,42 @@ class ActionStatementsGenerator:
             position=positions.build(execution.action), destruction_contract=argument
         ), contract
 
+    def _execute_operation(
+        self,
+        execution: codegen_input.ActionOperationExecution,
+        positions: position_expression.PositionExpressionBuilder,
+        names: naming.LocalNameAllocator,
+    ) -> template_context.ExecuteOperationContext:
+        arguments: list[template_context.PositionExpr | str] = []
+        outputs: list[template_context.PositionExpr] = []
+        output_view_names: list[str] = []
+        for argument in execution.arguments:
+            looking_at = argument.looking_at
+            # Validation reports output views that look at literals, so a
+            # literal is always an argument and never receives a result.
+            if isinstance(looking_at, str):
+                arguments.append(looking_at)
+                continue
+            if argument.interface_view.is_input:
+                arguments.append(positions.build(looking_at))
+            if argument.interface_view.is_output:
+                outputs.append(positions.build(looking_at))
+                output_view_names.append(
+                    argument.interface_view.typed_name.name_content.name
+                )
+        # A single returned value goes straight to its position.
+        result_names: list[str] = []
+        if len(outputs) > 1:
+            for view_name in output_view_names:
+                result_names.append(names.allocate(view_name))
+        return template_context.ExecuteOperationContext(
+            function=self._converter.function_reference(execution.encoding_operation),
+            arguments=arguments,
+            outputs=outputs,
+            result_names=result_names,
+            operation_label=self._execution_label(execution),
+        )
+
     def _operation_label(
         self,
         kind: template_context.StatementKind,
@@ -284,6 +335,15 @@ class ActionStatementsGenerator:
                 kind,
                 position,
                 destination,
+            )
+        return None
+
+    def _execution_label(
+        self, execution: codegen_input.ActionOperationExecution
+    ) -> str | None:
+        if self._trace_operations:
+            return operation_labels.operation_execution_label(
+                self._action_input.definition.typed_name, execution
             )
         return None
 

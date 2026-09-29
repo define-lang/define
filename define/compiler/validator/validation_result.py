@@ -43,6 +43,12 @@ class ActionPostorderValidationResult(PostorderValidationResult):
     codegen_input: codegen_input.ActionCodegenInput
 
 
+class EncodingOperationPostorderValidationResult(PostorderValidationResult):
+    """Result of validating a single Encoding Operation definition during the DFS post-order walk."""
+
+    codegen_input: codegen_input.EncodingOperationCodegenInput
+
+
 class DefinitionValidationResult(msgspec.Struct):
     """Validation output for one definition within a file."""
 

@@ -32,7 +32,7 @@ class TestAction(literal.Action):
             local.my_domain_com.my_lib.assign.AssignAction
         ).get_interface_position(
             "position<source>"
-        ).set_value(0.25)
+        ).particle.value = 0.25
         worker.particle.get_action(
             local.my_domain_com.my_lib.assign.AssignAction
         ).get_interface_position(

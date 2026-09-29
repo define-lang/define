@@ -12,7 +12,7 @@ import msgspec
 from define.compiler import ast, constants, name_types
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator
+    from collections.abc import Iterable, Iterator, Sequence
 
     from define.compiler.data_structures import define_path
     from define.compiler.validator.reference_graph import destruction_contract
@@ -31,7 +31,8 @@ DESTROY_PREFIX = "destroy_"
 _MODULE_COMPONENT_BYTE_LIMIT = 255
 # 8 bytes keeps distinct components apart well past the number of definitions
 # a single program can hold, and the digest must stay a pure function of the
-# component so that a module name never depends on what else was compiled.
+# component so that truncation never makes a module name depend on what else
+# was compiled.
 _MODULE_COMPONENT_DIGEST_BYTES = 8
 
 
@@ -68,6 +69,13 @@ class ClassReference(msgspec.Struct):
     """A reference to a generated class, including its module location."""
 
     class_name: str
+    module_name: str
+
+
+class FunctionReference(msgspec.Struct):
+    """A reference to a generated function, including its module location."""
+
+    function_name: str
     module_name: str
 
 
@@ -127,6 +135,9 @@ class NameConverter:
     _class_references: dict[str, ClassReference]
     _authority_names: dict[str, str]
     _used_authority_names: set[str]
+    # Keyed by the FQUN and path segments of the package that holds the names.
+    _package_components: dict[tuple[str, tuple[str, ...]], dict[str, str]]
+    _used_package_names: dict[tuple[str, tuple[str, ...]], set[str]]
 
     def __init__(self):
         """Initialize with empty name caches."""
@@ -134,6 +145,84 @@ class NameConverter:
         self._class_references = {}
         self._authority_names = {}
         self._used_authority_names = set()
+        self._package_components = {}
+        self._used_package_names = {}
+
+    def reserve_function_name(
+        self,
+        typed_global_name: ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
+    ):
+        """Reserve a generated function's name in the module of its path's parent.
+
+        Every function name must be reserved before any module is named, so that
+        no package gets the name of a function in the same parent package.
+        """
+        package_key = self._parent_package_key(typed_global_name)
+        self._used_package_names.setdefault(package_key, set()).add(
+            self._function_name(typed_global_name)
+        )
+
+    def function_reference(
+        self,
+        typed_global_name: ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
+    ) -> FunctionReference:
+        """Build a reference to a generated function, which lives in the module of its path's parent."""
+        fqun = self._fqun(typed_global_name)
+        parent_segments = typed_global_name.name_content.path.relative_path.parts[:-1]
+        return FunctionReference(
+            function_name=self._function_name(typed_global_name),
+            module_name=".".join(self._module_name_parts(fqun, parent_segments)),
+        )
+
+    @staticmethod
+    def _function_name(
+        typed_global_name: ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
+    ) -> str:
+        return _escape_module_component(
+            typed_global_name.name_content.path.relative_path.parts[-1]
+        )
+
+    def _parent_package_key(
+        self,
+        typed_global_name: ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
+    ) -> tuple[str, tuple[str, ...]]:
+        return (
+            self._fqun(typed_global_name).canonical,
+            tuple(typed_global_name.name_content.path.relative_path.parts[:-1]),
+        )
+
+    @staticmethod
+    def _fqun(
+        typed_global_name: ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
+    ) -> ast.Fqun:
+        if isinstance(typed_global_name, ast.GlobalTypedNameReference):
+            return typed_global_name.effective_fqun
+        return typing.cast(
+            "ast.DefinitionGlobalNameContent", typed_global_name.name_content
+        ).fqun
+
+    def _package_component(
+        self, fqun: ast.Fqun, parent_segments: tuple[str, ...], segment: str
+    ) -> str:
+        """Name a path segment's package so that it differs from its siblings and from functions in its parent.
+
+        A package is named after its segment unless a function in the parent
+        package already has that name, in which case it gets underscores until
+        its name is unused. So its name depends on the other definitions in
+        the program.
+        """
+        package_key = (fqun.canonical, parent_segments)
+        components = self._package_components.setdefault(package_key, {})
+        existing = components.get(segment)
+        if existing is not None:
+            return existing
+        used = self._used_package_names.setdefault(package_key, set())
+        name = _escape_module_component(segment)
+        while name in used:
+            name += "_"
+        used.add(name)
+        components[segment] = name
+        return name
 
     def class_name(
         self,
@@ -187,8 +276,10 @@ class NameConverter:
         self._used_authority_names.add(safe)
         return safe
 
-    def _module_name_parts(self, fqun: ast.Fqun, path: ast.GlobalPathName) -> list[str]:
-        """Compute module name segments from an FQUN and definition path."""
+    def _module_name_parts(
+        self, fqun: ast.Fqun, path_segments: Sequence[str]
+    ) -> list[str]:
+        """Compute module name segments from an FQUN and definition path segments."""
         parts: list[str] = []
         # Only the standard universe is written without an authority.
         if fqun.authority is not None:
@@ -198,14 +289,17 @@ class NameConverter:
                 parts.append(constants.DEFAULT_MULTIVERSE)
             parts.append(self.authority_segment(fqun.authority.name))
         parts.append(_escape_module_component(fqun.universe.name))
-        parts.extend(
-            _escape_module_component(segment) for segment in path.relative_path.parts
-        )
+        for index, segment in enumerate(path_segments):
+            parts.append(
+                self._package_component(fqun, tuple(path_segments[:index]), segment)
+            )
         return [_truncate_module_component(part) for part in parts]
 
     def module_name(self, name_content: ast.DefinitionGlobalNameContent) -> str:
         """Compute the dotted Python module name for a global definition."""
-        parts = self._module_name_parts(name_content.fqun, name_content.path)
+        parts = self._module_name_parts(
+            name_content.fqun, name_content.path.relative_path.parts
+        )
         return ".".join(parts)
 
     def constraints_to_class_references(
@@ -241,11 +335,11 @@ class NameConverter:
             return existing
         name_content = typed_global_name.name_content
         cls_name = self.class_name(typed_global_name)
-        if isinstance(typed_global_name, ast.GlobalTypedNameReference):
-            fqun = typed_global_name.effective_fqun
-        else:
-            fqun = typing.cast("ast.DefinitionGlobalNameContent", name_content).fqun
-        module_name = ".".join(self._module_name_parts(fqun, name_content.path))
+        module_name = ".".join(
+            self._module_name_parts(
+                self._fqun(typed_global_name), name_content.path.relative_path.parts
+            )
+        )
         class_reference = ClassReference(class_name=cls_name, module_name=module_name)
         self._class_references[canonical_name] = class_reference
         return class_reference
