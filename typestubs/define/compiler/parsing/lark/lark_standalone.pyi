@@ -90,6 +90,7 @@ class UnexpectedToken(UnexpectedInput):
         expected: set[str],
         *,
         interactive_parser: InteractiveParser | None = None,
+        token_history: list[lark_cython.Token] | None = None,
     ) -> None: ...
     @property
     def accepts(self) -> set[str]: ...

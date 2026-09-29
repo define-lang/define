@@ -231,7 +231,7 @@ def test_missing_to(parse: Parse):
 
 
 def test_missing_source(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedPositionOrActionOrLiteral) as error:
+    with pytest.raises(parser_exceptions.MissingValueSource) as error:
         parse(
             _ACTION_PREFIX
             + "        set the value of position<dest> to .\n"
@@ -243,7 +243,7 @@ def test_missing_source(parse: Parse):
 
 
 def test_missing_target(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedPositionOrAction) as error:
+    with pytest.raises(parser_exceptions.MissingPositionReference) as error:
         parse(_ACTION_PREFIX + "        set the value of .\n" + "    }\n}\n")
     assert error.value.location.line == 5
     assert error.value.location.column == 26
@@ -267,7 +267,7 @@ def test_value_setting_outside_action(parse: Parse):
         parse("set the value of position<dest> to position<src>.\n")
     assert error.value.location.line == 1
     assert error.value.location.column == 1
-    assert error.value.token == "set the value of "
+    assert error.value.token == "set the value of"
 
 
 def test_missing_to_at_eof(parse: Parse):

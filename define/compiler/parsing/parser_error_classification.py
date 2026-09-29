@@ -89,6 +89,34 @@ def _ends_block(token: lark_cython.Token) -> bool:
     return token.type in {"CLOSE_BRACE", "$END"}
 
 
+_STATEMENT_END_TOKEN_TYPES = frozenset({"DOT", "NEWLINE", "$END"})
+
+
+def _error_with_missing_space(
+    e: lark_standalone.UnexpectedToken,
+    file_path: pathlib.PurePosixPath | None,
+) -> lark_standalone.UnexpectedToken:
+    """Return the error as it would be if the expected space were present.
+
+    Raises MissingWhitespace if the space is the only thing missing.
+    """
+    interactive_parser = typing.cast(
+        "lark_standalone.InteractiveParser", e.interactive_parser
+    )
+    interactive_parser.feed_token(
+        lark_cython.Token.new_borrow_pos("SPACE", " ", e.token)
+    )
+    accepts = interactive_parser.accepts()
+    if e.token.type in accepts:
+        raise parser_exceptions.MissingWhitespace(e, file_path)
+    return lark_standalone.UnexpectedToken(
+        e.token,
+        accepts,
+        interactive_parser=interactive_parser,
+        token_history=e.token_history,
+    )
+
+
 def raise_token_error(
     e: lark_standalone.UnexpectedToken,
     source: str,
@@ -115,9 +143,12 @@ def raise_token_error(
             e, e.token.value, file_path
         )
 
-    # TODO: Raise ExtraWhitespace when the unexpected token is a space that
-    # follows another space and SPACE is not in e.accepts. Today a doubled space
-    # before a keyword or name falls through to an "expected X" error below.
+    if (
+        e.token.type == "SPACE"
+        and e.token_history
+        and e.token_history[-1].type == "SPACE"
+    ):
+        raise parser_exceptions.ExtraWhitespace(e, file_path)
 
     ################################
     ## End of File Classification ##
@@ -129,6 +160,9 @@ def raise_token_error(
         e = _end_of_file_error_with_final_newline(e, source, file_path)
         if "CLOSE_BRACE" in e.accepts:
             raise parser_exceptions.MissingCloseBrace(e, file_path)
+
+    if "SPACE" in e.accepts:
+        e = _error_with_missing_space(e, file_path)
 
     ###############################
     ## e.accepts Classification ##
@@ -196,9 +230,6 @@ def raise_token_error(
             raise parser_exceptions.ExtraWhitespace(e, file_path)
         raise parser_exceptions.MissingOpenBrace(e, file_path)
 
-    if e.accepts == {"SPACE"}:
-        raise parser_exceptions.MissingWhitespace(e, file_path)
-
     if e.accepts == {"NEWLINE"} and e.token_history:
         match e.token_history[-1].type:
             case "DOT":
@@ -234,9 +265,13 @@ def raise_token_error(
         raise parser_exceptions.MissingActionStatementsBlock(e, file_path)
 
     if e.accepts == {"POSITION_OR_ACTION"}:
+        if e.token.type in _STATEMENT_END_TOKEN_TYPES:
+            raise parser_exceptions.MissingPositionReference(e, file_path)
         raise parser_exceptions.ExpectedPositionOrAction(e, file_path)
 
     if e.accepts == {"POSITION_OR_ACTION", "LITERAL"}:
+        if e.token.type in _STATEMENT_END_TOKEN_TYPES:
+            raise parser_exceptions.MissingValueSource(e, file_path)
         raise parser_exceptions.ExpectedPositionOrActionOrLiteral(e, file_path)
 
     if e.accepts == {"POSITION_OR_ACTION", "VIEW", "LITERAL"}:

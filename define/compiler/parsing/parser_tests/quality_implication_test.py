@@ -334,7 +334,7 @@ def test_implication_missing_space_after_keyword(parse: Parse):
 
 
 def test_implication_extra_space_after_keyword(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedPositionOrAction) as exc_info:
+    with pytest.raises(parser_exceptions.ExtraWhitespace) as exc_info:
         parse(
             "define the potential position<mv:define-lang.org:parser:/path> {\n"
             + "    it also assigns the  position</required>.\n"

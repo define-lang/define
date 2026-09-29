@@ -34,5 +34,5 @@ def test_empty_action_statements_block(
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.EmptyActionStatementsBlockDiagnostic)
     assert diags[0].location.line == 4
-    assert diags[0].location.column == 6
+    assert diags[0].location.column == 7
     assert diags[0].location.file_path is None

@@ -151,7 +151,7 @@ def test_arguments_block_disallows_action_statement(parse: Parse):
         )
     assert error.value.location.line == 7
     assert error.value.location.column == 13
-    assert error.value.token == "create a particle in "
+    assert error.value.token == "create a particle in"
 
 
 def test_arguments_block_disallows_action_statement_after_first_argument(
@@ -168,7 +168,7 @@ def test_arguments_block_disallows_action_statement_after_first_argument(
         )
     assert error.value.location.line == 8
     assert error.value.location.column == 13
-    assert error.value.token == "create a particle in "
+    assert error.value.token == "create a particle in"
 
 
 def test_argument_cannot_look_at_value(parse: Parse):

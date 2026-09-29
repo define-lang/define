@@ -241,7 +241,7 @@ def test_disallows_action_statement(parse: Parse):
         )
     assert error.value.location.line == 3
     assert error.value.location.column == 9
-    assert error.value.token == "create a particle in "
+    assert error.value.token == "create a particle in"
 
 
 def test_disallows_action_statement_after_first_statement(parse: Parse):
@@ -256,7 +256,7 @@ def test_disallows_action_statement_after_first_statement(parse: Parse):
         )
     assert error.value.location.line == 4
     assert error.value.location.column == 9
-    assert error.value.token == "create a particle in "
+    assert error.value.token == "create a particle in"
 
 
 def test_disallows_encoding_operation_statement(parse: Parse):
@@ -298,7 +298,7 @@ def test_encoding_operation_name_type_cannot_be_position(parse: Parse):
 
 
 def test_encoding_operation_extra_space_after_execute_the(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedEncodingOperation) as error:
+    with pytest.raises(parser_exceptions.ExtraWhitespace) as error:
         parse(
             _ENCODING_OPERATION_PREFIX
             + "        execute the  encoding_operation</other>.\n"

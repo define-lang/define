@@ -323,12 +323,12 @@ class InvalidGlobalName(DefineTokenError):
 
 
 class InvalidHasAParticleSyntax(DefineTokenError):
-    """Expected ' has a particle' after a local name in a trigger condition."""
+    """Expected 'has a particle' after a local name in a trigger condition."""
 
     message_format: ClassVar[str] = (
-        "The syntax for a particle presence check looks like:"
-        " the position<foo> has a particle."
-        " Expected ' has a particle' here."
+        "The syntax for a particle presence check looks like:\n"
+        "    the position<foo> has a particle.\n"
+        "Expected 'has a particle' here."
     )
 
 
@@ -341,12 +341,12 @@ class InvalidLiteralSyntax(DefineTokenError):
 
 
 class InvalidMoveStatementSyntax(DefineTokenError):
-    """Expected ' to ' or '::' after a position reference in a move statement."""
+    """Expected 'to' or '::' after a position reference in a move statement."""
 
     message_format: ClassVar[str] = (
-        "The syntax for a move statement looks like:"
-        " move the particle in position<foo> to position<bar>."
-        " Expected a 'to' or a longer chained name (a '::' followed by another name) here."
+        "The syntax for a move statement looks like:\n"
+        "    move the particle in position<foo> to position<bar>.\n"
+        "Expected a 'to' or a longer chained name (a '::' followed by another name) here."
     )
 
 
@@ -362,8 +362,8 @@ class InvalidOperationArgumentsBlock(DefineTokenError):
     """Wrote something other than an Operation Argument Statement in an Operation Arguments Block."""
 
     message_format: ClassVar[str] = (
-        "Operation arguments blocks must contain one or more statements like:"
-        " with view<name> looking at position<foo>."
+        "Operation arguments blocks must contain one or more statements like:\n"
+        "    with view<name> looking at position<foo>."
     )
 
 
@@ -371,9 +371,9 @@ class InvalidOperationArgumentSyntax(DefineTokenError):
     """Expected ' looking at ' after the view name in an Operation Argument Statement."""
 
     message_format: ClassVar[str] = (
-        "The syntax for an operation argument looks like:"
-        " with view<name> looking at position<foo>."
-        ' The position may also be a literal, such as literal</decimal>"123".'
+        "The syntax for an operation argument looks like:\n"
+        "    with view<name> looking at position<foo>.\n"
+        "The position may also be a literal."
     )
 
 
@@ -449,9 +449,9 @@ class InvalidValueSettingStatementSyntax(DefineTokenError):
     """Invalid target or source syntax in a Value Setting Statement."""
 
     message_format: ClassVar[str] = (
-        "The syntax for a value setting statement looks like:"
-        " set the value of position<recipient> to position<source>."
-        ' The source may also be a literal, such as literal</decimal>"123".'
+        "The syntax for a value setting statement looks like:\n"
+        "    set the value of position<target> to position<source>.\n"
+        "The source may also be a literal."
     )
 
 
@@ -559,6 +559,14 @@ class MissingOpenBrace(DefineTokenError):
     )
 
 
+class MissingPositionReference(DefineTokenError):
+    """A statement ends where a position reference must follow."""
+
+    message_format: ClassVar[str] = (
+        "Expected a position reference here, such as 'position<foo>'."
+    )
+
+
 class MissingPositionConstraintContent(DefineTokenError):
     """Left out syntax from a position constraint block."""
 
@@ -605,6 +613,14 @@ class MissingTriggerConditionContent(DefineTokenError):
 
     message_format: ClassVar[str] = (
         "Trigger conditions blocks must contain at least one 'the ... has a particle.' statement."
+    )
+
+
+class MissingValueSource(DefineTokenError):
+    """A value setting statement ends where its source must follow."""
+
+    message_format: ClassVar[str] = (
+        "Expected a position reference or literal here, such as 'position<foo>'."
     )
 
 

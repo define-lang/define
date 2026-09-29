@@ -186,7 +186,7 @@ def test_missing_terminator_after_trigger_condition(parse: Parse):
 
 
 def test_missing_space_before_has_a_particle(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidHasAParticleSyntax) as exc_info:
+    with pytest.raises(parser_exceptions.MissingWhitespace) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/my_action> {\n"
             + "    define the position<run>.\n"
@@ -198,6 +198,7 @@ def test_missing_space_before_has_a_particle(parse: Parse):
         )
     assert exc_info.value.location.line == 4
     assert exc_info.value.location.column == 26
+    assert exc_info.value.token == "has a particle"
 
 
 def test_missing_has_a_particle(parse: Parse):

@@ -122,7 +122,7 @@ def test_disallows_action_statement(parse: Parse):
         )
     assert error.value.location.line == 3
     assert error.value.location.column == 9
-    assert error.value.token == "create a particle in "
+    assert error.value.token == "create a particle in"
 
 
 def test_disallows_action_statement_after_first_statement(parse: Parse):
@@ -135,7 +135,7 @@ def test_disallows_action_statement_after_first_statement(parse: Parse):
         )
     assert error.value.location.line == 4
     assert error.value.location.column == 9
-    assert error.value.token == "create a particle in "
+    assert error.value.token == "create a particle in"
 
 
 def test_encoding_operation_requires_terminator(parse: Parse):
@@ -292,7 +292,7 @@ def test_operation_missing_space_after_execute_the(parse: Parse):
 
 
 def test_operation_extra_space_after_execute_the(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedOperation) as error:
+    with pytest.raises(parser_exceptions.ExtraWhitespace) as error:
         parse(
             _OPERATION_PREFIX
             + "        execute the  operation</other>.\n"
@@ -318,7 +318,7 @@ def test_argument_missing_space_after_with(parse: Parse):
 
 
 def test_argument_extra_space_after_with(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedView) as error:
+    with pytest.raises(parser_exceptions.ExtraWhitespace) as error:
         parse(
             _OPERATION_PREFIX
             + "        execute the operation</other> {\n"
@@ -346,7 +346,7 @@ def test_argument_missing_space_before_looking_at(parse: Parse):
 
 
 def test_argument_extra_space_before_looking_at(parse: Parse):
-    with pytest.raises(parser_exceptions.InvalidOperationArgumentSyntax) as error:
+    with pytest.raises(parser_exceptions.ExtraWhitespace) as error:
         parse(
             _OPERATION_PREFIX
             + "        execute the operation</other> {\n"
@@ -374,7 +374,7 @@ def test_argument_missing_space_after_looking_at(parse: Parse):
 
 
 def test_argument_extra_space_after_looking_at(parse: Parse):
-    with pytest.raises(parser_exceptions.ExpectedValueSource) as error:
+    with pytest.raises(parser_exceptions.ExtraWhitespace) as error:
         parse(
             _OPERATION_PREFIX
             + "        execute the operation</other> {\n"

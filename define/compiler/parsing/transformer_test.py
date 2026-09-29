@@ -564,10 +564,10 @@ def test_action_statements_block_fields():
     assert isinstance(block.statements[1], ast.MoveParticleStatement)
     assert isinstance(block.statements[2], ast.DestroyParticleStatement)
     assert block.location == ast.SourceLocation(
-        line=7, column=6, end_line=11, end_column=6
+        line=7, column=7, end_line=11, end_column=6
     )
     assert _slice(_FULL_ACTION, block.location) == (
-        " and it does {\n"
+        "and it does {\n"
         "        create a particle in position<run>.\n"
         "        move the particle in position<src> to position<dest>.\n"
         "        destroy the particle in position<run>.\n"
@@ -579,11 +579,11 @@ def test_action_statements_block_empty_fields():
     block = _only_action(_DESTRUCTOR_ACTION).action_statements
     assert block.statements == ()
     assert block.location == ast.SourceLocation(
-        line=4, column=6, end_line=5, end_column=6
+        line=4, column=7, end_line=5, end_column=6
     )
     # fmt: off
     assert _slice(_DESTRUCTOR_ACTION, block.location) == (
-        " and it does {\n"
+        "and it does {\n"
         "    }"
     )
     # fmt: on

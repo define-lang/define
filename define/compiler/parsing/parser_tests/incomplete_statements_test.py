@@ -542,9 +542,7 @@ def test_position_requirement_missing_space_after_it_has_the(parse: Parse):
 def test_create_particle_missing_reference(
     parse: Parse,
 ):
-    # TODO: I don't love this error classification here, it's not as clear
-    # as it could be.
-    with pytest.raises(parser_exceptions.InvalidActionStatementsBlock) as exc_info:
+    with pytest.raises(parser_exceptions.MissingPositionReference) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
@@ -555,8 +553,10 @@ def test_create_particle_missing_reference(
             + "    }\n"
             + "}\n"
         )
+    assert exc_info.value.token == "."
+    assert exc_info.value.token.type == "DOT"
     assert exc_info.value.location.line == 6
-    assert exc_info.value.location.column == 9
+    assert exc_info.value.location.column == 29
 
 
 def test_value_cannot_start_position_reference(parse: Parse):
@@ -610,7 +610,7 @@ def test_value_cannot_be_local_position_reference(parse: Parse):
 def test_create_particle_reference_missing_name_after_chain_separator(
     parse: Parse,
 ):
-    with pytest.raises(parser_exceptions.ExpectedPositionOrAction) as exc_info:
+    with pytest.raises(parser_exceptions.MissingPositionReference) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
@@ -629,7 +629,7 @@ def test_create_particle_reference_missing_name_after_chain_separator(
 def test_create_particle_reference_chain_separator_then_newline(
     parse: Parse,
 ):
-    with pytest.raises(parser_exceptions.ExpectedPositionOrAction) as exc_info:
+    with pytest.raises(parser_exceptions.MissingPositionReference) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
@@ -711,7 +711,7 @@ def test_double_colon_in_create_reference_parses_as_global_name(
 def test_destroy_particle_missing_reference(
     parse: Parse,
 ):
-    with pytest.raises(parser_exceptions.InvalidActionStatementsBlock) as exc_info:
+    with pytest.raises(parser_exceptions.MissingPositionReference) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
@@ -722,14 +722,16 @@ def test_destroy_particle_missing_reference(
             + "    }\n"
             + "}\n"
         )
+    assert exc_info.value.token == "."
+    assert exc_info.value.token.type == "DOT"
     assert exc_info.value.location.line == 6
-    assert exc_info.value.location.column == 9
+    assert exc_info.value.location.column == 32
 
 
 def test_destroy_particle_reference_missing_name_after_chain_separator(
     parse: Parse,
 ):
-    with pytest.raises(parser_exceptions.ExpectedPositionOrAction) as exc_info:
+    with pytest.raises(parser_exceptions.MissingPositionReference) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
@@ -748,7 +750,7 @@ def test_destroy_particle_reference_missing_name_after_chain_separator(
 def test_destroy_particle_reference_chain_separator_then_newline(
     parse: Parse,
 ):
-    with pytest.raises(parser_exceptions.ExpectedPositionOrAction) as exc_info:
+    with pytest.raises(parser_exceptions.MissingPositionReference) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
@@ -827,7 +829,7 @@ def test_name_chain_invalid_item(
 def test_move_particle_missing_source_reference(
     parse: Parse,
 ):
-    with pytest.raises(parser_exceptions.InvalidActionStatementsBlock) as exc_info:
+    with pytest.raises(parser_exceptions.MissingPositionReference) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
@@ -838,10 +840,10 @@ def test_move_particle_missing_source_reference(
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.token == "move"
-    assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
+    assert exc_info.value.token == "."
+    assert exc_info.value.token.type == "DOT"
     assert exc_info.value.location.line == 6
-    assert exc_info.value.location.column == 9
+    assert exc_info.value.location.column == 29
 
 
 def test_move_particle_missing_to_keyword(
@@ -858,16 +860,16 @@ def test_move_particle_missing_to_keyword(
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.token == " "
-    assert exc_info.value.token.type == "SPACE"
+    assert exc_info.value.token == "position"
+    assert exc_info.value.token.type == "POSITION_OR_ACTION"
     assert exc_info.value.location.line == 6
-    assert exc_info.value.location.column == 43
+    assert exc_info.value.location.column == 44
 
 
 def test_move_particle_missing_destination_reference(
     parse: Parse,
 ):
-    with pytest.raises(parser_exceptions.InvalidMoveStatementSyntax) as exc_info:
+    with pytest.raises(parser_exceptions.MissingPositionReference) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
@@ -878,16 +880,16 @@ def test_move_particle_missing_destination_reference(
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.token == " "
-    assert exc_info.value.token.type == "SPACE"
+    assert exc_info.value.token == "."
+    assert exc_info.value.token.type == "DOT"
     assert exc_info.value.location.line == 6
-    assert exc_info.value.location.column == 43
+    assert exc_info.value.location.column == 46
 
 
 def test_move_particle_chain_separator_after_source_then_terminator(
     parse: Parse,
 ):
-    with pytest.raises(parser_exceptions.ExpectedPositionOrAction) as exc_info:
+    with pytest.raises(parser_exceptions.MissingPositionReference) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
@@ -907,7 +909,7 @@ def test_move_particle_chain_separator_after_source_then_terminator(
 def test_move_particle_chain_separator_after_source_then_newline(
     parse: Parse,
 ):
-    with pytest.raises(parser_exceptions.ExpectedPositionOrAction) as exc_info:
+    with pytest.raises(parser_exceptions.MissingPositionReference) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
@@ -927,7 +929,7 @@ def test_move_particle_chain_separator_after_source_then_newline(
 def test_move_particle_chain_separator_after_destination_then_terminator(
     parse: Parse,
 ):
-    with pytest.raises(parser_exceptions.ExpectedPositionOrAction) as exc_info:
+    with pytest.raises(parser_exceptions.MissingPositionReference) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
@@ -947,7 +949,7 @@ def test_move_particle_chain_separator_after_destination_then_terminator(
 def test_move_particle_chain_separator_after_destination_then_newline(
     parse: Parse,
 ):
-    with pytest.raises(parser_exceptions.ExpectedPositionOrAction) as exc_info:
+    with pytest.raises(parser_exceptions.MissingPositionReference) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
@@ -1009,7 +1011,7 @@ def test_move_particle_single_colon_after_destination(
 def test_move_particle_no_space_before_to(
     parse: Parse,
 ):
-    with pytest.raises(parser_exceptions.InvalidMoveStatementSyntax) as exc_info:
+    with pytest.raises(parser_exceptions.MissingWhitespace) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
@@ -1021,7 +1023,7 @@ def test_move_particle_no_space_before_to(
             + "}\n"
         )
     assert exc_info.value.token == "to"
-    assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
+    assert exc_info.value.token.type == "TO"
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 43
 
@@ -1029,7 +1031,7 @@ def test_move_particle_no_space_before_to(
 def test_move_particle_no_space_after_to(
     parse: Parse,
 ):
-    with pytest.raises(parser_exceptions.InvalidMoveStatementSyntax) as exc_info:
+    with pytest.raises(parser_exceptions.MissingWhitespace) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
@@ -1040,10 +1042,10 @@ def test_move_particle_no_space_after_to(
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.token == " "
-    assert exc_info.value.token.type == "SPACE"
+    assert exc_info.value.token == "position"
+    assert exc_info.value.token.type == "POSITION_OR_ACTION"
     assert exc_info.value.location.line == 6
-    assert exc_info.value.location.column == 43
+    assert exc_info.value.location.column == 46
 
 
 def test_move_particle_chained_source_missing_to(
@@ -1102,8 +1104,8 @@ def test_move_particle_missing_close_angle_bracket_before_to(
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.token == " to "
-    assert exc_info.value.token.type == "TO"
+    assert exc_info.value.token == " "
+    assert exc_info.value.token.type == "SPACE"
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 47
 
@@ -1131,7 +1133,7 @@ def test_move_keyword_then_newline(
 def test_move_particle_in_space_dot(
     parse: Parse,
 ):
-    with pytest.raises(parser_exceptions.ExpectedPositionOrAction) as exc_info:
+    with pytest.raises(parser_exceptions.MissingPositionReference) as exc_info:
         parse(
             "define the potential action<mv:define-lang.org:parser:/path> {\n"
             + "    define the position<run>.\n"
@@ -1146,3 +1148,23 @@ def test_move_particle_in_space_dot(
     assert exc_info.value.token.type == "DOT"
     assert exc_info.value.location.line == 6
     assert exc_info.value.location.column == 30
+
+
+def test_create_particle_no_space_before_reference(
+    parse: Parse,
+):
+    with pytest.raises(parser_exceptions.MissingWhitespace) as exc_info:
+        parse(
+            "define the potential action<mv:define-lang.org:parser:/path> {\n"
+            + "    define the position<run>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a particle.\n"
+            + "    } and it does {\n"
+            + "        create a particle inposition<run>.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.token == "position"
+    assert exc_info.value.token.type == "POSITION_OR_ACTION"
+    assert exc_info.value.location.line == 6
+    assert exc_info.value.location.column == 29

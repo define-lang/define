@@ -120,7 +120,7 @@ def test_extra_space_in_and_it_does_clause_in_action_block(parse: Parse):
         )
     assert str(exc_info.value.token) == " "
     assert exc_info.value.location.line == 5
-    assert exc_info.value.location.column == 6
+    assert exc_info.value.location.column == 7
 
 
 def test_extra_space_after_and_it_does_before_open_brace(parse: Parse):
@@ -155,3 +155,70 @@ def test_extra_space_before_local_name_in_position_requirement_statement(
     assert exc_info.value.location.line == 3
     assert exc_info.value.location.column == 28
     assert exc_info.value.name == " "
+
+
+def test_extra_space_after_create_a_particle_in(parse: Parse):
+    with pytest.raises(parser_exceptions.ExtraWhitespace) as exc_info:
+        parse(
+            "define the potential action<mv:define-lang.org:parser:/path> {\n"
+            + "    define the position<run>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a particle.\n"
+            + "    } and it does {\n"
+            + "        create a particle in  position<run>.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert str(exc_info.value.token) == " "
+    assert exc_info.value.location.line == 6
+    assert exc_info.value.location.column == 30
+
+
+def test_extra_space_before_to_in_move_statement(parse: Parse):
+    with pytest.raises(parser_exceptions.ExtraWhitespace) as exc_info:
+        parse(
+            "define the potential action<mv:define-lang.org:parser:/path> {\n"
+            + "    define the position<run>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a particle.\n"
+            + "    } and it does {\n"
+            + "        move the particle in position<src>  to position<dest>.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert str(exc_info.value.token) == " "
+    assert exc_info.value.location.line == 6
+    assert exc_info.value.location.column == 44
+
+
+def test_extra_space_after_to_in_move_statement(parse: Parse):
+    with pytest.raises(parser_exceptions.ExtraWhitespace) as exc_info:
+        parse(
+            "define the potential action<mv:define-lang.org:parser:/path> {\n"
+            + "    define the position<run>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a particle.\n"
+            + "    } and it does {\n"
+            + "        move the particle in position<src> to  position<dest>.\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert str(exc_info.value.token) == " "
+    assert exc_info.value.location.line == 6
+    assert exc_info.value.location.column == 47
+
+
+def test_extra_space_after_the_in_trigger_condition(parse: Parse):
+    with pytest.raises(parser_exceptions.ExtraWhitespace) as exc_info:
+        parse(
+            "define the potential action<mv:define-lang.org:parser:/path> {\n"
+            + "    define the position<run>.\n"
+            + "    it happens when {\n"
+            + "        the  position<run> has a particle.\n"
+            + "    } and it does {\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert str(exc_info.value.token) == " "
+    assert exc_info.value.location.line == 4
+    assert exc_info.value.location.column == 13

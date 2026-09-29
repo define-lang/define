@@ -772,3 +772,20 @@ def test_action_statements_block_with_mixed_statements_and_multiple_create_parti
         "inner_pos",
         "inner_pos",
     ]
+
+
+def test_no_space_before_and_it_does(parse: Parse):
+    with pytest.raises(parser_exceptions.MissingWhitespace) as exc_info:
+        parse(
+            "define the potential action<mv:define-lang.org:parser:/path> {\n"
+            + "    define the position<run>.\n"
+            + "    it happens when {\n"
+            + "        the position<run> has a particle.\n"
+            + "    }and it does {\n"
+            + "    }\n"
+            + "}\n"
+        )
+    assert exc_info.value.token == "and it does"
+    assert exc_info.value.token.type == "AND_IT_DOES"
+    assert exc_info.value.location.line == 5
+    assert exc_info.value.location.column == 6
