@@ -29,6 +29,8 @@ py_test(
         "//define/testdata/compiler_resources:reference_depth_updates_control",
         "//define/testdata/compiler_resources:reference_graph_project",
         "//define/testdata/compiler_resources:reference_graph_project_entry",
+        "//define/testdata/compiler_resources:triggered_children_destruction",
+        "//define/testdata/compiler_resources:triggered_children_destruction_control",
         "//define/testdata/compiler_resources:wide_destruction",
     ],
     env = {
@@ -50,6 +52,8 @@ py_test(
         "REFERENCE_GRAPH_PROJECT": "$(rlocationpath //define/testdata/compiler_resources:reference_graph_project_entry)",
         "RESOURCE_LIMIT_RUNNER": "$(rlocationpath :resource_limit_runner)",
         "RESOURCE_TEST_RUNNER": "$(rlocationpath :resource_test_runner)",
+        "TRIGGERED_CHILDREN_DESTRUCTION": "$(rlocationpath //define/testdata/compiler_resources:triggered_children_destruction)",
+        "TRIGGERED_CHILDREN_DESTRUCTION_CONTROL": "$(rlocationpath //define/testdata/compiler_resources:triggered_children_destruction_control)",
     },
     tags = ["no-coverage"],
     target_compatible_with = ["@platforms//os:linux"],

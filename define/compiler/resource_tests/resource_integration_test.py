@@ -183,6 +183,21 @@ def test_retained_memory(case: MemoryCase, tmp_path: Path):
             ),
             id="shared_quality_implications",
         ),
+        pytest.param(
+            CpuGrowthCase(
+                control_variable="TRIGGERED_CHILDREN_DESTRUCTION_CONTROL",
+                source_variable="TRIGGERED_CHILDREN_DESTRUCTION",
+                filesystem=False,
+                maximum_ratio=4,
+            ),
+            id="triggered_children_destruction",
+            # Destruction resolves the pending Guarantees of every triggered
+            # action below the destroyed particle, one execution path at a time.
+            marks=pytest.mark.xfail(
+                strict=True,
+                reason="destruction resolves exponentially many pending Guarantees",
+            ),
+        ),
     ],
 )
 def test_cpu_growth(case: CpuGrowthCase, tmp_path: Path):

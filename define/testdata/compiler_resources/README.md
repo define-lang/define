@@ -200,3 +200,21 @@ bazelisk run --noshow_progress --ui_event_filters=-info \
   --output define/testdata/compiler_resources/pending_guarantees_growth.dfn \
   --pending-positions 8192 --destroyed-positions 819
 ```
+
+## Destroying triggered children
+
+Checks CPU growth when a destroyed particle's transitive children were filled by
+a tree of triggered actions, so linearly many actions give exponentially many
+children.
+
+```sh
+bazelisk run --noshow_progress --ui_event_filters=-info \
+  //tools/generators:generate_triggered_children_destruction_source -- \
+  --output define/testdata/compiler_resources/triggered_children_destruction_control.dfn \
+  --depth 10 --fan-out 2
+
+bazelisk run --noshow_progress --ui_event_filters=-info \
+  //tools/generators:generate_triggered_children_destruction_source -- \
+  --output define/testdata/compiler_resources/triggered_children_destruction.dfn \
+  --depth 24 --fan-out 2
+```

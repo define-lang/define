@@ -21,6 +21,8 @@ filegroup(
         ":reference_depth_updates_control_project",
         ":reference_depth_updates_project",
         ":reference_graph_project",
+        ":triggered_children_destruction",
+        ":triggered_children_destruction_control",
         ":wide_destruction",
     ],
     visibility = [
@@ -157,6 +159,20 @@ filegroup(
     name = "reference_graph_project_entry",
     testonly = True,
     srcs = ["reference_graph_project/test.dfn"],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)
+
+filegroup(
+    name = "triggered_children_destruction",
+    testonly = True,
+    srcs = ["triggered_children_destruction.dfn"],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)
+
+filegroup(
+    name = "triggered_children_destruction_control",
+    testonly = True,
+    srcs = ["triggered_children_destruction_control.dfn"],
     visibility = ["//define/compiler/resource_tests:__pkg__"],
 )
 
