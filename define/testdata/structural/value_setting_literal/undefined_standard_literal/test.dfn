@@ -1,4 +1,4 @@
-# The standard universe defines only its built-in literals.
+# The standard universe does not define this literal.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.

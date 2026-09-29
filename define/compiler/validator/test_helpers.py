@@ -4,9 +4,10 @@
 from __future__ import annotations
 
 from pprint import pformat
-from typing import TYPE_CHECKING, Final, Protocol
+from typing import TYPE_CHECKING, Protocol
 
-from define.compiler import built_in_definitions
+from define.compiler import constants
+from define.compiler.data_structures import define_path
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -15,9 +16,9 @@ if TYPE_CHECKING:
     from define.compiler.validator import validation_result
 
 
-# A program that references the standard universe has every built-in
-# definition in its definition results.
-BUILT_IN_DEFINITION_COUNT: Final = len(built_in_definitions.definitions())
+def standard_library_file(relative_path: str) -> str:
+    """Return the path of a standard universe file as file results report it."""
+    return str(constants.STANDARD_LIBRARY_ROOT / define_path.DefinePath(relative_path))
 
 
 class _ValidationErrors(Protocol):

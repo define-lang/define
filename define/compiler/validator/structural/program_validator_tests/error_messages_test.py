@@ -12,7 +12,7 @@ import textwrap
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING
 
-from define.compiler import built_in_definitions, config, constants
+from define.compiler import config
 from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics, exceptions, parser_exceptions
 from define.compiler.validator import test_helpers
@@ -138,38 +138,6 @@ def test_incorrect_indentation_format(validate_project: ValidateProject):
                   it has the position</child>.
             ^^^^^^
         expected 8 spaces of indentation on this line, but found 6""")
-
-
-def test_built_in_definition_location_shows_its_source_line(
-    validate_project: ValidateProject,
-):
-    result = validate_project(
-        {"test.dfn": "define the potential position<my.domain.com:my_lib:/test>.\n"}
-    )
-    definition = built_in_definitions.get_definition(constants.DECIMAL_ASCII_ENCODING)
-    assert definition is not None
-    assert result.program_result.source_map.format_location(definition.location) == (
-        f'File "{built_in_definitions.SOURCE_FILE_PATH}", line 3, column 1\n'
-        "    define the encoding<standard:/number/decimal/ascii>.\n"
-        "    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
-    )
-
-
-def test_built_in_definition_location_shows_its_source_line_with_in_memory_source():
-    # The in-memory source's locations have no file, and built-in locations
-    # must not be read from it.
-    program_result = (
-        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
-            "define the potential position<my.domain.com:my_lib:/test>.\n"
-        )
-    )
-    definition = built_in_definitions.get_definition(constants.DECIMAL_ASCII_ENCODING)
-    assert definition is not None
-    assert program_result.source_map.format_location(definition.location) == (
-        f'File "{built_in_definitions.SOURCE_FILE_PATH}", line 3, column 1\n'
-        "    define the encoding<standard:/number/decimal/ascii>.\n"
-        "    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
-    )
 
 
 def test_referenced_definition_not_found_format(validate_project: ValidateProject):

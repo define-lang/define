@@ -12,7 +12,10 @@ from typing import TYPE_CHECKING
 from define.compiler import config
 from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics
-from define.compiler.validator.test_helpers import assert_no_errors
+from define.compiler.validator.test_helpers import (
+    assert_no_errors,
+    standard_library_file,
+)
 
 if TYPE_CHECKING:
     from define.compiler.conftest import ValidateTestdataStructuralNonFilesystem
@@ -399,15 +402,17 @@ def test_non_filesystem_cross_universe_back_reference(
     assert result.all_exceptions == []
 
 
-def test_standard_reference_does_not_load_a_file_non_filesystem(
+def test_standard_reference_loads_its_standard_file_non_filesystem(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
     assert_no_errors(result)
-    assert len(result.file_results) == 3
-    assert str(result.file_results[0].file_path) == "<string>"
-    assert result.file_results[1].file_path == define_path.DefinePath("target.dfn")
-    assert result.file_results[2].file_path == define_path.DefinePath("leaf.dfn")
+    assert [str(file_result.file_path) for file_result in result.file_results] == [
+        "<string>",
+        standard_library_file("number/rational.dfn"),
+        "target.dfn",
+        "leaf.dfn",
+    ]
 
 
 def test_config_failure_keeps_standard_references(

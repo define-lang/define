@@ -17,7 +17,7 @@ import msgspec
 if typing.TYPE_CHECKING:
     import pathlib
 
-from define.compiler import ast, built_in_definitions, config, constants
+from define.compiler import ast, config, constants
 from define.compiler.data_structures import define_path, typed_name_dict
 from define.compiler.errors import diagnostics, exceptions, source_map
 from define.compiler.graphs import reference_graph, reference_graph_order
@@ -103,7 +103,6 @@ class ProgramStructuralValidator:
     _path_tracker: path_tracker.PathTracker[validation_result.FileValidationResult]
     _reference_graph: reference_graph.ReferenceGraph
     _deferred_edges: dict[define_path.DefinePath, list[_DeferredReferenceEdge]]
-    _built_in_definitions_registered: bool
     _definition_results: typed_name_dict.TypedNameDict[
         ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
         validation_result.DefinitionValidationResult,
@@ -133,7 +132,6 @@ class ProgramStructuralValidator:
         self._reference_graph = reference_graph.ReferenceGraph()
         self._deferred_edges = {}
         self._definition_results = typed_name_dict.TypedNameDict()
-        self._built_in_definitions_registered = False
         self._config_loading_time_ns = 0
         self._allow_entry_action_interface_positions = (
             allow_entry_action_interface_positions
@@ -229,9 +227,7 @@ class ProgramStructuralValidator:
         for file_result in file_results:
             for definition_result in file_result.definition_results:
                 definition_result.reference_edges.clear()
-        file_digests: dict[pathlib.PurePosixPath, bytes] = {
-            built_in_definitions.SOURCE_FILE_PATH: built_in_definitions.source_digest()
-        }
+        file_digests: dict[pathlib.PurePosixPath, bytes] = {}
         for file_result in file_results:
             if file_result.source_digest is not None:
                 file_digests[file_result.file_path.as_posix_path()] = (
@@ -328,16 +324,6 @@ class ProgramStructuralValidator:
         self._reference_graph.add_definition(definition_result.definition)
         self._validate_outgoing_reference_edges(result.root_prefix, definition_result)
 
-    def _register_built_in_definitions(self):
-        """Load every built-in definition, once per program, as though the standard universe were one file."""
-        if self._built_in_definitions_registered:
-            return
-        self._built_in_definitions_registered = True
-        for definition in built_in_definitions.definitions():
-            self._definition_results[definition.typed_name] = (
-                validation_result.DefinitionValidationResult(definition=definition)
-            )
-
     def _submit_referenced_file_from_configured_root(
         self,
         result: validation_result.FileValidationResult,
@@ -345,16 +331,16 @@ class ProgramStructuralValidator:
         pool: _FileWorkPool,
     ):
         """Submit a referenced file using its source project's loaded config."""
-        global_name = edge.global_name_reference.name_content
-        if global_name.fqun is None:
-            root_prefix = result.root_prefix
-        else:
-            # Edges with an explicit FQUN only exist when file validation
-            # found the FQUN in the enclosing root's local deps, so this
-            # lookup cannot fail.
-            root_prefix = result.root_prefix / self._path_tracker.sub_root_location(
-                global_name.fqun.canonical, result.root_prefix
-            )
+        # Edges with an explicit FQUN only exist when file validation found the
+        # FQUN in the enclosing root's local deps, or when the universe needs
+        # no configuration, so the universe always has a root.
+        root_prefix = typing.cast(
+            "define_path.DefinePath",
+            self._path_tracker.universe_root(
+                _canonical_fqun(edge.global_name_reference.name_content),
+                result.root_prefix,
+            ),
+        )
         self._submit_referenced_file(
             result=result,
             edge=edge,
@@ -412,7 +398,13 @@ class ProgramStructuralValidator:
         pool: _FileWorkPool,
     ):
         """Load project config if necessary, and submit referenced files."""
-        first_edge = result.first_edge_to_other_file()
+        first_edge: reference_graph.ReferenceEdge | None = None
+        for edge in result.first_edge_per_referenced_file():
+            if _needs_configuration(edge):
+                if first_edge is None:
+                    first_edge = edge
+            else:
+                self._submit_referenced_file_from_configured_root(result, edge, pool)
         if first_edge is None:
             return
 
@@ -435,6 +427,10 @@ class ProgramStructuralValidator:
         """Resolve references in non-filesystem mode after config load."""
         unknown_fquns: set[str] = set()
         for edge in result.first_edge_per_referenced_file():
+            # Files in universes that need no configuration were already
+            # submitted.
+            if not _needs_configuration(edge):
+                continue
             global_name = edge.global_name_reference.name_content
             if global_name.fqun is not None:
                 fqun = global_name.fqun.canonical
@@ -474,15 +470,15 @@ class ProgramStructuralValidator:
 
         When root config loading fails entirely, every cross-universe FQUN is
         unresolvable. Same-universe edges are kept so that same-file validation
-        (e.g. cycle detection) still runs, and so are standard universe edges,
-        whose definitions need no config.
+        (e.g. cycle detection) still runs, and so are edges to universes that
+        need no configuration.
         """
         for definition_result in result.definition_results:
             definition_result.reference_edges = [
                 ref_edge
                 for ref_edge in definition_result.reference_edges
                 if ref_edge.global_name_reference.name_content.fqun is None
-                or ref_edge.targets_standard_universe
+                or not _needs_configuration(ref_edge)
             ]
 
     def _load_config_in_non_filesystem_context(
@@ -521,11 +517,6 @@ class ProgramStructuralValidator:
     ):
         """Try to add edges to the reference graph, validate targets we already know about, and enqueue those we don't."""
         for ref_edge in source_definition.reference_edges:
-            # TODO: Remove this special case once the Define Standard Library
-            # defines the built-in names.
-            if ref_edge.targets_standard_universe:
-                self._add_built_in_reference_edge(ref_edge, source_definition)
-                continue
             # A definition from the supplied source has no file path to resolve.
             if self._references_non_filesystem_definition(ref_edge):
                 _ = self._add_reference_edge(ref_edge, source_definition)
@@ -561,26 +552,6 @@ class ProgramStructuralValidator:
                 self._deferred_edges.setdefault(target_file, []).append(
                     _DeferredReferenceEdge(ref_edge, source_definition)
                 )
-
-    def _add_built_in_reference_edge(
-        self,
-        ref_edge: reference_graph.ReferenceEdge,
-        source_definition: validation_result.DefinitionValidationResult,
-    ):
-        self._register_built_in_definitions()
-        target = self._definition_results.get(ref_edge.global_name_reference)
-        if target is None:
-            source_definition.add_diagnostic(
-                diagnostics.StandardDefinitionNotFoundDiagnostic(
-                    location=ref_edge.global_name_reference.name_content.location,
-                    definition_name=ref_edge.target_full_typed_name,
-                )
-            )
-            return
-        # Only referenced built-in definitions join the reference graph, just
-        # as only referenced files are loaded.
-        self._reference_graph.add_definition(target.definition)
-        _ = self._add_reference_edge(ref_edge, source_definition)
 
     def _add_reference_edge(
         self,
@@ -618,15 +589,15 @@ class ProgramStructuralValidator:
 
         Returns None if the target is under a failed or nonexistent root.
         """
-        if global_name.fqun is None:
-            return global_name.path.file_path(enclosing_root)
-
-        fqun_string = global_name.fqun.canonical
-        if not self._path_tracker.has_sub_root(fqun_string, enclosing_root):
+        universe_root = self._path_tracker.universe_root(
+            _canonical_fqun(global_name), enclosing_root
+        )
+        if universe_root is None:
+            fqun = typing.cast("ast.Fqun", global_name.fqun)
             source_definition.add_diagnostic(
                 diagnostics.ExternalUniverseNotConfiguredDiagnostic(
-                    location=global_name.fqun.location,
-                    universe=fqun_string,
+                    location=fqun.location,
+                    universe=fqun.canonical,
                     current_universe_name=self._path_tracker.fqun_for_root(
                         enclosing_root
                     )
@@ -634,9 +605,7 @@ class ProgramStructuralValidator:
                 )
             )
             return None
-        sub_root_loc = self._path_tracker.sub_root_location(fqun_string, enclosing_root)
-        sub_root_path = enclosing_root / sub_root_loc
-        target_file = global_name.path.file_path(sub_root_path)
+        target_file = global_name.path.file_path(universe_root)
         if self._path_tracker.is_under_failed_root(target_file):
             return None
         return target_file
@@ -685,6 +654,26 @@ class ProgramStructuralValidator:
     ):
         """Validate a reference edge against a completed target file's result."""
         global_name = edge.global_name_reference.name_content
+
+        # A standard universe file is not in the project, so naming it would
+        # not help.
+        # TODO: Remove this special case once the Define Standard Library
+        # exists.
+        if (
+            self._path_tracker.find_enclosing_root(target_file)
+            == constants.STANDARD_LIBRARY_ROOT
+        ):
+            if isinstance(target_result.exception, exceptions.SourceFileNotFoundError):
+                self._path_tracker.mark_not_found(target_file)
+            elif edge.global_name_reference in self._definition_results:
+                return
+            source_definition.add_diagnostic(
+                diagnostics.StandardDefinitionNotFoundDiagnostic(
+                    location=global_name.location,
+                    definition_name=edge.global_name_reference.full_typed_name,
+                )
+            )
+            return
 
         if isinstance(target_result.exception, exceptions.SourceFileNotFoundError):
             source_definition.add_diagnostic(
@@ -787,9 +776,18 @@ class ProgramStructuralValidator:
                 )
             return existing
 
-        root_config = config.ConfigLoader(root_prefix).load_project_root_config(
-            expected_fqun
-        )
+        # The standard universe ships with the compiler, so its root has no
+        # config file.
+        # TODO: Remove this special case once the Define Standard Library
+        # exists.
+        if root_prefix == constants.STANDARD_LIBRARY_ROOT:
+            root_config = config.ProjectRootConfig(
+                fqun=constants.STANDARD_UNIVERSE, sub_roots={}
+            )
+        else:
+            root_config = config.ConfigLoader(root_prefix).load_project_root_config(
+                expected_fqun
+            )
         existing_root = self._path_tracker.root_for_fqun(root_config.fqun)
         if existing_root is not None and existing_root != root_prefix:
             raise config.DuplicateFqunError(
@@ -800,6 +798,20 @@ class ProgramStructuralValidator:
             )
         self._path_tracker.register_project_root(root_prefix, root_config)
         return root_config
+
+
+def _canonical_fqun(global_name: ast.ReferenceGlobalNameContent) -> str | None:
+    """Return the FQUN written in a reference, if one is written."""
+    if global_name.fqun is None:
+        return None
+    return global_name.fqun.canonical
+
+
+def _needs_configuration(edge: reference_graph.ReferenceEdge) -> bool:
+    """Whether a project must configure the referenced universe before resolving the reference."""
+    return config.universe_needs_configuration(
+        edge.global_name_reference.effective_fqun.canonical
+    )
 
 
 def _make_config_error_result(

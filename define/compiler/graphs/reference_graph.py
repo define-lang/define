@@ -6,8 +6,6 @@ import typing
 
 import msgspec
 
-from define.compiler import constants
-
 if typing.TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
 
@@ -24,14 +22,6 @@ class ReferenceEdge(msgspec.Struct, frozen=True):
     def target_full_typed_name(self) -> str:
         """The referenced definition's full typed name."""
         return self.global_name_reference.full_typed_name
-
-    @property
-    def targets_standard_universe(self) -> bool:
-        """Whether the referenced name is in the standard universe, whose definitions are built into the compiler."""
-        return (
-            self.global_name_reference.effective_fqun.canonical
-            == constants.STANDARD_UNIVERSE
-        )
 
     @property
     def source_full_typed_name(self) -> str:

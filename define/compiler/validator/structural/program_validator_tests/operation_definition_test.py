@@ -9,10 +9,7 @@ from typing import TYPE_CHECKING
 
 from define.compiler import name_types
 from define.compiler.errors import diagnostics
-from define.compiler.validator.test_helpers import (
-    BUILT_IN_DEFINITION_COUNT,
-    assert_no_errors,
-)
+from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
     from define.compiler.conftest import ValidateTestdataStructuralNonFilesystem
@@ -23,7 +20,6 @@ def test_valid_operation(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert_no_errors(result)
-    assert len(result.definition_results) == 2 + BUILT_IN_DEFINITION_COUNT
 
 
 def test_encoding_operation_references_every_view(

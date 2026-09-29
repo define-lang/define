@@ -31,7 +31,6 @@ def test_built_in_literal(
 ):
     result = validate_testdata_project_with_reference_graph().program_result
     assert_no_errors(result)
-    assert len(result.file_results) == 2
 
 
 def test_defined_literal_with_built_in_encoding(
@@ -39,7 +38,6 @@ def test_defined_literal_with_built_in_encoding(
 ):
     result = validate_testdata_project_with_reference_graph().program_result
     assert_no_errors(result)
-    assert len(result.file_results) == 3
 
 
 def test_empty_literal_content(

@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING, cast, final
 
 import msgspec
 
+from define.compiler import constants
+
 if TYPE_CHECKING:
     from define.compiler import config
     from define.compiler.data_structures import define_path
@@ -234,6 +236,26 @@ class PathTracker[T]:
         """Return the FQUN registered for an exact project root path, or None."""
         root_config = self.config_for_root(root)
         return None if root_config is None else root_config.fqun
+
+    def universe_root(
+        self, fqun: str | None, referencing_root: define_path.DefinePath
+    ) -> define_path.DefinePath | None:
+        """Return the root of a referenced universe, if the referencing root can reach it.
+
+        fqun is None for a short-form reference, which is in the referencing
+        root's own universe.
+        """
+        if fqun is None:
+            return referencing_root
+        # Every project can reference the standard universe without
+        # configuring it. Only this universe has an absolute root.
+        # TODO: Remove this special case once the Define Standard Library
+        # exists.
+        if fqun == constants.STANDARD_UNIVERSE:
+            return constants.STANDARD_LIBRARY_ROOT
+        if not self.has_sub_root(fqun, referencing_root):
+            return None
+        return referencing_root / self.sub_root_location(fqun, referencing_root)
 
     def has_sub_root(self, fqun: str, parent_root: define_path.DefinePath) -> bool:
         """Return True if fqun is a configured sub_root of parent_root."""

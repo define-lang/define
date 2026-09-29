@@ -114,24 +114,14 @@ class FileValidationResult:
         """Yield the edges that lead to other files.
 
         An edge leads to another file unless its target is the enclosing
-        definition, a definition that appeared earlier in the same file, or a
-        built-in definition in the standard universe.
+        definition or a definition that appeared earlier in the same file.
         """
         seen_targets: set[str] = set()
         for definition_result in self.definition_results:
             seen_targets.add(definition_result.definition.typed_name.full_typed_name)
             for edge in definition_result.reference_edges:
-                if edge.target_full_typed_name in seen_targets:
-                    continue
-                # TODO: Remove this special case once the Define Standard
-                # Library defines the built-in names.
-                if edge.targets_standard_universe:
-                    continue
-                yield edge
-
-    def first_edge_to_other_file(self) -> reference_graph.ReferenceEdge | None:
-        """Return the first edge that leads to another file, if any."""
-        return next(self.edges_to_other_files(), None)
+                if edge.target_full_typed_name not in seen_targets:
+                    yield edge
 
     def first_edge_per_referenced_file(
         self,
@@ -148,10 +138,6 @@ class FileValidationResult:
             seen_files: set[tuple[str, str]] = set()
             for edge in definition_result.reference_edges:
                 if edge.target_full_typed_name in seen_targets:
-                    continue
-                # TODO: Remove this special case once the Define Standard
-                # Library defines the built-in names.
-                if edge.targets_standard_universe:
                     continue
                 referenced_file = (
                     edge.global_name_reference.effective_fqun.canonical,

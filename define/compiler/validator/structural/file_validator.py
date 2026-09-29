@@ -254,7 +254,12 @@ class DefinitionStructuralValidator:
         """Validate one top-level definition and return its validation result."""
         self._diagnostics.extend(
             name_validators.validate_global_name(
-                self._definition.typed_name.name_content
+                self._definition.typed_name.name_content,
+                # TODO: Remove this special case once the Define Standard
+                # Library exists.
+                allow_reserved_universe=(
+                    self._context.root_prefix == constants.STANDARD_LIBRARY_ROOT
+                ),
             )
         )
         self._validate_path_matches_file()
@@ -1068,13 +1073,10 @@ class DefinitionStructuralValidator:
         )
         # Process a cross-FQUN reference in a filesystem context. References
         # that resolve within this same file skip the sub-root check so that
-        # they still get edges for same-file validation. The standard universe
-        # is built into the compiler, so it has no sub-root.
-        # TODO: Stop exempting the standard universe once the Define Standard
-        # Library defines the built-in names.
+        # they still get edges for same-file validation.
         if (
             global_name.fqun is not None
-            and global_name.fqun.canonical != constants.STANDARD_UNIVERSE
+            and config.universe_needs_configuration(global_name.fqun.canonical)
             and not is_same_file_reference
             and self._context.is_filesystem_context
         ):

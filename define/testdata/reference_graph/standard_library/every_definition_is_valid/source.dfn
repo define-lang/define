@@ -1,0 +1,41 @@
+# A program that references every standard universe definition loads and validates all of their files.
+define the potential position<my.domain.com:my_lib:/total> {
+    it may only contain particles where {
+        it has the value<standard:/number/rational>.
+    }
+}
+define the encoding_operation<my.domain.com:my_lib:/increment> {
+    define the view<number> {
+        it is read.
+        it may only contain particles where {
+            it has the encoding<standard:/number/decimal/ascii>.
+        }
+    }
+    define the view<result> {
+        it is written.
+        it may only contain particles where {
+            it has the encoding<standard:/number/decimal/ascii>.
+        }
+    }
+
+    it does {
+        execute the encoding_operation<standard:/number/decimal/ascii/infix_add> {
+            with view<a> looking at view<number>.
+            with view<b> looking at literal<standard:/number>"1".
+            with view<sum> looking at view<result>.
+        }
+    }
+}
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</total>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</total>.
+        execute the operation<standard:/number/rational/add> {
+            with view<a> looking at literal<standard:/number>"1".
+            with view<b> looking at literal<standard:/number>"2".
+            with view<sum> looking at position</total>.
+        }
+    }
+}

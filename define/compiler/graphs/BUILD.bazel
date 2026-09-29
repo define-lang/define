@@ -15,7 +15,6 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         "//define/compiler:ast",
-        "//define/compiler:constants",
         "@pypi//msgspec",
     ],
 )

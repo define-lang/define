@@ -369,14 +369,23 @@ def _validate_fqun(fqun: ast.Fqun) -> list[diagnostics.Diagnostic]:
 def validate_global_name(
     name: ast.GlobalNameContent[ast.Fqun | None],
     must_use_short_form: ast.Fqun | None = None,
+    *,
+    allow_reserved_universe: bool = False,
 ) -> list[diagnostics.Diagnostic]:
-    """Validate a global name and its FQUN."""
+    """Validate a global name and its FQUN.
+
+    allow_reserved_universe permits defining a name in a reserved universe,
+    which only the standard universe itself may do.
+    """
     result: list[diagnostics.Diagnostic] = []
     if name.fqun is not None:
         result.extend(_validate_fqun(name.fqun))
         # References may name reserved universes, such as standard. Only
         # defining names in a reserved universe is forbidden.
-        if isinstance(name, ast.DefinitionGlobalNameContent):
+        if (
+            isinstance(name, ast.DefinitionGlobalNameContent)
+            and not allow_reserved_universe
+        ):
             result.extend(_validate_universe_name_reserved(name.fqun.universe))
         if (
             must_use_short_form is not None

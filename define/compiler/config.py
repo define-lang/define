@@ -135,6 +135,12 @@ _EMPTY_DEPS: types.MappingProxyType[str, define_path.DefinePathFromPosix] = (
 )
 
 
+def universe_needs_configuration(fqun: str) -> bool:
+    """Whether a project must configure a universe as a sub-root before referencing it."""
+    # TODO: Remove this once the Define Standard Library exists.
+    return fqun != constants.STANDARD_UNIVERSE
+
+
 class ProjectRootConfig(msgspec.Struct):
     """Resolved project configuration for a project root."""
 

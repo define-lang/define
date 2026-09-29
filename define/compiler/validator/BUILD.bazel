@@ -60,7 +60,8 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         ":validation_result",
-        "//define/compiler:built_in_definitions",
+        "//define/compiler:constants",
+        "//define/compiler/data_structures:define_path",
         "//define/compiler/errors:diagnostics",
     ],
 )

@@ -6,10 +6,7 @@ from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.errors import diagnostics
-from define.compiler.validator.test_helpers import (
-    BUILT_IN_DEFINITION_COUNT,
-    assert_no_errors,
-)
+from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
     from define.compiler.conftest import (
@@ -157,8 +154,6 @@ def test_built_in_literal(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert_no_errors(result)
-    assert len(result.file_results) == 1
-    assert len(result.definition_results) == 1 + BUILT_IN_DEFINITION_COUNT
 
 
 def test_undefined_standard_literal(

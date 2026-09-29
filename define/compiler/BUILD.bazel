@@ -35,38 +35,6 @@ py_test(
 )
 
 py_library(
-    name = "built_in_definitions",
-    srcs = ["built_in_definitions.py"],
-    data = ["built_in_definitions.dfn"],
-    visibility = [":__subpackages__"],
-    deps = [
-        ":ast",
-        "//define/compiler/errors:source_map",
-        "//define/compiler/parsing:parser",
-    ],
-)
-
-py_test(
-    name = "built_in_definitions_test",
-    size = "small",
-    srcs = ["built_in_definitions_test.py"],
-    deps = [
-        ":ast",
-        ":built_in_definitions",
-        ":constants",
-        "//define/compiler/data_structures:typed_name_dict",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/graphs:reference_graph",
-        "//define/compiler/graphs:reference_graph_order",
-        "//define/compiler/parsing:parser",
-        "//define/compiler/validator:validation_result",
-        "//define/compiler/validator/reference_graph:reference_graph_validator",
-        "//define/compiler/validator/structural:file_validator",
-        "//define/compiler/validator/structural:program_validator",
-    ],
-)
-
-py_library(
     name = "chained_name",
     srcs = ["chained_name.py"],
     visibility = [":__subpackages__"],
@@ -137,6 +105,7 @@ py_library(
 py_library(
     name = "constants",
     srcs = ["constants.py"],
+    data = ["//define/standard"],
     visibility = [":__subpackages__"],
     deps = ["//define/compiler/data_structures:define_path"],
 )
@@ -329,8 +298,6 @@ pyright_test(
     deps = [
         ":ast",
         ":ast_test",
-        ":built_in_definitions",
-        ":built_in_definitions_test",
         ":chained_name",
         ":chained_name_test",
         ":compiler",

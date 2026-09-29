@@ -947,6 +947,17 @@ py_library(
     srcs = ["__init__.py"],
 )
 
+py_test(
+    name = "standard_library_test",
+    size = "small",
+    srcs = ["standard_library_test.py"],
+    data = ["//define/testdata/reference_graph/standard_library"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler/validator:test_helpers",
+    ],
+)
+
 py_library(
     name = "test_helpers",
     srcs = ["test_helpers.py"],
@@ -1117,6 +1128,7 @@ pyright_test(
         ":quality_implication_test",
         ":reference_graph_invariants_test",
         ":reference_graph_validator_tests",
+        ":standard_library_test",
         ":test_helpers",
         ":trigger_conditions_test",
         ":unset_value_test",

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pytest
 
-from define.compiler import config
+from define.compiler import config, constants
 from define.compiler.data_structures import define_path
 from define.compiler.validator.structural import path_tracker
 
@@ -278,3 +278,40 @@ class TestConflictDetection:
         tracker.mark_in_progress(define_path.DefinePath("lib/inner/x.dfn"))
         result = tracker.first_tracked_file_under(define_path.DefinePath("lib"))
         assert result == (define_path.DefinePath("lib/inner/x.dfn"), "inner.uni")
+
+
+class TestUniverseRoot:
+    def test_own_universe_is_the_referencing_root(self):
+        tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
+        root = define_path.DefinePath("sub")
+        assert tracker.universe_root(None, root) == root
+
+    def test_configured_universe_is_under_the_referencing_root(self):
+        tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
+        tracker.register_project_root(
+            define_path.EMPTY,
+            config.ProjectRootConfig(
+                fqun="a.com:main",
+                sub_roots={"b.com:lib": define_path.DefinePath("deps/lib")},
+            ),
+        )
+        assert tracker.universe_root(
+            "b.com:lib", define_path.EMPTY
+        ) == define_path.DefinePath("deps/lib")
+
+    def test_unconfigured_universe_has_no_root(self):
+        tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
+        tracker.register_project_root(
+            define_path.EMPTY, config.ProjectRootConfig(fqun="a.com:main", sub_roots={})
+        )
+        assert tracker.universe_root("b.com:lib", define_path.EMPTY) is None
+
+    def test_standard_universe_needs_no_configuration(self):
+        tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
+        tracker.register_project_root(
+            define_path.EMPTY, config.ProjectRootConfig(fqun="a.com:main", sub_roots={})
+        )
+        assert (
+            tracker.universe_root(constants.STANDARD_UNIVERSE, define_path.EMPTY)
+            == constants.STANDARD_LIBRARY_ROOT
+        )

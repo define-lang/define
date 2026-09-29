@@ -132,10 +132,8 @@ py_test(
     size = "small",
     srcs = ["error_messages_test.py"],
     deps = [
-        "//define/compiler:built_in_definitions",
         "//define/compiler:config",
         "//define/compiler:conftest",
-        "//define/compiler:constants",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/errors:exceptions",
@@ -369,6 +367,17 @@ py_test(
     ],
 )
 
+py_test(
+    name = "standard_library_test",
+    size = "small",
+    srcs = ["standard_library_test.py"],
+    data = ["//define/testdata/structural/standard_library"],
+    deps = [
+        "//define/compiler:conftest",
+        "//define/compiler/validator:test_helpers",
+    ],
+)
+
 py_library(
     name = "test_helpers",
     testonly = True,
@@ -530,6 +539,7 @@ pyright_test(
         ":program_validator_tests",
         ":quality_implication_test",
         ":reserved_name_positions_test",
+        ":standard_library_test",
         ":test_helpers",
         ":trigger_conditions_test",
         ":universe_without_authority_test",

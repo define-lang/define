@@ -16,8 +16,16 @@ NON_FILESYSTEM_PATH: Final = define_path.InvalidDefinePath("<string>")
 DEFAULT_MULTIVERSE: Final = "local"
 DEFAULT_OUTPUT_DIR: Final = pathlib.Path("define-out")
 STANDARD_UNIVERSE: Final = "standard"
-# built_in_definitions.dfn defines this encoding until the Define Standard
-# Library exists.
+# Every project can reference the standard universe without configuring it, so
+# its root lies outside every project, and its path is absolute.
+# TODO: Load the standard universe from the Define Standard Library once it
+# exists.
+STANDARD_LIBRARY_ROOT: Final = define_path.DefinePathFromPosix(
+    pathlib.PurePosixPath(
+        (pathlib.Path(__file__).parent.parent / "standard").as_posix()
+    )
+)
+# The standard universe's files in define/standard define this encoding.
 DECIMAL_ASCII_ENCODING: Final = f"encoding<{STANDARD_UNIVERSE}:/number/decimal/ascii>"
 # TODO: Read value encodings from encodings configuration (DLP 47) once it
 # exists.
