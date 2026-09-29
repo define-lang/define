@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import unicodedata
 from typing import TYPE_CHECKING, ClassVar, Self, override
 
 from define.compiler import ast, constants
@@ -182,6 +183,27 @@ class InvalidLiteralCharacter(DefineCharError):
     """A forbidden file character in literal content."""
 
     message_format: ClassVar[str] = "Invalid character in literal content."
+
+
+class InvisibleCharacterError(DefineCharError):
+    """Raised when a character is invisible and the Invisible Characters rule does not allow it there."""
+
+    message_format: ClassVar[str] = (
+        "Invisible character {description} is not allowed here."
+    )
+
+    @property
+    def description(self) -> str:
+        """The character's code point and, when Unicode names it, its name."""
+        code_point = f"U+{ord(self.char):04X}"
+        name = unicodedata.name(self.char, "")
+        return f"{code_point} {name}" if name else code_point
+
+    @override
+    def _message_fields(self) -> dict[str, object]:
+        fields = super()._message_fields()
+        fields["description"] = self.description
+        return fields
 
 
 # --- Token error subclasses ---

@@ -13,6 +13,7 @@ from define.compiler.errors import diagnostics as diagnostics_mod
 from define.compiler.errors import parser_exceptions
 from define.compiler.parsing import (
     indentation_validator,
+    invisible_characters,
     parser_error_classification,
     transformer,
 )
@@ -126,10 +127,14 @@ class Parser:
         file_path: pathlib.PurePosixPath | None,
     ) -> lark_standalone.Tree[lark_cython.Token]:
         """Run the actual Lark parser, raising DefineSyntaxError exceptions."""
+        invisible_characters.check(source, file_path)
         try:
             return lark.parse(source)
         except lark_standalone.UnexpectedToken as e:
             parser_error_classification.raise_token_error(e, source, file_path)
+            raise
+        except lark_standalone.UnexpectedCharacters as e:
+            parser_error_classification.raise_character_error(e, file_path)
             raise
 
     def _indentation_diagnostics(

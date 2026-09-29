@@ -28,6 +28,33 @@ py_test(
 )
 
 py_library(
+    name = "invisible_characters",
+    srcs = ["invisible_characters.py"],
+    deps = [
+        ":invisible_characters_data",
+        ":parser_error_classification",
+        "//define/compiler:ast",
+        "//define/compiler/errors:parser_exceptions",
+    ],
+)
+
+py_library(
+    name = "invisible_characters_data",
+    srcs = ["invisible_characters_data.py"],
+    visibility = ["//tools:__pkg__"],
+)
+
+py_test(
+    name = "invisible_characters_test",
+    size = "small",
+    srcs = ["invisible_characters_test.py"],
+    deps = [
+        ":invisible_characters",
+        "@pypi//pytest",
+    ],
+)
+
+py_library(
     name = "name_parser",
     srcs = ["name_parser.py"],
     visibility = ["//define/compiler:__subpackages__"],
@@ -61,6 +88,7 @@ py_library(
     ],
     deps = [
         ":indentation_validator",
+        ":invisible_characters",
         ":parser_error_classification",
         ":transformer",
         "//define/compiler:ast",
@@ -145,6 +173,9 @@ pyright_test(
     deps = [
         ":indentation_validator",
         ":indentation_validator_test",
+        ":invisible_characters",
+        ":invisible_characters_data",
+        ":invisible_characters_test",
         ":name_parser",
         ":name_parser_test",
         ":parser",

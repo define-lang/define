@@ -109,17 +109,23 @@ and non-filesystem contexts.
 
 ### Invisible Characters
 
+A character is invisible if its Unicode General_Category is Cc, Cf, Cs, Co, Cn,
+Zs, Zl, or Zp, or if it has the Default_Ignorable_Code_Point property. All other
+characters are visible.
+
 The only invisible characters allowed in Define source code files are:
 
 - Space (`U+0020`)
 - Line feed (`U+000A`)
-- Characters necessary for correctly rendering visible Unicode text, provided
-  their use conforms to UTS #55 (especially for BiDi handling).
+- Variation selectors 15 and 16 (`U+FE0E` and `U+FE0F`), when the character
+  before them is visible.
+- Zero width non-joiner and zero width joiner (`U+200C` and `U+200D`), when the
+  character after them is visible and the character before them is visible or is
+  `U+FE0E` or `U+FE0F`.
+- Left-to-right mark, right-to-left mark, and Arabic letter mark (`U+200E`,
+  `U+200F`, and `U+061C`), in comments only.
 
-An invisible character is necessary for rendering visible text if and only if it
-is part of an extended grapheme cluster (per
-[UAX #29](https://www.unicode.org/reports/tr29/) Section 3.1.1, Grapheme Cluster
-Boundary Rules) that contains at least one character with a visible glyph.
+This rule applies everywhere in a file, including comments and literal content.
 
 ### Allowed Syntax Characters
 

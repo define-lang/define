@@ -112,3 +112,20 @@ def test_error_message_for_indented_code_in_action_block(parse: Parse):
             define the position<local_name.
                                            ^
         Missing '>' on this name: local_name.""")
+
+
+def test_invisible_character_error_message(parse: Parse):
+    with pytest.raises(parser_exceptions.InvisibleCharacterError) as exc_info:
+        parse(
+            "# a\u200bb\n"
+            + "define the potential position<mv:define-lang.org:parser:/path>.\n"
+        )
+    assert _format(
+        exc_info.value,
+        "# a\u200bb\n"
+        + "define the potential position<mv:define-lang.org:parser:/path>.\n",
+    ) == textwrap.dedent("""\
+        line 1, column 4
+            # a\\u200bb
+               ^^^^^^
+        Invisible character U+200B ZERO WIDTH SPACE is not allowed here.""")

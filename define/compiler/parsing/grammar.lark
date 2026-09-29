@@ -9,7 +9,9 @@
 # of these two terminals, greatly reducing the accuracy of parser error
 # states.
 
-GLOBAL_NAME_CONTENT.-1: /([^> \n]+:){0,3}\/[^>\n]+/
+# Name and literal content terminals exclude the direction marks
+# (U+061C, U+200E, U+200F), which the spec allows only in comments.
+GLOBAL_NAME_CONTENT.-1: /([^> \n\u061c\u200e\u200f]+:){0,3}\/[^>\n\u061c\u200e\u200f]+/
 # We have to make LOCAL_NAME_CONTENT exclude : and / in order to
 # successfully differentiate it in circumstances where both local
 # and global names are accepted.
@@ -18,7 +20,7 @@ GLOBAL_NAME_CONTENT.-1: /([^> \n]+:){0,3}\/[^>\n]+/
 # most of the time and I'm concerned about the code-generation security
 # implications of allowing spaces in names (because the languages we
 # transpile down to could do something unsafe with names with spaces in them).
-LOCAL_NAME_CONTENT.-2: /[^:\/> \n]+/
+LOCAL_NAME_CONTENT.-2: /[^:\/> \n\u061c\u200e\u200f]+/
 
 # Syntax Terminals
 DEFINE_THE_POSITION: "define the position"
@@ -68,8 +70,9 @@ IT_IS_WRITTEN: "it is written"
 # lookahead ensures we don't consume trailing whitespace on blank lines.
 %ignore /(?<=\n) +(?=\S)/
 
-# Allow only visible characters in comments.
-# TODO: Disallow invisible Unicode characters per spec.
+# Comments exclude control characters here; the parser rejects every other
+# invisible character except the direction marks before lexing, per the
+# spec's Invisible Characters rule.
 # Literal content must win over a comment when both can match.
 COMMENT.-4: / *#(?:[^\x00-\x1F\x7F]*[^\x00-\x1F\x7F ])?/
 %ignore COMMENT
@@ -133,7 +136,7 @@ create_particle_statement: CREATE_A_PARTICLE_IN " " position_reference terminato
 move_particle_statement: MOVE_THE_PARTICLE_IN " " position_reference " " TO " " position_reference terminator
 destroy_particle_statement: DESTROY_THE_PARTICLE_IN " " position_reference terminator
 
-LITERAL_CONTENT.-3: /(?:[^"\\\n]|\\[^\n])+/
+LITERAL_CONTENT.-3: /(?:[^"\\\n\u061c\u200e\u200f]|\\[^\n\u061c\u200e\u200f])+/
 literal: LITERAL global_name_reference_content "\"" LITERAL_CONTENT? "\""
 
 value_setting_statement: SET_THE_VALUE_OF " " position_reference " " TO " " (position_reference | literal) terminator

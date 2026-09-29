@@ -19,18 +19,24 @@ if typing.TYPE_CHECKING:
 _CHAR_ERRORS: dict[str, type[parser_exceptions.DefineCharError]] = {
     "\ufeff": parser_exceptions.ByteOrderMarkError,
     "\r": parser_exceptions.CarriageReturnError,
+    # Direction marks are allowed only in comments, so the lexer rejects them
+    # everywhere else.
+    "\u061c": parser_exceptions.InvisibleCharacterError,
+    "\u200e": parser_exceptions.InvisibleCharacterError,
+    "\u200f": parser_exceptions.InvisibleCharacterError,
 }
 
 
-def _classify_invalid_char(
+def classify_invalid_char(
     char: str,
 ) -> type[parser_exceptions.DefineCharError] | None:
     """Classify a character that is always invalid in Define source."""
     char_class = _CHAR_ERRORS.get(char)
     if char_class is not None:
         return char_class
-    # C0 control characters (U+0000-U+001F) and DEL (U+007F), excluding newline
-    if char != "\n" and (ord(char) < 0x20 or ord(char) == 0x7F):
+    # C0 control characters (U+0000-U+001F), DEL (U+007F), and C1 control
+    # characters (U+0080-U+009F), excluding newline
+    if char != "\n" and (ord(char) < 0x20 or 0x7F <= ord(char) <= 0x9F):
         return parser_exceptions.ControlCharacterError
     # UTF-16 surrogates (U+D800-U+DFFF), not valid in UTF-8
     if "\ud800" <= char <= "\udfff":
@@ -117,13 +123,22 @@ def _error_with_missing_space(
     )
 
 
+def raise_character_error(
+    e: lark_standalone.UnexpectedCharacters,
+    file_path: pathlib.PurePosixPath | None,
+):
+    """Classify an error for a character that no terminal matches."""
+    char_error = classify_invalid_char(e.char)
+    if char_error:
+        raise char_error.from_lark_exception(e, e.char, file_path)
+
+
 def raise_token_error(
     e: lark_standalone.UnexpectedToken,
     source: str,
     file_path: pathlib.PurePosixPath | None,
 ):
     """Classify a token error into a specific exception type."""
-    # TODO: Convert much of this classification into match/case statements.
     ####################################
     ## First Character Classification ##
     ####################################
@@ -131,7 +146,7 @@ def raise_token_error(
     # This needs to come first; it's the only error type that reliably escapes control
     # characters.
     if len(e.token.value) > 0:
-        char_error = _classify_invalid_char(e.token.value[0])
+        char_error = classify_invalid_char(e.token.value[0])
         if char_error:
             raise char_error.from_lark_exception(e, e.token.value[0], file_path)
 

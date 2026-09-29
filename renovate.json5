@@ -9,7 +9,29 @@
   "pre-commit": {
     enabled: true,
   },
+  customDatasources: {
+    // Unicode has no release API; this ReadMe names the latest final version,
+    // unlike the version listing, which also has drafts.
+    unicode: {
+      defaultRegistryUrlTemplate: "https://www.unicode.org/Public/UCD/latest/ucd/ReadMe.txt",
+      format: "plain",
+      transformTemplates: [
+        '{"releases": [{"version": $match($join(releases.version, " "), /final data files for version (\\d+\\.\\d+\\.\\d+)/).groups[0]}]}',
+      ],
+    },
+  },
   customManagers: [
+    {
+      customType: "regex",
+      managerFilePatterns: ["/^tools/generate_invisible_characters\\.py$/"],
+      matchStrings: [
+        'UNICODE_VERSION = "(?<currentValue>\\d+\\.\\d+\\.\\d+)"',
+        "unicode\\.org/Public/(?<currentValue>\\d+\\.\\d+\\.\\d+)/",
+      ],
+      depNameTemplate: "unicode",
+      datasourceTemplate: "custom.unicode",
+      versioningTemplate: "semver",
+    },
     {
       customType: "regex",
       managerFilePatterns: ["/(^|/)MODULE\\.bazel$/"],

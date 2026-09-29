@@ -85,6 +85,21 @@ py_test(
 )
 
 py_binary(
+    name = "generate_invisible_characters",
+    srcs = ["generate_invisible_characters.py"],
+)
+
+py_test(
+    name = "generate_invisible_characters_test",
+    size = "small",
+    srcs = ["generate_invisible_characters_test.py"],
+    deps = [
+        ":generate_invisible_characters",
+        "//define/compiler/parsing:invisible_characters_data",
+    ],
+)
+
+py_binary(
     name = "generate_lark_standalone",
     srcs = ["generate_lark_standalone.py"],
     visibility = ["//:__subpackages__"],
@@ -377,6 +392,8 @@ pyright_test(
         ":check_python_deps_test",
         ":check_symlinks",
         ":check_symlinks_test",
+        ":generate_invisible_characters",
+        ":generate_invisible_characters_test",
         ":generate_lark_standalone",
         ":generate_programming_languages",
         ":git_commit_via_api",
