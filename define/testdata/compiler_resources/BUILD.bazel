@@ -22,7 +22,13 @@ filegroup(
         ":reference_depth_updates_project",
         ":reference_graph_project",
         ":triggered_children_destruction",
+        ":triggered_children_destruction_contracted",
+        ":triggered_children_destruction_contracted_control",
         ":triggered_children_destruction_control",
+        ":triggered_children_destruction_destructors",
+        ":triggered_children_destruction_destructors_control",
+        ":triggered_children_destruction_move",
+        ":triggered_children_destruction_move_control",
         ":wide_destruction",
     ],
     visibility = [
@@ -170,9 +176,51 @@ filegroup(
 )
 
 filegroup(
+    name = "triggered_children_destruction_contracted",
+    testonly = True,
+    srcs = ["triggered_children_destruction_contracted.dfn"],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)
+
+filegroup(
+    name = "triggered_children_destruction_contracted_control",
+    testonly = True,
+    srcs = ["triggered_children_destruction_contracted_control.dfn"],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)
+
+filegroup(
     name = "triggered_children_destruction_control",
     testonly = True,
     srcs = ["triggered_children_destruction_control.dfn"],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)
+
+filegroup(
+    name = "triggered_children_destruction_destructors",
+    testonly = True,
+    srcs = ["triggered_children_destruction_destructors.dfn"],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)
+
+filegroup(
+    name = "triggered_children_destruction_destructors_control",
+    testonly = True,
+    srcs = ["triggered_children_destruction_destructors_control.dfn"],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)
+
+filegroup(
+    name = "triggered_children_destruction_move",
+    testonly = True,
+    srcs = ["triggered_children_destruction_move.dfn"],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)
+
+filegroup(
+    name = "triggered_children_destruction_move_control",
+    testonly = True,
+    srcs = ["triggered_children_destruction_move_control.dfn"],
     visibility = ["//define/compiler/resource_tests:__pkg__"],
 )
 

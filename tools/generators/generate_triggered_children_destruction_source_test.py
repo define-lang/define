@@ -12,13 +12,28 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
+@pytest.mark.parametrize(
+    ("shape", "additional_actions"),
+    [
+        (gen.Shape.LOCAL, 1),
+        (gen.Shape.DESTRUCTORS, 2),
+        (gen.Shape.CONTRACTED, 2),
+        (gen.Shape.MOVE, 2),
+    ],
+)
 @pytest.mark.parametrize(("depth", "fan_out"), [(1, 1), (1, 3), (4, 1), (4, 2)])
-def test_valid_program(depth: int, fan_out: int, tmp_path: Path):
-    source = "\n".join(gen.generate_source_lines(depth, fan_out)) + "\n"
+def test_valid_program(
+    shape: gen.Shape,
+    additional_actions: int,
+    depth: int,
+    fan_out: int,
+    tmp_path: Path,
+):
+    source = "\n".join(gen.generate_source_lines(depth, fan_out, shape)) + "\n"
     result = driver.Driver().compile_source(source, tmp_path / "generated")
     assert result.all_exceptions == []
     assert result.all_diagnostics == []
-    assert source.count("define the potential action<") == depth + 1
+    assert source.count("define the potential action<") == depth + additional_actions
     assert source.count("define the potential position<") == (depth - 1) * fan_out
     assert source.count("::action</fill_") == (depth - 1) * fan_out + 1
 
@@ -40,6 +55,8 @@ def test_cli(tmp_path: Path):
             "3",
             "--fan-out",
             "2",
+            "--shape",
+            "move",
             "--fqun-prefix",
             "mv:example.com:generated",
         ],
@@ -47,5 +64,8 @@ def test_cli(tmp_path: Path):
     assert result.exit_code == 0
     assert (
         output.read_text()
-        == "\n".join(gen.generate_source_lines(3, 2, "mv:example.com:generated")) + "\n"
+        == "\n".join(
+            gen.generate_source_lines(3, 2, gen.Shape.MOVE, "mv:example.com:generated")
+        )
+        + "\n"
     )

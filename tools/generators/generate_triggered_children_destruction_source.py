@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import enum
 from typing import TYPE_CHECKING
 
 import click
@@ -14,9 +15,103 @@ if TYPE_CHECKING:
 DEFAULT_FQUN_PREFIX = "mv:define-lang.org:triggered_children_destruction"
 
 
+class Shape(enum.StrEnum):
+    """Where the particle with triggered children is destroyed."""
+
+    # The entry action destroys a local particle.
+    LOCAL = "local"
+    # As LOCAL, but every triggered child also has a Destructor.
+    DESTRUCTORS = "destructors"
+    # An action destroys a particle from an interface position, which makes a
+    # Destruction Contract.
+    CONTRACTED = "contracted"
+    # An action moves the particle between interface positions before the entry
+    # action destroys it.
+    MOVE = "move"
+
+
+def _position_with_fill(name: str, indent: str) -> list[str]:
+    return [
+        f"{indent}define the position<{name}> {{",
+        f"{indent}    it may only contain particles where {{",
+        f"{indent}        it has the action</fill_1>.",
+        f"{indent}    }}",
+        f"{indent}}}",
+    ]
+
+
+def _entry_lines(shape: Shape, fqun_prefix: str) -> list[str]:
+    header = [
+        f"define the potential action<{fqun_prefix}:/test> {{",
+        "    it happens when {",
+        "        this particle is created.",
+        "    } and it does {",
+    ]
+    match shape:
+        case Shape.LOCAL | Shape.DESTRUCTORS:
+            return [
+                *header,
+                *_position_with_fill("filled", "        "),
+                "        create a particle in position<filled>.",
+                "        create a particle in position<filled>::action</fill_1>::position<run>.",
+                "        destroy the particle in position<filled>.",
+                "    }",
+                "}",
+            ]
+        case Shape.CONTRACTED:
+            return [
+                f"define the potential action<{fqun_prefix}:/destroyer> {{",
+                "    define the position<run>.",
+                *_position_with_fill("filled", "    "),
+                "    it happens when {",
+                "        the position<run> has a particle.",
+                "    } and it does {",
+                "        create a particle in position<filled>::action</fill_1>::position<run>.",
+                "        destroy the particle in position<filled>.",
+                "        destroy the particle in position<run>.",
+                "    }",
+                "}",
+                f"define the potential action<{fqun_prefix}:/test> {{",
+                "    it also assigns the action</destroyer>.",
+                "    it happens when {",
+                "        this particle is created.",
+                "    } and it does {",
+                "        create a particle in action</destroyer>::position<filled>.",
+                "        create a particle in action</destroyer>::position<run>.",
+                "    }",
+                "}",
+            ]
+        case Shape.MOVE:
+            return [
+                f"define the potential action<{fqun_prefix}:/mover> {{",
+                "    define the position<run>.",
+                *_position_with_fill("source", "    "),
+                *_position_with_fill("destination", "    "),
+                "    it happens when {",
+                "        the position<run> has a particle.",
+                "    } and it does {",
+                "        create a particle in position<source>::action</fill_1>::position<run>.",
+                "        move the particle in position<source> to position<destination>.",
+                "        destroy the particle in position<run>.",
+                "    }",
+                "}",
+                f"define the potential action<{fqun_prefix}:/test> {{",
+                "    it also assigns the action</mover>.",
+                "    it happens when {",
+                "        this particle is created.",
+                "    } and it does {",
+                "        create a particle in action</mover>::position<source>.",
+                "        create a particle in action</mover>::position<run>.",
+                "        destroy the particle in action</mover>::position<destination>.",
+                "    }",
+                "}",
+            ]
+
+
 def generate_source_lines(
     depth: int = 20,
     fan_out: int = 2,
+    shape: Shape = Shape.LOCAL,
     fqun_prefix: str = DEFAULT_FQUN_PREFIX,
 ) -> list[str]:
     """Generate ``depth`` actions that each fill ``fan_out`` children and trigger the next action on each.
@@ -27,6 +122,19 @@ def generate_source_lines(
     if depth < 1 or fan_out < 1:
         raise ValueError("depth and fan_out must be at least 1")
     lines: list[str] = []
+    if shape == Shape.DESTRUCTORS:
+        lines.extend(
+            [
+                f"define the potential action<{fqun_prefix}:/cleanup> {{",
+                "    it happens when {",
+                "        this particle is being destroyed.",
+                "    } and it does {",
+                "        define the position<scratch>.",
+                "        create a particle in position<scratch>.",
+                "    }",
+                "}",
+            ]
+        )
     # A single-file program must define each global name before referencing it.
     for level in reversed(range(1, depth + 1)):
         if level < depth:
@@ -36,10 +144,11 @@ def generate_source_lines(
                         f"define the potential position<{fqun_prefix}:/child_{level}_{child}> {{",
                         "    it may only contain particles where {",
                         f"        it has the action</fill_{level + 1}>.",
-                        "    }",
-                        "}",
                     ]
                 )
+                if shape == Shape.DESTRUCTORS:
+                    lines.append("        it has the action</cleanup>.")
+                lines.extend(["    }", "}"])
         lines.append(f"define the potential action<{fqun_prefix}:/fill_{level}> {{")
         if level < depth:
             lines.extend(
@@ -64,24 +173,7 @@ def generate_source_lines(
                     ]
                 )
         lines.extend(["    }", "}"])
-    lines.extend(
-        [
-            f"define the potential action<{fqun_prefix}:/test> {{",
-            "    it happens when {",
-            "        this particle is created.",
-            "    } and it does {",
-            "        define the position<filled> {",
-            "            it may only contain particles where {",
-            "                it has the action</fill_1>.",
-            "            }",
-            "        }",
-            "        create a particle in position<filled>.",
-            "        create a particle in position<filled>::action</fill_1>::position<run>.",
-            "        destroy the particle in position<filled>.",
-            "    }",
-            "}",
-        ]
-    )
+    lines.extend(_entry_lines(shape, fqun_prefix))
     return lines
 
 
@@ -93,12 +185,19 @@ def generate_source_lines(
 @click.option(
     "--fan-out", type=generator_cli.POSITIVE_INTEGER, default=2, show_default=True
 )
+@click.option(
+    "--shape",
+    type=click.Choice([shape.value for shape in Shape]),
+    default=Shape.LOCAL.value,
+    show_default=True,
+)
 @click.option("--fqun-prefix", default=DEFAULT_FQUN_PREFIX, show_default=True)
-def main(output: Path, depth: int, fan_out: int, fqun_prefix: str):
+def main(output: Path, depth: int, fan_out: int, shape: str, fqun_prefix: str):
     """Generate a destroyed particle with exponentially many triggered children."""
     written = generator_cli.invoke(
         lambda: generator_io.write_lines(
-            output, generate_source_lines(depth, fan_out, fqun_prefix)
+            output,
+            generate_source_lines(depth, fan_out, Shape(shape), fqun_prefix),
         )
     )
     generator_cli.report_written("lines", written, output)

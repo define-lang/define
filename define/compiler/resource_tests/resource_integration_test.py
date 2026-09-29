@@ -19,6 +19,12 @@ _CPU_SAFETY_SECONDS = 10
 _CPU_GROWTH_SAFETY_SECONDS = 30
 _WALL_SAFETY_SECONDS = 20
 _WALL_GROWTH_SAFETY_SECONDS = 45
+# Destruction resolves the pending Guarantees of every triggered action below the
+# destroyed particle, one execution path at a time.
+_TRIGGERED_CHILDREN_EXPONENTIAL = pytest.mark.xfail(
+    strict=True,
+    reason="destruction resolves exponentially many pending Guarantees",
+)
 
 
 @dataclasses.dataclass(kw_only=True)
@@ -191,12 +197,37 @@ def test_retained_memory(case: MemoryCase, tmp_path: Path):
                 maximum_ratio=4,
             ),
             id="triggered_children_destruction",
-            # Destruction resolves the pending Guarantees of every triggered
-            # action below the destroyed particle, one execution path at a time.
-            marks=pytest.mark.xfail(
-                strict=True,
-                reason="destruction resolves exponentially many pending Guarantees",
+            marks=_TRIGGERED_CHILDREN_EXPONENTIAL,
+        ),
+        pytest.param(
+            CpuGrowthCase(
+                control_variable="TRIGGERED_CHILDREN_DESTRUCTION_DESTRUCTORS_CONTROL",
+                source_variable="TRIGGERED_CHILDREN_DESTRUCTION_DESTRUCTORS",
+                filesystem=False,
+                maximum_ratio=4,
             ),
+            id="triggered_children_destruction_destructors",
+            marks=_TRIGGERED_CHILDREN_EXPONENTIAL,
+        ),
+        pytest.param(
+            CpuGrowthCase(
+                control_variable="TRIGGERED_CHILDREN_DESTRUCTION_CONTRACTED_CONTROL",
+                source_variable="TRIGGERED_CHILDREN_DESTRUCTION_CONTRACTED",
+                filesystem=False,
+                maximum_ratio=4,
+            ),
+            id="triggered_children_destruction_contracted",
+            marks=_TRIGGERED_CHILDREN_EXPONENTIAL,
+        ),
+        pytest.param(
+            CpuGrowthCase(
+                control_variable="TRIGGERED_CHILDREN_DESTRUCTION_MOVE_CONTROL",
+                source_variable="TRIGGERED_CHILDREN_DESTRUCTION_MOVE",
+                filesystem=False,
+                maximum_ratio=4,
+            ),
+            id="triggered_children_destruction_move",
+            marks=_TRIGGERED_CHILDREN_EXPONENTIAL,
         ),
     ],
 )

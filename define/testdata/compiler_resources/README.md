@@ -205,16 +205,21 @@ bazelisk run --noshow_progress --ui_event_filters=-info \
 
 Checks CPU growth when a destroyed particle's transitive children were filled by
 a tree of triggered actions, so linearly many actions give exponentially many
-children.
+children. Each shape has its own control: `local` destroys a local particle,
+`destructors` also gives every child a Destructor, `contracted` destroys a
+particle from an interface position (making a Destruction Contract), and `move`
+moves the particle between interface positions before destroying it.
 
 ```sh
-bazelisk run --noshow_progress --ui_event_filters=-info \
-  //tools/generators:generate_triggered_children_destruction_source -- \
-  --output define/testdata/compiler_resources/triggered_children_destruction_control.dfn \
-  --depth 10 --fan-out 2
-
-bazelisk run --noshow_progress --ui_event_filters=-info \
-  //tools/generators:generate_triggered_children_destruction_source -- \
-  --output define/testdata/compiler_resources/triggered_children_destruction.dfn \
-  --depth 24 --fan-out 2
+for shape in local destructors contracted move; do
+  suffix=$([ "$shape" = local ] && echo "" || echo "_${shape}")
+  bazelisk run --noshow_progress --ui_event_filters=-info \
+    //tools/generators:generate_triggered_children_destruction_source -- \
+    --output "define/testdata/compiler_resources/triggered_children_destruction${suffix}_control.dfn" \
+    --depth 10 --fan-out 2 --shape "$shape"
+  bazelisk run --noshow_progress --ui_event_filters=-info \
+    //tools/generators:generate_triggered_children_destruction_source -- \
+    --output "define/testdata/compiler_resources/triggered_children_destruction${suffix}.dfn" \
+    --depth 24 --fan-out 2 --shape "$shape"
+done
 ```
