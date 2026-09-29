@@ -1,0 +1,6 @@
+test.create(/reading)
+test.create(/limit)
+test.create(/below)
+test.set_value(/reading, 1.5)
+test.set_value(/limit, 4)
+test.execute(operation<standard:/number/rational/less_than>, /reading, /limit, /below)

@@ -1,0 +1,23 @@
+# A comparison's result view requires a boolean, while the views it compares require rationals.
+define the potential action<my.domain.com:my_lib:/run> {
+    define the position<number> {
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+        }
+    }
+    define the position<result> {
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+        }
+    }
+    define the position<trigger>.
+    it happens when {
+        the position<trigger> has a particle.
+    } and it does {
+        execute the operation<standard:/number/rational/less_than> {
+            with view<a> looking at position<number>.
+            with view<b> looking at literal<standard:/number>"2".
+            with view<result> looking at position<result>.
+        }
+    }
+}

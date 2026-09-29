@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 NO_VALUE: Final = "Never"
 # TODO: Emit values of rationals as exact fractions, such as
 # fractions.Fraction, instead of Python floats, which cannot represent most
-# rationals.
+# rationals and so can also make rational comparisons give the wrong answer.
 _ENCODING_PYTHON_TYPES: Final = {
     constants.BOOLEAN_ASCII_ENCODING: "bool",
     constants.DECIMAL_ASCII_ENCODING: "float",

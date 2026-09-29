@@ -1,0 +1,4 @@
+test.create(/reading)
+test.create(/matches)
+test.set_value(/reading, 1.5)
+test.execute(operation<standard:/number/rational/equal>, /reading, 1.5, /matches)

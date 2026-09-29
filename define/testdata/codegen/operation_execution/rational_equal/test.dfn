@@ -1,0 +1,17 @@
+# An action checks whether a position's value equals a literal with the built-in rational equal.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</reading>.
+    it also assigns the position</matches>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</reading>.
+        create a particle in position</matches>.
+        set the value of position</reading> to literal<standard:/number>"1.5".
+        execute the operation<standard:/number/rational/equal> {
+            with view<a> looking at position</reading>.
+            with view<b> looking at literal<standard:/number>"1.5".
+            with view<result> looking at position</matches>.
+        }
+    }
+}

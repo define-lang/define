@@ -103,6 +103,12 @@ _COMPUTER_OPERATIONS: Final[
     f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/ceiling>": _unary_function_call(
         "math", "ceil"
     ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/equal>": _BinaryOperation(
+        operator=template_context.BinaryOperator.EQUAL,
+        left_view="view<a>",
+        right_view="view<b>",
+        result_view="view<result>",
+    ),
     f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/floor>": _unary_function_call(
         "math", "floor"
     ),
@@ -124,6 +130,18 @@ _COMPUTER_OPERATIONS: Final[
     ),
     f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/infix_multiply>": _BinaryOperation(
         operator=template_context.BinaryOperator.MULTIPLY,
+        left_view="view<a>",
+        right_view="view<b>",
+        result_view="view<result>",
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/less_than>": _BinaryOperation(
+        operator=template_context.BinaryOperator.LESS_THAN,
+        left_view="view<a>",
+        right_view="view<b>",
+        result_view="view<result>",
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/less_than_or_equal>": _BinaryOperation(
+        operator=template_context.BinaryOperator.LESS_THAN_OR_EQUAL,
         left_view="view<a>",
         right_view="view<b>",
         result_view="view<result>",

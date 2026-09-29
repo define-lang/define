@@ -1,0 +1,20 @@
+# An action checks whether one position's value is less than another's with the built-in rational less than.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</reading>.
+    it also assigns the position</limit>.
+    it also assigns the position</below>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</reading>.
+        create a particle in position</limit>.
+        create a particle in position</below>.
+        set the value of position</reading> to literal<standard:/number>"1.5".
+        set the value of position</limit> to literal<standard:/number>"4".
+        execute the operation<standard:/number/rational/less_than> {
+            with view<a> looking at position</reading>.
+            with view<b> looking at position</limit>.
+            with view<result> looking at position</below>.
+        }
+    }
+}

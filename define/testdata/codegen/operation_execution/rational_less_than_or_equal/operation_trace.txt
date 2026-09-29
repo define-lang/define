@@ -1,0 +1,4 @@
+test.create(/reading)
+test.create(/at_most)
+test.set_value(/reading, 1.5)
+test.execute(operation<standard:/number/rational/less_than_or_equal>, /reading, 1.5, /at_most)

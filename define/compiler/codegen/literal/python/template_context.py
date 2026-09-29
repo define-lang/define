@@ -265,6 +265,9 @@ class BinaryOperator(enum.Enum):
     AND = enum.auto()
     OR = enum.auto()
     EXCLUSIVE_OR = enum.auto()
+    EQUAL = enum.auto()
+    LESS_THAN = enum.auto()
+    LESS_THAN_OR_EQUAL = enum.auto()
 
 
 class BinaryOperationContext(EncodingOperationStatementContext):

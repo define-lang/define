@@ -14,6 +14,12 @@ and
 or
             {%- when BinaryOperator::ExclusiveOr -%}
 ^
+            {%- when BinaryOperator::Equal -%}
+==
+            {%- when BinaryOperator::LessThan -%}
+<
+            {%- when BinaryOperator::LessThanOrEqual -%}
+<=
             {%- endmatch %} {{ statement.right }}
         {%- when EncodingOperationStatement::PrefixOperation with (statement) -%}
             {%- match statement.operator -%}

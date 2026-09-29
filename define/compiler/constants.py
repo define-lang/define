@@ -57,11 +57,20 @@ BUILT_IN_ENCODING_OPERATIONS: Final = {
     f"operation<{STANDARD_UNIVERSE}:/number/rational/decrement>": (
         "/number/decimal/ascii/infix_decrement"
     ),
+    f"operation<{STANDARD_UNIVERSE}:/number/rational/equal>": (
+        "/number/decimal/ascii/equal"
+    ),
     f"operation<{STANDARD_UNIVERSE}:/number/rational/floor>": (
         "/number/decimal/ascii/floor"
     ),
     f"operation<{STANDARD_UNIVERSE}:/number/rational/increment>": (
         "/number/decimal/ascii/infix_increment"
+    ),
+    f"operation<{STANDARD_UNIVERSE}:/number/rational/less_than>": (
+        "/number/decimal/ascii/less_than"
+    ),
+    f"operation<{STANDARD_UNIVERSE}:/number/rational/less_than_or_equal>": (
+        "/number/decimal/ascii/less_than_or_equal"
     ),
     f"operation<{STANDARD_UNIVERSE}:/number/rational/maximum>": (
         "/number/decimal/ascii/maximum"

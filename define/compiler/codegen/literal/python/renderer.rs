@@ -260,6 +260,9 @@ enum BinaryOperator {
     And,
     Or,
     ExclusiveOr,
+    Equal,
+    LessThan,
+    LessThanOrEqual,
 }
 
 impl<'a, 'py> FromPyObject<'a, 'py> for BinaryOperator {
@@ -273,6 +276,9 @@ impl<'a, 'py> FromPyObject<'a, 'py> for BinaryOperator {
             "AND" => Ok(Self::And),
             "OR" => Ok(Self::Or),
             "EXCLUSIVE_OR" => Ok(Self::ExclusiveOr),
+            "EQUAL" => Ok(Self::Equal),
+            "LESS_THAN" => Ok(Self::LessThan),
+            "LESS_THAN_OR_EQUAL" => Ok(Self::LessThanOrEqual),
             _ => Err(PyRuntimeError::new_err(format!(
                 "Unknown binary operator: {name}"
             ))),

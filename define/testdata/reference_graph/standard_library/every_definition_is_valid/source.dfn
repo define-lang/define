@@ -19,6 +19,21 @@ define the potential position<my.domain.com:my_lib:/exactly_one> {
         it has the value<standard:/boolean>.
     }
 }
+define the potential position<my.domain.com:my_lib:/same> {
+    it may only contain particles where {
+        it has the value<standard:/boolean>.
+    }
+}
+define the potential position<my.domain.com:my_lib:/below> {
+    it may only contain particles where {
+        it has the value<standard:/boolean>.
+    }
+}
+define the potential position<my.domain.com:my_lib:/at_most> {
+    it may only contain particles where {
+        it has the value<standard:/boolean>.
+    }
+}
 define the potential position<my.domain.com:my_lib:/total> {
     it may only contain particles where {
         it has the value<standard:/number/rational>.
@@ -71,6 +86,9 @@ define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the position</both>.
     it also assigns the position</either>.
     it also assigns the position</exactly_one>.
+    it also assigns the position</same>.
+    it also assigns the position</below>.
+    it also assigns the position</at_most>.
     it also assigns the position</total>.
     it also assigns the position</remaining>.
     it also assigns the position</product>.
@@ -83,6 +101,9 @@ define the potential action<my.domain.com:my_lib:/test> {
         create a particle in position</both>.
         create a particle in position</either>.
         create a particle in position</exactly_one>.
+        create a particle in position</same>.
+        create a particle in position</below>.
+        create a particle in position</at_most>.
         set the value of position</flag> to literal<standard:/boolean>"true".
         execute the operation<standard:/boolean/not> {
             with view<value> looking at position</flag>.
@@ -152,6 +173,21 @@ define the potential action<my.domain.com:my_lib:/test> {
             with view<a> looking at position</total>.
             with view<b> looking at literal<standard:/number>"2".
             with view<result> looking at position</larger>.
+        }
+        execute the operation<standard:/number/rational/equal> {
+            with view<a> looking at position</total>.
+            with view<b> looking at literal<standard:/number>"2".
+            with view<result> looking at position</same>.
+        }
+        execute the operation<standard:/number/rational/less_than> {
+            with view<a> looking at position</total>.
+            with view<b> looking at literal<standard:/number>"2".
+            with view<result> looking at position</below>.
+        }
+        execute the operation<standard:/number/rational/less_than_or_equal> {
+            with view<a> looking at position</total>.
+            with view<b> looking at literal<standard:/number>"2".
+            with view<result> looking at position</at_most>.
         }
     }
 }
