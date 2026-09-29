@@ -11,7 +11,6 @@ repos:
       - id: check-illegal-windows-names
       - id: check-json
       - id: check-merge-conflict
-      - id: check-symlinks
       - id: check-toml
       - id: check-yaml
       - id: destroyed-symlinks
@@ -45,6 +44,15 @@ repos:
           //tools:sync_agent_permissions_test
         language: system
         types_or: [markdown, json]
+        pass_filenames: false
+
+      - id: check-all-symlinks
+        name: check that no tracked symlink is broken
+        # Checks every tracked symlink, because a change can remove the
+        # target of a symlink that the change does not touch.
+        entry: uv run tools/check_symlinks.py
+        language: system
+        always_run: true
         pass_filenames: false
 
       - id: python-deps

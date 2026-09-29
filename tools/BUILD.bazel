@@ -73,6 +73,18 @@ py_test(
 )
 
 py_binary(
+    name = "check_symlinks",
+    srcs = ["check_symlinks.py"],
+)
+
+py_test(
+    name = "check_symlinks_test",
+    size = "small",
+    srcs = ["check_symlinks_test.py"],
+    deps = [":check_symlinks"],
+)
+
+py_binary(
     name = "generate_lark_standalone",
     srcs = ["generate_lark_standalone.py"],
     visibility = ["//:__subpackages__"],
@@ -363,6 +375,8 @@ pyright_test(
         ":analyze_profile_test",
         ":check_python_deps",
         ":check_python_deps_test",
+        ":check_symlinks",
+        ":check_symlinks_test",
         ":generate_lark_standalone",
         ":generate_programming_languages",
         ":git_commit_via_api",

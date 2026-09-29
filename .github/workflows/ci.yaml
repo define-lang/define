@@ -78,6 +78,9 @@ jobs:
       - name: Check Python BUILD dependencies
         run: uv run tools/check_python_deps.py --check
 
+      - name: Check for broken symlinks
+        run: uv run tools/check_symlinks.py
+
       - name: Build buf plugin
         run: bazelisk build --noshow_progress //defcl/buf
 
