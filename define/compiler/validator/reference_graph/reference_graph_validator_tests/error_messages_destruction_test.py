@@ -1209,7 +1209,7 @@ def test_diagnostic_in_callee_file_shows_callee_source_line_format(
             create a particle in position</out>.
                                  ^^^^^^^^^^^^^^
         a destructor must leave every contracted position in the state it was in when it started.
-        However, this line creates a new particle in 'position</out>' and then nothing removes it from that position.""")
+        However, this line creates a new particle in 'position</saved>::position</out>' and then nothing removes it from that position.""")
     )
     assert (
         all_diags[1].format(result.program_result.source_map)

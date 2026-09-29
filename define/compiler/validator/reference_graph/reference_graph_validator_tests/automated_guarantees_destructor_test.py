@@ -187,7 +187,7 @@ def test_destructor_surfaces_nested_guarantee_pending_under_an_interface_positio
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("b.dfn")
-    assert all_diags[0].position_name == "position</out>"
+    assert all_diags[0].position_name == "position</saved>::position</out>"
     assert isinstance(
         all_diags[1], diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic
     )

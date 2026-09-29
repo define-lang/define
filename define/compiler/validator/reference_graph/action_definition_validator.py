@@ -1166,15 +1166,11 @@ class ActionDefinitionValidator:
         Destructor must also be checked, even when they are applied lazily.
         """
         for position, guarantee in guarantees.items():
-            # TODO: caused_by names the position as it was written in the action
-            # where the guarantee originated, so a guarantee surfaced from a
-            # deeply-nested triggered action gets that callee's short chained name
-            # (e.g. "position<out>") instead of its full chained name relative to
-            # the destructor (e.g.
-            # "action</a>::position<box>::action</b>::position<out>"). The contract holds
-            # that full chained name, but only as canonical names, not a source form.
-            position_name = guarantee.caused_by.source_form_in_universe(
-                self._enclosing_fqun
+            # A guarantee from a triggered action names its position the way that
+            # callee wrote it. The key is the position's full chained name from
+            # this Destructor's perspective, so report that instead.
+            position_name = ast.source_form_chained_name(
+                position, self._enclosing_fqun.canonical
             )
             match guarantee:
                 case action_contract.EmptyGuarantee():
