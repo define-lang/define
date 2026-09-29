@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import re
 import string
+import typing
 from pathlib import Path, PurePosixPath
 
 from define.compiler import ast, constants
@@ -47,52 +49,99 @@ _RESERVED_MULTIVERSE_NAMES = (
     | _PROGRAMMING_LANGUAGES
 )
 
+
+@typing.final
+class _NameCharacters:
+    """The characters that each position of a name part allows."""
+
+    def __init__(
+        self,
+        first_chars: frozenset[str],
+        middle_chars: frozenset[str],
+        last_chars: frozenset[str],
+    ):
+        """Initialize with the characters allowed first, in the middle, and last."""
+        self._first_chars = first_chars
+        self._middle_chars = middle_chars
+        self._last_chars = last_chars
+        # Most names are valid, and one regular expression match is several
+        # times faster than checking each character in Python.
+        self._valid_name = re.compile(
+            _character_class(first_chars)
+            + f"(?:{_character_class(middle_chars)}*{_character_class(last_chars)})?"
+        )
+
+    def invalid_indexes(self, name: str) -> list[int]:
+        """Return the index of every character of ``name`` that its position does not allow."""
+        if self._valid_name.fullmatch(name):
+            return []
+        last_index = len(name) - 1
+        invalid_indexes: list[int] = []
+        for index, char in enumerate(name):
+            if index == 0:
+                allowed = self._first_chars
+            elif index == last_index:
+                allowed = self._last_chars
+            else:
+                allowed = self._middle_chars
+            if char not in allowed:
+                invalid_indexes.append(index)
+        return invalid_indexes
+
+
+def _character_class(chars: frozenset[str]) -> str:
+    return "[" + "".join(re.escape(char) for char in sorted(chars)) + "]"
+
+
 _LOWERCASE_ALNUM = frozenset(string.ascii_lowercase + string.digits)
 
 _MULTIVERSE_BOUNDARY_CHARS = _LOWERCASE_ALNUM
 _MULTIVERSE_CONTINUE_CHARS = _MULTIVERSE_BOUNDARY_CHARS | frozenset("_")
+_MULTIVERSE_CHARACTERS = _NameCharacters(
+    _MULTIVERSE_BOUNDARY_CHARS, _MULTIVERSE_CONTINUE_CHARS, _MULTIVERSE_BOUNDARY_CHARS
+)
 
 _AUTHORITY_DOMAIN_BOUNDARY_CHARS = _LOWERCASE_ALNUM
 _AUTHORITY_DOMAIN_CONTINUE_CHARS = _AUTHORITY_DOMAIN_BOUNDARY_CHARS | frozenset(".-")
+_AUTHORITY_DOMAIN_CHARACTERS = _NameCharacters(
+    _AUTHORITY_DOMAIN_BOUNDARY_CHARS,
+    _AUTHORITY_DOMAIN_CONTINUE_CHARS,
+    _AUTHORITY_DOMAIN_BOUNDARY_CHARS,
+)
 
 # TODO: Add a config option to allow uppercase characters in universe names.
 _UNIVERSE_BOUNDARY_CHARS = _LOWERCASE_ALNUM
 _UNIVERSE_CONTINUE_CHARS = _UNIVERSE_BOUNDARY_CHARS | frozenset("_")
+_UNIVERSE_CHARACTERS = _NameCharacters(
+    _UNIVERSE_BOUNDARY_CHARS, _UNIVERSE_CONTINUE_CHARS, _UNIVERSE_BOUNDARY_CHARS
+)
 
 _PATH_SEGMENT_START_CHARS = frozenset(string.ascii_lowercase + "_")
 _PATH_SEGMENT_CONTINUE_CHARS = _PATH_SEGMENT_START_CHARS | frozenset(string.digits)
+_PATH_SEGMENT_CHARACTERS = _NameCharacters(
+    _PATH_SEGMENT_START_CHARS,
+    _PATH_SEGMENT_CONTINUE_CHARS,
+    _PATH_SEGMENT_CONTINUE_CHARS,
+)
 
 _LOCAL_NAME_START_CHARS = _PATH_SEGMENT_START_CHARS
 _LOCAL_NAME_CONTINUE_CHARS = _PATH_SEGMENT_CONTINUE_CHARS
+_LOCAL_NAME_CHARACTERS = _NameCharacters(
+    _LOCAL_NAME_START_CHARS, _LOCAL_NAME_CONTINUE_CHARS, _LOCAL_NAME_CONTINUE_CHARS
+)
 
 _AUTHORITY_PATH_START_CHARS = _LOWERCASE_ALNUM | frozenset("_-~")
 _AUTHORITY_PATH_CONTINUE_CHARS = _AUTHORITY_PATH_START_CHARS | frozenset(".")
+_AUTHORITY_PATH_CHARACTERS = _NameCharacters(
+    _AUTHORITY_PATH_START_CHARS,
+    _AUTHORITY_PATH_CONTINUE_CHARS,
+    _AUTHORITY_PATH_CONTINUE_CHARS,
+)
 
 
 # ---------------------------------------------------------------------------
 # Multiverse validation
 # ---------------------------------------------------------------------------
-
-
-def _invalid_character_indexes(
-    name: str,
-    first_chars: frozenset[str],
-    middle_chars: frozenset[str],
-    last_chars: frozenset[str],
-) -> list[int]:
-    """Return the index of every character of ``name`` that its position does not allow."""
-    last_index = len(name) - 1
-    invalid_indexes: list[int] = []
-    for index, char in enumerate(name):
-        if index == 0:
-            allowed = first_chars
-        elif index == last_index:
-            allowed = last_chars
-        else:
-            allowed = middle_chars
-        if char not in allowed:
-            invalid_indexes.append(index)
-    return invalid_indexes
 
 
 def _distinct_characters(name: str, indexes: list[int]) -> tuple[str, ...]:
@@ -124,12 +173,7 @@ def _validate_multiverse_name_format(
                 multiverse_name=name,
             )
         )
-    invalid_indexes = _invalid_character_indexes(
-        name,
-        _MULTIVERSE_BOUNDARY_CHARS,
-        _MULTIVERSE_CONTINUE_CHARS,
-        _MULTIVERSE_BOUNDARY_CHARS,
-    )
+    invalid_indexes = _MULTIVERSE_CHARACTERS.invalid_indexes(name)
     if invalid_indexes:
         result.append(
             diagnostics.MultiverseNameInvalidCharDiagnostic(
@@ -183,12 +227,7 @@ def _validate_authority_domain_format(
                 domain=domain,
             )
         )
-    invalid_indexes = _invalid_character_indexes(
-        domain,
-        _AUTHORITY_DOMAIN_BOUNDARY_CHARS,
-        _AUTHORITY_DOMAIN_CONTINUE_CHARS,
-        _AUTHORITY_DOMAIN_BOUNDARY_CHARS,
-    )
+    invalid_indexes = _AUTHORITY_DOMAIN_CHARACTERS.invalid_indexes(domain)
     if invalid_indexes:
         result.append(
             diagnostics.AuthorityDomainInvalidCharDiagnostic(
@@ -243,12 +282,7 @@ def _validate_authority_path_segment(
             ),
             authority=authority_name,
         )
-    invalid_indexes = _invalid_character_indexes(
-        segment,
-        _AUTHORITY_PATH_START_CHARS,
-        _AUTHORITY_PATH_CONTINUE_CHARS,
-        _AUTHORITY_PATH_CONTINUE_CHARS,
-    )
+    invalid_indexes = _AUTHORITY_PATH_CHARACTERS.invalid_indexes(segment)
     if not invalid_indexes:
         return None
     return diagnostics.InvalidAuthorityPathSegmentDiagnostic(
@@ -322,12 +356,7 @@ def _validate_universe_name_format(
                 universe_name=name,
             )
         )
-    invalid_indexes = _invalid_character_indexes(
-        name,
-        _UNIVERSE_BOUNDARY_CHARS,
-        _UNIVERSE_CONTINUE_CHARS,
-        _UNIVERSE_BOUNDARY_CHARS,
-    )
+    invalid_indexes = _UNIVERSE_CHARACTERS.invalid_indexes(name)
     if invalid_indexes:
         result.append(
             diagnostics.UniverseNameInvalidCharDiagnostic(
@@ -475,12 +504,7 @@ def _validate_global_name_path(
                     path=path_name,
                 )
             )
-        invalid_indexes = _invalid_character_indexes(
-            segment,
-            _PATH_SEGMENT_START_CHARS,
-            _PATH_SEGMENT_CONTINUE_CHARS,
-            _PATH_SEGMENT_CONTINUE_CHARS,
-        )
+        invalid_indexes = _PATH_SEGMENT_CHARACTERS.invalid_indexes(segment)
         if invalid_indexes:
             result.append(
                 diagnostics.InvalidGlobalNamePathCharacterDiagnostic(
@@ -509,12 +533,7 @@ def validate_local_name_format(
 ) -> list[diagnostics.InvalidLocalNameFormatDiagnostic]:
     """Validate local name character format."""
     name = local_name.name
-    invalid_indexes = _invalid_character_indexes(
-        name,
-        _LOCAL_NAME_START_CHARS,
-        _LOCAL_NAME_CONTINUE_CHARS,
-        _LOCAL_NAME_CONTINUE_CHARS,
-    )
+    invalid_indexes = _LOCAL_NAME_CHARACTERS.invalid_indexes(name)
     if not invalid_indexes:
         return []
     return [
