@@ -550,7 +550,9 @@ class ChainedName(ASTNode, abc.ABC, Generic[ChainedNameTupleT_co]):
         """The canonical typed names in this chain."""
         if self._canonical_chained_name_tuple is None:
             self._canonical_chained_name_tuple = self._tag(
-                tuple([elem.full_typed_name for elem in self.typed_names])
+                chained_name.ChainedNameTuple(
+                    tuple([elem.full_typed_name for elem in self.typed_names])
+                )
             )
         return self._canonical_chained_name_tuple
 
@@ -596,7 +598,7 @@ class ChainedName(ASTNode, abc.ABC, Generic[ChainedNameTupleT_co]):
             typed_names=self.typed_names[: index + 1],
             # A prefix of self's canonical tuple is exactly the result's, so
             # slice it here instead of making the result recompute it.
-            _canonical_chained_name_tuple=chained_name.ActionReferenceTuple(
+            _canonical_chained_name_tuple=chained_name.action(
                 self.canonical_chained_name_tuple[: index + 1]
             ),
         )
@@ -611,7 +613,7 @@ class ChainedName(ASTNode, abc.ABC, Generic[ChainedNameTupleT_co]):
             typed_names=self.typed_names[: index + 1],
             # A prefix of self's canonical tuple is exactly the parent's,
             # so slice it here instead of making the parent recompute it.
-            _canonical_chained_name_tuple=chained_name.PositionReferenceTuple(
+            _canonical_chained_name_tuple=chained_name.position(
                 self.canonical_chained_name_tuple[: index + 1]
             ),
         )
@@ -640,8 +642,8 @@ class ChainedName(ASTNode, abc.ABC, Generic[ChainedNameTupleT_co]):
             # chained_name_tuple over and over for requirement checks. (Concatenating
             # these two tuples is much faster than generating the tuple from the typed
             # names.)
-            _canonical_chained_name_tuple=self._tag(
-                prefix.canonical_chained_name_tuple + self.canonical_chained_name_tuple
+            _canonical_chained_name_tuple=chained_name.with_prefix(
+                self.canonical_chained_name_tuple, prefix.canonical_chained_name_tuple
             ),
         )
 
@@ -654,7 +656,7 @@ class ChainedName(ASTNode, abc.ABC, Generic[ChainedNameTupleT_co]):
         return PositionReference(
             location=self.location,
             typed_names=self.typed_names + names,
-            _canonical_chained_name_tuple=chained_name.PositionReferenceTuple(
+            _canonical_chained_name_tuple=chained_name.position(
                 self.canonical_chained_name_tuple
                 + tuple([name.full_typed_name for name in names])
             ),
@@ -669,7 +671,7 @@ class ChainedName(ASTNode, abc.ABC, Generic[ChainedNameTupleT_co]):
         return ActionReference(
             location=self.location,
             typed_names=self.typed_names + names,
-            _canonical_chained_name_tuple=chained_name.ActionReferenceTuple(
+            _canonical_chained_name_tuple=chained_name.action(
                 self.canonical_chained_name_tuple
                 + tuple([name.full_typed_name for name in names])
             ),
@@ -720,7 +722,7 @@ class PositionReference(ChainedName[chained_name.PositionReferenceTuple]):
     def _tag(
         self, canonical_names: chained_name.ChainedNameTuple
     ) -> chained_name.PositionReferenceTuple:
-        return chained_name.PositionReferenceTuple(canonical_names)
+        return chained_name.position(canonical_names)
 
 
 class ActionReference(ChainedName[chained_name.ActionReferenceTuple]):
@@ -749,7 +751,7 @@ class ActionReference(ChainedName[chained_name.ActionReferenceTuple]):
     def _tag(
         self, canonical_names: chained_name.ChainedNameTuple
     ) -> chained_name.ActionReferenceTuple:
-        return chained_name.ActionReferenceTuple(canonical_names)
+        return chained_name.action(canonical_names)
 
 
 class ParticleStatement(ASTNode):

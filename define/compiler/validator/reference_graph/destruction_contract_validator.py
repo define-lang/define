@@ -317,9 +317,9 @@ class DestructionContractValidator:
             if position_suffix
             else position_prefix
         )
-        relative_key = position_in_child_state[
-            len(destruction_contract.position_in_child_state) :
-        ]
+        relative_key = chained_name.without_prefix(
+            position_in_child_state, destruction_contract.position_in_child_state
+        )
         # A child absent from the contract was unknown to the callee but is
         # occupied from this caller's perspective, so this caller contributes
         # its Destroy. The contracted position itself is already destroyed by
@@ -352,9 +352,8 @@ class DestructionContractValidator:
         for quality in reversed(particle.qualities.assignments):
             if quality.name_type == name_types.NameType.POSITION:
                 child_position_suffix = (quality,)
-                child_position_in_child_state = (
-                    *position_in_child_state,
-                    quality.full_typed_name,
+                child_position_in_child_state = chained_name.with_suffix(
+                    position_in_child_state, quality.full_typed_name
                 )
                 self._verify_destruction_cascade(
                     position,
@@ -403,8 +402,8 @@ class DestructionContractValidator:
                 for interface_position in reversed(definition.interface_positions):
                     interface_position_name = interface_position.typed_name
                     child_position_suffix = (quality, interface_position_name)
-                    child_position_in_child_state = (
-                        *position_in_child_state,
+                    child_position_in_child_state = chained_name.with_suffix(
+                        position_in_child_state,
                         quality.full_typed_name,
                         interface_position_name.full_typed_name,
                     )
@@ -544,10 +543,12 @@ class DestructionContractValidator:
         # relative_key:
         #   ("position</file>",)
         required_position = inner_req.position.in_caller(action_chain)
-        relative_key = required_position.canonical_chained_name_tuple[
-            caller_prefix_length:
-        ]
-        state_key = destruction_contract.position_in_child_state + relative_key
+        relative_key = chained_name.names_after(
+            required_position.canonical_chained_name_tuple, caller_prefix_length
+        )
+        state_key = chained_name.with_prefix(
+            relative_key, destruction_contract.position_in_child_state
+        )
         occupancy = merged_child_state.occupancy.get(state_key)
         value_state = None
         if isinstance(inner_req, action_contract.ValueRequirement):

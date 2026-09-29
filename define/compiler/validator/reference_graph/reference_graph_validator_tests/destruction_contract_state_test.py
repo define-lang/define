@@ -6,6 +6,7 @@ from unittest import mock
 
 import pytest
 
+from define.compiler import chained_name
 from define.compiler.validator.reference_graph import (
     action_contract,
     child_state,
@@ -19,6 +20,10 @@ if typing.TYPE_CHECKING:
     from collections.abc import Iterator
 
     from define.compiler import ast, conftest
+
+
+def _chain(*names: str) -> chained_name.ChainedNameTuple:
+    return chained_name.ChainedNameTuple(names)
 
 
 @pytest.fixture
@@ -88,8 +93,8 @@ def _assert_shared_state_with_independent_facts(
         )
         assert contract.verified_destructors.assignments == ()
     assert sorted(positions) == [
-        ("position<run>",),
-        ("position<run>", "position<my.domain.com:my_lib:/child>"),
+        _chain("position<run>"),
+        _chain("position<run>", "position<my.domain.com:my_lib:/child>"),
     ]
 
 
@@ -106,7 +111,7 @@ def test_automatic_destruction_snapshots_each_target_before_destructors(
     (second,) = second_contracts.particles
     assert (
         first.propagated_destruction.contracted_position.canonical_chained_name_tuple
-        == ("position<first>",)
+        == _chain("position<first>")
     )
     assert (
         child.propagated_destruction.contracted_position.canonical_chained_name_tuple
@@ -117,10 +122,10 @@ def test_automatic_destruction_snapshots_each_target_before_destructors(
     )
     assert (
         second.propagated_destruction.contracted_position.canonical_chained_name_tuple
-        == ("position<second>",)
+        == _chain("position<second>")
     )
     assert first_contracts.child_state is not second_contracts.child_state
-    child_position = ("position<my.domain.com:my_lib:/child>",)
+    child_position = _chain("position<my.domain.com:my_lib:/child>")
     occupied = first_contracts.child_state.occupancy.get(child_position)
     assert occupied is not None
     assert occupied.state == position_occupancy.PositionOccupancyState.OCCUPIED
@@ -145,14 +150,14 @@ def test_automatic_destruction_with_unrelated_pending_guarantees(
     (second_particle,) = second.particles
     assert (
         first_particle.propagated_destruction.contracted_position.canonical_chained_name_tuple
-        == ("position<first>",)
+        == _chain("position<first>")
     )
     assert (
         second_particle.propagated_destruction.contracted_position.canonical_chained_name_tuple
-        == ("position<second>",)
+        == _chain("position<second>")
     )
     assert first.child_state is not second.child_state
-    marker = ("position<my.domain.com:my_lib:/marker>",)
+    marker = _chain("position<my.domain.com:my_lib:/marker>")
     assert first.child_state.occupancy.get(marker) is None
     assert second.child_state.occupancy.get(marker) is None
     assert action_graph(result.reference_graph_result) == [
@@ -164,7 +169,9 @@ def test_automatic_destruction_with_unrelated_pending_guarantees(
             "action<my.domain.com:my_lib:/middle>",
             "action<my.domain.com:my_lib:/outer>",
         ),
-        ("action<my.domain.com:my_lib:/test>", "action<my.domain.com:my_lib:/middle>"),
+        _chain(
+            "action<my.domain.com:my_lib:/test>", "action<my.domain.com:my_lib:/middle>"
+        ),
     ]
 
 
@@ -270,13 +277,16 @@ def test_large_child_states_share_extend_and_compact_from_source(
         # still know about only 16 after compilation finishes. This catches both
         # lost knowledge and accidental changes to a snapshot shared with a callee.
         for index in range(count):
-            occupancy = snapshot.get((f"position<my.domain.com:my_lib:/child{index}>",))
+            occupancy = snapshot.get(
+                _chain(f"position<my.domain.com:my_lib:/child{index}>")
+            )
             assert occupancy is not None
             assert occupancy.state == position_occupancy.PositionOccupancyState.OCCUPIED
-        assert snapshot.get(("position<unknown>",)) is None
+        assert snapshot.get(_chain("position<unknown>")) is None
         for index in range(count, counts[-1]):
             assert (
-                snapshot.get((f"position<my.domain.com:my_lib:/child{index}>",)) is None
+                snapshot.get(_chain(f"position<my.domain.com:my_lib:/child{index}>"))
+                is None
             )
     # Sixteen children reach the threshold for sharing. Stage1 adds nothing,
     # so it should keep exactly the snapshot stage0 already built.
@@ -304,7 +314,7 @@ def test_caller_passed_child_of_local_parent_keeps_its_contract(
     (contract,) = contracts.particles
     assert (
         contract.propagated_destruction.contracted_position.canonical_chained_name_tuple
-        == ("position<run>",)
+        == _chain("position<run>")
     )
     assert contract.position_in_child_state == (
         "position<my.domain.com:my_lib:/child>",
@@ -331,23 +341,25 @@ def test_shared_state_uses_each_moved_particles_own_origin(
     child, parent = contracts.particles
     assert (
         parent.propagated_destruction.contracted_position.canonical_chained_name_tuple
-        == ("position<run>",)
+        == _chain("position<run>")
     )
     assert (
         child.propagated_destruction.contracted_position.canonical_chained_name_tuple
-        == ("position<incoming>",)
+        == _chain("position<incoming>")
     )
     assert contracts.positions == {
         parent.position_in_child_state,
         child.position_in_child_state,
     }
     occupancy = contracts.child_occupancy(
-        parent, ("position<my.domain.com:my_lib:/child>",)
+        parent, _chain("position<my.domain.com:my_lib:/child>")
     )
     assert occupancy is not None
     assert occupancy.state == position_occupancy.PositionOccupancyState.OCCUPIED
     assert (
-        contracts.child_occupancy(child, ("position<my.domain.com:my_lib:/resource>",))
+        contracts.child_occupancy(
+            child, _chain("position<my.domain.com:my_lib:/resource>")
+        )
         is None
     )
     assert action_graph(result.reference_graph_result) == [
@@ -355,7 +367,9 @@ def test_shared_state_uses_each_moved_particles_own_origin(
             "action<my.domain.com:my_lib:/middle>",
             "action<my.domain.com:my_lib:/destroyer>",
         ),
-        ("action<my.domain.com:my_lib:/test>", "action<my.domain.com:my_lib:/middle>"),
+        _chain(
+            "action<my.domain.com:my_lib:/test>", "action<my.domain.com:my_lib:/middle>"
+        ),
     ]
 
 
@@ -380,11 +394,11 @@ def test_repeated_executions_keep_distinct_shared_histories(
     )
     assert (
         first_particle.propagated_destruction.contracted_position.canonical_chained_name_tuple
-        == ("position<run>",)
+        == _chain("position<run>")
     )
     assert (
         second_particle.propagated_destruction.contracted_position.canonical_chained_name_tuple
-        == ("position<second>",)
+        == _chain("position<second>")
     )
     assert first.child_state is second.child_state
     assert first.propagation is not None

@@ -9,17 +9,27 @@ from define.compiler import name_types
 if typing.TYPE_CHECKING:
     from collections.abc import Iterator
 
-# A position's canonical chained name, as stored in tries and contracts.
+# A canonical chained name of any kind, including a relative or partial one.
 # TODO: Compute with these tuples instead of building ChainedName objects
 # wherever the code does not need a SourceLocation.
-# TODO: Also, use this everywhere appropriate.
-type ChainedNameTuple = tuple[str, ...]
+ChainedNameTuple = typing.NewType("ChainedNameTuple", tuple[str, ...])
 
 # A chained name's kind is the kind of its last typed name, so a
 # PositionReferenceTuple can still contain actions, as in
 # position<p>::action<a>::position<q>.
-PositionReferenceTuple = typing.NewType("PositionReferenceTuple", tuple[str, ...])
-ActionReferenceTuple = typing.NewType("ActionReferenceTuple", tuple[str, ...])
+PositionReferenceTuple = typing.NewType("PositionReferenceTuple", ChainedNameTuple)
+ActionReferenceTuple = typing.NewType("ActionReferenceTuple", ChainedNameTuple)
+
+
+def position(names: tuple[str, ...]) -> PositionReferenceTuple:
+    """Tag canonical typed names that end in a position."""
+    return typing.cast("PositionReferenceTuple", names)
+
+
+def action(names: tuple[str, ...]) -> ActionReferenceTuple:
+    """Tag canonical typed names that end in an action."""
+    return typing.cast("ActionReferenceTuple", names)
+
 
 _ACTION_TYPED_NAME_PREFIX: typing.Final = f"{name_types.NameType.ACTION.value}<"
 
@@ -43,7 +53,27 @@ def without_prefix(
     chain: ChainedNameTuple, prefix: ChainedNameTuple
 ) -> ChainedNameTuple:
     """Return the names of ``chain`` after ``prefix``, which must be a prefix of it."""
-    return chain[len(prefix) :]
+    return names_after(chain, len(prefix))
+
+
+def names_after(chain: ChainedNameTuple, name_count: int) -> ChainedNameTuple:
+    """Return the names of ``chain`` after its first ``name_count`` names."""
+    return ChainedNameTuple(chain[name_count:])
+
+
+def with_suffix(chain: ChainedNameTuple, *typed_names: str) -> ChainedNameTuple:
+    """Return ``chain`` with ``typed_names`` appended as child names."""
+    return ChainedNameTuple((*chain, *typed_names))
+
+
+def parent(chain: ChainedNameTuple) -> ChainedNameTuple:
+    """Return ``chain`` without its last name."""
+    return ChainedNameTuple(chain[:-1])
+
+
+def last_name(chain: ChainedNameTuple) -> ChainedNameTuple:
+    """Return the last name of ``chain`` as a chain of one name."""
+    return ChainedNameTuple(chain[-1:])
 
 
 def replace_prefix[T: ChainedNameTuple](
@@ -56,7 +86,7 @@ def replace_prefix[T: ChainedNameTuple](
 def prefixes(chain: ChainedNameTuple) -> Iterator[ChainedNameTuple]:
     """Yield each nonempty prefix of the chain, shortest first."""
     for length in range(1, len(chain) + 1):
-        yield chain[:length]
+        yield ChainedNameTuple(chain[:length])
 
 
 def in_caller[T: ChainedNameTuple](
@@ -79,12 +109,12 @@ def last_action_index(chain: ChainedNameTuple) -> int | None:
 def chain_to_last_action(chain: ChainedNameTuple) -> ActionReferenceTuple | None:
     """Return the chain up to and including its last action, or None if it has none."""
     index = last_action_index(chain)
-    return None if index is None else ActionReferenceTuple(chain[: index + 1])
+    return None if index is None else action(chain[: index + 1])
 
 
 def position_prefix(chain: ChainedNameTuple, name_count: int) -> PositionReferenceTuple:
     """Return the chain's first ``name_count`` typed names, which must end in a position."""
-    return PositionReferenceTuple(chain[:name_count])
+    return position(chain[:name_count])
 
 
 def position_prefixes_before_first_action(
@@ -110,4 +140,4 @@ def parent_position_index(chain: ChainedNameTuple) -> int | None:
 def parent_position(chain: ChainedNameTuple) -> PositionReferenceTuple | None:
     """Return the nearest parent position, or None if the chain has no parent position."""
     index = parent_position_index(chain)
-    return None if index is None else PositionReferenceTuple(chain[: index + 1])
+    return None if index is None else position(chain[: index + 1])

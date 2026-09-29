@@ -53,9 +53,7 @@ def test_contract_access():
 
 def test_concurrent_quality_assignment_builds_publish_one_value():
     state = reference_graph_validation_state.ReferenceGraphValidationState()
-    cache_key = chained_name.PositionReferenceTuple(
-        ("position<my.domain.com:my_lib:/shared>",)
-    )
+    cache_key = chained_name.position(("position<my.domain.com:my_lib:/shared>",))
     builders_ready = Barrier(2)
     first = quality_assignment.QualityAssignments(())
     second = quality_assignment.QualityAssignments(())

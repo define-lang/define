@@ -112,7 +112,7 @@ class DetachedSubtrees(msgspec.Struct):
         self, key: chained_name.ChainedNameTuple
     ) -> particle_info.ParticleInfo | None:
         """Return the particle detached from ``key``, or None if the Position was empty."""
-        return self.state[key][key[-1:]].particle_info
+        return self.state[key][chained_name.last_name(key)].particle_info
 
 
 class _CurrentActionNestedGuarantees:
@@ -177,7 +177,7 @@ class _CurrentActionNestedGuarantees:
     ):
         """Restore a saved particle's nested guarantees at its destination."""
         self._by_action_chain.restore_subtree(
-            target, saved_subtree, saved_subtree[source[-1:]]
+            target, saved_subtree, saved_subtree[chained_name.last_name(source)]
         )
 
     def items(self) -> list[action_contract.CalleeContract]:
@@ -218,7 +218,7 @@ class _CurrentActionNestedGuarantees:
 def _stored_action_chain(key: trie.TrieKey) -> chained_name.ActionReferenceTuple:
     # Only action chains are added, and a Move replaces only a key's parent
     # names, so every key in the trie still ends in its action.
-    return chained_name.ActionReferenceTuple(key)
+    return chained_name.action(key)
 
 
 class ParticleStateStore:
@@ -290,7 +290,7 @@ class ParticleStateStore:
     def ensure_action_parent(self, key: chained_name.PositionReferenceTuple):
         """Ensure the action name preceding the position has tracker state."""
         if len(key) >= 2 and chained_name.is_action_key(key[-2]):
-            parent_key = key[:-1]
+            parent_key = chained_name.parent(key)
             if parent_key not in self._state:
                 # This is the other repeated allocation from the default
                 # action-graph full-compiler experiment documented in
@@ -352,7 +352,7 @@ class ParticleStateStore:
             self._state.restore_subtree(
                 to_key,
                 detached_state,
-                detached_state[from_key[-1:]],
+                detached_state[chained_name.last_name(from_key)],
                 restored_value_callback=self._wrap_moved_particle_callback(
                     moved_particle_callback
                 ),
@@ -372,7 +372,7 @@ class ParticleStateStore:
         # guarantee fills it with whatever was at origin, including the uncertainty.
         if detached_error is not None:
             self._error.restore_subtree(
-                to_key, detached_error, detached_error[from_key[-1:]]
+                to_key, detached_error, detached_error[chained_name.last_name(from_key)]
             )
         elif from_key in self._error:
             self._move_error_subtree(from_key, to_key)
@@ -416,7 +416,7 @@ class ParticleStateStore:
             if state.particle_info is not None:
                 # Only positions hold particles.
                 moved_particle_callback(
-                    chained_name.PositionReferenceTuple(position), state.particle_info
+                    chained_name.position(position), state.particle_info
                 )
 
         return call_with_moved_particle
@@ -458,7 +458,7 @@ class ParticleStateStore:
                 continue
             for child_key, state in self._state.direct_child_items(action_chain):
                 # An action's child names are its interface positions.
-                position = chained_name.PositionReferenceTuple(child_key)
+                position = chained_name.position(child_key)
                 if state.particle_info is None or self.has_error_at(position):
                     continue
                 yield action, position
@@ -469,7 +469,7 @@ class ParticleStateStore:
         """Return the longest prefix of ``key`` that holds a particle, if any."""
         prefix = self._state.find_longest_prefix_where(key, _node_is_occupied)
         # Only positions hold particles.
-        return None if prefix is None else chained_name.PositionReferenceTuple(prefix)
+        return None if prefix is None else chained_name.position(prefix)
 
     def error_caused_by(
         self, key: chained_name.PositionReferenceTuple
@@ -642,7 +642,7 @@ class ParticleStateStore:
                 results[key] = None
                 continue
             # Only positions hold particles.
-            ancestor_position = chained_name.PositionReferenceTuple(ancestor_key)
+            ancestor_position = chained_name.position(ancestor_key)
             results[key] = ancestor_position, self.occupant(ancestor_position)
         return results
 
@@ -656,13 +656,13 @@ class ParticleStateStore:
         # Only positions hold a particle, emptied state, or error state.
         keys: set[chained_name.PositionReferenceTuple] = set()
         for key, state in self._state.items():
-            position = chained_name.PositionReferenceTuple(key)
+            position = chained_name.position(key)
             if (state.particle_info is not None or state.emptied_by is not None) and (
                 include_callee_derived or self._include_in_own_guarantees(position)
             ):
                 keys.add(position)
         for key, error_state in self._error.items():
-            position = chained_name.PositionReferenceTuple(key)
+            position = chained_name.position(key)
             if error_state.caused_by is not None and (
                 include_callee_derived or self._include_in_own_guarantees(position)
             ):
@@ -740,12 +740,12 @@ class ParticleStateStore:
         # A strict trie holds a parent name for every key it holds, so a single
         # present parent name means the whole chain above it is present too.
         # That is why two probes settle a question about every parent name.
-        parent_key = key[:-1]
+        parent_key = chained_name.parent(key)
         if not parent_key or parent_key in self._state:
             return None
         # The parent name is absent, so the invariant above says nothing about
         # the rest of the chain and the grandparent has to be probed too.
-        grandparent_key = parent_key[:-1]
+        grandparent_key = chained_name.parent(parent_key)
         if not grandparent_key or grandparent_key in self._state:
             # The parent name is the only absent one. A strict trie refuses a
             # write whose own parent name is missing, so this is the only case
@@ -759,7 +759,7 @@ class ParticleStateStore:
                 # unprofiled runs showed no measurable wall-time change.
                 self._state[parent_key] = _NodeState()
                 return None
-            return chained_name.PositionReferenceTuple(parent_key)
+            return chained_name.position(parent_key)
         # Two or more names are absent, so only a walk can say which of them the
         # caller left unfilled first.
         first_missing_index = len(self._state.existing_prefix(key))
@@ -767,7 +767,7 @@ class ParticleStateStore:
         # one the caller left unfilled.
         if chained_name.is_action_key(key[first_missing_index]):
             first_missing_index += 1
-        return chained_name.PositionReferenceTuple(key[: first_missing_index + 1])
+        return chained_name.position(key[: first_missing_index + 1])
 
     def _rekey_records_for_move(
         self,

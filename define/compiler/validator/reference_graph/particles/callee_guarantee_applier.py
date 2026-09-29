@@ -49,7 +49,7 @@ class _PendingGuarantee(msgspec.Struct, frozen=True):
         action's interface position names. ``action_chain`` always ends in the
         triggered action, since that is the only thing that produces guarantees.
         """
-        return self.action_chain[:-1]
+        return chained_name.parent(self.action_chain)
 
     def key_for[T: chained_name.ChainedNameTuple](self, name: T) -> T:
         """Return the absolute key for a guarantee this action names ``name``."""
@@ -193,7 +193,7 @@ class _PendingNestedGuarantees:
         key_len = len(key)
         length = 0
         while length < key_len and length <= self._longest_pending_guarantee_key:
-            prefix = key[:length]
+            prefix = chained_name.ChainedNameTuple(key[:length])
             # Applying a yielded guarantee can re-add one at this same prefix, so
             # drain it fully before moving to a prefix with another child name.
             while prefix in self._by_prefix:
@@ -241,7 +241,7 @@ class _PendingNestedGuarantees:
             # A guarantee can affect the queried position only when its prefix
             # is one of the queried position's parent names.
             while length < key_len and length <= self._longest_pending_guarantee_key:
-                prefix = key[:length]
+                prefix = chained_name.ChainedNameTuple(key[:length])
                 # Applying a guarantee can add another pending guarantee at this
                 # same prefix, so do not advance until the prefix stays empty.
                 while prefix in self._by_prefix:
@@ -565,7 +565,9 @@ class CalleeGuaranteeApplier:
     def fully_resolve_all_pending_guarantees(self):
         """Apply every pending guarantee."""
         # Every stored prefix is at or below the empty chain.
-        self._apply_drained(self._pending.drain_at_or_below_for([()]))
+        self._apply_drained(
+            self._pending.drain_at_or_below_for([chained_name.ChainedNameTuple(())])
+        )
 
     def _apply_drained(self, pending_guarantees: Iterator[_PendingGuarantee]):
         # The drains re-query as they go, so each guarantee must be applied

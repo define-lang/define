@@ -117,6 +117,7 @@ py_test(
         ":child_state",
         ":position_occupancy",
         "//define/compiler:ast",
+        "//define/compiler:chained_name",
         "//define/compiler/validator/reference_graph/particles:particle_info",
     ],
 )

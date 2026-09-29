@@ -1,6 +1,6 @@
 """A hash-indexed trie supporting subtree reparenting and prefix scans.
 
-Keys are sequences of string segments (tuples) that form a prefix hierarchy.
+Keys are chained names, whose typed names form a prefix hierarchy.
 Every point operation (get/set/contains/delete) is a single tuple hash
 plus one dict probe; there is no walking the segments like a traditional trie
 data structure. A parallel ``children`` index records each parent's immediate
@@ -16,11 +16,13 @@ from __future__ import annotations
 
 import typing
 
+from define.compiler import chained_name
+
 if typing.TYPE_CHECKING:
     from collections.abc import Callable, ItemsView, Iterable, Iterator
     from collections.abc import Set as AbstractSet
 
-type TrieKey = tuple[str, ...]
+type TrieKey = chained_name.ChainedNameTuple
 
 _MISSING: typing.Final = object()
 
@@ -38,7 +40,7 @@ class TargetExistsError(TrieError):
 
 
 class StrictReparentingTrie[V]:
-    """A trie keyed by string sequences, supporting subtree reparenting.
+    """A trie keyed by chained names, supporting subtree reparenting.
 
     Every node must have an existing parent (except single-element keys, whose
     parent is the root). Deleting a key deletes all of its descendants.
@@ -55,8 +57,10 @@ class StrictReparentingTrie[V]:
         # very expensive and a fairly large hotspot in large compiles. Our new
         # structure optimizes for making lookups cheap, at the expense of making
         # moves more expensive.
-        self._values: dict[TrieKey, V] = {}
-        self._children: dict[TrieKey, set[TrieKey]] = {}
+        # Internal keys are plain tuples so that parent names and prefixes can
+        # be sliced without tagging each one; keys leave the trie as TrieKey.
+        self._values: dict[tuple[str, ...], V] = {}
+        self._children: dict[tuple[str, ...], set[tuple[str, ...]]] = {}
 
     def get(self, key: TrieKey, default: V | None = None) -> V | None:
         """Get value at key, or default if missing."""
@@ -72,7 +76,7 @@ class StrictReparentingTrie[V]:
         """Check if key has a value."""
         return key in self._values
 
-    def _ensure_parent(self, key: TrieKey):
+    def _ensure_parent(self, key: tuple[str, ...]):
         """Verify the parent path for a write; strict tries require it to exist."""
         parent = key[:-1]
         if parent and parent not in self._values:
@@ -91,7 +95,7 @@ class StrictReparentingTrie[V]:
         else:
             siblings.add(key)
 
-    def _collect_subtree(self, root: TrieKey) -> list[TrieKey]:
+    def _collect_subtree(self, root: tuple[str, ...]) -> list[tuple[str, ...]]:
         """Return root and all of its descendant keys."""
         result = [root]
         stack = [root]
@@ -102,7 +106,7 @@ class StrictReparentingTrie[V]:
                 stack.append(child)
         return result
 
-    def _unlink_from_parent(self, key: TrieKey):
+    def _unlink_from_parent(self, key: tuple[str, ...]):
         """Remove key from its parent's child set."""
         parent = key[:-1]
         siblings = self._children[parent]
@@ -159,7 +163,7 @@ class StrictReparentingTrie[V]:
         source_len = len(source)
         old_keys = self._collect_subtree(source)
         new_keys = {old: target + old[source_len:] for old in old_keys}
-        moved: list[tuple[TrieKey, V, set[TrieKey] | None]] = []
+        moved: list[tuple[tuple[str, ...], V, set[tuple[str, ...]] | None]] = []
         for old in old_keys:
             value = self._values.pop(old)
             old_children = self._children.pop(old, None)
@@ -178,7 +182,7 @@ class StrictReparentingTrie[V]:
         self._children.setdefault(target[:-1], set()).add(target)
         if moved_value_callback is not None:
             for new, value, _ in moved:
-                moved_value_callback(new, value)
+                moved_value_callback(chained_name.ChainedNameTuple(new), value)
 
     def pop_subtrees(
         self, keys: Iterable[TrieKey]
@@ -267,18 +271,20 @@ class StrictReparentingTrie[V]:
         if restored_value_callback is not None:
             restored_value_callback(target, root_value)
             for old, value in subtree_values.items():
-                restored_value_callback(new_keys[old], value)
+                restored_value_callback(
+                    chained_name.ChainedNameTuple(new_keys[old]), value
+                )
 
     def items(self) -> ItemsView[TrieKey, V]:
         """Yield all (key, value) pairs in the trie."""
-        return self._values.items()
+        return typing.cast("ItemsView[TrieKey, V]", self._values.items())
 
     def direct_child_items(self, key: TrieKey) -> Iterator[tuple[TrieKey, V]]:
         """Yield each direct child's full key and value in key order."""
         if not key:
             raise EmptyKeyError("key must not be empty")
         for child in sorted(self._children.get(key, ())):
-            yield child, self._values[child]
+            yield chained_name.ChainedNameTuple(child), self._values[child]
 
     def pruned_subtree_items(
         self,
@@ -295,14 +301,17 @@ class StrictReparentingTrie[V]:
         """
         if not key:
             raise EmptyKeyError("key must not be empty")
-        pending = [(key, key_prefix)]
+        pending: list[tuple[tuple[str, ...], tuple[str, ...]]] = [(key, key_prefix)]
         while pending:
             full_node, result_node = pending.pop()
             for full_child in self._children.get(full_node, ()):
                 result_child = (*result_node, full_child[-1])
                 if result_child in excluded_keys:
                     continue
-                yield result_child, self._values[full_child]
+                yield (
+                    chained_name.ChainedNameTuple(result_child),
+                    self._values[full_child],
+                )
                 pending.append((full_child, result_child))
 
     def selected_subtree_items[Selected](
@@ -312,28 +321,31 @@ class StrictReparentingTrie[V]:
         if not key:
             raise EmptyKeyError("key must not be empty")
         prefix_length = len(key)
-        stack = [key]
+        stack: list[tuple[str, ...]] = [key]
         while stack:
             full_node = stack.pop()
             for full_child in self._children.get(full_node, ()):
                 value = self._values[full_child]
                 selected = select(value)
                 if selected is not None:
-                    yield full_child[prefix_length:], selected
+                    yield (
+                        chained_name.ChainedNameTuple(full_child[prefix_length:]),
+                        selected,
+                    )
                 stack.append(full_child)
 
     def subtree_keys(self, key: TrieKey) -> list[TrieKey]:
         """Return the full key of every descendant of key; key itself is excluded."""
         if not key:
             raise EmptyKeyError("key must not be empty")
-        result: list[TrieKey] = []
-        stack = [key]
+        result: list[tuple[str, ...]] = []
+        stack: list[tuple[str, ...]] = [key]
         while stack:
             node = stack.pop()
             for child in self._children.get(node, ()):
                 result.append(child)
                 stack.append(child)
-        return result
+        return typing.cast("list[TrieKey]", result)
 
     def existing_prefix(self, key: TrieKey) -> TrieKey:
         """Return the longest prefix of key whose nodes all exist in the trie."""
@@ -344,8 +356,8 @@ class StrictReparentingTrie[V]:
         for length in range(len(key), 0, -1):
             prefix = key[:length]
             if prefix in self._values:
-                return prefix
-        return ()
+                return chained_name.ChainedNameTuple(prefix)
+        return chained_name.ChainedNameTuple(())
 
     def find_shortest_prefix_where(
         self, key: TrieKey, predicate: Callable[[V], bool]
@@ -364,7 +376,7 @@ class StrictReparentingTrie[V]:
             if value is _MISSING:
                 return None
             if predicate(typing.cast("V", value)):
-                return prefix
+                return chained_name.ChainedNameTuple(prefix)
         return None
 
     def find_longest_prefix_where(
@@ -382,7 +394,7 @@ class StrictReparentingTrie[V]:
             prefix = key[:length]
             value = self._values.get(prefix, _MISSING)
             if value is not _MISSING and predicate(typing.cast("V", value)):
-                return prefix
+                return chained_name.ChainedNameTuple(prefix)
         return None
 
     def find_longest_prefixes_where(
@@ -392,9 +404,9 @@ class StrictReparentingTrie[V]:
         sorted_keys = sorted(keys)
         if sorted_keys and not sorted_keys[0]:
             raise EmptyKeyError("key must not be empty")
-        results: dict[TrieKey, TrieKey | None] = {}
-        previous_key: TrieKey = ()
-        matches_by_depth: list[TrieKey | None] = [None]
+        results: dict[TrieKey, tuple[str, ...] | None] = {}
+        previous_key: tuple[str, ...] = ()
+        matches_by_depth: list[tuple[str, ...] | None] = [None]
         for key in sorted_keys:
             if key == previous_key:
                 continue
@@ -413,7 +425,7 @@ class StrictReparentingTrie[V]:
                 matches_by_depth.append(nearest_match)
             results[key] = nearest_match
             previous_key = key
-        return results
+        return typing.cast("dict[TrieKey, TrieKey | None]", results)
 
 
 class LenientReparentingTrie[V](StrictReparentingTrie[V]):
@@ -432,7 +444,7 @@ class LenientReparentingTrie[V](StrictReparentingTrie[V]):
         self._default_factory = default_factory
 
     @typing.override
-    def _ensure_parent(self, key: TrieKey):
+    def _ensure_parent(self, key: tuple[str, ...]):
         """Auto-create any missing ancestors with default values."""
         for length in range(len(key) - 1, 0, -1):
             ancestor = key[:length]

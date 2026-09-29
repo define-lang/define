@@ -631,6 +631,7 @@ py_test(
     data = ["//define/testdata/reference_graph/destruction_contract_state"],
     deps = [
         "//define/compiler:ast",
+        "//define/compiler:chained_name",
         "//define/compiler:conftest",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/reference_graph:action_contract",

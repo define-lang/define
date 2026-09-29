@@ -30,6 +30,9 @@ py_library(
     name = "trie",
     srcs = ["trie.py"],
     visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        "//define/compiler:chained_name",
+    ],
 )
 
 py_test(
@@ -38,6 +41,7 @@ py_test(
     srcs = ["trie_test.py"],
     deps = [
         ":trie",
+        "//define/compiler:chained_name",
         "@pypi//pytest",
     ],
 )
