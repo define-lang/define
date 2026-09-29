@@ -6,7 +6,7 @@ import typing
 
 import msgspec
 
-from define.compiler import ast, chained_name, name_types
+from define.compiler import ast, chained_name
 from define.compiler.data_structures import trie
 from define.compiler.validator.reference_graph import (
     action_contract,
@@ -143,21 +143,27 @@ class _CurrentActionNestedGuarantees:
         at_action_chain.append(execution)
         self._contracts[execution] = contract
 
-    def move(self, source: tuple[str, ...], target: tuple[str, ...]):
+    def move(
+        self,
+        source: chained_name.PositionReferenceTuple,
+        target: chained_name.PositionReferenceTuple,
+    ):
         """Move nested guarantees beneath a moved particle."""
         if source not in self._by_action_chain:
             return
         self._by_action_chain.move_subtree(source, target)
 
-    def discard_for_destroyed_particle(self, position: tuple[str, ...]):
+    def discard_for_destroyed_particle(
+        self, position: chained_name.PositionReferenceTuple
+    ):
         """Discard nested guarantees belonging to a destroyed particle."""
         if position in self._by_action_chain:
             self._by_action_chain.delete_subtree(position)
 
     def pop_subtrees(
-        self, positions: Iterable[tuple[str, ...]]
+        self, positions: Iterable[chained_name.PositionReferenceTuple]
     ) -> dict[
-        tuple[str, ...],
+        chained_name.ChainedNameTuple,
         trie.StrictReparentingTrie[list[codegen_input.ActionExecution]],
     ]:
         """Detach nested guarantees belonging to particles that may move."""
@@ -165,8 +171,8 @@ class _CurrentActionNestedGuarantees:
 
     def restore_moved_particle(
         self,
-        source: tuple[str, ...],
-        target: tuple[str, ...],
+        source: chained_name.PositionReferenceTuple,
+        target: chained_name.PositionReferenceTuple,
         saved_subtree: trie.StrictReparentingTrie[list[codegen_input.ActionExecution]],
     ):
         """Restore a saved particle's nested guarantees at its destination."""
@@ -215,9 +221,6 @@ def _stored_action_chain(key: trie.TrieKey) -> chained_name.ActionReferenceTuple
     return chained_name.ActionReferenceTuple(key)
 
 
-_ACTION_KEY_PREFIX = f"{name_types.NameType.ACTION.value}<"
-
-
 class ParticleStateStore:
     """The internal Position state store, which tracks particle state and its relationship to our callees' contracts.
 
@@ -248,35 +251,45 @@ class ParticleStateStore:
         self._error: trie.LenientReparentingTrie[_ErrorState] = (
             trie.LenientReparentingTrie(default_factory=_ErrorState)
         )
-        self._write_record: dict[tuple[str, ...], _WriteRecord] = {}
+        # Keyed generically because a Move re-keys records by subtree keys, which
+        # include action names; only positions ever have a record.
+        self._write_record: dict[chained_name.ChainedNameTuple, _WriteRecord] = {}
         self._nested_guarantees: _CurrentActionNestedGuarantees = (
             _CurrentActionNestedGuarantees()
         )
 
-    def has_state(self, key: tuple[str, ...]) -> bool:
+    def has_state(self, key: chained_name.PositionReferenceTuple) -> bool:
         """Return whether the store tracks this Position, whether or not its occupancy is known."""
         return key in self._state
 
-    def mark_error(self, key: tuple[str, ...], caused_by: ast.PositionReference):
+    def mark_error(
+        self, key: chained_name.PositionReferenceTuple, caused_by: ast.PositionReference
+    ):
         """Mark a Position as having error occupancy state."""
         self._error[key] = _ErrorState(caused_by=caused_by)
 
-    def mark_emptied(self, key: tuple[str, ...], emptied_by: ast.PositionReference):
+    def mark_emptied(
+        self,
+        key: chained_name.PositionReferenceTuple,
+        emptied_by: ast.PositionReference,
+    ):
         """Record that a Position is known to be empty, replacing any state it had."""
         self._state[key] = _NodeState(emptied_by=emptied_by)
 
-    def mark_occupied(self, key: tuple[str, ...], info: particle_info.ParticleInfo):
+    def mark_occupied(
+        self, key: chained_name.PositionReferenceTuple, info: particle_info.ParticleInfo
+    ):
         """Record that a particle occupies a Position, replacing any state it had."""
         self._state[key] = _NodeState(particle_info=info)
 
-    def mark_unchanged(self, key: tuple[str, ...]):
+    def mark_unchanged(self, key: chained_name.PositionReferenceTuple):
         """Record that a callee left a Position unchanged, tracking it with unknown occupancy if it has no state."""
         if key not in self._state:
             self._state[key] = _NodeState()
 
-    def ensure_action_parent(self, key: tuple[str, ...]):
+    def ensure_action_parent(self, key: chained_name.PositionReferenceTuple):
         """Ensure the action name preceding the position has tracker state."""
-        if len(key) >= 2 and key[-2].startswith(_ACTION_KEY_PREFIX):
+        if len(key) >= 2 and chained_name.is_action_key(key[-2]):
             parent_key = key[:-1]
             if parent_key not in self._state:
                 # This is the other repeated allocation from the default
@@ -287,7 +300,7 @@ class ParticleStateStore:
 
     def delete_subtree(
         self,
-        key: tuple[str, ...],
+        key: chained_name.PositionReferenceTuple,
         removed_particle_callback: typing.Callable[[particle_info.ParticleInfo], None],
     ):
         """Delete everything tracked at or below a Position, passing each removed particle to ``removed_particle_callback``."""
@@ -306,10 +319,10 @@ class ParticleStateStore:
 
     def move_subtree(
         self,
-        from_key: tuple[str, ...],
-        to_key: tuple[str, ...],
+        from_key: chained_name.PositionReferenceTuple,
+        to_key: chained_name.PositionReferenceTuple,
         moved_particle_callback: typing.Callable[
-            [chained_name.ChainedNameTuple, particle_info.ParticleInfo], None
+            [chained_name.PositionReferenceTuple, particle_info.ParticleInfo], None
         ],
     ):
         """Move a particle and everything tracked below it to an untracked Position."""
@@ -320,11 +333,11 @@ class ParticleStateStore:
 
     def move_guaranteed_particle(
         self,
-        from_key: tuple[str, ...],
-        to_key: tuple[str, ...],
+        from_key: chained_name.PositionReferenceTuple,
+        to_key: chained_name.PositionReferenceTuple,
         detached: DetachedSubtrees,
         moved_particle_callback: typing.Callable[
-            [chained_name.ChainedNameTuple, particle_info.ParticleInfo], None
+            [chained_name.PositionReferenceTuple, particle_info.ParticleInfo], None
         ],
     ):
         """Move the particle that a callee's Guarantee says occupies ``to_key``.
@@ -366,10 +379,10 @@ class ParticleStateStore:
 
     def _move_live_subtree(
         self,
-        from_key: tuple[str, ...],
-        to_key: tuple[str, ...],
+        from_key: chained_name.PositionReferenceTuple,
+        to_key: chained_name.PositionReferenceTuple,
         moved_particle_callback: typing.Callable[
-            [chained_name.ChainedNameTuple, particle_info.ParticleInfo], None
+            [chained_name.PositionReferenceTuple, particle_info.ParticleInfo], None
         ],
     ):
         self._state.move_subtree(
@@ -381,7 +394,11 @@ class ParticleStateStore:
         )
         self._nested_guarantees.move(from_key, to_key)
 
-    def _move_error_subtree(self, from_key: tuple[str, ...], to_key: tuple[str, ...]):
+    def _move_error_subtree(
+        self,
+        from_key: chained_name.PositionReferenceTuple,
+        to_key: chained_name.PositionReferenceTuple,
+    ):
         self._error.move_subtree(from_key, to_key)
         # A moved particle's own Position is known once it arrives; only its
         # child positions keep their error state.
@@ -390,19 +407,24 @@ class ParticleStateStore:
     @staticmethod
     def _wrap_moved_particle_callback(
         moved_particle_callback: typing.Callable[
-            [chained_name.ChainedNameTuple, particle_info.ParticleInfo], None
+            [chained_name.PositionReferenceTuple, particle_info.ParticleInfo], None
         ],
     ) -> typing.Callable[[chained_name.ChainedNameTuple, _NodeState], None]:
         def call_with_moved_particle(
             position: chained_name.ChainedNameTuple, state: _NodeState
         ):
             if state.particle_info is not None:
-                moved_particle_callback(position, state.particle_info)
+                # Only positions hold particles.
+                moved_particle_callback(
+                    chained_name.PositionReferenceTuple(position), state.particle_info
+                )
 
         return call_with_moved_particle
 
     def detach_subtrees(
-        self, keys: Sequence[tuple[str, ...]], detached: DetachedSubtrees
+        self,
+        keys: Sequence[chained_name.PositionReferenceTuple],
+        detached: DetachedSubtrees,
     ):
         """Detach everything tracked at or below each of ``keys`` into ``detached``."""
         detached.state.update(self._state.pop_subtrees(keys))
@@ -424,7 +446,9 @@ class ParticleStateStore:
 
     def unconsumed_action_interfaces(
         self,
-    ) -> Iterator[tuple[ast.GlobalTypedNameReference, chained_name.ChainedNameTuple]]:
+    ) -> Iterator[
+        tuple[ast.GlobalTypedNameReference, chained_name.PositionReferenceTuple]
+    ]:
         """Yield occupied interfaces of callees directly triggered by this action."""
         for (
             action_chain,
@@ -432,26 +456,36 @@ class ParticleStateStore:
         ) in self._nested_guarantees.action_chains_with_most_recent_trigger():
             if self.has_error_in_chain(action_chain):
                 continue
-            for position, state in self._state.direct_child_items(action_chain):
+            for child_key, state in self._state.direct_child_items(action_chain):
+                # An action's child names are its interface positions.
+                position = chained_name.PositionReferenceTuple(child_key)
                 if state.particle_info is None or self.has_error_at(position):
                     continue
                 yield action, position
 
-    def longest_occupied_prefix(self, key: tuple[str, ...]) -> tuple[str, ...] | None:
+    def longest_occupied_prefix(
+        self, key: chained_name.PositionReferenceTuple
+    ) -> chained_name.PositionReferenceTuple | None:
         """Return the longest prefix of ``key`` that holds a particle, if any."""
-        return self._state.find_longest_prefix_where(key, _node_is_occupied)
+        prefix = self._state.find_longest_prefix_where(key, _node_is_occupied)
+        # Only positions hold particles.
+        return None if prefix is None else chained_name.PositionReferenceTuple(prefix)
 
-    def error_caused_by(self, key: tuple[str, ...]) -> ast.PositionReference | None:
+    def error_caused_by(
+        self, key: chained_name.PositionReferenceTuple
+    ) -> ast.PositionReference | None:
         """Return what caused this exact Position's error occupancy state, if it has one."""
         state = self._error.get(key)
         return state.caused_by if state is not None else None
 
-    def is_occupied(self, key: tuple[str, ...]) -> bool:
+    def is_occupied(self, key: chained_name.PositionReferenceTuple) -> bool:
         """Return whether a particle is known to exist at this position."""
         state = self._state.get(key)
         return state is not None and state.particle_info is not None
 
-    def occupant(self, key: tuple[str, ...]) -> particle_info.ParticleInfo:
+    def occupant(
+        self, key: chained_name.PositionReferenceTuple
+    ) -> particle_info.ParticleInfo:
         """Return the particle at this position, raising KeyError if it is empty."""
         state = self._state[key]
         if state.particle_info is None:
@@ -459,13 +493,15 @@ class ParticleStateStore:
         return state.particle_info
 
     def occupant_or_none(
-        self, key: tuple[str, ...]
+        self, key: chained_name.PositionReferenceTuple
     ) -> particle_info.ParticleInfo | None:
         """Return the particle at this position, or None if it is empty."""
         state = self._state.get(key)
         return state.particle_info if state is not None else None
 
-    def snapshot_child_state(self, key: tuple[str, ...]) -> child_state.ChildState:
+    def snapshot_child_state(
+        self, key: chained_name.PositionReferenceTuple
+    ) -> child_state.ChildState:
         """Capture known descendant occupancy and values, with keys relative to key."""
         result = dict(self._state.selected_subtree_items(key, _child_occupancy))
         # An error entry wins over a stale state entry, so it is applied last.
@@ -482,9 +518,9 @@ class ParticleStateStore:
         values: child_state.ChildValueMap,
         particles: dict[chained_name.ChainedNameTuple, particle_info.ParticleInfo],
         snapshot: child_state.ChildState,
-        key: tuple[str, ...],
-        position_in_child_state: tuple[str, ...],
-        contract_positions: set[tuple[str, ...]],
+        key: chained_name.PositionReferenceTuple,
+        position_in_child_state: chained_name.ChainedNameTuple,
+        contract_positions: set[chained_name.ChainedNameTuple],
     ):
         """Collect caller particles and additional Child State, keyed by Child State position."""
         particle = self.occupant(key)
@@ -558,19 +594,21 @@ class ParticleStateStore:
         ):
             values[position] = particle.value_state
 
-    def emptied_by(self, key: tuple[str, ...]) -> ast.PositionReference | None:
+    def emptied_by(
+        self, key: chained_name.PositionReferenceTuple
+    ) -> ast.PositionReference | None:
         """Return the position reference that emptied this position, if it is known-empty."""
         state = self._state.get(key)
         return state.emptied_by if state is not None else None
 
-    def has_known_occupancy(self, key: tuple[str, ...]) -> bool:
+    def has_known_occupancy(self, key: chained_name.PositionReferenceTuple) -> bool:
         """Return whether the Position is known to be occupied or empty."""
         state = self._state.get(key)
         if state is None:
             return False
         return state.particle_info is not None or state.emptied_by is not None
 
-    def has_error_in_chain(self, key: tuple[str, ...]) -> bool:
+    def has_error_in_chain(self, key: chained_name.ChainedNameTuple) -> bool:
         """Return whether this position or any ancestor has error occupancy state."""
         return (
             self._error.find_shortest_prefix_where(
@@ -579,51 +617,62 @@ class ParticleStateStore:
             is not None
         )
 
-    def has_error_at(self, key: tuple[str, ...]) -> bool:
+    def has_error_at(self, key: chained_name.PositionReferenceTuple) -> bool:
         """Return whether this exact position has error occupancy state."""
         state = self._error.get(key)
         return state is not None and state.caused_by is not None
 
     def nearest_occupied_ancestors(
-        self, keys: Sequence[tuple[str, ...]]
+        self, keys: Sequence[chained_name.PositionReferenceTuple]
     ) -> dict[
-        tuple[str, ...], tuple[tuple[str, ...], particle_info.ParticleInfo] | None
+        chained_name.PositionReferenceTuple,
+        tuple[chained_name.PositionReferenceTuple, particle_info.ParticleInfo] | None,
     ]:
         """Return the nearest occupied ancestor for each distinct key."""
         ancestor_keys = self._state.find_longest_prefixes_where(keys, _node_is_occupied)
         results: dict[
-            tuple[str, ...],
-            tuple[tuple[str, ...], particle_info.ParticleInfo] | None,
+            chained_name.PositionReferenceTuple,
+            tuple[chained_name.PositionReferenceTuple, particle_info.ParticleInfo]
+            | None,
         ] = {}
-        for key, ancestor_key in ancestor_keys.items():
+        for key in keys:
+            ancestor_key = ancestor_keys[key]
             if ancestor_key is None:
                 results[key] = None
                 continue
-            results[key] = ancestor_key, self.occupant(ancestor_key)
+            # Only positions hold particles.
+            ancestor_position = chained_name.PositionReferenceTuple(ancestor_key)
+            results[key] = ancestor_position, self.occupant(ancestor_position)
         return results
 
     def keys_for_guarantees(
         self, *, include_callee_derived: bool
-    ) -> set[tuple[str, ...]]:
+    ) -> set[chained_name.PositionReferenceTuple]:
         """Return every position that we need to provide a guarantee for: occupied, known-empty, or marked error.
 
         Positions set by our callees are included only when ``include_callee_derived`` is set.
         """
-        keys: set[tuple[str, ...]] = set()
+        # Only positions hold a particle, emptied state, or error state.
+        keys: set[chained_name.PositionReferenceTuple] = set()
         for key, state in self._state.items():
+            position = chained_name.PositionReferenceTuple(key)
             if (state.particle_info is not None or state.emptied_by is not None) and (
-                include_callee_derived or self._include_in_own_guarantees(key)
+                include_callee_derived or self._include_in_own_guarantees(position)
             ):
-                keys.add(key)
+                keys.add(position)
         for key, error_state in self._error.items():
+            position = chained_name.PositionReferenceTuple(key)
             if error_state.caused_by is not None and (
-                include_callee_derived or self._include_in_own_guarantees(key)
+                include_callee_derived or self._include_in_own_guarantees(position)
             ):
-                keys.add(key)
+                keys.add(position)
         return keys
 
     def is_superseded(
-        self, key: tuple[str, ...], body_operation_number: int, depth: int
+        self,
+        key: chained_name.PositionReferenceTuple,
+        body_operation_number: int,
+        depth: int,
     ) -> bool:
         """Return whether a later-ordered write already decided this key.
 
@@ -639,18 +688,20 @@ class ParticleStateStore:
             and existing.depth < depth
         )
 
-    def _include_in_own_guarantees(self, key: tuple[str, ...]) -> bool:
+    def _include_in_own_guarantees(
+        self, key: chained_name.PositionReferenceTuple
+    ) -> bool:
         """Whether to include this position when collecting this action's own Guarantees."""
         record = self._write_record.get(key)
         return record is None or record.include_in_own_guarantees
 
-    def was_written(self, key: tuple[str, ...]) -> bool:
+    def was_written(self, key: chained_name.PositionReferenceTuple) -> bool:
         """Return whether the action body or a callee wrote this position."""
         return key in self._write_record
 
     def record_write(
         self,
-        key: tuple[str, ...],
+        key: chained_name.PositionReferenceTuple,
         body_operation_number: int,
     ):
         """Record an ordered state write from the action body.
@@ -666,7 +717,7 @@ class ParticleStateStore:
 
     def record_callee_write(
         self,
-        key: tuple[str, ...],
+        key: chained_name.PositionReferenceTuple,
         body_operation_number: int,
         depth: int,
         *,
@@ -677,7 +728,9 @@ class ParticleStateStore:
             body_operation_number, depth, include_in_own_guarantees
         )
 
-    def try_add_action_parent(self, key: tuple[str, ...]) -> tuple[str, ...] | None:
+    def try_add_action_parent(
+        self, key: chained_name.PositionReferenceTuple
+    ) -> chained_name.PositionReferenceTuple | None:
         """Track ``key``'s action name when that is the only absent parent name.
 
         Returns the first absent parent name of ``key``, or None when every
@@ -697,7 +750,7 @@ class ParticleStateStore:
             # write whose own parent name is missing, so this is the only case
             # where the compiler may add a tracker entry for an action name. Any
             # other absent parent name is a position the caller never filled.
-            if parent_key[-1].startswith(_ACTION_KEY_PREFIX):
+            if chained_name.is_action_key(parent_key[-1]):
                 # Repeated _NodeState construction for action-name trie
                 # keys looked costly in the default action-graph full-compiler
                 # benchmark. An August 2026 experiment replaced every fresh value
@@ -705,7 +758,7 @@ class ParticleStateStore:
                 # unprofiled runs showed no measurable wall-time change.
                 self._state[parent_key] = _NodeState()
                 return None
-            return parent_key
+            return chained_name.PositionReferenceTuple(parent_key)
         # Two or more names are absent, so only a walk can say which of them the
         # caller left unfilled first.
         first_missing_index = len(self._state.existing_prefix(key))
@@ -713,10 +766,12 @@ class ParticleStateStore:
         # one the caller left unfilled.
         if chained_name.is_action_key(key[first_missing_index]):
             first_missing_index += 1
-        return key[: first_missing_index + 1]
+        return chained_name.PositionReferenceTuple(key[: first_missing_index + 1])
 
     def _rekey_records_for_move(
-        self, from_key: tuple[str, ...], to_key: tuple[str, ...]
+        self,
+        from_key: chained_name.PositionReferenceTuple,
+        to_key: chained_name.PositionReferenceTuple,
     ):
         """Relocate the moved subtree's write records to follow a state move.
 

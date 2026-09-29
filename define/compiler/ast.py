@@ -709,8 +709,8 @@ class PositionReference(ChainedName[chained_name.PositionReferenceTuple]):
         return PositionReference(
             location=self.location,
             typed_names=self.typed_names[:name_count],
-            _canonical_chained_name_tuple=chained_name.PositionReferenceTuple(
-                self.canonical_chained_name_tuple[:name_count]
+            _canonical_chained_name_tuple=chained_name.position_prefix(
+                self.canonical_chained_name_tuple, name_count
             ),
         )
 

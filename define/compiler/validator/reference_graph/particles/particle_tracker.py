@@ -74,11 +74,11 @@ class ParticleTracker:
         self._guarantee_generator = guarantee_generation.GuaranteeGenerator(self._store)
         self._body_operation_number = 0
 
-    def _delete_subtree(self, key: chained_name.ChainedNameTuple):
+    def _delete_subtree(self, key: chained_name.PositionReferenceTuple):
         """Delete everything tracked at or below a Position while preserving interface-rule history."""
         self._store.delete_subtree(key, self._dead_interfaces.mark_particle_destroyed)
 
-    def _record_write(self, *keys: chained_name.ChainedNameTuple):
+    def _record_write(self, *keys: chained_name.PositionReferenceTuple):
         """Record Position state changes at one point in execution order."""
         self._body_operation_number += 1
         for key in keys:
@@ -127,7 +127,9 @@ class ParticleTracker:
 
     def unconsumed_action_interfaces(
         self,
-    ) -> Iterator[tuple[ast.GlobalTypedNameReference, chained_name.ChainedNameTuple]]:
+    ) -> Iterator[
+        tuple[ast.GlobalTypedNameReference, chained_name.PositionReferenceTuple]
+    ]:
         """Yield occupied interfaces of callees directly triggered by this action."""
         return self._store.unconsumed_action_interfaces()
 
@@ -212,7 +214,7 @@ class ParticleTracker:
         return self._store.occupant_or_none(key)
 
     def get_occupant_or_none_by_key(
-        self, key: chained_name.ChainedNameTuple
+        self, key: chained_name.PositionReferenceTuple
     ) -> particle_info.ParticleInfo | None:
         """Get the particle at this position, if one exists."""
         return self._store.occupant_or_none(key)
@@ -227,7 +229,7 @@ class ParticleTracker:
         self._record_write(position.canonical_chained_name_tuple)
 
     def value_written_at(
-        self, key: chained_name.ChainedNameTuple
+        self, key: chained_name.PositionReferenceTuple
     ) -> ast.SourceLocation:
         """Return where this action last wrote the value of the particle at this position."""
         written_at = self._store.occupant(key).value_written_at
@@ -268,8 +270,8 @@ class ParticleTracker:
         particles: dict[chained_name.ChainedNameTuple, particle_info.ParticleInfo],
         snapshot: child_state.ChildState,
         for_position: ast.PositionReference,
-        position_in_child_state: tuple[str, ...],
-        contract_positions: set[tuple[str, ...]],
+        position_in_child_state: chained_name.ChainedNameTuple,
+        contract_positions: set[chained_name.ChainedNameTuple],
     ):
         """Collect caller particles and additional Child State, keyed by Child State position."""
         key = for_position.canonical_chained_name_tuple
@@ -411,7 +413,7 @@ class ParticleTracker:
         self._delete_subtree(to_key)
 
         def update_interface_occupancy(
-            moved_position: chained_name.ChainedNameTuple,
+            moved_position: chained_name.PositionReferenceTuple,
             moved_particle: particle_info.ParticleInfo,
         ):
             self._dead_interfaces.replace_occupied_interface_child_position(
@@ -431,9 +433,10 @@ class ParticleTracker:
         interface_names: tuple[ast.TypedName[ast.NameContent], ...],
         implied_quality_names: tuple[ast.GlobalTypedNameReference, ...],
         requirements: dict[
-            tuple[str, ...], action_contract.PositionOccupancyRequirement
+            chained_name.PositionReferenceTuple,
+            action_contract.PositionOccupancyRequirement,
         ],
-    ) -> dict[chained_name.ChainedNameTuple, action_contract.PositionGuarantee]:
+    ) -> dict[chained_name.PositionReferenceTuple, action_contract.PositionGuarantee]:
         """Generate this block's own guarantees, excluding the callee-derived keys carried via nested guarantees.
 
         The own guarantees come from keys whose first element matches an
@@ -451,15 +454,16 @@ class ParticleTracker:
         interface_names: tuple[ast.TypedName[ast.NameContent], ...],
         implied_quality_names: tuple[ast.GlobalTypedNameReference, ...],
         requirements: dict[
-            tuple[str, ...], action_contract.PositionOccupancyRequirement
+            chained_name.PositionReferenceTuple,
+            action_contract.PositionOccupancyRequirement,
         ],
-    ) -> dict[chained_name.ChainedNameTuple, action_contract.PositionGuarantee]:
+    ) -> dict[chained_name.PositionReferenceTuple, action_contract.PositionGuarantee]:
         """Produce every guarantee a destructor makes on its contracted positions.
 
         Guarantees about implied positions from triggered actions are expanded
         into the destructor's state rather than deferred.
         """
-        self._callee_guarantees.fully_resolve_pending_guarantees(())
+        self._callee_guarantees.fully_resolve_all_pending_guarantees()
         return self._guarantee_generator.contracted_position_guarantees(
             interface_names,
             implied_quality_names,
@@ -473,7 +477,7 @@ class ParticleTracker:
         contract: action_contract.ActionContract,
         *,
         parent_particle: particle_info.ParticleInfo | None,
-    ) -> list[tuple[chained_name.ChainedNameTuple, ast.SourceLocation]]:
+    ) -> list[tuple[chained_name.PositionReferenceTuple, ast.SourceLocation]]:
         """Record an Action Execution and apply the triggered action's guarantees.
 
         The callee's own guarantees are applied immediately. Any nested guarantees

@@ -117,15 +117,18 @@ class _PendingNestedGuarantees:
         # Each inner dictionary is an ordered set of the guarantees stored at
         # that name.
         self._by_prefix: dict[
-            tuple[str, ...], dict[_PendingGuaranteeIdentity, _PendingGuarantee]
+            chained_name.ChainedNameTuple,
+            dict[_PendingGuaranteeIdentity, _PendingGuarantee],
         ] = {}
         # Queries must skip unrelated guarantees even when many share a parent name.
-        self._by_requested_prefix: dict[tuple[str, ...], set[tuple[str, ...]]] = {}
+        self._by_requested_prefix: dict[
+            chained_name.ChainedNameTuple, set[chained_name.ChainedNameTuple]
+        ] = {}
         # Draining several indexed names must preserve their original insertion order.
         # The sets in _by_requested_prefix do not preserve insertion order, so these
         # numbers recover the order of keys in _by_prefix. Removing and re-adding a
         # key gives it a new place in that order.
-        self._prefix_order: dict[tuple[str, ...], int] = {}
+        self._prefix_order: dict[chained_name.ChainedNameTuple, int] = {}
         self._next_prefix_order: int = 0
         self._longest_pending_guarantee_key: int = 0
 
@@ -163,7 +166,9 @@ class _PendingNestedGuarantees:
             self._longest_pending_guarantee_key, len(prefix)
         )
 
-    def _pop_prefix(self, prefix: tuple[str, ...]) -> Iterable[_PendingGuarantee]:
+    def _pop_prefix(
+        self, prefix: chained_name.ChainedNameTuple
+    ) -> Iterable[_PendingGuarantee]:
         # Every drain must remove the index entries before yielding the guarantees:
         # applying one can query the index again or add new guarantees at this same name.
         guarantees = self._by_prefix.pop(prefix)
@@ -176,7 +181,9 @@ class _PendingNestedGuarantees:
         del self._prefix_order[prefix]
         return guarantees.values()
 
-    def drain_shortest_first(self, key: tuple[str, ...]) -> Iterator[_PendingGuarantee]:
+    def drain_shortest_first(
+        self, key: chained_name.ChainedNameTuple
+    ) -> Iterator[_PendingGuarantee]:
         """Yield and remove the pending nested guarantees on the path to ``key``, shortest prefix first."""
         # The common case is no pending guarantees; bail before doing any work,
         # as a performance optimization.
@@ -196,7 +203,7 @@ class _PendingNestedGuarantees:
             length += 1
 
     def drain_shortest_first_for(
-        self, keys: Iterable[tuple[str, ...]]
+        self, keys: Iterable[chained_name.ChainedNameTuple]
     ) -> Iterator[_PendingGuarantee]:
         """Yield and remove pending guarantees on the paths to ``keys``.
 
@@ -211,7 +218,7 @@ class _PendingNestedGuarantees:
         if not self._by_prefix:
             self._longest_pending_guarantee_key = 0
             return
-        previous_key: tuple[str, ...] | None = None
+        previous_key: chained_name.ChainedNameTuple | None = None
         previous_drained_prefix_count = 0
         for key in keys:
             if previous_key is None:
@@ -251,7 +258,7 @@ class _PendingNestedGuarantees:
             previous_drained_prefix_count = length
 
     def drain_at_or_below_for(
-        self, keys: Sequence[tuple[str, ...]]
+        self, keys: Sequence[chained_name.ChainedNameTuple]
     ) -> Iterator[_PendingGuarantee]:
         """Yield guarantees at or below any of the equally long keys."""
         if not self._by_prefix or not keys:
@@ -270,7 +277,7 @@ class _PendingNestedGuarantees:
                 # duplicate the complete set of stored keys.
                 matching = list(self._by_prefix)
             else:
-                matching: list[tuple[str, ...]] = []
+                matching: list[chained_name.ChainedNameTuple] = []
                 # Distinct requested names of equal length have disjoint matches.
                 for key in requested:
                     matching.extend(self._by_requested_prefix.get(key, ()))
@@ -284,7 +291,7 @@ class _PendingNestedGuarantees:
 class _GuaranteeApplicationState(msgspec.Struct, frozen=True):
     """Shared particle state for applying one callee's guarantees."""
 
-    origin_keys: set[chained_name.ChainedNameTuple]
+    origin_keys: set[chained_name.PositionReferenceTuple]
     # Detached for swap safety.
     detached: particle_state_store.DetachedSubtrees = msgspec.field(
         default_factory=particle_state_store.DetachedSubtrees
@@ -295,7 +302,7 @@ class _GuaranteeApplicationState(msgspec.Struct, frozen=True):
         """Prepare shared state for applying the callee's guarantees."""
         # Existing particles must survive earlier Guarantees that overwrite
         # their origin Positions before the particles reach their destinations.
-        origin_keys: set[tuple[str, ...]] = set()
+        origin_keys: set[chained_name.PositionReferenceTuple] = set()
         for guarantee in pending_guarantee.contract.guarantees.values():
             if isinstance(guarantee, action_contract.OccupiedByExistingGuarantee):
                 origin_tuple = guarantee.origin_position.canonical_chained_name_tuple
@@ -305,12 +312,12 @@ class _GuaranteeApplicationState(msgspec.Struct, frozen=True):
 
     def save_origins_at_or_below(
         self,
-        key: chained_name.ChainedNameTuple,
+        key: chained_name.PositionReferenceTuple,
         store: particle_state_store.ParticleStateStore,
     ):
         """Detach every origin position at or below ``key`` before ``key``'s subtree is overwritten."""
         key_len = len(key)
-        at_or_below: list[tuple[str, ...]] = []
+        at_or_below: list[chained_name.PositionReferenceTuple] = []
         for origin_key in self.origin_keys:
             if len(origin_key) >= key_len and origin_key[:key_len] == key:
                 at_or_below.append(origin_key)
@@ -540,26 +547,38 @@ class CalleeGuaranteeApplier:
             )
             self._pending.add(child_nested_guarantee)
 
-    def apply_pending_guarantees_up_to(self, key: tuple[str, ...]):
+    def apply_pending_guarantees_up_to(self, key: chained_name.PositionReferenceTuple):
         """Apply any nested guarantee on the path from root to ``key``."""
-        for pending_guarantee in self._pending.drain_shortest_first(key):
-            self._apply_pending_guarantee(pending_guarantee)
+        self._apply_drained(self._pending.drain_shortest_first(key))
 
-    def apply_pending_guarantees_up_to_all(self, keys: Iterable[tuple[str, ...]]):
+    def apply_pending_guarantees_up_to_all(
+        self, keys: Iterable[chained_name.PositionReferenceTuple]
+    ):
         """Apply nested guarantees on the paths to any of ``keys``."""
-        for pending_guarantee in self._pending.drain_shortest_first_for(keys):
-            self._apply_pending_guarantee(pending_guarantee)
+        self._apply_drained(self._pending.drain_shortest_first_for(keys))
 
-    def fully_resolve_pending_guarantees(self, *keys: tuple[str, ...]):
+    def fully_resolve_pending_guarantees(
+        self, *keys: chained_name.PositionReferenceTuple
+    ):
         """Apply guarantees affecting any of the equally long keys or their children."""
         self.apply_pending_guarantees_up_to_all(keys)
-        for pending_guarantee in self._pending.drain_at_or_below_for(keys):
+        self._apply_drained(self._pending.drain_at_or_below_for(keys))
+
+    def fully_resolve_all_pending_guarantees(self):
+        """Apply every pending guarantee."""
+        # Every stored prefix is at or below the empty chain.
+        self._apply_drained(self._pending.drain_at_or_below_for([()]))
+
+    def _apply_drained(self, pending_guarantees: Iterator[_PendingGuarantee]):
+        # The drains re-query as they go, so each guarantee must be applied
+        # before the next one is drawn.
+        for pending_guarantee in pending_guarantees:
             self._apply_pending_guarantee(pending_guarantee)
 
     def _update_store_from_callee_direct_guarantee(
         self,
         pending_guarantee: _PendingGuarantee,
-        key: chained_name.ChainedNameTuple,
+        key: chained_name.PositionReferenceTuple,
         guarantee: action_contract.PositionGuarantee,
         application: _GuaranteeApplicationState,
     ):
@@ -658,7 +677,7 @@ class CalleeGuaranteeApplier:
 
     def _apply_existing_guarantee(
         self,
-        dest_key: tuple[str, ...],
+        dest_key: chained_name.PositionReferenceTuple,
         pending_guarantee: _PendingGuarantee,
         guarantee: action_contract.OccupiedByExistingGuarantee,
         application: _GuaranteeApplicationState,
@@ -693,7 +712,7 @@ class CalleeGuaranteeApplier:
         self._dead_interfaces.mark_particle_departed(moved_info)
 
         def record_guaranteed_position(
-            position: chained_name.ChainedNameTuple,
+            position: chained_name.PositionReferenceTuple,
             particle: particle_info.ParticleInfo,
         ):
             self._dead_interfaces.replace_occupied_interface_child_position(

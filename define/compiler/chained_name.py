@@ -54,6 +54,23 @@ def chain_to_last_action(chain: ChainedNameTuple) -> ActionReferenceTuple | None
     return None if index is None else ActionReferenceTuple(chain[: index + 1])
 
 
+def position_prefix(chain: ChainedNameTuple, name_count: int) -> PositionReferenceTuple:
+    """Return the chain's first ``name_count`` typed names, which must end in a position."""
+    return PositionReferenceTuple(chain[:name_count])
+
+
+def position_prefixes_before_first_action(
+    chain: ChainedNameTuple,
+) -> list[PositionReferenceTuple]:
+    """Return every prefix of the chain that ends before its first action, shortest first."""
+    prefixes: list[PositionReferenceTuple] = []
+    for index, typed_name in enumerate(chain):
+        if is_action_key(typed_name):
+            break
+        prefixes.append(position_prefix(chain, index + 1))
+    return prefixes
+
+
 def parent_position_index(chain: ChainedNameTuple) -> int | None:
     """Return the index of the chain's nearest parent position, or None if it has none."""
     for index in range(len(chain) - 2, -1, -1):

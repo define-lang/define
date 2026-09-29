@@ -6,7 +6,7 @@ import typing
 
 import msgspec
 
-from define.compiler import ast, chained_name, name_types
+from define.compiler import ast, chained_name
 from define.compiler.validator.reference_graph import (
     action_contract,
     position_occupancy,
@@ -57,12 +57,11 @@ class RequirementResolver:
             position.starts_with_global
             or position.typed_names[0].full_typed_name in interface_position_names
         )
-        canonical_position_prefixes: list[chained_name.ChainedNameTuple] = []
-        canonical_position = position.canonical_chained_name_tuple
-        for name_index, typed_name in enumerate(position.typed_names):
-            if typed_name.name_type == name_types.NameType.ACTION:
-                break
-            canonical_position_prefixes.append(canonical_position[: name_index + 1])
+        canonical_position_prefixes = (
+            chained_name.position_prefixes_before_first_action(
+                position.canonical_chained_name_tuple
+            )
+        )
         resolved_positions: list[ResolvedRequirementPosition] = []
         for requirement_index, nearest_particle in self._requirement_indices_for_caller(
             canonical_position_prefixes
@@ -150,18 +149,22 @@ class RequirementResolver:
 
     def _requirement_indices_for_caller(
         self,
-        canonical_positions: Sequence[chained_name.ChainedNameTuple],
+        canonical_positions: Sequence[chained_name.PositionReferenceTuple],
     ) -> Iterator[
-        tuple[int, tuple[tuple[str, ...], particle_info.ParticleInfo] | None]
+        tuple[
+            int,
+            tuple[chained_name.PositionReferenceTuple, particle_info.ParticleInfo]
+            | None,
+        ]
     ]:
         """Yield indices of requirements that the caller must fulfill.
 
         Each requirement index is paired with the nearest particle passed in by
         the caller, or ``None`` when no parent position is occupied.
         """
-        parent_positions: list[chained_name.ChainedNameTuple] = []
+        parent_positions: list[chained_name.PositionReferenceTuple] = []
         unresolved_requirements: list[
-            tuple[int, chained_name.ChainedNameTuple | None]
+            tuple[int, chained_name.PositionReferenceTuple | None]
         ] = []
         for requirement_index, canonical_position in enumerate(canonical_positions):
             # If we have touched a position, then the current action overrides any
@@ -170,9 +173,7 @@ class RequirementResolver:
                 canonical_position
             ) or self._store.has_known_occupancy(canonical_position):
                 continue
-            parent_position = (
-                canonical_position[:-1] if len(canonical_position) > 1 else None
-            )
+            parent_position = chained_name.parent_position(canonical_position)
             unresolved_requirements.append((requirement_index, parent_position))
             if parent_position is not None:
                 parent_positions.append(parent_position)
@@ -189,7 +190,10 @@ class RequirementResolver:
 
 def _contracted_position_for_requirement(
     position: ast.PositionReference,
-    nearest_particle: tuple[tuple[str, ...], particle_info.ParticleInfo] | None,
+    nearest_particle: tuple[
+        chained_name.PositionReferenceTuple, particle_info.ParticleInfo
+    ]
+    | None,
 ) -> ast.PositionReference:
     if nearest_particle is None:
         return position

@@ -19,7 +19,7 @@ type _Callee = QualityOnParticle
 
 
 def interface_parent_name_indexes(
-    position: chained_name.ChainedNameTuple,
+    position: chained_name.PositionReferenceTuple,
 ) -> tuple[list[int], list[int]]:
     """Return the name indexes of the callees and interface parent qualities in a chained name.
 
@@ -73,7 +73,7 @@ class _OccupiedInterfaceChildPosition(msgspec.Struct):
     the same particle, is a violation.
     """
 
-    position: chained_name.ChainedNameTuple
+    position: chained_name.PositionReferenceTuple
     location: ast.SourceLocation
     callees: list[_Callee]
     interface_parent_qualities: list[QualityOnParticle]
@@ -151,7 +151,7 @@ class OccupiedInterfaceChildPositionTracker:
     def register(
         self,
         particle: particle_info.ParticleInfo,
-        position: chained_name.ChainedNameTuple,
+        position: chained_name.PositionReferenceTuple,
         location: ast.SourceLocation,
         callees: list[_Callee],
         interface_parent_qualities: list[QualityOnParticle],
@@ -162,7 +162,7 @@ class OccupiedInterfaceChildPositionTracker:
     def replace(
         self,
         particle: particle_info.ParticleInfo,
-        position: chained_name.ChainedNameTuple,
+        position: chained_name.PositionReferenceTuple,
         location: ast.SourceLocation,
         callees: list[_Callee],
         interface_parent_qualities: list[QualityOnParticle],
@@ -186,7 +186,7 @@ class OccupiedInterfaceChildPositionTracker:
         action_name: str,
         implied_quality_names: frozenset[str],
         parent_particle: particle_info.ParticleInfo | None,
-    ) -> list[tuple[chained_name.ChainedNameTuple, ast.SourceLocation]]:
+    ) -> list[tuple[chained_name.PositionReferenceTuple, ast.SourceLocation]]:
         """Remove and return occupied interface child positions for one callee."""
         particles: set[particle_info.ParticleInfo] = set()
         callee_particles = self._particles_by_callee.get((parent_particle, action_name))
@@ -200,7 +200,7 @@ class OccupiedInterfaceChildPositionTracker:
                 if quality_particles is not None:
                     particles.update(quality_particles)
         occupied_positions: list[
-            tuple[chained_name.ChainedNameTuple, ast.SourceLocation]
+            tuple[chained_name.PositionReferenceTuple, ast.SourceLocation]
         ] = []
         for particle in particles:
             occupied_position = self._by_particle.pop(particle)
@@ -244,7 +244,7 @@ class OccupiedInterfaceChildPositionTracker:
     def _set(
         self,
         particle: particle_info.ParticleInfo,
-        position: chained_name.ChainedNameTuple,
+        position: chained_name.PositionReferenceTuple,
         location: ast.SourceLocation,
         callees: list[_Callee],
         interface_parent_qualities: list[QualityOnParticle],
@@ -264,7 +264,7 @@ class ParticleLookup(typing.Protocol):
     """Current particle state, as seen by the action being validated."""
 
     def occupant(
-        self, key: chained_name.ChainedNameTuple
+        self, key: chained_name.PositionReferenceTuple
     ) -> particle_info.ParticleInfo:
         """Return the particle at this position, raising KeyError if it is empty."""
         ...
@@ -286,7 +286,7 @@ class DeadInterfaceTracker:
 
     def register_occupied_interface_child_position(
         self,
-        position: chained_name.ChainedNameTuple,
+        position: chained_name.PositionReferenceTuple,
         particle: particle_info.ParticleInfo,
         location: ast.SourceLocation,
     ):
@@ -302,7 +302,7 @@ class DeadInterfaceTracker:
 
     def replace_occupied_interface_child_position(
         self,
-        position: chained_name.ChainedNameTuple,
+        position: chained_name.PositionReferenceTuple,
         particle: particle_info.ParticleInfo,
         location: ast.SourceLocation,
     ):
@@ -354,9 +354,11 @@ class DeadInterfaceTracker:
         action: ast.GlobalTypedNameReference,
         implied_quality_names: frozenset[str],
         parent_particle: particle_info.ParticleInfo | None,
-    ) -> list[tuple[chained_name.ChainedNameTuple, ast.SourceLocation]]:
+    ) -> list[tuple[chained_name.PositionReferenceTuple, ast.SourceLocation]]:
         """Record an Action Execution and return the occupied interface child positions it violates."""
-        violations: list[tuple[chained_name.ChainedNameTuple, ast.SourceLocation]] = []
+        violations: list[
+            tuple[chained_name.PositionReferenceTuple, ast.SourceLocation]
+        ] = []
         occupied_positions = (
             self._occupied_child_positions.pop_occupied_interface_child_positions(
                 action.full_typed_name, implied_quality_names, parent_particle
@@ -374,7 +376,7 @@ class DeadInterfaceTracker:
         return self._arrivals.dead_arrivals()
 
     def _interface_parent_names_on_particles(
-        self, position: chained_name.ChainedNameTuple
+        self, position: chained_name.PositionReferenceTuple
     ) -> tuple[list[QualityOnParticle], list[QualityOnParticle]]:
         """Pair each callee and interface parent quality in this position's chained name with the particle it is on."""
         callee_indexes, interface_parent_quality_indexes = (
@@ -391,10 +393,14 @@ class DeadInterfaceTracker:
         return callees, interface_parent_qualities
 
     def _quality_on_particle(
-        self, position: chained_name.ChainedNameTuple, name_index: int
+        self, position: chained_name.PositionReferenceTuple, name_index: int
     ) -> QualityOnParticle:
         """Pair the name at ``name_index`` with its particle, or None for this action's parent particle."""
         particle = (
-            None if name_index == 0 else self._particles.occupant(position[:name_index])
+            None
+            if name_index == 0
+            else self._particles.occupant(
+                chained_name.position_prefix(position, name_index)
+            )
         )
         return particle, position[name_index]

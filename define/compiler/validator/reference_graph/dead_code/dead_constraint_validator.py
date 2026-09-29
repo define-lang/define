@@ -174,7 +174,7 @@ class DeadConstraintValidator:
     def validate(
         self,
         own_guarantees: dict[
-            chained_name.ChainedNameTuple, action_contract.PositionGuarantee
+            chained_name.PositionReferenceTuple, action_contract.PositionGuarantee
         ],
         scope: scope_tracker.ScopeTracker,
     ) -> list[diagnostics.Diagnostic]:
@@ -237,7 +237,7 @@ class DeadConstraintValidator:
     def _mark_own_contract_guarantees_alive(
         self,
         own_guarantees: dict[
-            chained_name.ChainedNameTuple, action_contract.PositionGuarantee
+            chained_name.PositionReferenceTuple, action_contract.PositionGuarantee
         ],
         scope: scope_tracker.ScopeTracker,
     ):

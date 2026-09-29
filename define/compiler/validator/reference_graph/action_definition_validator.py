@@ -612,7 +612,7 @@ class ActionDefinitionValidator:
         action: ast.GlobalTypedNameReference,
         trigger_location: ast.SourceLocation,
         occupied_interface_child_position_violations: Sequence[
-            tuple[chained_name.ChainedNameTuple, ast.SourceLocation]
+            tuple[chained_name.PositionReferenceTuple, ast.SourceLocation]
         ],
     ):
         """Record occupied interface child positions found when one callee triggers."""
@@ -1184,7 +1184,7 @@ class ActionDefinitionValidator:
     def _check_destructor_guarantees(
         self,
         guarantees: dict[
-            chained_name.ChainedNameTuple, action_contract.PositionGuarantee
+            chained_name.PositionReferenceTuple, action_contract.PositionGuarantee
         ],
     ):
         """Report forbidden Destructor Guarantees and replace them with Error Guarantees.

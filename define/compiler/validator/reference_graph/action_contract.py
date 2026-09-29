@@ -305,7 +305,7 @@ class ActionContract(msgspec.Struct, frozen=True):
 
     occupancy_requirements: list[PositionOccupancyRequirement]
     value_requirements: list[ValueRequirement]
-    guarantees: dict[chained_name.ChainedNameTuple, PositionGuarantee]
+    guarantees: dict[chained_name.PositionReferenceTuple, PositionGuarantee]
     # Callee contracts are referenced rather than folded in so that we don't
     # get unbounded memory growth from re-copying guarantees as we walk up a
     # call stack (and unbounded compute growth from having to iterate through

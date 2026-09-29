@@ -76,6 +76,7 @@ py_library(
         ":position_quality_resolver",
         ":requirement_violation",
         "//define/compiler:ast",
+        "//define/compiler:chained_name",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:scope_tracker",
         "//define/compiler/validator/reference_graph/particles:particle_info",

@@ -30,11 +30,12 @@ class GuaranteeGenerator:
         interface_names: tuple[ast.TypedName[ast.NameContent], ...],
         implied_quality_names: tuple[ast.GlobalTypedNameReference, ...],
         requirements: dict[
-            tuple[str, ...], action_contract.PositionOccupancyRequirement
+            chained_name.PositionReferenceTuple,
+            action_contract.PositionOccupancyRequirement,
         ],
         *,
         is_destructor: bool = False,
-    ) -> dict[chained_name.ChainedNameTuple, action_contract.PositionGuarantee]:
+    ) -> dict[chained_name.PositionReferenceTuple, action_contract.PositionGuarantee]:
         """Collect and sort the guarantees for every contracted key, excluding the ones _guarantee_for_key reports as no-ops."""
         include_names = {
             name.full_typed_name for name in (*interface_names, *implied_quality_names)
@@ -45,7 +46,9 @@ class GuaranteeGenerator:
         all_keys = self._store.keys_for_guarantees(include_callee_derived=is_destructor)
 
         guarantees: list[
-            tuple[chained_name.ChainedNameTuple, action_contract.PositionGuarantee]
+            tuple[
+                chained_name.PositionReferenceTuple, action_contract.PositionGuarantee
+            ]
         ] = []
         for key in all_keys:
             # Consuming a callee's Interface Position must also override its
@@ -110,9 +113,10 @@ class GuaranteeGenerator:
 
     def _guarantee_for_key(
         self,
-        key: tuple[str, ...],
+        key: chained_name.PositionReferenceTuple,
         requirements: dict[
-            tuple[str, ...], action_contract.PositionOccupancyRequirement
+            chained_name.PositionReferenceTuple,
+            action_contract.PositionOccupancyRequirement,
         ],
     ) -> action_contract.PositionGuarantee | None:
         """Build a guarantee describing the current tracker state, or None for no-ops.

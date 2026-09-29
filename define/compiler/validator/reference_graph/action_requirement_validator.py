@@ -12,7 +12,7 @@ from define.compiler.validator.reference_graph import (
 from define.compiler.validator.reference_graph.particles import particle_info
 
 if typing.TYPE_CHECKING:
-    from define.compiler import ast
+    from define.compiler import ast, chained_name
     from define.compiler.errors import diagnostics
     from define.compiler.validator import scope_tracker
     from define.compiler.validator.reference_graph import position_quality_resolver
@@ -26,7 +26,8 @@ class ActionRequirementValidator:
     _tracker: particle_tracker.ParticleTracker
     _position_quality_resolver: position_quality_resolver.PositionQualityResolver
     _inferred_occupancy_requirements: dict[
-        tuple[str, ...], action_contract.PositionOccupancyRequirement
+        chained_name.PositionReferenceTuple,
+        action_contract.PositionOccupancyRequirement,
     ]
 
     def __init__(
@@ -41,13 +42,16 @@ class ActionRequirementValidator:
         self._position_quality_resolver = quality_resolver
         self._inferred_occupancy_requirements = {}
         self.value_requirements: dict[
-            tuple[str, ...], action_contract.ValueRequirement
+            chained_name.PositionReferenceTuple, action_contract.ValueRequirement
         ] = {}
 
     @property
     def occupancy_requirements(
         self,
-    ) -> dict[tuple[str, ...], action_contract.PositionOccupancyRequirement]:
+    ) -> dict[
+        chained_name.PositionReferenceTuple,
+        action_contract.PositionOccupancyRequirement,
+    ]:
         """The requirements inferred for this Action's contract."""
         return self._inferred_occupancy_requirements
 
