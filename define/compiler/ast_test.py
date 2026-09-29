@@ -482,7 +482,7 @@ class TestPositionConstraintBlockAsSet:
 class TestChainedNameConstruction:
     def test_empty_typed_names_rejected(self):
         with pytest.raises(ValueError, match="at least one typed name"):
-            _ = ast.ChainedName(location=_LOC, typed_names=())
+            _ = ast.PositionReference(location=_LOC, typed_names=())
 
 
 class TestChainedNameCanonical:

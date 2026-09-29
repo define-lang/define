@@ -78,8 +78,12 @@ def _global(
 def _chain(
     *typed_names: ast.TypedNameReference,
     location: ast.SourceLocation = _LOC,
-) -> ast.ChainedName:
-    return ast.ChainedName(location=location, typed_names=typed_names)
+) -> ast.PositionReference:
+    return ast.PositionReference(location=location, typed_names=typed_names)
+
+
+def _action_chain(*typed_names: ast.TypedNameReference) -> ast.ActionReference:
+    return ast.ActionReference(location=_LOC, typed_names=typed_names)
 
 
 class TestBasicOps:
@@ -514,10 +518,10 @@ class TestChainedCanonicalIdentity:
             typed_name_dict.ChainedNameDict()
         )
         d[_chain(_local("a", name_type=name_types.NameType.POSITION))] = 1
-        d[_chain(_local("a", name_type=name_types.NameType.ACTION))] = 2
+        d[_action_chain(_local("a", name_type=name_types.NameType.ACTION))] = 2
         assert len(d) == 2
         assert d[_chain(_local("a", name_type=name_types.NameType.POSITION))] == 1
-        assert d[_chain(_local("a", name_type=name_types.NameType.ACTION))] == 2
+        assert d[_action_chain(_local("a", name_type=name_types.NameType.ACTION))] == 2
 
     def test_overwrite_retains_latest_key_instance(self):
         d: typed_name_dict.ChainedNameDict[ast.ChainedName, int] = (

@@ -348,8 +348,8 @@ class TestResolvedChainedName:
 def _make_chain(
     location_from: ast.ASTNode,
     *typed_names: ast.TypedNameReference,
-) -> ast.ChainedName:
-    return ast.ChainedName(
+) -> ast.ActionReference:
+    return ast.ActionReference(
         location=location_from.location,
         typed_names=typed_names,
     )

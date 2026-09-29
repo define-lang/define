@@ -576,7 +576,15 @@ def chain_parent_position(
     return None
 
 
-class ChainedName(ASTNode):
+ChainedNameTupleT_co = TypeVar(
+    "ChainedNameTupleT_co",
+    bound=chained_name.ChainedNameTuple,
+    covariant=True,
+    default=chained_name.ChainedNameTuple,
+)
+
+
+class ChainedName(ASTNode, abc.ABC, Generic[ChainedNameTupleT_co]):
     """A chain of typed name references joined by ::.
 
     Treat location and typed_names as immutable after construction so that
@@ -584,7 +592,10 @@ class ChainedName(ASTNode):
     """
 
     typed_names: tuple[TypedNameReference, ...]
-    _canonical_chained_name_tuple: chained_name.ChainedNameTuple | None = None
+    # A covariant type in a mutable field is safe here only because nothing
+    # writes it through a chained name of a wider kind: only this class's
+    # property and the construction of a concrete kind set it.
+    _canonical_chained_name_tuple: ChainedNameTupleT_co | None = None
     _canonical_chained_name: str | None = None
 
     def __post_init__(self):
@@ -596,13 +607,17 @@ class ChainedName(ASTNode):
     # hotspot in compilation profiles. The values are deterministic over the
     # immutable typed_names, so a benign race recomputes an equal value.
     @property
-    def canonical_chained_name_tuple(self) -> chained_name.ChainedNameTuple:
+    def canonical_chained_name_tuple(self) -> ChainedNameTupleT_co:
         """The canonical typed names in this chain."""
         if self._canonical_chained_name_tuple is None:
-            self._canonical_chained_name_tuple = tuple(
-                [elem.full_typed_name for elem in self.typed_names]
+            self._canonical_chained_name_tuple = self._tag(
+                tuple([elem.full_typed_name for elem in self.typed_names])
             )
         return self._canonical_chained_name_tuple
+
+    @abc.abstractmethod
+    def _tag(self, canonical_names: tuple[str, ...]) -> ChainedNameTupleT_co:
+        """Tag canonical typed names with this chained name's kind."""
 
     @property
     def canonical_chained_name(self) -> str:
@@ -663,9 +678,9 @@ class ChainedName(ASTNode):
                     typed_names=names[: i + 1],
                     # A prefix of self's canonical tuple is exactly the parent's,
                     # so slice it here instead of making the parent recompute it.
-                    _canonical_chained_name_tuple=self.canonical_chained_name_tuple[
-                        : i + 1
-                    ],
+                    _canonical_chained_name_tuple=chained_name.PositionReferenceTuple(
+                        self.canonical_chained_name_tuple[: i + 1]
+                    ),
                 )
         return None
 
@@ -693,7 +708,7 @@ class ChainedName(ASTNode):
             # chained_name_tuple over and over for requirement checks. (Concatenating
             # these two tuples is much faster than generating the tuple from the typed
             # names.)
-            _canonical_chained_name_tuple=(
+            _canonical_chained_name_tuple=self._tag(
                 prefix.canonical_chained_name_tuple + self.canonical_chained_name_tuple
             ),
         )
@@ -707,7 +722,7 @@ class ChainedName(ASTNode):
         return PositionReference(
             location=self.location,
             typed_names=self.typed_names + names,
-            _canonical_chained_name_tuple=(
+            _canonical_chained_name_tuple=chained_name.PositionReferenceTuple(
                 self.canonical_chained_name_tuple
                 + tuple([name.full_typed_name for name in names])
             ),
@@ -722,7 +737,7 @@ class ChainedName(ASTNode):
         return ActionReference(
             location=self.location,
             typed_names=self.typed_names + names,
-            _canonical_chained_name_tuple=(
+            _canonical_chained_name_tuple=chained_name.ActionReferenceTuple(
                 self.canonical_chained_name_tuple
                 + tuple([name.full_typed_name for name in names])
             ),
@@ -741,7 +756,7 @@ class ChainedName(ASTNode):
         return self.with_prefix(caller_chain)
 
 
-class PositionReference(ChainedName):
+class PositionReference(ChainedName[chained_name.PositionReferenceTuple]):
     """Represents a position reference, possibly chained with ::."""
 
     from_source: bool = False
@@ -764,13 +779,19 @@ class PositionReference(ChainedName):
         return PositionReference(
             location=self.location,
             typed_names=self.typed_names[:name_count],
-            _canonical_chained_name_tuple=self.canonical_chained_name_tuple[
-                :name_count
-            ],
+            _canonical_chained_name_tuple=chained_name.PositionReferenceTuple(
+                self.canonical_chained_name_tuple[:name_count]
+            ),
         )
 
+    @override
+    def _tag(
+        self, canonical_names: tuple[str, ...]
+    ) -> chained_name.PositionReferenceTuple:
+        return chained_name.PositionReferenceTuple(canonical_names)
 
-class ActionReference(ChainedName):
+
+class ActionReference(ChainedName[chained_name.ActionReferenceTuple]):
     """Represents a chained name known to end with an action.
 
     Unlike PositionReference, the parser never produces this directly; the
@@ -791,6 +812,12 @@ class ActionReference(ChainedName):
         # Every action name is global, and construction checked that the chain ends
         # with an action, so its last element is that action.
         return cast("GlobalTypedNameReference", self.typed_names[-1])
+
+    @override
+    def _tag(
+        self, canonical_names: tuple[str, ...]
+    ) -> chained_name.ActionReferenceTuple:
+        return chained_name.ActionReferenceTuple(canonical_names)
 
 
 class ParticleStatement(ASTNode):
