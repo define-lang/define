@@ -1,0 +1,6 @@
+test.create(/powered)
+test.create(/unlocked)
+test.create(/exactly_one)
+test.set_value(/powered, True)
+test.set_value(/unlocked, False)
+test.execute(operation<standard:/boolean/exclusive_or>, /powered, /unlocked, /exactly_one)

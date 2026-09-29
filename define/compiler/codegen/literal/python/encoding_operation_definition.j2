@@ -8,6 +8,12 @@
 -
             {%- when BinaryOperator::Multiply -%}
 *
+            {%- when BinaryOperator::And -%}
+and
+            {%- when BinaryOperator::Or -%}
+or
+            {%- when BinaryOperator::ExclusiveOr -%}
+^
             {%- endmatch %} {{ statement.right }}
         {%- when EncodingOperationStatement::PrefixOperation with (statement) -%}
             {%- match statement.operator -%}

@@ -1,0 +1,24 @@
+define the encoding_operation<standard:/boolean/ascii/exclusive_or> {
+    define the view<a> {
+        it is read.
+        it may only contain particles where {
+            it has the encoding</boolean/ascii>.
+        }
+    }
+    define the view<b> {
+        it is read.
+        it may only contain particles where {
+            it has the encoding</boolean/ascii>.
+        }
+    }
+    define the view<result> {
+        it is written.
+        it may only contain particles where {
+            it has the encoding</boolean/ascii>.
+        }
+    }
+
+    it does {
+        execute the computer operation.
+    }
+}

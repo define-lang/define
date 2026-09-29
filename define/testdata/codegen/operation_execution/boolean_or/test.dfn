@@ -1,0 +1,20 @@
+# Either of two positions' values is true with the built-in boolean or.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</powered>.
+    it also assigns the position</unlocked>.
+    it also assigns the position</either>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</powered>.
+        create a particle in position</unlocked>.
+        create a particle in position</either>.
+        set the value of position</powered> to literal<standard:/boolean>"true".
+        set the value of position</unlocked> to literal<standard:/boolean>"false".
+        execute the operation<standard:/boolean/or> {
+            with view<a> looking at position</powered>.
+            with view<b> looking at position</unlocked>.
+            with view<result> looking at position</either>.
+        }
+    }
+}

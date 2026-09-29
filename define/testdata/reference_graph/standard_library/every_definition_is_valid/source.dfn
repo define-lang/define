@@ -4,6 +4,21 @@ define the potential position<my.domain.com:my_lib:/flag> {
         it has the value<standard:/boolean>.
     }
 }
+define the potential position<my.domain.com:my_lib:/both> {
+    it may only contain particles where {
+        it has the value<standard:/boolean>.
+    }
+}
+define the potential position<my.domain.com:my_lib:/either> {
+    it may only contain particles where {
+        it has the value<standard:/boolean>.
+    }
+}
+define the potential position<my.domain.com:my_lib:/exactly_one> {
+    it may only contain particles where {
+        it has the value<standard:/boolean>.
+    }
+}
 define the potential position<my.domain.com:my_lib:/total> {
     it may only contain particles where {
         it has the value<standard:/number/rational>.
@@ -53,6 +68,9 @@ define the encoding_operation<my.domain.com:my_lib:/increment> {
 }
 define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the position</flag>.
+    it also assigns the position</both>.
+    it also assigns the position</either>.
+    it also assigns the position</exactly_one>.
     it also assigns the position</total>.
     it also assigns the position</remaining>.
     it also assigns the position</product>.
@@ -62,9 +80,27 @@ define the potential action<my.domain.com:my_lib:/test> {
         this particle is created.
     } and it does {
         create a particle in position</flag>.
+        create a particle in position</both>.
+        create a particle in position</either>.
+        create a particle in position</exactly_one>.
         set the value of position</flag> to literal<standard:/boolean>"true".
         execute the operation<standard:/boolean/not> {
             with view<value> looking at position</flag>.
+        }
+        execute the operation<standard:/boolean/and> {
+            with view<a> looking at position</flag>.
+            with view<b> looking at literal<standard:/boolean>"false".
+            with view<result> looking at position</both>.
+        }
+        execute the operation<standard:/boolean/or> {
+            with view<a> looking at position</flag>.
+            with view<b> looking at literal<standard:/boolean>"false".
+            with view<result> looking at position</either>.
+        }
+        execute the operation<standard:/boolean/exclusive_or> {
+            with view<a> looking at position</flag>.
+            with view<b> looking at literal<standard:/boolean>"false".
+            with view<result> looking at position</exactly_one>.
         }
         create a particle in position</total>.
         create a particle in position</remaining>.

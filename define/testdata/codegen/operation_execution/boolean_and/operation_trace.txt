@@ -1,0 +1,4 @@
+test.create(/powered)
+test.create(/both)
+test.set_value(/powered, True)
+test.execute(operation<standard:/boolean/and>, /powered, True, /both)

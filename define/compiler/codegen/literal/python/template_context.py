@@ -257,15 +257,18 @@ class EncodingOperationStatementContext(msgspec.Struct):
 
 
 class BinaryOperator(enum.Enum):
-    """An arithmetic operator that combines two values."""
+    """An operator written between the two values it combines."""
 
     ADD = enum.auto()
     SUBTRACT = enum.auto()
     MULTIPLY = enum.auto()
+    AND = enum.auto()
+    OR = enum.auto()
+    EXCLUSIVE_OR = enum.auto()
 
 
 class BinaryOperationContext(EncodingOperationStatementContext):
-    """Combine two values with an infix arithmetic operator."""
+    """Combine two values with an infix operator."""
 
     kind: ClassVar[EncodingOperationStatementKind] = (
         EncodingOperationStatementKind.BINARY_OPERATION

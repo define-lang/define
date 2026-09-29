@@ -101,6 +101,7 @@ required-imports = ["from __future__ import annotations"]
     "D103", # Generated code doesn't need function docstrings.
     "D107", # Generated code doesn't need __init__ docstrings.
     "FBT001", # Encoding Operation functions take boolean values positionally, like any other value.
+    "FBT003", # Boolean literals are passed to Encoding Operation functions positionally, like any other value.
     "I001", # Import ordering depends on isort first-party config of the target project.
     "I002", # Generated code does not inherit this project's required imports.
     "N801", # Generated code may produce non-CapWords class names.
@@ -113,6 +114,7 @@ required-imports = ["from __future__ import annotations"]
     "D103", # Generated code doesn't need function docstrings.
     "D107", # Generated code doesn't need __init__ docstrings.
     "FBT001", # Encoding Operation functions take boolean values positionally, like any other value.
+    "FBT003", # Boolean literals are passed to Encoding Operation functions positionally, like any other value.
     "I001", # Import ordering depends on isort first-party config of the target project.
     "I002", # Generated code does not inherit this project's required imports.
     "N801", # Generated code may produce non-CapWords class names.

@@ -257,6 +257,9 @@ enum BinaryOperator {
     Add,
     Subtract,
     Multiply,
+    And,
+    Or,
+    ExclusiveOr,
 }
 
 impl<'a, 'py> FromPyObject<'a, 'py> for BinaryOperator {
@@ -267,6 +270,9 @@ impl<'a, 'py> FromPyObject<'a, 'py> for BinaryOperator {
             "ADD" => Ok(Self::Add),
             "SUBTRACT" => Ok(Self::Subtract),
             "MULTIPLY" => Ok(Self::Multiply),
+            "AND" => Ok(Self::And),
+            "OR" => Ok(Self::Or),
+            "EXCLUSIVE_OR" => Ok(Self::ExclusiveOr),
             _ => Err(PyRuntimeError::new_err(format!(
                 "Unknown binary operator: {name}"
             ))),

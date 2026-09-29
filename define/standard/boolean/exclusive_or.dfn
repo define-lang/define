@@ -1,0 +1,24 @@
+define the operation<standard:/boolean/exclusive_or> {
+    define the view<a> {
+        it is read.
+        it may only contain particles where {
+            it has the value</boolean>.
+        }
+    }
+    define the view<b> {
+        it is read.
+        it may only contain particles where {
+            it has the value</boolean>.
+        }
+    }
+    define the view<result> {
+        it is written.
+        it may only contain particles where {
+            it has the value</boolean>.
+        }
+    }
+
+    it does {
+        execute the encoding operation.
+    }
+}
