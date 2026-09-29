@@ -92,8 +92,26 @@ def _decimal_error(content: str) -> LiteralParseError:
     raise ValueError(f"valid decimal content was rejected: {content!r}")
 
 
+_BOOLEANS: Final = {"true": "True", "false": "False"}
+
+
+def _parse_boolean_ascii(content: str) -> str:
+    boolean = _BOOLEANS.get(content)
+    if boolean is not None:
+        return boolean
+    if content.lower() in _BOOLEANS:
+        for index, char in enumerate(content):
+            if char.isupper():
+                raise LiteralParseError("booleans are written in lowercase", index)
+    raise LiteralParseError("a boolean is either true or false", 0)
+
+
 # Keyed by the Potential Literal's encoding and then the value's encoding.
 LITERAL_PARSERS: Final[dict[tuple[str, str], Callable[[str], str]]] = {
+    (
+        constants.BOOLEAN_ASCII_ENCODING,
+        constants.BOOLEAN_ASCII_ENCODING,
+    ): _parse_boolean_ascii,
     (
         constants.DECIMAL_ASCII_ENCODING,
         constants.DECIMAL_ASCII_ENCODING,

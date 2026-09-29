@@ -1,4 +1,9 @@
 # A program that references every standard universe definition loads and validates all of their files.
+define the potential position<my.domain.com:my_lib:/flag> {
+    it may only contain particles where {
+        it has the value<standard:/boolean>.
+    }
+}
 define the potential position<my.domain.com:my_lib:/total> {
     it may only contain particles where {
         it has the value<standard:/number/rational>.
@@ -47,6 +52,7 @@ define the encoding_operation<my.domain.com:my_lib:/increment> {
     }
 }
 define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</flag>.
     it also assigns the position</total>.
     it also assigns the position</remaining>.
     it also assigns the position</product>.
@@ -55,6 +61,8 @@ define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.
     } and it does {
+        create a particle in position</flag>.
+        set the value of position</flag> to literal<standard:/boolean>"true".
         create a particle in position</total>.
         create a particle in position</remaining>.
         create a particle in position</product>.

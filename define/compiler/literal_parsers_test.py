@@ -4,9 +4,35 @@ import pytest
 
 from define.compiler import constants, literal_parsers
 
+_PARSE_BOOLEAN_ASCII = literal_parsers.LITERAL_PARSERS[
+    constants.BOOLEAN_ASCII_ENCODING, constants.BOOLEAN_ASCII_ENCODING
+]
 _PARSE_DECIMAL_ASCII = literal_parsers.LITERAL_PARSERS[
     constants.DECIMAL_ASCII_ENCODING, constants.DECIMAL_ASCII_ENCODING
 ]
+
+
+@pytest.mark.parametrize(("content", "python"), [("true", "True"), ("false", "False")])
+def test_boolean_ascii_accepts(content: str, python: str):
+    assert _PARSE_BOOLEAN_ASCII(content) == python
+
+
+@pytest.mark.parametrize(
+    ("content", "reason", "content_index"),
+    [
+        ("", "a boolean is either true or false", 0),
+        ("True", "booleans are written in lowercase", 0),
+        ("fALSE", "booleans are written in lowercase", 1),
+        ("yes", "a boolean is either true or false", 0),
+        ("1", "a boolean is either true or false", 0),
+        ("true ", "a boolean is either true or false", 0),
+    ],
+)
+def test_boolean_ascii_rejects(content: str, reason: str, content_index: int):
+    with pytest.raises(literal_parsers.LiteralParseError) as error:
+        _ = _PARSE_BOOLEAN_ASCII(content)
+    assert error.value.reason == reason
+    assert error.value.content_index == content_index
 
 
 @pytest.mark.parametrize(

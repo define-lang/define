@@ -25,12 +25,14 @@ STANDARD_LIBRARY_ROOT: Final = define_path.DefinePathFromPosix(
         (pathlib.Path(__file__).parent.parent / "standard").as_posix()
     )
 )
-# The standard universe's files in define/standard define this encoding.
+# The standard universe's files in define/standard define these encodings.
+BOOLEAN_ASCII_ENCODING: Final = f"encoding<{STANDARD_UNIVERSE}:/boolean/ascii>"
 DECIMAL_ASCII_ENCODING: Final = f"encoding<{STANDARD_UNIVERSE}:/number/decimal/ascii>"
 # TODO: Read value encodings from encodings configuration (DLP 47) once it
 # exists.
 BUILT_IN_VALUE_ENCODINGS: Final = {
-    f"value<{STANDARD_UNIVERSE}:/number/rational>": DECIMAL_ASCII_ENCODING
+    f"value<{STANDARD_UNIVERSE}:/boolean>": BOOLEAN_ASCII_ENCODING,
+    f"value<{STANDARD_UNIVERSE}:/number/rational>": DECIMAL_ASCII_ENCODING,
 }
 # The path, in the standard universe, of the Encoding Operation that performs
 # each Value Operation for the encodings of its input views.

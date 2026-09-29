@@ -1,0 +1,10 @@
+# A boolean literal sets a boolean value.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</enabled>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</enabled>.
+        set the value of position</enabled> to literal<standard:/boolean>"false".
+    }
+}

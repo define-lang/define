@@ -15,7 +15,10 @@ NO_VALUE: Final = "Never"
 # TODO: Emit values of rationals as exact fractions, such as
 # fractions.Fraction, instead of Python floats, which cannot represent most
 # rationals.
-_ENCODING_PYTHON_TYPES: Final = {constants.DECIMAL_ASCII_ENCODING: "float"}
+_ENCODING_PYTHON_TYPES: Final = {
+    constants.BOOLEAN_ASCII_ENCODING: "bool",
+    constants.DECIMAL_ASCII_ENCODING: "float",
+}
 
 
 def python_value_type(value_type: ast.GlobalTypedNameReference) -> str:

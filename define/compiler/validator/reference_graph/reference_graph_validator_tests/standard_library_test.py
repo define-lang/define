@@ -25,6 +25,8 @@ def test_every_definition_is_valid(
     ) == sorted(
         [
             "<string>",
+            standard_library_file("boolean.dfn"),
+            standard_library_file("boolean/ascii.dfn"),
             standard_library_file("number.dfn"),
             standard_library_file("number/decimal/ascii.dfn"),
             standard_library_file("number/decimal/ascii/absolute_value.dfn"),

@@ -331,3 +331,46 @@ def test_callee_target_missing_value_type(
     assert diagnostic.location.column == 26
     assert diagnostic.position_name == "position<target>"
     assert diagnostic.origin_position_name == "position<target>"
+
+
+def test_boolean_literal(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph().program_result
+    assert_no_errors(result)
+
+
+def test_invalid_boolean_literal_content(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph().program_result
+    assert result.all_exceptions == []
+    assert len(result.all_diagnostics) == 1
+    diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.InvalidLiteralContentDiagnostic)
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.content == "True"
+    assert diagnostic.potential_literal == "literal<standard:/boolean>"
+    assert diagnostic.value_encoding == "encoding<standard:/boolean/ascii>"
+    assert diagnostic.reason == "booleans are written in lowercase"
+    assert diagnostic.location.line == 12
+    assert diagnostic.location.column == 73
+
+
+def test_boolean_literal_sets_rational(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph().program_result
+    assert result.all_exceptions == []
+    assert len(result.all_diagnostics) == 1
+    diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.LiteralCannotSetValueDiagnostic)
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.potential_literal == "literal<standard:/boolean>"
+    assert diagnostic.literal_encoding == "encoding<standard:/boolean/ascii>"
+    assert diagnostic.value_type == "value<standard:/number/rational>"
+    assert diagnostic.supported_encodings == [
+        "encoding<standard:/number/decimal/ascii>"
+    ]
+    assert diagnostic.location.line == 12
+    assert diagnostic.location.column == 46

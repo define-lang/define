@@ -1,0 +1,4 @@
+define the potential value<standard:/boolean>.
+define the potential literal<standard:/boolean> {
+    it has the encoding</boolean/ascii>.
+}
