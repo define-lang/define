@@ -415,11 +415,10 @@ class ActionDefinitionValidator:
                 # Position. For a Destroy of position<box>, a particle at
                 # position<box>::position</child> uses just position</child>
                 # to find its child state; the particle at position<box> uses ().
-                position_in_child_state=destruction_fact.destroyed_position_in_destroyer.canonical_chained_name_tuple[
-                    len(
-                        destruction_fact.destruction.directly_destroyed_position.typed_names
-                    ) :
-                ],
+                position_in_child_state=chained_name.without_prefix(
+                    destruction_fact.destroyed_position_in_destroyer.canonical_chained_name_tuple,
+                    destruction_fact.destruction.directly_destroyed_position.canonical_chained_name_tuple,
+                ),
                 # We know these destructors exist at destruction time, so they are
                 # handled through the normal requirements mechanism (fired and
                 # propagated as this action's own requirements), not through the

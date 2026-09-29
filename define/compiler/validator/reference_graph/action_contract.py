@@ -8,13 +8,14 @@ from dataclasses import dataclass, field
 
 import msgspec
 
+from define.compiler import chained_name
 from define.compiler.validator.reference_graph import position_occupancy
 from define.compiler.validator.reference_graph.particles import particle_info
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from define.compiler import ast, chained_name
+    from define.compiler import ast
     from define.compiler.validator.reference_graph import (
         child_state,
         quality_assignment,
@@ -278,7 +279,7 @@ class DestructionContracts:
     ) -> position_occupancy.ChildOccupancy | None:
         """Look up child state relative to this contract's destroyed particle."""
         return self.child_state.occupancy.get(
-            contract.position_in_child_state + position
+            chained_name.with_prefix(position, contract.position_in_child_state)
         )
 
     def propagation_steps(self) -> Iterator[PropagationStep]:

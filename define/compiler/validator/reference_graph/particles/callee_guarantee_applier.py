@@ -140,8 +140,7 @@ class _PendingNestedGuarantees:
         prefix = nested_guarantee.parent_position
         guarantees = self._by_prefix.get(prefix)
         if guarantees is None:
-            for length in range(1, len(prefix) + 1):
-                requested_prefix = prefix[:length]
+            for requested_prefix in chained_name.prefixes(prefix):
                 matching = self._by_requested_prefix.get(requested_prefix)
                 if matching is None:
                     self._by_requested_prefix[requested_prefix] = {prefix}
@@ -172,8 +171,7 @@ class _PendingNestedGuarantees:
         # Every drain must remove the index entries before yielding the guarantees:
         # applying one can query the index again or add new guarantees at this same name.
         guarantees = self._by_prefix.pop(prefix)
-        for length in range(1, len(prefix) + 1):
-            requested_prefix = prefix[:length]
+        for requested_prefix in chained_name.prefixes(prefix):
             matching = self._by_requested_prefix[requested_prefix]
             matching.remove(prefix)
             if not matching:

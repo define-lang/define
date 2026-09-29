@@ -40,3 +40,42 @@ def test_parent_position_with_only_actions_before_is_none():
 def test_parent_position_of_two_positions():
     chain = ("position<local>", f"position<{_FQUN}:/x>")
     assert chained_name.parent_position(chain) == ("position<local>",)
+
+
+def test_with_prefix_places_chain_below_prefix():
+    assert chained_name.with_prefix(
+        ("position<c>",), ("position<a>", "position<b>")
+    ) == (
+        "position<a>",
+        "position<b>",
+        "position<c>",
+    )
+
+
+def test_without_prefix_returns_names_after_prefix():
+    chain = ("position<a>", "position<b>", "position<c>")
+    assert chained_name.without_prefix(chain, ("position<a>",)) == (
+        "position<b>",
+        "position<c>",
+    )
+
+
+def test_without_whole_chain_is_empty():
+    chain = ("position<a>", "position<b>")
+    assert chained_name.without_prefix(chain, chain) == ()
+
+
+def test_replace_prefix_moves_chain_to_new_prefix():
+    chain = ("position<a>", "position<b>", "position<c>")
+    assert chained_name.replace_prefix(
+        chain, ("position<a>", "position<b>"), ("position<x>",)
+    ) == ("position<x>", "position<c>")
+
+
+def test_prefixes_are_nonempty_and_shortest_first():
+    chain = ("position<a>", "action<b>", "position<c>")
+    assert list(chained_name.prefixes(chain)) == [
+        ("position<a>",),
+        ("position<a>", "action<b>"),
+        ("position<a>", "action<b>", "position<c>"),
+    ]

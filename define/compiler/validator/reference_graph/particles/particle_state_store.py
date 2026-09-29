@@ -536,7 +536,6 @@ class ParticleStateStore:
             self._collect_caller_value(
                 position_in_child_state, particle, snapshot.values, values
             )
-        prefix_length = len(position_in_child_state)
         # Another contract can describe a child particle with an independent
         # origin after a Move. Its own caller knowledge must determine that
         # particle's Child State, not the old contents of this caller position.
@@ -547,7 +546,9 @@ class ParticleStateStore:
         ):
             particle = node.particle_info
             if particle is not None:
-                caller_position_key = key + state_position[prefix_length:]
+                caller_position_key = chained_name.replace_prefix(
+                    state_position, position_in_child_state, key
+                )
                 if not self.has_error_in_chain(caller_position_key):
                     particles[state_position] = particle
             known_occupancy = snapshot.occupancy.get(state_position)
@@ -778,8 +779,9 @@ class ParticleStateStore:
         Must run after the state subtree has moved to ``to_key``: it mirrors that
         move.
         """
-        to_length = len(to_key)
         for new_key in self._state.subtree_keys(to_key):
-            record = self._write_record.pop(from_key + new_key[to_length:], None)
+            record = self._write_record.pop(
+                chained_name.replace_prefix(new_key, to_key, from_key), None
+            )
             if record is not None:
                 self._write_record[new_key] = record

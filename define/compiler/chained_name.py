@@ -6,6 +6,9 @@ import typing
 
 from define.compiler import name_types
 
+if typing.TYPE_CHECKING:
+    from collections.abc import Iterator
+
 # A position's canonical chained name, as stored in tries and contracts.
 # TODO: Compute with these tuples instead of building ChainedName objects
 # wherever the code does not need a SourceLocation.
@@ -29,6 +32,31 @@ def is_action_key(typed_name: str) -> bool:
 def starts_with_global(chain: ChainedNameTuple) -> bool:
     """Return whether the leftmost element of a chained-name key is a global."""
     return "/" in chain[0]
+
+
+def with_prefix[T: ChainedNameTuple](chain: T, prefix: ChainedNameTuple) -> T:
+    """Return ``chain`` with ``prefix`` as its parent names."""
+    return typing.cast("T", prefix + chain)
+
+
+def without_prefix(
+    chain: ChainedNameTuple, prefix: ChainedNameTuple
+) -> ChainedNameTuple:
+    """Return the names of ``chain`` after ``prefix``, which must be a prefix of it."""
+    return chain[len(prefix) :]
+
+
+def replace_prefix[T: ChainedNameTuple](
+    chain: T, old_prefix: ChainedNameTuple, new_prefix: ChainedNameTuple
+) -> T:
+    """Return ``chain`` with ``old_prefix``, which must be a prefix of it, replaced by ``new_prefix``."""
+    return typing.cast("T", new_prefix + chain[len(old_prefix) :])
+
+
+def prefixes(chain: ChainedNameTuple) -> Iterator[ChainedNameTuple]:
+    """Yield each nonempty prefix of the chain, shortest first."""
+    for length in range(1, len(chain) + 1):
+        yield chain[:length]
 
 
 def in_caller[T: ChainedNameTuple](
