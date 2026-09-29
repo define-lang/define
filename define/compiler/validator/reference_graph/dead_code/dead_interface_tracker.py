@@ -7,7 +7,7 @@ import typing
 
 import msgspec
 
-from define.compiler import ast
+from define.compiler import ast, chained_name
 from define.compiler.validator.reference_graph.particles import particle_info
 
 if typing.TYPE_CHECKING:
@@ -316,19 +316,21 @@ class DeadInterfaceTracker:
         particle: particle_info.ParticleInfo,
     ):
         """Record a body Create or Move whose target names an action interface."""
-        action_chain = position.get_chain_to_last_action()
+        action_chain = chained_name.chain_to_last_action(
+            position.canonical_chained_name_tuple
+        )
         if action_chain is None:
             return
-        parent_position = action_chain.parent_position()
+        parent_position = chained_name.parent_position(action_chain)
         # The caller has already resolved the target position, which also
         # resolves each of its parent positions.
         parent_particle = (
-            self._particles.occupant(parent_position.canonical_chained_name_tuple)
+            self._particles.occupant(parent_position)
             if parent_position is not None
             else None
         )
         self._arrivals.register(
-            action_chain.get_last_action().full_typed_name,
+            action_chain[-1],
             position,
             parent_particle,
             particle,

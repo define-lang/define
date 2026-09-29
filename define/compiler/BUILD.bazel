@@ -64,6 +64,20 @@ py_test(
 )
 
 py_library(
+    name = "chained_name",
+    srcs = ["chained_name.py"],
+    visibility = [":__subpackages__"],
+    deps = [":ast"],
+)
+
+py_test(
+    name = "chained_name_test",
+    size = "small",
+    srcs = ["chained_name_test.py"],
+    deps = [":chained_name"],
+)
+
+py_library(
     name = "compiler",
     srcs = ["__init__.py"],
     deps = ["//define"],
@@ -308,6 +322,8 @@ pyright_test(
         ":ast_test",
         ":built_in_definitions",
         ":built_in_definitions_test",
+        ":chained_name",
+        ":chained_name_test",
         ":compiler",
         ":config",
         ":config_test",
