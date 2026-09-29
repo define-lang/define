@@ -7,7 +7,7 @@ import typing
 
 import msgspec
 
-from define.compiler import ast, chained_name, name_types
+from define.compiler import ast, chained_name
 from define.compiler.validator.reference_graph.dead_code import dead_interface_tracker
 from define.compiler.validator.reference_graph.particles import (
     callee_guarantee_applier,
@@ -148,10 +148,10 @@ class ParticleTracker:
 
         The caller must pass a validated chained name.
         """
-        immediate_parent = position.parent_position()
-        if immediate_parent is None:
+        key = position.canonical_chained_name_tuple
+        parent_key = chained_name.parent_position(key)
+        if parent_key is None:
             return None
-        parent_key = immediate_parent.canonical_chained_name_tuple
         self._callee_guarantees.apply_pending_guarantees_up_to(parent_key)
         deepest_occupied_parent = self._store.longest_occupied_prefix(parent_key)
         occupied_name_count = (
@@ -160,10 +160,7 @@ class ParticleTracker:
         unoccupied_name_count = occupied_name_count + 1
         if unoccupied_name_count == len(position.typed_names):
             return None
-        if (
-            position.typed_names[unoccupied_name_count - 1].name_type
-            == name_types.NameType.ACTION
-        ):
+        if chained_name.is_action_key(key[unoccupied_name_count - 1]):
             unoccupied_name_count += 1
         if unoccupied_name_count == len(position.typed_names):
             return None

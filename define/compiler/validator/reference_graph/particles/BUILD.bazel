@@ -70,7 +70,6 @@ py_library(
         ":requirement_resolution",
         "//define/compiler:ast",
         "//define/compiler:chained_name",
-        "//define/compiler:name_types",
         "//define/compiler/validator:codegen_input",
         "//define/compiler/validator/reference_graph:action_contract",
         "//define/compiler/validator/reference_graph:child_state",
