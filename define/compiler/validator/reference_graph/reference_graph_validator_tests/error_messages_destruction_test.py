@@ -67,27 +67,27 @@ def test_destructor_requires_occupied_position_format(
     formatted = all_diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 14, column 33
-                destroy the particle in position<box>.
-                                        ^
+            destroy the particle in position<box>.
+                                    ^^^^^^^^^^^^^
         'position<box>::position</child_q>::action</destructor>::position<item>' must be occupied before 'action<my.domain.com:my_lib:/destructor>' runs.
 
         This error happens because:
           'action<my.domain.com:my_lib:/destructor>' is assigned to 'position<my.domain.com:my_lib:/child_q>':
             File "child_q.dfn", line 3, column 20
-                    it has the action</destructor>.
-                               ^
+                it has the action</destructor>.
+                           ^^^^^^^^^^^^^^^^^^^
           the particle in 'position<box>::position</child_q>' comes from here:
             File "test.dfn", line 12, column 30
-                    create a particle in position<staging>::position</child_q>.
-                                         ^
+                create a particle in position<staging>::position</child_q>.
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/test>' destroys a particle, triggering the destructor 'action<my.domain.com:my_lib:/destructor>':
             File "test.dfn", line 14, column 33
-                    destroy the particle in position<box>.
-                                            ^
+                destroy the particle in position<box>.
+                                        ^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/destructor>' infers this requirement:
             File "destructor.dfn", line 7, column 30
-                    move the particle in position<item> to position<holder>.
-                                         ^""")
+                move the particle in position<item> to position<holder>.
+                                     ^^^^^^^^^^^^^^""")
 
 
 def test_destructor_on_particle_created_in_callee_local_position_format(
@@ -151,27 +151,27 @@ def test_destructor_on_particle_created_in_callee_local_position_format(
     formatted = all_diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 12, column 33
-                destroy the particle in position<box>::action</producer>::position<result>.
-                                        ^
+            destroy the particle in position<box>::action</producer>::position<result>.
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         'position<box>::action</producer>::position<result>::action</destructor>::position<item>' must be occupied before 'action<my.domain.com:my_lib:/destructor>' runs.
 
         This error happens because:
           'action<my.domain.com:my_lib:/destructor>' is assigned to 'position<created>':
             File "producer.dfn", line 13, column 28
-                            it has the action</destructor>.
-                                       ^
+                it has the action</destructor>.
+                           ^^^^^^^^^^^^^^^^^^^
           the particle in 'position<box>::action</producer>::position<result>' comes from here:
             File "producer.dfn", line 16, column 30
-                    create a particle in position<created>.
-                                         ^
+                create a particle in position<created>.
+                                     ^^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/test>' destroys a particle, triggering the destructor 'action<my.domain.com:my_lib:/destructor>':
             File "test.dfn", line 12, column 33
-                    destroy the particle in position<box>::action</producer>::position<result>.
-                                            ^
+                destroy the particle in position<box>::action</producer>::position<result>.
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/destructor>' infers this requirement:
             File "destructor.dfn", line 7, column 30
-                    move the particle in position<item> to position<holder>.
-                                         ^""")
+                move the particle in position<item> to position<holder>.
+                                     ^^^^^^^^^^^^^^""")
 
 
 def test_destructor_requires_empty_position_format(
@@ -226,31 +226,31 @@ def test_destructor_requires_empty_position_format(
     formatted = all_diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 19, column 33
-                destroy the particle in position<box>.
-                                        ^
+            destroy the particle in position<box>.
+                                    ^^^^^^^^^^^^^
         'position<box>::position</child_q>::action</destructor_empty>::position<item>' must be empty before 'action<my.domain.com:my_lib:/destructor_empty>' runs.
 
         This error happens because:
           'action<my.domain.com:my_lib:/destructor_empty>' is assigned to 'position<my.domain.com:my_lib:/child_q>':
             File "child_q.dfn", line 3, column 20
-                    it has the action</destructor_empty>.
-                               ^
+                it has the action</destructor_empty>.
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^
           the particle in 'position<box>::position</child_q>' comes from here:
             File "test.dfn", line 16, column 30
-                    create a particle in position<staging>::position</child_q>.
-                                         ^
+                create a particle in position<staging>::position</child_q>.
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           'position<box>::position</child_q>::action</destructor_empty>::position<item>' is filled here:
             File "test.dfn", line 18, column 30
-                    create a particle in position<box>::position</child_q>::action</destructor_empty>::position<item>.
-                                         ^
+                create a particle in position<box>::position</child_q>::action</destructor_empty>::position<item>.
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/test>' destroys a particle, triggering the destructor 'action<my.domain.com:my_lib:/destructor_empty>':
             File "test.dfn", line 19, column 33
-                    destroy the particle in position<box>.
-                                            ^
+                destroy the particle in position<box>.
+                                        ^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/destructor_empty>' infers this requirement:
             File "destructor_empty.dfn", line 6, column 30
-                    create a particle in position<item>.
-                                         ^""")
+                create a particle in position<item>.
+                                     ^^^^^^^^^^^^^^""")
 
 
 def test_aware_destructor_requirement_surfaces_as_action_requires_format(
@@ -309,27 +309,27 @@ def test_aware_destructor_requirement_surfaces_as_action_requires_format(
     formatted = all_diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 12, column 30
-                create a particle in position<box>::action</close_file>::position<run>.
-                                     ^
+            create a particle in position<box>::action</close_file>::position<run>.
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         'position<box>::action</close_file>::position<target>::position</file>' must be occupied before 'action<my.domain.com:my_lib:/close_file>' runs.
 
         This error happens because:
           'action<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/close_file>':
             File "test.dfn", line 12, column 30
-                    create a particle in position<box>::action</close_file>::position<run>.
-                                         ^
+                create a particle in position<box>::action</close_file>::position<run>.
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/destructor>' is assigned to 'position<target>':
             File "close_file.dfn", line 4, column 24
-                        it has the action</destructor>.
-                                   ^
+                it has the action</destructor>.
+                           ^^^^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/close_file>' destroys a particle, triggering the destructor 'action<my.domain.com:my_lib:/destructor>':
             File "close_file.dfn", line 11, column 33
-                    destroy the particle in position<target>.
-                                            ^
+                destroy the particle in position<target>.
+                                        ^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/destructor>' infers this requirement:
             File "destructor.dfn", line 7, column 30
-                    move the particle in position</file> to position<_holder>.
-                                         ^""")
+                move the particle in position</file> to position<_holder>.
+                                     ^^^^^^^^^^^^^^^""")
 
 
 def test_destructor_moved_guarantee_names_contracted_origin_format(
@@ -371,8 +371,8 @@ def test_destructor_moved_guarantee_names_contracted_origin_format(
         all_diags[0].format(result.program_result.source_map)
         == textwrap.dedent("""\
         File "test.dfn", line 16, column 30
-                move the particle in position<incoming> to position<tmp>.
-                                     ^
+            move the particle in position<incoming> to position<tmp>.
+                                 ^^^^^^^^^^^^^^^^^^
         a destructor must leave every contracted position in the state it was in when it started.
         However, this line empties 'position<incoming>' and then nothing puts the same particle back into that position.""")
     )
@@ -380,8 +380,8 @@ def test_destructor_moved_guarantee_names_contracted_origin_format(
         all_diags[1].format(result.program_result.source_map)
         == textwrap.dedent("""\
         File "test.dfn", line 17, column 65
-                move the particle in position<tmp>::position</child> to position<dest>.
-                                                                        ^
+            move the particle in position<tmp>::position</child> to position<dest>.
+                                                                    ^^^^^^^^^^^^^^
         a destructor must leave every contracted position in the state it was in when it started.
         However, this line moves a particle from 'position<incoming>::position</child>' into 'position<dest>' and then nothing moves it back out of that position.""")
     )
@@ -409,8 +409,8 @@ def test_destructor_occupied_guarantee_format(
         all_diags[0].format(result.program_result.source_map)
         == textwrap.dedent("""\
         File "test.dfn", line 6, column 30
-                create a particle in position<item>.
-                                     ^
+            create a particle in position<item>.
+                                 ^^^^^^^^^^^^^^
         a destructor must leave every contracted position in the state it was in when it started.
         However, this line creates a new particle in 'position<item>' and then nothing removes it from that position.""")
     )
@@ -467,35 +467,35 @@ def test_auto_destruction_destructor_requires_empty_position_format(
     formatted = all_diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 17, column 51
-                move the particle in position<staging> to position<box>.
-                                                          ^
+            move the particle in position<staging> to position<box>.
+                                                      ^^^^^^^^^^^^^
         'position<box>::position</child_q>::action</destructor_empty>::position<item>' must be empty before 'action<my.domain.com:my_lib:/destructor_empty>' runs.
 
         This error happens because:
           'action<my.domain.com:my_lib:/destructor_empty>' is assigned to 'position<my.domain.com:my_lib:/child_q>':
             File "child_q.dfn", line 3, column 20
-                    it has the action</destructor_empty>.
-                               ^
+                it has the action</destructor_empty>.
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^
           the particle in 'position<box>::position</child_q>' comes from here:
             File "test.dfn", line 16, column 30
-                    create a particle in position<staging>::position</child_q>.
-                                         ^
+                create a particle in position<staging>::position</child_q>.
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           'position<box>::position</child_q>::action</destructor_empty>::position<item>' is filled here:
             File "test.dfn", line 18, column 30
-                    create a particle in position<box>::position</child_q>::action</destructor_empty>::position<item>.
-                                         ^
+                create a particle in position<box>::position</child_q>::action</destructor_empty>::position<item>.
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           the particle in 'position<box>' is automatically destroyed at the end of 'action<my.domain.com:my_lib:/test>':
             File "test.dfn", line 17, column 51
-                    move the particle in position<staging> to position<box>.
-                                                              ^
+                move the particle in position<staging> to position<box>.
+                                                          ^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/test>' destroys a particle, triggering the destructor 'action<my.domain.com:my_lib:/destructor_empty>':
             File "test.dfn", line 17, column 51
-                    move the particle in position<staging> to position<box>.
-                                                              ^
+                move the particle in position<staging> to position<box>.
+                                                          ^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/destructor_empty>' infers this requirement:
             File "destructor_empty.dfn", line 6, column 30
-                    create a particle in position<item>.
-                                         ^""")
+                create a particle in position<item>.
+                                     ^^^^^^^^^^^^^^""")
 
 
 def test_auto_destruction_destructor_requires_occupied_position_format(
@@ -545,31 +545,31 @@ def test_auto_destruction_destructor_requires_occupied_position_format(
     formatted = all_diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 13, column 51
-                move the particle in position<staging> to position<box>.
-                                                          ^
+            move the particle in position<staging> to position<box>.
+                                                      ^^^^^^^^^^^^^
         'position<box>::position</child_q>::action</destructor>::position<item>' must be occupied before 'action<my.domain.com:my_lib:/destructor>' runs.
 
         This error happens because:
           'action<my.domain.com:my_lib:/destructor>' is assigned to 'position<my.domain.com:my_lib:/child_q>':
             File "child_q.dfn", line 3, column 20
-                    it has the action</destructor>.
-                               ^
+                it has the action</destructor>.
+                           ^^^^^^^^^^^^^^^^^^^
           the particle in 'position<box>::position</child_q>' comes from here:
             File "test.dfn", line 12, column 30
-                    create a particle in position<staging>::position</child_q>.
-                                         ^
+                create a particle in position<staging>::position</child_q>.
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           the particle in 'position<box>' is automatically destroyed at the end of 'action<my.domain.com:my_lib:/test>':
             File "test.dfn", line 13, column 51
-                    move the particle in position<staging> to position<box>.
-                                                              ^
+                move the particle in position<staging> to position<box>.
+                                                          ^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/test>' destroys a particle, triggering the destructor 'action<my.domain.com:my_lib:/destructor>':
             File "test.dfn", line 13, column 51
-                    move the particle in position<staging> to position<box>.
-                                                              ^
+                move the particle in position<staging> to position<box>.
+                                                          ^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/destructor>' infers this requirement:
             File "destructor.dfn", line 7, column 30
-                    move the particle in position<item> to position<_holder>.
-                                         ^""")
+                move the particle in position<item> to position<_holder>.
+                                     ^^^^^^^^^^^^^^""")
 
 
 def test_destructor_cascade_through_action_format(
@@ -636,35 +636,35 @@ def test_destructor_cascade_through_action_format(
     formatted = all_diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "inner.dfn", line 19, column 52
-                move the particle in position<incoming> to position<local>.
-                                                           ^
+            move the particle in position<incoming> to position<local>.
+                                                       ^^^^^^^^^^^^^^^
         'position<local>::action</destructor_empty>::position<item>' must be empty before 'action<my.domain.com:my_lib:/destructor_empty>' runs.
 
         This error happens because:
           'action<my.domain.com:my_lib:/destructor_empty>' is assigned to 'position<incoming>':
             File "inner.dfn", line 4, column 24
-                        it has the action</destructor_empty>.
-                                   ^
+                it has the action</destructor_empty>.
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^
           the particle in 'position<local>' comes from here:
             File "inner.dfn", line 18, column 30
-                    move the particle in position<incoming>::position</item> to position<item_holder>.
-                                         ^
+                move the particle in position<incoming>::position</item> to position<item_holder>.
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           'position<local>::action</destructor_empty>::position<item>' is filled here:
             File "inner.dfn", line 20, column 55
-                    move the particle in position<item_holder> to position<local>::action</destructor_empty>::position<item>.
-                                                                  ^
+                move the particle in position<item_holder> to position<local>::action</destructor_empty>::position<item>.
+                                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           the particle in 'position<local>' is automatically destroyed at the end of 'action<my.domain.com:my_lib:/inner>':
             File "inner.dfn", line 19, column 52
-                    move the particle in position<incoming> to position<local>.
-                                                               ^
+                move the particle in position<incoming> to position<local>.
+                                                           ^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/inner>' destroys a particle, triggering the destructor 'action<my.domain.com:my_lib:/destructor_empty>':
             File "inner.dfn", line 19, column 52
-                    move the particle in position<incoming> to position<local>.
-                                                               ^
+                move the particle in position<incoming> to position<local>.
+                                                           ^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/destructor_empty>' infers this requirement:
             File "destructor_empty.dfn", line 6, column 30
-                    create a particle in position<item>.
-                                         ^""")
+                create a particle in position<item>.
+                                     ^^^^^^^^^^^^^^""")
 
 
 # --- Destruction Contract stacks (DLP 41) ---
@@ -732,31 +732,31 @@ def test_destruction_contract_requires_occupied_format(
     formatted = all_diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 18, column 30
-                create a particle in position<box>::action</close_file>::position<run>.
-                                     ^
+            create a particle in position<box>::action</close_file>::position<run>.
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         'position<box>::action</close_file>::position<target>::position</file>' must be occupied before 'action<my.domain.com:my_lib:/close_file>' runs.
 
         This error happens because:
           'action<my.domain.com:my_lib:/delete_file_destructor>' is assigned to 'position<my_file>':
             File "test.dfn", line 12, column 28
-                            it has the action</delete_file_destructor>.
-                                       ^
+                it has the action</delete_file_destructor>.
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           the particle in 'position<box>::action</close_file>::position<target>' comes from here:
             File "test.dfn", line 16, column 30
-                    create a particle in position<my_file>.
-                                         ^
+                create a particle in position<my_file>.
+                                     ^^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/close_file>':
             File "test.dfn", line 18, column 30
-                    create a particle in position<box>::action</close_file>::position<run>.
-                                         ^
+                create a particle in position<box>::action</close_file>::position<run>.
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/close_file>' destroys a particle, triggering the destructor 'action<my.domain.com:my_lib:/delete_file_destructor>':
             File "close_file.dfn", line 7, column 33
-                    destroy the particle in position<target>.
-                                            ^
+                destroy the particle in position<target>.
+                                        ^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/delete_file_destructor>' infers this requirement:
             File "delete_file_destructor.dfn", line 7, column 30
-                    move the particle in position</file> to position<_holder>.
-                                         ^""")
+                move the particle in position</file> to position<_holder>.
+                                     ^^^^^^^^^^^^^^^""")
 
 
 def test_destruction_contract_requires_empty_format(
@@ -839,39 +839,39 @@ def test_destruction_contract_requires_empty_format(
     formatted = all_diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 18, column 30
-                create a particle in position<box>::action</filler>::position<run>.
-                                     ^
+            create a particle in position<box>::action</filler>::position<run>.
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         'position<box>::action</filler>::position<incoming>::position</p2>' must be empty before 'action<my.domain.com:my_lib:/filler>' runs.
 
         This error happens because:
           'action<my.domain.com:my_lib:/d>' is assigned to 'position<my_file>':
             File "test.dfn", line 12, column 28
-                            it has the action</d>.
-                                       ^
+                it has the action</d>.
+                           ^^^^^^^^^^
           the particle in 'position<box>::action</filler>::position<incoming>' comes from here:
             File "test.dfn", line 16, column 30
-                    create a particle in position<my_file>.
-                                         ^
+                create a particle in position<my_file>.
+                                     ^^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/filler>':
             File "test.dfn", line 18, column 30
-                    create a particle in position<box>::action</filler>::position<run>.
-                                         ^
+                create a particle in position<box>::action</filler>::position<run>.
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           'position<box>::action</filler>::position<incoming>::position</p2>' is filled here:
             File "filler.dfn", line 17, column 30
-                    create a particle in position<incoming>::position</p2>.
-                                         ^
+                create a particle in position<incoming>::position</p2>.
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/filler>' triggers 'action<my.domain.com:my_lib:/close_file>':
             File "filler.dfn", line 19, column 30
-                    create a particle in position<box>::action</close_file>::position<run>.
-                                         ^
+                create a particle in position<box>::action</close_file>::position<run>.
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/close_file>' destroys a particle, triggering the destructor 'action<my.domain.com:my_lib:/d>':
             File "close_file.dfn", line 7, column 33
-                    destroy the particle in position<target>.
-                                            ^
+                destroy the particle in position<target>.
+                                        ^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/d>' infers this requirement:
             File "d.dfn", line 6, column 30
-                    create a particle in position</p2>.
-                                         ^""")
+                create a particle in position</p2>.
+                                     ^^^^^^^^^^^^^""")
 
 
 # TODO: The auto-destruction step still names 'position<local_box>', a local
@@ -936,35 +936,35 @@ def test_destruction_contract_auto_destruction_format(
     formatted = all_diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 18, column 30
-                create a particle in position<box>::action</mid>::position<run>.
-                                     ^
+            create a particle in position<box>::action</mid>::position<run>.
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         'position<box>::action</mid>::position<incoming>::position</file>' must be occupied before 'action<my.domain.com:my_lib:/mid>' runs.
 
         This error happens because:
           'action<my.domain.com:my_lib:/delete_destructor>' is assigned to 'position<my_file>':
             File "test.dfn", line 12, column 28
-                            it has the action</delete_destructor>.
-                                       ^
+                it has the action</delete_destructor>.
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
           the particle in 'position<box>::action</mid>::position<incoming>' comes from here:
             File "test.dfn", line 16, column 30
-                    create a particle in position<my_file>.
-                                         ^
+                create a particle in position<my_file>.
+                                     ^^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/mid>':
             File "test.dfn", line 18, column 30
-                    create a particle in position<box>::action</mid>::position<run>.
-                                         ^
+                create a particle in position<box>::action</mid>::position<run>.
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           the particle in 'position<local_box>' is automatically destroyed at the end of 'action<my.domain.com:my_lib:/mid>':
             File "mid.dfn", line 7, column 9
-                    define the position<local_box>.
-                    ^
+                define the position<local_box>.
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/mid>' destroys a particle, triggering the destructor 'action<my.domain.com:my_lib:/delete_destructor>':
             File "mid.dfn", line 7, column 9
-                    define the position<local_box>.
-                    ^
+                define the position<local_box>.
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/delete_destructor>' infers this requirement:
             File "delete_destructor.dfn", line 7, column 30
-                    move the particle in position</file> to position<_holder>.
-                                         ^""")
+                move the particle in position</file> to position<_holder>.
+                                     ^^^^^^^^^^^^^^^""")
 
 
 def test_destruction_contract_constructor_attacher_format(
@@ -1028,31 +1028,31 @@ def test_destruction_contract_constructor_attacher_format(
     formatted = all_diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 14, column 30
-                create a particle in position<box>::action</close_file>::position<run>.
-                                     ^
+            create a particle in position<box>::action</close_file>::position<run>.
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         'position<box>::action</close_file>::position<target>::position</file>' must be occupied before 'action<my.domain.com:my_lib:/close_file>' runs.
 
         This error happens because:
           'action<my.domain.com:my_lib:/delete_destructor>' is assigned to 'position<my.domain.com:my_lib:/carrier>':
             File "carrier.dfn", line 4, column 20
-                    it has the action</delete_destructor>.
-                               ^
+                it has the action</delete_destructor>.
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
           the particle in 'position<box>::action</close_file>::position<target>' comes from here:
             File "test.dfn", line 12, column 30
-                    create a particle in position</carrier>.
-                                         ^
+                create a particle in position</carrier>.
+                                     ^^^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/close_file>':
             File "test.dfn", line 14, column 30
-                    create a particle in position<box>::action</close_file>::position<run>.
-                                         ^
+                create a particle in position<box>::action</close_file>::position<run>.
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/close_file>' destroys a particle, triggering the destructor 'action<my.domain.com:my_lib:/delete_destructor>':
             File "close_file.dfn", line 7, column 33
-                    destroy the particle in position<target>.
-                                            ^
+                destroy the particle in position<target>.
+                                        ^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/delete_destructor>' infers this requirement:
             File "delete_destructor.dfn", line 7, column 30
-                    move the particle in position</file> to position<_holder>.
-                                         ^""")
+                move the particle in position</file> to position<_holder>.
+                                     ^^^^^^^^^^^^^^^""")
 
 
 def test_destruction_contract_cascade_child_format(
@@ -1120,31 +1120,31 @@ def test_destruction_contract_cascade_child_format(
     formatted = all_diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 19, column 30
-                create a particle in position<box>::action</close_file>::position<run>.
-                                     ^
+            create a particle in position<box>::action</close_file>::position<run>.
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         'position<box>::action</close_file>::position<target>::position</child>::position</file>' must be occupied before 'action<my.domain.com:my_lib:/close_file>' runs.
 
         This error happens because:
           'action<my.domain.com:my_lib:/child_destructor>' is assigned to 'position<my.domain.com:my_lib:/child>':
             File "child.dfn", line 3, column 20
-                    it has the action</child_destructor>.
-                               ^
+                it has the action</child_destructor>.
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^
           the particle in 'position<box>::action</close_file>::position<target>::position</child>' comes from here:
             File "test.dfn", line 17, column 30
-                    create a particle in position<my_file>::position</child>.
-                                         ^
+                create a particle in position<my_file>::position</child>.
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/close_file>':
             File "test.dfn", line 19, column 30
-                    create a particle in position<box>::action</close_file>::position<run>.
-                                         ^
+                create a particle in position<box>::action</close_file>::position<run>.
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/close_file>' destroys a particle, triggering the destructor 'action<my.domain.com:my_lib:/child_destructor>':
             File "close_file.dfn", line 7, column 33
-                    destroy the particle in position<target>.
-                                            ^
+                destroy the particle in position<target>.
+                                        ^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/child_destructor>' infers this requirement:
             File "child_destructor.dfn", line 7, column 30
-                    move the particle in position</file> to position<_holder>.
-                                         ^""")
+                move the particle in position</file> to position<_holder>.
+                                     ^^^^^^^^^^^^^^^""")
 
 
 def test_diagnostic_in_callee_file_shows_callee_source_line_format(
@@ -1206,8 +1206,8 @@ def test_diagnostic_in_callee_file_shows_callee_source_line_format(
         all_diags[0].format(result.program_result.source_map)
         == textwrap.dedent("""\
         File "b.dfn", line 7, column 30
-                create a particle in position</out>.
-                                     ^
+            create a particle in position</out>.
+                                 ^^^^^^^^^^^^^^
         a destructor must leave every contracted position in the state it was in when it started.
         However, this line creates a new particle in 'position</out>' and then nothing removes it from that position.""")
     )
@@ -1215,8 +1215,8 @@ def test_diagnostic_in_callee_file_shows_callee_source_line_format(
         all_diags[1].format(result.program_result.source_map)
         == textwrap.dedent("""\
         File "test.dfn", line 8, column 59
-                move the particle in action</a>::position<box> to position</saved>.
-                                                                  ^
+            move the particle in action</a>::position<box> to position</saved>.
+                                                              ^^^^^^^^^^^^^^^^
         a destructor must leave every contracted position in the state it was in when it started.
         However, this line creates a new particle in 'position</saved>' and then nothing removes it from that position.""")
     )

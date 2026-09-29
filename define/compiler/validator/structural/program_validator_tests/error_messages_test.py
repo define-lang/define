@@ -44,8 +44,8 @@ def test_reserved_universe_name_format():
     formatted = diags[0].format(program_result.source_map)
     assert formatted == textwrap.dedent("""\
         line 1, column 31
-        define the potential position<standard:/path>.
-                                      ^
+            define the potential position<standard:/path>.
+                                          ^^^^^^^^
         'standard' is a reserved universe name""")
 
 
@@ -61,8 +61,8 @@ def test_path_mismatch_format(validate_project: ValidateProject):
     formatted = diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "foo/bar.dfn", line 1, column 52
-        define the potential position<my.domain.com:my_lib:/wrong/path>.
-                                                           ^
+            define the potential position<my.domain.com:my_lib:/wrong/path>.
+                                                               ^^^^^^^^^^^
         definition path '/wrong/path' does not match file path '/foo/bar'""")
 
 
@@ -90,8 +90,8 @@ def test_circular_reference_format(validate_project: ValidateProject):
     formatted = all_diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "other.dfn", line 3, column 20
-                it has the position</test>.
-                           ^
+            it has the position</test>.
+                       ^^^^^^^^^^^^^^^
         circular references between definitions are not allowed in Define:
         position<my.domain.com:my_lib:/test>
           --> position<my.domain.com:my_lib:/other>
@@ -116,8 +116,8 @@ def test_incorrect_indentation_format(validate_project: ValidateProject):
     formatted = all_diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 3, column 1
-              it has the position</child>.
-        ^
+            it has the position</child>.
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         expected 8 spaces of indentation on this line, but found 6""")
 
 
@@ -131,8 +131,8 @@ def test_built_in_definition_location_shows_its_source_line(
     assert definition is not None
     assert result.program_result.source_map.format_location(definition.location) == (
         f'File "{built_in_definitions.SOURCE_FILE_PATH}", line 3, column 1\n'
-        "define the encoding<standard:/number/decimal/ascii>.\n"
-        "^"
+        "    define the encoding<standard:/number/decimal/ascii>.\n"
+        "    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
     )
 
 
@@ -148,8 +148,8 @@ def test_built_in_definition_location_shows_its_source_line_with_in_memory_sourc
     assert definition is not None
     assert program_result.source_map.format_location(definition.location) == (
         f'File "{built_in_definitions.SOURCE_FILE_PATH}", line 3, column 1\n'
-        "define the encoding<standard:/number/decimal/ascii>.\n"
-        "^"
+        "    define the encoding<standard:/number/decimal/ascii>.\n"
+        "    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
     )
 
 
@@ -188,8 +188,8 @@ def test_referenced_definition_not_found_format(validate_project: ValidateProjec
         formatted
         == textwrap.dedent("""\
         File "test.dfn", line 3, column 29
-                it has the position</target>.
-                                    ^
+            it has the position</target>.
+                                ^^^^^^^
         file 'target.dfn' does not contain a definition for 'position<my.domain.com:my_lib:/target>'""")
     )
 
@@ -209,8 +209,8 @@ def test_duplicate_definition_format():
     formatted = diags[0].format(program_result.source_map)
     assert formatted == textwrap.dedent("""\
         line 2, column 1
-        define the potential position<my.domain.com:my_lib:/same>.
-        ^
+            define the potential position<my.domain.com:my_lib:/same>.
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         duplicate position definition for path '/same'; first defined on line 1""")
 
 
@@ -230,8 +230,8 @@ def test_non_filesystem_diagnostics_have_no_file_name():
     formatted = diags[0].format(program_result.source_map)
     assert formatted == textwrap.dedent("""\
         line 2, column 1
-        define the potential position<my.domain.com:my_lib:/same>.
-        ^
+            define the potential position<my.domain.com:my_lib:/same>.
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         duplicate position definition for path '/same'; first defined on line 1""")
 
 
@@ -259,8 +259,8 @@ def test_move_to_same_position_format():
         formatted
         == textwrap.dedent("""\
         line 7, column 47
-                move the particle in position<pos> to position<pos>.
-                                                      ^
+            move the particle in position<pos> to position<pos>.
+                                                  ^^^^^^^^^^^^^
         source and destination cannot be identical when moving particles ('position<pos>' is the name of both the source and destination here)""")
     )
 
@@ -305,8 +305,8 @@ def test_move_into_defining_position_format(validate_project: ValidateProject):
         formatted
         == textwrap.dedent("""\
         File "test.dfn", line 11, column 74
-                move the particle in position<local_pos> to position<local_pos>::position</mid_pos>::position</end_pos>.
-                                                                                 ^
+            move the particle in position<local_pos> to position<local_pos>::position</mid_pos>::position</end_pos>.
+                                                                             ^^^^^^^^^^^^^^^^^^
         cannot move a particle
           from: position<local_pos>
             to: position<local_pos>::position</mid_pos>::position</end_pos>
@@ -349,8 +349,8 @@ def test_config_load_error_format_with_sub_root_fqun_mismatch_exception(
         formatted
         == textwrap.dedent("""\
         File "test.dfn", line 3, column 29
-                it has the position<mv:define-lang.org:child:/target>.
-                                    ^
+            it has the position<mv:define-lang.org:child:/target>.
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         an error occurred while loading the project configuration:
         Sub-root at 'lib' is configured as a dependency with universe 'mv:define-lang.org:child' but the actual project root in that path says it has the universe name 'mv:define-lang.org:wrong_universe'""")
     )

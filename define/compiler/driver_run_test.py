@@ -186,8 +186,8 @@ def test_validation_diagnostics_returns_error_and_prints_to_stream(
     assert result == driver.ExitCode.ERROR
     assert error_stream.getvalue() == (
         'File "wrong_file.dfn", line 1, column 60\n'
-        "define the potential position<mv:define-lang.org:test_path:/different>.\n"
-        "                                                           ^\n"
+        "    define the potential position<mv:define-lang.org:test_path:/different>.\n"
+        "                                                               ^^^^^^^^^^\n"
         "definition path '/different' does not match file path '/wrong_file'\n"
     )
 
@@ -214,15 +214,15 @@ def test_multiple_errors_are_separated_by_divider(
     assert error_stream.getvalue() == (
         (
             'File "wrong_file.dfn", line 1, column 60\n'
-            "define the potential position<mv:define-lang.org:test_path:/first>.\n"
-            "                                                           ^\n"
+            "    define the potential position<mv:define-lang.org:test_path:/first>.\n"
+            "                                                               ^^^^^^\n"
             "definition path '/first' does not match file path '/wrong_file'"
         )
         + constants.ERROR_DIVIDER
         + (
             'File "wrong_file.dfn", line 2, column 60\n'
-            "define the potential position<mv:define-lang.org:test_path:/second>.\n"
-            "                                                           ^\n"
+            "    define the potential position<mv:define-lang.org:test_path:/second>.\n"
+            "                                                               ^^^^^^^\n"
             "definition path '/second' does not match file path '/wrong_file'"
         )
         + "\n"
@@ -325,8 +325,8 @@ def test_compile_emits_codegen_diagnostic_on_action_entry_point(
     assert result == driver.ExitCode.ERROR
     assert error_stream.getvalue() == (
         'File "test.dfn", line 1, column 1\n'
-        "define the potential action<mv:define-lang.org:test_action:/test> {\n"
-        "^\n"
+        "    define the potential action<mv:define-lang.org:test_action:/test> {\n"
+        "    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"
         "the entry point of a Define program must be a constructor\n"
     )
 
@@ -390,12 +390,12 @@ def test_reference_graph_diagnostic_returns_error(
     assert result == driver.ExitCode.ERROR
     assert error_stream.getvalue() == (
         'File "test.dfn", line 8, column 30\n'
-        "        create a particle in position<target>.\n"
-        "                             ^\n"
+        "    create a particle in position<target>.\n"
+        "                         ^^^^^^^^^^^^^^^^\n"
         "a particle already exists in 'position<target>'; it was put there at:\n"
         'File "test.dfn", line 7, column 30\n'
-        "        create a particle in position<target>.\n"
-        "                             ^\n"
+        "    create a particle in position<target>.\n"
+        "                         ^^^^^^^^^^^^^^^^\n"
     )
 
 

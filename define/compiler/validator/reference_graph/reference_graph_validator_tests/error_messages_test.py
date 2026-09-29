@@ -50,12 +50,12 @@ def test_local_duplicate_particle_format(
     formatted = diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 7, column 30
-                create a particle in position<pos>.
-                                     ^
+            create a particle in position<pos>.
+                                 ^^^^^^^^^^^^^
         a particle already exists in 'position<pos>'; it was put there at:
         File "test.dfn", line 6, column 30
-                create a particle in position<pos>.
-                                     ^""")
+            create a particle in position<pos>.
+                                 ^^^^^^^^^^^^^""")
 
 
 def test_move_to_occupied_position_format(
@@ -80,12 +80,12 @@ def test_move_to_occupied_position_format(
     formatted = all_diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 9, column 52
-                move the particle in position<from_pos> to position<to_pos>.
-                                                           ^
+            move the particle in position<from_pos> to position<to_pos>.
+                                                       ^^^^^^^^^^^^^^^^
         cannot move a particle to 'position<to_pos>' because it already contains one; it was put there at:
         File "test.dfn", line 8, column 30
-                create a particle in position<to_pos>.
-                                     ^""")
+            create a particle in position<to_pos>.
+                                 ^^^^^^^^^^^^^^^^""")
 
 
 def test_move_from_empty_position_format(
@@ -110,8 +110,8 @@ def test_move_from_empty_position_format(
         formatted
         == textwrap.dedent("""\
         File "test.dfn", line 7, column 30
-                move the particle in position<from_pos> to position<to_pos>.
-                                     ^
+            move the particle in position<from_pos> to position<to_pos>.
+                                 ^^^^^^^^^^^^^^^^^^
         cannot move a particle from 'position<from_pos>' because it does not contain one""")
     )
 
@@ -157,8 +157,8 @@ def test_deferred_position_chain_error_format(
         formatted
         == textwrap.dedent("""\
         File "test.dfn", line 11, column 65
-                create a particle in position<pos_a>::position</pos_b>::position</wrong>.
-                                                                        ^
+            create a particle in position<pos_a>::position</pos_b>::position</wrong>.
+                                                                    ^^^^^^^^^^^^^^^^
         'position<my.domain.com:my_lib:/wrong>' must be declared as an explicit 'it has the' constraint in the definition of 'position<my.domain.com:my_lib:/pos_b>'""")
     )
 
@@ -209,8 +209,8 @@ def test_deferred_action_chain_error_format(
         formatted
         == textwrap.dedent("""\
         File "test.dfn", line 11, column 69
-                create a particle in position<pos_a>::action</create_noop>::position<no_such>.
-                                                                            ^
+            create a particle in position<pos_a>::action</create_noop>::position<no_such>.
+                                                                        ^^^^^^^^^^^^^^^^^
         'position<no_such>' is not an interface position of the action 'action<my.domain.com:my_lib:/create_noop>'; only that action's interface positions may follow it in a chained name""")
     )
 
@@ -253,23 +253,23 @@ def test_action_requires_empty_position_format(
     formatted = all_diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 12, column 30
-                create a particle in position<box>::action</other>::position<trigger_pos>.
-                                     ^
+            create a particle in position<box>::action</other>::position<trigger_pos>.
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         'position<box>::action</other>::position<item>' must be empty before 'action<my.domain.com:my_lib:/other>' runs.
 
         This error happens because:
           'position<box>::action</other>::position<item>' is filled here:
             File "test.dfn", line 11, column 30
-                    create a particle in position<box>::action</other>::position<item>.
-                                         ^
+                create a particle in position<box>::action</other>::position<item>.
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/other>':
             File "test.dfn", line 12, column 30
-                    create a particle in position<box>::action</other>::position<trigger_pos>.
-                                         ^
+                create a particle in position<box>::action</other>::position<trigger_pos>.
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/other>' infers this requirement:
             File "other.dfn", line 7, column 30
-                    create a particle in position<item>.
-                                         ^""")
+                create a particle in position<item>.
+                                     ^^^^^^^^^^^^^^""")
     assert action_graph(result.reference_graph_result) == [
         (_TEST, _OTHER),
     ]
@@ -313,19 +313,19 @@ def test_action_requires_occupied_position_format(
     formatted = all_diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 11, column 30
-                create a particle in position<box>::action</other>::position<trigger_pos>.
-                                     ^
+            create a particle in position<box>::action</other>::position<trigger_pos>.
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         'position<box>::action</other>::position<item>' must be occupied before 'action<my.domain.com:my_lib:/other>' runs.
 
         This error happens because:
           'action<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/other>':
             File "test.dfn", line 11, column 30
-                    create a particle in position<box>::action</other>::position<trigger_pos>.
-                                         ^
+                create a particle in position<box>::action</other>::position<trigger_pos>.
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/other>' infers this requirement:
             File "other.dfn", line 8, column 30
-                    move the particle in position<item> to position<dest>.
-                                         ^""")
+                move the particle in position<item> to position<dest>.
+                                     ^^^^^^^^^^^^^^""")
 
 
 def test_propagated_action_requires_empty_position_format(
@@ -438,33 +438,36 @@ def test_propagated_action_requires_empty_position_format(
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
     formatted = all_diags[0].format(result.program_result.source_map)
-    assert formatted == textwrap.dedent("""\
+    assert (
+        formatted
+        == textwrap.dedent("""\
         File "test.dfn", line 16, column 30
-                create a particle in position<box>::action</outer>::position<trigger_pos>.
-                                     ^
+            create a particle in position<box>::action</outer>::position<trigger_pos>.
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         'position<box>::action</outer>::position<out_iface>::position</middle_particle>::position</inner_particle>::position</item_parent>::position</item>' must be empty before 'action<my.domain.com:my_lib:/outer>' runs.
 
         This error happens because:
           'position<box>::action</outer>::position<out_iface>::position</middle_particle>::position</inner_particle>::position</item_parent>::position</item>' is filled here:
             File "test.dfn", line 15, column 30
-                    create a particle in position<box>::action</outer>::position<out_iface>::position</middle_particle>::position</inner_particle>::position</item_parent>::position</item>.
-                                         ^
+                create a particle in position<box>::action</outer>::position<out_iface>::position</middle_particle>::position</inner_particle>::position</item_parent>::position</item>.
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/outer>':
             File "test.dfn", line 16, column 30
-                    create a particle in position<box>::action</outer>::position<trigger_pos>.
-                                         ^
+                create a particle in position<box>::action</outer>::position<trigger_pos>.
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/outer>' triggers 'action<my.domain.com:my_lib:/middle>':
             File "outer.dfn", line 18, column 30
-                    create a particle in position<middle_holder>::action</middle>::position<trigger_pos>.
-                                         ^
+                create a particle in position<middle_holder>::action</middle>::position<trigger_pos>.
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/middle>' triggers 'action<my.domain.com:my_lib:/inner>':
             File "middle.dfn", line 18, column 30
-                    create a particle in position<inner_holder>::action</inner>::position<trigger_pos>.
-                                         ^
+                create a particle in position<inner_holder>::action</inner>::position<trigger_pos>.
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/inner>' infers this requirement:
             File "inner.dfn", line 11, column 30
-                    create a particle in position<input>::position</item_parent>::position</item>.
-                                         ^""")
+                create a particle in position<input>::position</item_parent>::position</item>.
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^""")
+    )
     assert action_graph(result.reference_graph_result) == [
         (_MIDDLE, _INNER),
         (_OUTER, _MIDDLE),
@@ -551,23 +554,23 @@ def test_requirement_carried_through_two_moves_format(
     # inference.
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 18, column 30
-                create a particle in position<outer_holder>::action</outer>::position<run>.
-                                     ^
+            create a particle in position<outer_holder>::action</outer>::position<run>.
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         'position<outer_holder>::action</outer>::position<input>::position</required>' must be occupied before 'action<my.domain.com:my_lib:/outer>' runs.
 
         This error happens because:
           'action<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/outer>':
             File "test.dfn", line 18, column 30
-                    create a particle in position<outer_holder>::action</outer>::position<run>.
-                                         ^
+                create a particle in position<outer_holder>::action</outer>::position<run>.
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/outer>' triggers 'action<my.domain.com:my_lib:/middle>':
             File "outer.dfn", line 18, column 30
-                    create a particle in position<middle_holder>::action</middle>::position<run>.
-                                         ^
+                create a particle in position<middle_holder>::action</middle>::position<run>.
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/middle>' infers this requirement:
             File "middle.dfn", line 11, column 33
-                    destroy the particle in position<input>::position</required>.
-                                            ^""")
+                destroy the particle in position<input>::position</required>.
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^""")
     assert action_graph(result.reference_graph_result) == [
         (_OUTER, _MIDDLE),
         (_TEST, _OUTER),
@@ -671,27 +674,27 @@ def test_requirement_carried_through_actions_on_locals_format(
     # reported on the path /test can act on, with the locals never appearing.
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 18, column 30
-                create a particle in position<outer_holder>::action</outer>::position<run>.
-                                     ^
+            create a particle in position<outer_holder>::action</outer>::position<run>.
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         'position<outer_holder>::action</outer>::position<input>::position</marker>' must be occupied before 'action<my.domain.com:my_lib:/outer>' runs.
 
         This error happens because:
           'action<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/outer>':
             File "test.dfn", line 18, column 30
-                    create a particle in position<outer_holder>::action</outer>::position<run>.
-                                         ^
+                create a particle in position<outer_holder>::action</outer>::position<run>.
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/outer>' triggers 'action<my.domain.com:my_lib:/middle>':
             File "outer.dfn", line 18, column 30
-                    create a particle in position<mid_holder>::action</middle>::position<run>.
-                                         ^
+                create a particle in position<mid_holder>::action</middle>::position<run>.
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/middle>' triggers 'action<my.domain.com:my_lib:/inner>':
             File "middle.dfn", line 18, column 30
-                    create a particle in position<gw>::action</inner>::position<run>.
-                                         ^
+                create a particle in position<gw>::action</inner>::position<run>.
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/inner>' infers this requirement:
             File "inner.dfn", line 11, column 33
-                    destroy the particle in position<input>::position</marker>.
-                                            ^""")
+                destroy the particle in position<input>::position</marker>.
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^""")
     assert action_graph(result.reference_graph_result) == [
         (_MIDDLE, _INNER),
         (_OUTER, _MIDDLE),
@@ -742,8 +745,8 @@ def test_value_setting_type_mismatch_format(
         formatted
         == textwrap.dedent("""\
         File "test.dfn", line 18, column 41
-                set the value of position<x> to position<y>.
-                                                ^
+            set the value of position<x> to position<y>.
+                                            ^^^^^^^^^^^
         this value setting statement has particles with two different value types, which is not allowed. position<x> has value</foo/bar> and position<y> has value<standard:/number/rational>.""")
     )
 
@@ -778,8 +781,8 @@ def test_invalid_literal_content_format(validate_project: ValidateProject):
         formatted
         == textwrap.dedent("""\
         File "test.dfn", line 11, column 75
-                set the value of position<target> to literal<standard:/number>"1.2.3".
-                                                                                  ^
+            set the value of position<target> to literal<standard:/number>"1.2.3".
+                                                                              ^
         '1.2.3' is not a valid value for 'literal<standard:/number>' here, because it cannot be represented as 'encoding<standard:/number/decimal/ascii>': a number may have only one decimal point.""")
     )
 
@@ -814,8 +817,8 @@ def test_literal_cannot_set_value_format(validate_project: ValidateProject):
     formatted = all_diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 11, column 46
-                set the value of position<target> to literal</text>"5".
-                                                     ^
+            set the value of position<target> to literal</text>"5".
+                                                 ^^^^^^^^^^^^^^
         literal</text> cannot set a value<standard:/number/rational>, because literals with the encoding</text_encoding> cannot be read as value<standard:/number/rational>.
         To set a value<standard:/number/rational>, use a literal with one of these encodings:
             encoding<standard:/number/decimal/ascii>""")
@@ -859,8 +862,8 @@ def test_literal_cannot_be_converted_format(validate_project: ValidateProject):
     formatted = all_diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 5, column 42
-                    with view<number> looking at literal</text>"5".
-                                                 ^
+            with view<number> looking at literal</text>"5".
+                                         ^^^^^^^^^^^^^^
         literal</text> cannot be looked at as encoding<standard:/number/decimal/ascii>, because literals with the encoding</text_encoding> cannot be translated into encoding<standard:/number/decimal/ascii>.
         To look at a literal as encoding<standard:/number/decimal/ascii>, use a literal with one of these encodings:
             encoding<standard:/number/decimal/ascii>""")
@@ -905,8 +908,8 @@ def test_literal_cannot_be_converted_to_any_literal_encoding_format(
     formatted = all_diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 5, column 40
-                    with view<text> looking at literal<standard:/number>"5".
-                                               ^
+            with view<text> looking at literal<standard:/number>"5".
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^
         literal<standard:/number> cannot be looked at as encoding</text_encoding>, because literals with the encoding<standard:/number/decimal/ascii> cannot be translated into encoding</text_encoding>.
         In fact, encoding</text_encoding> cannot be set by a literal at all.""")
 
@@ -957,8 +960,8 @@ def test_move_violates_constraints_error_message(
     formatted = all_diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 17, column 52
-                move the particle in position<from_pos> to position<to_pos>.
-                                                           ^
+            move the particle in position<from_pos> to position<to_pos>.
+                                                       ^^^^^^^^^^^^^^^^
         cannot move a particle
           from: position<from_pos>
             to: position<to_pos>
@@ -1004,8 +1007,8 @@ def test_move_violates_constraints_error_message_cross_universe(
     formatted = all_diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent(f"""\
         File "test.dfn", line 13, column 52
-                move the particle in position<from_pos> to position<to_pos>.
-                                                           ^
+            move the particle in position<from_pos> to position<to_pos>.
+                                                       ^^^^^^^^^^^^^^^^
         cannot move a particle
           from: position<from_pos>
             to: position<to_pos>
@@ -1061,27 +1064,27 @@ def test_constructor_requires_empty_position_format(
     formatted = all_diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 11, column 30
-                create a particle in position<box>.
-                                     ^
+            create a particle in position<box>.
+                                 ^^^^^^^^^^^^^
         'position<box>::position</q>' must be empty before 'action<my.domain.com:my_lib:/create_q>' runs.
 
         This error happens because:
           'action<my.domain.com:my_lib:/create_q>' is assigned to 'position<box>':
             File "test.dfn", line 8, column 28
-                            it has the action</create_q>.
-                                       ^
+                it has the action</create_q>.
+                           ^^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/test>' creates a particle, triggering the constructor 'action<my.domain.com:my_lib:/create_q>':
             File "test.dfn", line 11, column 30
-                    create a particle in position<box>.
-                                         ^
+                create a particle in position<box>.
+                                     ^^^^^^^^^^^^^
           'position<box>::position</q>' is filled here:
             File "filler.dfn", line 6, column 30
-                    create a particle in position</q>.
-                                         ^
+                create a particle in position</q>.
+                                     ^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/create_q>' infers this requirement:
             File "create_q.dfn", line 6, column 30
-                    create a particle in position</q>.
-                                         ^""")
+                create a particle in position</q>.
+                                     ^^^^^^^^^^^^""")
 
 
 def test_constructor_requires_occupied_position_format(
@@ -1120,23 +1123,23 @@ def test_constructor_requires_occupied_position_format(
     formatted = all_diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 10, column 30
-                create a particle in position<box>.
-                                     ^
+            create a particle in position<box>.
+                                 ^^^^^^^^^^^^^
         'position<box>::position</q>' must be occupied before 'action<my.domain.com:my_lib:/destroy_q>' runs.
 
         This error happens because:
           'action<my.domain.com:my_lib:/destroy_q>' is assigned to 'position<box>':
             File "test.dfn", line 7, column 28
-                            it has the action</destroy_q>.
-                                       ^
+                it has the action</destroy_q>.
+                           ^^^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/test>' creates a particle, triggering the constructor 'action<my.domain.com:my_lib:/destroy_q>':
             File "test.dfn", line 10, column 30
-                    create a particle in position<box>.
-                                         ^
+                create a particle in position<box>.
+                                     ^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/destroy_q>' infers this requirement:
             File "destroy_q.dfn", line 6, column 33
-                    destroy the particle in position</q>.
-                                            ^""")
+                destroy the particle in position</q>.
+                                        ^^^^^^^^^^^^""")
 
 
 def test_destroy_in_emptied_interface_position_format(
@@ -1183,12 +1186,12 @@ def test_destroy_in_emptied_interface_position_format(
     formatted = all_diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 16, column 33
-                destroy the particle in position<box>::action</other>::position<item>.
-                                        ^
+            destroy the particle in position<box>::action</other>::position<item>.
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         cannot destroy a particle in 'position<box>::action</other>::position<item>' because it does not contain one; it was emptied at:
         File "test.dfn", line 15, column 33
-                destroy the particle in position<box>::action</other>::position<item>.
-                                        ^""")
+            destroy the particle in position<box>::action</other>::position<item>.
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^""")
 
 
 def test_destroy_in_default_empty_interface_position_format(
@@ -1235,8 +1238,8 @@ def test_destroy_in_default_empty_interface_position_format(
         formatted
         == textwrap.dedent("""\
         File "test.dfn", line 14, column 33
-                destroy the particle in position<box>::action</other>::position<item>.
-                                        ^
+            destroy the particle in position<box>::action</other>::position<item>.
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         cannot destroy a particle in 'position<box>::action</other>::position<item>' because it does not contain one; action interface positions are empty by default""")
     )
 
@@ -1287,12 +1290,12 @@ def test_move_from_emptied_interface_position_format(
     formatted = all_diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 18, column 30
-                move the particle in position<box>::action</other>::position<item> to position<sink2>.
-                                     ^
+            move the particle in position<box>::action</other>::position<item> to position<sink2>.
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         cannot move a particle from 'position<box>::action</other>::position<item>' because it does not contain one; it was emptied at:
         File "test.dfn", line 17, column 30
-                move the particle in position<box>::action</other>::position<item> to position<sink>.
-                                     ^""")
+            move the particle in position<box>::action</other>::position<item> to position<sink>.
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^""")
 
 
 def test_move_from_default_empty_interface_position_format(
@@ -1340,8 +1343,8 @@ def test_move_from_default_empty_interface_position_format(
         formatted
         == textwrap.dedent("""\
         File "test.dfn", line 15, column 30
-                move the particle in position<box>::action</other>::position<item> to position<sink>.
-                                     ^
+            move the particle in position<box>::action</other>::position<item> to position<sink>.
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         cannot move a particle from 'position<box>::action</other>::position<item>' because it does not contain one; action interface positions are empty by default""")
     )
 
@@ -1423,27 +1426,27 @@ def test_propagated_value_requirement_format(validate_project: ValidateProject):
     formatted = all_diagnostics[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 18, column 50
-                move the particle in position<source> to position<worker>::action</relay>::position<input>.
-                                                         ^
+            move the particle in position<source> to position<worker>::action</relay>::position<input>.
+                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         'position<worker>::action</relay>::position<input>' must be occupied by a particle with a set value before 'action<my.domain.com:my_lib:/relay>' runs.
 
         This error happens because:
           'position<worker>::action</relay>::position<input>' is filled here:
             File "test.dfn", line 18, column 50
-                    move the particle in position<source> to position<worker>::action</relay>::position<input>.
-                                                             ^
+                move the particle in position<source> to position<worker>::action</relay>::position<input>.
+                                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/relay>':
             File "test.dfn", line 18, column 50
-                    move the particle in position<source> to position<worker>::action</relay>::position<input>.
-                                                             ^
+                move the particle in position<source> to position<worker>::action</relay>::position<input>.
+                                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/relay>' triggers 'action<my.domain.com:my_lib:/consume>':
             File "relay.dfn", line 16, column 49
-                    move the particle in position<input> to position<moved>::action</consume>::position<input>.
-                                                            ^
+                move the particle in position<input> to position<moved>::action</consume>::position<input>.
+                                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           'action<my.domain.com:my_lib:/consume>' infers this requirement:
             File "consume.dfn", line 12, column 45
-                    set the value of position</copy> to position<input>.
-                                                        ^""")
+                set the value of position</copy> to position<input>.
+                                                    ^^^^^^^^^^^^^^^""")
 
 
 def test_destructor_changes_value_after_move_format(validate_project: ValidateProject):
@@ -1493,8 +1496,8 @@ def test_destructor_changes_value_after_move_format(validate_project: ValidatePr
     formatted = all_diagnostics[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "cleanup.dfn", line 9, column 26
-                set the value of position</value> to literal<standard:/number>"5".
-                                 ^
+            set the value of position</value> to literal<standard:/number>"5".
+                             ^^^^^^^^^^^^^^^^
         a destructor must leave every contracted position in the state it was in when it started.
         However, this line changes the value of the particle in 'position</value>'.""")
 
@@ -1552,8 +1555,8 @@ def test_undefined_operation_view_format(
     formatted = diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 8, column 18
-                    with view<extra> looking at literal<standard:/number>"4".
-                         ^
+            with view<extra> looking at literal<standard:/number>"4".
+                 ^^^^^^^^^^^
         'view<extra>' is not an interface view of 'operation</sum>'; its interface views are:
           view<first>
           view<second>
@@ -1605,8 +1608,8 @@ def test_operation_argument_violates_constraints_format(
     formatted = diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 11, column 42
-                    with view<source> looking at view<number>.
-                                                 ^
+            with view<source> looking at view<number>.
+                                         ^^^^^^^^^^^^
         'view<source>' cannot look at 'view<number>' because 'view<number>' does not have the required qualities:
           encoding<standard:/number/decimal/ascii>""")
 
@@ -1652,8 +1655,8 @@ def test_operation_argument_position_violates_constraints_format(
     formatted = diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 8, column 42
-                    with view<source> looking at position<number>.
-                                                 ^
+            with view<source> looking at position<number>.
+                                         ^^^^^^^^^^^^^^^^
         'view<source>' cannot look at 'position<number>' because the particle in 'position<number>' does not have the required qualities:
           value<standard:/number/rational>""")
 
@@ -1717,10 +1720,10 @@ def test_occupied_action_interface_when_action_triggers_format(
         formatted
         == textwrap.dedent("""\
         File "test.dfn", line 13, column 30
-                create a particle in position<box>::action</parent>::position<run>.
-                                     ^
+            create a particle in position<box>::action</parent>::position<run>.
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         'position<box>::action</parent>::position<iface>::action</child>::position<result>' contains a particle when 'action</parent>' triggers here; move or destroy the particle before triggering that action. The particle arrived at:
         File "test.dfn", line 12, column 79
-                create a particle in position<box>::action</parent>::position<iface>::action</child>::position<run>.
-                                                                                      ^""")
+            create a particle in position<box>::action</parent>::position<iface>::action</child>::position<run>.
+                                                                                  ^^^^^^^^^^^^^^""")
     )

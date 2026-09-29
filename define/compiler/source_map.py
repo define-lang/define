@@ -18,6 +18,9 @@ def source_digest(source: bytes) -> bytes:
     return hashlib.sha256(source).digest()
 
 
+_CODE_INDENTATION = "    "
+
+
 def _format_location_header(location: ast.SourceLocation) -> str:
     """Format a source location as a human-readable string."""
     if location.file_path is not None:
@@ -44,15 +47,29 @@ class SourceMap:
         self._file_lines: dict[PurePosixPath, list[str] | None] = {}
 
     def format_location(self, location: ast.SourceLocation) -> str:
-        """Format a location with its source line and a caret under its column."""
+        """Format a location with its source code, underlined with carets."""
         header = _format_location_header(location)
         lines = self._source_lines(location.file_path)
         if lines is None:
             return header
         line_index = location.line - 1
         source_line = lines[line_index] if 0 <= line_index < len(lines) else ""
-        caret_line = " " * (location.column - 1) + "^"
-        return f"{header}\n{source_line}\n{caret_line}"
+        # Only the diagnostic's own indentation should show, not the source's.
+        code = source_line.lstrip(" ")
+        indentation = len(source_line) - len(code)
+        start = max(location.column - 1 - indentation, 0)
+        # A span that continues onto later lines is underlined to the end of its
+        # first line, so that the context stays one line long.
+        if location.end_line == location.line:
+            end = location.end_column - 1 - indentation
+        else:
+            end = len(code)
+        underline = "^" * max(end - start, 1)
+        return (
+            f"{header}\n"
+            f"{_CODE_INDENTATION}{code}\n"
+            f"{_CODE_INDENTATION}{' ' * start}{underline}"
+        )
 
     @functools.cached_property
     def _in_memory_lines(self) -> list[str] | None:
