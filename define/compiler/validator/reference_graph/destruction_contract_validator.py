@@ -7,7 +7,7 @@ import typing
 
 import msgspec
 
-from define.compiler import ast, diagnostics
+from define.compiler import ast
 from define.compiler.validator.reference_graph import (
     action_contract,
     child_state,
@@ -24,6 +24,7 @@ if typing.TYPE_CHECKING:
     from collections.abc import Sequence
 
     from define.compiler.data_structures import typed_name_dict
+    from define.compiler.errors import diagnostics
     from define.compiler.validator import validation_result
     from define.compiler.validator.reference_graph.dead_code import (
         dead_value_write_validator,

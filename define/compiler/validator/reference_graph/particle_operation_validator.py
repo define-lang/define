@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import typing
 
-from define.compiler import ast, diagnostics
+from define.compiler import ast
+from define.compiler.errors import diagnostics
 from define.compiler.validator.reference_graph.particles import particle_info
 
 if typing.TYPE_CHECKING:

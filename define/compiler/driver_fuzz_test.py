@@ -15,7 +15,9 @@ import pytest
 from hypothesis import HealthCheck, event, example, given, settings
 from hypothesis import strategies as st
 
-from define.compiler import driver, exceptions, parser, parser_exceptions
+from define.compiler import driver
+from define.compiler.errors import exceptions, parser_exceptions
+from define.compiler.parsing import parser
 
 if TYPE_CHECKING:
     from define.compiler.validator import validation_result

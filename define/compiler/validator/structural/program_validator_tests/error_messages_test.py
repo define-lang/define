@@ -12,14 +12,9 @@ import textwrap
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING
 
-from define.compiler import (
-    built_in_definitions,
-    config,
-    constants,
-    diagnostics,
-    exceptions,
-)
+from define.compiler import built_in_definitions, config, constants
 from define.compiler.data_structures import define_path
+from define.compiler.errors import diagnostics, exceptions
 from define.compiler.validator import test_helpers
 from define.compiler.validator.structural import program_validator
 

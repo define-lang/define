@@ -12,7 +12,8 @@ from define.compiler.validator.reference_graph import (
 from define.compiler.validator.reference_graph.particles import particle_info
 
 if typing.TYPE_CHECKING:
-    from define.compiler import ast, diagnostics
+    from define.compiler import ast
+    from define.compiler.errors import diagnostics
     from define.compiler.validator import scope_tracker
     from define.compiler.validator.reference_graph import position_quality_resolver
     from define.compiler.validator.reference_graph.particles import particle_tracker

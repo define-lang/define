@@ -6,10 +6,13 @@ import functools
 import typing
 from pathlib import Path, PurePosixPath
 
-from define.compiler import ast, parser, source_map
+from define.compiler.errors import source_map
+from define.compiler.parsing import parser
 
 if typing.TYPE_CHECKING:
     from collections.abc import Collection
+
+    from define.compiler import ast
 
 _SOURCE_PATH = Path(__file__).parent / "built_in_definitions.dfn"
 # Project file paths are relative, so this absolute path cannot collide with one.

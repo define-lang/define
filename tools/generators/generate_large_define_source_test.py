@@ -6,7 +6,8 @@ from pathlib import Path, PurePosixPath
 import click.testing
 import pytest
 
-from define.compiler import ast, driver, parser
+from define.compiler import ast, driver
+from define.compiler.parsing import parser
 from tools.generators import generate_large_define_source as gen
 
 

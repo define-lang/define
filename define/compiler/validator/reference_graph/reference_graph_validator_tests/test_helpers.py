@@ -8,7 +8,7 @@ from pprint import pformat
 from typing import TYPE_CHECKING, TypedDict
 
 if TYPE_CHECKING:
-    from define.compiler import diagnostics
+    from define.compiler.errors import diagnostics
     from define.compiler.validator.reference_graph import action_contract
 
 

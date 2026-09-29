@@ -9,13 +9,10 @@ from unittest import mock
 
 import pytest
 
-from define.compiler import (
-    diagnostics,
-    driver,
-    exceptions,
-    parser,
-)
+from define.compiler import driver
 from define.compiler.data_structures import define_path
+from define.compiler.errors import diagnostics, exceptions
+from define.compiler.parsing import parser
 from define.compiler.validator.reference_graph import reference_graph_validator
 from define.compiler.validator.structural import program_validator
 from define.compiler.validator.test_helpers import assert_no_errors

@@ -60,7 +60,7 @@ py_library(
     deps = [
         ":validation_result",
         "//define/compiler:built_in_definitions",
-        "//define/compiler:diagnostics",
+        "//define/compiler/errors:diagnostics",
     ],
 )
 
@@ -75,14 +75,14 @@ py_library(
         ":codegen_input",
         ":stats",
         "//define/compiler:ast",
-        "//define/compiler:diagnostics",
-        "//define/compiler:exceptions",
-        "//define/compiler:source_map",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/data_structures:typed_name_dict",
+        "//define/compiler/errors:diagnostics",
+        "//define/compiler/errors:exceptions",
+        "//define/compiler/errors:source_map",
         "//define/compiler/graphs:reference_graph",
         "//define/compiler/graphs:reference_graph_order",
-        "//define/compiler/lark:lark_standalone",
+        "//define/compiler/parsing/lark:lark_standalone",
         "//define/compiler/validator/reference_graph:action_contract",
         "@pypi//msgspec",
     ],
@@ -96,9 +96,9 @@ py_test(
         ":stats",
         ":validation_result",
         "//define/compiler:ast",
-        "//define/compiler:test_helpers",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/graphs:reference_graph",
+        "//define/compiler/parsing:test_helpers",
     ],
 )
 

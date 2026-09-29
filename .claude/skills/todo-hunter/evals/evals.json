@@ -30,7 +30,7 @@
     },
     {
       "id": 2,
-      "prompt": "There's a TODO in define/compiler/name_parser.py about renaming _parse_fqun that looks trivially fixable. Prepare a fix for it in a git worktree so I can review it before anything lands — consider the candidate pre-approved, no need to check with me on the plan. Stop when it's ready for my review. The repo is at <REPO>.",
+      "prompt": "There's a TODO in define/compiler/parsing/name_parser.py about renaming _parse_fqun that looks trivially fixable. Prepare a fix for it in a git worktree so I can review it before anything lands — consider the candidate pre-approved, no need to check with me on the plan. Stop when it's ready for my review. The repo is at <REPO>.",
       "expected_output": "A todo/<slug> branch with a worktree under the repo's .todo-worktrees directory containing the rename as staged, uncommitted changes with the TODO comment removed. Branch has no commits of its own; nothing committed or pushed; full Bazel suite run in the worktree; report says how to review.",
       "files": [],
       "expectations": [

@@ -10,7 +10,7 @@ from typing import Protocol, cast
 import msgspec
 import pytest
 
-from define.compiler import parser
+from define.compiler.parsing import parser
 from define.compiler.validator import test_helpers, validation_result
 from define.compiler.validator.reference_graph import reference_graph_validator
 from define.compiler.validator.structural import program_validator

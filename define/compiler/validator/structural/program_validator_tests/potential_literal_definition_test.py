@@ -5,7 +5,8 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
-from define.compiler import ast, diagnostics, parser_exceptions
+from define.compiler import ast
+from define.compiler.errors import diagnostics, parser_exceptions
 from define.compiler.validator.test_helpers import (
     BUILT_IN_DEFINITION_COUNT,
     assert_no_errors,

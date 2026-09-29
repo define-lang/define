@@ -8,7 +8,7 @@ import functools
 import inspect
 from typing import TYPE_CHECKING, cast, override
 
-from define.compiler import diagnostics
+from define.compiler.errors import diagnostics
 
 if TYPE_CHECKING:
     from collections.abc import Sequence

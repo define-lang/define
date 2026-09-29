@@ -3,9 +3,10 @@
 
 from __future__ import annotations
 
-from define.compiler import ast, test_helpers
+from define.compiler import ast
 from define.compiler.data_structures import define_path
 from define.compiler.graphs import reference_graph
+from define.compiler.parsing import test_helpers
 from define.compiler.validator import stats, validation_result
 
 _FQUN = "my.domain.com:my_lib"

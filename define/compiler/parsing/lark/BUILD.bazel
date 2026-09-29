@@ -1,0 +1,24 @@
+load("@aspect_rules_py//py:defs.bzl", "py_library")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+
+py_library(
+    name = "lark",
+    srcs = ["__init__.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+)
+
+py_library(
+    name = "lark_standalone",
+    srcs = [":lark_standalone.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+)
+
+genrule(
+    name = "lark_standalone_gen",
+    srcs = ["//define/compiler/parsing:grammar.lark"],
+    outs = ["lark_standalone.py"],
+    cmd = "$(location //tools:generate_lark_standalone) $(location //define/compiler/parsing:grammar.lark) && mv lark_parser.py $@",
+    tools = ["//tools:generate_lark_standalone"],
+)
+
+check_build_file()

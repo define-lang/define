@@ -11,7 +11,7 @@ from define.compiler import built_in_definitions
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from define.compiler import diagnostics
+    from define.compiler.errors import diagnostics
     from define.compiler.validator import validation_result
 
 

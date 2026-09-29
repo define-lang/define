@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import typing
 
-from define.compiler import ast, diagnostics
+from define.compiler import ast
+from define.compiler.errors import diagnostics
 from define.compiler.validator import validation_result
 from define.compiler.validator.reference_graph import (
     literal_encoder,

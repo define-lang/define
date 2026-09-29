@@ -1,0 +1,1594 @@
+"""Tests for the Define AST transformer.
+
+There is at least one test per concrete AST node the transformer can produce.
+Each such test asserts the node's stored data fields, its full source location
+(line, column, end_line, end_column), and the substring of the original source
+that location addresses.
+"""
+
+from __future__ import annotations
+
+from pathlib import PurePosixPath
+
+from define.compiler import ast
+from define.compiler.errors import parser_exceptions
+from define.compiler.parsing import parser, test_helpers
+
+
+def _require_fqun(name: ast.GlobalNameContent[ast.Fqun | None]) -> ast.Fqun:
+    assert name.fqun is not None
+    return name.fqun
+
+
+def _slice(source: str, location: ast.SourceLocation) -> str:
+    """Return the exact substring of ``source`` covered by ``location``.
+
+    Locations use 1-based ``line``/``column`` and an exclusive ``end_column``,
+    matching what lark's lexer produces.
+    """
+    lines = source.split("\n")
+    if location.line == location.end_line:
+        return lines[location.line - 1][location.column - 1 : location.end_column - 1]
+    parts = [lines[location.line - 1][location.column - 1 :]]
+    for line_idx in range(location.line, location.end_line - 1):
+        parts.append(lines[line_idx])
+    parts.append(lines[location.end_line - 1][: location.end_column - 1])
+    return "\n".join(parts)
+
+
+_SIMPLE_POSITION = "define the potential position<standard:/path>.\n"
+
+_FULL_FQUN_POSITION = (
+    "define the potential position<my_mv:example.com:my_lib:/some/path>.\n"
+)
+
+_AUTHORITY_FQUN_POSITION = (
+    "define the potential position<example.com:my_lib:/some/path>.\n"
+)
+
+_AUTHORITY_PATH_FQUN_POSITION = (
+    "define the potential position<example.com/org/repo:my_lib:/some/path>.\n"
+)
+
+_FULL_POSITION = (
+    "define the potential position<standard:/path> {\n"
+    + "    it also assigns the position</a>.\n"
+    + "    it may only contain particles where {\n"
+    + "        it has the position</child>.\n"
+    + "        it has the action</other>.\n"
+    + "        it has the value</number/rational>.\n"
+    + "    }\n"
+    + "}\n"
+)
+
+_FULL_ACTION = (
+    "define the potential action<standard:/path> {\n"
+    + "    it also assigns the position</a>.\n"
+    + "    define the position<run>.\n"
+    + "    define the position<other_pos>.\n"
+    + "    it happens when {\n"
+    + "        the position<run> has a particle.\n"
+    + "    } and it does {\n"
+    + "        create a particle in position<run>.\n"
+    + "        move the particle in position<src> to position<dest>.\n"
+    + "        destroy the particle in position<run>.\n"
+    + "    }\n"
+    + "}\n"
+)
+
+_DESTRUCTOR_ACTION = (
+    "define the potential action<standard:/path> {\n"
+    + "    it happens when {\n"
+    + "        this particle is being destroyed.\n"
+    + "    } and it does {\n"
+    + "    }\n"
+    + "}\n"
+)
+
+_CONSTRUCTOR_ACTION = (
+    "define the potential action<standard:/path> {\n"
+    + "    it happens when {\n"
+    + "        this particle is created.\n"
+    + "    } and it does {\n"
+    + "    }\n"
+    + "}\n"
+)
+
+_LOCAL_CONSTRAINED_ACTION = (
+    "define the potential action<standard:/path> {\n"
+    + "    define the position<my_pos> {\n"
+    + "        it may only contain particles where {\n"
+    + "            it has the action</child>.\n"
+    + "        }\n"
+    + "    }\n"
+    + "    it happens when {\n"
+    + "        the position<my_pos> has a particle.\n"
+    + "    } and it does {\n"
+    + "    }\n"
+    + "}\n"
+)
+
+_LOCAL_CHAIN_CREATE = (
+    "define the potential action<standard:/path> {\n"
+    + "    define the position<run>.\n"
+    + "    it happens when {\n"
+    + "        the position<run> has a particle.\n"
+    + "    } and it does {\n"
+    + "        create a particle in position<to>::action<deposit>::position<run>.\n"
+    + "    }\n"
+    + "}\n"
+)
+
+_GLOBAL_CHAIN_CREATE = (
+    "define the potential action<standard:/path> {\n"
+    + "    define the position<run>.\n"
+    + "    it happens when {\n"
+    + "        the position<run> has a particle.\n"
+    + "    } and it does {\n"
+    + "        create a particle in position</a>::action</b>::position</c>.\n"
+    + "    }\n"
+    + "}\n"
+)
+
+_FULL_FQUN_CREATE = (
+    "define the potential action<standard:/path> {\n"
+    + "    define the position<run>.\n"
+    + "    it happens when {\n"
+    + "        the position<run> has a particle.\n"
+    + "    } and it does {\n"
+    + "        create a particle in position<mv:define-lang.org:parser:/run>.\n"
+    + "    }\n"
+    + "}\n"
+)
+
+_TWO_DEFINITIONS = (
+    "define the potential position<my_mv:example.com:lib_a:/pos_a> {\n"
+    + "    it may only contain particles where {\n"
+    + "        it has the position</child>.\n"
+    + "    }\n"
+    + "}\n"
+    + "define the potential position<my_mv:example.com:lib_b:/pos_b> {\n"
+    + "    it may only contain particles where {\n"
+    + "        it has the position</other>.\n"
+    + "    }\n"
+    + "}\n"
+)
+
+
+def _only_action(source: str) -> ast.ActionDefinition:
+    program = test_helpers.parse_and_transform(source)
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.ActionDefinition)
+    return definition
+
+
+def _only_position(source: str) -> ast.PositionDefinition:
+    program = test_helpers.parse_and_transform(source)
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.PositionDefinition)
+    return definition
+
+
+# Name leaf nodes
+
+
+def test_universe_fields():
+    fqun = _require_fqun(_only_position(_SIMPLE_POSITION).typed_name.name_content)
+    assert fqun.universe.name == "standard"
+    assert fqun.universe.location == ast.SourceLocation(
+        line=1, column=31, end_line=1, end_column=39
+    )
+    assert _slice(_SIMPLE_POSITION, fqun.universe.location) == "standard"
+
+
+def test_multiverse_fields():
+    fqun = _require_fqun(_only_position(_FULL_FQUN_POSITION).typed_name.name_content)
+    assert fqun.multiverse is not None
+    assert fqun.multiverse.name == "my_mv"
+    assert fqun.multiverse.location == ast.SourceLocation(
+        line=1, column=31, end_line=1, end_column=36
+    )
+    assert _slice(_FULL_FQUN_POSITION, fqun.multiverse.location) == "my_mv"
+
+
+def test_authority_fields():
+    fqun = _require_fqun(_only_position(_FULL_FQUN_POSITION).typed_name.name_content)
+    assert fqun.authority is not None
+    assert fqun.authority.name == "example.com"
+    assert fqun.authority.location == ast.SourceLocation(
+        line=1, column=37, end_line=1, end_column=48
+    )
+    assert _slice(_FULL_FQUN_POSITION, fqun.authority.location) == "example.com"
+
+
+def test_authority_with_path_fields():
+    fqun = _require_fqun(
+        _only_position(_AUTHORITY_PATH_FQUN_POSITION).typed_name.name_content
+    )
+    assert fqun.authority is not None
+    assert fqun.authority.name == "example.com/org/repo"
+    assert fqun.authority.location == ast.SourceLocation(
+        line=1, column=31, end_line=1, end_column=51
+    )
+    assert (
+        _slice(_AUTHORITY_PATH_FQUN_POSITION, fqun.authority.location)
+        == "example.com/org/repo"
+    )
+
+
+def test_global_path_name_fields():
+    path = _only_position(_SIMPLE_POSITION).typed_name.name_content.path
+    assert path.name == "/path"
+    assert path.location == ast.SourceLocation(
+        line=1, column=40, end_line=1, end_column=45
+    )
+    assert _slice(_SIMPLE_POSITION, path.location) == "/path"
+
+
+def test_local_name_content_fields():
+    name_content = (
+        _only_action(_FULL_ACTION).interface_positions[0].typed_name.name_content
+    )
+    assert name_content.name == "run"
+    assert name_content.location == ast.SourceLocation(
+        line=3, column=25, end_line=3, end_column=28
+    )
+    assert _slice(_FULL_ACTION, name_content.location) == "run"
+
+
+# Fully-qualified universe names
+
+
+def test_fqun_universe_only_fields():
+    fqun = _require_fqun(_only_position(_SIMPLE_POSITION).typed_name.name_content)
+    assert fqun.multiverse is None
+    assert fqun.authority is None
+    assert fqun.universe.name == "standard"
+    assert fqun.location == ast.SourceLocation(
+        line=1, column=31, end_line=1, end_column=39
+    )
+    assert _slice(_SIMPLE_POSITION, fqun.location) == "standard"
+
+
+def test_fqun_authority_universe_fields():
+    fqun = _require_fqun(
+        _only_position(_AUTHORITY_FQUN_POSITION).typed_name.name_content
+    )
+    assert fqun.multiverse is None
+    assert fqun.authority is not None
+    assert fqun.authority.name == "example.com"
+    assert fqun.universe.name == "my_lib"
+    assert fqun.location == ast.SourceLocation(
+        line=1, column=31, end_line=1, end_column=49
+    )
+    assert _slice(_AUTHORITY_FQUN_POSITION, fqun.location) == "example.com:my_lib"
+
+
+def test_fqun_full_fields():
+    fqun = _require_fqun(_only_position(_FULL_FQUN_POSITION).typed_name.name_content)
+    assert fqun.multiverse is not None
+    assert fqun.multiverse.name == "my_mv"
+    assert fqun.authority is not None
+    assert fqun.authority.name == "example.com"
+    assert fqun.universe.name == "my_lib"
+    assert fqun.location == ast.SourceLocation(
+        line=1, column=31, end_line=1, end_column=55
+    )
+    assert _slice(_FULL_FQUN_POSITION, fqun.location) == "my_mv:example.com:my_lib"
+
+
+# Typed names
+
+
+def test_global_typed_name_in_definition_fields():
+    typed_name = _only_position(_SIMPLE_POSITION).typed_name
+    assert typed_name.name_type == ast.NameType.POSITION
+    assert isinstance(typed_name.name_content, ast.DefinitionGlobalNameContent)
+    assert typed_name.location == ast.SourceLocation(
+        line=1, column=22, end_line=1, end_column=46
+    )
+    assert _slice(_SIMPLE_POSITION, typed_name.location) == "position<standard:/path>"
+
+
+def test_definition_global_name_content_fields():
+    name_content = _only_position(_SIMPLE_POSITION).typed_name.name_content
+    assert isinstance(name_content.fqun, ast.Fqun)
+    assert isinstance(name_content.path, ast.GlobalPathName)
+    assert name_content.location == ast.SourceLocation(
+        line=1, column=31, end_line=1, end_column=45
+    )
+    assert _slice(_SIMPLE_POSITION, name_content.location) == "standard:/path"
+
+
+def test_reference_global_name_content_without_fqun_fields():
+    definition = _only_position(_FULL_POSITION)
+    assert definition.constraints is not None
+    name_content = definition.constraints.requirements[0].typed_global_name.name_content
+    assert name_content.fqun is None
+    assert name_content.path.name == "/child"
+    assert name_content.location == ast.SourceLocation(
+        line=4, column=29, end_line=4, end_column=35
+    )
+    assert _slice(_FULL_POSITION, name_content.location) == "/child"
+
+
+def test_reference_global_name_content_with_fqun_fields():
+    stmt = _only_action(_FULL_FQUN_CREATE).action_statements.statements[0]
+    assert isinstance(stmt, ast.CreateParticleStatement)
+    typed_name = stmt.target_position.typed_names[0]
+    assert isinstance(typed_name, ast.GlobalTypedNameReference)
+    name_content = typed_name.name_content
+    assert _require_fqun(name_content).universe.name == "parser"
+    assert name_content.path.name == "/run"
+    assert name_content.location == ast.SourceLocation(
+        line=6, column=39, end_line=6, end_column=69
+    )
+    assert (
+        _slice(_FULL_FQUN_CREATE, name_content.location)
+        == "mv:define-lang.org:parser:/run"
+    )
+
+
+def test_global_typed_name_reference_fields():
+    definition = _only_position(_FULL_POSITION)
+    assert definition.constraints is not None
+    typed_name = definition.constraints.requirements[0].typed_global_name
+    assert typed_name.name_type == ast.NameType.POSITION
+    assert isinstance(typed_name.name_content, ast.ReferenceGlobalNameContent)
+    assert typed_name.enclosing_fqun.canonical == "standard"
+    assert typed_name.location == ast.SourceLocation(
+        line=4, column=20, end_line=4, end_column=36
+    )
+    assert _slice(_FULL_POSITION, typed_name.location) == "position</child>"
+
+
+def test_local_typed_name_reference_fields():
+    typed_name = _only_action(_FULL_ACTION).interface_positions[0].typed_name
+    assert typed_name.name_type == ast.NameType.POSITION
+    assert isinstance(typed_name.name_content, ast.LocalNameContent)
+    assert typed_name.location == ast.SourceLocation(
+        line=3, column=16, end_line=3, end_column=29
+    )
+    assert _slice(_FULL_ACTION, typed_name.location) == "position<run>"
+
+
+# Position references
+
+
+def test_position_reference_single_fields():
+    stmt = _only_action(_FULL_ACTION).action_statements.statements[0]
+    assert isinstance(stmt, ast.CreateParticleStatement)
+    reference = stmt.target_position
+    assert len(reference.typed_names) == 1
+    assert isinstance(reference.typed_names[0], ast.LocalTypedNameReference)
+    assert reference.location == ast.SourceLocation(
+        line=8, column=30, end_line=8, end_column=43
+    )
+    assert _slice(_FULL_ACTION, reference.location) == "position<run>"
+
+
+def test_position_reference_chained_local_fields():
+    stmt = _only_action(_LOCAL_CHAIN_CREATE).action_statements.statements[0]
+    assert isinstance(stmt, ast.CreateParticleStatement)
+    reference = stmt.target_position
+    assert len(reference.typed_names) == 3
+    assert all(
+        isinstance(name, ast.LocalTypedNameReference) for name in reference.typed_names
+    )
+    assert reference.location == ast.SourceLocation(
+        line=6, column=30, end_line=6, end_column=74
+    )
+    assert (
+        _slice(_LOCAL_CHAIN_CREATE, reference.location)
+        == "position<to>::action<deposit>::position<run>"
+    )
+
+
+def test_position_reference_chained_global_fields():
+    stmt = _only_action(_GLOBAL_CHAIN_CREATE).action_statements.statements[0]
+    assert isinstance(stmt, ast.CreateParticleStatement)
+    reference = stmt.target_position
+    assert len(reference.typed_names) == 3
+    assert all(
+        isinstance(name, ast.GlobalTypedNameReference) for name in reference.typed_names
+    )
+    assert reference.location == ast.SourceLocation(
+        line=6, column=30, end_line=6, end_column=68
+    )
+    assert (
+        _slice(_GLOBAL_CHAIN_CREATE, reference.location)
+        == "position</a>::action</b>::position</c>"
+    )
+
+
+# Particle statements
+
+
+def test_create_particle_statement_fields():
+    stmt = _only_action(_FULL_ACTION).action_statements.statements[0]
+    assert isinstance(stmt, ast.CreateParticleStatement)
+    assert isinstance(stmt.target_position, ast.PositionReference)
+    assert stmt.location == ast.SourceLocation(
+        line=8, column=9, end_line=8, end_column=44
+    )
+    assert _slice(_FULL_ACTION, stmt.location) == "create a particle in position<run>."
+
+
+def test_move_particle_statement_fields():
+    stmt = _only_action(_FULL_ACTION).action_statements.statements[1]
+    assert isinstance(stmt, ast.MoveParticleStatement)
+    assert isinstance(stmt.source_position, ast.PositionReference)
+    source_name = stmt.source_position.typed_names[0]
+    assert isinstance(source_name, ast.LocalTypedNameReference)
+    assert source_name.name_content.name == "src"
+    assert isinstance(stmt.target_position, ast.PositionReference)
+    target_name = stmt.target_position.typed_names[0]
+    assert isinstance(target_name, ast.LocalTypedNameReference)
+    assert target_name.name_content.name == "dest"
+    assert stmt.location == ast.SourceLocation(
+        line=9, column=9, end_line=9, end_column=62
+    )
+    assert (
+        _slice(_FULL_ACTION, stmt.location)
+        == "move the particle in position<src> to position<dest>."
+    )
+
+
+def test_destroy_particle_statement_fields():
+    stmt = _only_action(_FULL_ACTION).action_statements.statements[2]
+    assert isinstance(stmt, ast.DestroyParticleStatement)
+    assert isinstance(stmt.target_position, ast.PositionReference)
+    assert stmt.location == ast.SourceLocation(
+        line=10, column=9, end_line=10, end_column=47
+    )
+    assert (
+        _slice(_FULL_ACTION, stmt.location) == "destroy the particle in position<run>."
+    )
+
+
+# Trigger conditions
+
+
+def test_position_presence_statement_fields():
+    condition = _only_action(_FULL_ACTION).trigger_conditions.condition
+    assert isinstance(condition, ast.PositionPresenceStatement)
+    assert isinstance(condition.typed_name, ast.LocalTypedNameReference)
+    assert condition.typed_name.name_content.name == "run"
+    assert condition.location == ast.SourceLocation(
+        line=6, column=9, end_line=6, end_column=42
+    )
+    assert (
+        _slice(_FULL_ACTION, condition.location) == "the position<run> has a particle."
+    )
+
+
+def test_constructor_condition_statement_fields():
+    condition = _only_action(_CONSTRUCTOR_ACTION).trigger_conditions.condition
+    assert isinstance(condition, ast.ConstructorConditionStatement)
+    assert condition.location == ast.SourceLocation(
+        line=3, column=9, end_line=3, end_column=34
+    )
+    assert (
+        _slice(_CONSTRUCTOR_ACTION, condition.location) == "this particle is created."
+    )
+
+
+def test_destructor_condition_statement_fields():
+    condition = _only_action(_DESTRUCTOR_ACTION).trigger_conditions.condition
+    assert isinstance(condition, ast.DestructorConditionStatement)
+    assert condition.location == ast.SourceLocation(
+        line=3, column=9, end_line=3, end_column=42
+    )
+    assert (
+        _slice(_DESTRUCTOR_ACTION, condition.location)
+        == "this particle is being destroyed."
+    )
+
+
+def test_trigger_conditions_block_fields():
+    block = _only_action(_FULL_ACTION).trigger_conditions
+    assert isinstance(block.condition, ast.PositionPresenceStatement)
+    assert block.location == ast.SourceLocation(
+        line=5, column=5, end_line=7, end_column=6
+    )
+    # fmt: off
+    assert _slice(_FULL_ACTION, block.location) == (
+        "it happens when {\n"
+        "        the position<run> has a particle.\n"
+        "    }"
+    )
+    # fmt: on
+
+
+# Blocks
+
+
+def test_position_constraint_block_fields():
+    definition = _only_position(_FULL_POSITION)
+    assert definition.constraints is not None
+    block = definition.constraints
+    assert len(block.requirements) == 3
+    assert all(
+        isinstance(requirement, ast.PositionRequirementStatement)
+        for requirement in block.requirements
+    )
+    assert block.location == ast.SourceLocation(
+        line=3, column=5, end_line=7, end_column=6
+    )
+    assert _slice(_FULL_POSITION, block.location) == (
+        "it may only contain particles where {\n"
+        "        it has the position</child>.\n"
+        "        it has the action</other>.\n"
+        "        it has the value</number/rational>.\n"
+        "    }"
+    )
+
+
+def test_value_constraint_fields():
+    definition = _only_position(_FULL_POSITION)
+    assert definition.constraints is not None
+    typed_name = definition.constraints.requirements[2].typed_global_name
+    assert isinstance(typed_name, ast.GlobalTypedNameReference)
+    assert typed_name.name_type == ast.NameType.VALUE
+
+
+def test_position_requirement_statement_fields():
+    definition = _only_position(_FULL_POSITION)
+    assert definition.constraints is not None
+    requirement = definition.constraints.requirements[0]
+    assert isinstance(requirement.typed_global_name, ast.GlobalTypedNameReference)
+    assert requirement.location == ast.SourceLocation(
+        line=4, column=9, end_line=4, end_column=37
+    )
+    assert (
+        _slice(_FULL_POSITION, requirement.location) == "it has the position</child>."
+    )
+
+
+def test_quality_implication_statement_fields():
+    implication = _only_position(_FULL_POSITION).quality_implications[0]
+    assert isinstance(implication.typed_global_name, ast.GlobalTypedNameReference)
+    assert implication.location == ast.SourceLocation(
+        line=2, column=5, end_line=2, end_column=38
+    )
+    assert (
+        _slice(_FULL_POSITION, implication.location)
+        == "it also assigns the position</a>."
+    )
+
+
+def test_action_statements_block_fields():
+    block = _only_action(_FULL_ACTION).action_statements
+    assert len(block.statements) == 3
+    assert isinstance(block.statements[0], ast.CreateParticleStatement)
+    assert isinstance(block.statements[1], ast.MoveParticleStatement)
+    assert isinstance(block.statements[2], ast.DestroyParticleStatement)
+    assert block.location == ast.SourceLocation(
+        line=7, column=6, end_line=11, end_column=6
+    )
+    assert _slice(_FULL_ACTION, block.location) == (
+        " and it does {\n"
+        "        create a particle in position<run>.\n"
+        "        move the particle in position<src> to position<dest>.\n"
+        "        destroy the particle in position<run>.\n"
+        "    }"
+    )
+
+
+def test_action_statements_block_empty_fields():
+    block = _only_action(_DESTRUCTOR_ACTION).action_statements
+    assert block.statements == ()
+    assert block.location == ast.SourceLocation(
+        line=4, column=6, end_line=5, end_column=6
+    )
+    # fmt: off
+    assert _slice(_DESTRUCTOR_ACTION, block.location) == (
+        " and it does {\n"
+        "    }"
+    )
+    # fmt: on
+
+
+# Local position definitions
+
+
+def test_local_position_definition_without_constraints_fields():
+    local_def = _only_action(_FULL_ACTION).interface_positions[0]
+    assert isinstance(local_def.typed_name, ast.LocalTypedNameReference)
+    assert local_def.typed_name.name_content.name == "run"
+    assert local_def.constraints is None
+    assert local_def.location == ast.SourceLocation(
+        line=3, column=5, end_line=3, end_column=30
+    )
+    assert _slice(_FULL_ACTION, local_def.location) == "define the position<run>."
+
+
+def test_local_position_definition_with_constraints_fields():
+    local_def = _only_action(_LOCAL_CONSTRAINED_ACTION).interface_positions[0]
+    assert isinstance(local_def.typed_name, ast.LocalTypedNameReference)
+    assert local_def.typed_name.name_content.name == "my_pos"
+    assert isinstance(local_def.constraints, ast.PositionConstraintBlock)
+    assert local_def.location == ast.SourceLocation(
+        line=2, column=5, end_line=6, end_column=6
+    )
+    assert _slice(_LOCAL_CONSTRAINED_ACTION, local_def.location) == (
+        "define the position<my_pos> {\n"
+        "        it may only contain particles where {\n"
+        "            it has the action</child>.\n"
+        "        }\n"
+        "    }"
+    )
+
+
+# Quality definitions
+
+
+def test_value_definition_fields():
+    source = "define the potential value<mv:example.com:example:/number/rational>.\n"
+    program = test_helpers.parse_and_transform(source)
+    assert len(program.definitions) == 1
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.ValueDefinition)
+    assert definition.quality_implications == ()
+    assert definition.typed_name.name_type == ast.NameType.VALUE
+    name = definition.typed_name.name_content
+    assert isinstance(name, ast.DefinitionGlobalNameContent)
+    assert name.source_name == "mv:example.com:example:/number/rational"
+    assert definition.location == ast.SourceLocation(
+        line=1, column=1, end_line=1, end_column=len(source)
+    )
+    assert _slice(source, definition.location) == source.rstrip("\n")
+    assert (
+        _slice(source, definition.typed_name.location)
+        == "value<mv:example.com:example:/number/rational>"
+    )
+    assert _slice(source, name.location) == name.source_name
+    assert program.location == definition.location
+
+
+def test_value_definition_between_other_definitions():
+    source = (
+        _SIMPLE_POSITION
+        + "define the potential value<standard:/number/rational>.\n"
+        + _CONSTRUCTOR_ACTION
+    )
+    program = test_helpers.parse_and_transform(source)
+    assert len(program.definitions) == 3
+    assert isinstance(program.definitions[0], ast.PositionDefinition)
+    assert isinstance(program.definitions[1], ast.ValueDefinition)
+    assert isinstance(program.definitions[2], ast.ActionDefinition)
+
+
+def test_encoding_definition_fields():
+    source = "define the encoding<mv:example.com:example:/number/rational>.\n"
+    program = test_helpers.parse_and_transform(source)
+    assert len(program.definitions) == 1
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.EncodingDefinition)
+    assert not isinstance(definition, ast.QualityDefinition)
+    assert definition.typed_name.name_type == ast.NameType.ENCODING
+    name = definition.typed_name.name_content
+    assert isinstance(name, ast.DefinitionGlobalNameContent)
+    assert name.source_name == "mv:example.com:example:/number/rational"
+    assert definition.location == ast.SourceLocation(
+        line=1, column=1, end_line=1, end_column=len(source)
+    )
+    assert _slice(source, definition.location) == source.rstrip("\n")
+    assert (
+        _slice(source, definition.typed_name.location)
+        == "encoding<mv:example.com:example:/number/rational>"
+    )
+    assert _slice(source, name.location) == name.source_name
+    assert program.location == definition.location
+
+
+def test_encoding_definition_between_other_definitions():
+    source = (
+        _SIMPLE_POSITION
+        + "define the encoding<standard:/number/rational>.\n"
+        + _CONSTRUCTOR_ACTION
+    )
+    program = test_helpers.parse_and_transform(source)
+    assert len(program.definitions) == 3
+    assert isinstance(program.definitions[0], ast.PositionDefinition)
+    assert isinstance(program.definitions[1], ast.EncodingDefinition)
+    assert isinstance(program.definitions[2], ast.ActionDefinition)
+
+
+def test_position_definition_bare_fields():
+    definition = _only_position(_SIMPLE_POSITION)
+    assert isinstance(definition.typed_name, ast.GlobalTypedNameInDefinition)
+    assert definition.quality_implications == ()
+    assert definition.constraints is None
+    assert definition.location == ast.SourceLocation(
+        line=1, column=1, end_line=1, end_column=47
+    )
+    assert (
+        _slice(_SIMPLE_POSITION, definition.location)
+        == "define the potential position<standard:/path>."
+    )
+
+
+def test_position_definition_full_fields():
+    definition = _only_position(_FULL_POSITION)
+    assert isinstance(definition.typed_name, ast.GlobalTypedNameInDefinition)
+    assert len(definition.quality_implications) == 1
+    assert isinstance(
+        definition.quality_implications[0], ast.QualityImplicationStatement
+    )
+    assert isinstance(definition.constraints, ast.PositionConstraintBlock)
+    assert definition.location == ast.SourceLocation(
+        line=1, column=1, end_line=8, end_column=2
+    )
+    assert _slice(_FULL_POSITION, definition.location) == (
+        "define the potential position<standard:/path> {\n"
+        "    it also assigns the position</a>.\n"
+        "    it may only contain particles where {\n"
+        "        it has the position</child>.\n"
+        "        it has the action</other>.\n"
+        "        it has the value</number/rational>.\n"
+        "    }\n"
+        "}"
+    )
+
+
+def test_action_definition_minimal_fields():
+    definition = _only_action(_DESTRUCTOR_ACTION)
+    assert isinstance(definition.typed_name, ast.GlobalTypedNameInDefinition)
+    assert definition.typed_name.name_type == ast.NameType.ACTION
+    assert definition.quality_implications == ()
+    assert definition.interface_positions == ()
+    assert isinstance(definition.trigger_conditions, ast.TriggerConditionsBlock)
+    assert isinstance(definition.action_statements, ast.ActionStatementsBlock)
+    assert definition.location == ast.SourceLocation(
+        line=1, column=1, end_line=6, end_column=2
+    )
+    assert _slice(_DESTRUCTOR_ACTION, definition.location) == (
+        "define the potential action<standard:/path> {\n"
+        "    it happens when {\n"
+        "        this particle is being destroyed.\n"
+        "    } and it does {\n"
+        "    }\n"
+        "}"
+    )
+
+
+def test_action_definition_full_fields():
+    definition = _only_action(_FULL_ACTION)
+    assert isinstance(definition.typed_name, ast.GlobalTypedNameInDefinition)
+    assert len(definition.quality_implications) == 1
+    assert isinstance(
+        definition.quality_implications[0], ast.QualityImplicationStatement
+    )
+    assert len(definition.interface_positions) == 2
+    assert all(
+        isinstance(position, ast.LocalPositionDefinition)
+        for position in definition.interface_positions
+    )
+    assert isinstance(definition.trigger_conditions, ast.TriggerConditionsBlock)
+    assert isinstance(definition.action_statements, ast.ActionStatementsBlock)
+    assert definition.location == ast.SourceLocation(
+        line=1, column=1, end_line=12, end_column=2
+    )
+    assert _slice(_FULL_ACTION, definition.location) == (
+        "define the potential action<standard:/path> {\n"
+        "    it also assigns the position</a>.\n"
+        "    define the position<run>.\n"
+        "    define the position<other_pos>.\n"
+        "    it happens when {\n"
+        "        the position<run> has a particle.\n"
+        "    } and it does {\n"
+        "        create a particle in position<run>.\n"
+        "        move the particle in position<src> to position<dest>.\n"
+        "        destroy the particle in position<run>.\n"
+        "    }\n"
+        "}"
+    )
+
+
+# Program
+
+
+def test_program_fields():
+    program = test_helpers.parse_and_transform(_SIMPLE_POSITION)
+    assert len(program.definitions) == 1
+    assert isinstance(program.definitions[0], ast.PositionDefinition)
+    assert program.location == ast.SourceLocation(
+        line=1, column=1, end_line=1, end_column=47
+    )
+    assert (
+        _slice(_SIMPLE_POSITION, program.location)
+        == "define the potential position<standard:/path>."
+    )
+
+
+def test_program_multiple_definitions_fields():
+    program = test_helpers.parse_and_transform(_TWO_DEFINITIONS)
+    assert len(program.definitions) == 2
+    assert isinstance(program.definitions[0], ast.PositionDefinition)
+    assert isinstance(program.definitions[1], ast.PositionDefinition)
+    assert program.location == ast.SourceLocation(
+        line=1, column=1, end_line=10, end_column=2
+    )
+    assert _slice(_TWO_DEFINITIONS, program.location) == (
+        "define the potential position<my_mv:example.com:lib_a:/pos_a> {\n"
+        "    it may only contain particles where {\n"
+        "        it has the position</child>.\n"
+        "    }\n"
+        "}\n"
+        "define the potential position<my_mv:example.com:lib_b:/pos_b> {\n"
+        "    it may only contain particles where {\n"
+        "        it has the position</other>.\n"
+        "    }\n"
+        "}"
+    )
+
+
+# enclosing_fqun is a stored field on GlobalTypedNameReference, dispatched by the
+# enclosing definition rather than the reference's own (often absent) FQUN.
+
+
+def test_enclosing_fqun_dispatched_per_definition():
+    program = test_helpers.parse_and_transform(_TWO_DEFINITIONS)
+    first = program.definitions[0]
+    second = program.definitions[1]
+    assert isinstance(first, ast.PositionDefinition)
+    assert isinstance(second, ast.PositionDefinition)
+    assert first.constraints is not None
+    assert second.constraints is not None
+    first_reference = first.constraints.requirements[0].typed_global_name
+    second_reference = second.constraints.requirements[0].typed_global_name
+    assert first_reference.enclosing_fqun.canonical == "my_mv:example.com:lib_a"
+    assert second_reference.enclosing_fqun.canonical == "my_mv:example.com:lib_b"
+
+
+def test_enclosing_fqun_on_every_chain_segment():
+    stmt = _only_action(_GLOBAL_CHAIN_CREATE).action_statements.statements[0]
+    assert isinstance(stmt, ast.CreateParticleStatement)
+    chain = stmt.target_position.typed_names
+    assert len(chain) == 3
+    for segment in chain:
+        assert isinstance(segment, ast.GlobalTypedNameReference)
+        assert segment.enclosing_fqun.canonical == "standard"
+
+
+def test_value_setting_statement_fields():
+    source = (
+        "define the potential action<mv:define-lang.org:parser:/set_value> {\n"
+        + "    it happens when {\n"
+        + "        this particle is created.\n"
+        + "    } and it does {\n"
+        + "        set the value of position<dest> to position<src>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    statement = _only_action(source).action_statements.statements[0]
+    assert isinstance(statement, ast.ValueSettingStatement)
+    assert statement.target_position.source_chained_name == "position<dest>"
+    assert isinstance(statement.source, ast.PositionReference)
+    assert statement.source.source_chained_name == "position<src>"
+    assert statement.location == ast.SourceLocation(
+        line=5, column=9, end_line=5, end_column=58
+    )
+    assert (
+        _slice(source, statement.location)
+        == "set the value of position<dest> to position<src>."
+    )
+    assert _slice(source, statement.target_position.location) == "position<dest>"
+    assert _slice(source, statement.source.location) == "position<src>"
+
+
+def test_value_setting_statement_chained_positions():
+    source = (
+        "define the potential action<mv:define-lang.org:parser:/set_value> {\n"
+        + "    it happens when {\n"
+        + "        this particle is created.\n"
+        + "    } and it does {\n"
+        + "        set the value of position<dest>::action</a>::position<value> to position<mv:define-lang.org:parser:/src>::position<value>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    statement = _only_action(source).action_statements.statements[0]
+    assert isinstance(statement, ast.ValueSettingStatement)
+    assert isinstance(statement.source, ast.PositionReference)
+    assert (
+        statement.target_position.source_chained_name
+        == "position<dest>::action</a>::position<value>"
+    )
+    assert (
+        statement.source.source_chained_name
+        == "position<mv:define-lang.org:parser:/src>::position<value>"
+    )
+    assert statement.location == ast.SourceLocation(
+        line=5, column=9, end_line=5, end_column=131
+    )
+    assert _slice(source, statement.location) == source.splitlines()[4].strip()
+    assert (
+        _slice(source, statement.target_position.location)
+        == statement.target_position.source_chained_name
+    )
+    assert (
+        _slice(source, statement.source.location)
+        == statement.source.source_chained_name
+    )
+
+
+def test_potential_literal_definition_fields():
+    source = (
+        "define the potential literal<mv:example.com:example:/decimal> {\n"
+        + "    it has the encoding</decimal_text>.\n"
+        + "}\n"
+    )
+    program = test_helpers.parse_and_transform(source)
+    assert len(program.definitions) == 1
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.PotentialLiteralDefinition)
+    assert not isinstance(definition, ast.QualityDefinition)
+    assert definition.typed_name.name_type == ast.NameType.LITERAL
+    assert (
+        definition.typed_name.name_content.source_name
+        == "mv:example.com:example:/decimal"
+    )
+    assert definition.location == ast.SourceLocation(
+        line=1, column=1, end_line=3, end_column=2
+    )
+    assert _slice(source, definition.location) == source.rstrip("\n")
+    assert (
+        _slice(source, definition.typed_name.location)
+        == "literal<mv:example.com:example:/decimal>"
+    )
+    encoding = definition.encoding
+    assert encoding.name_type == ast.NameType.ENCODING
+    assert encoding.source_typed_name == "encoding</decimal_text>"
+    assert encoding.full_typed_name == "encoding<mv:example.com:example:/decimal_text>"
+    assert _slice(source, encoding.location) == "encoding</decimal_text>"
+    assert _slice(source, encoding.name_content.location) == "/decimal_text"
+    assert program.location == definition.location
+
+
+def test_potential_literal_definitions_update_reference_fqun():
+    source = (
+        "define the potential literal<mv:example.com:first:/decimal> {\n"
+        + "    it has the encoding</decimal_text>.\n"
+        + "}\n"
+        + "define the potential literal<mv:example.com:second:/decimal> {\n"
+        + "    it has the encoding</decimal_text>.\n"
+        + "}\n"
+        + "define the potential literal<mv:example.com:third:/decimal> {\n"
+        + "    it has the encoding<standard:/decimal_text>.\n"
+        + "}\n"
+    )
+    program = test_helpers.parse_and_transform(source)
+    first, second, third = program.definitions
+    assert isinstance(first, ast.PotentialLiteralDefinition)
+    assert isinstance(second, ast.PotentialLiteralDefinition)
+    assert isinstance(third, ast.PotentialLiteralDefinition)
+    assert (
+        first.encoding.full_typed_name == "encoding<mv:example.com:first:/decimal_text>"
+    )
+    assert (
+        second.encoding.full_typed_name
+        == "encoding<mv:example.com:second:/decimal_text>"
+    )
+    assert third.encoding.full_typed_name == "encoding<standard:/decimal_text>"
+
+
+def test_value_setting_literal_fields():
+    source = (
+        "define the potential action<mv:define-lang.org:parser:/set_value> {\n"
+        + "    it happens when {\n"
+        + "        this particle is created.\n"
+        + "    } and it does {\n"
+        + '        set the value of position<dest> to literal</text>" # Hello 世界 > : \\" \\\\ \\n \\\\n ".\n'
+        + "    }\n}\n"
+    )
+    statement = _only_action(source).action_statements.statements[0]
+    assert isinstance(statement, ast.ValueSettingStatement)
+    assert statement.target_position.source_chained_name == "position<dest>"
+    literal = statement.source
+    assert isinstance(literal, ast.Literal)
+    assert literal.content == ' # Hello 世界 > : " \\ \n \\n '
+    assert literal.potential_literal.name_type == ast.NameType.LITERAL
+    assert literal.potential_literal.name_content.fqun is None
+    assert literal.potential_literal.name_content.path.name == "/text"
+    assert (
+        literal.potential_literal.full_typed_name
+        == "literal<mv:define-lang.org:parser:/text>"
+    )
+    assert literal.location == ast.SourceLocation(
+        line=5, column=44, end_line=5, end_column=89
+    )
+    assert (
+        _slice(source, literal.location)
+        == 'literal</text>" # Hello 世界 > : \\" \\\\ \\n \\\\n "'
+    )
+    assert _slice(source, literal.potential_literal.location) == "literal</text>"
+    assert _slice(source, literal.potential_literal.name_content.location) == "/text"
+    assert _slice(source, statement.location) == source.splitlines()[4].strip()
+
+
+def test_value_setting_literal_empty_and_explicit_fqun():
+    source = (
+        "define the potential action<mv:define-lang.org:parser:/set_value> {\n"
+        + "    it happens when {\n"
+        + "        this particle is created.\n"
+        + "    } and it does {\n"
+        + '        set the value of position<dest> to literal<mv:example.com:other:/text>"".\n'
+        + "    }\n}\n"
+    )
+    statement = _only_action(source).action_statements.statements[0]
+    assert isinstance(statement, ast.ValueSettingStatement)
+    literal = statement.source
+    assert isinstance(literal, ast.Literal)
+    assert literal.content == ""
+    assert literal.potential_literal.effective_fqun.canonical == "mv:example.com:other"
+    assert (
+        literal.potential_literal.enclosing_fqun.canonical
+        == "mv:define-lang.org:parser"
+    )
+    assert literal.location == ast.SourceLocation(
+        line=5, column=44, end_line=5, end_column=81
+    )
+    assert _slice(source, literal.location) == 'literal<mv:example.com:other:/text>""'
+    assert _slice(source, statement.location) == source.splitlines()[4].strip()
+
+
+def test_literal_file_path_and_following_statement():
+    source = (
+        "define the potential action<mv:define-lang.org:parser:/set_value> {\n"
+        + "    it happens when {\n"
+        + "        this particle is created.\n"
+        + "    } and it does {\n"
+        + '        set the value of position<dest> to literal</text>"first".\n'
+        + '        set the value of position<dest> to literal</text>"".\n'
+        + "    }\n}\n"
+    )
+    file_path = PurePosixPath("set_value.dfn")
+    result = parser.Parser().parse_and_transform(source, file_path)
+    assert result.exception is None
+    assert result.diagnostics == []
+    assert result.program is not None
+    definition = result.program.definitions[0]
+    assert isinstance(definition, ast.ActionDefinition)
+    for statement in definition.action_statements.statements:
+        assert isinstance(statement, ast.ValueSettingStatement)
+        assert isinstance(statement.source, ast.Literal)
+        assert statement.location.file_path == file_path
+        assert statement.source.location.file_path == file_path
+        assert statement.source.potential_literal.location.file_path == file_path
+        assert (
+            statement.source.potential_literal.name_content.location.file_path
+            == file_path
+        )
+    first, second = definition.action_statements.statements
+    assert isinstance(first, ast.ValueSettingStatement)
+    assert isinstance(first.source, ast.Literal)
+    assert first.source.content == "first"
+    assert isinstance(second, ast.ValueSettingStatement)
+    assert isinstance(second.source, ast.Literal)
+    assert second.source.content == ""
+
+
+_FULL_OPERATION = (
+    "define the operation<mv:example.com:example:/add> {\n"
+    + "    define the view<left> {\n"
+    + "        it is read.\n"
+    + "        it may only contain particles where {\n"
+    + "            it has the value</number>.\n"
+    + "            it has the encoding<standard:/decimal>.\n"
+    + "        }\n"
+    + "    }\n"
+    + "    define the view<right> {\n"
+    + "        it is read.\n"
+    + "        it may only contain particles where {\n"
+    + "            it has the value</number>.\n"
+    + "        }\n"
+    + "    }\n"
+    + "    it does {\n"
+    + "        execute the operation</other>.\n"
+    + "        execute the operation<standard:/sum> {\n"
+    + "            with view<a> looking at view<left>.\n"
+    + '            with view<b> looking at literal</number>"12".\n'
+    + "        }\n"
+    + "        execute the encoding operation.\n"
+    + "    }\n"
+    + "}\n"
+)
+
+
+def _only_operation(source: str) -> ast.ValueOperationDefinition:
+    program = test_helpers.parse_and_transform(source)
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.ValueOperationDefinition)
+    return definition
+
+
+def test_operation_definition_fields():
+    definition = _only_operation(_FULL_OPERATION)
+    assert not isinstance(definition, ast.QualityDefinition)
+    assert not isinstance(definition, ast.EncodingOperationDefinition)
+    assert definition.typed_name.name_type == ast.NameType.OPERATION
+    assert (
+        definition.typed_name.name_content.source_name == "mv:example.com:example:/add"
+    )
+    assert definition.location == ast.SourceLocation(
+        line=1, column=1, end_line=23, end_column=2
+    )
+    assert _slice(_FULL_OPERATION, definition.location) == _FULL_OPERATION.rstrip("\n")
+    assert (
+        _slice(_FULL_OPERATION, definition.typed_name.location)
+        == "operation<mv:example.com:example:/add>"
+    )
+    assert [view.typed_name.source_typed_name for view in definition.views] == [
+        "view<left>",
+        "view<right>",
+    ]
+    assert len(definition.operation_statements) == 3
+
+
+def test_operation_definition_without_views_fields():
+    source = (
+        "define the operation<mv:example.com:example:/add> {\n"
+        + "    it does {\n"
+        + "        execute the encoding operation.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = _only_operation(source)
+    assert definition.views == ()
+    assert len(definition.operation_statements) == 1
+    assert definition.location == ast.SourceLocation(
+        line=1, column=1, end_line=5, end_column=2
+    )
+    assert _slice(source, definition.location) == source.rstrip("\n")
+
+
+def test_view_definition_fields():
+    view = _only_operation(_FULL_OPERATION).views[0]
+    assert isinstance(view, ast.ViewDefinition)
+    assert isinstance(view.typed_name, ast.LocalTypedNameReference)
+    assert view.typed_name.name_type == ast.NameType.VIEW
+    assert view.typed_name.source_typed_name == "view<left>"
+    assert _slice(_FULL_OPERATION, view.typed_name.location) == "view<left>"
+    assert _slice(_FULL_OPERATION, view.typed_name.name_content.location) == "left"
+    assert view.is_input
+    assert not view.is_output
+    assert view.location == ast.SourceLocation(
+        line=2, column=5, end_line=8, end_column=6
+    )
+    assert _slice(_FULL_OPERATION, view.location) == (
+        "define the view<left> {\n"
+        "        it is read.\n"
+        "        it may only contain particles where {\n"
+        "            it has the value</number>.\n"
+        "            it has the encoding<standard:/decimal>.\n"
+        "        }\n"
+        "    }"
+    )
+    assert view.constraints.location == ast.SourceLocation(
+        line=4, column=9, end_line=7, end_column=10
+    )
+    assert [
+        requirement.typed_global_name.full_typed_name
+        for requirement in view.constraints.requirements
+    ] == [
+        "value<mv:example.com:example:/number>",
+        "encoding<standard:/decimal>",
+    ]
+    encoding_requirement = view.constraints.requirements[1]
+    assert encoding_requirement.typed_global_name.name_type == ast.NameType.ENCODING
+    assert encoding_requirement.location == ast.SourceLocation(
+        line=6, column=13, end_line=6, end_column=52
+    )
+    assert (
+        _slice(_FULL_OPERATION, encoding_requirement.location)
+        == "it has the encoding<standard:/decimal>."
+    )
+
+
+def test_view_direction_fields():
+    source = (
+        "define the operation<mv:example.com:example:/increment> {\n"
+        + "    define the view<number> {\n"
+        + "        it is read.\n"
+        + "        it is written.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</number>.\n"
+        + "        }\n"
+        + "    }\n"
+        + "    define the view<result> {\n"
+        + "        it is written.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</number>.\n"
+        + "        }\n"
+        + "    }\n"
+        + "    it does {\n"
+        + "        execute the encoding operation.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    read_and_written, written = _only_operation(source).views
+    assert read_and_written.is_input
+    assert read_and_written.is_output
+    assert read_and_written.location == ast.SourceLocation(
+        line=2, column=5, end_line=8, end_column=6
+    )
+    assert not written.is_input
+    assert written.is_output
+    assert written.location == ast.SourceLocation(
+        line=9, column=5, end_line=14, end_column=6
+    )
+
+
+def test_operation_execution_statement_without_arguments_fields():
+    statement = _only_operation(_FULL_OPERATION).operation_statements[0]
+    assert isinstance(statement, ast.OperationExecutionStatement)
+    assert statement.arguments == ()
+    assert statement.operation.name_type == ast.NameType.OPERATION
+    assert statement.operation.source_typed_name == "operation</other>"
+    assert (
+        statement.operation.full_typed_name
+        == "operation<mv:example.com:example:/other>"
+    )
+    assert _slice(_FULL_OPERATION, statement.operation.location) == "operation</other>"
+    assert statement.location == ast.SourceLocation(
+        line=16, column=9, end_line=16, end_column=39
+    )
+    assert (
+        _slice(_FULL_OPERATION, statement.location) == "execute the operation</other>."
+    )
+
+
+def test_operation_execution_statement_with_arguments_fields():
+    statement = _only_operation(_FULL_OPERATION).operation_statements[1]
+    assert isinstance(statement, ast.OperationExecutionStatement)
+    assert statement.operation.full_typed_name == "operation<standard:/sum>"
+    assert len(statement.arguments) == 2
+    assert statement.location == ast.SourceLocation(
+        line=17, column=9, end_line=20, end_column=10
+    )
+    assert _slice(_FULL_OPERATION, statement.location) == (
+        "execute the operation<standard:/sum> {\n"
+        "            with view<a> looking at view<left>.\n"
+        '            with view<b> looking at literal</number>"12".\n'
+        "        }"
+    )
+
+
+def test_operation_argument_statement_view_fields():
+    statement = _only_operation(_FULL_OPERATION).operation_statements[1]
+    assert isinstance(statement, ast.OperationExecutionStatement)
+    argument = statement.arguments[0]
+    assert isinstance(argument, ast.OperationArgumentStatement)
+    assert argument.view.name_type == ast.NameType.VIEW
+    assert argument.view.source_typed_name == "view<a>"
+    assert _slice(_FULL_OPERATION, argument.view.location) == "view<a>"
+    looking_at = argument.looking_at
+    assert isinstance(looking_at, ast.LocalTypedNameReference)
+    assert looking_at.name_type == ast.NameType.VIEW
+    assert looking_at.source_typed_name == "view<left>"
+    assert _slice(_FULL_OPERATION, looking_at.location) == "view<left>"
+    assert _slice(_FULL_OPERATION, looking_at.name_content.location) == "left"
+    assert argument.location == ast.SourceLocation(
+        line=18, column=13, end_line=18, end_column=48
+    )
+    assert (
+        _slice(_FULL_OPERATION, argument.location)
+        == "with view<a> looking at view<left>."
+    )
+
+
+def test_operation_argument_statement_position_fields():
+    source = (
+        "define the operation<mv:example.com:example:/add> {\n"
+        + "    it does {\n"
+        + "        execute the operation</other> {\n"
+        + "            with view<a> looking at position<p>::position<child>.\n"
+        + "        }\n"
+        + "    }\n"
+        + "}\n"
+    )
+    statement = _only_operation(source).operation_statements[0]
+    assert isinstance(statement, ast.OperationExecutionStatement)
+    argument = statement.arguments[0]
+    assert argument.view.source_typed_name == "view<a>"
+    looking_at = argument.looking_at
+    assert isinstance(looking_at, ast.PositionReference)
+    assert looking_at.source_chained_name == "position<p>::position<child>"
+    assert _slice(source, looking_at.location) == "position<p>::position<child>"
+    assert argument.location == ast.SourceLocation(
+        line=4, column=13, end_line=4, end_column=66
+    )
+    assert (
+        _slice(source, argument.location)
+        == "with view<a> looking at position<p>::position<child>."
+    )
+
+
+def test_operation_argument_statement_literal_fields():
+    statement = _only_operation(_FULL_OPERATION).operation_statements[1]
+    assert isinstance(statement, ast.OperationExecutionStatement)
+    argument = statement.arguments[1]
+    assert argument.view.source_typed_name == "view<b>"
+    literal = argument.looking_at
+    assert isinstance(literal, ast.Literal)
+    assert literal.content == "12"
+    assert (
+        literal.potential_literal.full_typed_name
+        == "literal<mv:example.com:example:/number>"
+    )
+    assert _slice(_FULL_OPERATION, literal.location) == 'literal</number>"12"'
+    assert argument.location == ast.SourceLocation(
+        line=19, column=13, end_line=19, end_column=58
+    )
+    assert (
+        _slice(_FULL_OPERATION, argument.location)
+        == 'with view<b> looking at literal</number>"12".'
+    )
+
+
+def test_encoding_operation_execution_statement_fields():
+    statement = _only_operation(_FULL_OPERATION).operation_statements[2]
+    assert isinstance(statement, ast.EncodingOperationExecutionStatement)
+    assert statement.location == ast.SourceLocation(
+        line=21, column=9, end_line=21, end_column=40
+    )
+    assert (
+        _slice(_FULL_OPERATION, statement.location) == "execute the encoding operation."
+    )
+
+
+def test_operation_definitions_update_reference_fqun():
+    source = (
+        "define the operation<mv:example.com:first:/add> {\n"
+        + "    it does {\n"
+        + "        execute the operation</other>.\n"
+        + "    }\n"
+        + "}\n"
+        + "define the operation<mv:example.com:second:/add> {\n"
+        + "    it does {\n"
+        + "        execute the operation</other>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    first, second = test_helpers.parse_and_transform(source).definitions
+    assert isinstance(first, ast.OperationDefinition)
+    assert isinstance(second, ast.OperationDefinition)
+    first_statement = first.operation_statements[0]
+    second_statement = second.operation_statements[0]
+    assert isinstance(first_statement, ast.OperationExecutionStatement)
+    assert isinstance(second_statement, ast.OperationExecutionStatement)
+    assert (
+        first_statement.operation.full_typed_name
+        == "operation<mv:example.com:first:/other>"
+    )
+    assert (
+        second_statement.operation.full_typed_name
+        == "operation<mv:example.com:second:/other>"
+    )
+
+
+_FULL_ENCODING_OPERATION = (
+    "define the encoding_operation<mv:example.com:example:/add_decimal> {\n"
+    + "    define the view<left> {\n"
+    + "        it is read.\n"
+    + "        it may only contain particles where {\n"
+    + "            it has the encoding<standard:/decimal>.\n"
+    + "        }\n"
+    + "    }\n"
+    + "    it does {\n"
+    + "        execute the encoding_operation</other>.\n"
+    + "        execute the encoding_operation<standard:/sum> {\n"
+    + "            with view<a> looking at view<left>.\n"
+    + "        }\n"
+    + "        execute the computer operation.\n"
+    + "    }\n"
+    + "}\n"
+)
+
+
+def _only_encoding_operation(source: str) -> ast.EncodingOperationDefinition:
+    program = test_helpers.parse_and_transform(source)
+    definition = program.definitions[0]
+    assert isinstance(definition, ast.EncodingOperationDefinition)
+    return definition
+
+
+def test_encoding_operation_definition_fields():
+    definition = _only_encoding_operation(_FULL_ENCODING_OPERATION)
+    assert not isinstance(definition, ast.ValueOperationDefinition)
+    assert definition.typed_name.name_type == ast.NameType.ENCODING_OPERATION
+    assert (
+        definition.typed_name.name_content.source_name
+        == "mv:example.com:example:/add_decimal"
+    )
+    assert (
+        definition.typed_name.full_typed_name
+        == "encoding_operation<mv:example.com:example:/add_decimal>"
+    )
+    assert definition.location == ast.SourceLocation(
+        line=1, column=1, end_line=15, end_column=2
+    )
+    assert _slice(
+        _FULL_ENCODING_OPERATION, definition.location
+    ) == _FULL_ENCODING_OPERATION.rstrip("\n")
+    assert (
+        _slice(_FULL_ENCODING_OPERATION, definition.typed_name.location)
+        == "encoding_operation<mv:example.com:example:/add_decimal>"
+    )
+    assert [view.typed_name.source_typed_name for view in definition.views] == [
+        "view<left>"
+    ]
+    assert len(definition.operation_statements) == 3
+
+
+def test_encoding_operation_definition_without_views_fields():
+    source = (
+        "define the encoding_operation<mv:example.com:example:/add_decimal> {\n"
+        + "    it does {\n"
+        + "        execute the computer operation.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    definition = _only_encoding_operation(source)
+    assert definition.views == ()
+    assert len(definition.operation_statements) == 1
+    assert definition.location == ast.SourceLocation(
+        line=1, column=1, end_line=5, end_column=2
+    )
+    assert _slice(source, definition.location) == source.rstrip("\n")
+
+
+def test_encoding_operation_execution_without_arguments_fields():
+    definition = _only_encoding_operation(_FULL_ENCODING_OPERATION)
+    statement = definition.operation_statements[0]
+    assert isinstance(statement, ast.OperationExecutionStatement)
+    assert statement.arguments == ()
+    assert statement.operation.name_type == ast.NameType.ENCODING_OPERATION
+    assert statement.operation.source_typed_name == "encoding_operation</other>"
+    assert (
+        statement.operation.full_typed_name
+        == "encoding_operation<mv:example.com:example:/other>"
+    )
+    assert (
+        _slice(_FULL_ENCODING_OPERATION, statement.operation.location)
+        == "encoding_operation</other>"
+    )
+    assert statement.location == ast.SourceLocation(
+        line=9, column=9, end_line=9, end_column=48
+    )
+    assert (
+        _slice(_FULL_ENCODING_OPERATION, statement.location)
+        == "execute the encoding_operation</other>."
+    )
+
+
+def test_encoding_operation_execution_with_arguments_fields():
+    definition = _only_encoding_operation(_FULL_ENCODING_OPERATION)
+    statement = definition.operation_statements[1]
+    assert isinstance(statement, ast.OperationExecutionStatement)
+    assert statement.operation.name_type == ast.NameType.ENCODING_OPERATION
+    assert statement.operation.full_typed_name == "encoding_operation<standard:/sum>"
+    assert statement.location == ast.SourceLocation(
+        line=10, column=9, end_line=12, end_column=10
+    )
+    assert _slice(_FULL_ENCODING_OPERATION, statement.location) == (
+        "execute the encoding_operation<standard:/sum> {\n"
+        "            with view<a> looking at view<left>.\n"
+        "        }"
+    )
+    (argument,) = statement.arguments
+    assert argument.view.source_typed_name == "view<a>"
+    looking_at = argument.looking_at
+    assert isinstance(looking_at, ast.LocalTypedNameReference)
+    assert looking_at.name_type == ast.NameType.VIEW
+    assert looking_at.source_typed_name == "view<left>"
+    assert argument.location == ast.SourceLocation(
+        line=11, column=13, end_line=11, end_column=48
+    )
+    assert (
+        _slice(_FULL_ENCODING_OPERATION, argument.location)
+        == "with view<a> looking at view<left>."
+    )
+
+
+def test_computer_operation_execution_statement_fields():
+    definition = _only_encoding_operation(_FULL_ENCODING_OPERATION)
+    statement = definition.operation_statements[2]
+    assert isinstance(statement, ast.ComputerOperationExecutionStatement)
+    assert statement.location == ast.SourceLocation(
+        line=13, column=9, end_line=13, end_column=40
+    )
+    assert (
+        _slice(_FULL_ENCODING_OPERATION, statement.location)
+        == "execute the computer operation."
+    )
+
+
+_OPERATION_EXECUTING_ACTION = (
+    "define the potential action<mv:example.com:example:/run> {\n"
+    + "    define the position<p>.\n"
+    + "    it happens when {\n"
+    + "        the position<p> has a particle.\n"
+    + "    } and it does {\n"
+    + "        execute the operation</clear>.\n"
+    + "        execute the operation<standard:/add> {\n"
+    + "            with view<a> looking at position<p>.\n"
+    + '            with view<b> looking at literal</number>"12".\n'
+    + "        }\n"
+    + "    }\n"
+    + "}\n"
+)
+
+
+def test_action_operation_execution_statement_without_arguments_fields():
+    block = _only_action(_OPERATION_EXECUTING_ACTION).action_statements
+    statement = block.statements[0]
+    assert isinstance(statement, ast.OperationExecutionStatement)
+    assert statement.arguments == ()
+    assert statement.operation.name_type == ast.NameType.OPERATION
+    assert (
+        statement.operation.full_typed_name
+        == "operation<mv:example.com:example:/clear>"
+    )
+    assert statement.location == ast.SourceLocation(
+        line=6, column=9, end_line=6, end_column=39
+    )
+    assert (
+        _slice(_OPERATION_EXECUTING_ACTION, statement.location)
+        == "execute the operation</clear>."
+    )
+
+
+def test_action_operation_execution_statement_with_arguments_fields():
+    block = _only_action(_OPERATION_EXECUTING_ACTION).action_statements
+    statement = block.statements[1]
+    assert isinstance(statement, ast.OperationExecutionStatement)
+    assert statement.operation.full_typed_name == "operation<standard:/add>"
+    assert statement.location == ast.SourceLocation(
+        line=7, column=9, end_line=10, end_column=10
+    )
+    assert _slice(_OPERATION_EXECUTING_ACTION, statement.location) == (
+        "execute the operation<standard:/add> {\n"
+        "            with view<a> looking at position<p>.\n"
+        '            with view<b> looking at literal</number>"12".\n'
+        "        }"
+    )
+    position_argument, literal_argument = statement.arguments
+    assert position_argument.view.source_typed_name == "view<a>"
+    position = position_argument.looking_at
+    assert isinstance(position, ast.PositionReference)
+    assert position.source_chained_name == "position<p>"
+    assert _slice(_OPERATION_EXECUTING_ACTION, position.location) == "position<p>"
+    assert (
+        _slice(_OPERATION_EXECUTING_ACTION, position_argument.location)
+        == "with view<a> looking at position<p>."
+    )
+    assert literal_argument.view.source_typed_name == "view<b>"
+    literal = literal_argument.looking_at
+    assert isinstance(literal, ast.Literal)
+    assert literal.content == "12"
+    assert (
+        literal.potential_literal.full_typed_name
+        == "literal<mv:example.com:example:/number>"
+    )
+    assert (
+        _slice(_OPERATION_EXECUTING_ACTION, literal_argument.location)
+        == 'with view<b> looking at literal</number>"12".'
+    )
+
+
+def test_truncated_block_reports_missing_close_brace_while_transforming():
+    source = (
+        "define the potential action<mv:define-lang.org:parser:/path> {\n"
+        + "    define the position<run>.\n"
+        + "    it happens when {\n"
+        + "        the position<run> has a particle.\n"
+        + "    } and it does {\n"
+        + "        create a particle in position<run>."
+    )
+    result = parser.Parser().parse_and_transform(source)
+    assert isinstance(result.exception, parser_exceptions.MissingCloseBrace)
+    assert result.exception.token == ""
+    assert result.exception.line == 6
+    assert result.exception.column == 43

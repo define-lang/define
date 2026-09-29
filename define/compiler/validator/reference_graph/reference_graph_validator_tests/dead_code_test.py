@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 from pathlib import PurePosixPath
+from typing import TYPE_CHECKING
 
-from define.compiler import conftest, diagnostics
+from define.compiler.errors import diagnostics
 from define.compiler.validator.reference_graph.test_helpers import (
     action_graph,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
+
+if TYPE_CHECKING:
+    from define.compiler import conftest
 
 _RUNNER = "action<my.domain.com:my_lib:/runner>"
 _MIDDLE = "action<my.domain.com:my_lib:/middle>"

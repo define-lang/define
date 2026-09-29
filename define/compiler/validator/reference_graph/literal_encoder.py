@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import typing
 
-from define.compiler import ast, constants, diagnostics, literal_parsers
+from define.compiler import ast, constants, literal_parsers
+from define.compiler.errors import diagnostics
 
 if typing.TYPE_CHECKING:
     from collections.abc import Callable

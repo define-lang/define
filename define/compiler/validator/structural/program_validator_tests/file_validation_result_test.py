@@ -10,8 +10,9 @@ import hashlib
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING
 
-from define.compiler import config, exceptions, parser_exceptions
+from define.compiler import config
 from define.compiler.data_structures import define_path
+from define.compiler.errors import exceptions, parser_exceptions
 from define.compiler.validator import test_helpers as validator_test_helpers
 from define.compiler.validator.structural import program_validator
 from define.compiler.validator.structural.program_validator_tests import (

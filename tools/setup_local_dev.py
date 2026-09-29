@@ -13,12 +13,12 @@ RUNFILES_WORKSPACE = Path(__file__).absolute().parent.parent
 REPO_ROOT = Path(os.environ.get("BUILD_WORKSPACE_DIRECTORY", RUNFILES_WORKSPACE))
 
 LARK_TARGETS = [
-    "//define/compiler/lark:lark_standalone_gen",
+    "//define/compiler/parsing/lark:lark_standalone_gen",
     "//defcl/python/lark:lark_standalone_gen",
 ]
 
 LARK_FILES = [
-    "define/compiler/lark/lark_standalone.py",
+    "define/compiler/parsing/lark/lark_standalone.py",
     "defcl/python/lark/lark_standalone.py",
 ]
 

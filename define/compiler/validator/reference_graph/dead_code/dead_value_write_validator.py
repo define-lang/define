@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typing
 
-from define.compiler import diagnostics
+from define.compiler.errors import diagnostics
 
 if typing.TYPE_CHECKING:
     from define.compiler import ast

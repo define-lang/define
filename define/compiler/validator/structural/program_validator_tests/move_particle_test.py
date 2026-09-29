@@ -3,8 +3,8 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
-from define.compiler import diagnostics
 from define.compiler.data_structures import define_path
+from define.compiler.errors import diagnostics
 
 if TYPE_CHECKING:
     from define.compiler.conftest import (

@@ -5,7 +5,8 @@ from __future__ import annotations
 import string
 from pathlib import Path, PurePosixPath
 
-from define.compiler import ast, constants, diagnostics
+from define.compiler import ast, constants
+from define.compiler.errors import diagnostics
 
 _RESERVED_WORDS_DIR = Path(__file__).parent.parent.parent.parent / "reserved_words"
 

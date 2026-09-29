@@ -3,7 +3,8 @@
 
 from __future__ import annotations
 
-from define.compiler import ast, diagnostics
+from define.compiler import ast
+from define.compiler.errors import diagnostics
 from define.compiler.validator.structural import name_validators
 
 _LOC = ast.SourceLocation(line=1, column=10, end_line=1, end_column=20)

@@ -5,7 +5,7 @@ message:
   Use the `parse` fixture, or `p` for the raw `ParseResult`, instead of
   constructing `parser.Parser`.
 files:
-  - define/compiler/parser_tests/*_test.py
+  - define/compiler/parsing/parser_tests/*_test.py
 rule:
   any:
     - pattern: parser.Parser($$$)

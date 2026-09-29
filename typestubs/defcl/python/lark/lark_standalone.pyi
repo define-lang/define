@@ -1,1 +1,1 @@
-../../../define/compiler/lark/lark_standalone.pyi
+../../../define/compiler/parsing/lark/lark_standalone.pyi

@@ -18,21 +18,16 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import TextIO
 
-from define.compiler import (
-    ast,
-    constants,
-    diagnostics,
-    exceptions,
-    overall_stats,
-    parser,
-)
+from define.compiler import ast, constants, overall_stats
 from define.compiler.codegen import generator
+from define.compiler.errors import diagnostics, exceptions
 from define.compiler.validator.reference_graph import reference_graph_validator
 from define.compiler.validator.structural import program_validator
 
 if typing.TYPE_CHECKING:
     import collections.abc
 
+    from define.compiler.parsing import parser
     from define.compiler.validator import codegen_input as codegen_input_types
     from define.compiler.validator import validation_result
 

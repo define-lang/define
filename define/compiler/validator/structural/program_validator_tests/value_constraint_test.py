@@ -5,7 +5,8 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
-from define.compiler import ast, diagnostics
+from define.compiler import ast
+from define.compiler.errors import diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:

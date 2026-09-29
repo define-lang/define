@@ -1,0 +1,94 @@
+load("@aspect_rules_py//py:defs.bzl", "py_library")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+load("//tools/bzl:format.bzl", "format_test")
+load("//tools/bzl:py_test.bzl", "py_test")
+load("//tools/bzl:pyright.bzl", "pyright_test")
+
+py_library(
+    name = "diagnostics",
+    srcs = ["diagnostics.py"],
+    visibility = [
+        "//define/compiler:__subpackages__",
+        "//define/testdata:__pkg__",
+        "//tools:__pkg__",
+        "//tools/generators:__pkg__",
+    ],
+    deps = [
+        ":source_map",
+        "//define/compiler:ast",
+        "//define/compiler:config",
+        "//define/compiler:constants",
+        "//define/compiler/validator/reference_graph:action_contract",
+        "@pypi//msgspec",
+    ],
+)
+
+py_library(
+    name = "errors",
+    srcs = ["__init__.py"],
+)
+
+py_library(
+    name = "exceptions",
+    srcs = ["exceptions.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        "//define/compiler:constants",
+    ],
+)
+
+py_library(
+    name = "parser_exceptions",
+    srcs = ["parser_exceptions.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        ":exceptions",
+        "//define/compiler:constants",
+        "//define/compiler/parsing/lark:lark_standalone",
+        "@pypi//lark_cython",
+    ],
+)
+
+py_library(
+    name = "source_map",
+    srcs = ["source_map.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        "//define/compiler:ast",
+    ],
+)
+
+py_test(
+    name = "source_map_test",
+    size = "small",
+    srcs = ["source_map_test.py"],
+    deps = [
+        ":source_map",
+        "//define/compiler:ast",
+        "@pypi//pytest",
+    ],
+)
+
+# --- Format checking ---
+
+format_test(
+    name = "format_test",
+    srcs = glob(["*.py"]),
+    python = "@multitool//tools/ruff",
+)
+
+# --- Type-checking ---
+
+pyright_test(
+    name = "pyright_test",
+    deps = [
+        ":diagnostics",
+        ":errors",
+        ":exceptions",
+        ":parser_exceptions",
+        ":source_map",
+        ":source_map_test",
+    ],
+)
+
+check_build_file()

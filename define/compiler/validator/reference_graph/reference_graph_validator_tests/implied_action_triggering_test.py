@@ -2,8 +2,9 @@
 from __future__ import annotations
 
 from pathlib import PurePosixPath
+from typing import TYPE_CHECKING
 
-from define.compiler import conftest, diagnostics
+from define.compiler.errors import diagnostics
 from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
@@ -12,6 +13,9 @@ from define.compiler.validator.reference_graph.test_helpers import (
     action_graph,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
+
+if TYPE_CHECKING:
+    from define.compiler import conftest
 
 _TEST = "action<my.domain.com:my_lib:/test>"
 _IMPLIED = "action<my.domain.com:my_lib:/implied_action>"

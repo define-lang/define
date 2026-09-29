@@ -11,7 +11,7 @@ py_test(
     data = ["//define/testdata/structural/action_operation_execution"],
     deps = [
         "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
+        "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:test_helpers",
     ],
 )
@@ -23,7 +23,7 @@ py_test(
     data = ["//define/testdata/structural/action_statements_block"],
     deps = [
         "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
+        "//define/compiler/errors:diagnostics",
     ],
 )
 
@@ -35,8 +35,8 @@ py_test(
     deps = [
         "//define/compiler:config",
         "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
         "//define/compiler/data_structures:define_path",
+        "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:test_helpers",
     ],
 )
@@ -48,7 +48,7 @@ py_test(
     data = ["//define/testdata/structural/destroy_particle"],
     deps = [
         "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
+        "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:test_helpers",
     ],
 )
@@ -60,7 +60,7 @@ py_test(
     data = ["//define/testdata/structural/diagnostic_collection"],
     deps = [
         "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
+        "//define/compiler/errors:diagnostics",
     ],
 )
 
@@ -71,7 +71,7 @@ py_test(
     data = ["//define/testdata/structural/duplicate_definitions"],
     deps = [
         "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
+        "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:test_helpers",
     ],
 )
@@ -83,7 +83,7 @@ py_test(
     data = ["//define/testdata/structural/duplicate_position_constraint"],
     deps = [
         "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
+        "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:test_helpers",
     ],
 )
@@ -96,8 +96,8 @@ py_test(
     deps = [
         "//define/compiler:ast",
         "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
-        "//define/compiler:parser_exceptions",
+        "//define/compiler/errors:diagnostics",
+        "//define/compiler/errors:parser_exceptions",
         "//define/compiler/validator:test_helpers",
     ],
 )
@@ -110,7 +110,7 @@ py_test(
     deps = [
         "//define/compiler:ast",
         "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
+        "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:test_helpers",
     ],
 )
@@ -122,7 +122,7 @@ py_test(
     data = ["//define/testdata/structural/entry_action"],
     deps = [
         "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
+        "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:test_helpers",
     ],
 )
@@ -136,9 +136,9 @@ py_test(
         "//define/compiler:config",
         "//define/compiler:conftest",
         "//define/compiler:constants",
-        "//define/compiler:diagnostics",
-        "//define/compiler:exceptions",
         "//define/compiler/data_structures:define_path",
+        "//define/compiler/errors:diagnostics",
+        "//define/compiler/errors:exceptions",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/structural:program_validator",
         "@pypi//pytest",
@@ -152,9 +152,9 @@ py_test(
     data = ["//define/testdata/structural/file_not_found"],
     deps = [
         "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
-        "//define/compiler:exceptions",
         "//define/compiler/data_structures:define_path",
+        "//define/compiler/errors:diagnostics",
+        "//define/compiler/errors:exceptions",
     ],
 )
 
@@ -165,9 +165,9 @@ py_test(
     deps = [
         ":test_helpers",
         "//define/compiler:config",
-        "//define/compiler:exceptions",
-        "//define/compiler:parser_exceptions",
         "//define/compiler/data_structures:define_path",
+        "//define/compiler/errors:exceptions",
+        "//define/compiler/errors:parser_exceptions",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/structural:program_validator",
         "@pypi//pytest",
@@ -181,7 +181,7 @@ py_test(
     data = ["//define/testdata/structural/fqun_mismatch"],
     deps = [
         "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
+        "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:test_helpers",
     ],
 )
@@ -193,8 +193,8 @@ py_test(
     data = ["//define/testdata/structural/global_name_walking"],
     deps = [
         "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
         "//define/compiler/data_structures:define_path",
+        "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/structural:file_validator",
     ],
@@ -207,7 +207,7 @@ py_test(
     data = ["//define/testdata/structural/local_name_conflicts"],
     deps = [
         "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
+        "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:test_helpers",
     ],
 )
@@ -219,8 +219,8 @@ py_test(
     data = ["//define/testdata/structural/move_particle"],
     deps = [
         "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
         "//define/compiler/data_structures:define_path",
+        "//define/compiler/errors:diagnostics",
     ],
 )
 
@@ -231,7 +231,7 @@ py_test(
     data = ["//define/testdata/structural/name_format_positions"],
     deps = [
         "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
+        "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:test_helpers",
     ],
 )
@@ -244,8 +244,8 @@ py_test(
     deps = [
         "//define/compiler:config",
         "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
         "//define/compiler/data_structures:define_path",
+        "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:test_helpers",
     ],
 )
@@ -258,7 +258,7 @@ py_test(
     deps = [
         "//define/compiler:ast",
         "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
+        "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:test_helpers",
     ],
 )
@@ -270,7 +270,7 @@ py_test(
     data = ["//define/testdata/structural/operation_execution"],
     deps = [
         "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
+        "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:test_helpers",
     ],
 )
@@ -282,8 +282,8 @@ py_test(
     data = ["//define/testdata/structural/parallel"],
     deps = [
         "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
         "//define/compiler/data_structures:define_path",
+        "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/structural:file_validator",
     ],
@@ -296,7 +296,7 @@ py_test(
     data = ["//define/testdata/structural/path_mismatch"],
     deps = [
         "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
+        "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:test_helpers",
     ],
 )
@@ -308,8 +308,8 @@ py_test(
     data = ["//define/testdata/structural/position_constraint_references"],
     deps = [
         "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
         "//define/compiler/data_structures:define_path",
+        "//define/compiler/errors:diagnostics",
     ],
 )
 
@@ -321,8 +321,8 @@ py_test(
     deps = [
         "//define/compiler:ast",
         "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
-        "//define/compiler:parser_exceptions",
+        "//define/compiler/errors:diagnostics",
+        "//define/compiler/errors:parser_exceptions",
         "//define/compiler/validator:test_helpers",
     ],
 )
@@ -350,8 +350,8 @@ py_test(
     data = ["//define/testdata/structural/quality_implication"],
     deps = [
         "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
         "//define/compiler/data_structures:define_path",
+        "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:test_helpers",
     ],
 )
@@ -363,7 +363,7 @@ py_test(
     data = ["//define/testdata/structural/reserved_name_positions"],
     deps = [
         "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
+        "//define/compiler/errors:diagnostics",
     ],
 )
 
@@ -372,7 +372,7 @@ py_library(
     testonly = True,
     srcs = ["test_helpers.py"],
     deps = [
-        "//define/compiler:parser",
+        "//define/compiler/parsing:parser",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator:validation_result",
         "//define/compiler/validator/structural:program_validator",
@@ -394,7 +394,7 @@ py_test(
     data = ["//define/testdata/structural/trigger_conditions"],
     deps = [
         "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
+        "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:test_helpers",
     ],
 )
@@ -406,7 +406,7 @@ py_test(
     data = ["//define/testdata/structural/universe_without_authority"],
     deps = [
         "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
+        "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:test_helpers",
     ],
 )
@@ -418,7 +418,7 @@ py_test(
     data = ["//define/testdata/structural/unreferenced_positions"],
     deps = [
         "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
+        "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:test_helpers",
     ],
 )
@@ -444,7 +444,7 @@ py_test(
     deps = [
         "//define/compiler:ast",
         "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
+        "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:test_helpers",
     ],
 )
@@ -457,7 +457,7 @@ py_test(
     deps = [
         "//define/compiler:ast",
         "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
+        "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:test_helpers",
     ],
 )
@@ -469,7 +469,7 @@ py_test(
     data = ["//define/testdata/structural/value_setting_literal"],
     deps = [
         "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
+        "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:test_helpers",
     ],
 )
@@ -481,7 +481,7 @@ py_test(
     data = ["//define/testdata/structural/value_setting"],
     deps = [
         "//define/compiler:conftest",
-        "//define/compiler:diagnostics",
+        "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:test_helpers",
     ],
 )

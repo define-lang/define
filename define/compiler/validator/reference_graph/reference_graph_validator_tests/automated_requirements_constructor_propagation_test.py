@@ -11,7 +11,7 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
-from define.compiler import diagnostics
+from define.compiler.errors import diagnostics
 from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,

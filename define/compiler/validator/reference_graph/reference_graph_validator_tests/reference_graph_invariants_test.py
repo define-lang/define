@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 from pathlib import PurePosixPath
+from typing import TYPE_CHECKING
 
-from define.compiler import conftest, diagnostics
+from define.compiler.errors import diagnostics
+
+if TYPE_CHECKING:
+    from define.compiler import conftest
 
 
 def test_multiple_pending_depth_updates_do_not_hide_cycle(

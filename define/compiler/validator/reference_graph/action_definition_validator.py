@@ -7,7 +7,8 @@ from functools import cached_property
 
 import msgspec
 
-from define.compiler import ast, diagnostics
+from define.compiler import ast
+from define.compiler.errors import diagnostics
 from define.compiler.validator import codegen_input, scope_tracker, validation_result
 from define.compiler.validator.reference_graph import (
     action_contract,

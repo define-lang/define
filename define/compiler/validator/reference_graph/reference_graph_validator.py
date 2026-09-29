@@ -6,7 +6,8 @@ import typing
 
 import msgspec
 
-from define.compiler import ast, diagnostics
+from define.compiler import ast
+from define.compiler.errors import diagnostics
 from define.compiler.graphs import (
     reference_graph_executor,
     reference_graph_order,

@@ -7,17 +7,13 @@ from dataclasses import dataclass, field
 
 import msgspec
 
-from define.compiler import (
-    ast,
-    diagnostics,
-    exceptions,
-    source_map,
-)
-from define.compiler.lark import lark_standalone
+from define.compiler.errors import diagnostics, exceptions, source_map
+from define.compiler.parsing.lark import lark_standalone
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterator, Sequence
 
+    from define.compiler import ast
     from define.compiler.data_structures import define_path, typed_name_dict
     from define.compiler.graphs import reference_graph, reference_graph_order
     from define.compiler.validator import codegen_input, stats

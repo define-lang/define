@@ -6,7 +6,9 @@ from typing import TYPE_CHECKING
 import click.testing
 import pytest
 
-from define.compiler import diagnostics, driver, parser
+from define.compiler import driver
+from define.compiler.errors import diagnostics
+from define.compiler.parsing import parser
 from tools.generators import generate_diagnostics_source as gen
 
 if TYPE_CHECKING:

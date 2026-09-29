@@ -13,7 +13,8 @@ from pathlib import Path
 
 import pytest
 
-from define.compiler import constants, driver, overall_stats, parser
+from define.compiler import constants, driver, overall_stats
+from define.compiler.parsing import parser
 
 _PARSER = parser.Parser()
 

@@ -16,7 +16,7 @@ import typing
 
 import msgspec
 
-from define.compiler import ast, diagnostics
+from define.compiler.errors import diagnostics
 from define.compiler.validator.reference_graph import (
     action_contract,
     position_occupancy,
@@ -25,6 +25,8 @@ from define.compiler.validator.reference_graph.particles import particle_info
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterable
+
+    from define.compiler import ast
 
 
 class _AutoDestruction(msgspec.Struct, frozen=True):

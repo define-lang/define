@@ -8,8 +8,9 @@ from pathlib import PurePosixPath
 
 import pytest
 
-from define.compiler import ast, test_helpers
+from define.compiler import ast
 from define.compiler.data_structures import define_path
+from define.compiler.parsing import test_helpers
 
 _LOC = ast.start_of_file_location()
 _FQUN = "my.domain.com:my_lib"

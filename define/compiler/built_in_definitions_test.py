@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from define.compiler import ast, built_in_definitions, constants, diagnostics, parser
+from define.compiler import ast, built_in_definitions, constants
 from define.compiler.data_structures import typed_name_dict
+from define.compiler.errors import diagnostics
 from define.compiler.graphs import reference_graph, reference_graph_order
+from define.compiler.parsing import parser
 from define.compiler.validator import validation_result
 from define.compiler.validator.reference_graph import reference_graph_validator
 from define.compiler.validator.structural import file_validator, program_validator

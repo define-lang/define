@@ -4,7 +4,7 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
-from define.compiler import diagnostics
+from define.compiler.errors import diagnostics
 from define.compiler.validator.reference_graph.test_helpers import (
     action_graph,
 )

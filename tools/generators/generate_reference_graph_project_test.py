@@ -6,7 +6,8 @@ from pathlib import Path
 import click.testing
 import pytest
 
-from define.compiler import diagnostics, driver
+from define.compiler import driver
+from define.compiler.errors import diagnostics
 from tools.generators import generate_reference_graph_project as gen
 
 

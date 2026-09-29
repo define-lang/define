@@ -13,18 +13,11 @@ from typing import TYPE_CHECKING
 
 import msgspec
 
-from define.compiler import (
-    ast,
-    config,
-    constants,
-    diagnostics,
-    exceptions,
-    parser,
-    parser_error_classification,
-    source_map,
-)
+from define.compiler import ast, config, constants
 from define.compiler.data_structures import define_path, typed_name_dict
+from define.compiler.errors import diagnostics, exceptions, source_map
 from define.compiler.graphs import reference_graph
+from define.compiler.parsing import parser, parser_error_classification
 from define.compiler.validator import scope_tracker, stats, validation_result
 from define.compiler.validator.structural import name_validators
 

@@ -5,7 +5,7 @@ message:
   Expect a specific subclass of `DefineSyntaxError`, not `DefineSyntaxError`
   itself.
 files:
-  - define/compiler/parser_tests/*_test.py
+  - define/compiler/parsing/parser_tests/*_test.py
 rule:
   any:
     - pattern: pytest.raises($ERROR)

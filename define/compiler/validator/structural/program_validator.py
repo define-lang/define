@@ -17,18 +17,11 @@ import msgspec
 if typing.TYPE_CHECKING:
     import pathlib
 
-from define.compiler import (
-    ast,
-    built_in_definitions,
-    config,
-    constants,
-    diagnostics,
-    exceptions,
-    parser,
-    source_map,
-)
+from define.compiler import ast, built_in_definitions, config, constants
 from define.compiler.data_structures import define_path, typed_name_dict
+from define.compiler.errors import diagnostics, exceptions, source_map
 from define.compiler.graphs import reference_graph, reference_graph_order
+from define.compiler.parsing import parser
 from define.compiler.validator import stats, validation_result
 from define.compiler.validator.structural import file_validator, path_tracker
 

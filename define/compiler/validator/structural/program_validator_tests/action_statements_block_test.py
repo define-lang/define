@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler import diagnostics
+from define.compiler.errors import diagnostics
 
 if TYPE_CHECKING:
     from define.compiler.conftest import ValidateTestdataStructuralNonFilesystem

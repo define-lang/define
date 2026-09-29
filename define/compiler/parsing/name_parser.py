@@ -1,0 +1,232 @@
+"""Parse name content into AST nodes and decode literal content."""
+
+from __future__ import annotations
+
+import re
+from typing import TYPE_CHECKING
+
+import msgspec
+
+from define.compiler import ast
+from define.compiler.errors import parser_exceptions
+
+if TYPE_CHECKING:
+    from pathlib import PurePosixPath
+
+    import lark_cython
+
+
+_LITERAL_SPECIAL_CHARACTERS = re.compile(
+    r"\\([^\n])|[\x00-\x1f\x7f-\x9f\u00a0\u2028\u2029\ud800-\udfff\ufeff]"
+)
+
+
+def parse_literal_content(
+    token: lark_cython.Token, file_path: PurePosixPath | None = None
+) -> str:
+    """Validate and decode the content of a literal."""
+
+    def decode(match: re.Match[str]) -> str:
+        escaped = match[1]
+        if escaped is None:
+            raise parser_exceptions.InvalidLiteralCharacter(
+                token.value,
+                _line(token),
+                _column(token) + match.start(),
+                match[0],
+                file_path,
+            )
+        if escaped == "n":
+            return "\n"
+        if escaped not in ('"', "\\"):
+            raise parser_exceptions.InvalidLiteralEscape(
+                token.value,
+                _line(token),
+                _column(token) + match.start() + 1,
+                escaped,
+                file_path,
+            )
+        return escaped
+
+    return _LITERAL_SPECIAL_CHARACTERS.sub(decode, token.value)
+
+
+def parse_local_name(
+    token: lark_cython.Token, file_path: PurePosixPath | None = None
+) -> ast.LocalNameContent:
+    """Parse local name content into an AST local-name node."""
+    return ast.LocalNameContent(
+        name=token.value,
+        location=ast.SourceLocation.from_ast_or_token(
+            start=token, end=token, file_path=file_path
+        ),
+    )
+
+
+def parse_global_name_definition(
+    token: lark_cython.Token, file_path: PurePosixPath | None = None
+) -> ast.DefinitionGlobalNameContent:
+    """Parse definition-site global name content into an AST node."""
+    parsed = _parse_global_name(token, file_path)
+    if parsed.fqun is None:
+        raise parser_exceptions.DefinitionGlobalNameContentRequiresFqun(
+            token.value,
+            _line(token),
+            _column(token),
+            file_path,
+        )
+    return ast.DefinitionGlobalNameContent(
+        location=ast.SourceLocation.from_ast_or_token(
+            start=token, end=token, file_path=file_path
+        ),
+        fqun=parsed.fqun,
+        path=parsed.path,
+    )
+
+
+def parse_global_name_reference(
+    token: lark_cython.Token, file_path: PurePosixPath | None = None
+) -> ast.ReferenceGlobalNameContent:
+    """Parse reference-site global name content into an AST node."""
+    parsed = _parse_global_name(token, file_path)
+    return ast.ReferenceGlobalNameContent(
+        location=ast.SourceLocation.from_ast_or_token(
+            start=token, end=token, file_path=file_path
+        ),
+        fqun=parsed.fqun,
+        path=parsed.path,
+    )
+
+
+class _ParsedGlobalName(msgspec.Struct, frozen=True):
+    fqun: ast.Fqun | None
+    path: ast.GlobalPathName
+
+
+def _parse_global_name(
+    token: lark_cython.Token, file_path: PurePosixPath | None = None
+) -> _ParsedGlobalName:
+    # TODO: Support escaped :
+    fqun_sep_index = token.value.rfind(":")
+    fqun = None
+    path_start = 0
+    if fqun_sep_index > 0:
+        fqun_text = token.value[:fqun_sep_index]
+        path_text = token.value[fqun_sep_index + 1 :]
+        path_start = fqun_sep_index + 1
+        fqun = _parse_fqun(token, fqun_text, file_path)
+    else:
+        path_text = token.value
+
+    global_path = ast.GlobalPathName(
+        name=path_text,
+        location=_position_for_offsets(
+            token, path_start, path_start + len(path_text), file_path
+        ),
+    )
+    return _ParsedGlobalName(fqun, global_path)
+
+
+def _parse_fqun(
+    token: lark_cython.Token, text: str, file_path: PurePosixPath | None = None
+) -> ast.Fqun:
+    # TODO: Support escaped :
+    parts = text.split(":")
+    if len(parts) not in {1, 2, 3}:
+        raise parser_exceptions.GlobalNameInvalidFqunFormat(
+            token.value,
+            _line(token),
+            _column(token),
+            file_path,
+        )
+
+    multiverse = None
+    authority = None
+    fqun_position = _position_for_offsets(token, 0, len(text), file_path)
+    if len(parts) == 1:
+        universe = ast.Universe(
+            name=parts[0],
+            location=fqun_position,
+        )
+    elif len(parts) == 2:
+        authority_text, universe_text = parts
+        authority_start = 0
+        authority_end = len(authority_text)
+        universe_start = authority_end + 1
+        universe_end = universe_start + len(universe_text)
+        authority = ast.Authority(
+            name=authority_text,
+            location=_position_for_offsets(
+                token, authority_start, authority_start + len(authority_text), file_path
+            ),
+        )
+        universe = ast.Universe(
+            name=universe_text,
+            location=_position_for_offsets(
+                token, universe_start, universe_end, file_path
+            ),
+        )
+    else:
+        multiverse_text, authority_text, universe_text = parts
+        multiverse_start = 0
+        multiverse_end = len(multiverse_text)
+        authority_start = multiverse_end + 1
+        authority_end = authority_start + len(authority_text)
+        universe_start = authority_end + 1
+        universe_end = universe_start + len(universe_text)
+        multiverse = ast.Multiverse(
+            name=multiverse_text,
+            location=_position_for_offsets(
+                token, multiverse_start, multiverse_end, file_path
+            ),
+        )
+        authority = ast.Authority(
+            name=authority_text,
+            location=_position_for_offsets(
+                token, authority_start, authority_start + len(authority_text), file_path
+            ),
+        )
+        universe = ast.Universe(
+            name=universe_text,
+            location=_position_for_offsets(
+                token, universe_start, universe_end, file_path
+            ),
+        )
+
+    return ast.Fqun(
+        multiverse=multiverse,
+        authority=authority,
+        universe=universe,
+        location=fqun_position,
+    )
+
+
+def _line(token: lark_cython.Token) -> int:
+    line = token.line
+    if line < 0:
+        raise ValueError("Expected token.line to be present")
+    return line
+
+
+def _column(token: lark_cython.Token) -> int:
+    column = token.column
+    if column < 0:
+        raise ValueError("Expected token.column to be present")
+    return column
+
+
+def _position_for_offsets(
+    token: lark_cython.Token,
+    start_offset: int,
+    end_offset: int,
+    file_path: PurePosixPath | None = None,
+) -> ast.SourceLocation:
+    line = _line(token)
+    base_column = _column(token)
+    return ast.SourceLocation(
+        line=line,
+        column=base_column + start_offset,
+        end_line=line,
+        end_column=base_column + end_offset,
+        file_path=file_path,
+    )

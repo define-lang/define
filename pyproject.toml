@@ -129,7 +129,7 @@ required-imports = ["from __future__ import annotations"]
 "**/test_helpers.py" = [
     "S101", # Allow assert statements in test helpers.
 ]
-"define/compiler/parser_exceptions.py" = [
+"define/compiler/errors/parser_exceptions.py" = [
     "N818", # Allow exceptions that are not suffixed with "Error", for the parser.
 ]
 "define/compiler/ast.py" = [
@@ -177,7 +177,7 @@ do_not_mutate = [
     "**/test_helpers.py",
     "**/testdata/**",
     "defcl/python/lark/lark_standalone.py",
-    "define/compiler/lark/lark_standalone.py",
+    "define/compiler/parsing/lark/lark_standalone.py",
 ]
 pytest_add_cli_args_test_selection = [
     "defcl/python",
@@ -214,7 +214,7 @@ exclude = [
     "bazel-*",
     "**/*.pytest_main.py",
     "defcl/python/lark",
-    "define/compiler/lark",
+    "define/compiler/parsing/lark",
 ]
 
 [[tool.basedpyright.executionEnvironments]]

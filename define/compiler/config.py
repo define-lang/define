@@ -13,8 +13,9 @@ from google.protobuf import message
 
 from defcl.python import exceptions as dcl_exceptions
 from defcl.python import parser as defcl_parser
-from define.compiler import constants, exceptions
+from define.compiler import constants
 from define.compiler.data_structures import define_path
+from define.compiler.errors import exceptions
 from define.config.deps import local_pb2
 from define.config.project import config_pb2
 
