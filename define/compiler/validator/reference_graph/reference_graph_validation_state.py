@@ -7,7 +7,7 @@ import typing
 if typing.TYPE_CHECKING:
     from collections.abc import Callable
 
-    from define.compiler import ast
+    from define.compiler import ast, chained_name
     from define.compiler.validator.reference_graph import (
         action_contract,
         quality_assignment,
@@ -33,7 +33,7 @@ class ReferenceGraphValidationState:
         """Create empty shared validation state."""
         self._contract_by_name: dict[str, action_contract.ActionContract] = {}
         self._quality_assignments_by_key: dict[
-            tuple[str, ...], quality_assignment.QualityAssignments
+            chained_name.PositionReferenceTuple, quality_assignment.QualityAssignments
         ] = {}
 
     def publish_contract(
@@ -58,7 +58,7 @@ class ReferenceGraphValidationState:
 
     def get_or_build_quality_assignments(
         self,
-        cache_key: tuple[str, ...],
+        cache_key: chained_name.PositionReferenceTuple,
         build: Callable[[], quality_assignment.QualityAssignments],
     ) -> quality_assignment.QualityAssignments:
         """Return cached quality assignments, building them when absent."""

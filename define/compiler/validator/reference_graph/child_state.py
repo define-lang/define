@@ -8,6 +8,7 @@ import typing
 import msgspec
 
 if typing.TYPE_CHECKING:
+    from define.compiler import chained_name
     from define.compiler.validator.reference_graph import position_occupancy
     from define.compiler.validator.reference_graph.particles import particle_info
 
@@ -32,17 +33,17 @@ _FLAT_LIMIT = 16
 class ChildStateStore[State](abc.ABC):
     """Known state that remains unchanged when shared with another caller."""
 
-    __slots__: tuple[str, ...] = ()
+    __slots__: chained_name.ChainedNameTuple = ()
 
     @abc.abstractmethod
-    def get(self, position: tuple[str, ...]) -> State | None:
+    def get(self, position: chained_name.ChainedNameTuple) -> State | None:
         """Return known state, or None when the position's state is unknown."""
         raise NotImplementedError
 
     @abc.abstractmethod
     def with_caller(
         self,
-        caller: dict[tuple[str, ...], State],
+        caller: dict[chained_name.ChainedNameTuple, State],
     ) -> ChildStateStore[State]:
         """Take ownership of caller knowledge for previously unknown positions.
 
@@ -55,20 +56,20 @@ class ChildStateStore[State](abc.ABC):
 class FlatChildStateStore[State](ChildStateStore[State]):
     """A small or newly captured destruction-time snapshot."""
 
-    __slots__: tuple[str, ...] = ("_values",)
+    __slots__: chained_name.ChainedNameTuple = ("_values",)
 
-    def __init__(self, values: dict[tuple[str, ...], State]):
+    def __init__(self, values: dict[chained_name.ChainedNameTuple, State]):
         """Take ownership of values that will no longer be mutated."""
         self._values = values
 
     @typing.override
-    def get(self, position: tuple[str, ...]) -> State | None:
+    def get(self, position: chained_name.ChainedNameTuple) -> State | None:
         return self._values.get(position)
 
     @typing.override
     def with_caller(
         self,
-        caller: dict[tuple[str, ...], State],
+        caller: dict[chained_name.ChainedNameTuple, State],
     ) -> ChildStateStore[State]:
         if not caller:
             return self
@@ -82,19 +83,19 @@ class FlatChildStateStore[State](ChildStateStore[State]):
 class ExtendedChildStateStore[State](ChildStateStore[State]):
     """Destruction-time state sharing original knowledge across callers."""
 
-    __slots__: tuple[str, ...] = ("_additions", "_base")
+    __slots__: chained_name.ChainedNameTuple = ("_additions", "_base")
 
     def __init__(
         self,
-        base: dict[tuple[str, ...], State],
-        additions: dict[tuple[str, ...], State],
+        base: dict[chained_name.ChainedNameTuple, State],
+        additions: dict[chained_name.ChainedNameTuple, State],
     ):
         """Take ownership of dictionaries that will no longer be mutated."""
         self._base = base
         self._additions = additions
 
     @typing.override
-    def get(self, position: tuple[str, ...]) -> State | None:
+    def get(self, position: chained_name.ChainedNameTuple) -> State | None:
         state = self._base.get(position)
         if state is not None:
             return state
@@ -103,7 +104,7 @@ class ExtendedChildStateStore[State](ChildStateStore[State]):
     @typing.override
     def with_caller(
         self,
-        caller: dict[tuple[str, ...], State],
+        caller: dict[chained_name.ChainedNameTuple, State],
     ) -> ChildStateStore[State]:
         if not caller:
             return self
@@ -112,8 +113,8 @@ class ExtendedChildStateStore[State](ChildStateStore[State]):
 
 
 def _extended_state[State](
-    base: dict[tuple[str, ...], State],
-    additions: dict[tuple[str, ...], State],
+    base: dict[chained_name.ChainedNameTuple, State],
+    additions: dict[chained_name.ChainedNameTuple, State],
 ) -> ChildStateStore[State]:
     if len(additions) >= len(base):
         additions.update(base)
@@ -121,8 +122,12 @@ def _extended_state[State](
     return ExtendedChildStateStore(base, additions)
 
 
-type ChildOccupancyMap = dict[tuple[str, ...], position_occupancy.ChildOccupancy]
-type ChildValueMap = dict[tuple[str, ...], particle_info.ParticleValueState]
+type ChildOccupancyMap = dict[
+    chained_name.ChainedNameTuple, position_occupancy.ChildOccupancy
+]
+type ChildValueMap = dict[
+    chained_name.ChainedNameTuple, particle_info.ParticleValueState
+]
 
 
 class ChildState(msgspec.Struct, frozen=True):

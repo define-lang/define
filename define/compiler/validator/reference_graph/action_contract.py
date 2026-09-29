@@ -246,7 +246,7 @@ class DestructionContract(msgspec.Struct, frozen=True):
     propagated_destruction: destruction_contract_types.PropagatedDestruction
     # The position in the shared snapshot stays fixed when a caller expresses
     # the particle's contracted origin from its own perspective.
-    position_in_child_state: tuple[str, ...]
+    position_in_child_state: chained_name.ChainedNameTuple
     # Verification belongs to a particle, not just a quality: different child
     # particles can have the same Destructor assigned to them.
     verified_destructors: quality_assignment.QualityAssignments
@@ -258,7 +258,9 @@ class DestructionContracts:
 
     particles: list[DestructionContract] = field(default_factory=list, init=False)
     # Callers repeatedly need membership checks while verifying child positions.
-    positions: set[tuple[str, ...]] = field(default_factory=set, init=False)
+    positions: set[chained_name.ChainedNameTuple] = field(
+        default_factory=set, init=False
+    )
     # Particles destroyed together share their destruction-time occupancy.
     child_state: child_state.ChildState
     # The trigger hops, in execution order, from the verifying definition's
@@ -272,7 +274,7 @@ class DestructionContracts:
         self.positions.add(contract.position_in_child_state)
 
     def child_occupancy(
-        self, contract: DestructionContract, position: tuple[str, ...]
+        self, contract: DestructionContract, position: chained_name.ChainedNameTuple
     ) -> position_occupancy.ChildOccupancy | None:
         """Look up child state relative to this contract's destroyed particle."""
         return self.child_state.occupancy.get(

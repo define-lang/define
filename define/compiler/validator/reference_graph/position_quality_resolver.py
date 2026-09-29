@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typing
 
-from define.compiler import ast, name_types
+from define.compiler import ast, chained_name, name_types
 from define.compiler.validator.reference_graph import quality_assignment
 
 if typing.TYPE_CHECKING:
@@ -56,7 +56,7 @@ class PositionQualityResolver:
         scope: scope_tracker.ScopeTracker,
     ) -> tuple[
         tuple[ast.GlobalTypedNameReference, ...] | None,
-        tuple[str, ...] | None,
+        chained_name.PositionReferenceTuple | None,
     ]:
         """Resolve the constraint qualities required at a position, in source order.
 
@@ -91,7 +91,9 @@ class PositionQualityResolver:
                 action_def.interface_positions_by_name[
                     last_element.full_typed_name
                 ].constraint_typed_names,
-                (parent.full_typed_name, last_element.full_typed_name),
+                chained_name.PositionReferenceTuple(
+                    (parent.full_typed_name, last_element.full_typed_name)
+                ),
             )
 
         # This can be None if the last element in the chain is a definition we never loaded
@@ -102,7 +104,10 @@ class PositionQualityResolver:
         position_def = typing.cast(
             "ast.PositionDefinition", definition_result.definition
         )
-        return (position_def.constraint_typed_names, (last_element.full_typed_name,))
+        return (
+            position_def.constraint_typed_names,
+            chained_name.PositionReferenceTuple((last_element.full_typed_name,)),
+        )
 
     def get_transitive_required_qualities(
         self,
@@ -172,11 +177,13 @@ class PositionQualityResolver:
     def _local_definition_cache_key(
         self,
         local_name: ast.LocalTypedNameReference,
-    ) -> tuple[str, ...] | None:
+    ) -> chained_name.PositionReferenceTuple | None:
         """Cache interface positions so the action's own processing fills the same key external references use."""
         if local_name.full_typed_name in self._definition.interface_positions_by_name:
-            return (
-                self._definition.typed_name.full_typed_name,
-                local_name.full_typed_name,
+            return chained_name.PositionReferenceTuple(
+                (
+                    self._definition.typed_name.full_typed_name,
+                    local_name.full_typed_name,
+                )
             )
         return None

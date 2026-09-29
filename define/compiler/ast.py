@@ -555,7 +555,9 @@ class ChainedName(ASTNode, abc.ABC, Generic[ChainedNameTupleT_co]):
         return self._canonical_chained_name_tuple
 
     @abc.abstractmethod
-    def _tag(self, canonical_names: tuple[str, ...]) -> ChainedNameTupleT_co:
+    def _tag(
+        self, canonical_names: chained_name.ChainedNameTuple
+    ) -> ChainedNameTupleT_co:
         """Tag canonical typed names with this chained name's kind."""
 
     @property
@@ -716,7 +718,7 @@ class PositionReference(ChainedName[chained_name.PositionReferenceTuple]):
 
     @override
     def _tag(
-        self, canonical_names: tuple[str, ...]
+        self, canonical_names: chained_name.ChainedNameTuple
     ) -> chained_name.PositionReferenceTuple:
         return chained_name.PositionReferenceTuple(canonical_names)
 
@@ -745,7 +747,7 @@ class ActionReference(ChainedName[chained_name.ActionReferenceTuple]):
 
     @override
     def _tag(
-        self, canonical_names: tuple[str, ...]
+        self, canonical_names: chained_name.ChainedNameTuple
     ) -> chained_name.ActionReferenceTuple:
         return chained_name.ActionReferenceTuple(canonical_names)
 

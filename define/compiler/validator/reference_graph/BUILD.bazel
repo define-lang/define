@@ -103,6 +103,7 @@ py_library(
     visibility = [":__subpackages__"],
     deps = [
         ":position_occupancy",
+        "//define/compiler:chained_name",
         "//define/compiler/validator/reference_graph/particles:particle_info",
         "@pypi//msgspec",
     ],
@@ -226,6 +227,7 @@ py_library(
         ":quality_assignment",
         ":reference_graph_validation_state",
         "//define/compiler:ast",
+        "//define/compiler:chained_name",
         "//define/compiler:name_types",
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/validator:scope_tracker",
@@ -267,6 +269,7 @@ py_library(
         ":action_contract",
         ":quality_assignment",
         "//define/compiler:ast",
+        "//define/compiler:chained_name",
     ],
 )
 
@@ -279,6 +282,7 @@ py_test(
         ":quality_assignment",
         ":reference_graph_validation_state",
         "//define/compiler:ast",
+        "//define/compiler:chained_name",
         "//define/compiler:name_types",
     ],
 )

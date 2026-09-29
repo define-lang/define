@@ -3,7 +3,7 @@ from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier
 
-from define.compiler import ast, name_types
+from define.compiler import ast, chained_name, name_types
 from define.compiler.validator.reference_graph import (
     action_contract,
     quality_assignment,
@@ -53,6 +53,9 @@ def test_contract_access():
 
 def test_concurrent_quality_assignment_builds_publish_one_value():
     state = reference_graph_validation_state.ReferenceGraphValidationState()
+    cache_key = chained_name.PositionReferenceTuple(
+        ("position<my.domain.com:my_lib:/shared>",)
+    )
     builders_ready = Barrier(2)
     first = quality_assignment.QualityAssignments(())
     second = quality_assignment.QualityAssignments(())
@@ -66,12 +69,12 @@ def test_concurrent_quality_assignment_builds_publish_one_value():
     with ThreadPoolExecutor(max_workers=2) as executor:
         first_future = executor.submit(
             state.get_or_build_quality_assignments,
-            ("shared",),
+            cache_key,
             lambda: build(first),
         )
         second_future = executor.submit(
             state.get_or_build_quality_assignments,
-            ("shared",),
+            cache_key,
             lambda: build(second),
         )
         first_result = first_future.result()
@@ -84,6 +87,6 @@ def test_concurrent_quality_assignment_builds_publish_one_value():
         raise AssertionError("a cache hit must not rebuild quality assignments")
 
     assert (
-        state.get_or_build_quality_assignments(("shared",), fail_if_called)
+        state.get_or_build_quality_assignments(cache_key, fail_if_called)
         is first_result
     )

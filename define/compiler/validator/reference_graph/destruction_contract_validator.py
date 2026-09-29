@@ -250,7 +250,7 @@ class DestructionContractValidator:
         caller_particle: particle_info.ParticleInfo,
         propagated_contracts: action_contract.DestructionContracts,
         connection: destruction_contract_types.DestructionConnection,
-        position_in_child_state: tuple[str, ...],
+        position_in_child_state: chained_name.ChainedNameTuple,
         verified_destructors: quality_assignment.QualityAssignments,
         newly_verified: list[ast.GlobalTypedNameReference],
     ):
