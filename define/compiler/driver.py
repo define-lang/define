@@ -20,7 +20,7 @@ from typing import TextIO
 
 from define.compiler import ast, constants, overall_stats
 from define.compiler.codegen import generator
-from define.compiler.errors import diagnostics, exceptions
+from define.compiler.errors import diagnostics, exceptions, parser_exceptions
 from define.compiler.validator.reference_graph import reference_graph_validator
 from define.compiler.validator.structural import program_validator
 
@@ -52,7 +52,9 @@ def _error_strings(
     """Format every exception and diagnostic for the command-line caller."""
     error_strings: list[str] = []
     for result in program_result.file_results:
-        if result.exception is not None:
+        if isinstance(result.exception, parser_exceptions.DefineSyntaxError):
+            error_strings.append(result.exception.format(program_result.source_map))
+        elif result.exception is not None:
             error_strings.append(str(result.exception))
         for diagnostic in result.diagnostics:
             error_strings.append(diagnostic.format(program_result.source_map))

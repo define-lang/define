@@ -30,21 +30,16 @@ def parse_literal_content(
         escaped = match[1]
         if escaped is None:
             raise parser_exceptions.InvalidLiteralCharacter(
-                token.value,
-                _line(token),
-                _column(token) + match.start(),
+                _position_for_offsets(token, match.start(), match.end(), file_path),
                 match[0],
-                file_path,
             )
         if escaped == "n":
             return "\n"
         if escaped not in ('"', "\\"):
+            # The location is the escaped character after the backslash.
             raise parser_exceptions.InvalidLiteralEscape(
-                token.value,
-                _line(token),
-                _column(token) + match.start() + 1,
+                _position_for_offsets(token, match.start() + 1, match.end(), file_path),
                 escaped,
-                file_path,
             )
         return escaped
 
@@ -70,10 +65,9 @@ def parse_global_name_definition(
     parsed = _parse_global_name(token, file_path)
     if parsed.fqun is None:
         raise parser_exceptions.DefinitionGlobalNameContentRequiresFqun(
-            token.value,
-            _line(token),
-            _column(token),
-            file_path,
+            ast.SourceLocation.from_ast_or_token(
+                start=token, end=token, file_path=file_path
+            )
         )
     return ast.DefinitionGlobalNameContent(
         location=ast.SourceLocation.from_ast_or_token(
@@ -134,10 +128,7 @@ def _parse_fqun(
     parts = text.split(":")
     if len(parts) not in {1, 2, 3}:
         raise parser_exceptions.GlobalNameInvalidFqunFormat(
-            token.value,
-            _line(token),
-            _column(token),
-            file_path,
+            _position_for_offsets(token, 0, len(text), file_path)
         )
 
     multiverse = None

@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING
 
 from define.compiler import built_in_definitions, config, constants
 from define.compiler.data_structures import define_path
-from define.compiler.errors import diagnostics, exceptions
+from define.compiler.errors import diagnostics, exceptions, parser_exceptions
 from define.compiler.validator import test_helpers
 from define.compiler.validator.structural import program_validator
 
@@ -42,6 +42,30 @@ def test_reserved_universe_name_format():
             define the potential position<standard:/path>.
                                           ^^^^^^^^
         'standard' is a reserved universe name""")
+
+
+def test_invalid_fqun_format_format(validate_project: ValidateProject):
+    result = validate_project(
+        {
+            "test.dfn": (
+                "define the potential position<my.domain.com:my_lib:/test> {\n"
+                "    it may only contain particles where {\n"
+                "        it has the position<mv:too:many:colons:bad:/y>.\n"
+                "    }\n"
+                "}\n"
+            )
+        }
+    )
+    exception = result.program_result.file_results[0].exception
+    assert isinstance(exception, parser_exceptions.GlobalNameInvalidFqunFormat)
+    assert (
+        exception.format(result.program_result.source_map)
+        == textwrap.dedent("""\
+        File "test.dfn", line 3, column 29
+            it has the position<mv:too:many:colons:bad:/y>.
+                                ^^^^^^^^^^^^^^^^^^^^^^
+        Fully qualified universe name format is invalid. Use '<multiverse:authority:universe:/path>' or '<authority:universe:/path>' or '<standard:/path>'.""")
+    )
 
 
 def test_path_mismatch_format(validate_project: ValidateProject):
@@ -111,8 +135,8 @@ def test_incorrect_indentation_format(validate_project: ValidateProject):
     formatted = all_diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 3, column 1
-            it has the position</child>.
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                  it has the position</child>.
+            ^^^^^^
         expected 8 spaces of indentation on this line, but found 6""")
 
 

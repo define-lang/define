@@ -7,8 +7,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, ClassVar, Self, override
 
-from define.compiler import constants
-from define.compiler.errors import exceptions
+from define.compiler import ast, constants
+from define.compiler.errors import exceptions, source_map
 
 if TYPE_CHECKING:
     import pathlib
@@ -18,39 +18,43 @@ if TYPE_CHECKING:
     from define.compiler.parsing.lark import lark_standalone
 
 
-def _escape_invisible(text: str) -> str:
-    """Replace non-printable characters with their Python escape sequences."""
-    chars: list[str] = []
-    for c in text:
-        if c == "\n" or c.isprintable():
-            chars.append(c)
-        else:
-            chars.append(repr(c)[1:-1])
-    return "".join(chars)
+def _single_line_location(
+    line: int, column: int, width: int, file_path: pathlib.PurePosixPath | None
+) -> ast.SourceLocation:
+    return ast.SourceLocation(
+        line=line,
+        column=column,
+        end_line=line,
+        end_column=column + width,
+        file_path=file_path,
+    )
 
 
 class DefineSyntaxError(exceptions.DefineError):
     """Base class for Define syntax errors."""
 
     message_format: ClassVar[str] = "Syntax error."
-    context: str
-    line: int
-    column: int
-    file_path: pathlib.PurePosixPath | None
+    location: ast.SourceLocation
 
-    def __init__(
-        self,
-        context: str,
-        line: int,
-        column: int,
-        file_path: pathlib.PurePosixPath | None,
-    ):
-        """Initialize the syntax error with location and context information."""
-        super().__init__(context, line, column)
-        self.context = context
-        self.line = line
-        self.column = column
-        self.file_path = file_path
+    def __init__(self, location: ast.SourceLocation):
+        """Initialize the syntax error with the location of the invalid source."""
+        super().__init__(location)
+        self.location = location
+
+    @property
+    def line(self) -> int:
+        """The line where the invalid source starts."""
+        return self.location.line
+
+    @property
+    def column(self) -> int:
+        """The column where the invalid source starts."""
+        return self.location.column
+
+    @property
+    def file_path(self) -> pathlib.PurePosixPath | None:
+        """The file containing the invalid source, if it has one."""
+        return self.location.file_path
 
     def _message_fields(self) -> dict[str, object]:
         """Return fields available for message formatting."""
@@ -61,14 +65,13 @@ class DefineSyntaxError(exceptions.DefineError):
         """Render the error message from the format template."""
         return self.message_format.format(**self._message_fields())
 
-    @override
-    def __str__(self) -> str:
-        if self.file_path is not None:
-            header = f'File "{self.file_path}", line {self.line}, column {self.column}'
-        else:
-            header = f"line {self.line}, column {self.column}"
-        context = _escape_invisible(self.context.rstrip("\n"))
-        return f"{header}\n{context}\n{self.message}"
+    def format(self, sources: source_map.SourceMap) -> str:
+        """Format the error with the source code at its location."""
+        # A syntax error can be about an invisible character, so it must show.
+        location = sources.format_location(
+            self.location, escape_invisible_characters=True
+        )
+        return f"{location}\n{self.message}"
 
 
 class DefineTokenError(DefineSyntaxError):
@@ -79,15 +82,13 @@ class DefineTokenError(DefineSyntaxError):
     def __init__(
         self,
         exception: lark_standalone.UnexpectedToken,
-        source: str,
         file_path: pathlib.PurePosixPath | None,
     ):
         """Initialize with the unexpected token."""
+        # A token that ends a line, such as a newline, underlines no characters.
+        width = len(exception.token.value.split("\n", 1)[0])
         super().__init__(
-            exception.get_context(source),
-            exception.line,
-            exception.column,
-            file_path,
+            _single_line_location(exception.line, exception.column, width, file_path)
         )
         self.token = exception.token
 
@@ -97,39 +98,30 @@ class DefineCharError(DefineSyntaxError):
 
     char: str
 
-    def __init__(
-        self,
-        context: str,
-        line: int,
-        column: int,
-        char: str,
-        file_path: pathlib.PurePosixPath | None,
-    ):
+    def __init__(self, location: ast.SourceLocation, char: str):
         """Initialize with the unexpected character."""
-        super().__init__(context, line, column, file_path)
+        super().__init__(location)
         self.char = char
 
     @classmethod
     def from_lark_exception(
         cls,
         exception: lark_standalone.UnexpectedInput,
-        source: str,
         char: str,
         file_path: pathlib.PurePosixPath | None,
     ) -> Self:
         """Construct a character error from a Lark exception."""
         return cls(
-            exception.get_context(source),
-            exception.line,
-            exception.column,
+            _single_line_location(
+                exception.line, exception.column, len(char), file_path
+            ),
             char,
-            file_path,
         )
 
     @property
     def escaped_char(self) -> str:
         """Return the character in a readable escaped form."""
-        return _escape_invisible(self.char)
+        return source_map.escape_invisible(self.char)
 
     @override
     def _message_fields(self) -> dict[str, object]:
@@ -519,12 +511,11 @@ class MissingCloseAngleBracket(DefineTokenError):
     def __init__(
         self,
         exception: lark_standalone.UnexpectedToken,
-        source: str,
         file_path: pathlib.PurePosixPath | None,
         name: str,
     ):
         """Initialize with the parsed name token that missed '>'."""
-        super().__init__(exception, source, file_path)
+        super().__init__(exception, file_path)
         self.name = name
 
 
@@ -567,12 +558,11 @@ class MissingOpenAngleBracket(DefineTokenError):
     def __init__(
         self,
         exception: lark_standalone.UnexpectedToken,
-        source: str,
         file_path: pathlib.PurePosixPath | None,
         name: str,
     ):
         """Initialize with the parsed name token that missed '<'."""
-        super().__init__(exception, source, file_path)
+        super().__init__(exception, file_path)
         self.name = name
 
 

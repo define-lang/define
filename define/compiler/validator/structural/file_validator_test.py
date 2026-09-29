@@ -139,7 +139,6 @@ class TestFileStructuralValidatorErrors:
         assert result.exception.line == 3
         assert result.exception.column == 6
         assert result.exception.char == "\\x80"
-        assert result.exception.context.startswith("third")
 
 
 class TestFileStructuralValidatorDiagnostics:

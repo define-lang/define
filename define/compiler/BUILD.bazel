@@ -135,6 +135,7 @@ py_library(
         "//define/compiler/codegen:generator",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/errors:exceptions",
+        "//define/compiler/errors:parser_exceptions",
         "//define/compiler/parsing:parser",
         "//define/compiler/validator:codegen_input",
         "//define/compiler/validator:validation_result",

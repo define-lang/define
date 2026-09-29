@@ -83,7 +83,7 @@ class FileStructuralValidator:
         if load_error is not None:
             return validation_result.FileValidationResult(
                 exception=load_error,
-                source_digest=None,
+                source_digest=digest,
                 file_path=context.full_path,
                 root_prefix=context.root_prefix,
                 stats=tracker.build(),
@@ -189,17 +189,18 @@ class FileStructuralValidator:
                     filesystem_path=pathlib.Path(posix_path)
                 ),
             )
+        digest = source_map.source_digest(raw)
         try:
             source = raw.decode("utf-8")
         except UnicodeDecodeError as e:
             return (
                 "",
-                None,
+                digest,
                 parser_error_classification.make_invalid_encoding_error(
                     raw, e, posix_path
                 ),
             )
-        return source, source_map.source_digest(raw), None
+        return source, digest, None
 
 
 class DefinitionStructuralValidator:

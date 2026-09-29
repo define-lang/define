@@ -9,25 +9,28 @@ messages or messages with many fields. Behavioral tests cover simple ones.
 
 from __future__ import annotations
 
-import pathlib
 import textwrap
 from typing import TYPE_CHECKING
 
 import pytest
 
-from define.compiler.errors import parser_exceptions
+from define.compiler.errors import parser_exceptions, source_map
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import Parse
 
 
+def _format(error: parser_exceptions.DefineSyntaxError, source: str) -> str:
+    return error.format(source_map.SourceMap({}, in_memory_source=source))
+
+
 def test_empty_source_error_message(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
         parse("")
-    assert str(exc_info.value) == textwrap.dedent("""\
+    assert _format(exc_info.value, "") == textwrap.dedent("""\
         line 1, column 1
 
-        ^
+            ^
         Expected a global definition, one of:
             - define the potential position
             - define the potential action
@@ -46,29 +49,13 @@ def test_error_message_without_path(parse: Parse):
     assert exc_info.value.line == 1
     assert exc_info.value.column == 1
     assert (
-        str(exc_info.value)
+        _format(
+            exc_info.value, "\ufeffdefine the potential position<standard:/path>.\n"
+        )
         == textwrap.dedent("""\
         line 1, column 1
-        \\ufeffdefine the potential position<standard:
-        ^
-        UTF-8 Byte Order Marks (\\ufeff) are not allowed in Define source code files.""")
-    )
-
-
-def test_error_message_with_path(parse: Parse):
-    with pytest.raises(parser_exceptions.ByteOrderMarkError) as exc_info:
-        parse(
-            "\ufeffdefine the potential position<standard:/path>.\n",
-            file_path=pathlib.PurePosixPath("test.dfn"),
-        )
-    assert exc_info.value.line == 1
-    assert exc_info.value.column == 1
-    assert (
-        str(exc_info.value)
-        == textwrap.dedent("""\
-        File "test.dfn", line 1, column 1
-        \\ufeffdefine the potential position<standard:
-        ^
+            \\ufeffdefine the potential position<standard:/path>.
+            ^^^^^^
         UTF-8 Byte Order Marks (\\ufeff) are not allowed in Define source code files.""")
     )
 
@@ -78,25 +65,12 @@ def test_char_error_message(parse: Parse):
         parse("define the potential position<standard:/path>.\r\n")
     assert exc_info.value.line == 1
     assert exc_info.value.column == 47
-    assert str(exc_info.value) == textwrap.dedent("""\
+    assert _format(
+        exc_info.value, "define the potential position<standard:/path>.\r\n"
+    ) == textwrap.dedent("""\
         line 1, column 47
-         the potential position<standard:/path>.\\r
-                                                ^
-        Carriage return character (\\r) is not allowed.""")
-
-
-def test_char_error_message_with_path(parse: Parse):
-    with pytest.raises(parser_exceptions.CarriageReturnError) as exc_info:
-        parse(
-            "define the potential position<standard:/path>.\r\n",
-            file_path=pathlib.PurePosixPath("test.dfn"),
-        )
-    assert exc_info.value.line == 1
-    assert exc_info.value.column == 47
-    assert str(exc_info.value) == textwrap.dedent("""\
-        File "test.dfn", line 1, column 47
-         the potential position<standard:/path>.\\r
-                                                ^
+            define the potential position<standard:/path>.\\r
+                                                          ^^
         Carriage return character (\\r) is not allowed.""")
 
 
@@ -105,10 +79,12 @@ def test_token_error_message(parse: Parse):
         parse("define the potential position<standard:/path>\n")
     assert exc_info.value.line == 1
     assert exc_info.value.column == 46
-    assert str(exc_info.value) == textwrap.dedent("""\
+    assert _format(
+        exc_info.value, "define the potential position<standard:/path>\n"
+    ) == textwrap.dedent("""\
         line 1, column 46
-        e the potential position<standard:/path>
-                                                ^
+            define the potential position<standard:/path>
+                                                         ^
         This statement must end with a '.' or a single space followed by '{'""")
 
 
@@ -126,7 +102,12 @@ def test_error_message_for_indented_code_in_action_block(parse: Parse):
         )
     assert exc_info.value.line == 3
     assert exc_info.value.column == 36
-    assert str(exc_info.value) == textwrap.dedent("""\
+    assert _format(
+        exc_info.value,
+        "define the potential action<mv:define-lang.org:parser:/act> {\n"
+        + "    define the position<run>.\n"
+        + "    define the position<local_name.\n",
+    ) == textwrap.dedent("""\
         line 3, column 36
             define the position<local_name.
                                            ^

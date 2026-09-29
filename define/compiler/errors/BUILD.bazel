@@ -43,6 +43,8 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         ":exceptions",
+        ":source_map",
+        "//define/compiler:ast",
         "//define/compiler:constants",
         "//define/compiler/parsing/lark:lark_standalone",
         "@pypi//lark_cython",

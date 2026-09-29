@@ -160,8 +160,8 @@ def test_syntax_error_returns_error_and_prints_to_stream(
     assert result == driver.ExitCode.ERROR
     assert error_stream.getvalue() == (
         'File "test.dfn", line 1, column 1\n'
-        "defin the potential position<mv:define-l\n"
-        "^\n"
+        "    defin the potential position<mv:define-lang.org:test_files:/test>.\n"
+        "    ^^^^^\n"
         "Expected a global definition, one of:\n"
         "    - define the potential position\n"
         "    - define the potential action\n"

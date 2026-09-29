@@ -82,9 +82,7 @@ def validate_indentation(
             expected = block_stack.pop()
             if actual_indent != expected:
                 result.append(
-                    _make_diagnostic(
-                        line_number, line, expected, actual_indent, file_path
-                    )
+                    _make_diagnostic(line_number, expected, actual_indent, file_path)
                 )
             if stripped.endswith(" {"):
                 block_stack.append(actual_indent)
@@ -92,9 +90,7 @@ def validate_indentation(
             expected = block_stack[-1] + 4 if block_stack else 0
             if actual_indent != expected:
                 result.append(
-                    _make_diagnostic(
-                        line_number, line, expected, actual_indent, file_path
-                    )
+                    _make_diagnostic(line_number, expected, actual_indent, file_path)
                 )
             if stripped and stripped.endswith(" {"):
                 block_stack.append(actual_indent)
@@ -104,17 +100,17 @@ def validate_indentation(
 
 def _make_diagnostic(
     line_number: int,
-    line: str,
     expected: int,
     actual: int,
     file_path: PurePosixPath | None = None,
 ) -> diagnostics.IncorrectIndentationDiagnostic:
+    # The location covers only the line's indentation.
     return diagnostics.IncorrectIndentationDiagnostic(
         location=ast.SourceLocation(
             line=line_number,
             column=1,
             end_line=line_number,
-            end_column=len(line) + 1,
+            end_column=actual + 1,
             file_path=file_path,
         ),
         expected_indent=expected,

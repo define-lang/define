@@ -130,6 +130,7 @@ py_test(
     deps = [
         ":conftest",
         "//define/compiler/errors:parser_exceptions",
+        "//define/compiler/errors:source_map",
         "@pypi//pytest",
     ],
 )

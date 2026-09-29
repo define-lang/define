@@ -55,14 +55,14 @@ def test_format_location_underlines_span_with_our_own_indentation(
     )
 
 
-def test_format_location_underlines_span_starting_in_indentation_from_code(
+def test_format_location_keeps_indentation_when_span_starts_in_it(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     sources = _map_for_file(tmp_path, monkeypatch, _SOURCE)
-    assert sources.format_location(_location(3, 1, 37, "test.dfn")) == (
+    assert sources.format_location(_location(3, 1, 9, "test.dfn")) == (
         'File "test.dfn", line 3, column 1\n'
-        "    it has the position</child>.\n"
-        "    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
+        "            it has the position</child>.\n"
+        "    ^^^^^^^^"
     )
 
 
@@ -89,7 +89,7 @@ def test_format_location_past_last_line_shows_empty_source_line(
 ):
     sources = _map_for_file(tmp_path, monkeypatch, _SOURCE)
     assert sources.format_location(_location(9, 1, 2, "test.dfn")) == (
-        'File "test.dfn", line 9, column 1\n    \n    ^'
+        'File "test.dfn", line 9, column 1\n\n    ^'
     )
 
 
@@ -134,3 +134,26 @@ def test_format_location_without_file_uses_in_memory_source():
 def test_format_location_without_file_or_in_memory_source_names_location_only():
     sources = source_map.SourceMap({}, in_memory_source=None)
     assert sources.format_location(_location(2, 5, 40, None)) == "line 2, column 5"
+
+
+def test_format_location_shows_invisible_characters_unescaped():
+    sources = source_map.SourceMap({}, in_memory_source="a\u200dbc\n")
+    assert sources.format_location(_location(1, 3, 5, None)) == (
+        "line 1, column 3\n    a\u200dbc\n      ^^"
+    )
+
+
+def test_format_location_escapes_invisible_characters_and_shifts_underline():
+    sources = source_map.SourceMap({}, in_memory_source="a\x01bc\n")
+    assert sources.format_location(
+        _location(1, 3, 5, None), escape_invisible_characters=True
+    ) == ("line 1, column 3\n    a\\x01bc\n         ^^")
+
+
+def test_format_location_counts_lines_by_newlines_only():
+    sources = source_map.SourceMap(
+        {}, in_memory_source="first\x0cstill first\nsecond\n"
+    )
+    assert sources.format_location(_location(2, 1, 7, None)) == (
+        "line 2, column 1\n    second\n    ^^^^^^"
+    )

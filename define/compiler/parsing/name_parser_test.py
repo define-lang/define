@@ -173,9 +173,9 @@ def test_global_name_definition_rejects_bare_slash():
         parser_exceptions.DefinitionGlobalNameContentRequiresFqun
     ) as error:
         name_parser.parse_global_name_definition(token)
-    assert error.value.context == "/"
     assert error.value.line == 1
     assert error.value.column == 10
+    assert error.value.location.end_column == 11
 
 
 def test_global_name_definition_requires_fqun():
@@ -184,9 +184,9 @@ def test_global_name_definition_requires_fqun():
         parser_exceptions.DefinitionGlobalNameContentRequiresFqun
     ) as error:
         name_parser.parse_global_name_definition(token)
-    assert error.value.context == "/path/only"
     assert error.value.line == 1
     assert error.value.column == 30
+    assert error.value.location.end_column == 40
 
 
 def test_global_name_definition_rejects_too_many_fqun_parts():
@@ -206,7 +206,7 @@ def test_global_name_reference_rejects_too_many_fqun_parts():
         name_parser.parse_global_name_reference(token, file_path)
     assert error.value.line == 5
     assert error.value.column == 52
-    assert error.value.context == "mv:define-lang.org:parser:extra:/text"
+    assert error.value.location.end_column == 83
     assert error.value.file_path == file_path
 
 
