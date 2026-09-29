@@ -7,9 +7,8 @@ import typing
 from define.compiler import name_types
 
 # A position's canonical chained name, as stored in tries and contracts.
-# TODO: Make this a real class with methods (starting with the chain_*
-# functions in ast.py) so that code computing with chained names stops having to
-# build ChainedName objects all the time.
+# TODO: Compute with these tuples instead of building ChainedName objects
+# wherever the code does not need a SourceLocation.
 # TODO: Also, use this everywhere appropriate.
 type ChainedNameTuple = tuple[str, ...]
 
@@ -19,13 +18,30 @@ type ChainedNameTuple = tuple[str, ...]
 PositionReferenceTuple = typing.NewType("PositionReferenceTuple", tuple[str, ...])
 ActionReferenceTuple = typing.NewType("ActionReferenceTuple", tuple[str, ...])
 
-_ACTION_PREFIX = f"{name_types.NameType.ACTION}<"
+_ACTION_TYPED_NAME_PREFIX: typing.Final = f"{name_types.NameType.ACTION.value}<"
+
+
+def is_action_key(typed_name: str) -> bool:
+    """Return whether a canonical typed name in a chained-name key is an action."""
+    return typed_name.startswith(_ACTION_TYPED_NAME_PREFIX)
+
+
+def starts_with_global(chain: ChainedNameTuple) -> bool:
+    """Return whether the leftmost element of a chained-name key is a global."""
+    return "/" in chain[0]
+
+
+def in_caller[T: ChainedNameTuple](caller_chain: ChainedNameTuple, local_chain: T) -> T:
+    """Return a callee-local chain from the perspective of a caller that triggers it via ``caller_chain``."""
+    if starts_with_global(local_chain):
+        return typing.cast("T", caller_chain[:-1] + local_chain)
+    return typing.cast("T", caller_chain + local_chain)
 
 
 def chain_to_last_action(chain: ChainedNameTuple) -> ActionReferenceTuple | None:
     """Return the chain up to and including its last action, or None if it has none."""
     for index in range(len(chain) - 1, -1, -1):
-        if chain[index].startswith(_ACTION_PREFIX):
+        if is_action_key(chain[index]):
             return ActionReferenceTuple(chain[: index + 1])
     return None
 
@@ -33,6 +49,6 @@ def chain_to_last_action(chain: ChainedNameTuple) -> ActionReferenceTuple | None
 def parent_position(chain: ChainedNameTuple) -> PositionReferenceTuple | None:
     """Return the nearest parent position, or None if the chain has no parent position."""
     for index in range(len(chain) - 2, -1, -1):
-        if not chain[index].startswith(_ACTION_PREFIX):
+        if not is_action_key(chain[index]):
             return PositionReferenceTuple(chain[: index + 1])
     return None

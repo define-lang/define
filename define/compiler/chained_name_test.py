@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from define.compiler import chained_name
 
+_FQUN = "my.domain.com:my_lib"
+
 
 def test_chain_to_last_action_ends_at_last_action():
     chain = ("position<p>", "action<a>", "position<q>", "action<b>", "position<r>")
@@ -33,3 +35,8 @@ def test_parent_position_of_single_name_is_none():
 
 def test_parent_position_with_only_actions_before_is_none():
     assert chained_name.parent_position(("action<a>", "position<q>")) is None
+
+
+def test_parent_position_of_two_positions():
+    chain = ("position<local>", f"position<{_FQUN}:/x>")
+    assert chained_name.parent_position(chain) == ("position<local>",)

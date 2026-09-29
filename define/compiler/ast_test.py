@@ -8,7 +8,7 @@ from pathlib import PurePosixPath
 
 import pytest
 
-from define.compiler import ast, name_types
+from define.compiler import ast, chained_name, name_types
 from define.compiler.data_structures import define_path
 from define.compiler.parsing import test_helpers
 
@@ -687,22 +687,6 @@ class TestParentPosition:
 
 
 class TestChainParentPosition:
-    def test_single_element(self):
-        key = _position_reference_for("position<local>").canonical_chained_name_tuple
-        assert ast.chain_parent_position(key) is None
-
-    def test_two_positions(self):
-        key = _position_reference_for(
-            "position<local>::position</x>"
-        ).canonical_chained_name_tuple
-        assert ast.chain_parent_position(key) == ("position<local>",)
-
-    def test_skips_action(self):
-        key = _position_reference_for(
-            "position<local>::action</act>::position<iface>"
-        ).canonical_chained_name_tuple
-        assert ast.chain_parent_position(key) == ("position<local>",)
-
     def test_matches_object_form_including_action(self):
         pos = _position_reference_for(
             "position<local>::action</act>::position<iface>::position</child>"
@@ -710,70 +694,9 @@ class TestChainParentPosition:
         object_parent = pos.parent_position()
         assert object_parent is not None
         assert (
-            ast.chain_parent_position(pos.canonical_chained_name_tuple)
+            chained_name.parent_position(pos.canonical_chained_name_tuple)
             == object_parent.canonical_chained_name_tuple
         )
-
-
-class TestIsPrefix:
-    def test_equal_chained_name(self):
-        chained_name = ("position<parent>", "position<child>")
-        assert ast.is_prefix(chained_name, chained_name)
-
-    def test_parent_name(self):
-        assert ast.is_prefix(
-            ("position<parent>",),
-            ("position<parent>", "position<child>"),
-        )
-
-    def test_child_name(self):
-        assert not ast.is_prefix(
-            ("position<parent>", "position<child>"),
-            ("position<parent>",),
-        )
-
-    def test_different_name(self):
-        assert not ast.is_prefix(
-            ("position<other>",),
-            ("position<parent>", "position<child>"),
-        )
-
-
-class TestChainInCallee:
-    def test_interface_position_is_a_child_of_the_action(self):
-        caller = _position_reference_for(
-            "position<box>::action</b>"
-        ).canonical_chained_name_tuple
-        absolute = _position_reference_for(
-            "position<box>::action</b>::position<iface>"
-        ).canonical_chained_name_tuple
-        assert ast.chain_in_callee(caller, absolute) == ("position<iface>",)
-
-    def test_implied_position_is_a_child_of_the_actions_parent_position(self):
-        caller = _position_reference_for(
-            "position<box>::action</b>"
-        ).canonical_chained_name_tuple
-        absolute = _position_reference_for(
-            "position<box>::position</x>"
-        ).canonical_chained_name_tuple
-        assert ast.chain_in_callee(caller, absolute) == (
-            "position<my.domain.com:my_lib:/x>",
-        )
-
-    def test_inverts_chain_in_caller(self):
-        caller = _position_reference_for(
-            "position<box>::action</b>"
-        ).canonical_chained_name_tuple
-        for source in (
-            "position<iface>",
-            "position</x>",
-            "position</x>::position</y>",
-            "action</c>::position<iface>",
-        ):
-            local = _position_reference_for(source).canonical_chained_name_tuple
-            assert (
-                ast.chain_in_callee(caller, ast.chain_in_caller(caller, local)) == local
-            )
 
 
 class TestInCaller:

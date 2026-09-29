@@ -6,7 +6,7 @@ import typing
 
 import msgspec
 
-from define.compiler import ast, chained_name
+from define.compiler import chained_name
 from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.particles import (
     particle_info,
@@ -53,7 +53,7 @@ class _PendingGuarantee(msgspec.Struct, frozen=True):
 
     def key_for(self, name: tuple[str, ...]) -> tuple[str, ...]:
         """Return the absolute key for a guarantee this action names ``name``."""
-        return ast.chain_in_caller(self.action_chain, name)
+        return chained_name.in_caller(self.action_chain, name)
 
     @property
     def identity(self) -> _PendingGuaranteeIdentity:

@@ -515,67 +515,6 @@ def source_form_chained_name(
     return "::".join(source_names)
 
 
-def is_prefix(
-    prefix: chained_name.ChainedNameTuple, chained_name: chained_name.ChainedNameTuple
-) -> bool:
-    """Return whether ``prefix`` is a parent name of or equal to ``chained_name``."""
-    return len(prefix) <= len(chained_name) and chained_name[: len(prefix)] == prefix
-
-
-def chain_starts_with_global(key: chained_name.ChainedNameTuple) -> bool:
-    """Return whether the leftmost element of a chained-name key is a global."""
-    return "/" in key[0]
-
-
-def chain_in_caller(
-    caller_chain: chained_name.ChainedNameTuple,
-    local_chain: chained_name.ChainedNameTuple,
-) -> chained_name.ChainedNameTuple:
-    """Return a callee-local chain from the perspective of a caller that triggers it via ``caller_chain``."""
-    if chain_starts_with_global(local_chain):
-        return caller_chain[:-1] + local_chain
-    return caller_chain + local_chain
-
-
-def chain_in_callee(
-    caller_chain: chained_name.ChainedNameTuple,
-    absolute_chain: chained_name.ChainedNameTuple,
-) -> chained_name.ChainedNameTuple:
-    """Return a caller's chain from the perspective of the callee it triggers via ``caller_chain``.
-
-    The inverse of ``chain_in_caller``: an interface position of the callee is a
-    child name of its action, while a position the action implies is a child
-    name of the particle the action is assigned to, which is the action's parent
-    position.
-    """
-    if absolute_chain[: len(caller_chain)] == caller_chain:
-        return absolute_chain[len(caller_chain) :]
-    return absolute_chain[len(caller_chain) - 1 :]
-
-
-_ACTION_TYPED_NAME_PREFIX: Final = f"{name_types.NameType.ACTION.value}<"
-
-
-def is_action_key(typed_name: str) -> bool:
-    """Return whether a canonical typed name in a chained-name key is an action."""
-    return typed_name.startswith(_ACTION_TYPED_NAME_PREFIX)
-
-
-def chain_parent_position(
-    key: chained_name.ChainedNameTuple,
-) -> chained_name.ChainedNameTuple | None:
-    """Return the nearest parent position key, skipping actions, or None.
-
-    The tuple-space equivalent of ``ChainedName.parent_position`` for callers
-    that already hold a canonical chained-name tuple and only need the parent's
-    key, so no ``PositionReference`` has to be built to read it back off.
-    """
-    for i in range(len(key) - 2, -1, -1):
-        if not key[i].startswith(_ACTION_TYPED_NAME_PREFIX):
-            return key[: i + 1]
-    return None
-
-
 ChainedNameTupleT_co = TypeVar(
     "ChainedNameTupleT_co",
     bound=chained_name.ChainedNameTuple,

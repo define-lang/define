@@ -52,13 +52,14 @@ class GuaranteeGenerator:
             # nested Guarantee when our caller later applies that Guarantee.
             # Destructors resolve all nested Guarantees here, and their callees'
             # Interface Positions are not Positions they must preserve.
-            if is_destructor and any(ast.is_action_key(name) for name in key):
+            if is_destructor and any(chained_name.is_action_key(name) for name in key):
                 continue
             first_element = key[0]
             # Any position that starts with a global is contracted, even if it was updated
             # by an implied action and we can't see it directly.
-            if first_element not in include_names and not ast.chain_starts_with_global(
-                key
+            if (
+                first_element not in include_names
+                and not chained_name.starts_with_global(key)
             ):
                 continue
             guarantee = self._guarantee_for_key(key, requirements)

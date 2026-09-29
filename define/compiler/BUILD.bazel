@@ -27,6 +27,7 @@ py_test(
     srcs = ["ast_test.py"],
     deps = [
         ":ast",
+        ":chained_name",
         ":name_types",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/parsing:test_helpers",

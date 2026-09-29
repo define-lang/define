@@ -34,7 +34,7 @@ def interface_parent_name_indexes(
     interface_parent_quality_indexes: list[int] = []
     last_action_index: int | None = None
     for name_index, name in enumerate(position):
-        if ast.is_action_key(name):
+        if chained_name.is_action_key(name):
             last_action_index = name_index
     if last_action_index is None:
         return callee_indexes, interface_parent_quality_indexes
@@ -44,13 +44,13 @@ def interface_parent_name_indexes(
         # names are interface positions, which follow an action, and the
         # action's local positions, which start a chain.
         is_particle_child_name = (
-            ast.chain_starts_with_global(position)
+            chained_name.starts_with_global(position)
             if name_index == 0
-            else not ast.is_action_key(position[name_index - 1])
+            else not chained_name.is_action_key(position[name_index - 1])
         )
         if is_particle_child_name:
             interface_parent_quality_indexes.append(name_index)
-        if not ast.is_action_key(name):
+        if not chained_name.is_action_key(name):
             continue
         if previous_action_index is not None:
             callee_indexes.append(previous_action_index)

@@ -9,7 +9,6 @@ py_library(
     deps = [
         ":particle_info",
         ":particle_state_store",
-        "//define/compiler:ast",
         "//define/compiler:chained_name",
         "//define/compiler/validator:codegen_input",
         "//define/compiler/validator/reference_graph:action_contract",
