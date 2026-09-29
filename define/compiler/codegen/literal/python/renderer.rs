@@ -264,6 +264,11 @@ struct InfixAdd {
 }
 
 #[derive(FromPyObject)]
+struct InfixIncrement {
+    value: String,
+}
+
+#[derive(FromPyObject)]
 struct Call {
     function: FunctionReference,
     arguments: Vec<String>,
@@ -272,6 +277,7 @@ struct Call {
 
 enum EncodingOperationStatement {
     InfixAdd(InfixAdd),
+    InfixIncrement(InfixIncrement),
     Call(Call),
 }
 
@@ -281,6 +287,7 @@ impl<'a, 'py> FromPyObject<'a, 'py> for EncodingOperationStatement {
         let kind: String = object.getattr("kind")?.getattr("name")?.extract()?;
         match kind.as_str() {
             "INFIX_ADD" => Ok(Self::InfixAdd(object.extract()?)),
+            "INFIX_INCREMENT" => Ok(Self::InfixIncrement(object.extract()?)),
             "CALL" => Ok(Self::Call(object.extract()?)),
             _ => Err(PyRuntimeError::new_err(format!(
                 "Unknown Encoding Operation statement kind: {kind}"

@@ -240,6 +240,7 @@ class EncodingOperationStatementKind(enum.Enum):
     """Discriminator for statement types in Encoding Operation functions."""
 
     INFIX_ADD = enum.auto()
+    INFIX_INCREMENT = enum.auto()
     CALL = enum.auto()
 
 
@@ -258,6 +259,15 @@ class InfixAddContext(EncodingOperationStatementContext):
     left: str
     right: str
     result: str
+
+
+class InfixIncrementContext(EncodingOperationStatementContext):
+    """Add one to a value with infix addition."""
+
+    kind: ClassVar[EncodingOperationStatementKind] = (
+        EncodingOperationStatementKind.INFIX_INCREMENT
+    )
+    value: str
 
 
 class CallContext(EncodingOperationStatementContext):

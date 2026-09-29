@@ -2,6 +2,8 @@
     {%- match statement -%}
         {%- when EncodingOperationStatement::InfixAdd with (statement) -%}
 {{ statement.left }} + {{ statement.right }}
+        {%- when EncodingOperationStatement::InfixIncrement with (statement) -%}
+{{ statement.value }} + 1
         {%- when EncodingOperationStatement::Call with (statement) -%}
 {{ statement.function.name_in_module(module_name) }}({{ statement.arguments|join(", ") }})
     {%- endmatch -%}
@@ -28,6 +30,8 @@ def {{ self.function_name }}(
         {%- match statement %}
             {%- when EncodingOperationStatement::InfixAdd with (infix_add) %}
     {{ infix_add.result }} = {{ expression(statement, module_name) }}
+            {%- when EncodingOperationStatement::InfixIncrement with (infix_increment) %}
+    {{ infix_increment.value }} = {{ expression(statement, module_name) }}
             {%- when EncodingOperationStatement::Call with (call) %}
     {% if !call.results.is_empty() %}{{ call.results|join(", ") }} = {% endif -%}
     {{ expression(statement, module_name) }}

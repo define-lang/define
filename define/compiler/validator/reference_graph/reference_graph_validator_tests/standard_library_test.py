@@ -28,7 +28,9 @@ def test_every_definition_is_valid(
             standard_library_file("number.dfn"),
             standard_library_file("number/decimal/ascii.dfn"),
             standard_library_file("number/decimal/ascii/infix_add.dfn"),
+            standard_library_file("number/decimal/ascii/infix_increment.dfn"),
             standard_library_file("number/rational.dfn"),
             standard_library_file("number/rational/add.dfn"),
+            standard_library_file("number/rational/increment.dfn"),
         ]
     )

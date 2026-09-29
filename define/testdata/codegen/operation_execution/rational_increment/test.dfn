@@ -1,0 +1,13 @@
+# An action increments a position's value with the built-in rational increment.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</count>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</count>.
+        set the value of position</count> to literal<standard:/number>"1".
+        execute the operation<standard:/number/rational/increment> {
+            with view<value> looking at position</count>.
+        }
+    }
+}

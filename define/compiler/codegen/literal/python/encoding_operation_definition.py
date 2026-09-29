@@ -22,12 +22,21 @@ class _InfixAdd(msgspec.Struct, frozen=True):
     result_view: str
 
 
+class _InfixIncrement(msgspec.Struct, frozen=True):
+    """A computer operation that adds one to a view with infix addition."""
+
+    view: str
+
+
 # The computer operations that the compiler knows how to perform, by the
 # Encoding Operation that executes them.
-_COMPUTER_OPERATIONS: Final = {
+_COMPUTER_OPERATIONS: Final[dict[str, _InfixAdd | _InfixIncrement]] = {
     f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/infix_add>": _InfixAdd(
         left_view="view<a>", right_view="view<b>", result_view="view<sum>"
-    )
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/infix_increment>": _InfixIncrement(
+        view="view<value>"
+    ),
 }
 
 
@@ -82,9 +91,10 @@ class EncodingOperationDefinitionGenerator:
                 statements.append(call)
                 last_written_names = call.results
             else:
-                computer_operation = self._computer_operation(definition, view_names)
+                computer_operation, last_written_names = self._computer_operation(
+                    definition, view_names
+                )
                 statements.append(computer_operation)
-                last_written_names = [computer_operation.result]
         results = [
             view_names[view.typed_name.source_typed_name]
             for view in definition.views
@@ -132,12 +142,19 @@ class EncodingOperationDefinitionGenerator:
     @staticmethod
     def _computer_operation(
         definition: ast.EncodingOperationDefinition, view_names: dict[str, str]
-    ) -> template_context.InfixAddContext:
+    ) -> tuple[template_context.EncodingOperationStatementContext, list[str]]:
+        """Return the statement that performs the Encoding Operation's computer operation, and the local names it assigns."""
         # Code generation relies on validation to report computer operations
         # that the compiler cannot perform.
         computer_operation = _COMPUTER_OPERATIONS[definition.typed_name.full_typed_name]
-        return template_context.InfixAddContext(
-            left=view_names[computer_operation.left_view],
-            right=view_names[computer_operation.right_view],
-            result=view_names[computer_operation.result_view],
-        )
+        match computer_operation:
+            case _InfixAdd():
+                result = view_names[computer_operation.result_view]
+                return template_context.InfixAddContext(
+                    left=view_names[computer_operation.left_view],
+                    right=view_names[computer_operation.right_view],
+                    result=result,
+                ), [result]
+            case _InfixIncrement():
+                value = view_names[computer_operation.view]
+                return template_context.InfixIncrementContext(value=value), [value]

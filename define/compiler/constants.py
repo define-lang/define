@@ -39,5 +39,8 @@ BUILT_IN_VALUE_ENCODINGS: Final = {
 BUILT_IN_ENCODING_OPERATIONS: Final = {
     f"operation<{STANDARD_UNIVERSE}:/number/rational/add>": (
         "/number/decimal/ascii/infix_add"
-    )
+    ),
+    f"operation<{STANDARD_UNIVERSE}:/number/rational/increment>": (
+        "/number/decimal/ascii/infix_increment"
+    ),
 }

@@ -37,5 +37,8 @@ define the potential action<my.domain.com:my_lib:/test> {
             with view<b> looking at literal<standard:/number>"2".
             with view<sum> looking at position</total>.
         }
+        execute the operation<standard:/number/rational/increment> {
+            with view<value> looking at position</total>.
+        }
     }
 }
