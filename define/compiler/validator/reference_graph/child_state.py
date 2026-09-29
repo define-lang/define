@@ -33,7 +33,7 @@ _FLAT_LIMIT = 16
 class ChildStateStore[State](abc.ABC):
     """Known state that remains unchanged when shared with another caller."""
 
-    __slots__: chained_name.ChainedNameTuple = ()
+    __slots__: tuple[str, ...] = ()
 
     @abc.abstractmethod
     def get(self, position: chained_name.ChainedNameTuple) -> State | None:
@@ -56,7 +56,7 @@ class ChildStateStore[State](abc.ABC):
 class FlatChildStateStore[State](ChildStateStore[State]):
     """A small or newly captured destruction-time snapshot."""
 
-    __slots__: chained_name.ChainedNameTuple = ("_values",)
+    __slots__: tuple[str, ...] = ("_values",)
 
     def __init__(self, values: dict[chained_name.ChainedNameTuple, State]):
         """Take ownership of values that will no longer be mutated."""
@@ -83,7 +83,7 @@ class FlatChildStateStore[State](ChildStateStore[State]):
 class ExtendedChildStateStore[State](ChildStateStore[State]):
     """Destruction-time state sharing original knowledge across callers."""
 
-    __slots__: chained_name.ChainedNameTuple = ("_additions", "_base")
+    __slots__: tuple[str, ...] = ("_additions", "_base")
 
     def __init__(
         self,
