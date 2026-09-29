@@ -589,32 +589,6 @@ class TestGetChainToLastAction:
         )
 
 
-class TestGetLastActionChildren:
-    def test_no_action(self):
-        pos = _position_reference_for("position<local>::position</x>")
-        assert pos.get_last_action_children() is None
-
-    def test_with_action_and_interface(self):
-        pos = _position_reference_for(
-            "position<local>::action</act>::position<iface>::position</child>"
-        )
-        result = pos.get_last_action_children()
-        assert result is not None
-        assert result.source_chained_name == "position<iface>::position</child>"
-
-    def test_action_at_end(self):
-        pos = _position_reference_for("position<local>::action</act>")
-        assert pos.get_last_action_children() is None
-
-    def test_two_actions(self):
-        pos = _position_reference_for(
-            "position<local>::action</outer>::position<iface>::action</inner>::position<trigger>"
-        )
-        result = pos.get_last_action_children()
-        assert result is not None
-        assert result.source_chained_name == "position<trigger>"
-
-
 class TestPositionPrefix:
     def test_whole_chain_is_self(self):
         position = _position_reference_for("position<local>::position</x>")

@@ -38,17 +38,29 @@ def in_caller[T: ChainedNameTuple](caller_chain: ChainedNameTuple, local_chain: 
     return typing.cast("T", caller_chain + local_chain)
 
 
-def chain_to_last_action(chain: ChainedNameTuple) -> ActionReferenceTuple | None:
-    """Return the chain up to and including its last action, or None if it has none."""
+def last_action_index(chain: ChainedNameTuple) -> int | None:
+    """Return the index of the chain's last action, or None if it has none."""
     for index in range(len(chain) - 1, -1, -1):
         if is_action_key(chain[index]):
-            return ActionReferenceTuple(chain[: index + 1])
+            return index
+    return None
+
+
+def chain_to_last_action(chain: ChainedNameTuple) -> ActionReferenceTuple | None:
+    """Return the chain up to and including its last action, or None if it has none."""
+    index = last_action_index(chain)
+    return None if index is None else ActionReferenceTuple(chain[: index + 1])
+
+
+def parent_position_index(chain: ChainedNameTuple) -> int | None:
+    """Return the index of the chain's nearest parent position, or None if it has none."""
+    for index in range(len(chain) - 2, -1, -1):
+        if not is_action_key(chain[index]):
+            return index
     return None
 
 
 def parent_position(chain: ChainedNameTuple) -> PositionReferenceTuple | None:
     """Return the nearest parent position, or None if the chain has no parent position."""
-    for index in range(len(chain) - 2, -1, -1):
-        if not is_action_key(chain[index]):
-            return PositionReferenceTuple(chain[: index + 1])
-    return None
+    index = parent_position_index(chain)
+    return None if index is None else PositionReferenceTuple(chain[: index + 1])

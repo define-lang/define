@@ -586,42 +586,33 @@ class ChainedName(ASTNode, abc.ABC, Generic[ChainedNameTupleT_co]):
 
     def get_chain_to_last_action(self) -> ActionReference | None:
         """Return everything up to and including the last action element, or None."""
-        for i in range(len(self.typed_names) - 1, -1, -1):
-            if self.typed_names[i].name_type == name_types.NameType.ACTION:
-                return ActionReference(
-                    location=self.location,
-                    typed_names=self.typed_names[: i + 1],
-                )
-        return None
-
-    def get_last_action_children(self) -> PositionReference | None:
-        """Return everything after the last action element, or None."""
-        for i in range(len(self.typed_names) - 1, -1, -1):
-            if self.typed_names[i].name_type == name_types.NameType.ACTION:
-                tail = self.typed_names[i + 1 :]
-                if not tail:
-                    return None
-                return PositionReference(
-                    location=tail[0].location,
-                    typed_names=tail,
-                )
-        return None
+        index = chained_name.last_action_index(self.canonical_chained_name_tuple)
+        if index is None:
+            return None
+        return ActionReference(
+            location=self.location,
+            typed_names=self.typed_names[: index + 1],
+            # A prefix of self's canonical tuple is exactly the result's, so
+            # slice it here instead of making the result recompute it.
+            _canonical_chained_name_tuple=chained_name.ActionReferenceTuple(
+                self.canonical_chained_name_tuple[: index + 1]
+            ),
+        )
 
     def parent_position(self) -> PositionReference | None:
         """Return the nearest parent position, or None for single-element chains."""
-        names = self.typed_names
-        for i in range(len(names) - 2, -1, -1):
-            if names[i].name_type != name_types.NameType.ACTION:
-                return PositionReference(
-                    location=self.location,
-                    typed_names=names[: i + 1],
-                    # A prefix of self's canonical tuple is exactly the parent's,
-                    # so slice it here instead of making the parent recompute it.
-                    _canonical_chained_name_tuple=chained_name.PositionReferenceTuple(
-                        self.canonical_chained_name_tuple[: i + 1]
-                    ),
-                )
-        return None
+        index = chained_name.parent_position_index(self.canonical_chained_name_tuple)
+        if index is None:
+            return None
+        return PositionReference(
+            location=self.location,
+            typed_names=self.typed_names[: index + 1],
+            # A prefix of self's canonical tuple is exactly the parent's,
+            # so slice it here instead of making the parent recompute it.
+            _canonical_chained_name_tuple=chained_name.PositionReferenceTuple(
+                self.canonical_chained_name_tuple[: index + 1]
+            ),
+        )
 
     def source_form_in_universe(self, caller_fqun: Fqun) -> str:
         """Get the string form of the name as it would be written in source in the specified universe."""
