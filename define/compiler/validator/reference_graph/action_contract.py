@@ -232,7 +232,7 @@ class ErrorGuarantee(PositionGuarantee, frozen=True):
 class CalleeContract(msgspec.Struct, frozen=True):
     """A callee's contract at its current action chain."""
 
-    action_chain: chained_name.ChainedNameTuple
+    action_chain: chained_name.ActionReferenceTuple
     contract: ActionContract
 
 

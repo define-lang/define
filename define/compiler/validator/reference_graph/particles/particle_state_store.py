@@ -132,7 +132,7 @@ class _CurrentActionNestedGuarantees:
 
     def add(
         self,
-        action_chain: tuple[str, ...],
+        action_chain: chained_name.ActionReferenceTuple,
         execution: codegen_input.ActionExecution,
         contract: action_contract.ActionContract,
     ):
@@ -185,7 +185,7 @@ class _CurrentActionNestedGuarantees:
         for action_chain, guarantees in self._by_action_chain.items():
             for nested_guarantees in guarantees:
                 by_execution[nested_guarantees] = action_contract.CalleeContract(
-                    action_chain,
+                    _stored_action_chain(action_chain),
                     self._contracts[nested_guarantees],
                 )
         return [
@@ -196,12 +196,23 @@ class _CurrentActionNestedGuarantees:
 
     def action_chains_with_most_recent_trigger(
         self,
-    ) -> Iterator[tuple[chained_name.ChainedNameTuple, ast.GlobalTypedNameReference]]:
+    ) -> Iterator[
+        tuple[chained_name.ActionReferenceTuple, ast.GlobalTypedNameReference]
+    ]:
         """Yield each triggered action chain and its most recent direct trigger."""
         for action_chain, nested_guarantees in self._by_action_chain.items():
             if not nested_guarantees:
                 continue
-            yield action_chain, nested_guarantees[-1].action.get_last_action()
+            yield (
+                _stored_action_chain(action_chain),
+                nested_guarantees[-1].action.get_last_action(),
+            )
+
+
+def _stored_action_chain(key: trie.TrieKey) -> chained_name.ActionReferenceTuple:
+    # Only action chains are added, and a Move replaces only a key's parent
+    # names, so every key in the trie still ends in its action.
+    return chained_name.ActionReferenceTuple(key)
 
 
 _ACTION_KEY_PREFIX = f"{name_types.NameType.ACTION.value}<"
@@ -400,7 +411,7 @@ class ParticleStateStore:
 
     def record_triggered_action(
         self,
-        action_chain: tuple[str, ...],
+        action_chain: chained_name.ActionReferenceTuple,
         execution: codegen_input.ActionExecution,
         contract: action_contract.ActionContract,
     ):

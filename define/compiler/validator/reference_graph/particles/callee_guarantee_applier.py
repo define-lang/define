@@ -26,7 +26,7 @@ class _PendingGuarantee(msgspec.Struct, frozen=True):
     """A callee's guarantees and the execution path where they apply."""
 
     # The triggered action's chain.
-    action_chain: tuple[str, ...]
+    action_chain: chained_name.ActionReferenceTuple
     contract: action_contract.ActionContract
     # The body operation number of the Action Execution that produced this nested
     # guarantee.
@@ -41,7 +41,7 @@ class _PendingGuarantee(msgspec.Struct, frozen=True):
     call_chain_depth: int = 0
 
     @property
-    def parent_position(self) -> tuple[str, ...]:
+    def parent_position(self) -> chained_name.ChainedNameTuple:
         """The parent of the callee's implied (global) positions.
 
         This is ``action_chain`` with its trailing action stripped: an implied
@@ -51,7 +51,7 @@ class _PendingGuarantee(msgspec.Struct, frozen=True):
         """
         return self.action_chain[:-1]
 
-    def key_for(self, name: tuple[str, ...]) -> tuple[str, ...]:
+    def key_for[T: chained_name.ChainedNameTuple](self, name: T) -> T:
         """Return the absolute key for a guarantee this action names ``name``."""
         return chained_name.in_caller(self.action_chain, name)
 
@@ -70,7 +70,7 @@ class _PendingGuarantee(msgspec.Struct, frozen=True):
 class _PendingGuaranteeIdentity(msgspec.Struct, frozen=True):
     """Fields that make two pending guarantees apply identical effects."""
 
-    action_chain: tuple[str, ...]
+    action_chain: chained_name.ActionReferenceTuple
     # Contracts are compared by identity because comparing their contents
     # would walk every guarantee, and each definition has one contract.
     contract_id: int

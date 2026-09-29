@@ -31,7 +31,9 @@ def starts_with_global(chain: ChainedNameTuple) -> bool:
     return "/" in chain[0]
 
 
-def in_caller[T: ChainedNameTuple](caller_chain: ChainedNameTuple, local_chain: T) -> T:
+def in_caller[T: ChainedNameTuple](
+    caller_chain: ActionReferenceTuple, local_chain: T
+) -> T:
     """Return a callee-local chain from the perspective of a caller that triggers it via ``caller_chain``."""
     if starts_with_global(local_chain):
         return typing.cast("T", caller_chain[:-1] + local_chain)
