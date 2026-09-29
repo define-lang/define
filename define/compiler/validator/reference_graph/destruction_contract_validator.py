@@ -7,7 +7,7 @@ import typing
 
 import msgspec
 
-from define.compiler import ast
+from define.compiler import ast, chained_name, name_types
 from define.compiler.validator.reference_graph import (
     action_contract,
     child_state,
@@ -53,7 +53,7 @@ class _ResolvedRequirement(msgspec.Struct, frozen=True):
     requirement: action_contract.PositionRequirement
     position: ast.PositionReference
     # The required position's name in the shared Child State.
-    state_key: ast.ChainedNameTuple
+    state_key: chained_name.ChainedNameTuple
     occupancy: position_occupancy.ChildOccupancy
     value_state: particle_info.ParticleValueState | None
 
@@ -128,7 +128,7 @@ class DestructionContractValidator:
         list[_DestructionContractInCaller],
         child_state.ChildOccupancyMap,
         child_state.ChildValueMap,
-        dict[ast.ChainedNameTuple, particle_info.ParticleInfo],
+        dict[chained_name.ChainedNameTuple, particle_info.ParticleInfo],
     ]:
         """Resolve contracted positions and collect the caller's Child State and particles."""
         caller_contracts: list[_DestructionContractInCaller] = []
@@ -136,7 +136,9 @@ class DestructionContractValidator:
         caller_values: child_state.ChildValueMap = {}
         # Every Destruction Contract from one destruction shares these, so a
         # destructor can find a particle that another of those contracts collected.
-        caller_particles: dict[ast.ChainedNameTuple, particle_info.ParticleInfo] = {}
+        caller_particles: dict[
+            chained_name.ChainedNameTuple, particle_info.ParticleInfo
+        ] = {}
         for destruction_contract in callee_contracts.particles:
             connection = destruction_contract_types.DestructionConnection(
                 callee_destruction=destruction_contract.propagated_destruction,
@@ -203,7 +205,9 @@ class DestructionContractValidator:
         trigger_step: action_contract.PropagationStep,
         callee_contracts: action_contract.DestructionContracts,
         propagated_contracts: action_contract.DestructionContracts,
-        caller_particles: dict[ast.ChainedNameTuple, particle_info.ParticleInfo],
+        caller_particles: dict[
+            chained_name.ChainedNameTuple, particle_info.ParticleInfo
+        ],
         validation_diagnostics: list[diagnostics.Diagnostic],
     ):
         destruction_contract = caller_contract.contract
@@ -273,9 +277,11 @@ class DestructionContractValidator:
         self,
         position_prefix: ast.PositionReference,
         position_suffix: tuple[ast.TypedNameReference, ...],
-        position_in_child_state: ast.ChainedNameTuple,
+        position_in_child_state: chained_name.ChainedNameTuple,
         *,
-        caller_particles: dict[ast.ChainedNameTuple, particle_info.ParticleInfo],
+        caller_particles: dict[
+            chained_name.ChainedNameTuple, particle_info.ParticleInfo
+        ],
         destruction_contract: action_contract.DestructionContract,
         destroying_definition: ast.ActionDefinition,
         caller_prefix_length: int,
@@ -344,7 +350,7 @@ class DestructionContractValidator:
             )
             verified_destructors = destruction_contract.verified_destructors
         for quality in reversed(particle.qualities.assignments):
-            if quality.name_type == ast.NameType.POSITION:
+            if quality.name_type == name_types.NameType.POSITION:
                 child_position_suffix = (quality,)
                 child_position_in_child_state = (
                     *position_in_child_state,
@@ -366,7 +372,7 @@ class DestructionContractValidator:
                     newly_occupied_children=newly_occupied_children,
                     validation_diagnostics=validation_diagnostics,
                 )
-            elif quality.name_type == ast.NameType.ACTION:
+            elif quality.name_type == name_types.NameType.ACTION:
                 definition_result = self._definition_results.get(quality)
                 if definition_result is None:
                     continue
@@ -451,7 +457,9 @@ class DestructionContractValidator:
         caller_prefix_length: int,
         trigger_step: action_contract.PropagationStep,
         merged_child_state: child_state.ChildState,
-        caller_particles: dict[ast.ChainedNameTuple, particle_info.ParticleInfo],
+        caller_particles: dict[
+            chained_name.ChainedNameTuple, particle_info.ParticleInfo
+        ],
         created_in_this_action: bool,
         newly_verified: list[ast.GlobalTypedNameReference],
         validation_diagnostics: list[diagnostics.Diagnostic],

@@ -8,7 +8,7 @@ from pathlib import PurePosixPath
 
 import pytest
 
-from define.compiler import ast
+from define.compiler import ast, name_types
 from define.compiler.data_structures import define_path
 from define.compiler.parsing import test_helpers
 
@@ -90,7 +90,7 @@ class TestSourceFormTypedNameParts:
     def test_local_name(self):
         assert ast.source_form_typed_name_parts("position<item>", _FQUN) == (
             ast.SourceFormTypedNameParts(
-                name_type=ast.NameType.POSITION,
+                name_type=name_types.NameType.POSITION,
                 source_name="item",
                 is_global=False,
             )
@@ -101,7 +101,7 @@ class TestSourceFormTypedNameParts:
             "position<my.domain.com:my_lib:/item>",
             _FQUN,
         ) == ast.SourceFormTypedNameParts(
-            name_type=ast.NameType.POSITION,
+            name_type=name_types.NameType.POSITION,
             source_name="/item",
             is_global=True,
         )
@@ -111,7 +111,7 @@ class TestSourceFormTypedNameParts:
             "action<mv:other.example:other_lib:/run>",
             _FQUN,
         ) == ast.SourceFormTypedNameParts(
-            name_type=ast.NameType.ACTION,
+            name_type=name_types.NameType.ACTION,
             source_name="mv:other.example:other_lib:/run",
             is_global=True,
         )
@@ -184,7 +184,7 @@ class TestSourceLocationFromDefinitionName:
             path=ast.GlobalPathName(location=_LOC, name="/thing"),
         )
         result = ast.SourceLocation.from_definition_name(
-            name_content, ast.NameType.POSITION
+            name_content, name_types.NameType.POSITION
         )
         assert result == ast.SourceLocation(
             line=1, column=22, end_line=1, end_column=46
@@ -197,7 +197,7 @@ class TestSourceLocationFromDefinitionName:
             path=ast.GlobalPathName(location=_LOC, name="/thing"),
         )
         result = ast.SourceLocation.from_definition_name(
-            name_content, ast.NameType.ACTION
+            name_content, name_types.NameType.ACTION
         )
         assert result == ast.SourceLocation(
             line=1, column=22, end_line=1, end_column=44
@@ -212,7 +212,7 @@ class TestSourceLocationFromDefinitionName:
             ),
         )
         result = ast.SourceLocation.from_definition_name(
-            name_content, ast.NameType.POSITION
+            name_content, name_types.NameType.POSITION
         )
         assert result == ast.SourceLocation(
             line=2, column=12, end_line=2, end_column=23, file_path=path
@@ -223,7 +223,7 @@ class TestGlobalTypedNameInDefinition:
     def test_full_typed_name(self):
         typed_name = ast.GlobalTypedNameInDefinition(
             location=_LOC,
-            name_type=ast.NameType.POSITION,
+            name_type=name_types.NameType.POSITION,
             name_content=ast.DefinitionGlobalNameContent(
                 location=_LOC,
                 fqun=_make_fqun("my_lib", authority="my.domain.com"),
@@ -238,7 +238,7 @@ class TestGlobalTypedNameReference:
         fqun = _make_fqun("my_lib", authority="my.domain.com")
         reference = ast.GlobalTypedNameReference(
             location=_LOC,
-            name_type=ast.NameType.ACTION,
+            name_type=name_types.NameType.ACTION,
             name_content=ast.ReferenceGlobalNameContent(
                 location=_LOC,
                 fqun=fqun,
@@ -251,7 +251,7 @@ class TestGlobalTypedNameReference:
     def test_full_typed_name_with_short_name_uses_enclosing_fqun(self):
         reference = ast.GlobalTypedNameReference(
             location=_LOC,
-            name_type=ast.NameType.POSITION,
+            name_type=name_types.NameType.POSITION,
             name_content=ast.ReferenceGlobalNameContent(
                 location=_LOC,
                 fqun=None,
@@ -264,7 +264,7 @@ class TestGlobalTypedNameReference:
     def test_full_typed_name_own_fqun_takes_precedence(self):
         reference = ast.GlobalTypedNameReference(
             location=_LOC,
-            name_type=ast.NameType.POSITION,
+            name_type=name_types.NameType.POSITION,
             name_content=ast.ReferenceGlobalNameContent(
                 location=_LOC,
                 fqun=_make_fqun("my_lib", authority="my.domain.com"),
@@ -285,7 +285,7 @@ class TestCachedStrings:
     def test_definition_source_typed_name_returns_same_object(self):
         typed_name = ast.GlobalTypedNameInDefinition(
             location=_LOC,
-            name_type=ast.NameType.POSITION,
+            name_type=name_types.NameType.POSITION,
             name_content=ast.DefinitionGlobalNameContent(
                 location=_LOC,
                 fqun=_make_fqun("my_lib", authority="my.domain.com"),
@@ -297,7 +297,7 @@ class TestCachedStrings:
     def test_definition_full_typed_name_returns_same_object(self):
         typed_name = ast.GlobalTypedNameInDefinition(
             location=_LOC,
-            name_type=ast.NameType.POSITION,
+            name_type=name_types.NameType.POSITION,
             name_content=ast.DefinitionGlobalNameContent(
                 location=_LOC,
                 fqun=_make_fqun("my_lib", authority="my.domain.com"),
@@ -309,7 +309,7 @@ class TestCachedStrings:
     def test_definition_source_typed_name_matches_full(self):
         typed_name = ast.GlobalTypedNameInDefinition(
             location=_LOC,
-            name_type=ast.NameType.POSITION,
+            name_type=name_types.NameType.POSITION,
             name_content=ast.DefinitionGlobalNameContent(
                 location=_LOC,
                 fqun=_make_fqun("my_lib", authority="my.domain.com"),
@@ -910,7 +910,7 @@ def _action_typed_name(path: str) -> ast.GlobalTypedNameReference:
     fqun = _make_fqun("my_lib", authority="my.domain.com")
     return ast.GlobalTypedNameReference(
         location=_LOC,
-        name_type=ast.NameType.ACTION,
+        name_type=name_types.NameType.ACTION,
         name_content=ast.ReferenceGlobalNameContent(
             location=_LOC,
             fqun=fqun,

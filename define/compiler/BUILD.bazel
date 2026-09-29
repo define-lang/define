@@ -12,7 +12,9 @@ py_library(
         "//tools:__subpackages__",
     ],
     deps = [
+        ":chained_name",
         ":constants",
+        ":name_types",
         "//define/compiler/data_structures:define_path",
         "@pypi//lark_cython",
         "@pypi//msgspec",
@@ -25,6 +27,7 @@ py_test(
     srcs = ["ast_test.py"],
     deps = [
         ":ast",
+        ":name_types",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/parsing:test_helpers",
         "@pypi//pytest",
@@ -67,7 +70,7 @@ py_library(
     name = "chained_name",
     srcs = ["chained_name.py"],
     visibility = [":__subpackages__"],
-    deps = [":ast"],
+    deps = [":name_types"],
 )
 
 py_test(
@@ -274,6 +277,12 @@ py_test(
 )
 
 py_library(
+    name = "name_types",
+    srcs = ["name_types.py"],
+    visibility = [":__subpackages__"],
+)
+
+py_library(
     name = "overall_stats",
     srcs = ["overall_stats.py"],
     visibility = [":__subpackages__"],
@@ -338,6 +347,7 @@ pyright_test(
         ":main",
         ":main_integration_test",
         ":main_test",
+        ":name_types",
         ":overall_stats",
         ":overall_stats_test",
         ":test_runfiles",

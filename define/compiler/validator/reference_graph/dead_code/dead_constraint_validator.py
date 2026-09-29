@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typing
 
-from define.compiler import ast
+from define.compiler import ast, chained_name, name_types
 from define.compiler.errors import diagnostics
 from define.compiler.validator.reference_graph import position_occupancy
 from define.compiler.validator.reference_graph.dead_code import dead_constraint_tracker
@@ -54,7 +54,7 @@ class DeadConstraintValidator:
         """Register implied Actions before analyzing the Action's statements."""
         for implication in quality_implications:
             implied_action = implication.typed_global_name
-            if implied_action.name_type != ast.NameType.ACTION:
+            if implied_action.name_type != name_types.NameType.ACTION:
                 continue
             self._dead_constraint_tracker.register_implied_action(implied_action)
 
@@ -112,7 +112,7 @@ class DeadConstraintValidator:
             if (
                 parent_position_name_count is not None
                 and isinstance(typed_name, ast.GlobalTypedNameReference)
-                and typed_name.name_type == ast.NameType.POSITION
+                and typed_name.name_type == name_types.NameType.POSITION
                 and self._dead_constraint_tracker.has_position_constraint_candidate(
                     typed_name
                 )
@@ -123,7 +123,7 @@ class DeadConstraintValidator:
                     self._particle_origin_position(current_position),
                     typed_name,
                 )
-            if typed_name.name_type == ast.NameType.POSITION:
+            if typed_name.name_type == name_types.NameType.POSITION:
                 parent_position_name_count = name_index + 1
 
     def mark_callee_contract_constraints_alive(
@@ -173,7 +173,9 @@ class DeadConstraintValidator:
 
     def validate(
         self,
-        own_guarantees: dict[ast.ChainedNameTuple, action_contract.PositionGuarantee],
+        own_guarantees: dict[
+            chained_name.ChainedNameTuple, action_contract.PositionGuarantee
+        ],
         scope: scope_tracker.ScopeTracker,
     ) -> list[diagnostics.Diagnostic]:
         """Check dead constraints and untriggered Actions after accounting for final guarantees."""
@@ -183,7 +185,7 @@ class DeadConstraintValidator:
             candidate
         ) in self._dead_constraint_tracker.dead_value_and_encoding_constraints():
             dead_constraint_diagnostic = diagnostics.DeadValueConstraintDiagnostic
-            if candidate.constraint.name_type == ast.NameType.ENCODING:
+            if candidate.constraint.name_type == name_types.NameType.ENCODING:
                 dead_constraint_diagnostic = (
                     diagnostics.DeadEncodingConstraintDiagnostic
                 )
@@ -234,7 +236,9 @@ class DeadConstraintValidator:
 
     def _mark_own_contract_guarantees_alive(
         self,
-        own_guarantees: dict[ast.ChainedNameTuple, action_contract.PositionGuarantee],
+        own_guarantees: dict[
+            chained_name.ChainedNameTuple, action_contract.PositionGuarantee
+        ],
         scope: scope_tracker.ScopeTracker,
     ):
         """Keep origin and final position constraints alive through this action's guarantees."""

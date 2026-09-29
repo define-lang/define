@@ -3,7 +3,7 @@ from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier
 
-from define.compiler import ast
+from define.compiler import ast, name_types
 from define.compiler.validator.reference_graph import (
     action_contract,
     quality_assignment,
@@ -21,7 +21,7 @@ _FQUN = ast.Fqun(
 
 def _action(name: str) -> ast.GlobalTypedNameReference:
     return ast.GlobalTypedNameReference(
-        name_type=ast.NameType.ACTION,
+        name_type=name_types.NameType.ACTION,
         name_content=ast.ReferenceGlobalNameContent(
             fqun=None,
             path=ast.GlobalPathName(name=f"/{name}", location=_LOCATION),

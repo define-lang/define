@@ -7,7 +7,7 @@ from functools import cached_property
 
 import msgspec
 
-from define.compiler import ast
+from define.compiler import ast, chained_name, name_types
 from define.compiler.errors import diagnostics
 from define.compiler.validator import codegen_input, scope_tracker, validation_result
 from define.compiler.validator.reference_graph import (
@@ -193,7 +193,7 @@ class ActionDefinitionValidator:
         """Trigger every constructor on the particle just created in position (DLP 32)."""
         position = statement.target_position
         for quality in qualities.assignments:
-            if quality.name_type != ast.NameType.ACTION:
+            if quality.name_type != name_types.NameType.ACTION:
                 continue
             definition_result = self._definition_results.get(quality)
             # The constructor's file may have failed to load or parse, which is
@@ -310,7 +310,7 @@ class ActionDefinitionValidator:
         # the current Position's constraints—determine its child Positions and
         # Destructors.
         for quality in particle.qualities.assignments:
-            if quality.name_type == ast.NameType.POSITION:
+            if quality.name_type == name_types.NameType.POSITION:
                 child = position.with_position_suffix(quality)
                 self._collect_child_particle_destructions(
                     child,
@@ -320,7 +320,7 @@ class ActionDefinitionValidator:
                     pending_contracts,
                     destruction,
                 )
-            elif quality.name_type == ast.NameType.ACTION:
+            elif quality.name_type == name_types.NameType.ACTION:
                 definition_result = self._definition_results.get(quality)
                 # Reference validation has already reported unresolved qualities;
                 # their absence must not prevent checking the remaining Destructors.
@@ -607,7 +607,7 @@ class ActionDefinitionValidator:
         action: ast.GlobalTypedNameReference,
         trigger_location: ast.SourceLocation,
         occupied_interface_child_position_violations: Sequence[
-            tuple[ast.ChainedNameTuple, ast.SourceLocation]
+            tuple[chained_name.ChainedNameTuple, ast.SourceLocation]
         ],
     ):
         """Record occupied interface child positions found when one callee triggers."""
@@ -1154,7 +1154,9 @@ class ActionDefinitionValidator:
 
     def _check_destructor_guarantees(
         self,
-        guarantees: dict[ast.ChainedNameTuple, action_contract.PositionGuarantee],
+        guarantees: dict[
+            chained_name.ChainedNameTuple, action_contract.PositionGuarantee
+        ],
     ):
         """Report forbidden Destructor Guarantees and replace them with Error Guarantees.
 

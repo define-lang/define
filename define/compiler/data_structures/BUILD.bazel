@@ -56,6 +56,7 @@ py_test(
     deps = [
         ":typed_name_dict",
         "//define/compiler:ast",
+        "//define/compiler:name_types",
         "@pypi//pytest",
     ],
 )

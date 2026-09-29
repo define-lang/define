@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from define.compiler import ast
+from define.compiler import ast, name_types
 from define.compiler.validator.reference_graph import quality_assignment
 
 _LOCATION = ast.start_of_file_location()
@@ -13,7 +13,7 @@ _FQUN = ast.Fqun(
 
 
 def _quality(
-    name: str, name_type: ast.NameType = ast.NameType.POSITION
+    name: str, name_type: name_types.NameType = name_types.NameType.POSITION
 ) -> ast.GlobalTypedNameReference:
     return ast.GlobalTypedNameReference(
         name_type=name_type,
@@ -74,7 +74,7 @@ def test_quality_membership():
 
 def test_value_type_with_other_qualities():
     first = _quality("first")
-    value = _quality("number", ast.NameType.VALUE)
+    value = _quality("number", name_types.NameType.VALUE)
     last = _quality("last")
     implied = _quality("implied")
     assignments = _build((first, value, last), {last.full_typed_name: (implied,)})
@@ -91,7 +91,7 @@ def test_shared_empty_collection_is_reused():
 
 def test_direct_assignment_value_type():
     position = _quality("position")
-    value = _quality("number", ast.NameType.VALUE)
+    value = _quality("number", name_types.NameType.VALUE)
     assignments = quality_assignment.QualityAssignments((position, value))
 
     assert tuple(assignments) == (position, value)

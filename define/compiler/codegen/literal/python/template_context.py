@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, ClassVar
 
 import msgspec
 
-from define.compiler import ast
+from define.compiler import name_types
 
 if TYPE_CHECKING:
     from define.compiler.codegen.literal.python import naming
@@ -46,18 +46,18 @@ class ChainElement:
 
     def __init__(
         self,
-        previous_name_type: ast.NameType | None,
-        name_type: ast.NameType,
+        previous_name_type: name_types.NameType | None,
+        name_type: name_types.NameType,
     ):
         """Derive the accessor from this element and its predecessor."""
         if previous_name_type is None:
-            if name_type == ast.NameType.ACTION:
+            if name_type == name_types.NameType.ACTION:
                 self.accessor = ChainAccessor.IMPLIED_ACTION
             else:
                 self.accessor = ChainAccessor.IMPLIED_POSITION
-        elif previous_name_type == ast.NameType.ACTION:
+        elif previous_name_type == name_types.NameType.ACTION:
             self.accessor = ChainAccessor.POSITION_FROM_ACTION
-        elif name_type == ast.NameType.ACTION:
+        elif name_type == name_types.NameType.ACTION:
             self.accessor = ChainAccessor.ACTION_FROM_POSITION
         else:
             self.accessor = ChainAccessor.POSITION_FROM_POSITION
@@ -72,8 +72,8 @@ class GlobalQualityChainElement(ChainElement):
 
     def __init__(
         self,
-        previous_name_type: ast.NameType | None,
-        name_type: ast.NameType,
+        previous_name_type: name_types.NameType | None,
+        name_type: name_types.NameType,
         class_reference: naming.ClassReference,
     ):
         """Initialize a global quality in a position reference chain."""
@@ -90,8 +90,8 @@ class InterfacePositionChainElement(ChainElement):
 
     def __init__(
         self,
-        previous_name_type: ast.NameType | None,
-        name_type: ast.NameType,
+        previous_name_type: name_types.NameType | None,
+        name_type: name_types.NameType,
         typed_name: str,
     ):
         """Initialize an interface position in a position reference chain."""

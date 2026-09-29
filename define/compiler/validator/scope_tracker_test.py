@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from define.compiler import ast
+from define.compiler import ast, name_types
 from define.compiler.validator import scope_tracker
 
 _LOC = ast.start_of_file_location()
@@ -29,7 +29,7 @@ def _make_local_def(
 
 
 def _make_local_typed_name(
-    name: str, name_type: ast.NameType = ast.NameType.POSITION
+    name: str, name_type: name_types.NameType = name_types.NameType.POSITION
 ) -> ast.LocalTypedNameReference:
     return ast.LocalTypedNameReference(
         name_type=name_type,
@@ -39,7 +39,7 @@ def _make_local_typed_name(
 
 
 def _make_global_typed_name(
-    path: str, name_type: ast.NameType = ast.NameType.ACTION
+    path: str, name_type: name_types.NameType = name_types.NameType.ACTION
 ) -> ast.GlobalTypedNameReference:
     return ast.GlobalTypedNameReference(
         name_type=name_type,
@@ -129,8 +129,8 @@ def test_action_name_does_not_match_position():
     tracker = scope_tracker.ScopeTracker()
     tracker.add_definition(_make_local_def("shared_name"))
 
-    pos_ref = _make_local_typed_name("shared_name", ast.NameType.POSITION)
-    act_ref = _make_local_typed_name("shared_name", ast.NameType.ACTION)
+    pos_ref = _make_local_typed_name("shared_name", name_types.NameType.POSITION)
+    act_ref = _make_local_typed_name("shared_name", name_types.NameType.ACTION)
 
     assert tracker.is_defined(pos_ref) is True
     assert tracker.is_defined(act_ref) is False
@@ -156,7 +156,7 @@ def test_is_defined_local_multi_item_chain():
     position = _make_position_ref(
         [
             _make_local_typed_name("my_pos"),
-            _make_global_typed_name("/child", ast.NameType.POSITION),
+            _make_global_typed_name("/child", name_types.NameType.POSITION),
         ]
     )
 
@@ -166,7 +166,7 @@ def test_is_defined_local_multi_item_chain():
 def test_is_defined_local_global_reference():
     tracker = scope_tracker.ScopeTracker()
     position = _make_position_ref(
-        [_make_global_typed_name("/some_pos", ast.NameType.POSITION)]
+        [_make_global_typed_name("/some_pos", name_types.NameType.POSITION)]
     )
 
     assert tracker.is_defined_local(position) is False

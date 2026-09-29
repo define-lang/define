@@ -97,6 +97,7 @@ py_library(
     deps = [
         "//define/compiler:ast",
         "//define/compiler:constants",
+        "//define/compiler:name_types",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/validator/reference_graph:destruction_contract",
         "@pypi//msgspec",
@@ -110,6 +111,7 @@ py_test(
     deps = [
         ":naming",
         "//define/compiler:ast",
+        "//define/compiler:name_types",
     ],
 )
 
@@ -140,6 +142,7 @@ py_library(
         ":naming",
         ":template_context",
         "//define/compiler:ast",
+        "//define/compiler:name_types",
     ],
 )
 
@@ -168,7 +171,7 @@ py_library(
     visibility = ["//define/compiler/codegen:__subpackages__"],
     deps = [
         ":naming",
-        "//define/compiler:ast",
+        "//define/compiler:name_types",
         "@pypi//msgspec",
     ],
 )

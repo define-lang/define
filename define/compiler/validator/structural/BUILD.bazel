@@ -13,6 +13,7 @@ py_library(
         "//define/compiler:ast",
         "//define/compiler:config",
         "//define/compiler:constants",
+        "//define/compiler:name_types",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/errors:diagnostics",
@@ -67,6 +68,7 @@ py_test(
     deps = [
         ":name_validators",
         "//define/compiler:ast",
+        "//define/compiler:name_types",
         "//define/compiler/errors:diagnostics",
     ],
 )

@@ -6,7 +6,7 @@ import typing
 
 import msgspec
 
-from define.compiler import ast
+from define.compiler import ast, name_types
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterable
@@ -17,7 +17,9 @@ if typing.TYPE_CHECKING:
 
 # Constraints that a particle's use in a Value Setting Statement or Operation
 # Execution Statement keeps alive.
-VALUE_AND_ENCODING_NAME_TYPES = frozenset((ast.NameType.VALUE, ast.NameType.ENCODING))
+VALUE_AND_ENCODING_NAME_TYPES = frozenset(
+    (name_types.NameType.VALUE, name_types.NameType.ENCODING)
+)
 
 
 class DeadConstraintCandidate(msgspec.Struct, frozen=True):
@@ -71,7 +73,7 @@ class DeadConstraintTracker:
     ):
         """Register a directly-written constraint as a pending-dead candidate."""
         candidate = DeadConstraintCandidate(position=position, constraint=constraint)
-        if constraint.name_type == ast.NameType.ACTION:
+        if constraint.name_type == name_types.NameType.ACTION:
             self._action_constraint_candidates[candidate.key] = candidate
         elif constraint.name_type in VALUE_AND_ENCODING_NAME_TYPES:
             self._value_and_encoding_constraint_candidates[candidate.key] = candidate

@@ -6,7 +6,7 @@ import typing
 
 import msgspec
 
-from define.compiler import ast
+from define.compiler import ast, chained_name, name_types
 from define.compiler.data_structures import trie
 from define.compiler.validator.reference_graph import (
     action_contract,
@@ -93,23 +93,23 @@ class DetachedSubtrees(msgspec.Struct):
     Each subtree is keyed by the full key it was detached from.
     """
 
-    state: dict[ast.ChainedNameTuple, trie.StrictReparentingTrie[_NodeState]] = (
-        msgspec.field(default_factory=dict)
-    )
-    error: dict[ast.ChainedNameTuple, trie.StrictReparentingTrie[_ErrorState]] = (
-        msgspec.field(default_factory=dict)
-    )
+    state: dict[
+        chained_name.ChainedNameTuple, trie.StrictReparentingTrie[_NodeState]
+    ] = msgspec.field(default_factory=dict)
+    error: dict[
+        chained_name.ChainedNameTuple, trie.StrictReparentingTrie[_ErrorState]
+    ] = msgspec.field(default_factory=dict)
     nested_guarantees: dict[
-        ast.ChainedNameTuple,
+        chained_name.ChainedNameTuple,
         trie.StrictReparentingTrie[list[codegen_input.ActionExecution]],
     ] = msgspec.field(default_factory=dict)
 
-    def has_state(self, key: ast.ChainedNameTuple) -> bool:
+    def has_state(self, key: chained_name.ChainedNameTuple) -> bool:
         """Return whether the Position at ``key`` had state when it was detached."""
         return key in self.state
 
     def occupant_or_none(
-        self, key: ast.ChainedNameTuple
+        self, key: chained_name.ChainedNameTuple
     ) -> particle_info.ParticleInfo | None:
         """Return the particle detached from ``key``, or None if the Position was empty."""
         return self.state[key][key[-1:]].particle_info
@@ -196,7 +196,7 @@ class _CurrentActionNestedGuarantees:
 
     def action_chains_with_most_recent_trigger(
         self,
-    ) -> Iterator[tuple[ast.ChainedNameTuple, ast.GlobalTypedNameReference]]:
+    ) -> Iterator[tuple[chained_name.ChainedNameTuple, ast.GlobalTypedNameReference]]:
         """Yield each triggered action chain and its most recent direct trigger."""
         for action_chain, nested_guarantees in self._by_action_chain.items():
             if not nested_guarantees:
@@ -204,7 +204,7 @@ class _CurrentActionNestedGuarantees:
             yield action_chain, nested_guarantees[-1].action.get_last_action()
 
 
-_ACTION_KEY_PREFIX = f"{ast.NameType.ACTION.value}<"
+_ACTION_KEY_PREFIX = f"{name_types.NameType.ACTION.value}<"
 
 
 class ParticleStateStore:
@@ -298,7 +298,7 @@ class ParticleStateStore:
         from_key: tuple[str, ...],
         to_key: tuple[str, ...],
         moved_particle_callback: typing.Callable[
-            [ast.ChainedNameTuple, particle_info.ParticleInfo], None
+            [chained_name.ChainedNameTuple, particle_info.ParticleInfo], None
         ],
     ):
         """Move a particle and everything tracked below it to an untracked Position."""
@@ -313,7 +313,7 @@ class ParticleStateStore:
         to_key: tuple[str, ...],
         detached: DetachedSubtrees,
         moved_particle_callback: typing.Callable[
-            [ast.ChainedNameTuple, particle_info.ParticleInfo], None
+            [chained_name.ChainedNameTuple, particle_info.ParticleInfo], None
         ],
     ):
         """Move the particle that a callee's Guarantee says occupies ``to_key``.
@@ -358,7 +358,7 @@ class ParticleStateStore:
         from_key: tuple[str, ...],
         to_key: tuple[str, ...],
         moved_particle_callback: typing.Callable[
-            [ast.ChainedNameTuple, particle_info.ParticleInfo], None
+            [chained_name.ChainedNameTuple, particle_info.ParticleInfo], None
         ],
     ):
         self._state.move_subtree(
@@ -379,10 +379,12 @@ class ParticleStateStore:
     @staticmethod
     def _wrap_moved_particle_callback(
         moved_particle_callback: typing.Callable[
-            [ast.ChainedNameTuple, particle_info.ParticleInfo], None
+            [chained_name.ChainedNameTuple, particle_info.ParticleInfo], None
         ],
-    ) -> typing.Callable[[ast.ChainedNameTuple, _NodeState], None]:
-        def call_with_moved_particle(position: ast.ChainedNameTuple, state: _NodeState):
+    ) -> typing.Callable[[chained_name.ChainedNameTuple, _NodeState], None]:
+        def call_with_moved_particle(
+            position: chained_name.ChainedNameTuple, state: _NodeState
+        ):
             if state.particle_info is not None:
                 moved_particle_callback(position, state.particle_info)
 
@@ -411,7 +413,7 @@ class ParticleStateStore:
 
     def unconsumed_action_interfaces(
         self,
-    ) -> Iterator[tuple[ast.GlobalTypedNameReference, ast.ChainedNameTuple]]:
+    ) -> Iterator[tuple[ast.GlobalTypedNameReference, chained_name.ChainedNameTuple]]:
         """Yield occupied interfaces of callees directly triggered by this action."""
         for (
             action_chain,
@@ -467,7 +469,7 @@ class ParticleStateStore:
         self,
         occupancies: child_state.ChildOccupancyMap,
         values: child_state.ChildValueMap,
-        particles: dict[ast.ChainedNameTuple, particle_info.ParticleInfo],
+        particles: dict[chained_name.ChainedNameTuple, particle_info.ParticleInfo],
         snapshot: child_state.ChildState,
         key: tuple[str, ...],
         position_in_child_state: tuple[str, ...],
@@ -531,7 +533,7 @@ class ParticleStateStore:
 
     @staticmethod
     def _collect_caller_value(
-        position: ast.ChainedNameTuple,
+        position: chained_name.ChainedNameTuple,
         particle: particle_info.ParticleInfo | None,
         known_values: child_state.ChildStateStore[particle_info.ParticleValueState],
         values: child_state.ChildValueMap,

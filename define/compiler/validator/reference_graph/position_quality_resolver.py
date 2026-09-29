@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typing
 
-from define.compiler import ast
+from define.compiler import ast, name_types
 from define.compiler.validator.reference_graph import quality_assignment
 
 if typing.TYPE_CHECKING:
@@ -140,7 +140,7 @@ class PositionQualityResolver:
             if quality.full_typed_name in names:
                 continue
             names.add(quality.full_typed_name)
-            if quality.name_type == ast.NameType.ACTION:
+            if quality.name_type == name_types.NameType.ACTION:
                 # Implied actions are validated first, so their contracts
                 # already hold their transitive implications. A rejected
                 # circular reference leaves no contract; it is reported elsewhere.
@@ -158,7 +158,7 @@ class PositionQualityResolver:
         self, quality: ast.GlobalTypedNameReference
     ) -> tuple[ast.GlobalTypedNameReference, ...]:
         # Encodings are not qualities, so they imply nothing.
-        if quality.name_type == ast.NameType.ENCODING:
+        if quality.name_type == name_types.NameType.ENCODING:
             return ()
         definition_result = self._definition_results.get(quality)
         if definition_result is None:

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typing
 
-from define.compiler import ast
+from define.compiler import ast, name_types
 from define.compiler.errors import diagnostics
 from define.compiler.validator.structural import name_validators
 
@@ -243,7 +243,7 @@ class OperationArgumentsValidator:
         if isinstance(executed, ast.EncodingOperationDefinition):
             for requirement in interface_view.constraints.requirements:
                 constraint = requirement.typed_global_name
-                if constraint.name_type == ast.NameType.ENCODING:
+                if constraint.name_type == name_types.NameType.ENCODING:
                     validation_diagnostics.extend(
                         self._literal_encoder.encode_in_encoding(literal, constraint)
                     )

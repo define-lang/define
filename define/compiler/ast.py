@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import abc
-import enum
 import sys
 from typing import (
     TYPE_CHECKING,
@@ -18,26 +17,13 @@ from typing import (
 
 import msgspec
 
-from define.compiler import constants
+from define.compiler import chained_name, constants, name_types
 from define.compiler.data_structures import define_path
 
 if TYPE_CHECKING:
     from pathlib import PurePosixPath
 
     import lark_cython
-
-
-class NameType(enum.StrEnum):
-    """The type of a name."""
-
-    POSITION = "position"
-    ACTION = "action"
-    VALUE = "value"
-    ENCODING = "encoding"
-    LITERAL = "literal"
-    OPERATION = "operation"
-    ENCODING_OPERATION = "encoding_operation"
-    VIEW = "view"
 
 
 class ASTNodeMeta(msgspec.StructMeta, abc.ABCMeta):
@@ -98,7 +84,7 @@ class SourceLocation(msgspec.Struct, frozen=True):
 
     @classmethod
     def from_definition_name(
-        cls, name_content: NameContent, name_type: NameType
+        cls, name_content: NameContent, name_type: name_types.NameType
     ) -> Self:
         """Source location of a typed name at its definition site.
 
@@ -161,9 +147,11 @@ class EncodingDefinition(GlobalDefinition):
         """Initialize with a global name."""
         return cls(
             typed_name=GlobalTypedNameInDefinition(
-                name_type=NameType.ENCODING,
+                name_type=name_types.NameType.ENCODING,
                 name_content=name,
-                location=SourceLocation.from_definition_name(name, NameType.ENCODING),
+                location=SourceLocation.from_definition_name(
+                    name, name_types.NameType.ENCODING
+                ),
             ),
             location=location,
         )
@@ -185,9 +173,11 @@ class PotentialLiteralDefinition(GlobalDefinition):
         """Initialize with a global name and its encoding."""
         return cls(
             typed_name=GlobalTypedNameInDefinition(
-                name_type=NameType.LITERAL,
+                name_type=name_types.NameType.LITERAL,
                 name_content=name,
-                location=SourceLocation.from_definition_name(name, NameType.LITERAL),
+                location=SourceLocation.from_definition_name(
+                    name, name_types.NameType.LITERAL
+                ),
             ),
             encoding=encoding,
             location=location,
@@ -197,7 +187,7 @@ class PotentialLiteralDefinition(GlobalDefinition):
 class OperationDefinition(GlobalDefinition):
     """Base class for Value Operation and Encoding Operation definitions."""
 
-    definition_name_type: ClassVar[NameType]
+    definition_name_type: ClassVar[name_types.NameType]
 
     views: tuple[ViewDefinition, ...]
     operation_statements: tuple[OperationStatement, ...]
@@ -248,13 +238,15 @@ class OperationDefinition(GlobalDefinition):
 class ValueOperationDefinition(OperationDefinition):
     """Represents a Value Operation definition."""
 
-    definition_name_type: ClassVar[NameType] = NameType.OPERATION
+    definition_name_type: ClassVar[name_types.NameType] = name_types.NameType.OPERATION
 
 
 class EncodingOperationDefinition(OperationDefinition):
     """Represents an Encoding Operation definition."""
 
-    definition_name_type: ClassVar[NameType] = NameType.ENCODING_OPERATION
+    definition_name_type: ClassVar[name_types.NameType] = (
+        name_types.NameType.ENCODING_OPERATION
+    )
 
 
 class ValueDefinition(QualityDefinition):
@@ -267,9 +259,11 @@ class ValueDefinition(QualityDefinition):
         """Initialize with a global name."""
         return cls(
             typed_name=GlobalTypedNameInDefinition(
-                name_type=NameType.VALUE,
+                name_type=name_types.NameType.VALUE,
                 name_content=name,
-                location=SourceLocation.from_definition_name(name, NameType.VALUE),
+                location=SourceLocation.from_definition_name(
+                    name, name_types.NameType.VALUE
+                ),
             ),
             quality_implications=(),
             location=location,
@@ -293,9 +287,11 @@ class PositionDefinition(QualityDefinition):
         """Initialize with a global name, wrapping it in a typed definition name."""
         return cls(
             typed_name=GlobalTypedNameInDefinition(
-                name_type=NameType.POSITION,
+                name_type=name_types.NameType.POSITION,
                 name_content=name,
-                location=SourceLocation.from_definition_name(name, NameType.POSITION),
+                location=SourceLocation.from_definition_name(
+                    name, name_types.NameType.POSITION
+                ),
             ),
             quality_implications=quality_implications,
             location=location,
@@ -351,10 +347,10 @@ class LocalPositionDefinition(ASTNode):
         """Initialize with a local name, wrapping it in a typed name."""
         return cls(
             typed_name=LocalTypedNameReference(
-                name_type=NameType.POSITION,
+                name_type=name_types.NameType.POSITION,
                 name_content=local_name,
                 location=SourceLocation.from_definition_name(
-                    local_name, NameType.POSITION
+                    local_name, name_types.NameType.POSITION
                 ),
             ),
             location=location,
@@ -393,9 +389,11 @@ class ViewDefinition(ASTNode):
         """Initialize with a local name, wrapping it in a typed name."""
         return cls(
             typed_name=LocalTypedNameReference(
-                name_type=NameType.VIEW,
+                name_type=name_types.NameType.VIEW,
                 name_content=local_name,
-                location=SourceLocation.from_definition_name(local_name, NameType.VIEW),
+                location=SourceLocation.from_definition_name(
+                    local_name, name_types.NameType.VIEW
+                ),
             ),
             is_input=is_input,
             is_output=is_output,
@@ -411,7 +409,7 @@ NameContentT_co = TypeVar("NameContentT_co", bound=NameContent, covariant=True)
 class TypedName(ASTNode, Generic[NameContentT_co], kw_only=True):  # noqa: UP046
     """Represents a typed name (local or global)."""
 
-    name_type: NameType
+    name_type: name_types.NameType
     name_content: Final[NameContentT_co]
     _source_typed_name: str = ""
 
@@ -485,7 +483,7 @@ type TypedNameReference = GlobalTypedNameReference | LocalTypedNameReference
 class SourceFormTypedNameParts(msgspec.Struct, frozen=True):
     """Source-form parts parsed from one full typed name."""
 
-    name_type: NameType
+    name_type: name_types.NameType
     source_name: str
     is_global: bool
 
@@ -499,14 +497,14 @@ def source_form_typed_name_parts(
     is_global = canonical_name.startswith("/") or ":/" in canonical_name
     source_name = canonical_name.removeprefix(current_fqun + ":")
     return SourceFormTypedNameParts(
-        name_type=NameType(name_type),
+        name_type=name_types.NameType(name_type),
         source_name=source_name,
         is_global=is_global,
     )
 
 
 def source_form_chained_name(
-    chained_name: ChainedNameTuple,
+    chained_name: chained_name.ChainedNameTuple,
     current_fqun: str,
 ) -> str:
     """Return a canonical chained-name tuple in source form for one universe."""
@@ -517,27 +515,22 @@ def source_form_chained_name(
     return "::".join(source_names)
 
 
-# A position's canonical chained name, as stored in tries and contracts.
-# TODO: Make this a real class with methods (starting with the chain_*
-# functions below) so that code computing with chained names stops having to
-# build ChainedName objects all the time.
-# TODO: Also, use this everywhere appropriate.
-type ChainedNameTuple = tuple[str, ...]
-
-
-def is_prefix(prefix: ChainedNameTuple, chained_name: ChainedNameTuple) -> bool:
+def is_prefix(
+    prefix: chained_name.ChainedNameTuple, chained_name: chained_name.ChainedNameTuple
+) -> bool:
     """Return whether ``prefix`` is a parent name of or equal to ``chained_name``."""
     return len(prefix) <= len(chained_name) and chained_name[: len(prefix)] == prefix
 
 
-def chain_starts_with_global(key: ChainedNameTuple) -> bool:
+def chain_starts_with_global(key: chained_name.ChainedNameTuple) -> bool:
     """Return whether the leftmost element of a chained-name key is a global."""
     return "/" in key[0]
 
 
 def chain_in_caller(
-    caller_chain: ChainedNameTuple, local_chain: ChainedNameTuple
-) -> ChainedNameTuple:
+    caller_chain: chained_name.ChainedNameTuple,
+    local_chain: chained_name.ChainedNameTuple,
+) -> chained_name.ChainedNameTuple:
     """Return a callee-local chain from the perspective of a caller that triggers it via ``caller_chain``."""
     if chain_starts_with_global(local_chain):
         return caller_chain[:-1] + local_chain
@@ -545,8 +538,9 @@ def chain_in_caller(
 
 
 def chain_in_callee(
-    caller_chain: ChainedNameTuple, absolute_chain: ChainedNameTuple
-) -> ChainedNameTuple:
+    caller_chain: chained_name.ChainedNameTuple,
+    absolute_chain: chained_name.ChainedNameTuple,
+) -> chained_name.ChainedNameTuple:
     """Return a caller's chain from the perspective of the callee it triggers via ``caller_chain``.
 
     The inverse of ``chain_in_caller``: an interface position of the callee is a
@@ -559,7 +553,7 @@ def chain_in_callee(
     return absolute_chain[len(caller_chain) - 1 :]
 
 
-_ACTION_TYPED_NAME_PREFIX: Final = f"{NameType.ACTION.value}<"
+_ACTION_TYPED_NAME_PREFIX: Final = f"{name_types.NameType.ACTION.value}<"
 
 
 def is_action_key(typed_name: str) -> bool:
@@ -567,7 +561,9 @@ def is_action_key(typed_name: str) -> bool:
     return typed_name.startswith(_ACTION_TYPED_NAME_PREFIX)
 
 
-def chain_parent_position(key: ChainedNameTuple) -> ChainedNameTuple | None:
+def chain_parent_position(
+    key: chained_name.ChainedNameTuple,
+) -> chained_name.ChainedNameTuple | None:
     """Return the nearest parent position key, skipping actions, or None.
 
     The tuple-space equivalent of ``ChainedName.parent_position`` for callers
@@ -588,7 +584,7 @@ class ChainedName(ASTNode):
     """
 
     typed_names: tuple[TypedNameReference, ...]
-    _canonical_chained_name_tuple: ChainedNameTuple | None = None
+    _canonical_chained_name_tuple: chained_name.ChainedNameTuple | None = None
     _canonical_chained_name: str | None = None
 
     def __post_init__(self):
@@ -600,7 +596,7 @@ class ChainedName(ASTNode):
     # hotspot in compilation profiles. The values are deterministic over the
     # immutable typed_names, so a benign race recomputes an equal value.
     @property
-    def canonical_chained_name_tuple(self) -> ChainedNameTuple:
+    def canonical_chained_name_tuple(self) -> chained_name.ChainedNameTuple:
         """The canonical typed names in this chain."""
         if self._canonical_chained_name_tuple is None:
             self._canonical_chained_name_tuple = tuple(
@@ -628,7 +624,7 @@ class ChainedName(ASTNode):
     def get_last_action(self) -> GlobalTypedNameReference | None:
         """Return the last action element in the chain, or None."""
         for elem in reversed(self.typed_names):
-            if elem.name_type == NameType.ACTION and isinstance(
+            if elem.name_type == name_types.NameType.ACTION and isinstance(
                 elem, GlobalTypedNameReference
             ):
                 return elem
@@ -637,7 +633,7 @@ class ChainedName(ASTNode):
     def get_chain_to_last_action(self) -> ActionReference | None:
         """Return everything up to and including the last action element, or None."""
         for i in range(len(self.typed_names) - 1, -1, -1):
-            if self.typed_names[i].name_type == NameType.ACTION:
+            if self.typed_names[i].name_type == name_types.NameType.ACTION:
                 return ActionReference(
                     location=self.location,
                     typed_names=self.typed_names[: i + 1],
@@ -647,7 +643,7 @@ class ChainedName(ASTNode):
     def get_last_action_children(self) -> PositionReference | None:
         """Return everything after the last action element, or None."""
         for i in range(len(self.typed_names) - 1, -1, -1):
-            if self.typed_names[i].name_type == NameType.ACTION:
+            if self.typed_names[i].name_type == name_types.NameType.ACTION:
                 tail = self.typed_names[i + 1 :]
                 if not tail:
                     return None
@@ -661,7 +657,7 @@ class ChainedName(ASTNode):
         """Return the nearest parent position, or None for single-element chains."""
         names = self.typed_names
         for i in range(len(names) - 2, -1, -1):
-            if names[i].name_type != NameType.ACTION:
+            if names[i].name_type != name_types.NameType.ACTION:
                 return PositionReference(
                     location=self.location,
                     typed_names=names[: i + 1],
@@ -735,7 +731,7 @@ class ChainedName(ASTNode):
     def in_caller(self, caller_chain: ChainedName) -> Self:
         """Get the chained name of a contracted position from the perspective of the caller."""
         caller_ends_with_action = (
-            caller_chain.typed_names[-1].name_type == NameType.ACTION
+            caller_chain.typed_names[-1].name_type == name_types.NameType.ACTION
         )
         if self.starts_with_global and caller_ends_with_action:
             parent = caller_chain.parent_position()
@@ -753,7 +749,10 @@ class PositionReference(ChainedName):
     def __post_init__(self):
         """Require a position as the final typed name."""
         super().__post_init__()
-        if not self.from_source and self.typed_names[-1].name_type != NameType.POSITION:
+        if (
+            not self.from_source
+            and self.typed_names[-1].name_type != name_types.NameType.POSITION
+        ):
             raise ValueError(
                 f"Last element of a PositionReference must be a position: {self.source_chained_name}"
             )
@@ -781,7 +780,7 @@ class ActionReference(ChainedName):
     def __post_init__(self):
         """Require an action as the final typed name."""
         super().__post_init__()
-        if self.typed_names[-1].name_type != NameType.ACTION:
+        if self.typed_names[-1].name_type != name_types.NameType.ACTION:
             raise ValueError(
                 f"Last element of an ActionReference must be an action: {self.source_chained_name}"
             )
@@ -910,7 +909,7 @@ class PositionConstraintBlock(ASTNode):
     def value_constraint(self) -> GlobalTypedNameReference | None:
         """Return the first value this block requires, if any."""
         for requirement in self.requirements:
-            if requirement.typed_global_name.name_type == NameType.VALUE:
+            if requirement.typed_global_name.name_type == name_types.NameType.VALUE:
                 return requirement.typed_global_name
         return None
 
@@ -1014,9 +1013,11 @@ class ActionDefinition(QualityDefinition):
         """Initialize with a global name, wrapping it in a typed definition name."""
         return cls(
             typed_name=GlobalTypedNameInDefinition(
-                name_type=NameType.ACTION,
+                name_type=name_types.NameType.ACTION,
                 name_content=name,
-                location=SourceLocation.from_definition_name(name, NameType.ACTION),
+                location=SourceLocation.from_definition_name(
+                    name, name_types.NameType.ACTION
+                ),
             ),
             quality_implications=quality_implications,
             location=location,

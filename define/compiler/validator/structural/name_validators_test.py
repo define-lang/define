@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from define.compiler import ast
+from define.compiler import ast, name_types
 from define.compiler.errors import diagnostics
 from define.compiler.validator.structural import name_validators
 
@@ -749,7 +749,7 @@ def _enclosing_definition() -> ast.PositionDefinition:
 class TestValidateTypedName:
     def test_global_reference_valid(self):
         typed_name = ast.GlobalTypedNameReference(
-            name_type=ast.NameType.POSITION,
+            name_type=name_types.NameType.POSITION,
             name_content=ast.ReferenceGlobalNameContent(
                 fqun=None,
                 path=_global_path_name("/other"),
@@ -765,7 +765,7 @@ class TestValidateTypedName:
 
     def test_global_reference_same_fqun_must_use_short_form(self):
         typed_name = ast.GlobalTypedNameReference(
-            name_type=ast.NameType.POSITION,
+            name_type=name_types.NameType.POSITION,
             name_content=ast.ReferenceGlobalNameContent(
                 fqun=_fqun("my_lib", authority=_authority("my.domain.com")),
                 path=_global_path_name("/other"),
@@ -784,7 +784,7 @@ class TestValidateTypedName:
 
     def test_local_reference_valid(self):
         typed_name = ast.LocalTypedNameReference(
-            name_type=ast.NameType.POSITION,
+            name_type=name_types.NameType.POSITION,
             name_content=ast.LocalNameContent(name="my_pos", location=_LOC),
             location=_LOC,
         )
@@ -795,7 +795,7 @@ class TestValidateTypedName:
 
     def test_local_reference_invalid_char(self):
         typed_name = ast.LocalTypedNameReference(
-            name_type=ast.NameType.POSITION,
+            name_type=name_types.NameType.POSITION,
             name_content=ast.LocalNameContent(name="My-pos", location=_LOC),
             location=_LOC,
         )

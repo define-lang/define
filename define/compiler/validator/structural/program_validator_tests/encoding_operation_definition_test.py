@@ -8,7 +8,7 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
-from define.compiler import ast
+from define.compiler import name_types
 from define.compiler.errors import diagnostics
 from define.compiler.validator.test_helpers import (
     BUILT_IN_DEFINITION_COUNT,
@@ -49,14 +49,14 @@ def test_unreferenced_views(
     assert first.location.line == 27
     assert first.location.column == 21
     assert first.view_name == "view<unused>"
-    assert first.operation_name_type == ast.NameType.ENCODING_OPERATION
+    assert first.operation_name_type == name_types.NameType.ENCODING_OPERATION
     second = result.all_diagnostics[1]
     assert isinstance(second, diagnostics.UnreferencedViewDiagnostic)
     assert second.location.file_path is None
     assert second.location.line == 33
     assert second.location.column == 21
     assert second.view_name == "view<also_unused>"
-    assert second.operation_name_type == ast.NameType.ENCODING_OPERATION
+    assert second.operation_name_type == name_types.NameType.ENCODING_OPERATION
 
 
 def test_view_missing_encoding_constraint(

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from define.compiler import ast
+from define.compiler import ast, name_types
 from define.compiler.data_structures import typed_name_dict
 
 _LOC = ast.start_of_file_location()
@@ -15,7 +15,7 @@ def _at(line: int) -> ast.SourceLocation:
 
 
 def _base(
-    name: str, name_type: ast.NameType = ast.NameType.POSITION
+    name: str, name_type: name_types.NameType = name_types.NameType.POSITION
 ) -> ast.TypedName[ast.NameContent]:
     return ast.TypedName(
         location=_LOC,
@@ -26,7 +26,7 @@ def _base(
 
 def _local(
     name: str,
-    name_type: ast.NameType = ast.NameType.POSITION,
+    name_type: name_types.NameType = name_types.NameType.POSITION,
     location: ast.SourceLocation = _LOC,
 ) -> ast.LocalTypedNameReference:
     return ast.LocalTypedNameReference(
@@ -61,7 +61,7 @@ def _global(
     path: str,
     enclosing_fqun: ast.Fqun,
     fqun: ast.Fqun | None = None,
-    name_type: ast.NameType = ast.NameType.POSITION,
+    name_type: name_types.NameType = name_types.NameType.POSITION,
 ) -> ast.GlobalTypedNameReference:
     return ast.GlobalTypedNameReference(
         location=_LOC,
@@ -199,11 +199,11 @@ class TestCanonicalIdentity:
         d: typed_name_dict.TypedNameDict[ast.LocalTypedNameReference, int] = (
             typed_name_dict.TypedNameDict()
         )
-        d[_local("a", name_type=ast.NameType.POSITION)] = 1
-        d[_local("a", name_type=ast.NameType.ACTION)] = 2
+        d[_local("a", name_type=name_types.NameType.POSITION)] = 1
+        d[_local("a", name_type=name_types.NameType.ACTION)] = 2
         assert len(d) == 2
-        assert d[_local("a", name_type=ast.NameType.POSITION)] == 1
-        assert d[_local("a", name_type=ast.NameType.ACTION)] == 2
+        assert d[_local("a", name_type=name_types.NameType.POSITION)] == 1
+        assert d[_local("a", name_type=name_types.NameType.ACTION)] == 2
 
     def test_distinct_names_stay_distinct(self):
         d: typed_name_dict.TypedNameDict[ast.LocalTypedNameReference, int] = (
@@ -513,11 +513,11 @@ class TestChainedCanonicalIdentity:
         d: typed_name_dict.ChainedNameDict[ast.ChainedName, int] = (
             typed_name_dict.ChainedNameDict()
         )
-        d[_chain(_local("a", name_type=ast.NameType.POSITION))] = 1
-        d[_chain(_local("a", name_type=ast.NameType.ACTION))] = 2
+        d[_chain(_local("a", name_type=name_types.NameType.POSITION))] = 1
+        d[_chain(_local("a", name_type=name_types.NameType.ACTION))] = 2
         assert len(d) == 2
-        assert d[_chain(_local("a", name_type=ast.NameType.POSITION))] == 1
-        assert d[_chain(_local("a", name_type=ast.NameType.ACTION))] == 2
+        assert d[_chain(_local("a", name_type=name_types.NameType.POSITION))] == 1
+        assert d[_chain(_local("a", name_type=name_types.NameType.ACTION))] == 2
 
     def test_overwrite_retains_latest_key_instance(self):
         d: typed_name_dict.ChainedNameDict[ast.ChainedName, int] = (

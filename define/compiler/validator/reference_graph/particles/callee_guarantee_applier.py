@@ -6,7 +6,7 @@ import typing
 
 import msgspec
 
-from define.compiler import ast
+from define.compiler import ast, chained_name
 from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.particles import (
     particle_info,
@@ -284,7 +284,7 @@ class _PendingNestedGuarantees:
 class _GuaranteeApplicationState(msgspec.Struct, frozen=True):
     """Shared particle state for applying one callee's guarantees."""
 
-    origin_keys: set[ast.ChainedNameTuple]
+    origin_keys: set[chained_name.ChainedNameTuple]
     # Detached for swap safety.
     detached: particle_state_store.DetachedSubtrees = msgspec.field(
         default_factory=particle_state_store.DetachedSubtrees
@@ -305,7 +305,7 @@ class _GuaranteeApplicationState(msgspec.Struct, frozen=True):
 
     def save_origins_at_or_below(
         self,
-        key: ast.ChainedNameTuple,
+        key: chained_name.ChainedNameTuple,
         store: particle_state_store.ParticleStateStore,
     ):
         """Detach every origin position at or below ``key`` before ``key``'s subtree is overwritten."""
@@ -559,7 +559,7 @@ class CalleeGuaranteeApplier:
     def _update_store_from_callee_direct_guarantee(
         self,
         pending_guarantee: _PendingGuarantee,
-        key: ast.ChainedNameTuple,
+        key: chained_name.ChainedNameTuple,
         guarantee: action_contract.PositionGuarantee,
         application: _GuaranteeApplicationState,
     ):
@@ -693,7 +693,7 @@ class CalleeGuaranteeApplier:
         self._dead_interfaces.mark_particle_departed(moved_info)
 
         def record_guaranteed_position(
-            position: ast.ChainedNameTuple,
+            position: chained_name.ChainedNameTuple,
             particle: particle_info.ParticleInfo,
         ):
             self._dead_interfaces.replace_occupied_interface_child_position(

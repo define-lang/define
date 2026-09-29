@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, final
 
-from define.compiler import ast
+from define.compiler import ast, name_types
 from define.compiler.codegen.literal.python import naming, template_context
 
 if TYPE_CHECKING:
@@ -39,7 +39,7 @@ class PositionExpressionBuilder:
                 local_position_name = None
                 chain_elements: list[template_context.ChainElement] = [
                     template_context.InterfacePositionChainElement(
-                        previous_name_type=ast.NameType.ACTION,
+                        previous_name_type=name_types.NameType.ACTION,
                         name_type=first.name_type,
                         typed_name=first.source_typed_name,
                     )

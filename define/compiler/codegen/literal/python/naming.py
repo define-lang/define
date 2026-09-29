@@ -9,7 +9,7 @@ from pathlib import Path
 
 import msgspec
 
-from define.compiler import ast, constants
+from define.compiler import ast, constants, name_types
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
@@ -262,7 +262,7 @@ class NameConverter:
             for index, name in enumerate(destruction.contracted_position.typed_names):
                 prefix = name.name_type.value
                 if isinstance(name, ast.GlobalTypedNameReference):
-                    if index == 0 and name.name_type == ast.NameType.POSITION:
+                    if index == 0 and name.name_type == name_types.NameType.POSITION:
                         prefix = "global_position"
                     content = "_".join(name.name_content.path.relative_path.parts)
                 else:

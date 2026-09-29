@@ -110,6 +110,7 @@ py_library(
     deps = [
         ":name_parser",
         "//define/compiler:ast",
+        "//define/compiler:name_types",
         "//define/compiler/parsing/lark:lark_standalone",
         "@pypi//lark_cython",
         "@pypi//msgspec",
@@ -124,6 +125,7 @@ py_test(
         ":parser",
         ":test_helpers",
         "//define/compiler:ast",
+        "//define/compiler:name_types",
         "//define/compiler/errors:parser_exceptions",
     ],
 )

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typing
 
-from define.compiler import ast
+from define.compiler import ast, chained_name
 from define.compiler.validator.reference_graph import (
     action_contract,
     position_occupancy,
@@ -34,7 +34,7 @@ class GuaranteeGenerator:
         ],
         *,
         is_destructor: bool = False,
-    ) -> dict[ast.ChainedNameTuple, action_contract.PositionGuarantee]:
+    ) -> dict[chained_name.ChainedNameTuple, action_contract.PositionGuarantee]:
         """Collect and sort the guarantees for every contracted key, excluding the ones _guarantee_for_key reports as no-ops."""
         include_names = {
             name.full_typed_name for name in (*interface_names, *implied_quality_names)
@@ -45,7 +45,7 @@ class GuaranteeGenerator:
         all_keys = self._store.keys_for_guarantees(include_callee_derived=is_destructor)
 
         guarantees: list[
-            tuple[ast.ChainedNameTuple, action_contract.PositionGuarantee]
+            tuple[chained_name.ChainedNameTuple, action_contract.PositionGuarantee]
         ] = []
         for key in all_keys:
             # Consuming a callee's Interface Position must also override its

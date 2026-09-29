@@ -18,6 +18,7 @@ py_library(
         "//define/compiler:ast",
         "//define/compiler:config",
         "//define/compiler:constants",
+        "//define/compiler:name_types",
         "//define/compiler/validator/reference_graph:action_contract",
         "@pypi//msgspec",
     ],

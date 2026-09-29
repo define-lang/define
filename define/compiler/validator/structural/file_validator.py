@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 
 import msgspec
 
-from define.compiler import ast, config, constants
+from define.compiler import ast, config, constants, name_types
 from define.compiler.data_structures import define_path, typed_name_dict
 from define.compiler.errors import diagnostics, exceptions, source_map
 from define.compiler.graphs import reference_graph
@@ -425,10 +425,13 @@ class DefinitionStructuralValidator:
             views[view.typed_name] = view
             unreferenced_views[view.typed_name] = view
         requirements: list[ast.PositionRequirementStatement] = []
-        constraint_types: set[ast.NameType] = set()
+        constraint_types: set[name_types.NameType] = set()
         for requirement in view.constraints.requirements:
             constraint = requirement.typed_global_name
-            if constraint.name_type in (ast.NameType.POSITION, ast.NameType.ACTION):
+            if constraint.name_type in (
+                name_types.NameType.POSITION,
+                name_types.NameType.ACTION,
+            ):
                 self._diagnostics.append(
                     diagnostics.ViewQualityConstraintDiagnostic(
                         location=constraint.location,
@@ -438,7 +441,7 @@ class DefinitionStructuralValidator:
                 continue
             if (
                 isinstance(definition, ast.EncodingOperationDefinition)
-                and constraint.name_type == ast.NameType.VALUE
+                and constraint.name_type == name_types.NameType.VALUE
             ):
                 self._diagnostics.append(
                     diagnostics.EncodingOperationViewValueConstraintDiagnostic(
@@ -449,7 +452,7 @@ class DefinitionStructuralValidator:
                 continue
             if (
                 isinstance(definition, ast.ValueOperationDefinition)
-                and constraint.name_type == ast.NameType.ENCODING
+                and constraint.name_type == name_types.NameType.ENCODING
             ):
                 self._diagnostics.append(
                     diagnostics.ValueOperationViewEncodingConstraintDiagnostic(
@@ -465,14 +468,14 @@ class DefinitionStructuralValidator:
             multiple_values_diagnostic=diagnostics.ViewMultipleValueConstraintsDiagnostic,
         )
         if isinstance(definition, ast.EncodingOperationDefinition):
-            if ast.NameType.ENCODING not in constraint_types:
+            if name_types.NameType.ENCODING not in constraint_types:
                 self._diagnostics.append(
                     diagnostics.ViewMissingEncodingConstraintDiagnostic(
                         location=view.typed_name.name_content.location,
                         view_name=view.typed_name.source_typed_name,
                     )
                 )
-        elif ast.NameType.VALUE not in constraint_types:
+        elif name_types.NameType.VALUE not in constraint_types:
             self._diagnostics.append(
                 diagnostics.ViewMissingValueConstraintDiagnostic(
                     location=view.typed_name.name_content.location,
@@ -897,7 +900,7 @@ class DefinitionStructuralValidator:
                 and isinstance(typed_name, ast.LocalTypedNameReference)
                 and not (
                     isinstance(previous_element, ast.GlobalTypedNameReference)
-                    and previous_element.name_type == ast.NameType.ACTION
+                    and previous_element.name_type == name_types.NameType.ACTION
                 )
             ):
                 self._diagnostics.append(
@@ -912,7 +915,7 @@ class DefinitionStructuralValidator:
                 may_continue = False
             previous_element = typed_name
 
-        if last_typed_name.name_type != ast.NameType.POSITION:
+        if last_typed_name.name_type != name_types.NameType.POSITION:
             self._diagnostics.append(
                 diagnostics.PositionReferenceChainEndDiagnostic(
                     location=last_typed_name.location,
@@ -939,7 +942,7 @@ class DefinitionStructuralValidator:
 
         if isinstance(chain_element, ast.GlobalTypedNameReference):
             self._process_reference(chain_element)
-        elif chain_element.name_type == ast.NameType.ACTION:
+        elif chain_element.name_type == name_types.NameType.ACTION:
             self._diagnostics.append(
                 diagnostics.LocalActionNameDiagnostic(
                     location=chain_element.location,
@@ -979,7 +982,7 @@ class DefinitionStructuralValidator:
             seen_lines[requirement.typed_global_name] = (
                 requirement.typed_global_name.location.line
             )
-            if requirement.typed_global_name.name_type == ast.NameType.VALUE:
+            if requirement.typed_global_name.name_type == name_types.NameType.VALUE:
                 if first_value is not None:
                     self._diagnostics.append(
                         multiple_values_diagnostic(

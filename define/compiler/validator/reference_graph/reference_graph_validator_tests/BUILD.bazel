@@ -716,8 +716,8 @@ py_test(
     srcs = ["encoding_operation_test.py"],
     data = ["//define/testdata/reference_graph/encoding_operation"],
     deps = [
-        "//define/compiler:ast",
         "//define/compiler:conftest",
+        "//define/compiler:name_types",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:test_helpers",
     ],
@@ -871,8 +871,8 @@ py_test(
     srcs = ["operation_view_directions_test.py"],
     data = ["//define/testdata/reference_graph/operation_view_directions"],
     deps = [
-        "//define/compiler:ast",
         "//define/compiler:conftest",
+        "//define/compiler:name_types",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:test_helpers",
     ],

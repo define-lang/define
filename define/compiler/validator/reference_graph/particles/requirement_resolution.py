@@ -6,7 +6,7 @@ import typing
 
 import msgspec
 
-from define.compiler import ast
+from define.compiler import ast, chained_name, name_types
 from define.compiler.validator.reference_graph import (
     action_contract,
     position_occupancy,
@@ -57,10 +57,10 @@ class RequirementResolver:
             position.starts_with_global
             or position.typed_names[0].full_typed_name in interface_position_names
         )
-        canonical_position_prefixes: list[ast.ChainedNameTuple] = []
+        canonical_position_prefixes: list[chained_name.ChainedNameTuple] = []
         canonical_position = position.canonical_chained_name_tuple
         for name_index, typed_name in enumerate(position.typed_names):
-            if typed_name.name_type == ast.NameType.ACTION:
+            if typed_name.name_type == name_types.NameType.ACTION:
                 break
             canonical_position_prefixes.append(canonical_position[: name_index + 1])
         resolved_positions: list[ResolvedRequirementPosition] = []
@@ -150,7 +150,7 @@ class RequirementResolver:
 
     def _requirement_indices_for_caller(
         self,
-        canonical_positions: Sequence[ast.ChainedNameTuple],
+        canonical_positions: Sequence[chained_name.ChainedNameTuple],
     ) -> Iterator[
         tuple[int, tuple[tuple[str, ...], particle_info.ParticleInfo] | None]
     ]:
@@ -159,8 +159,10 @@ class RequirementResolver:
         Each requirement index is paired with the nearest particle passed in by
         the caller, or ``None`` when no parent position is occupied.
         """
-        parent_positions: list[ast.ChainedNameTuple] = []
-        unresolved_requirements: list[tuple[int, ast.ChainedNameTuple | None]] = []
+        parent_positions: list[chained_name.ChainedNameTuple] = []
+        unresolved_requirements: list[
+            tuple[int, chained_name.ChainedNameTuple | None]
+        ] = []
         for requirement_index, canonical_position in enumerate(canonical_positions):
             # If we have touched a position, then the current action overrides any
             # requirements from its callees.

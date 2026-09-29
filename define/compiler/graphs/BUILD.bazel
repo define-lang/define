@@ -61,6 +61,7 @@ py_test(
     deps = [
         ":reference_graph",
         "//define/compiler:ast",
+        "//define/compiler:name_types",
     ],
 )
 

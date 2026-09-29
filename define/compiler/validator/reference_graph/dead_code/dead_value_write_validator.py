@@ -7,7 +7,7 @@ import typing
 from define.compiler.errors import diagnostics
 
 if typing.TYPE_CHECKING:
-    from define.compiler import ast
+    from define.compiler import ast, chained_name
     from define.compiler.validator.reference_graph import action_contract
     from define.compiler.validator.reference_graph.particles import (
         particle_info,
@@ -61,7 +61,9 @@ class DeadValueWriteValidator:
 
     def validate(
         self,
-        guarantees: dict[ast.ChainedNameTuple, action_contract.PositionGuarantee],
+        guarantees: dict[
+            chained_name.ChainedNameTuple, action_contract.PositionGuarantee
+        ],
     ) -> list[diagnostics.DeadValueWriteDiagnostic]:
         """Diagnose value writes that nothing used, unless this action guarantees them."""
         if not self._unused_writes:

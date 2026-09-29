@@ -8,6 +8,7 @@ py_library(
     srcs = ["dead_constraint_tracker.py"],
     deps = [
         "//define/compiler:ast",
+        "//define/compiler:name_types",
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/validator:validation_result",
         "@pypi//msgspec",
@@ -21,6 +22,8 @@ py_library(
     deps = [
         ":dead_constraint_tracker",
         "//define/compiler:ast",
+        "//define/compiler:chained_name",
+        "//define/compiler:name_types",
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:scope_tracker",
@@ -54,6 +57,7 @@ py_library(
     visibility = ["//define/compiler/validator/reference_graph:__pkg__"],
     deps = [
         "//define/compiler:ast",
+        "//define/compiler:chained_name",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/validator/reference_graph:action_contract",
         "//define/compiler/validator/reference_graph/particles:particle_info",

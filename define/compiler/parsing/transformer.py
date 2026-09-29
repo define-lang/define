@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, cast
 import lark_cython
 import msgspec
 
-from define.compiler import ast
+from define.compiler import ast, name_types
 from define.compiler.parsing import name_parser
 from define.compiler.parsing.lark import lark_standalone
 
@@ -638,37 +638,37 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
             ),
         )
 
-    def POSITION_OR_ACTION(self, token: lark_cython.Token) -> ast.NameType:  # noqa: N802
+    def POSITION_OR_ACTION(self, token: lark_cython.Token) -> name_types.NameType:  # noqa: N802
         """Transform a name-type token into a NameType enum."""
-        return ast.NameType(token.value)
+        return name_types.NameType(token.value)
 
-    def VALUE(self, _token: lark_cython.Token) -> ast.NameType:  # noqa: N802
+    def VALUE(self, _token: lark_cython.Token) -> name_types.NameType:  # noqa: N802
         """Transform the value name type."""
-        return ast.NameType.VALUE
+        return name_types.NameType.VALUE
 
-    def ENCODING(self, _token: lark_cython.Token) -> ast.NameType:  # noqa: N802
+    def ENCODING(self, _token: lark_cython.Token) -> name_types.NameType:  # noqa: N802
         """Transform the encoding name type."""
-        return ast.NameType.ENCODING
+        return name_types.NameType.ENCODING
 
-    def OPERATION(self, _token: lark_cython.Token) -> ast.NameType:  # noqa: N802
+    def OPERATION(self, _token: lark_cython.Token) -> name_types.NameType:  # noqa: N802
         """Transform the operation name type."""
-        return ast.NameType.OPERATION
+        return name_types.NameType.OPERATION
 
-    def ENCODING_OPERATION(self, _token: lark_cython.Token) -> ast.NameType:  # noqa: N802
+    def ENCODING_OPERATION(self, _token: lark_cython.Token) -> name_types.NameType:  # noqa: N802
         """Transform the encoding operation name type."""
-        return ast.NameType.ENCODING_OPERATION
+        return name_types.NameType.ENCODING_OPERATION
 
-    def VIEW(self, _token: lark_cython.Token) -> ast.NameType:  # noqa: N802
+    def VIEW(self, _token: lark_cython.Token) -> name_types.NameType:  # noqa: N802
         """Transform the view name type."""
-        return ast.NameType.VIEW
+        return name_types.NameType.VIEW
 
     @_strip_discard
     def typed_global_name_reference(
         self,
-        items: list[ast.NameType | ast.ReferenceGlobalNameContent],
+        items: list[name_types.NameType | ast.ReferenceGlobalNameContent],
     ) -> ast.GlobalTypedNameReference:
         """Transform typed global name references."""
-        name_type = cast("ast.NameType", items[0])
+        name_type = cast("name_types.NameType", items[0])
         name_content = cast("ast.ReferenceGlobalNameContent", items[1])
         return ast.GlobalTypedNameReference(
             name_type=name_type,
@@ -680,10 +680,10 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
     @_strip_discard
     def typed_local_name_reference(
         self,
-        items: list[ast.NameType | ast.LocalNameContent],
+        items: list[name_types.NameType | ast.LocalNameContent],
     ) -> ast.LocalTypedNameReference:
         """Transform typed local name references."""
-        name_type = cast("ast.NameType", items[0])
+        name_type = cast("name_types.NameType", items[0])
         name_content = cast("ast.LocalNameContent", items[1])
         return ast.LocalTypedNameReference(
             name_type=name_type,
@@ -756,7 +756,7 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
         keyword = cast("lark_cython.Token", items[0])
         name = cast("ast.ReferenceGlobalNameContent", items[1])
         potential_literal = ast.GlobalTypedNameReference(
-            name_type=ast.NameType.LITERAL,
+            name_type=name_types.NameType.LITERAL,
             name_content=name,
             enclosing_fqun=self._enclosing_fqun,
             location=self._location(start=keyword, end=name, end_column_offset=1),

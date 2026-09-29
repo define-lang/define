@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from pathlib import PurePosixPath
 
-from define.compiler import ast
+from define.compiler import ast, name_types
 from define.compiler.errors import parser_exceptions
 from define.compiler.parsing import parser, test_helpers
 
@@ -282,7 +282,7 @@ def test_fqun_full_fields():
 
 def test_global_typed_name_in_definition_fields():
     typed_name = _only_position(_SIMPLE_POSITION).typed_name
-    assert typed_name.name_type == ast.NameType.POSITION
+    assert typed_name.name_type == name_types.NameType.POSITION
     assert isinstance(typed_name.name_content, ast.DefinitionGlobalNameContent)
     assert typed_name.location == ast.SourceLocation(
         line=1, column=22, end_line=1, end_column=46
@@ -333,7 +333,7 @@ def test_global_typed_name_reference_fields():
     definition = _only_position(_FULL_POSITION)
     assert definition.constraints is not None
     typed_name = definition.constraints.requirements[0].typed_global_name
-    assert typed_name.name_type == ast.NameType.POSITION
+    assert typed_name.name_type == name_types.NameType.POSITION
     assert isinstance(typed_name.name_content, ast.ReferenceGlobalNameContent)
     assert typed_name.enclosing_fqun.canonical == "standard"
     assert typed_name.location == ast.SourceLocation(
@@ -344,7 +344,7 @@ def test_global_typed_name_reference_fields():
 
 def test_local_typed_name_reference_fields():
     typed_name = _only_action(_FULL_ACTION).interface_positions[0].typed_name
-    assert typed_name.name_type == ast.NameType.POSITION
+    assert typed_name.name_type == name_types.NameType.POSITION
     assert isinstance(typed_name.name_content, ast.LocalNameContent)
     assert typed_name.location == ast.SourceLocation(
         line=3, column=16, end_line=3, end_column=29
@@ -529,7 +529,7 @@ def test_value_constraint_fields():
     assert definition.constraints is not None
     typed_name = definition.constraints.requirements[2].typed_global_name
     assert isinstance(typed_name, ast.GlobalTypedNameReference)
-    assert typed_name.name_type == ast.NameType.VALUE
+    assert typed_name.name_type == name_types.NameType.VALUE
 
 
 def test_position_requirement_statement_fields():
@@ -630,7 +630,7 @@ def test_value_definition_fields():
     definition = program.definitions[0]
     assert isinstance(definition, ast.ValueDefinition)
     assert definition.quality_implications == ()
-    assert definition.typed_name.name_type == ast.NameType.VALUE
+    assert definition.typed_name.name_type == name_types.NameType.VALUE
     name = definition.typed_name.name_content
     assert isinstance(name, ast.DefinitionGlobalNameContent)
     assert name.source_name == "mv:example.com:example:/number/rational"
@@ -666,7 +666,7 @@ def test_encoding_definition_fields():
     definition = program.definitions[0]
     assert isinstance(definition, ast.EncodingDefinition)
     assert not isinstance(definition, ast.QualityDefinition)
-    assert definition.typed_name.name_type == ast.NameType.ENCODING
+    assert definition.typed_name.name_type == name_types.NameType.ENCODING
     name = definition.typed_name.name_content
     assert isinstance(name, ast.DefinitionGlobalNameContent)
     assert name.source_name == "mv:example.com:example:/number/rational"
@@ -735,7 +735,7 @@ def test_position_definition_full_fields():
 def test_action_definition_minimal_fields():
     definition = _only_action(_DESTRUCTOR_ACTION)
     assert isinstance(definition.typed_name, ast.GlobalTypedNameInDefinition)
-    assert definition.typed_name.name_type == ast.NameType.ACTION
+    assert definition.typed_name.name_type == name_types.NameType.ACTION
     assert definition.quality_implications == ()
     assert definition.interface_positions == ()
     assert isinstance(definition.trigger_conditions, ast.TriggerConditionsBlock)
@@ -924,7 +924,7 @@ def test_potential_literal_definition_fields():
     definition = program.definitions[0]
     assert isinstance(definition, ast.PotentialLiteralDefinition)
     assert not isinstance(definition, ast.QualityDefinition)
-    assert definition.typed_name.name_type == ast.NameType.LITERAL
+    assert definition.typed_name.name_type == name_types.NameType.LITERAL
     assert (
         definition.typed_name.name_content.source_name
         == "mv:example.com:example:/decimal"
@@ -938,7 +938,7 @@ def test_potential_literal_definition_fields():
         == "literal<mv:example.com:example:/decimal>"
     )
     encoding = definition.encoding
-    assert encoding.name_type == ast.NameType.ENCODING
+    assert encoding.name_type == name_types.NameType.ENCODING
     assert encoding.source_typed_name == "encoding</decimal_text>"
     assert encoding.full_typed_name == "encoding<mv:example.com:example:/decimal_text>"
     assert _slice(source, encoding.location) == "encoding</decimal_text>"
@@ -988,7 +988,7 @@ def test_value_setting_literal_fields():
     literal = statement.source
     assert isinstance(literal, ast.Literal)
     assert literal.content == ' # Hello 世界 > : " \\ \n \\n '
-    assert literal.potential_literal.name_type == ast.NameType.LITERAL
+    assert literal.potential_literal.name_type == name_types.NameType.LITERAL
     assert literal.potential_literal.name_content.fqun is None
     assert literal.potential_literal.name_content.path.name == "/text"
     assert (
@@ -1107,7 +1107,7 @@ def test_operation_definition_fields():
     definition = _only_operation(_FULL_OPERATION)
     assert not isinstance(definition, ast.QualityDefinition)
     assert not isinstance(definition, ast.EncodingOperationDefinition)
-    assert definition.typed_name.name_type == ast.NameType.OPERATION
+    assert definition.typed_name.name_type == name_types.NameType.OPERATION
     assert (
         definition.typed_name.name_content.source_name == "mv:example.com:example:/add"
     )
@@ -1147,7 +1147,7 @@ def test_view_definition_fields():
     view = _only_operation(_FULL_OPERATION).views[0]
     assert isinstance(view, ast.ViewDefinition)
     assert isinstance(view.typed_name, ast.LocalTypedNameReference)
-    assert view.typed_name.name_type == ast.NameType.VIEW
+    assert view.typed_name.name_type == name_types.NameType.VIEW
     assert view.typed_name.source_typed_name == "view<left>"
     assert _slice(_FULL_OPERATION, view.typed_name.location) == "view<left>"
     assert _slice(_FULL_OPERATION, view.typed_name.name_content.location) == "left"
@@ -1176,7 +1176,9 @@ def test_view_definition_fields():
         "encoding<standard:/decimal>",
     ]
     encoding_requirement = view.constraints.requirements[1]
-    assert encoding_requirement.typed_global_name.name_type == ast.NameType.ENCODING
+    assert (
+        encoding_requirement.typed_global_name.name_type == name_types.NameType.ENCODING
+    )
     assert encoding_requirement.location == ast.SourceLocation(
         line=6, column=13, end_line=6, end_column=52
     )
@@ -1224,7 +1226,7 @@ def test_operation_execution_statement_without_arguments_fields():
     statement = _only_operation(_FULL_OPERATION).operation_statements[0]
     assert isinstance(statement, ast.OperationExecutionStatement)
     assert statement.arguments == ()
-    assert statement.operation.name_type == ast.NameType.OPERATION
+    assert statement.operation.name_type == name_types.NameType.OPERATION
     assert statement.operation.source_typed_name == "operation</other>"
     assert (
         statement.operation.full_typed_name
@@ -1260,12 +1262,12 @@ def test_operation_argument_statement_view_fields():
     assert isinstance(statement, ast.OperationExecutionStatement)
     argument = statement.arguments[0]
     assert isinstance(argument, ast.OperationArgumentStatement)
-    assert argument.view.name_type == ast.NameType.VIEW
+    assert argument.view.name_type == name_types.NameType.VIEW
     assert argument.view.source_typed_name == "view<a>"
     assert _slice(_FULL_OPERATION, argument.view.location) == "view<a>"
     looking_at = argument.looking_at
     assert isinstance(looking_at, ast.LocalTypedNameReference)
-    assert looking_at.name_type == ast.NameType.VIEW
+    assert looking_at.name_type == name_types.NameType.VIEW
     assert looking_at.source_typed_name == "view<left>"
     assert _slice(_FULL_OPERATION, looking_at.location) == "view<left>"
     assert _slice(_FULL_OPERATION, looking_at.name_content.location) == "left"
@@ -1397,7 +1399,7 @@ def _only_encoding_operation(source: str) -> ast.EncodingOperationDefinition:
 def test_encoding_operation_definition_fields():
     definition = _only_encoding_operation(_FULL_ENCODING_OPERATION)
     assert not isinstance(definition, ast.ValueOperationDefinition)
-    assert definition.typed_name.name_type == ast.NameType.ENCODING_OPERATION
+    assert definition.typed_name.name_type == name_types.NameType.ENCODING_OPERATION
     assert (
         definition.typed_name.name_content.source_name
         == "mv:example.com:example:/add_decimal"
@@ -1444,7 +1446,7 @@ def test_encoding_operation_execution_without_arguments_fields():
     statement = definition.operation_statements[0]
     assert isinstance(statement, ast.OperationExecutionStatement)
     assert statement.arguments == ()
-    assert statement.operation.name_type == ast.NameType.ENCODING_OPERATION
+    assert statement.operation.name_type == name_types.NameType.ENCODING_OPERATION
     assert statement.operation.source_typed_name == "encoding_operation</other>"
     assert (
         statement.operation.full_typed_name
@@ -1467,7 +1469,7 @@ def test_encoding_operation_execution_with_arguments_fields():
     definition = _only_encoding_operation(_FULL_ENCODING_OPERATION)
     statement = definition.operation_statements[1]
     assert isinstance(statement, ast.OperationExecutionStatement)
-    assert statement.operation.name_type == ast.NameType.ENCODING_OPERATION
+    assert statement.operation.name_type == name_types.NameType.ENCODING_OPERATION
     assert statement.operation.full_typed_name == "encoding_operation<standard:/sum>"
     assert statement.location == ast.SourceLocation(
         line=10, column=9, end_line=12, end_column=10
@@ -1481,7 +1483,7 @@ def test_encoding_operation_execution_with_arguments_fields():
     assert argument.view.source_typed_name == "view<a>"
     looking_at = argument.looking_at
     assert isinstance(looking_at, ast.LocalTypedNameReference)
-    assert looking_at.name_type == ast.NameType.VIEW
+    assert looking_at.name_type == name_types.NameType.VIEW
     assert looking_at.source_typed_name == "view<left>"
     assert argument.location == ast.SourceLocation(
         line=11, column=13, end_line=11, end_column=48
@@ -1526,7 +1528,7 @@ def test_action_operation_execution_statement_without_arguments_fields():
     statement = block.statements[0]
     assert isinstance(statement, ast.OperationExecutionStatement)
     assert statement.arguments == ()
-    assert statement.operation.name_type == ast.NameType.OPERATION
+    assert statement.operation.name_type == name_types.NameType.OPERATION
     assert (
         statement.operation.full_typed_name
         == "operation<mv:example.com:example:/clear>"

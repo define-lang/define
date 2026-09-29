@@ -9,7 +9,7 @@ from typing import ClassVar, Final
 
 import msgspec
 
-from define.compiler import ast, constants
+from define.compiler import ast, constants, name_types
 from define.compiler.validator.reference_graph import action_contract
 
 if typing.TYPE_CHECKING:
@@ -22,8 +22,8 @@ if typing.TYPE_CHECKING:
 # The statement that reads every input view and writes every output view of
 # each type of operation.
 _ALL_VIEWS_STATEMENTS: Final = {
-    ast.NameType.OPERATION: "execute the encoding operation",
-    ast.NameType.ENCODING_OPERATION: "execute the computer operation",
+    name_types.NameType.OPERATION: "execute the encoding operation",
+    name_types.NameType.ENCODING_OPERATION: "execute the computer operation",
 }
 
 
@@ -201,7 +201,7 @@ class UnreferencedViewDiagnostic(Diagnostic):
     """Diagnostic for an interface view never referenced in its operation."""
 
     view_name: str
-    operation_name_type: ast.NameType
+    operation_name_type: name_types.NameType
 
     @property
     def all_views_statement(self) -> str:
@@ -383,7 +383,7 @@ class UnreadInputViewDiagnostic(Diagnostic):
     """Diagnostic for an input view that its operation never reads."""
 
     view_name: str
-    operation_name_type: ast.NameType
+    operation_name_type: name_types.NameType
 
     @property
     def all_views_statement(self) -> str:
@@ -401,7 +401,7 @@ class UnwrittenOutputViewDiagnostic(Diagnostic):
     """Diagnostic for an output view that its operation never writes to."""
 
     view_name: str
-    operation_name_type: ast.NameType
+    operation_name_type: name_types.NameType
 
     @property
     def all_views_statement(self) -> str:

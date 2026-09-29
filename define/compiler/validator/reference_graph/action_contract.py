@@ -14,7 +14,7 @@ from define.compiler.validator.reference_graph.particles import particle_info
 if typing.TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from define.compiler import ast
+    from define.compiler import ast, chained_name
     from define.compiler.validator.reference_graph import (
         child_state,
         quality_assignment,
@@ -232,7 +232,7 @@ class ErrorGuarantee(PositionGuarantee, frozen=True):
 class CalleeContract(msgspec.Struct, frozen=True):
     """A callee's contract at its current action chain."""
 
-    action_chain: ast.ChainedNameTuple
+    action_chain: chained_name.ChainedNameTuple
     contract: ActionContract
 
 
@@ -305,7 +305,7 @@ class ActionContract(msgspec.Struct, frozen=True):
 
     occupancy_requirements: list[PositionOccupancyRequirement]
     value_requirements: list[ValueRequirement]
-    guarantees: dict[ast.ChainedNameTuple, PositionGuarantee]
+    guarantees: dict[chained_name.ChainedNameTuple, PositionGuarantee]
     # Callee contracts are referenced rather than folded in so that we don't
     # get unbounded memory growth from re-copying guarantees as we walk up a
     # call stack (and unbounded compute growth from having to iterate through

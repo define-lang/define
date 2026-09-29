@@ -30,6 +30,7 @@ py_test(
     deps = [
         ":scope_tracker",
         "//define/compiler:ast",
+        "//define/compiler:name_types",
         "@pypi//pytest",
     ],
 )

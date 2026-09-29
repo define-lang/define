@@ -5,7 +5,7 @@ from __future__ import annotations
 import typing
 from functools import cached_property
 
-from define.compiler import ast
+from define.compiler import ast, name_types
 
 if typing.TYPE_CHECKING:
     from collections.abc import Callable, Iterator
@@ -78,7 +78,7 @@ class QualityAssignments:
     def value_type(self) -> ast.GlobalTypedNameReference | None:
         """The value type assigned to the particle."""
         for quality in self.assignments:
-            if quality.name_type == ast.NameType.VALUE:
+            if quality.name_type == name_types.NameType.VALUE:
                 return quality
         return None
 

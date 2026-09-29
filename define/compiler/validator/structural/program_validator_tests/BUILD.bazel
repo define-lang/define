@@ -108,8 +108,8 @@ py_test(
     srcs = ["encoding_operation_definition_test.py"],
     data = ["//define/testdata/structural/encoding_operation_definition"],
     deps = [
-        "//define/compiler:ast",
         "//define/compiler:conftest",
+        "//define/compiler:name_types",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:test_helpers",
     ],
@@ -258,8 +258,8 @@ py_test(
     srcs = ["operation_definition_test.py"],
     data = ["//define/testdata/structural/operation_definition"],
     deps = [
-        "//define/compiler:ast",
         "//define/compiler:conftest",
+        "//define/compiler:name_types",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:test_helpers",
     ],

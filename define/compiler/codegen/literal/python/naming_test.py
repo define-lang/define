@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 from pathlib import Path
 
-from define.compiler import ast
+from define.compiler import ast, name_types
 from define.compiler.codegen.literal.python import naming
 
 _LOCATION = ast.start_of_file_location()
@@ -15,7 +15,9 @@ _FQUN = ast.Fqun(
 )
 
 
-def _typed_name(name_type: ast.NameType, path: str) -> ast.GlobalTypedNameInDefinition:
+def _typed_name(
+    name_type: name_types.NameType, path: str
+) -> ast.GlobalTypedNameInDefinition:
     return ast.GlobalTypedNameInDefinition(
         name_type=name_type,
         name_content=ast.DefinitionGlobalNameContent(
@@ -28,7 +30,7 @@ def _typed_name(name_type: ast.NameType, path: str) -> ast.GlobalTypedNameInDefi
 
 
 def _action_name(path: str) -> ast.GlobalTypedNameInDefinition:
-    return _typed_name(ast.NameType.ACTION, path)
+    return _typed_name(name_types.NameType.ACTION, path)
 
 
 def test_class_name_normal():
@@ -43,13 +45,13 @@ def test_class_name_multi_segment():
 
 def test_class_names_at_one_path_end_in_their_name_types():
     converter = naming.NameConverter()
-    assert converter.class_name(_typed_name(ast.NameType.POSITION, "/thing")) == (
-        "ThingPosition"
-    )
-    assert converter.class_name(_typed_name(ast.NameType.ACTION, "/thing")) == (
+    assert converter.class_name(
+        _typed_name(name_types.NameType.POSITION, "/thing")
+    ) == ("ThingPosition")
+    assert converter.class_name(_typed_name(name_types.NameType.ACTION, "/thing")) == (
         "ThingAction"
     )
-    assert converter.class_name(_typed_name(ast.NameType.VALUE, "/thing")) == (
+    assert converter.class_name(_typed_name(name_types.NameType.VALUE, "/thing")) == (
         "ThingValue"
     )
 
@@ -90,7 +92,7 @@ def test_module_name_short_component_unchanged():
 def test_class_reference_in_standard_universe():
     converter = naming.NameConverter()
     value_name = ast.GlobalTypedNameInDefinition(
-        name_type=ast.NameType.VALUE,
+        name_type=name_types.NameType.VALUE,
         name_content=ast.DefinitionGlobalNameContent(
             fqun=ast.Fqun(
                 multiverse=None,
@@ -122,8 +124,8 @@ def test_module_name_escapes_component_ending_in_underscore():
 
 def test_module_name_is_shared_by_definitions_at_one_path():
     converter = naming.NameConverter()
-    position = _typed_name(ast.NameType.POSITION, "/thing").name_content
-    action = _typed_name(ast.NameType.ACTION, "/thing").name_content
+    position = _typed_name(name_types.NameType.POSITION, "/thing").name_content
+    action = _typed_name(name_types.NameType.ACTION, "/thing").name_content
     assert converter.module_name(position) == converter.module_name(action)
 
 

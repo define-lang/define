@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from define.compiler import ast
+from define.compiler import ast, name_types
 from define.compiler.graphs import reference_graph
 
 _LOC = ast.start_of_file_location()
@@ -30,7 +30,7 @@ def _make_position(path_name: str) -> ast.PositionDefinition:
 
 
 _TRIGGER_REF = ast.LocalTypedNameReference(
-    name_type=ast.NameType.POSITION,
+    name_type=name_types.NameType.POSITION,
     name_content=ast.LocalNameContent(name="pp", location=_LOC),
     location=_LOC,
 )
@@ -59,7 +59,7 @@ def _make_action(path_name: str) -> ast.ActionDefinition:
 def _make_edge(
     source: ast.GlobalDefinition,
     target_path: str,
-    target_type: ast.NameType = ast.NameType.POSITION,
+    target_type: name_types.NameType = name_types.NameType.POSITION,
 ) -> reference_graph.ReferenceEdge:
     return reference_graph.ReferenceEdge(
         enclosing_definition=source,
@@ -279,7 +279,7 @@ class TestDfsPostorder:
             graph.add_definition(defn)
         _add(
             graph,
-            _make_edge(a, "/b", ast.NameType.ACTION),
+            _make_edge(a, "/b", name_types.NameType.ACTION),
             _make_edge(b, "/c"),
         )
         result = list(graph.dfs_postorder_from(a))
@@ -295,8 +295,8 @@ class TestDfsPostorder:
             graph.add_definition(defn)
         _add(
             graph,
-            _make_edge(a, "/b", ast.NameType.ACTION),
-            _make_edge(a, "/c", ast.NameType.ACTION),
+            _make_edge(a, "/b", name_types.NameType.ACTION),
+            _make_edge(a, "/c", name_types.NameType.ACTION),
             _make_edge(b, "/d"),
             _make_edge(c, "/d"),
         )
