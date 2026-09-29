@@ -1,0 +1,13 @@
+define the operation<standard:/boolean/not> {
+    define the view<value> {
+        it is read.
+        it is written.
+        it may only contain particles where {
+            it has the value</boolean>.
+        }
+    }
+
+    it does {
+        execute the encoding operation.
+    }
+}

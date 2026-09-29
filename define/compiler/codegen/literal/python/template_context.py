@@ -246,7 +246,7 @@ class EncodingOperationStatementKind(enum.Enum):
     """Discriminator for statement types in Encoding Operation functions."""
 
     BINARY_OPERATION = enum.auto()
-    NEGATION = enum.auto()
+    PREFIX_OPERATION = enum.auto()
     CALL = enum.auto()
 
 
@@ -277,12 +277,20 @@ class BinaryOperationContext(EncodingOperationStatementContext):
     result: str
 
 
-class NegationContext(EncodingOperationStatementContext):
-    """Negate a value with the prefix negation operator."""
+class PrefixOperator(enum.Enum):
+    """An operator written before the one value it applies to."""
+
+    NEGATE = enum.auto()
+    NOT = enum.auto()
+
+
+class PrefixOperationContext(EncodingOperationStatementContext):
+    """Apply a prefix operator to a value."""
 
     kind: ClassVar[EncodingOperationStatementKind] = (
-        EncodingOperationStatementKind.NEGATION
+        EncodingOperationStatementKind.PREFIX_OPERATION
     )
+    operator: PrefixOperator
     operand: str
     result: str
 

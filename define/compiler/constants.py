@@ -39,6 +39,7 @@ BUILT_IN_VALUE_ENCODINGS: Final = {
 # TODO: Read Encoding Operation associations from configuration (DLP 48) once
 # it exists.
 BUILT_IN_ENCODING_OPERATIONS: Final = {
+    f"operation<{STANDARD_UNIVERSE}:/boolean/not>": "/boolean/ascii/not",
     f"operation<{STANDARD_UNIVERSE}:/number/rational/absolute_value>": (
         "/number/decimal/ascii/absolute_value"
     ),
@@ -67,7 +68,7 @@ BUILT_IN_ENCODING_OPERATIONS: Final = {
         "/number/decimal/ascii/infix_multiply"
     ),
     f"operation<{STANDARD_UNIVERSE}:/number/rational/negate>": (
-        "/number/decimal/ascii/prefix_negate"
+        "/number/decimal/ascii/negate"
     ),
     f"operation<{STANDARD_UNIVERSE}:/number/rational/subtract>": (
         "/number/decimal/ascii/infix_subtract"

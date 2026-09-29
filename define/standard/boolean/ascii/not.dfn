@@ -1,9 +1,9 @@
-define the encoding_operation<standard:/number/decimal/ascii/prefix_negate> {
+define the encoding_operation<standard:/boolean/ascii/not> {
     define the view<value> {
         it is read.
         it is written.
         it may only contain particles where {
-            it has the encoding</number/decimal/ascii>.
+            it has the encoding</boolean/ascii>.
         }
     }
 

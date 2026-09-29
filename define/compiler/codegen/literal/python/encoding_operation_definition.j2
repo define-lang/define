@@ -9,8 +9,14 @@
             {%- when BinaryOperator::Multiply -%}
 *
             {%- endmatch %} {{ statement.right }}
-        {%- when EncodingOperationStatement::Negation with (statement) -%}
--{{ statement.operand }}
+        {%- when EncodingOperationStatement::PrefixOperation with (statement) -%}
+            {%- match statement.operator -%}
+                {%- when PrefixOperator::Negate -%}
+-
+                {%- when PrefixOperator::Not -%}
+not{{ " " }}
+            {%- endmatch -%}
+{{ statement.operand }}
         {%- when EncodingOperationStatement::Call with (statement) -%}
 {{ statement.function.name_in_module(module_name) }}({{ statement.arguments|join(", ") }})
     {%- endmatch -%}
@@ -37,8 +43,8 @@ def {{ self.function_name }}(
         {%- match statement %}
             {%- when EncodingOperationStatement::BinaryOperation with (binary_operation) %}
     {{ binary_operation.result }} = {{ expression(statement, module_name) }}
-            {%- when EncodingOperationStatement::Negation with (negation) %}
-    {{ negation.result }} = {{ expression(statement, module_name) }}
+            {%- when EncodingOperationStatement::PrefixOperation with (prefix_operation) %}
+    {{ prefix_operation.result }} = {{ expression(statement, module_name) }}
             {%- when EncodingOperationStatement::Call with (call) %}
     {% if !call.results.is_empty() %}{{ call.results|join(", ") }} = {% endif -%}
     {{ expression(statement, module_name) }}

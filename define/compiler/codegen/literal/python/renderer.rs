@@ -282,8 +282,28 @@ struct BinaryOperation {
     result: String,
 }
 
+enum PrefixOperator {
+    Negate,
+    Not,
+}
+
+impl<'a, 'py> FromPyObject<'a, 'py> for PrefixOperator {
+    type Error = PyErr;
+    fn extract(object: pyo3::Borrowed<'a, 'py, PyAny>) -> PyResult<Self> {
+        let name: String = object.getattr("name")?.extract()?;
+        match name.as_str() {
+            "NEGATE" => Ok(Self::Negate),
+            "NOT" => Ok(Self::Not),
+            _ => Err(PyRuntimeError::new_err(format!(
+                "Unknown prefix operator: {name}"
+            ))),
+        }
+    }
+}
+
 #[derive(FromPyObject)]
-struct Negation {
+struct PrefixOperation {
+    operator: PrefixOperator,
     operand: String,
     result: String,
 }
@@ -297,7 +317,7 @@ struct Call {
 
 enum EncodingOperationStatement {
     BinaryOperation(BinaryOperation),
-    Negation(Negation),
+    PrefixOperation(PrefixOperation),
     Call(Call),
 }
 
@@ -307,7 +327,7 @@ impl<'a, 'py> FromPyObject<'a, 'py> for EncodingOperationStatement {
         let kind: String = object.getattr("kind")?.getattr("name")?.extract()?;
         match kind.as_str() {
             "BINARY_OPERATION" => Ok(Self::BinaryOperation(object.extract()?)),
-            "NEGATION" => Ok(Self::Negation(object.extract()?)),
+            "PREFIX_OPERATION" => Ok(Self::PrefixOperation(object.extract()?)),
             "CALL" => Ok(Self::Call(object.extract()?)),
             _ => Err(PyRuntimeError::new_err(format!(
                 "Unknown Encoding Operation statement kind: {kind}"

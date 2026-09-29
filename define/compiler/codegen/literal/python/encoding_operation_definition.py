@@ -36,9 +36,10 @@ class _LiteralOperation(msgspec.Struct, frozen=True):
     literal: str
 
 
-class _Negation(msgspec.Struct, frozen=True):
-    """A computer operation that negates a view and writes the result back to the view."""
+class _PrefixOperation(msgspec.Struct, frozen=True):
+    """A computer operation that applies a prefix operator to a view and writes the result back to the view."""
 
+    operator: template_context.PrefixOperator
     view: str
 
 
@@ -73,8 +74,11 @@ def _binary_function_call(module_name: str, function_name: str) -> _FunctionCall
 # The computer operations that the compiler knows how to perform, by the
 # Encoding Operation that executes them.
 _COMPUTER_OPERATIONS: Final[
-    dict[str, _BinaryOperation | _LiteralOperation | _Negation | _FunctionCall]
+    dict[str, _BinaryOperation | _LiteralOperation | _PrefixOperation | _FunctionCall]
 ] = {
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/boolean/ascii/not>": _PrefixOperation(
+        operator=template_context.PrefixOperator.NOT, view="view<value>"
+    ),
     f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/absolute_value>": _unary_function_call(
         "builtins", "abs"
     ),
@@ -118,8 +122,8 @@ _COMPUTER_OPERATIONS: Final[
         right_view="view<take_away>",
         result_view="view<result>",
     ),
-    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/prefix_negate>": _Negation(
-        view="view<value>"
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/negate>": _PrefixOperation(
+        operator=template_context.PrefixOperator.NEGATE, view="view<value>"
     ),
     f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/truncate>": _unary_function_call(
         "math", "trunc"
@@ -256,11 +260,11 @@ class EncodingOperationDefinitionGenerator:
                     right=computer_operation.literal,
                     result=value,
                 ), [value]
-            case _Negation():
+            case _PrefixOperation():
                 value = view_names[computer_operation.view]
-                return template_context.NegationContext(operand=value, result=value), [
-                    value
-                ]
+                return template_context.PrefixOperationContext(
+                    operator=computer_operation.operator, operand=value, result=value
+                ), [value]
             case _FunctionCall():
                 result = view_names[computer_operation.result_view]
                 return template_context.CallContext(
@@ -274,7 +278,7 @@ class EncodingOperationDefinitionGenerator:
 
 def _lookup_computer_operation(
     definition: ast.EncodingOperationDefinition,
-) -> _BinaryOperation | _LiteralOperation | _Negation | _FunctionCall:
+) -> _BinaryOperation | _LiteralOperation | _PrefixOperation | _FunctionCall:
     # Code generation relies on validation to report computer operations that
     # the compiler cannot perform.
     return _COMPUTER_OPERATIONS[definition.typed_name.full_typed_name]

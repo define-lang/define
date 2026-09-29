@@ -63,6 +63,9 @@ define the potential action<my.domain.com:my_lib:/test> {
     } and it does {
         create a particle in position</flag>.
         set the value of position</flag> to literal<standard:/boolean>"true".
+        execute the operation<standard:/boolean/not> {
+            with view<value> looking at position</flag>.
+        }
         create a particle in position</total>.
         create a particle in position</remaining>.
         create a particle in position</product>.

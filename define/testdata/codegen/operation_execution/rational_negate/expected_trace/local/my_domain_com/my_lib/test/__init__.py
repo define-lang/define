@@ -25,7 +25,7 @@ class TestAction(literal.Action):
         literal.record_operation("test.set_value(/balance, 2.5)")
         self.on_particle.get_position(
             local.my_domain_com.my_lib.balance.BalancePosition
-        ).particle.value = standard.number.decimal.ascii.prefix_negate(
+        ).particle.value = standard.number.decimal.ascii.negate(
             self.on_particle.get_position(
                 local.my_domain_com.my_lib.balance.BalancePosition
             ).particle.value,
