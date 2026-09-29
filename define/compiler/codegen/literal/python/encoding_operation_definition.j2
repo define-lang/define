@@ -17,16 +17,16 @@
 {%- endmacro -%}
 def {{ self.function_name }}(
 {%- for parameter in self.parameters -%}
-    {{ parameter }}: float{% if !loop.last %}, {% endif %}
+    {{ parameter.name }}: {{ parameter.python_type }}{% if !loop.last %}, {% endif %}
 {%- endfor -%}
 ) -> {% if self.results.is_empty() -%}
     None
 {%- else if self.results.len() == 1 -%}
-    float
+    {{ self.results[0].python_type }}
 {%- else -%}
     tuple[
     {%- for result in self.results -%}
-        float{% if !loop.last %}, {% endif %}
+        {{ result.python_type }}{% if !loop.last %}, {% endif %}
     {%- endfor -%}
     ]
 {%- endif %}:
@@ -46,5 +46,5 @@ def {{ self.function_name }}(
     {%- endif %}
 {%- endfor %}
 {%- if !self.results.is_empty() && !self.return_last_statement %}
-    return {{ self.results|join(", ") }}
+    return {% for result in self.results %}{{ result.name }}{% if !loop.last %}, {% endif %}{% endfor %}
 {%- endif %}{{ "\n" }}

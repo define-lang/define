@@ -321,10 +321,16 @@ impl<'a, 'py> FromPyObject<'a, 'py> for EncodingOperationStatement {
 struct EncodingOperationDefinition {
     function_name: String,
     module_name: String,
-    parameters: Vec<String>,
+    parameters: Vec<TypedLocalName>,
     statements: Vec<EncodingOperationStatement>,
-    results: Vec<String>,
+    results: Vec<TypedLocalName>,
     return_last_statement: bool,
+}
+
+#[derive(FromPyObject)]
+struct TypedLocalName {
+    name: String,
+    python_type: String,
 }
 
 #[derive(Template)]

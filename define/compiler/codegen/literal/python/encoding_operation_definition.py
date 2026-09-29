@@ -7,7 +7,11 @@ from typing import TYPE_CHECKING, Final, final
 import msgspec
 
 from define.compiler import constants
-from define.compiler.codegen.literal.python import naming, template_context
+from define.compiler.codegen.literal.python import (
+    naming,
+    template_context,
+    value_types,
+)
 from define.compiler.validator import codegen_input
 
 if TYPE_CHECKING:
@@ -182,24 +186,27 @@ class EncodingOperationDefinitionGenerator:
                     definition, view_names
                 )
                 statements.append(computer_operation)
-        results = [
-            view_names[view.typed_name.source_typed_name]
-            for view in definition.views
-            if view.is_output
-        ]
+        parameters: list[template_context.TypedLocalName] = []
+        results: list[template_context.TypedLocalName] = []
+        for view in definition.views:
+            view_local = template_context.TypedLocalName(
+                name=view_names[view.typed_name.source_typed_name],
+                python_type=value_types.encoded_python_value_type(view.constraints),
+            )
+            if view.is_input:
+                parameters.append(view_local)
+            if view.is_output:
+                results.append(view_local)
+        result_names = [result.name for result in results]
         return template_context.EncodingOperationDefinitionContext(
             function_name=function.function_name,
             module_name=function.module_name,
-            parameters=[
-                view_names[view.typed_name.source_typed_name]
-                for view in definition.views
-                if view.is_input
-            ],
+            parameters=parameters,
             statements=statements,
             results=results,
             # Returning the last statement's expression avoids assigning
             # locals only to return them.
-            return_last_statement=bool(results) and last_written_names == results,
+            return_last_statement=bool(results) and last_written_names == result_names,
             imports=sorted(imports),
         )
 

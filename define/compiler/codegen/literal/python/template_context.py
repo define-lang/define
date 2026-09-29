@@ -298,14 +298,21 @@ class CallContext(EncodingOperationStatementContext):
     results: list[str]
 
 
+class TypedLocalName(msgspec.Struct):
+    """A Python local name and the type of its value."""
+
+    name: str
+    python_type: str
+
+
 class EncodingOperationDefinitionContext(msgspec.Struct):
     """Template context for rendering an Encoding Operation's function."""
 
     function_name: str
     module_name: str
-    parameters: list[str]
+    parameters: list[TypedLocalName]
     statements: list[EncodingOperationStatementContext]
-    results: list[str]
+    results: list[TypedLocalName]
     # Whether the last statement writes exactly the results, so the function
     # returns its expression instead.
     return_last_statement: bool
