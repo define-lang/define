@@ -138,9 +138,14 @@ class Parser:
         exception: ParseException | None,
         file_path: pathlib.PurePosixPath | None,
     ) -> list[diagnostics_mod.Diagnostic]:
-        stop_before_line = (
-            exception.line if exception is not None else None  # pragma: no mutate
-        )
+        if isinstance(exception, parser_exceptions.DefineSyntaxError):
+            stop_before_line = exception.location.line
+        # Lark's own exception gets here only when parser_error_classification
+        # fails to classify an error, which is a compiler bug.
+        elif exception is not None:  # pragma: no cover
+            stop_before_line = exception.line
+        else:
+            stop_before_line = None
         return indentation_validator.validate_indentation(
             source, stop_before_line, file_path=file_path
         )

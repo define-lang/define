@@ -1590,5 +1590,5 @@ def test_truncated_block_reports_missing_close_brace_while_transforming():
     result = parser.Parser().parse_and_transform(source)
     assert isinstance(result.exception, parser_exceptions.MissingCloseBrace)
     assert result.exception.token == ""
-    assert result.exception.line == 6
-    assert result.exception.column == 43
+    assert result.exception.location.line == 6
+    assert result.exception.location.column == 43

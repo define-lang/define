@@ -184,24 +184,24 @@ def test_requires_global_name(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert error.value.line == 1
-    assert error.value.column == 31
+    assert error.value.location.line == 1
+    assert error.value.location.column == 31
     assert error.value.token == "add"
 
 
 def test_requires_block(parse: Parse):
     with pytest.raises(parser_exceptions.MissingOpenBrace) as error:
         parse("define the encoding_operation<mv:define-lang.org:parser:/add>.\n")
-    assert error.value.line == 1
-    assert error.value.column == 62
+    assert error.value.location.line == 1
+    assert error.value.location.column == 62
     assert error.value.token == "."
 
 
 def test_requires_operation_statements_block(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidOperationDefinitionBlock) as error:
         parse("define the encoding_operation<mv:define-lang.org:parser:/add> {\n}\n")
-    assert error.value.line == 2
-    assert error.value.column == 1
+    assert error.value.location.line == 2
+    assert error.value.location.column == 1
     assert error.value.token == "}"
 
 
@@ -215,8 +215,8 @@ def test_disallows_local_position_definition(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert error.value.line == 2
-    assert error.value.column == 5
+    assert error.value.location.line == 2
+    assert error.value.location.column == 5
     assert error.value.token == "define the position"
 
 
@@ -225,8 +225,8 @@ def test_requires_statement(parse: Parse):
         parser_exceptions.InvalidEncodingOperationStatementsBlock
     ) as error:
         parse(_ENCODING_OPERATION_PREFIX + _ENCODING_OPERATION_SUFFIX)
-    assert error.value.line == 3
-    assert error.value.column == 5
+    assert error.value.location.line == 3
+    assert error.value.location.column == 5
     assert error.value.token == "}"
 
 
@@ -239,8 +239,8 @@ def test_disallows_action_statement(parse: Parse):
             + "        create a particle in position<p>.\n"
             + _ENCODING_OPERATION_SUFFIX
         )
-    assert error.value.line == 3
-    assert error.value.column == 9
+    assert error.value.location.line == 3
+    assert error.value.location.column == 9
     assert error.value.token == "create a particle in "
 
 
@@ -254,8 +254,8 @@ def test_disallows_action_statement_after_first_statement(parse: Parse):
             + "        create a particle in position<p>.\n"
             + _ENCODING_OPERATION_SUFFIX
         )
-    assert error.value.line == 4
-    assert error.value.column == 9
+    assert error.value.location.line == 4
+    assert error.value.location.column == 9
     assert error.value.token == "create a particle in "
 
 
@@ -268,8 +268,8 @@ def test_disallows_encoding_operation_statement(parse: Parse):
             + "        execute the encoding operation.\n"
             + _ENCODING_OPERATION_SUFFIX
         )
-    assert error.value.line == 3
-    assert error.value.column == 9
+    assert error.value.location.line == 3
+    assert error.value.location.column == 9
     assert error.value.token == "execute the encoding operation"
 
 
@@ -280,8 +280,8 @@ def test_disallows_value_operation_execution(parse: Parse):
             + "        execute the operation</other>.\n"
             + _ENCODING_OPERATION_SUFFIX
         )
-    assert error.value.line == 3
-    assert error.value.column == 21
+    assert error.value.location.line == 3
+    assert error.value.location.column == 21
     assert error.value.token == "operation"
 
 
@@ -292,8 +292,8 @@ def test_encoding_operation_name_type_cannot_be_position(parse: Parse):
             + "        execute the position</other>.\n"
             + _ENCODING_OPERATION_SUFFIX
         )
-    assert error.value.line == 3
-    assert error.value.column == 21
+    assert error.value.location.line == 3
+    assert error.value.location.column == 21
     assert error.value.token == "position"
 
 
@@ -304,8 +304,8 @@ def test_encoding_operation_extra_space_after_execute_the(parse: Parse):
             + "        execute the  encoding_operation</other>.\n"
             + _ENCODING_OPERATION_SUFFIX
         )
-    assert error.value.line == 3
-    assert error.value.column == 21
+    assert error.value.location.line == 3
+    assert error.value.location.column == 21
     assert error.value.token == " "
 
 
@@ -316,8 +316,8 @@ def test_computer_operation_requires_terminator(parse: Parse):
             + "        execute the computer operation\n"
             + _ENCODING_OPERATION_SUFFIX
         )
-    assert error.value.line == 3
-    assert error.value.column == 39
+    assert error.value.location.line == 3
+    assert error.value.location.column == 39
     assert error.value.token == "\n"
 
 
@@ -328,8 +328,8 @@ def test_encoding_operation_execution_requires_terminator_or_block(parse: Parse)
             + "        execute the encoding_operation</other>\n"
             + _ENCODING_OPERATION_SUFFIX
         )
-    assert error.value.line == 3
-    assert error.value.column == 47
+    assert error.value.location.line == 3
+    assert error.value.location.column == 47
     assert error.value.token == "\n"
 
 
@@ -340,8 +340,8 @@ def test_encoding_operation_execution_requires_global_name(parse: Parse):
             + "        execute the encoding_operation<other>.\n"
             + _ENCODING_OPERATION_SUFFIX
         )
-    assert error.value.line == 3
-    assert error.value.column == 40
+    assert error.value.location.line == 3
+    assert error.value.location.column == 40
     assert error.value.token == "other"
 
 
@@ -353,8 +353,8 @@ def test_arguments_block_requires_argument(parse: Parse):
             + "        }\n"
             + _ENCODING_OPERATION_SUFFIX
         )
-    assert error.value.line == 4
-    assert error.value.column == 9
+    assert error.value.location.line == 4
+    assert error.value.location.column == 9
     assert error.value.token == "}"
 
 
@@ -367,8 +367,8 @@ def test_value_operation_disallows_computer_operation(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert error.value.line == 3
-    assert error.value.column == 9
+    assert error.value.location.line == 3
+    assert error.value.location.column == 9
     assert error.value.token == "execute the computer operation"
 
 
@@ -381,8 +381,8 @@ def test_value_operation_disallows_encoding_operation_execution(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert error.value.line == 3
-    assert error.value.column == 21
+    assert error.value.location.line == 3
+    assert error.value.location.column == 21
     assert error.value.token == "encoding_operation"
 
 
@@ -397,8 +397,8 @@ def test_action_disallows_encoding_operation_execution(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert error.value.line == 5
-    assert error.value.column == 21
+    assert error.value.location.line == 5
+    assert error.value.location.column == 21
     assert error.value.token == "encoding_operation"
 
 
@@ -417,14 +417,14 @@ def test_disallows_local_context(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert error.value.line == 5
-    assert error.value.column == 9
+    assert error.value.location.line == 5
+    assert error.value.location.column == 9
     assert error.value.token == "define the encoding_operation"
 
 
 def test_computer_operation_is_not_a_global_definition(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as error:
         parse("execute the computer operation.\n")
-    assert error.value.line == 1
-    assert error.value.column == 1
+    assert error.value.location.line == 1
+    assert error.value.location.column == 1
     assert error.value.token == "execute the computer operation"

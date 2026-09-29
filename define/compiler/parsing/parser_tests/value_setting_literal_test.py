@@ -103,8 +103,8 @@ def test_literal_newline(parse: Parse):
             + '        set the value of position<dest> to literal</text>"a\nb".\n'
             + "    }\n}\n"
         )
-    assert error.value.line == 5
-    assert error.value.column == 60
+    assert error.value.location.line == 5
+    assert error.value.location.column == 60
     assert error.value.token == "\n"
 
 
@@ -115,8 +115,8 @@ def test_literal_target_is_invalid(parse: Parse):
             + '        set the value of literal</text>"a" to position<dest>.\n'
             + "    }\n}\n"
         )
-    assert error.value.line == 5
-    assert error.value.column == 26
+    assert error.value.location.line == 5
+    assert error.value.location.column == 26
     assert error.value.token == "literal"
 
 
@@ -127,8 +127,8 @@ def test_literal_missing_global_name(parse: Parse):
             + '        set the value of position<dest> to literal<text>"abc".\n'
             + "    }\n}\n"
         )
-    assert error.value.line == 5
-    assert error.value.column == 52
+    assert error.value.location.line == 5
+    assert error.value.location.column == 52
     assert error.value.token == "text"
 
 
@@ -139,8 +139,8 @@ def test_literal_empty_name(parse: Parse):
             + '        set the value of position<dest> to literal<>"abc".\n'
             + "    }\n}\n"
         )
-    assert error.value.line == 5
-    assert error.value.column == 52
+    assert error.value.location.line == 5
+    assert error.value.location.column == 52
     assert error.value.token == ">"
 
 
@@ -151,8 +151,8 @@ def test_literal_missing_open_angle_bracket(parse: Parse):
             + '        set the value of position<dest> to literal/text>"abc".\n'
             + "    }\n}\n"
         )
-    assert error.value.line == 5
-    assert error.value.column == 51
+    assert error.value.location.line == 5
+    assert error.value.location.column == 51
     assert error.value.token == "/text"
 
 
@@ -163,8 +163,8 @@ def test_literal_missing_close_angle_bracket(parse: Parse):
             + '        set the value of position<dest> to literal</text"abc".\n'
             + "    }\n}\n"
         )
-    assert error.value.line == 5
-    assert error.value.column == 63
+    assert error.value.location.line == 5
+    assert error.value.location.column == 63
     assert error.value.token == "\n"
     assert error.value.name == '/text"abc".'
 
@@ -176,8 +176,8 @@ def test_literal_missing_open_quote(parse: Parse):
             + "        set the value of position<dest> to literal</text>.\n"
             + "    }\n}\n"
         )
-    assert error.value.line == 5
-    assert error.value.column == 58
+    assert error.value.location.line == 5
+    assert error.value.location.column == 58
     assert error.value.token == "."
 
 
@@ -188,8 +188,8 @@ def test_literal_unquoted_content(parse: Parse):
             + "        set the value of position<dest> to literal</foo>5.\n"
             + "    }\n}\n"
         )
-    assert error.value.line == 5
-    assert error.value.column == 57
+    assert error.value.location.line == 5
+    assert error.value.location.column == 57
     assert error.value.token == "5."
 
 
@@ -200,8 +200,8 @@ def test_literal_missing_close_quote(parse: Parse):
             + '        set the value of position<dest> to literal</text>"abc.\n'
             + "    }\n}\n"
         )
-    assert error.value.line == 5
-    assert error.value.column == 63
+    assert error.value.location.line == 5
+    assert error.value.location.column == 63
     assert error.value.token == "\n"
 
 
@@ -221,8 +221,8 @@ def test_literal_cannot_be_child_of_position(parse: Parse):
             + '        set the value of position<dest> to position<parent>::literal</text>"abc".\n'
             + "    }\n}\n"
         )
-    assert error.value.line == 5
-    assert error.value.column == 62
+    assert error.value.location.line == 5
+    assert error.value.location.column == 62
     assert error.value.token == "literal"
 
 
@@ -233,8 +233,8 @@ def test_literal_cannot_start_position_reference(parse: Parse):
             + '        set the value of position<dest> to literal</text>"a"::position<child>.\n'
             + "    }\n}\n"
         )
-    assert error.value.line == 5
-    assert error.value.column == 61
+    assert error.value.location.line == 5
+    assert error.value.location.column == 61
     assert error.value.token == "::"
 
 
@@ -245,8 +245,8 @@ def test_literal_missing_terminator(parse: Parse):
             + '        set the value of position<dest> to literal</text>"a"\n'
             + "    }\n}\n"
         )
-    assert error.value.line == 5
-    assert error.value.column == 61
+    assert error.value.location.line == 5
+    assert error.value.location.column == 61
     assert error.value.token == "\n"
 
 
@@ -257,6 +257,6 @@ def test_literal_old_syntax_is_invalid(parse: Parse):
             + "        set the value of position<dest> to literal</text:abc>.\n"
             + "    }\n}\n"
         )
-    assert error.value.line == 5
-    assert error.value.column == 62
+    assert error.value.location.line == 5
+    assert error.value.location.column == 62
     assert error.value.token == "."

@@ -126,8 +126,8 @@ class TestFileStructuralValidatorErrors:
         result = file_validator.FileStructuralValidator(lark_parser).validate_file(ctx)
 
         assert isinstance(result.exception, parser_exceptions.InvalidEncodingError)
-        assert result.exception.line == 1
-        assert result.exception.column == 1
+        assert result.exception.location.line == 1
+        assert result.exception.location.column == 1
         assert result.exception.char == "\\x80"
 
     def test_encoding_error_multiline(self, tmp_path: Path, lark_parser: parser.Parser):
@@ -136,8 +136,8 @@ class TestFileStructuralValidatorErrors:
         result = file_validator.FileStructuralValidator(lark_parser).validate_file(ctx)
 
         assert isinstance(result.exception, parser_exceptions.InvalidEncodingError)
-        assert result.exception.line == 3
-        assert result.exception.column == 6
+        assert result.exception.location.line == 3
+        assert result.exception.location.column == 6
         assert result.exception.char == "\\x80"
 
 

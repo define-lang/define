@@ -72,16 +72,16 @@ def test_requires_local_name(parse: Parse):
             + "    }\n"
             + _OPERATION_SUFFIX
         )
-    assert error.value.line == 2
-    assert error.value.column == 21
+    assert error.value.location.line == 2
+    assert error.value.location.column == 21
     assert error.value.char == "/"
 
 
 def test_requires_block(parse: Parse):
     with pytest.raises(parser_exceptions.MissingOpenBrace) as error:
         parse(_OPERATION_PREFIX + "    define the view<left>.\n" + _OPERATION_SUFFIX)
-    assert error.value.line == 2
-    assert error.value.column == 26
+    assert error.value.location.line == 2
+    assert error.value.location.column == 26
     assert error.value.token == "."
 
 
@@ -145,8 +145,8 @@ def test_requires_direction_statement(parse: Parse):
             + "    }\n"
             + _OPERATION_SUFFIX
         )
-    assert error.value.line == 3
-    assert error.value.column == 9
+    assert error.value.location.line == 3
+    assert error.value.location.column == 9
     assert error.value.token == "it may only contain particles where"
 
 
@@ -158,8 +158,8 @@ def test_requires_direction_statement_in_empty_block(parse: Parse):
             + "    }\n"
             + _OPERATION_SUFFIX
         )
-    assert error.value.line == 3
-    assert error.value.column == 5
+    assert error.value.location.line == 3
+    assert error.value.location.column == 5
     assert error.value.token == "}"
 
 
@@ -176,8 +176,8 @@ def test_disallows_written_before_read(parse: Parse):
             + "    }\n"
             + _OPERATION_SUFFIX
         )
-    assert error.value.line == 4
-    assert error.value.column == 9
+    assert error.value.location.line == 4
+    assert error.value.location.column == 9
     assert error.value.token == "it is read"
 
 
@@ -194,8 +194,8 @@ def test_disallows_repeated_read(parse: Parse):
             + "    }\n"
             + _OPERATION_SUFFIX
         )
-    assert error.value.line == 4
-    assert error.value.column == 9
+    assert error.value.location.line == 4
+    assert error.value.location.column == 9
     assert error.value.token == "it is read"
 
 
@@ -213,8 +213,8 @@ def test_disallows_repeated_written(parse: Parse):
             + "    }\n"
             + _OPERATION_SUFFIX
         )
-    assert error.value.line == 5
-    assert error.value.column == 9
+    assert error.value.location.line == 5
+    assert error.value.location.column == 9
     assert error.value.token == "it is written"
 
 
@@ -231,8 +231,8 @@ def test_disallows_repeated_written_without_read(parse: Parse):
             + "    }\n"
             + _OPERATION_SUFFIX
         )
-    assert error.value.line == 4
-    assert error.value.column == 9
+    assert error.value.location.line == 4
+    assert error.value.location.column == 9
     assert error.value.token == "it is written"
 
 
@@ -250,8 +250,8 @@ def test_disallows_read_after_read_and_written(parse: Parse):
             + "    }\n"
             + _OPERATION_SUFFIX
         )
-    assert error.value.line == 5
-    assert error.value.column == 9
+    assert error.value.location.line == 5
+    assert error.value.location.column == 9
     assert error.value.token == "it is read"
 
 
@@ -268,8 +268,8 @@ def test_disallows_direction_statement_after_constraint_block(parse: Parse):
             + "    }\n"
             + _OPERATION_SUFFIX
         )
-    assert error.value.line == 7
-    assert error.value.column == 9
+    assert error.value.location.line == 7
+    assert error.value.location.column == 9
     assert error.value.token == "it is written"
 
 
@@ -282,8 +282,8 @@ def test_requires_constraint_block(parse: Parse):
             + "    }\n"
             + _OPERATION_SUFFIX
         )
-    assert error.value.line == 4
-    assert error.value.column == 5
+    assert error.value.location.line == 4
+    assert error.value.location.column == 5
     assert error.value.token == "}"
 
 
@@ -298,8 +298,8 @@ def test_requires_constraint_block_after_both_directions(parse: Parse):
             + "    }\n"
             + _OPERATION_SUFFIX
         )
-    assert error.value.line == 5
-    assert error.value.column == 9
+    assert error.value.location.line == 5
+    assert error.value.location.column == 9
     assert error.value.token == "it has the"
 
 
@@ -320,8 +320,8 @@ def test_disallows_direction_statement_in_position_definition(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert error.value.line == 3
-    assert error.value.column == 9
+    assert error.value.location.line == 3
+    assert error.value.location.column == 9
     assert error.value.token == "it is read"
 
 
@@ -336,8 +336,8 @@ def test_requires_constraint(parse: Parse):
             + "    }\n"
             + _OPERATION_SUFFIX
         )
-    assert error.value.line == 5
-    assert error.value.column == 9
+    assert error.value.location.line == 5
+    assert error.value.location.column == 9
     assert error.value.token == "}"
 
 
@@ -353,8 +353,8 @@ def test_disallows_literal_constraint(parse: Parse):
             + "    }\n"
             + _OPERATION_SUFFIX
         )
-    assert error.value.line == 5
-    assert error.value.column == 24
+    assert error.value.location.line == 5
+    assert error.value.location.column == 24
     assert error.value.token == "literal"
 
 
@@ -370,8 +370,8 @@ def test_disallows_quality_implication(parse: Parse):
             + "    }\n"
             + _OPERATION_SUFFIX
         )
-    assert error.value.line == 3
-    assert error.value.column == 9
+    assert error.value.location.line == 3
+    assert error.value.location.column == 9
     assert error.value.token == "it also assigns the"
 
 
@@ -387,8 +387,8 @@ def test_disallows_direction_statement_after_potential_position_constraint_block
             + "    it is read.\n"
             + "}\n"
         )
-    assert error.value.line == 5
-    assert error.value.column == 5
+    assert error.value.location.line == 5
+    assert error.value.location.column == 5
     assert error.value.token == "it is read"
 
 
@@ -411,8 +411,8 @@ def test_disallows_direction_statement_after_local_position_constraint_block(
             + "    }\n"
             + "}\n"
         )
-    assert error.value.line == 6
-    assert error.value.column == 9
+    assert error.value.location.line == 6
+    assert error.value.location.column == 9
     assert error.value.token == "it is written"
 
 
@@ -425,8 +425,8 @@ def test_disallows_global_context(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert error.value.line == 1
-    assert error.value.column == 1
+    assert error.value.location.line == 1
+    assert error.value.location.column == 1
     assert error.value.token == "define the view"
 
 
@@ -447,6 +447,6 @@ def test_disallows_action_context(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert error.value.line == 2
-    assert error.value.column == 5
+    assert error.value.location.line == 2
+    assert error.value.location.column == 5
     assert error.value.token == "define the view"

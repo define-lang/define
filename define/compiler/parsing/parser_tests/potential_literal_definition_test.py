@@ -46,16 +46,16 @@ def test_comments_and_blank_lines(parse: Parse):
 def test_requires_global_name(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidGlobalName) as error:
         _ = parse("define the potential literal<decimal> {\n}\n")
-    assert error.value.line == 1
-    assert error.value.column == 30
+    assert error.value.location.line == 1
+    assert error.value.location.column == 30
     assert error.value.token == "decimal"
 
 
 def test_requires_block(parse: Parse):
     with pytest.raises(parser_exceptions.MissingOpenBrace) as error:
         _ = parse("define the potential literal<mv:define-lang.org:parser:/decimal>.\n")
-    assert error.value.line == 1
-    assert error.value.column == 65
+    assert error.value.location.line == 1
+    assert error.value.location.column == 65
     assert error.value.token == "."
 
 
@@ -67,8 +67,8 @@ def test_requires_encoding_constraint(parse: Parse):
             "define the potential literal<mv:define-lang.org:parser:/decimal> {\n"
             + "}\n"
         )
-    assert error.value.line == 2
-    assert error.value.column == 1
+    assert error.value.location.line == 2
+    assert error.value.location.column == 1
     assert error.value.token == "}"
 
 
@@ -81,8 +81,8 @@ def test_requires_encoding_type(parse: Parse):
             + "    it has the value</decimal>.\n"
             + "}\n"
         )
-    assert error.value.line == 2
-    assert error.value.column == 16
+    assert error.value.location.line == 2
+    assert error.value.location.column == 16
     assert error.value.token == "value"
 
 
@@ -93,8 +93,8 @@ def test_encoding_requires_global_name(parse: Parse):
             + "    it has the encoding<decimal>.\n"
             + "}\n"
         )
-    assert error.value.line == 2
-    assert error.value.column == 25
+    assert error.value.location.line == 2
+    assert error.value.location.column == 25
     assert error.value.token == "decimal"
 
 
@@ -105,8 +105,8 @@ def test_encoding_requires_terminator(parse: Parse):
             + "    it has the encoding</decimal>\n"
             + "}\n"
         )
-    assert error.value.line == 2
-    assert error.value.column == 34
+    assert error.value.location.line == 2
+    assert error.value.location.column == 34
     assert error.value.token == "\n"
 
 
@@ -118,8 +118,8 @@ def test_disallows_multiple_encodings(parse: Parse):
             + "    it has the encoding</decimal>.\n"
             + "}\n"
         )
-    assert error.value.line == 3
-    assert error.value.column == 5
+    assert error.value.location.line == 3
+    assert error.value.location.column == 5
     assert error.value.token == "it has the"
 
 
@@ -136,8 +136,8 @@ def test_disallows_local_context(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert error.value.line == 5
-    assert error.value.column == 9
+    assert error.value.location.line == 5
+    assert error.value.location.column == 9
     assert error.value.token == "define the potential literal"
 
 
@@ -150,8 +150,8 @@ def test_disallows_particle_constraint(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert error.value.line == 3
-    assert error.value.column == 20
+    assert error.value.location.line == 3
+    assert error.value.location.column == 20
     assert error.value.token == "literal"
 
 
@@ -162,6 +162,6 @@ def test_disallows_quality_implication(parse: Parse):
             + "    it also assigns the literal</decimal>.\n"
             + "}\n"
         )
-    assert error.value.line == 2
-    assert error.value.column == 25
+    assert error.value.location.line == 2
+    assert error.value.location.column == 25
     assert error.value.token == "literal"

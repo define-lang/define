@@ -41,21 +41,6 @@ class DefineSyntaxError(exceptions.DefineError):
         super().__init__(location)
         self.location = location
 
-    @property
-    def line(self) -> int:
-        """The line where the invalid source starts."""
-        return self.location.line
-
-    @property
-    def column(self) -> int:
-        """The column where the invalid source starts."""
-        return self.location.column
-
-    @property
-    def file_path(self) -> pathlib.PurePosixPath | None:
-        """The file containing the invalid source, if it has one."""
-        return self.location.file_path
-
     def _message_fields(self) -> dict[str, object]:
         """Return fields available for message formatting."""
         return dict(self.__dict__)

@@ -100,5 +100,5 @@ def test_requires_fqun(
     assert isinstance(
         exception, parser_exceptions.DefinitionGlobalNameContentRequiresFqun
     )
-    assert exception.line == 2
-    assert exception.column == 21
+    assert exception.location.line == 2
+    assert exception.location.column == 21

@@ -225,8 +225,8 @@ def test_missing_to(parse: Parse):
         parse(
             _ACTION_PREFIX + "        set the value of position<dest>.\n" + "    }\n}\n"
         )
-    assert error.value.line == 5
-    assert error.value.column == 40
+    assert error.value.location.line == 5
+    assert error.value.location.column == 40
     assert error.value.token == "."
 
 
@@ -237,16 +237,16 @@ def test_missing_source(parse: Parse):
             + "        set the value of position<dest> to .\n"
             + "    }\n}\n"
         )
-    assert error.value.line == 5
-    assert error.value.column == 44
+    assert error.value.location.line == 5
+    assert error.value.location.column == 44
     assert error.value.token == "."
 
 
 def test_missing_target(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedPositionOrAction) as error:
         parse(_ACTION_PREFIX + "        set the value of .\n" + "    }\n}\n")
-    assert error.value.line == 5
-    assert error.value.column == 26
+    assert error.value.location.line == 5
+    assert error.value.location.column == 26
     assert error.value.token == "."
 
 
@@ -257,24 +257,24 @@ def test_missing_terminator(parse: Parse):
             + "        set the value of position<dest> to position<src>\n"
             + "    }\n}\n"
         )
-    assert error.value.line == 5
-    assert error.value.column == 57
+    assert error.value.location.line == 5
+    assert error.value.location.column == 57
     assert error.value.token == "\n"
 
 
 def test_value_setting_outside_action(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as error:
         parse("set the value of position<dest> to position<src>.\n")
-    assert error.value.line == 1
-    assert error.value.column == 1
+    assert error.value.location.line == 1
+    assert error.value.location.column == 1
     assert error.value.token == "set the value of "
 
 
 def test_missing_to_at_eof(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidValueSettingStatementSyntax) as error:
         parse(_ACTION_PREFIX + "        set the value of position<dest>")
-    assert error.value.line == 5
-    assert error.value.column == 39
+    assert error.value.location.line == 5
+    assert error.value.location.column == 39
     assert error.value.token == ""
 
 
@@ -285,8 +285,8 @@ def test_missing_to_after_chained_target(parse: Parse):
             + "        set the value of position<dest>::position<child>.\n"
             + "    }\n}\n"
         )
-    assert error.value.line == 5
-    assert error.value.column == 57
+    assert error.value.location.line == 5
+    assert error.value.location.column == 57
     assert error.value.token == "."
 
 
@@ -300,8 +300,8 @@ def test_missing_to_during_transformation(p: parser.Parser):
     assert isinstance(
         result.exception, parser_exceptions.InvalidValueSettingStatementSyntax
     )
-    assert result.exception.line == 6
-    assert result.exception.column == 39
+    assert result.exception.location.line == 6
+    assert result.exception.location.column == 39
     assert result.exception.token == ""
 
 
@@ -314,6 +314,6 @@ def test_missing_move_to_after_value_setting(p: parser.Parser):
     )
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.InvalidMoveStatementSyntax)
-    assert result.exception.line == 6
-    assert result.exception.column == 43
+    assert result.exception.location.line == 6
+    assert result.exception.location.column == 43
     assert result.exception.token == "."

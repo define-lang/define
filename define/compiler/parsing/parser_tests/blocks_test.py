@@ -23,16 +23,16 @@ def test_empty_block_on_position(parse: Parse):
     ) as exc_info:
         parse("define the potential position<standard:/path> {\n}\n")
     assert str(exc_info.value.token) == "}"
-    assert exc_info.value.line == 2
-    assert exc_info.value.column == 1
+    assert exc_info.value.location.line == 2
+    assert exc_info.value.location.column == 1
 
 
 def test_empty_block_on_action(parse: Parse):
     with pytest.raises(parser_exceptions.MissingActionDefinitionSyntax) as exc_info:
         parse("define the potential action<standard:/path> {\n}\n")
     assert str(exc_info.value.token) == "}"
-    assert exc_info.value.line == 2
-    assert exc_info.value.column == 1
+    assert exc_info.value.location.line == 2
+    assert exc_info.value.location.column == 1
 
 
 def test_block_with_blank_lines(parse: Parse):
@@ -182,30 +182,30 @@ def test_file_ending_after_block_open(parse: Parse):
         parser_exceptions.MissingPotentialPositionDefinitionContent
     ) as exc_info:
         parse("define the potential position<standard:/path> {\n")
-    assert exc_info.value.line == 1
-    assert exc_info.value.column == 48
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 48
 
 
 def test_missing_newline_after_block_open(parse: Parse):
     with pytest.raises(parser_exceptions.EmptyBlock) as exc_info:
         parse("define the potential position<standard:/path> {}\n")
-    assert exc_info.value.line == 1
-    assert exc_info.value.column == 48
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 48
 
 
 def test_no_space_before_brace(parse: Parse):
     with pytest.raises(parser_exceptions.MissingWhitespaceBeforeBrace) as exc_info:
         parse("define the potential position<standard:/path>{\n")
     assert str(exc_info.value.token) == "{"
-    assert exc_info.value.line == 1
-    assert exc_info.value.column == 46
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 46
 
 
 def test_missing_terminator_still_works(parse: Parse):
     with pytest.raises(parser_exceptions.MissingTerminatorOrBrace) as exc_info:
         parse("define the potential position<standard:/path>\n")
-    assert exc_info.value.line == 1
-    assert exc_info.value.column == 46
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 46
 
 
 def test_missing_outer_block_close_with_inner_block_message(parse: Parse):
@@ -218,8 +218,8 @@ def test_missing_outer_block_close_with_inner_block_message(parse: Parse):
             + "    } and it does {\n"
             + "    }\n"
         )
-    assert exc_info.value.line == 6
-    assert exc_info.value.column == 6
+    assert exc_info.value.location.line == 6
+    assert exc_info.value.location.column == 6
 
 
 def test_position_constraint_invalid_type_keyword(parse: Parse):
@@ -233,5 +233,5 @@ def test_position_constraint_invalid_type_keyword(parse: Parse):
             + "define the potential position<my_lib:/path>.\n"
         )
     assert str(exc_info.value.token) == "osition<my_lib:/path"
-    assert exc_info.value.line == 3
-    assert exc_info.value.column == 20
+    assert exc_info.value.location.line == 3
+    assert exc_info.value.location.column == 20

@@ -73,8 +73,8 @@ def test_chained_name_is_parse_error(parse: Parse):
         )
     assert exc_info.value.token == "::"
     assert exc_info.value.token.type == "CHAIN_SEPARATOR"
-    assert exc_info.value.line == 4
-    assert exc_info.value.column == 26
+    assert exc_info.value.location.line == 4
+    assert exc_info.value.location.column == 26
 
 
 def test_global_name_is_parse_error(parse: Parse):
@@ -87,8 +87,8 @@ def test_global_name_is_parse_error(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.line == 3
-    assert exc_info.value.column == 22
+    assert exc_info.value.location.line == 3
+    assert exc_info.value.location.column == 22
     assert exc_info.value.char == "/"
 
 
@@ -103,8 +103,8 @@ def test_trigger_block_same_line_no_space(parse: Parse):
         )
     assert exc_info.value.token == "}"
     assert exc_info.value.token.type == "CLOSE_BRACE"
-    assert exc_info.value.line == 3
-    assert exc_info.value.column == 22
+    assert exc_info.value.location.line == 3
+    assert exc_info.value.location.column == 22
 
 
 def test_trigger_block_same_line_with_space(parse: Parse):
@@ -118,8 +118,8 @@ def test_trigger_block_same_line_with_space(parse: Parse):
         )
     assert exc_info.value.token == " "
     assert exc_info.value.token.type == "SPACE"
-    assert exc_info.value.line == 3
-    assert exc_info.value.column == 22
+    assert exc_info.value.location.line == 3
+    assert exc_info.value.location.column == 22
 
 
 def test_trigger_block_closing_brace_same_line(parse: Parse):
@@ -132,8 +132,8 @@ def test_trigger_block_closing_brace_same_line(parse: Parse):
         )
     assert exc_info.value.token == "}"
     assert exc_info.value.token.type == "CLOSE_BRACE"
-    assert exc_info.value.line == 3
-    assert exc_info.value.column == 22
+    assert exc_info.value.location.line == 3
+    assert exc_info.value.location.column == 22
 
 
 def test_empty_trigger_block_is_error(parse: Parse):
@@ -147,8 +147,8 @@ def test_empty_trigger_block_is_error(parse: Parse):
         )
     assert exc_info.value.token == "}"
     assert exc_info.value.token.type == "CLOSE_BRACE"
-    assert exc_info.value.line == 3
-    assert exc_info.value.column == 5
+    assert exc_info.value.location.line == 3
+    assert exc_info.value.location.column == 5
 
 
 def test_invalid_content_in_trigger_block(parse: Parse):
@@ -164,8 +164,8 @@ def test_invalid_content_in_trigger_block(parse: Parse):
         )
     assert exc_info.value.token == "nonsense"
     assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
-    assert exc_info.value.line == 4
-    assert exc_info.value.column == 9
+    assert exc_info.value.location.line == 4
+    assert exc_info.value.location.column == 9
 
 
 def test_missing_terminator_after_trigger_condition(parse: Parse):
@@ -181,8 +181,8 @@ def test_missing_terminator_after_trigger_condition(parse: Parse):
         )
     assert exc_info.value.token == "\n"
     assert exc_info.value.token.type == "NEWLINE"
-    assert exc_info.value.line == 4
-    assert exc_info.value.column == 41
+    assert exc_info.value.location.line == 4
+    assert exc_info.value.location.column == 41
 
 
 def test_missing_space_before_has_a_particle(parse: Parse):
@@ -196,8 +196,8 @@ def test_missing_space_before_has_a_particle(parse: Parse):
             + "    }\n"
             + "}\n"
         )
-    assert exc_info.value.line == 4
-    assert exc_info.value.column == 26
+    assert exc_info.value.location.line == 4
+    assert exc_info.value.location.column == 26
 
 
 def test_missing_has_a_particle(parse: Parse):
@@ -213,5 +213,5 @@ def test_missing_has_a_particle(parse: Parse):
         )
     assert exc_info.value.token == "."
     assert exc_info.value.token.type == "DOT"
-    assert exc_info.value.line == 4
-    assert exc_info.value.column == 26
+    assert exc_info.value.location.line == 4
+    assert exc_info.value.location.column == 26

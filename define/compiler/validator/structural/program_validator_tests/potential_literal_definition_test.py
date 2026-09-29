@@ -127,8 +127,8 @@ def test_requires_fqun(
     assert isinstance(
         exception, parser_exceptions.DefinitionGlobalNameContentRequiresFqun
     )
-    assert exception.line == 2
-    assert exception.column == 30
+    assert exception.location.line == 2
+    assert exception.location.column == 30
 
 
 def test_path_mismatch(validate_testdata_structural: ValidateTestdataStructural):

@@ -98,32 +98,32 @@ def test_disallows_encoding_operation_execution(parse: Parse):
             + "        execute the encoding operation.\n"
             + _ACTION_SUFFIX
         )
-    assert error.value.line == 6
-    assert error.value.column == 9
+    assert error.value.location.line == 6
+    assert error.value.location.column == 9
     assert error.value.token == "execute the encoding operation"
 
 
 def test_operation_execution_requires_terminator_or_block(parse: Parse):
     with pytest.raises(parser_exceptions.MissingTerminatorOrBrace) as error:
         parse(_ACTION_PREFIX + "        execute the operation</add>\n" + _ACTION_SUFFIX)
-    assert error.value.line == 6
-    assert error.value.column == 36
+    assert error.value.location.line == 6
+    assert error.value.location.column == 36
     assert error.value.token == "\n"
 
 
 def test_operation_name_type_cannot_be_position(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedOperation) as error:
         parse(_ACTION_PREFIX + "        execute the position</add>.\n" + _ACTION_SUFFIX)
-    assert error.value.line == 6
-    assert error.value.column == 21
+    assert error.value.location.line == 6
+    assert error.value.location.column == 21
     assert error.value.token == "position"
 
 
 def test_operation_missing_space_after_execute_the(parse: Parse):
     with pytest.raises(parser_exceptions.MissingWhitespace) as error:
         parse(_ACTION_PREFIX + "        execute theoperation</add>.\n" + _ACTION_SUFFIX)
-    assert error.value.line == 6
-    assert error.value.column == 20
+    assert error.value.location.line == 6
+    assert error.value.location.column == 20
     assert error.value.token == "operation"
 
 
@@ -135,8 +135,8 @@ def test_arguments_block_requires_argument(parse: Parse):
             + "        }\n"
             + _ACTION_SUFFIX
         )
-    assert error.value.line == 7
-    assert error.value.column == 9
+    assert error.value.location.line == 7
+    assert error.value.location.column == 9
     assert error.value.token == "}"
 
 
@@ -149,8 +149,8 @@ def test_arguments_block_disallows_action_statement(parse: Parse):
             + "        }\n"
             + _ACTION_SUFFIX
         )
-    assert error.value.line == 7
-    assert error.value.column == 13
+    assert error.value.location.line == 7
+    assert error.value.location.column == 13
     assert error.value.token == "create a particle in "
 
 
@@ -166,8 +166,8 @@ def test_arguments_block_disallows_action_statement_after_first_argument(
             + "        }\n"
             + _ACTION_SUFFIX
         )
-    assert error.value.line == 8
-    assert error.value.column == 13
+    assert error.value.location.line == 8
+    assert error.value.location.column == 13
     assert error.value.token == "create a particle in "
 
 
@@ -180,6 +180,6 @@ def test_argument_cannot_look_at_value(parse: Parse):
             + "        }\n"
             + _ACTION_SUFFIX
         )
-    assert error.value.line == 7
-    assert error.value.column == 37
+    assert error.value.location.line == 7
+    assert error.value.location.column == 37
     assert error.value.token == "value"

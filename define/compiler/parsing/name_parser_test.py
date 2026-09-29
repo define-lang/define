@@ -173,8 +173,8 @@ def test_global_name_definition_rejects_bare_slash():
         parser_exceptions.DefinitionGlobalNameContentRequiresFqun
     ) as error:
         name_parser.parse_global_name_definition(token)
-    assert error.value.line == 1
-    assert error.value.column == 10
+    assert error.value.location.line == 1
+    assert error.value.location.column == 10
     assert error.value.location.end_column == 11
 
 
@@ -184,8 +184,8 @@ def test_global_name_definition_requires_fqun():
         parser_exceptions.DefinitionGlobalNameContentRequiresFqun
     ) as error:
         name_parser.parse_global_name_definition(token)
-    assert error.value.line == 1
-    assert error.value.column == 30
+    assert error.value.location.line == 1
+    assert error.value.location.column == 30
     assert error.value.location.end_column == 40
 
 
@@ -193,8 +193,8 @@ def test_global_name_definition_rejects_too_many_fqun_parts():
     token = _make_name_content_token("a:b:c:d:/x", line=1, column=1)
     with pytest.raises(parser_exceptions.GlobalNameInvalidFqunFormat) as error:
         name_parser.parse_global_name_definition(token)
-    assert error.value.line == 1
-    assert error.value.column == 1
+    assert error.value.location.line == 1
+    assert error.value.location.column == 1
 
 
 def test_global_name_reference_rejects_too_many_fqun_parts():
@@ -204,10 +204,10 @@ def test_global_name_reference_rejects_too_many_fqun_parts():
     file_path = PurePosixPath("set_value.dfn")
     with pytest.raises(parser_exceptions.GlobalNameInvalidFqunFormat) as error:
         name_parser.parse_global_name_reference(token, file_path)
-    assert error.value.line == 5
-    assert error.value.column == 52
+    assert error.value.location.line == 5
+    assert error.value.location.column == 52
     assert error.value.location.end_column == 83
-    assert error.value.file_path == file_path
+    assert error.value.location.file_path == file_path
 
 
 def test_positions_for_fqun_and_path():
@@ -237,10 +237,10 @@ def test_parse_literal_content_invalid_escape():
     file_path = PurePosixPath("set_value.dfn")
     with pytest.raises(parser_exceptions.InvalidLiteralEscape) as error:
         name_parser.parse_literal_content(token, file_path)
-    assert error.value.line == 3
-    assert error.value.column == 26
+    assert error.value.location.line == 3
+    assert error.value.location.column == 26
     assert error.value.char == "t"
-    assert error.value.file_path == file_path
+    assert error.value.location.file_path == file_path
 
 
 @pytest.mark.parametrize("escape", [r"\>", r"\:"])
@@ -248,8 +248,8 @@ def test_parse_literal_content_invalid_punctuation_escapes(escape: str):
     token = _make_name_content_token(escape, 2, 10)
     with pytest.raises(parser_exceptions.InvalidLiteralEscape) as error:
         name_parser.parse_literal_content(token)
-    assert error.value.line == 2
-    assert error.value.column == 11
+    assert error.value.location.line == 2
+    assert error.value.location.column == 11
     assert error.value.char == escape[1]
 
 
@@ -272,6 +272,6 @@ def test_parse_literal_content_invalid_file_characters(char: str):
     token = _make_name_content_token("before" + char + "after", 4, 10)
     with pytest.raises(parser_exceptions.InvalidLiteralCharacter) as error:
         name_parser.parse_literal_content(token)
-    assert error.value.line == 4
-    assert error.value.column == 16
+    assert error.value.location.line == 4
+    assert error.value.location.column == 16
     assert error.value.char == char

@@ -20,16 +20,16 @@ def test_file_all_spaces(parse: Parse):
     with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
         parse("   ")
     assert str(exc_info.value.char) == " "
-    assert exc_info.value.line == 1
-    assert exc_info.value.column == 1
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 1
 
 
 def test_file_spaces_and_newlines_only(parse: Parse):
     with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
         parse(" \n  \n ")
     assert str(exc_info.value.char) == " "
-    assert exc_info.value.line == 1
-    assert exc_info.value.column == 1
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 1
 
 
 def test_extra_space_after_define_in_position_definition(parse: Parse):
@@ -37,8 +37,8 @@ def test_extra_space_after_define_in_position_definition(parse: Parse):
         parse("define  the potential position<mv:define-lang.org:parser:/path>.\n")
     assert exc_info.value.token == "define"
     assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
-    assert exc_info.value.line == 1
-    assert exc_info.value.column == 1
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 1
 
 
 def test_extra_space_after_the_in_position_definition(parse: Parse):
@@ -46,8 +46,8 @@ def test_extra_space_after_the_in_position_definition(parse: Parse):
         parse("define the  potential position<mv:define-lang.org:parser:/path>.\n")
     assert exc_info.value.token == "define"
     assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
-    assert exc_info.value.line == 1
-    assert exc_info.value.column == 1
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 1
 
 
 def test_extra_space_after_potential_in_position_definition(
@@ -57,8 +57,8 @@ def test_extra_space_after_potential_in_position_definition(
         parse("define the potential  position<mv:define-lang.org:parser:/path>.\n")
     assert exc_info.value.token == "define"
     assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
-    assert exc_info.value.line == 1
-    assert exc_info.value.column == 1
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 1
 
 
 def test_extra_space_after_potential_in_action_definition(parse: Parse):
@@ -66,8 +66,8 @@ def test_extra_space_after_potential_in_action_definition(parse: Parse):
         parse("define the potential  action<mv:define-lang.org:parser:/path>.\n")
     assert exc_info.value.token == "define"
     assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
-    assert exc_info.value.line == 1
-    assert exc_info.value.column == 1
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 1
 
 
 def test_extra_space_in_local_position_definition_in_action_block(
@@ -86,8 +86,8 @@ def test_extra_space_in_local_position_definition_in_action_block(
         )
     assert exc_info.value.token == "define"
     assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
-    assert exc_info.value.line == 3
-    assert exc_info.value.column == 5
+    assert exc_info.value.location.line == 3
+    assert exc_info.value.location.column == 5
 
 
 def test_extra_space_in_trigger_clause_in_action_block(parse: Parse):
@@ -103,8 +103,8 @@ def test_extra_space_in_trigger_clause_in_action_block(parse: Parse):
         )
     assert exc_info.value.token == "it"
     assert exc_info.value.token.type == "LOCAL_NAME_CONTENT"
-    assert exc_info.value.line == 3
-    assert exc_info.value.column == 5
+    assert exc_info.value.location.line == 3
+    assert exc_info.value.location.column == 5
 
 
 def test_extra_space_in_and_it_does_clause_in_action_block(parse: Parse):
@@ -119,8 +119,8 @@ def test_extra_space_in_and_it_does_clause_in_action_block(parse: Parse):
             + "}\n"
         )
     assert str(exc_info.value.token) == " "
-    assert exc_info.value.line == 5
-    assert exc_info.value.column == 6
+    assert exc_info.value.location.line == 5
+    assert exc_info.value.location.column == 6
 
 
 def test_extra_space_after_and_it_does_before_open_brace(parse: Parse):
@@ -135,8 +135,8 @@ def test_extra_space_after_and_it_does_before_open_brace(parse: Parse):
             + "}\n"
         )
     assert str(exc_info.value.token) == " "
-    assert exc_info.value.line == 5
-    assert exc_info.value.column == 18
+    assert exc_info.value.location.line == 5
+    assert exc_info.value.location.column == 18
 
 
 def test_extra_space_before_local_name_in_position_requirement_statement(
@@ -152,6 +152,6 @@ def test_extra_space_before_local_name_in_position_requirement_statement(
         )
     assert str(exc_info.value.token) == " "
     assert exc_info.value.token.type == "SPACE"
-    assert exc_info.value.line == 3
-    assert exc_info.value.column == 28
+    assert exc_info.value.location.line == 3
+    assert exc_info.value.location.column == 28
     assert exc_info.value.name == " "

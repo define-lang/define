@@ -129,10 +129,10 @@ def test_name_parser_error_at_reference_populates_exception(
 
     assert result.diagnostics == []
     assert isinstance(result.exception, parser_exceptions.GlobalNameInvalidFqunFormat)
-    assert result.exception.line == 3
-    assert result.exception.column == 29
+    assert result.exception.location.line == 3
+    assert result.exception.location.column == 29
     assert result.exception.location.end_column == 51
-    assert result.exception.file_path == PurePosixPath("test.dfn")
+    assert result.exception.location.file_path == PurePosixPath("test.dfn")
 
 
 def test_config_error_populates_exception_and_root_prefix(

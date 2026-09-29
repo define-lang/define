@@ -21,80 +21,80 @@ def test_bom_at_start(parse: Parse):
     with pytest.raises(parser_exceptions.ByteOrderMarkError) as exc_info:
         parse("\ufeffdefine the potential position<standard:/path>.\n")
     assert exc_info.value.char == "\ufeff"
-    assert exc_info.value.line == 1
-    assert exc_info.value.column == 1
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 1
 
 
 def test_crlf_line_endings(parse: Parse):
     with pytest.raises(parser_exceptions.CarriageReturnError) as exc_info:
         parse("define the potential position<standard:/path>.\r\n")
     assert exc_info.value.char == "\r"
-    assert exc_info.value.line == 1
-    assert exc_info.value.column == 47
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 47
 
 
 def test_crlf_line_endings_in_comments(parse: Parse):
     with pytest.raises(parser_exceptions.CarriageReturnError) as exc_info:
         parse("# a comment\r\n")
     assert exc_info.value.char == "\r"
-    assert exc_info.value.line == 1
-    assert exc_info.value.column == 12
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 12
 
 
 def test_carriage_return_in_comment(parse: Parse):
     with pytest.raises(parser_exceptions.CarriageReturnError) as exc_info:
         parse("# comment with\rcarriage return\n")
     assert exc_info.value.char == "\r"
-    assert exc_info.value.line == 1
-    assert exc_info.value.column == 15
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 15
 
 
 def test_surrogate_character(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidEncodingError) as exc_info:
         parse("define the potential position<standard:/path>.\n\udcff\n")
     assert exc_info.value.char == "\udcff"
-    assert exc_info.value.line == 2
-    assert exc_info.value.column == 1
+    assert exc_info.value.location.line == 2
+    assert exc_info.value.location.column == 1
 
 
 def test_surrogate_range_start_boundary(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidEncodingError) as exc_info:
         parse("define the potential position<standard:/path>.\n\ud800\n")
     assert exc_info.value.char == "\ud800"
-    assert exc_info.value.line == 2
-    assert exc_info.value.column == 1
+    assert exc_info.value.location.line == 2
+    assert exc_info.value.location.column == 1
 
 
 def test_surrogate_range_end_boundary(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidEncodingError) as exc_info:
         parse("define the potential position<standard:/path>.\n\udfff\n")
     assert exc_info.value.char == "\udfff"
-    assert exc_info.value.line == 2
-    assert exc_info.value.column == 1
+    assert exc_info.value.location.line == 2
+    assert exc_info.value.location.column == 1
 
 
 def test_del_character(parse: Parse):
     with pytest.raises(parser_exceptions.ControlCharacterError) as exc_info:
         parse("define the potential position<standard:/path>.\n\x7f\n")
     assert exc_info.value.char == "\x7f"
-    assert exc_info.value.line == 2
-    assert exc_info.value.column == 1
+    assert exc_info.value.location.line == 2
+    assert exc_info.value.location.column == 1
 
 
 def test_invalid_character_error(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidCharacterError) as exc_info:
         parse("define the potential position<standard:/path>.\n☃\n")
     assert exc_info.value.char == "☃"
-    assert exc_info.value.line == 2
-    assert exc_info.value.column == 1
+    assert exc_info.value.location.line == 2
+    assert exc_info.value.location.column == 1
 
 
 def test_first_non_ascii_byte(parse: Parse):
     with pytest.raises(parser_exceptions.InvalidCharacterError) as exc_info:
         parse("define the potential position<standard:/path>.\n\x80\n")
     assert exc_info.value.char == "\x80"
-    assert exc_info.value.line == 2
-    assert exc_info.value.column == 1
+    assert exc_info.value.location.line == 2
+    assert exc_info.value.location.column == 1
 
 
 def test_comment_with_zero_width_joiner_in_grapheme_cluster(parse: Parse):

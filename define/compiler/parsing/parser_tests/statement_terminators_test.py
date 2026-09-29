@@ -28,16 +28,16 @@ def test_missing_terminator(parse: Parse):
     with pytest.raises(parser_exceptions.MissingTerminatorOrBrace) as exc_info:
         parse("define the potential position<standard:/path>\n")
     assert str(exc_info.value.token) == "\n"
-    assert exc_info.value.line == 1
-    assert exc_info.value.column == 46
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 46
 
 
 def test_missing_newline_after_terminator(parse: Parse):
     with pytest.raises(parser_exceptions.MissingNewlineAtEof) as exc_info:
         parse("define the potential position<standard:/path>.")
     assert str(exc_info.value.token) == ""
-    assert exc_info.value.line == 1
-    assert exc_info.value.column == 46
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 46
 
 
 def test_missing_newline_between_global_definitions(parse: Parse):
@@ -47,8 +47,8 @@ def test_missing_newline_between_global_definitions(parse: Parse):
         )
     assert exc_info.value.token == "define the potential action"
     assert exc_info.value.token.type == "DEFINE_THE_POTENTIAL_ACTION"
-    assert exc_info.value.line == 1
-    assert exc_info.value.column == 64
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 64
 
 
 def test_double_terminator(parse: Parse):
@@ -56,16 +56,16 @@ def test_double_terminator(parse: Parse):
         parse("define the potential position<mv:define-lang.org:parser:/path>..\n")
     assert exc_info.value.token == "."
     assert exc_info.value.token.type == "DOT"
-    assert exc_info.value.line == 1
-    assert exc_info.value.column == 64
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 64
 
 
 def test_space_before_terminator(parse: Parse):
     with pytest.raises(parser_exceptions.MissingCloseAngleBracket) as exc_info:
         parse("define the potential position<mv:my.domain.com:my_lib:/some_name .\n")
     assert str(exc_info.value.token) == "\n"
-    assert exc_info.value.line == 1
-    assert exc_info.value.column == 67
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 67
     assert exc_info.value.name == "mv:my.domain.com:my_lib:/some_name ."
 
 
@@ -73,8 +73,8 @@ def test_trailing_space_before_newline(parse: Parse):
     with pytest.raises(parser_exceptions.TrailingWhitespaceError) as exc_info:
         parse("define the potential position<standard:/path>. \n")
     assert exc_info.value.char == " "
-    assert exc_info.value.line == 1
-    assert exc_info.value.column == 47
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 47
 
 
 def test_missing_terminator_after_typed_reference_in_position_constraint(
@@ -90,5 +90,5 @@ def test_missing_terminator_after_typed_reference_in_position_constraint(
             + "}\n"
         )
     assert str(exc_info.value.token) == "\n"
-    assert exc_info.value.line == 4
-    assert exc_info.value.column == 41
+    assert exc_info.value.location.line == 4
+    assert exc_info.value.location.column == 41
