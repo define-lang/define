@@ -1,0 +1,13 @@
+load("//rules_define:defs.bzl", "define_binary")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+
+define_binary(
+    name = "concurrent_shift_register",
+    srcs = glob([
+        "**/*.dfn",
+        ".define/**/*.defcl",
+    ]),
+    entry_point = "main.dfn",
+)
+
+check_build_file()
