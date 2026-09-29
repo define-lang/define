@@ -47,13 +47,45 @@ def test_local_duplicate_particle_format(
     result = validate_project({"test.dfn": source})
     diags = result.program_result.file_results[0].diagnostics
     assert len(diags) == 1
-    formatted = diags[0].format(source.splitlines())
+    formatted = diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 7, column 30
                 create a particle in position<pos>.
                                      ^
         a particle already exists in 'position<pos>'; it was put there at:
-        File "test.dfn", line 6, column 30""")
+        File "test.dfn", line 6, column 30
+                create a particle in position<pos>.
+                                     ^""")
+
+
+def test_move_to_occupied_position_format(
+    validate_project: ValidateProject,
+):
+    source = (
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    it happens when {\n"
+        "        this particle is created.\n"
+        "    } and it does {\n"
+        "        define the position<from_pos>.\n"
+        "        define the position<to_pos>.\n"
+        "        create a particle in position<from_pos>.\n"
+        "        create a particle in position<to_pos>.\n"
+        "        move the particle in position<from_pos> to position<to_pos>.\n"
+        "    }\n"
+        "}\n"
+    )
+    result = validate_project({"test.dfn": source})
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    formatted = all_diags[0].format(result.program_result.source_map)
+    assert formatted == textwrap.dedent("""\
+        File "test.dfn", line 9, column 52
+                move the particle in position<from_pos> to position<to_pos>.
+                                                           ^
+        cannot move a particle to 'position<to_pos>' because it already contains one; it was put there at:
+        File "test.dfn", line 8, column 30
+                create a particle in position<to_pos>.
+                                     ^""")
 
 
 def test_move_from_empty_position_format(
@@ -73,7 +105,7 @@ def test_move_from_empty_position_format(
     result = validate_project({"test.dfn": source})
     diags = result.program_result.file_results[0].diagnostics
     assert len(diags) == 1
-    formatted = diags[0].format(source.splitlines())
+    formatted = diags[0].format(result.program_result.source_map)
     assert (
         formatted
         == textwrap.dedent("""\
@@ -120,7 +152,7 @@ def test_deferred_position_chain_error_format(
     assert test_result.file_path == define_path.DefinePath("test.dfn")
     diags = test_result.diagnostics
     assert len(diags) == 1
-    formatted = diags[0].format(source.splitlines())
+    formatted = diags[0].format(result.program_result.source_map)
     assert (
         formatted
         == textwrap.dedent("""\
@@ -172,7 +204,7 @@ def test_deferred_action_chain_error_format(
     assert test_result.file_path == define_path.DefinePath("test.dfn")
     diags = test_result.diagnostics
     assert len(diags) == 1
-    formatted = diags[0].format(source.splitlines())
+    formatted = diags[0].format(result.program_result.source_map)
     assert (
         formatted
         == textwrap.dedent("""\
@@ -218,7 +250,7 @@ def test_action_requires_empty_position_format(
     result = validate_project(files)
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(files["test.dfn"].splitlines())
+    formatted = all_diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 12, column 30
                 create a particle in position<box>::action</other>::position<trigger_pos>.
@@ -228,10 +260,16 @@ def test_action_requires_empty_position_format(
         This error happens because:
           'position<box>::action</other>::position<item>' is filled here:
             File "test.dfn", line 11, column 30
+                    create a particle in position<box>::action</other>::position<item>.
+                                         ^
           'action<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/other>':
             File "test.dfn", line 12, column 30
+                    create a particle in position<box>::action</other>::position<trigger_pos>.
+                                         ^
           'action<my.domain.com:my_lib:/other>' infers this requirement:
-            File "other.dfn", line 7, column 30""")
+            File "other.dfn", line 7, column 30
+                    create a particle in position<item>.
+                                         ^""")
     assert action_graph(result.reference_graph_result) == [
         (_TEST, _OTHER),
     ]
@@ -272,7 +310,7 @@ def test_action_requires_occupied_position_format(
     result = validate_project(files)
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(files["test.dfn"].splitlines())
+    formatted = all_diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 11, column 30
                 create a particle in position<box>::action</other>::position<trigger_pos>.
@@ -282,8 +320,12 @@ def test_action_requires_occupied_position_format(
         This error happens because:
           'action<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/other>':
             File "test.dfn", line 11, column 30
+                    create a particle in position<box>::action</other>::position<trigger_pos>.
+                                         ^
           'action<my.domain.com:my_lib:/other>' infers this requirement:
-            File "other.dfn", line 8, column 30""")
+            File "other.dfn", line 8, column 30
+                    move the particle in position<item> to position<dest>.
+                                         ^""")
 
 
 def test_propagated_action_requires_empty_position_format(
@@ -395,7 +437,7 @@ def test_propagated_action_requires_empty_position_format(
     result = validate_project(files)
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(files["test.dfn"].splitlines())
+    formatted = all_diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 16, column 30
                 create a particle in position<box>::action</outer>::position<trigger_pos>.
@@ -405,14 +447,24 @@ def test_propagated_action_requires_empty_position_format(
         This error happens because:
           'position<box>::action</outer>::position<out_iface>::position</middle_particle>::position</inner_particle>::position</item_parent>::position</item>' is filled here:
             File "test.dfn", line 15, column 30
+                    create a particle in position<box>::action</outer>::position<out_iface>::position</middle_particle>::position</inner_particle>::position</item_parent>::position</item>.
+                                         ^
           'action<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/outer>':
             File "test.dfn", line 16, column 30
+                    create a particle in position<box>::action</outer>::position<trigger_pos>.
+                                         ^
           'action<my.domain.com:my_lib:/outer>' triggers 'action<my.domain.com:my_lib:/middle>':
             File "outer.dfn", line 18, column 30
+                    create a particle in position<middle_holder>::action</middle>::position<trigger_pos>.
+                                         ^
           'action<my.domain.com:my_lib:/middle>' triggers 'action<my.domain.com:my_lib:/inner>':
             File "middle.dfn", line 18, column 30
+                    create a particle in position<inner_holder>::action</inner>::position<trigger_pos>.
+                                         ^
           'action<my.domain.com:my_lib:/inner>' infers this requirement:
-            File "inner.dfn", line 11, column 30""")
+            File "inner.dfn", line 11, column 30
+                    create a particle in position<input>::position</item_parent>::position</item>.
+                                         ^""")
     assert action_graph(result.reference_graph_result) == [
         (_MIDDLE, _INNER),
         (_OUTER, _MIDDLE),
@@ -492,7 +544,7 @@ def test_requirement_carried_through_two_moves_format(
     result = validate_project(files)
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(files["test.dfn"].splitlines())
+    formatted = all_diags[0].format(result.program_result.source_map)
     # The box moved through /outer into /middle never had its required child.
     # The position names where /test sees it (through /outer's interface, not
     # the move destinations), and the chain traces both moves down to /middle's
@@ -506,10 +558,16 @@ def test_requirement_carried_through_two_moves_format(
         This error happens because:
           'action<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/outer>':
             File "test.dfn", line 18, column 30
+                    create a particle in position<outer_holder>::action</outer>::position<run>.
+                                         ^
           'action<my.domain.com:my_lib:/outer>' triggers 'action<my.domain.com:my_lib:/middle>':
             File "outer.dfn", line 18, column 30
+                    create a particle in position<middle_holder>::action</middle>::position<run>.
+                                         ^
           'action<my.domain.com:my_lib:/middle>' infers this requirement:
-            File "middle.dfn", line 11, column 33""")
+            File "middle.dfn", line 11, column 33
+                    destroy the particle in position<input>::position</required>.
+                                            ^""")
     assert action_graph(result.reference_graph_result) == [
         (_OUTER, _MIDDLE),
         (_TEST, _OUTER),
@@ -606,7 +664,7 @@ def test_requirement_carried_through_actions_on_locals_format(
     result = validate_project(files)
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(files["test.dfn"].splitlines())
+    formatted = all_diags[0].format(result.program_result.source_map)
     # action</inner> and action</middle> exist only on body-local positions (gw
     # and mid_holder); the particle with its /marker child is passed down
     # through each action's Interface Position named input. The missing child is
@@ -620,12 +678,20 @@ def test_requirement_carried_through_actions_on_locals_format(
         This error happens because:
           'action<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/outer>':
             File "test.dfn", line 18, column 30
+                    create a particle in position<outer_holder>::action</outer>::position<run>.
+                                         ^
           'action<my.domain.com:my_lib:/outer>' triggers 'action<my.domain.com:my_lib:/middle>':
             File "outer.dfn", line 18, column 30
+                    create a particle in position<mid_holder>::action</middle>::position<run>.
+                                         ^
           'action<my.domain.com:my_lib:/middle>' triggers 'action<my.domain.com:my_lib:/inner>':
             File "middle.dfn", line 18, column 30
+                    create a particle in position<gw>::action</inner>::position<run>.
+                                         ^
           'action<my.domain.com:my_lib:/inner>' infers this requirement:
-            File "inner.dfn", line 11, column 33""")
+            File "inner.dfn", line 11, column 33
+                    destroy the particle in position<input>::position</marker>.
+                                            ^""")
     assert action_graph(result.reference_graph_result) == [
         (_MIDDLE, _INNER),
         (_OUTER, _MIDDLE),
@@ -671,7 +737,7 @@ def test_value_setting_type_mismatch_format(
     assert diagnostic.location.file_path == PurePosixPath("test.dfn")
     assert diagnostic.location.line == 18
     assert diagnostic.location.column == 41
-    formatted = diagnostic.format(source.splitlines())
+    formatted = diagnostic.format(result.program_result.source_map)
     assert (
         formatted
         == textwrap.dedent("""\
@@ -707,7 +773,7 @@ def test_invalid_literal_content_format(validate_project: ValidateProject):
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(source.splitlines())
+    formatted = all_diags[0].format(result.program_result.source_map)
     assert (
         formatted
         == textwrap.dedent("""\
@@ -745,7 +811,7 @@ def test_literal_cannot_set_value_format(validate_project: ValidateProject):
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(source.splitlines())
+    formatted = all_diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 11, column 46
                 set the value of position<target> to literal</text>"5".
@@ -790,7 +856,7 @@ def test_literal_cannot_be_converted_format(validate_project: ValidateProject):
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(source.splitlines())
+    formatted = all_diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 5, column 42
                     with view<number> looking at literal</text>"5".
@@ -836,7 +902,7 @@ def test_literal_cannot_be_converted_to_any_literal_encoding_format(
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(source.splitlines())
+    formatted = all_diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 5, column 40
                     with view<text> looking at literal<standard:/number>"5".
@@ -888,7 +954,7 @@ def test_move_violates_constraints_error_message(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(source.splitlines())
+    formatted = all_diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 17, column 52
                 move the particle in position<from_pos> to position<to_pos>.
@@ -935,7 +1001,7 @@ def test_move_violates_constraints_error_message_cross_universe(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(source.splitlines())
+    formatted = all_diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent(f"""\
         File "test.dfn", line 13, column 52
                 move the particle in position<from_pos> to position<to_pos>.
@@ -992,7 +1058,7 @@ def test_constructor_requires_empty_position_format(
     result = validate_project(files)
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(files["test.dfn"].splitlines())
+    formatted = all_diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 11, column 30
                 create a particle in position<box>.
@@ -1002,12 +1068,20 @@ def test_constructor_requires_empty_position_format(
         This error happens because:
           'action<my.domain.com:my_lib:/create_q>' is assigned to 'position<box>':
             File "test.dfn", line 8, column 28
+                            it has the action</create_q>.
+                                       ^
           'action<my.domain.com:my_lib:/test>' creates a particle, triggering the constructor 'action<my.domain.com:my_lib:/create_q>':
             File "test.dfn", line 11, column 30
+                    create a particle in position<box>.
+                                         ^
           'position<box>::position</q>' is filled here:
             File "filler.dfn", line 6, column 30
+                    create a particle in position</q>.
+                                         ^
           'action<my.domain.com:my_lib:/create_q>' infers this requirement:
-            File "create_q.dfn", line 6, column 30""")
+            File "create_q.dfn", line 6, column 30
+                    create a particle in position</q>.
+                                         ^""")
 
 
 def test_constructor_requires_occupied_position_format(
@@ -1043,7 +1117,7 @@ def test_constructor_requires_occupied_position_format(
     result = validate_project(files)
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(files["test.dfn"].splitlines())
+    formatted = all_diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 10, column 30
                 create a particle in position<box>.
@@ -1053,10 +1127,16 @@ def test_constructor_requires_occupied_position_format(
         This error happens because:
           'action<my.domain.com:my_lib:/destroy_q>' is assigned to 'position<box>':
             File "test.dfn", line 7, column 28
+                            it has the action</destroy_q>.
+                                       ^
           'action<my.domain.com:my_lib:/test>' creates a particle, triggering the constructor 'action<my.domain.com:my_lib:/destroy_q>':
             File "test.dfn", line 10, column 30
+                    create a particle in position<box>.
+                                         ^
           'action<my.domain.com:my_lib:/destroy_q>' infers this requirement:
-            File "destroy_q.dfn", line 6, column 33""")
+            File "destroy_q.dfn", line 6, column 33
+                    destroy the particle in position</q>.
+                                            ^""")
 
 
 def test_destroy_in_emptied_interface_position_format(
@@ -1100,13 +1180,15 @@ def test_destroy_in_emptied_interface_position_format(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(test_source.splitlines())
+    formatted = all_diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 16, column 33
                 destroy the particle in position<box>::action</other>::position<item>.
                                         ^
         cannot destroy a particle in 'position<box>::action</other>::position<item>' because it does not contain one; it was emptied at:
-        File "test.dfn", line 15, column 33""")
+        File "test.dfn", line 15, column 33
+                destroy the particle in position<box>::action</other>::position<item>.
+                                        ^""")
 
 
 def test_destroy_in_default_empty_interface_position_format(
@@ -1148,7 +1230,7 @@ def test_destroy_in_default_empty_interface_position_format(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(test_source.splitlines())
+    formatted = all_diags[0].format(result.program_result.source_map)
     assert (
         formatted
         == textwrap.dedent("""\
@@ -1202,13 +1284,15 @@ def test_move_from_emptied_interface_position_format(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(test_source.splitlines())
+    formatted = all_diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 18, column 30
                 move the particle in position<box>::action</other>::position<item> to position<sink2>.
                                      ^
         cannot move a particle from 'position<box>::action</other>::position<item>' because it does not contain one; it was emptied at:
-        File "test.dfn", line 17, column 30""")
+        File "test.dfn", line 17, column 30
+                move the particle in position<box>::action</other>::position<item> to position<sink>.
+                                     ^""")
 
 
 def test_move_from_default_empty_interface_position_format(
@@ -1251,7 +1335,7 @@ def test_move_from_default_empty_interface_position_format(
     )
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(test_source.splitlines())
+    formatted = all_diags[0].format(result.program_result.source_map)
     assert (
         formatted
         == textwrap.dedent("""\
@@ -1336,7 +1420,7 @@ def test_propagated_value_requirement_format(validate_project: ValidateProject):
     assert result.program_result.all_exceptions == []
     all_diagnostics = result.program_result.all_diagnostics
     assert len(all_diagnostics) == 1
-    formatted = all_diagnostics[0].format(files["test.dfn"].splitlines())
+    formatted = all_diagnostics[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 18, column 50
                 move the particle in position<source> to position<worker>::action</relay>::position<input>.
@@ -1346,12 +1430,20 @@ def test_propagated_value_requirement_format(validate_project: ValidateProject):
         This error happens because:
           'position<worker>::action</relay>::position<input>' is filled here:
             File "test.dfn", line 18, column 50
+                    move the particle in position<source> to position<worker>::action</relay>::position<input>.
+                                                             ^
           'action<my.domain.com:my_lib:/test>' triggers 'action<my.domain.com:my_lib:/relay>':
             File "test.dfn", line 18, column 50
+                    move the particle in position<source> to position<worker>::action</relay>::position<input>.
+                                                             ^
           'action<my.domain.com:my_lib:/relay>' triggers 'action<my.domain.com:my_lib:/consume>':
             File "relay.dfn", line 16, column 49
+                    move the particle in position<input> to position<moved>::action</consume>::position<input>.
+                                                            ^
           'action<my.domain.com:my_lib:/consume>' infers this requirement:
-            File "consume.dfn", line 12, column 45""")
+            File "consume.dfn", line 12, column 45
+                    set the value of position</copy> to position<input>.
+                                                        ^""")
 
 
 def test_destructor_changes_value_after_move_format(validate_project: ValidateProject):
@@ -1398,7 +1490,7 @@ def test_destructor_changes_value_after_move_format(validate_project: ValidatePr
     assert result.program_result.all_exceptions == []
     all_diagnostics = result.program_result.all_diagnostics
     assert len(all_diagnostics) == 1
-    formatted = all_diagnostics[0].format(files["cleanup.dfn"].splitlines())
+    formatted = all_diagnostics[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "cleanup.dfn", line 9, column 26
                 set the value of position</value> to literal<standard:/number>"5".
@@ -1457,7 +1549,7 @@ def test_undefined_operation_view_format(
     assert result.program_result.all_exceptions == []
     diags = result.program_result.all_diagnostics
     assert len(diags) == 1
-    formatted = diags[0].format(source.splitlines())
+    formatted = diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 8, column 18
                     with view<extra> looking at literal<standard:/number>"4".
@@ -1510,7 +1602,7 @@ def test_operation_argument_violates_constraints_format(
     assert result.program_result.all_exceptions == []
     diags = result.program_result.all_diagnostics
     assert len(diags) == 1
-    formatted = diags[0].format(source.splitlines())
+    formatted = diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 11, column 42
                     with view<source> looking at view<number>.
@@ -1557,7 +1649,7 @@ def test_operation_argument_position_violates_constraints_format(
     assert result.program_result.all_exceptions == []
     diags = result.program_result.all_diagnostics
     assert len(diags) == 1
-    formatted = diags[0].format(source.splitlines())
+    formatted = diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 8, column 42
                     with view<source> looking at position<number>.
@@ -1620,10 +1712,15 @@ def test_occupied_action_interface_when_action_triggers_format(
     result = validate_project(files)
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(files["test.dfn"].splitlines())
-    assert formatted == textwrap.dedent("""\
+    formatted = all_diags[0].format(result.program_result.source_map)
+    assert (
+        formatted
+        == textwrap.dedent("""\
         File "test.dfn", line 13, column 30
                 create a particle in position<box>::action</parent>::position<run>.
                                      ^
         'position<box>::action</parent>::position<iface>::action</child>::position<result>' contains a particle when 'action</parent>' triggers here; move or destroy the particle before triggering that action. The particle arrived at:
-        File "test.dfn", line 12, column 79""")
+        File "test.dfn", line 12, column 79
+                create a particle in position<box>::action</parent>::position<iface>::action</child>::position<run>.
+                                                                                      ^""")
+    )

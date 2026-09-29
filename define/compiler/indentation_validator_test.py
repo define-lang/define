@@ -408,16 +408,6 @@ class TestRemoveComment:
         assert indentation_validator._remove_comment("# comment") == ""
 
 
-class TestDiagnosticMessage:
-    def test_message_format(self):
-        source = "    define the potential position<standard:/path>.\n"
-        diags = indentation_validator.validate_indentation(source)
-        assert len(diags) == 1
-        assert diags[0].message == (
-            "expected 0 spaces of indentation on this line, but found 4"
-        )
-
-
 @pytest.mark.parametrize(
     "source",
     [

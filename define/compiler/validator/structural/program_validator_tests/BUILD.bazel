@@ -132,8 +132,10 @@ py_test(
     size = "small",
     srcs = ["error_messages_test.py"],
     deps = [
+        "//define/compiler:built_in_definitions",
         "//define/compiler:config",
         "//define/compiler:conftest",
+        "//define/compiler:constants",
         "//define/compiler:diagnostics",
         "//define/compiler:exceptions",
         "//define/compiler/data_structures:define_path",

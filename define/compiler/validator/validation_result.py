@@ -11,6 +11,7 @@ from define.compiler import (
     ast,
     diagnostics,
     exceptions,
+    source_map,
 )
 from define.compiler.lark import lark_standalone
 
@@ -80,7 +81,9 @@ class FileValidationResult:
     """Validation output for one source file."""
 
     exception: AnyValidationException | None
-    source_lines: list[str] | None
+    # The digest of a file that was read from the filesystem, which lets a
+    # source map read it again for diagnostics without keeping its text.
+    source_digest: bytes | None
     file_path: define_path.DefinePath  # Full path: root_prefix / relative file path.
     root_prefix: define_path.DefinePath
     stats: stats.ValidationTimingStats
@@ -175,6 +178,7 @@ class ProgramValidationResult(msgspec.Struct):
         ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
         DefinitionValidationResult,
     ]
+    source_map: source_map.SourceMap
 
     @property
     def all_diagnostics(self) -> list[diagnostics.Diagnostic]:

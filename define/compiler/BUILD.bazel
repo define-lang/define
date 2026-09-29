@@ -41,6 +41,7 @@ py_library(
     deps = [
         ":ast",
         ":parser",
+        ":source_map",
     ],
 )
 
@@ -138,19 +139,9 @@ py_library(
         ":ast",
         ":config",
         ":constants",
+        ":source_map",
         "//define/compiler/validator/reference_graph:action_contract",
         "@pypi//msgspec",
-    ],
-)
-
-py_test(
-    name = "diagnostics_test",
-    size = "small",
-    srcs = ["diagnostics_test.py"],
-    deps = [
-        ":ast",
-        ":diagnostics",
-        "//define/compiler/validator/reference_graph:action_contract",
     ],
 )
 
@@ -411,6 +402,26 @@ py_library(
 )
 
 py_library(
+    name = "source_map",
+    srcs = ["source_map.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        ":ast",
+    ],
+)
+
+py_test(
+    name = "source_map_test",
+    size = "small",
+    srcs = ["source_map_test.py"],
+    deps = [
+        ":ast",
+        ":source_map",
+        "@pypi//pytest",
+    ],
+)
+
+py_library(
     name = "test_helpers",
     testonly = True,
     srcs = ["test_helpers.py"],
@@ -480,7 +491,6 @@ pyright_test(
         ":conftest",
         ":constants",
         ":diagnostics",
-        ":diagnostics_test",
         ":driver",
         ":driver_fuzz_test",
         ":driver_run_test",
@@ -500,6 +510,8 @@ pyright_test(
         ":parser",
         ":parser_error_classification",
         ":parser_exceptions",
+        ":source_map",
+        ":source_map_test",
         ":test_helpers",
         ":test_runfiles",
         ":transformer",

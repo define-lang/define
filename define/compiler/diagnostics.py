@@ -3,25 +3,19 @@
 from __future__ import annotations
 
 import enum
+import textwrap
 import typing
 from typing import ClassVar, Final
 
 import msgspec
 
-from define.compiler import ast, constants
+from define.compiler import ast, constants, source_map
 from define.compiler.validator.reference_graph import action_contract
 
 if typing.TYPE_CHECKING:
     from collections.abc import Sequence
 
     from define.compiler import config
-
-
-def _format_location(location: ast.SourceLocation) -> str:
-    """Format a source location as a human-readable string."""
-    if location.file_path is not None:
-        return f'File "{location.file_path}", line {location.line}, column {location.column}'
-    return f"line {location.line}, column {location.column}"
 
 
 # The statement that reads every input view and writes every output view of
@@ -38,23 +32,15 @@ class Diagnostic(msgspec.Struct):
     location: ast.SourceLocation
     message_format: ClassVar[str] = ""
 
-    @property
-    def message(self) -> str:
-        """Render the diagnostic message from the format template."""
+    def render_message(self, _sources: source_map.SourceMap, /) -> str:
+        """Render the diagnostic message, with source lines for other locations it mentions."""
         return self.message_format.format(self=self)
 
-    def format(self, source_lines: Sequence[str]) -> str:
-        """Format the diagnostic with source context and caret pointer."""
-        line_idx = self.location.line - 1
-        source_line = (
-            source_lines[line_idx] if 0 <= line_idx < len(source_lines) else ""
+    def format(self, sources: source_map.SourceMap) -> str:
+        """Format the diagnostic with the source lines of every location it mentions."""
+        return (
+            f"{sources.format_location(self.location)}\n{self.render_message(sources)}"
         )
-
-        column = self.location.column
-        caret_line = " " * (column - 1) + "^"
-        header = _format_location(self.location)
-
-        return f"{header}\n{source_line}\n{caret_line}\n{self.message}"
 
 
 class ReservedNameDiagnostic(Diagnostic):
@@ -596,14 +582,13 @@ class OccupiedActionInterfaceWhenActionTriggersDiagnostic(Diagnostic):
     # the particle that has to move or be destroyed before the trigger.
     arrived_at: ast.SourceLocation
 
-    @property
     @typing.override
-    def message(self) -> str:
+    def render_message(self, sources: source_map.SourceMap, /) -> str:
         """Render the diagnostic message with where the particle arrived."""
         return (
             f"'{self.position_name}' contains a particle when '{self.action_name}' "
             "triggers here; move or destroy the particle before triggering that "
-            f"action. The particle arrived at:\n{_format_location(self.arrived_at)}"
+            f"action. The particle arrived at:\n{sources.format_location(self.arrived_at)}"
         )
 
 
@@ -848,9 +833,8 @@ class CircularGlobalReferenceDiagnostic(Diagnostic):
 
     cycle: list[str]
 
-    @property
     @typing.override
-    def message(self) -> str:
+    def render_message(self, sources: source_map.SourceMap, /) -> str:
         """Render a multi-line cycle listing with one edge per line."""
         if not self.cycle:
             raise ValueError("cycle must contain at least one typed global name")
@@ -921,13 +905,14 @@ class CreateInOccupiedPositionDiagnostic(Diagnostic):
     populated_at: ast.SourceLocation
     message_format: ClassVar[str] = (
         "a particle already exists in '{self.position_name}';"
-        " it was put there at:\n{self.formatted_populated_at}"
+        " it was put there at:\n{populated_at}"
     )
 
-    @property
-    def formatted_populated_at(self) -> str:
-        """Format the populated_at location as a human-readable string."""
-        return _format_location(self.populated_at)
+    @typing.override
+    def render_message(self, sources: source_map.SourceMap, /) -> str:
+        return self.message_format.format(
+            self=self, populated_at=sources.format_location(self.populated_at)
+        )
 
 
 class ParentPositionNotOccupiedDiagnostic(Diagnostic):
@@ -947,19 +932,17 @@ class MoveToOccupiedPositionDiagnostic(Diagnostic):
     """Diagnostic for when a move's destination position already contains a particle."""
 
     position_name: str
-    occupied_at: ast.SourceLocation | None = None
+    occupied_at: ast.SourceLocation
+    message_format: ClassVar[str] = (
+        "cannot move a particle to '{self.position_name}' because it already"
+        " contains one; it was put there at:\n{occupied_at}"
+    )
 
-    @property
     @typing.override
-    def message(self) -> str:
-        """Render the diagnostic message, optionally including the occupied-at location."""
-        base = (
-            f"cannot move a particle to '{self.position_name}'"
-            " because it already contains one"
+    def render_message(self, sources: source_map.SourceMap, /) -> str:
+        return self.message_format.format(
+            self=self, occupied_at=sources.format_location(self.occupied_at)
         )
-        if self.occupied_at is not None:
-            return f"{base}; it was put there at:\n{_format_location(self.occupied_at)}"
-        return base
 
 
 class MoveFromEmptyPositionDiagnostic(Diagnostic):
@@ -969,16 +952,15 @@ class MoveFromEmptyPositionDiagnostic(Diagnostic):
     is_action_interface_position: bool = False
     inferred_at: ast.SourceLocation | None = None
 
-    @property
     @typing.override
-    def message(self) -> str:
+    def render_message(self, sources: source_map.SourceMap, /) -> str:
         """Render the diagnostic message, optionally including the inferred-at location."""
         base = (
             f"cannot move a particle from '{self.position_name}'"
             " because it does not contain one"
         )
         if self.inferred_at is not None:
-            return f"{base}; it was emptied at:\n{_format_location(self.inferred_at)}"
+            return f"{base}; it was emptied at:\n{sources.format_location(self.inferred_at)}"
         if self.is_action_interface_position:
             return f"{base}; action interface positions are empty by default"
         return base
@@ -1292,7 +1274,7 @@ class InferredRequirementViolationDiagnostic(Diagnostic):
     message_format: ClassVar[str] = (
         "'{self.position_name}' must be {self.required_state} before"
         " '{self.action_name}' runs.\n\n"
-        "{self.formatted_propagation_chain}"
+        "{propagation_chain}"
     )
 
     @property
@@ -1302,21 +1284,15 @@ class InferredRequirementViolationDiagnostic(Diagnostic):
             return "occupied by a particle with a set value"
         return "empty" if self.required_empty else "occupied"
 
-    # TODO: This really needs to be able to show all the relevant
-    # source lines. I think we could do that by passing in a
-    # source_map to format() and providing some sort of get_context
-    # method on the base Diagnostic. The alternative is passing in
-    # a source_map on construction of the Diagnostic, but then that
-    # means that everything in all of the compiler has to be able
-    # to access source_lines for all files.
-    @property
-    def formatted_propagation_chain(self) -> str:
-        """Render the labeled propagation chain for the diagnostic message."""
+    @typing.override
+    def render_message(self, sources: source_map.SourceMap, /) -> str:
         lines = ["This error happens because:"]
         for step in self.propagation_chain:
             lines.append(f"  {self._format_propagation_step(step)}:")
-            lines.append(f"    {_format_location(step.location)}")
-        return "\n".join(lines)
+            lines.append(
+                textwrap.indent(sources.format_location(step.location), "    ")
+            )
+        return self.message_format.format(self=self, propagation_chain="\n".join(lines))
 
     def _format_propagation_step(self, step: action_contract.PropagationStep) -> str:
         """Render a propagation step as a human-readable label line."""
@@ -1410,16 +1386,15 @@ class DestroyInEmptyInterfacePositionDiagnostic(Diagnostic):
     position_name: str
     inferred_at: ast.SourceLocation | None
 
-    @property
     @typing.override
-    def message(self) -> str:
+    def render_message(self, sources: source_map.SourceMap, /) -> str:
         """Render the diagnostic message."""
         base = (
             f"cannot destroy a particle in '{self.position_name}'"
             f" because it does not contain one"
         )
         if self.inferred_at is not None:
-            return f"{base}; it was emptied at:\n{_format_location(self.inferred_at)}"
+            return f"{base}; it was emptied at:\n{sources.format_location(self.inferred_at)}"
         return f"{base}; action interface positions are empty by default"
 
 

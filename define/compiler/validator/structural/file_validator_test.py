@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import types
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING
@@ -76,7 +77,7 @@ class TestFileStructuralValidatorSuccess:
 
         assert result.exception is None
         assert result.diagnostics == []
-        assert result.source_lines == source.splitlines()
+        assert result.source_digest == hashlib.sha256(source.encode()).digest()
         assert len(result.definition_results) == 1
         assert (
             result.definition_results[0].definition.typed_name.name_type == "position"

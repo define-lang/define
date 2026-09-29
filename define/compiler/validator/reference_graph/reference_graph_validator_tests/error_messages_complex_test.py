@@ -274,7 +274,7 @@ def test_destruction_contract_traces_every_trigger_hop(
     # d1 is hidden from every trigger position below outer_implied::incoming, so
     # its contract is verified at outer_implied (the first caller that knows d1).
     # The full chain must trace all four trigger hops down to 'do_destruction'.
-    assert d1_diag.format(_FILES["outer_implied.dfn"].splitlines()) == textwrap.dedent("""\
+    assert d1_diag.format(result.program_result.source_map) == textwrap.dedent("""\
         File "outer_implied.dfn", line 18, column 52
                 move the particle in position<incoming> to action</triggered_by_outer_implied>::position<trigger_pos>.
                                                            ^
@@ -283,30 +283,50 @@ def test_destruction_contract_traces_every_trigger_hop(
         This error happens because:
           'action<my.domain.com:my_lib:/d1>' is assigned to 'position<incoming>':
             File "outer_implied.dfn", line 5, column 24
+                        it has the action</d1>.
+                                   ^
           the particle in 'action</triggered_by_outer_implied>::position<trigger_pos>' comes from here:
             File "outer_implied.dfn", line 14, column 30
+                    create a particle in position<incoming>::position</p1>.
+                                         ^
           'action<my.domain.com:my_lib:/outer_implied>' triggers 'action<my.domain.com:my_lib:/triggered_by_outer_implied>':
             File "outer_implied.dfn", line 18, column 52
+                    move the particle in position<incoming> to action</triggered_by_outer_implied>::position<trigger_pos>.
+                                                               ^
           'action</triggered_by_outer_implied>::position<trigger_pos>::position</p1>' is filled here:
             File "triggered_by_outer_implied.dfn", line 12, column 30
+                    create a particle in position<trigger_pos>::position</p1>.
+                                         ^
           'action<my.domain.com:my_lib:/triggered_by_outer_implied>' triggers 'action<my.domain.com:my_lib:/do_nothing>':
             File "triggered_by_outer_implied.dfn", line 15, column 55
+                    move the particle in position<trigger_pos> to action</do_nothing>::position<trigger_pos>.
+                                                                  ^
           'action<my.domain.com:my_lib:/do_nothing>' triggers 'action<my.domain.com:my_lib:/empty_p2>':
             File "do_nothing.dfn", line 13, column 55
+                    move the particle in position<trigger_pos> to action</empty_p2>::position<trigger_pos>.
+                                                                  ^
           'action<my.domain.com:my_lib:/empty_p2>' triggers 'action<my.domain.com:my_lib:/before_destructor>':
             File "empty_p2.dfn", line 13, column 55
+                    move the particle in position<trigger_pos> to action</before_destructor>::position<trigger_pos>.
+                                                                  ^
           'action<my.domain.com:my_lib:/before_destructor>' triggers 'action<my.domain.com:my_lib:/do_destruction>':
             File "before_destructor.dfn", line 8, column 30
+                    create a particle in action</do_destruction>::position<run>.
+                                         ^
           'action<my.domain.com:my_lib:/do_destruction>' destroys a particle, triggering the destructor 'action<my.domain.com:my_lib:/d1>':
             File "do_destruction.dfn", line 7, column 33
+                    destroy the particle in position<to_destroy>.
+                                            ^
           'action<my.domain.com:my_lib:/d1>' infers this requirement:
-            File "d1.dfn", line 6, column 30""")
+            File "d1.dfn", line 6, column 30
+                    create a particle in position</p1>.
+                                         ^""")
 
     # d2 is invisible everywhere below position</carrier>, so the first caller
     # that knows it is /outer. d2 must therefore be verified at /outer, with the
     # attachment traced back to the carrier constraint and the chain running
     # through every trigger hop down to 'do_destruction'.
-    assert d2_diag.format(_FILES["outer.dfn"].splitlines()) == textwrap.dedent("""\
+    assert d2_diag.format(result.program_result.source_map) == textwrap.dedent("""\
         File "outer.dfn", line 13, column 30
                 create a particle in action</outer_implied>::position<run>.
                                      ^
@@ -315,21 +335,41 @@ def test_destruction_contract_traces_every_trigger_hop(
         This error happens because:
           'action<my.domain.com:my_lib:/d2>' is assigned to 'position<my.domain.com:my_lib:/carrier>':
             File "carrier.dfn", line 4, column 20
+                    it has the action</d2>.
+                               ^
           the particle in 'action</outer_implied>::position<incoming>' comes from here:
             File "outer.dfn", line 9, column 30
+                    move the particle in position</carrier> to action</outer_implied>::position<incoming>.
+                                         ^
           'action<my.domain.com:my_lib:/outer>' triggers 'action<my.domain.com:my_lib:/outer_implied>':
             File "outer.dfn", line 13, column 30
+                    create a particle in action</outer_implied>::position<run>.
+                                         ^
           'action<my.domain.com:my_lib:/outer_implied>' triggers 'action<my.domain.com:my_lib:/triggered_by_outer_implied>':
             File "outer_implied.dfn", line 18, column 52
+                    move the particle in position<incoming> to action</triggered_by_outer_implied>::position<trigger_pos>.
+                                                               ^
           'action<my.domain.com:my_lib:/triggered_by_outer_implied>' triggers 'action<my.domain.com:my_lib:/do_nothing>':
             File "triggered_by_outer_implied.dfn", line 15, column 55
+                    move the particle in position<trigger_pos> to action</do_nothing>::position<trigger_pos>.
+                                                                  ^
           'action<my.domain.com:my_lib:/do_nothing>' triggers 'action<my.domain.com:my_lib:/empty_p2>':
             File "do_nothing.dfn", line 13, column 55
+                    move the particle in position<trigger_pos> to action</empty_p2>::position<trigger_pos>.
+                                                                  ^
           'action<my.domain.com:my_lib:/empty_p2>' triggers 'action<my.domain.com:my_lib:/before_destructor>':
             File "empty_p2.dfn", line 13, column 55
+                    move the particle in position<trigger_pos> to action</before_destructor>::position<trigger_pos>.
+                                                                  ^
           'action<my.domain.com:my_lib:/before_destructor>' triggers 'action<my.domain.com:my_lib:/do_destruction>':
             File "before_destructor.dfn", line 8, column 30
+                    create a particle in action</do_destruction>::position<run>.
+                                         ^
           'action<my.domain.com:my_lib:/do_destruction>' destroys a particle, triggering the destructor 'action<my.domain.com:my_lib:/d2>':
             File "do_destruction.dfn", line 7, column 33
+                    destroy the particle in position<to_destroy>.
+                                            ^
           'action<my.domain.com:my_lib:/d2>' infers this requirement:
-            File "d2.dfn", line 7, column 30""")
+            File "d2.dfn", line 7, column 30
+                    move the particle in position</p2> to position<_holder>.
+                                         ^""")

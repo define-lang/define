@@ -394,6 +394,8 @@ def test_reference_graph_diagnostic_returns_error(
         "                             ^\n"
         "a particle already exists in 'position<target>'; it was put there at:\n"
         'File "test.dfn", line 7, column 30\n'
+        "        create a particle in position<target>.\n"
+        "                             ^\n"
     )
 
 

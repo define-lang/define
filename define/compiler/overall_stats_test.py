@@ -16,7 +16,7 @@ def _make_result(
 ) -> validation_result.FileValidationResult:
     return validation_result.FileValidationResult(
         exception=None,
-        source_lines=None,
+        source_digest=None,
         file_path=define_path.DefinePath(file_path),
         root_prefix=define_path.EMPTY,
         stats=stats.ValidationTimingStats(

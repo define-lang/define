@@ -12,7 +12,13 @@ import textwrap
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING
 
-from define.compiler import config, diagnostics, exceptions
+from define.compiler import (
+    built_in_definitions,
+    config,
+    constants,
+    diagnostics,
+    exceptions,
+)
 from define.compiler.data_structures import define_path
 from define.compiler.validator import test_helpers
 from define.compiler.validator.structural import program_validator
@@ -28,14 +34,14 @@ if TYPE_CHECKING:
 
 def test_reserved_universe_name_format():
     source = "define the potential position<standard:/path>.\n"
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
+    program_result = (
+        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
+            source
+        )
     )
-    diags = results[0].diagnostics
+    diags = program_result.file_results[0].diagnostics
     assert len(diags) == 1
-    formatted = diags[0].format(source.splitlines())
+    formatted = diags[0].format(program_result.source_map)
     assert formatted == textwrap.dedent("""\
         line 1, column 31
         define the potential position<standard:/path>.
@@ -52,12 +58,99 @@ def test_path_mismatch_format(validate_project: ValidateProject):
     assert len(result.program_result.file_results) == 1
     diags = result.program_result.file_results[0].diagnostics
     assert len(diags) == 1
-    formatted = diags[0].format(source.splitlines())
+    formatted = diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
         File "foo/bar.dfn", line 1, column 52
         define the potential position<my.domain.com:my_lib:/wrong/path>.
                                                            ^
         definition path '/wrong/path' does not match file path '/foo/bar'""")
+
+
+def test_circular_reference_format(validate_project: ValidateProject):
+    result = validate_project(
+        {
+            "test.dfn": (
+                "define the potential position<my.domain.com:my_lib:/test> {\n"
+                "    it may only contain particles where {\n"
+                "        it has the position</other>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "other.dfn": (
+                "define the potential position<my.domain.com:my_lib:/other> {\n"
+                "    it may only contain particles where {\n"
+                "        it has the position</test>.\n"
+                "    }\n"
+                "}\n"
+            ),
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    formatted = all_diags[0].format(result.program_result.source_map)
+    assert formatted == textwrap.dedent("""\
+        File "other.dfn", line 3, column 20
+                it has the position</test>.
+                           ^
+        circular references between definitions are not allowed in Define:
+        position<my.domain.com:my_lib:/test>
+          --> position<my.domain.com:my_lib:/other>
+          --> position<my.domain.com:my_lib:/test>""")
+
+
+def test_incorrect_indentation_format(validate_project: ValidateProject):
+    result = validate_project(
+        {
+            "test.dfn": (
+                "define the potential position<my.domain.com:my_lib:/test> {\n"
+                "    it may only contain particles where {\n"
+                "      it has the position</child>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "child.dfn": "define the potential position<my.domain.com:my_lib:/child>.\n",
+        }
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    formatted = all_diags[0].format(result.program_result.source_map)
+    assert formatted == textwrap.dedent("""\
+        File "test.dfn", line 3, column 1
+              it has the position</child>.
+        ^
+        expected 8 spaces of indentation on this line, but found 6""")
+
+
+def test_built_in_definition_location_shows_its_source_line(
+    validate_project: ValidateProject,
+):
+    result = validate_project(
+        {"test.dfn": "define the potential position<my.domain.com:my_lib:/test>.\n"}
+    )
+    definition = built_in_definitions.get_definition(constants.DECIMAL_ASCII_ENCODING)
+    assert definition is not None
+    assert result.program_result.source_map.format_location(definition.location) == (
+        f'File "{built_in_definitions.SOURCE_FILE_PATH}", line 3, column 1\n'
+        "define the encoding<standard:/number/decimal/ascii>.\n"
+        "^"
+    )
+
+
+def test_built_in_definition_location_shows_its_source_line_with_in_memory_source():
+    # The in-memory source's locations have no file, and built-in locations
+    # must not be read from it.
+    program_result = (
+        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
+            "define the potential position<my.domain.com:my_lib:/test>.\n"
+        )
+    )
+    definition = built_in_definitions.get_definition(constants.DECIMAL_ASCII_ENCODING)
+    assert definition is not None
+    assert program_result.source_map.format_location(definition.location) == (
+        f'File "{built_in_definitions.SOURCE_FILE_PATH}", line 3, column 1\n'
+        "define the encoding<standard:/number/decimal/ascii>.\n"
+        "^"
+    )
 
 
 def test_referenced_definition_not_found_format(validate_project: ValidateProject):
@@ -90,7 +183,7 @@ def test_referenced_definition_not_found_format(validate_project: ValidateProjec
     diags = test_result.diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ReferencedDefinitionNotFoundDiagnostic)
-    formatted = diags[0].format(source.splitlines())
+    formatted = diags[0].format(result.program_result.source_map)
     assert (
         formatted
         == textwrap.dedent("""\
@@ -106,14 +199,14 @@ def test_duplicate_definition_format():
         "define the potential position<my.domain.com:my_lib:/same>.\n"
         "define the potential position<my.domain.com:my_lib:/same>.\n"
     )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
+    program_result = (
+        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
+            source
+        )
     )
-    diags = results[0].diagnostics
+    diags = program_result.file_results[0].diagnostics
     assert len(diags) == 1
-    formatted = diags[0].format(source.splitlines())
+    formatted = diags[0].format(program_result.source_map)
     assert formatted == textwrap.dedent("""\
         line 2, column 1
         define the potential position<my.domain.com:my_lib:/same>.
@@ -126,15 +219,15 @@ def test_non_filesystem_diagnostics_have_no_file_name():
         "define the potential position<my.domain.com:my_lib:/same>.\n"
         "define the potential position<my.domain.com:my_lib:/same>.\n"
     )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
+    program_result = (
+        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
+            source
+        )
     )
-    diags = results[0].diagnostics
+    diags = program_result.file_results[0].diagnostics
     assert len(diags) == 1
     assert diags[0].location.file_path is None
-    formatted = diags[0].format(source.splitlines())
+    formatted = diags[0].format(program_result.source_map)
     assert formatted == textwrap.dedent("""\
         line 2, column 1
         define the potential position<my.domain.com:my_lib:/same>.
@@ -154,14 +247,14 @@ def test_move_to_same_position_format():
         "    }\n"
         "}\n"
     )
-    results = (
-        program_validator.ProgramStructuralValidator()
-        .validate_program_non_filesystem(source)
-        .file_results
+    program_result = (
+        program_validator.ProgramStructuralValidator().validate_program_non_filesystem(
+            source
+        )
     )
-    diags = results[0].diagnostics
+    diags = program_result.file_results[0].diagnostics
     assert len(diags) == 1
-    formatted = diags[0].format(source.splitlines())
+    formatted = diags[0].format(program_result.source_map)
     assert (
         formatted
         == textwrap.dedent("""\
@@ -207,7 +300,7 @@ def test_move_into_defining_position_format(validate_project: ValidateProject):
     diags = test_result.diagnostics
     assert len(diags) == 2
     assert isinstance(diags[1], diagnostics.MoveIntoDefiningPositionDiagnostic)
-    formatted = diags[1].format(source.splitlines())
+    formatted = diags[1].format(result.program_result.source_map)
     assert (
         formatted
         == textwrap.dedent("""\
@@ -251,7 +344,7 @@ def test_config_load_error_format_with_sub_root_fqun_mismatch_exception(
     assert isinstance(diags[0], diagnostics.ConfigLoadErrorDiagnostic)
     assert isinstance(diags[0].error, config.SubRootFqunMismatchError)
 
-    formatted = diags[0].format(source.splitlines())
+    formatted = diags[0].format(result.program_result.source_map)
     assert (
         formatted
         == textwrap.dedent("""\

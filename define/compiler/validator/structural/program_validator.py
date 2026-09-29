@@ -25,6 +25,7 @@ from define.compiler import (
     diagnostics,
     exceptions,
     parser,
+    source_map,
 )
 from define.compiler.data_structures import define_path, typed_name_dict
 from define.compiler.graphs import reference_graph, reference_graph_order
@@ -157,7 +158,8 @@ class ProgramStructuralValidator:
             root_config = self._load_root_config(root_prefix)
         except config.ConfigError as e:
             return self._build_program_result(
-                [_make_config_error_result(root_prefix / path_dp, root_prefix, e)]
+                [_make_config_error_result(root_prefix / path_dp, root_prefix, e)],
+                in_memory_source=None,
             )
 
         initial_context = file_validator.FileValidationContext(
@@ -171,7 +173,9 @@ class ProgramStructuralValidator:
             pool.submit(initial_context)
             self._run_pool_loop(pool)
 
-        return self._build_program_result(self._path_tracker.completed_results())
+        return self._build_program_result(
+            self._path_tracker.completed_results(), in_memory_source=None
+        )
 
     def validate_program_non_filesystem(
         self,
@@ -183,7 +187,7 @@ class ProgramStructuralValidator:
             source
         )
         if result.exception is not None:
-            return self._build_program_result([result])
+            return self._build_program_result([result], in_memory_source=source)
 
         # The non-filesystem entry result lives in _results only — it isn't
         # added to _tracked_files because its file_path is the InvalidDefinePath
@@ -196,13 +200,16 @@ class ProgramStructuralValidator:
             self._process_completed_result(result, pool, submit_referenced_files=False)
             self._run_pool_loop(pool)
         return self._build_program_result(
-            self._path_tracker.completed_results(), select_last_constructor=True
+            self._path_tracker.completed_results(),
+            in_memory_source=source,
+            select_last_constructor=True,
         )
 
     def _build_program_result(
         self,
         file_results: list[validation_result.FileValidationResult],
         *,
+        in_memory_source: str | None,
         select_last_constructor: bool = False,
     ) -> validation_result.ProgramValidationResult:
         """Validate the entry action and assemble the program result."""
@@ -229,12 +236,21 @@ class ProgramStructuralValidator:
         for file_result in file_results:
             for definition_result in file_result.definition_results:
                 definition_result.reference_edges.clear()
+        file_digests: dict[pathlib.PurePosixPath, bytes] = {
+            built_in_definitions.SOURCE_FILE_PATH: built_in_definitions.source_digest()
+        }
+        for file_result in file_results:
+            if file_result.source_digest is not None:
+                file_digests[file_result.file_path.as_posix_path()] = (
+                    file_result.source_digest
+                )
         return validation_result.ProgramValidationResult(
             file_results=file_results,
             entry_action=entry_action,
             config_loading_time_ns=self._config_loading_time_ns,
             definition_order=definition_order,
             definition_results=self._definition_results,
+            source_map=source_map.SourceMap(file_digests, in_memory_source),
         )
 
     @staticmethod
@@ -802,7 +818,7 @@ def _make_config_error_result(
     tracker = stats.ValidationStatsTracker()
     return validation_result.FileValidationResult(
         exception=error,
-        source_lines=None,
+        source_digest=None,
         file_path=file_path,
         root_prefix=root_prefix,
         stats=tracker.build(),

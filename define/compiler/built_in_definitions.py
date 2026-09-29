@@ -4,20 +4,27 @@ from __future__ import annotations
 
 import functools
 import typing
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
-from define.compiler import ast, parser
+from define.compiler import ast, parser, source_map
 
 if typing.TYPE_CHECKING:
     from collections.abc import Collection
 
 _SOURCE_PATH = Path(__file__).parent / "built_in_definitions.dfn"
+# Project file paths are relative, so this absolute path cannot collide with one.
+SOURCE_FILE_PATH: typing.Final = PurePosixPath(_SOURCE_PATH.as_posix())
+
+
+@functools.cache
+def _source() -> bytes:
+    return _SOURCE_PATH.read_bytes()
 
 
 @functools.cache
 def _definitions_by_name() -> dict[str, ast.GlobalDefinition]:
     parse_result = parser.Parser().parse_and_transform(
-        _SOURCE_PATH.read_text(encoding="utf-8")
+        _source().decode("utf-8"), file_path=SOURCE_FILE_PATH
     )
     if parse_result.exception is not None:
         raise parse_result.exception
@@ -37,3 +44,8 @@ def definitions() -> Collection[ast.GlobalDefinition]:
 def get_definition(full_typed_name: str) -> ast.GlobalDefinition | None:
     """Return the built-in definition with this full typed name, if there is one."""
     return _definitions_by_name().get(full_typed_name)
+
+
+def source_digest() -> bytes:
+    """Return the digest of the built-in definitions' source file."""
+    return source_map.source_digest(_source())

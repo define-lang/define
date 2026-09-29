@@ -52,20 +52,15 @@ class ExitCode(enum.IntEnum):
 
 
 def _error_strings(
-    file_results: list[validation_result.FileValidationResult],
+    program_result: validation_result.ProgramValidationResult,
 ) -> list[str]:
     """Format every exception and diagnostic for the command-line caller."""
     error_strings: list[str] = []
-    for result in file_results:
+    for result in program_result.file_results:
         if result.exception is not None:
             error_strings.append(str(result.exception))
-        if result.diagnostics:
-            if result.source_lines is None:
-                raise ValueError(
-                    "result.source_lines must be set when there are diagnostics"
-                )
-            for diagnostic in result.diagnostics:
-                error_strings.append(diagnostic.format(result.source_lines))
+        for diagnostic in result.diagnostics:
+            error_strings.append(diagnostic.format(program_result.source_map))
     return error_strings
 
 
@@ -96,7 +91,7 @@ class CompilerValidationResult(CompilerResult):
     @typing.override
     def error_strings(self) -> list[str]:
         """Format errors from the detailed program validation data."""
-        return _error_strings(self.program_validation.file_results)
+        return _error_strings(self.program_validation)
 
     @typing.override
     def file_timing_results(
@@ -130,7 +125,7 @@ class CompilationResult(CompilerResult):
             all_diagnostics=program_validation.all_diagnostics,
             all_exceptions=program_validation.all_exceptions,
             entry_action=program_validation.entry_action,
-            _error_strings=_error_strings(program_validation.file_results),
+            _error_strings=_error_strings(program_validation),
             file_timings=[
                 overall_stats.FileTiming(file_result.file_path, file_result.stats)
                 for file_result in program_validation.file_results
