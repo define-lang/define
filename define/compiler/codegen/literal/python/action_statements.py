@@ -184,6 +184,10 @@ class ActionStatementsGenerator:
                         )
                     )
                 case codegen_input.LiteralValueSetting():
+                    # TODO: Emit values of rationals as exact fractions, such
+                    # as fractions.Fraction, instead of Python floats, which
+                    # cannot represent most rationals. Encoding Operation
+                    # functions and particle values are also typed as float.
                     statements.append(
                         template_context.SetValueContext(
                             position=positions.build(statement.target_position),
