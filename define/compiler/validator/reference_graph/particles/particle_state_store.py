@@ -708,8 +708,12 @@ class ParticleStateStore:
             return parent_key
         # Two or more names are absent, so only a walk can say which of them the
         # caller left unfilled first.
-        present_prefix = self._state.existing_prefix(key)
-        return (*present_prefix, key[len(present_prefix)])
+        first_missing_index = len(self._state.existing_prefix(key))
+        # An action name never holds a particle, so the position after it is the
+        # one the caller left unfilled.
+        if chained_name.is_action_key(key[first_missing_index]):
+            first_missing_index += 1
+        return key[: first_missing_index + 1]
 
     def _rekey_records_for_move(
         self, from_key: tuple[str, ...], to_key: tuple[str, ...]

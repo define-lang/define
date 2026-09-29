@@ -744,3 +744,63 @@ def test_swap_propagates_prior_error_state_from_origin_to_destination(
     assert action_graph(result.reference_graph_result) == [
         (_TEST, _OTHER),
     ]
+
+
+def test_unfilled_implied_action_interface_leaves_its_other_interface_positions_unaffected(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 6
+    assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
+    assert all_diags[0].location.line == 9
+    assert all_diags[0].location.column == 28
+    assert all_diags[0].location.end_line == 9
+    assert all_diags[0].location.end_column == 41
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].constraint_name == "action</impl>"
+    assert all_diags[0].position_name == "position<box>"
+    assert isinstance(
+        all_diags[1], diagnostics.DestroyInEmptyInterfacePositionDiagnostic
+    )
+    assert all_diags[1].location.line == 14
+    assert all_diags[1].location.column == 33
+    assert all_diags[1].location.end_line == 14
+    assert all_diags[1].location.end_column == 84
+    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert (
+        all_diags[1].position_name
+        == "position<box>::action</impl>::position<trigger_pos>"
+    )
+    assert all_diags[1].inferred_at is None
+    assert isinstance(all_diags[2], diagnostics.UntriggeredImpliedActionDiagnostic)
+    assert all_diags[2].location.line == 2
+    assert all_diags[2].location.column == 25
+    assert all_diags[2].location.end_line == 2
+    assert all_diags[2].location.end_column == 38
+    assert all_diags[2].location.file_path == PurePosixPath("other.dfn")
+    assert all_diags[2].implied_action_name == "action</impl>"
+    assert isinstance(all_diags[3], diagnostics.ParentPositionNotOccupiedDiagnostic)
+    assert all_diags[3].location.line == 8
+    assert all_diags[3].location.column == 30
+    assert all_diags[3].location.end_line == 8
+    assert all_diags[3].location.end_column == 70
+    assert all_diags[3].location.file_path == PurePosixPath("other.dfn")
+    assert all_diags[3].position_name == "action</impl>::position<q>::position</c>"
+    assert all_diags[3].parent_position_name == "action</impl>::position<q>"
+    assert isinstance(all_diags[4], diagnostics.UnreferencedPositionDiagnostic)
+    assert all_diags[4].location.line == 3
+    assert all_diags[4].location.column == 25
+    assert all_diags[4].location.end_line == 3
+    assert all_diags[4].location.end_column == 26
+    assert all_diags[4].location.file_path == PurePosixPath("impl.dfn")
+    assert all_diags[4].position_name == "position<q>"
+    assert isinstance(all_diags[5], diagnostics.DeadChildPositionDiagnostic)
+    assert all_diags[5].location.line == 5
+    assert all_diags[5].location.column == 24
+    assert all_diags[5].location.end_line == 5
+    assert all_diags[5].location.end_column == 36
+    assert all_diags[5].location.file_path == PurePosixPath("impl.dfn")
+    assert all_diags[5].constraint_name == "position</c>"
+    assert all_diags[5].position_name == "position<q>"
