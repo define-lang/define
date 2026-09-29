@@ -51,9 +51,6 @@ def test_class_names_at_one_path_end_in_their_name_types():
     assert converter.class_name(_typed_name(name_types.NameType.ACTION, "/thing")) == (
         "ThingAction"
     )
-    assert converter.class_name(_typed_name(name_types.NameType.VALUE, "/thing")) == (
-        "ThingValue"
-    )
 
 
 def test_class_name_cannot_match_imported_name():
@@ -89,10 +86,10 @@ def test_module_name_short_component_unchanged():
     assert converter.module_name(name_content) == "local.my_domain_com.my_lib.worker"
 
 
-def test_class_reference_in_standard_universe():
+def test_function_reference_in_standard_universe():
     converter = naming.NameConverter()
-    value_name = ast.GlobalTypedNameInDefinition(
-        name_type=name_types.NameType.VALUE,
+    encoding_operation_name = ast.GlobalTypedNameInDefinition(
+        name_type=name_types.NameType.ENCODING_OPERATION,
         name_content=ast.DefinitionGlobalNameContent(
             fqun=ast.Fqun(
                 multiverse=None,
@@ -100,13 +97,17 @@ def test_class_reference_in_standard_universe():
                 universe=ast.Universe(name="standard", location=_LOCATION),
                 location=_LOCATION,
             ),
-            path=ast.GlobalPathName(name="/number/rational", location=_LOCATION),
+            path=ast.GlobalPathName(
+                name="/number/decimal/ascii/infix_add", location=_LOCATION
+            ),
             location=_LOCATION,
         ),
         location=_LOCATION,
     )
-    assert converter.class_reference(value_name) == naming.ClassReference(
-        module_name="standard.number.rational", class_name="NumberRationalValue"
+    assert converter.function_reference(
+        encoding_operation_name
+    ) == naming.FunctionReference(
+        module_name="standard.number.decimal.ascii", function_name="infix_add"
     )
 
 

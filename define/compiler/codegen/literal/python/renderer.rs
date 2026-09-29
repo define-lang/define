@@ -56,12 +56,6 @@ struct PositionDefinition {
     implied_qualities: Vec<ClassReference>,
 }
 
-#[derive(Template)]
-#[template(path = "value_definition.j2", escape = "none")]
-struct ValueDefinition {
-    class_name: String,
-}
-
 #[derive(FromPyObject)]
 struct PositionExpression {
     local_position_name: Option<String>,
@@ -341,11 +335,6 @@ fn render_position(definition: PositionDefinition) -> PyResult<String> {
 }
 
 #[pyfunction]
-fn render_value(class_name: String) -> PyResult<String> {
-    render(ValueDefinition { class_name })
-}
-
-#[pyfunction]
 fn render_action(definition: ActionDefinition) -> PyResult<String> {
     render(definition)
 }
@@ -368,7 +357,6 @@ fn _templates(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_function(wrap_pyfunction!(render_module_header, module)?)?;
     module.add_function(wrap_pyfunction!(render_position, module)?)?;
     module.add_function(wrap_pyfunction!(render_action, module)?)?;
-    module.add_function(wrap_pyfunction!(render_value, module)?)?;
     module.add_function(wrap_pyfunction!(render_encoding_operation, module)?)?;
     module.add_function(wrap_pyfunction!(render_entry_point, module)?)
 }

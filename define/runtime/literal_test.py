@@ -77,7 +77,6 @@ class TestGlobalPosition:
         pos.create_particle()
 
         assert pos.particle._assigned_qualities == []
-        assert pos.particle.value_type is None
 
     def test_create_particle_assigns_constraint_qualities(self):
         class ConstraintPosition(literal.GlobalPosition):
@@ -159,14 +158,12 @@ class TestLocalPosition:
 
         quality_types = [type(quality) for quality in pos.particle._assigned_qualities]
         assert quality_types == [ConstraintPosition]
-        assert pos.particle.value_type is None
 
     def test_constraints_defaults_to_empty(self):
         pos = literal.LocalPosition("test")
         pos.create_particle()
 
         assert pos.particle._assigned_qualities == []
-        assert pos.particle.value_type is None
 
     def test_create_particle_assigns_constraint_qualities(self):
         class ConstraintPosition(literal.GlobalPosition):
@@ -257,6 +254,29 @@ class TestMovePosition:
             source.move_particle_to(dest)
         assert exc_info.value.position_name == "position<dest>"
         assert exc_info.value.constraint_name == f"action<{__name__}.ConstraintAction>"
+
+    def test_move_checks_every_destination_constraint(self):
+        class SatisfiedPosition(literal.GlobalPosition):
+            pass
+
+        class UnsatisfiedPosition(literal.GlobalPosition):
+            pass
+
+        source = literal.LocalPosition(
+            "position<source>", constraints=(SatisfiedPosition,)
+        )
+        dest = literal.LocalPosition(
+            "position<dest>", constraints=(SatisfiedPosition, UnsatisfiedPosition)
+        )
+        source.create_particle()
+
+        with pytest.raises(literal.UnsatisfiedConstraintError) as exc_info:
+            source.move_particle_to(dest)
+        assert exc_info.value.position_name == "position<dest>"
+        assert (
+            exc_info.value.constraint_name
+            == f"position<{__name__}.UnsatisfiedPosition>"
+        )
 
     def test_move_constraint_check_does_not_transfer_on_failure(self):
         class ConstraintPosition(literal.GlobalPosition):
@@ -634,7 +654,6 @@ class TestImpliedQualities:
 
         quality_types = [type(quality) for quality in particle._assigned_qualities]
         assert quality_types == [ImpliedPosition, ImplyingAction]
-        assert particle.value_type is None
 
     def test_position_can_imply_action(self):
         class ImpliedAction(literal.Action):
@@ -650,7 +669,6 @@ class TestImpliedQualities:
 
         quality_types = [type(quality) for quality in particle._assigned_qualities]
         assert quality_types == [ImpliedAction, ImplyingPosition]
-        assert particle.value_type is None
 
     def test_assign_position_twice_is_idempotent(self):
         class MyPosition(literal.GlobalPosition):
@@ -691,7 +709,6 @@ class TestImpliedQualities:
             type(quality) for quality in container.particle._assigned_qualities
         ]
         assert quality_types == [Inner, Outer]
-        assert container.particle.value_type is None
 
     def test_move_succeeds_via_transitive_implied_quality(self):
         class Implied(literal.GlobalPosition):
@@ -789,98 +806,3 @@ def test_failed_action_clears_tracing(monkeypatch: pytest.MonkeyPatch, tmp_path:
         literal.start(Failing, trace_operations=True)
     literal.start(_Worker, trace_operations=True)
     assert trace_file.read_text() == "worker.create(item)\nworker.destroy(item)\n"
-
-
-class TestValueConstraints:
-    def test_move_preserves_value_type(self):
-        class Number(literal.Value):
-            pass
-
-        source = literal.LocalPosition("source", constraints=(Number,))
-        destination = literal.LocalPosition("destination", constraints=(Number,))
-        source.create_particle()
-        particle = source.particle
-        source.move_particle_to(destination)
-        assert destination.particle is particle
-        assert particle._assigned_qualities == []
-        assert particle.value_type is Number
-        assert not source.has_particle
-
-    def test_move_rejects_different_value_type(self):
-        class Number(literal.Value):
-            pass
-
-        class Text(literal.Value):
-            pass
-
-        source = literal.LocalPosition("source", constraints=(Number,))
-        destination = literal.LocalPosition("destination", constraints=(Text,))
-        source.create_particle()
-        with pytest.raises(literal.UnsatisfiedConstraintError) as exception:
-            source.move_particle_to(destination)
-        assert exception.value.constraint_name == Text.full_name()
-        assert source.has_particle
-        assert not destination.has_particle
-
-    def test_implied_value_type(self):
-        class Number(literal.Value):
-            pass
-
-        class NumberPosition(literal.GlobalPosition):
-            implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (Number,)
-
-        position = literal.LocalPosition("position", constraints=(NumberPosition,))
-        position.create_particle()
-        quality_types = [
-            type(quality) for quality in position.particle._assigned_qualities
-        ]
-        assert quality_types == [NumberPosition]
-        assert position.particle.value_type is Number
-
-    def test_move_rejects_missing_value_type(self):
-        class Number(literal.Value):
-            pass
-
-        source = literal.LocalPosition("source")
-        destination = literal.LocalPosition("destination", constraints=(Number,))
-        source.create_particle()
-        with pytest.raises(literal.UnsatisfiedConstraintError) as exception:
-            source.move_particle_to(destination)
-        assert exception.value.constraint_name == Number.full_name()
-        assert source.has_particle
-        assert not destination.has_particle
-
-    def test_move_through_unconstrained_position_preserves_value_type(self):
-        class Number(literal.Value):
-            pass
-
-        source = literal.LocalPosition("source", constraints=(Number,))
-        intermediate = literal.LocalPosition("intermediate")
-        destination = literal.LocalPosition("destination", constraints=(Number,))
-        source.create_particle()
-        particle = source.particle
-        source.move_particle_to(intermediate)
-        intermediate.move_particle_to(destination)
-        assert destination.particle is particle
-        assert particle._assigned_qualities == []
-        assert particle.value_type is Number
-        assert not source.has_particle
-        assert not intermediate.has_particle
-
-    def test_matching_value_does_not_satisfy_other_constraints(self):
-        class Number(literal.Value):
-            pass
-
-        class RequiredPosition(literal.GlobalPosition):
-            pass
-
-        source = literal.LocalPosition("source", constraints=(Number,))
-        destination = literal.LocalPosition(
-            "destination", constraints=(Number, RequiredPosition)
-        )
-        source.create_particle()
-        with pytest.raises(literal.UnsatisfiedConstraintError) as exception:
-            source.move_particle_to(destination)
-        assert exception.value.constraint_name == RequiredPosition.full_name()
-        assert source.has_particle
-        assert not destination.has_particle

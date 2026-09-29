@@ -78,7 +78,7 @@ class DuplicateConstraintError(PositionError):
 
 
 class Quality:
-    """A position, action, or value assigned to a particle."""
+    """A position or action assigned to a particle."""
 
     TYPE_NAME: ClassVar[str]
     implied_qualities: ClassVar[tuple[type[Quality], ...]] = ()
@@ -103,12 +103,6 @@ class Quality:
         return self._on_particle
 
 
-class Value(Quality):
-    """A value type assigned to a particle."""
-
-    TYPE_NAME: ClassVar[str] = "value"
-
-
 class Particle:
     """A particle in the Define universe."""
 
@@ -117,7 +111,6 @@ class Particle:
         self._positions: dict[type[GlobalPosition], GlobalPosition] = {}
         self._actions: dict[type[Action], Action] = {}
         self._assigned_qualities: list[Quality] = []
-        self.value_type: type[Value] | None = None
         self._value: float | None = None
 
     def assign_position(self, position_class: type[GlobalPosition]):
@@ -147,8 +140,6 @@ class Particle:
                 self.assign_position(implied_class)
             elif issubclass(implied_class, Action):
                 self.assign_action(implied_class)
-            elif issubclass(implied_class, Value):
-                self.value_type = implied_class
 
     @property
     def value(self) -> float:
@@ -175,11 +166,7 @@ class Particle:
 
     def has_quality_type(self, quality_type: type[Quality]) -> bool:
         """Return whether this particle satisfies a constraint of the given type."""
-        return (
-            quality_type in self._positions
-            or quality_type in self._actions
-            or quality_type is self.value_type
-        )
+        return quality_type in self._positions or quality_type in self._actions
 
 
 class Position(ABC):
@@ -218,8 +205,6 @@ class Position(ABC):
                 self._particle.assign_position(constraint_type)
             elif issubclass(constraint_type, Action):
                 self._particle.assign_action(constraint_type)
-            elif issubclass(constraint_type, Value):
-                self._particle.value_type = constraint_type
 
     def move_particle_to(self, destination: Position):
         """Move the particle from this position to destination."""

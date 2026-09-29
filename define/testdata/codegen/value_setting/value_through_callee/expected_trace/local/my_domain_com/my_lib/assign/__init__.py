@@ -4,8 +4,6 @@ from typing import override
 
 from define.runtime import literal
 
-import standard.number.rational
-
 
 class AssignDestructionContracts:
     def run_destructors_position_trigger(self, _particle: literal.Particle):
@@ -25,18 +23,8 @@ class AssignAction(literal.Action):
             on_particle,
             interface_positions=[
                 literal.LocalPosition("position<trigger>"),
-                literal.LocalPosition(
-                    "position<target>",
-                    constraints=(
-                        standard.number.rational.NumberRationalValue,
-                    ),
-                ),
-                literal.LocalPosition(
-                    "position<source>",
-                    constraints=(
-                        standard.number.rational.NumberRationalValue,
-                    ),
-                ),
+                literal.LocalPosition("position<target>"),
+                literal.LocalPosition("position<source>"),
             ],
         )
 

@@ -4,8 +4,6 @@ from typing import override
 
 from define.runtime import literal
 
-import local.my_domain_com.my_lib.number.rational
-
 
 class ProvideAction(literal.Action):
 
@@ -13,18 +11,8 @@ class ProvideAction(literal.Action):
         super().__init__(
             on_particle,
             interface_positions=[
-                literal.LocalPosition(
-                    "position<input>",
-                    constraints=(
-                        local.my_domain_com.my_lib.number.rational.NumberRationalValue,
-                    ),
-                ),
-                literal.LocalPosition(
-                    "position<result>",
-                    constraints=(
-                        local.my_domain_com.my_lib.number.rational.NumberRationalValue,
-                    ),
-                ),
+                literal.LocalPosition("position<input>"),
+                literal.LocalPosition("position<result>"),
             ],
         )
 

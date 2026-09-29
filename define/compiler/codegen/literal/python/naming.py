@@ -34,6 +34,7 @@ _MODULE_COMPONENT_BYTE_LIMIT = 255
 # component so that truncation never makes a module name depend on what else
 # was compiled.
 _MODULE_COMPONENT_DIGEST_BYTES = 8
+_QUALITY_NAME_TYPES = (name_types.NameType.POSITION, name_types.NameType.ACTION)
 
 
 def _truncate_module_component(component: str) -> str:
@@ -306,12 +307,15 @@ class NameConverter:
         self,
         constraints: ast.PositionConstraintBlock | None,
     ) -> list[ClassReference]:
-        """Extract class references from a position constraint block."""
+        """Extract references to the position and action classes that a position constraint block requires."""
         if constraints is None:
             return []
+        # Values and encodings have no generated classes, because literals are
+        # already in their values' encodings in generated code.
         return [
             self.class_reference(requirement.typed_global_name)
             for requirement in constraints.requirements
+            if requirement.typed_global_name.name_type in _QUALITY_NAME_TYPES
         ]
 
     def implied_qualities_to_class_references(

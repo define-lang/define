@@ -4,7 +4,6 @@ from typing import override
 
 from define.runtime import literal
 
-import local.my_domain_com.my_lib.number.rational
 import local.my_domain_com.my_lib.provide
 
 
@@ -14,9 +13,6 @@ class TestAction(literal.Action):
     def run(self):
         item = literal.LocalPosition(
             "position<item>",
-            constraints=(
-                local.my_domain_com.my_lib.number.rational.NumberRationalValue,
-            ),
         )
         worker = literal.LocalPosition(
             "position<worker>",

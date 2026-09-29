@@ -54,10 +54,10 @@ class ActionStatementsGenerator:
         for step in self._action_input.steps:
             match step:
                 case ast.LocalPositionDefinition():
-                    for quality in step.constraint_typed_names:
-                        modules.add(
-                            self._converter.class_reference(quality).module_name
-                        )
+                    for constraint in self._converter.constraints_to_class_references(
+                        step.constraints
+                    ):
+                        modules.add(constraint.module_name)
                 case ast.CreateParticleStatement():
                     modules.update(
                         self._converter.referenced_modules(step.target_position)

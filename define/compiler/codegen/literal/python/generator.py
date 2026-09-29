@@ -66,12 +66,13 @@ class _SharedModule:
 
 def _generates_module_part(definition: ast.GlobalDefinition) -> bool:
     # Literals are already in their values' encodings in generated code, so
-    # encodings and Potential Literals need no code of their own. Executing a
-    # Value Operation runs the Encoding Operation that performs it, so Value
-    # Operations need no code either.
+    # values, encodings, and Potential Literals need no code of their own.
+    # Executing a Value Operation runs the Encoding Operation that performs it,
+    # so Value Operations need no code either.
     return not isinstance(
         definition,
-        ast.EncodingDefinition
+        ast.ValueDefinition
+        | ast.EncodingDefinition
         | ast.PotentialLiteralDefinition
         | ast.ValueOperationDefinition,
     )
@@ -178,17 +179,6 @@ class _DefinitionGenerator:
                 imports=action.imports,
                 needs_classvar=action.needs_classvar,
                 needs_override=True,
-                needs_runtime_import=True,
-            )
-        elif isinstance(definition, ast.ValueDefinition):
-            value = self._converter.class_reference(definition.typed_name)
-            module_name = value.module_name
-            part = _ModulePart(
-                definition_index=definition_index,
-                body=_templates.render_value(value.class_name),
-                imports=[],
-                needs_classvar=False,
-                needs_override=False,
                 needs_runtime_import=True,
             )
         elif isinstance(definition, ast.EncodingOperationDefinition):

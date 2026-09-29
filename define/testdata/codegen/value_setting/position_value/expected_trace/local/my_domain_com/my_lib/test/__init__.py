@@ -5,7 +5,6 @@ from typing import ClassVar, override
 from define.runtime import literal
 
 import local.my_domain_com.my_lib.target
-import standard.number.rational
 
 
 class TestAction(literal.Action):
@@ -17,9 +16,6 @@ class TestAction(literal.Action):
     def run(self):
         source = literal.LocalPosition(
             "position<source>",
-            constraints=(
-                standard.number.rational.NumberRationalValue,
-            ),
         )
         source.create_particle()
         literal.record_operation("test.create(source)")
