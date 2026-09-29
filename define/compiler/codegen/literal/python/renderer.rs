@@ -42,8 +42,7 @@ impl FunctionReference {
 #[template(path = "module_header.j2", escape = "none")]
 struct ModuleHeader {
     imports: Vec<String>,
-    needs_classvar: bool,
-    needs_override: bool,
+    typing_names: Vec<String>,
     needs_runtime_import: bool,
 }
 
@@ -54,6 +53,7 @@ struct PositionDefinition {
     module_name: String,
     constraints: Vec<ClassReference>,
     implied_qualities: Vec<ClassReference>,
+    value_type: String,
 }
 
 #[derive(FromPyObject)]
@@ -66,7 +66,7 @@ struct PositionExpression {
 enum ChainElement {
     PositionFromPosition(ClassReference),
     ActionFromPosition(ClassReference),
-    PositionFromAction(String),
+    PositionFromAction(String, Option<String>),
     ImpliedAction(ClassReference),
     ImpliedPosition(ClassReference),
 }
@@ -84,6 +84,7 @@ impl<'a, 'py> FromPyObject<'a, 'py> for ChainElement {
             )),
             "POSITION_FROM_ACTION" => Ok(Self::PositionFromAction(
                 object.getattr("typed_name")?.extract()?,
+                object.getattr("value_type")?.extract()?,
             )),
             "IMPLIED_ACTION" => Ok(Self::ImpliedAction(
                 object.getattr("class_reference")?.extract()?,
@@ -103,6 +104,7 @@ struct LocalPosition {
     name: String,
     local_typed_name: String,
     constraints: Vec<ClassReference>,
+    value_type: String,
 }
 
 #[derive(FromPyObject)]
@@ -214,6 +216,7 @@ impl<'a, 'py> FromPyObject<'a, 'py> for StatementKind {
 struct InterfacePosition {
     typed_name: String,
     constraints: Vec<ClassReference>,
+    value_type: String,
 }
 
 #[derive(FromPyObject)]
@@ -340,14 +343,12 @@ fn render(template: impl Template) -> PyResult<String> {
 #[pyfunction]
 fn render_module_header(
     imports: Vec<String>,
-    needs_classvar: bool,
-    needs_override: bool,
+    typing_names: Vec<String>,
     needs_runtime_import: bool,
 ) -> PyResult<String> {
     render(ModuleHeader {
         imports,
-        needs_classvar,
-        needs_override,
+        typing_names,
         needs_runtime_import,
     })
 }

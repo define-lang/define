@@ -750,16 +750,21 @@ class ActionDefinitionValidator:
                     if value is not None:
                         self._steps.append(
                             codegen_input.LiteralValueSetting(
-                                target_position=stmt.target_position, value=value
+                                target_position=stmt.target_position,
+                                value_type=target_type,
+                                value=value,
                             )
                         )
             case ast.PositionReference():
-                self._steps.append(
-                    codegen_input.PositionValueSetting(
-                        target_position=stmt.target_position,
-                        source_position=stmt.source,
+                # Validation reports a target without a known value type.
+                if target_type is not None:
+                    self._steps.append(
+                        codegen_input.PositionValueSetting(
+                            target_position=stmt.target_position,
+                            value_type=target_type,
+                            source_position=stmt.source,
+                        )
                     )
-                )
         if any(self._tracker.has_error_state(position) for position in positions):
             return
         # A failed statement still counts as writing its target, so later

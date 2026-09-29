@@ -3,5 +3,5 @@
 from define.runtime import literal
 
 
-class ReadingPosition(literal.GlobalPosition):
+class ReadingPosition(literal.GlobalPosition[float]):
     pass

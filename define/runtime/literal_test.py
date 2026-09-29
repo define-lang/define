@@ -1,7 +1,7 @@
 # pyright: reportPrivateUsage=false
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, ClassVar, override
+from typing import TYPE_CHECKING, ClassVar, Never, override
 
 import pytest
 
@@ -13,25 +13,25 @@ if TYPE_CHECKING:
 
 class TestParticle:
     def test_assign_position_sets_on_particle(self):
-        class MyPosition(literal.GlobalPosition):
+        class MyPosition(literal.GlobalPosition[Never]):
             pass
 
         particle = literal.Particle()
-        particle.assign_position(MyPosition)
+        particle.assign_quality(MyPosition)
 
         assert particle.get_position(MyPosition).on_particle is particle
 
     def test_get_position_returns_stored_position(self):
-        class MyPosition(literal.GlobalPosition):
+        class MyPosition(literal.GlobalPosition[Never]):
             pass
 
         particle = literal.Particle()
-        particle.assign_position(MyPosition)
+        particle.assign_quality(MyPosition)
 
         assert isinstance(particle.get_position(MyPosition), MyPosition)
 
     def test_get_position_raises_on_missing_name(self):
-        class MyPosition(literal.GlobalPosition):
+        class MyPosition(literal.GlobalPosition[Never]):
             pass
 
         particle = literal.Particle()
@@ -42,7 +42,7 @@ class TestParticle:
 
 class TestGlobalPosition:
     def test_name_from_full_class_path(self):
-        class MyPosition(literal.GlobalPosition):
+        class MyPosition(literal.GlobalPosition[Never]):
             pass
 
         pos = MyPosition(literal.Particle())
@@ -50,7 +50,7 @@ class TestGlobalPosition:
         assert pos.name == f"position<{__name__}.MyPosition>"
 
     def test_create_particle(self):
-        class MyPosition(literal.GlobalPosition):
+        class MyPosition(literal.GlobalPosition[Never]):
             pass
 
         pos = MyPosition(literal.Particle())
@@ -59,7 +59,7 @@ class TestGlobalPosition:
         assert pos.has_particle
 
     def test_create_particle_raises_on_duplicate(self):
-        class MyPosition(literal.GlobalPosition):
+        class MyPosition(literal.GlobalPosition[Never]):
             pass
 
         pos = MyPosition(literal.Particle())
@@ -70,19 +70,19 @@ class TestGlobalPosition:
         assert exc_info.value.position_name == f"position<{__name__}.MyPosition>"
 
     def test_constraints_default_to_empty(self):
-        class MyPosition(literal.GlobalPosition):
+        class MyPosition(literal.GlobalPosition[Never]):
             pass
 
         pos = MyPosition(literal.Particle())
         pos.create_particle()
 
-        assert pos.particle._assigned_qualities == []
+        assert pos.particle._qualities == {}
 
     def test_create_particle_assigns_constraint_qualities(self):
-        class ConstraintPosition(literal.GlobalPosition):
+        class ConstraintPosition(literal.GlobalPosition[Never]):
             pass
 
-        class MyPosition(literal.GlobalPosition):
+        class MyPosition(literal.GlobalPosition[Never]):
             constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
                 ConstraintPosition,
             )
@@ -98,7 +98,7 @@ class TestGlobalPosition:
         class ConstraintAction(literal.Action):
             pass
 
-        class MyPosition(literal.GlobalPosition):
+        class MyPosition(literal.GlobalPosition[Never]):
             constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
                 ConstraintAction,
             )
@@ -111,18 +111,18 @@ class TestGlobalPosition:
 
 class TestLocalPosition:
     def test_name_from_init(self):
-        pos = literal.LocalPosition("my_pos")
+        pos = literal.LocalPosition[Never]("my_pos")
 
         assert pos.name == "my_pos"
 
     def test_create_particle(self):
-        pos = literal.LocalPosition("test")
+        pos = literal.LocalPosition[Never]("test")
         pos.create_particle()
 
         assert pos.has_particle
 
     def test_create_particle_raises_on_duplicate(self):
-        pos = literal.LocalPosition("test")
+        pos = literal.LocalPosition[Never]("test")
         pos.create_particle()
 
         with pytest.raises(literal.ParticleExistsError) as exc_info:
@@ -131,45 +131,45 @@ class TestLocalPosition:
         assert "test" in str(exc_info.value)
 
     def test_has_particle_initially_false(self):
-        pos = literal.LocalPosition("test")
+        pos = literal.LocalPosition[Never]("test")
 
         assert not pos.has_particle
 
     def test_particle_returns_point(self):
-        pos = literal.LocalPosition("test")
+        pos = literal.LocalPosition[Never]("test")
         pos.create_particle()
         particle = pos.particle
 
         assert pos.particle is particle
 
     def test_particle_raises_when_none(self):
-        pos = literal.LocalPosition("test")
+        pos = literal.LocalPosition[Never]("test")
 
         with pytest.raises(literal.NoParticleError) as exc_info:
             pos.particle  # noqa: B018
         assert "test" in str(exc_info.value)
 
     def test_constraints_stored(self):
-        class ConstraintPosition(literal.GlobalPosition):
+        class ConstraintPosition(literal.GlobalPosition[Never]):
             pass
 
-        pos = literal.LocalPosition("test", constraints=(ConstraintPosition,))
+        pos = literal.LocalPosition[Never]("test", constraints=(ConstraintPosition,))
         pos.create_particle()
 
-        quality_types = [type(quality) for quality in pos.particle._assigned_qualities]
+        quality_types = list(pos.particle._qualities)
         assert quality_types == [ConstraintPosition]
 
     def test_constraints_defaults_to_empty(self):
-        pos = literal.LocalPosition("test")
+        pos = literal.LocalPosition[Never]("test")
         pos.create_particle()
 
-        assert pos.particle._assigned_qualities == []
+        assert pos.particle._qualities == {}
 
     def test_create_particle_assigns_constraint_qualities(self):
-        class ConstraintPosition(literal.GlobalPosition):
+        class ConstraintPosition(literal.GlobalPosition[Never]):
             pass
 
-        pos = literal.LocalPosition("test", constraints=(ConstraintPosition,))
+        pos = literal.LocalPosition[Never]("test", constraints=(ConstraintPosition,))
         pos.create_particle()
 
         assert isinstance(
@@ -179,8 +179,8 @@ class TestLocalPosition:
 
 class TestMovePosition:
     def test_move_particle_to(self):
-        source = literal.LocalPosition("source")
-        dest = literal.LocalPosition("dest")
+        source = literal.LocalPosition[Never]("source")
+        dest = literal.LocalPosition[Never]("dest")
         source.create_particle()
 
         source.move_particle_to(dest)
@@ -189,16 +189,16 @@ class TestMovePosition:
         assert dest.has_particle
 
     def test_move_from_empty_raises(self):
-        source = literal.LocalPosition("source")
-        dest = literal.LocalPosition("dest")
+        source = literal.LocalPosition[Never]("source")
+        dest = literal.LocalPosition[Never]("dest")
 
         with pytest.raises(literal.NoParticleError) as exc_info:
             source.move_particle_to(dest)
         assert exc_info.value.position_name == "source"
 
     def test_move_to_occupied_raises(self):
-        source = literal.LocalPosition("source")
-        dest = literal.LocalPosition("dest")
+        source = literal.LocalPosition[Never]("source")
+        dest = literal.LocalPosition[Never]("dest")
         source.create_particle()
         dest.create_particle()
 
@@ -207,13 +207,13 @@ class TestMovePosition:
         assert exc_info.value.position_name == "dest"
 
     def test_move_with_satisfied_constraints_succeeds(self):
-        class ConstraintPosition(literal.GlobalPosition):
+        class ConstraintPosition(literal.GlobalPosition[Never]):
             pass
 
-        source = literal.LocalPosition(
+        source = literal.LocalPosition[Never](
             "position<source>", constraints=(ConstraintPosition,)
         )
-        dest = literal.LocalPosition(
+        dest = literal.LocalPosition[Never](
             "position<dest>", constraints=(ConstraintPosition,)
         )
         source.create_particle()
@@ -224,11 +224,11 @@ class TestMovePosition:
         assert dest.has_particle
 
     def test_move_with_unsatisfied_position_constraint_raises(self):
-        class ConstraintPosition(literal.GlobalPosition):
+        class ConstraintPosition(literal.GlobalPosition[Never]):
             pass
 
-        source = literal.LocalPosition("position<source>")
-        dest = literal.LocalPosition(
+        source = literal.LocalPosition[Never]("position<source>")
+        dest = literal.LocalPosition[Never](
             "position<dest>", constraints=(ConstraintPosition,)
         )
         source.create_particle()
@@ -246,8 +246,10 @@ class TestMovePosition:
         class ConstraintAction(literal.Action):
             pass
 
-        source = literal.LocalPosition("position<source>")
-        dest = literal.LocalPosition("position<dest>", constraints=(ConstraintAction,))
+        source = literal.LocalPosition[Never]("position<source>")
+        dest = literal.LocalPosition[Never](
+            "position<dest>", constraints=(ConstraintAction,)
+        )
         source.create_particle()
 
         with pytest.raises(literal.UnsatisfiedConstraintError) as exc_info:
@@ -256,16 +258,16 @@ class TestMovePosition:
         assert exc_info.value.constraint_name == f"action<{__name__}.ConstraintAction>"
 
     def test_move_checks_every_destination_constraint(self):
-        class SatisfiedPosition(literal.GlobalPosition):
+        class SatisfiedPosition(literal.GlobalPosition[Never]):
             pass
 
-        class UnsatisfiedPosition(literal.GlobalPosition):
+        class UnsatisfiedPosition(literal.GlobalPosition[Never]):
             pass
 
-        source = literal.LocalPosition(
+        source = literal.LocalPosition[Never](
             "position<source>", constraints=(SatisfiedPosition,)
         )
-        dest = literal.LocalPosition(
+        dest = literal.LocalPosition[Never](
             "position<dest>", constraints=(SatisfiedPosition, UnsatisfiedPosition)
         )
         source.create_particle()
@@ -279,11 +281,11 @@ class TestMovePosition:
         )
 
     def test_move_constraint_check_does_not_transfer_on_failure(self):
-        class ConstraintPosition(literal.GlobalPosition):
+        class ConstraintPosition(literal.GlobalPosition[Never]):
             pass
 
-        source = literal.LocalPosition("position<source>")
-        dest = literal.LocalPosition(
+        source = literal.LocalPosition[Never]("position<source>")
+        dest = literal.LocalPosition[Never](
             "position<dest>", constraints=(ConstraintPosition,)
         )
         source.create_particle()
@@ -297,7 +299,7 @@ class TestMovePosition:
 
 class TestDestroyParticle:
     def test_destroy_particle(self):
-        pos = literal.LocalPosition("test")
+        pos = literal.LocalPosition[Never]("test")
         pos.create_particle()
 
         pos.destroy_particle()
@@ -305,14 +307,14 @@ class TestDestroyParticle:
         assert not pos.has_particle
 
     def test_destroy_from_empty_raises(self):
-        pos = literal.LocalPosition("test")
+        pos = literal.LocalPosition[Never]("test")
 
         with pytest.raises(literal.NoParticleError) as exc_info:
             pos.destroy_particle()
         assert exc_info.value.position_name == "test"
 
     def test_destroy_then_create_succeeds(self):
-        pos = literal.LocalPosition("test")
+        pos = literal.LocalPosition[Never]("test")
         pos.create_particle()
         pos.destroy_particle()
 
@@ -321,12 +323,12 @@ class TestDestroyParticle:
         assert pos.has_particle
 
     def test_destroy_does_not_destroy_a_child_position(self):
-        class ChildPosition(literal.GlobalPosition):
+        class ChildPosition(literal.GlobalPosition[Never]):
             pass
 
-        pos = literal.LocalPosition("test")
+        pos = literal.LocalPosition[Never]("test")
         pos.create_particle()
-        pos.particle.assign_position(ChildPosition)
+        pos.particle.assign_quality(ChildPosition)
         child_position = pos.particle.get_position(ChildPosition)
         child_position.create_particle()
 
@@ -340,14 +342,14 @@ class TestDestroyParticle:
                 super().__init__(
                     on_particle,
                     interface_positions=[
-                        literal.LocalPosition("position</iface1>"),
-                        literal.LocalPosition("position</iface2>"),
+                        literal.LocalPosition[Never]("position</iface1>"),
+                        literal.LocalPosition[Never]("position</iface2>"),
                     ],
                 )
 
-        pos = literal.LocalPosition("test")
+        pos = literal.LocalPosition[Never]("test")
         pos.create_particle()
-        pos.particle.assign_action(MyAction)
+        pos.particle.assign_quality(MyAction)
         action = pos.particle.get_action(MyAction)
         iface1 = action.get_interface_position("position</iface1>")
         iface1.create_particle()
@@ -362,18 +364,18 @@ class TestDestroyParticle:
 
 class TestValue:
     def test_value(self):
-        particle = literal.Particle()
+        particle = literal.ValueParticle[float]()
         particle.value = -12.5
         assert particle.value == -12.5
 
     def test_unset_value_raises(self):
-        particle = literal.Particle()
+        particle = literal.ValueParticle[float]()
         with pytest.raises(literal.UnsetValueError):
             _ = particle.value
 
     def test_moved_particle_keeps_value(self):
-        source = literal.LocalPosition("position<source>")
-        target = literal.LocalPosition("position<target>")
+        source = literal.LocalPosition[int]("position<source>")
+        target = literal.LocalPosition[int]("position<target>")
         source.create_particle()
         source.particle.value = 5
         source.move_particle_to(target)
@@ -422,7 +424,7 @@ class TestAction:
 
     def test_get_interface_position(self):
         particle = literal.Particle()
-        pos = literal.LocalPosition("position</iface>")
+        pos = literal.LocalPosition[Never]("position</iface>")
 
         class MyAction(literal.Action):
             pass
@@ -434,6 +436,20 @@ class TestAction:
 
         assert action.get_interface_position("position</iface>") is pos
 
+    def test_get_interface_position_with_value_type(self):
+        pos = literal.LocalPosition[float]("position</iface>")
+
+        class MyAction(literal.Action):
+            pass
+
+        action = MyAction(literal.Particle(), interface_positions=[pos])
+        typed_pos = action.get_interface_position("position</iface>", float)
+        typed_pos.create_particle()
+        typed_pos.particle.value = 2.5
+
+        assert typed_pos is pos
+        assert pos.particle.value == 2.5
+
 
 class TestParticleActions:
     def test_assign_action_sets_on_particle(self):
@@ -441,7 +457,7 @@ class TestParticleActions:
             pass
 
         particle = literal.Particle()
-        particle.assign_action(MyAction)
+        particle.assign_quality(MyAction)
 
         assert particle.get_action(MyAction).on_particle is particle
 
@@ -450,7 +466,7 @@ class TestParticleActions:
             pass
 
         particle = literal.Particle()
-        particle.assign_action(MyAction)
+        particle.assign_quality(MyAction)
 
         assert isinstance(particle.get_action(MyAction), MyAction)
 
@@ -466,7 +482,7 @@ class TestParticleActions:
 
 class TestImpliedQualities:
     def test_position_implied_qualities_default_to_empty(self):
-        class MyPosition(literal.GlobalPosition):
+        class MyPosition(literal.GlobalPosition[Never]):
             pass
 
         assert MyPosition.implied_qualities == ()
@@ -484,10 +500,10 @@ class TestImpliedQualities:
         class Implying(literal.Action):
             implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (Implied,)
 
-        position = literal.LocalPosition("test", constraints=(Implying,))
+        position = literal.LocalPosition[Never]("test", constraints=(Implying,))
         position.create_particle()
 
-        assert [type(quality) for quality in position.particle._assigned_qualities] == [
+        assert list(position.particle._qualities) == [
             Implied,
             Implying,
         ]
@@ -505,10 +521,10 @@ class TestImpliedQualities:
                 Second,
             )
 
-        position = literal.LocalPosition("test", constraints=(Implier,))
+        position = literal.LocalPosition[Never]("test", constraints=(Implier,))
         position.create_particle()
 
-        assert [type(quality) for quality in position.particle._assigned_qualities] == [
+        assert list(position.particle._qualities) == [
             First,
             Second,
             Implier,
@@ -524,10 +540,10 @@ class TestImpliedQualities:
         class A(literal.Action):
             implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (B,)
 
-        position = literal.LocalPosition("test", constraints=(A,))
+        position = literal.LocalPosition[Never]("test", constraints=(A,))
         position.create_particle()
 
-        assert [type(quality) for quality in position.particle._assigned_qualities] == [
+        assert list(position.particle._qualities) == [
             C,
             B,
             A,
@@ -549,10 +565,10 @@ class TestImpliedQualities:
                 Right,
             )
 
-        position = literal.LocalPosition("test", constraints=(Top,))
+        position = literal.LocalPosition[Never]("test", constraints=(Top,))
         position.create_particle()
 
-        assert [type(quality) for quality in position.particle._assigned_qualities] == [
+        assert list(position.particle._qualities) == [
             Shared,
             Left,
             Right,
@@ -563,22 +579,22 @@ class TestImpliedQualities:
         class Shared(literal.Action):
             pass
 
-        class Left(literal.GlobalPosition):
+        class Left(literal.GlobalPosition[Never]):
             implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (Shared,)
 
-        class Right(literal.GlobalPosition):
+        class Right(literal.GlobalPosition[Never]):
             implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (Shared,)
 
-        class Top(literal.GlobalPosition):
+        class Top(literal.GlobalPosition[Never]):
             implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
                 Left,
                 Right,
             )
 
         particle = literal.Particle()
-        particle.assign_position(Top)
+        particle.assign_quality(Top)
 
-        quality_types = [type(quality) for quality in particle._assigned_qualities]
+        quality_types = list(particle._qualities)
         assert quality_types == [
             Shared,
             Left,
@@ -587,61 +603,59 @@ class TestImpliedQualities:
         ]
 
     def test_constraint_also_implied_by_an_earlier_constraint_assigned_once(self):
-        class Implied(literal.GlobalPosition):
+        class Implied(literal.GlobalPosition[Never]):
             pass
 
         class Implier(literal.Action):
             implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (Implied,)
 
-        position = literal.LocalPosition("test", constraints=(Implier, Implied))
+        position = literal.LocalPosition[Never]("test", constraints=(Implier, Implied))
         position.create_particle()
 
-        quality_types = [
-            type(quality) for quality in position.particle._assigned_qualities
-        ]
+        quality_types = list(position.particle._qualities)
         assert quality_types == [Implied, Implier]
 
     def test_directly_assigned_quality_implied_by_a_later_constraint_assigned_once(
         self,
     ):
-        class Implied(literal.GlobalPosition):
+        class Implied(literal.GlobalPosition[Never]):
             pass
 
         class Implier(literal.Action):
             implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (Implied,)
 
-        position = literal.LocalPosition("test", constraints=(Implied, Implier))
+        position = literal.LocalPosition[Never]("test", constraints=(Implied, Implier))
         position.create_particle()
 
-        quality_types = [
-            type(quality) for quality in position.particle._assigned_qualities
-        ]
+        quality_types = list(position.particle._qualities)
         assert quality_types == [Implied, Implier]
 
     def test_local_position_with_a_duplicate_constraint_raises(self):
-        class Implied(literal.GlobalPosition):
+        class Implied(literal.GlobalPosition[Never]):
             pass
 
         class Implier(literal.Action):
             implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (Implied,)
 
         with pytest.raises(literal.DuplicateConstraintError) as exc_info:
-            _ = literal.LocalPosition("test", constraints=(Implier, Implied, Implied))
+            _ = literal.LocalPosition[Never](
+                "test", constraints=(Implier, Implied, Implied)
+            )
         assert exc_info.value.position_name == f"position<{__name__}.Implied>"
 
     def test_global_position_with_a_duplicate_constraint_raises(self):
-        class Foo(literal.GlobalPosition):
+        class Foo(literal.GlobalPosition[Never]):
             pass
 
         with pytest.raises(literal.DuplicateConstraintError) as exc_info:
 
-            class _Bad(literal.GlobalPosition):  # pyright: ignore[reportUnusedClass]
+            class _Bad(literal.GlobalPosition[Never]):  # pyright: ignore[reportUnusedClass]
                 constraints: ClassVar[tuple[type[literal.Quality], ...]] = (Foo, Foo)
 
         assert exc_info.value.position_name == f"position<{__name__}.Foo>"
 
     def test_action_processes_its_implied_qualities(self):
-        class ImpliedPosition(literal.GlobalPosition):
+        class ImpliedPosition(literal.GlobalPosition[Never]):
             pass
 
         class ImplyingAction(literal.Action):
@@ -650,75 +664,71 @@ class TestImpliedQualities:
             )
 
         particle = literal.Particle()
-        particle.assign_action(ImplyingAction)
+        particle.assign_quality(ImplyingAction)
 
-        quality_types = [type(quality) for quality in particle._assigned_qualities]
+        quality_types = list(particle._qualities)
         assert quality_types == [ImpliedPosition, ImplyingAction]
 
     def test_position_can_imply_action(self):
         class ImpliedAction(literal.Action):
             pass
 
-        class ImplyingPosition(literal.GlobalPosition):
+        class ImplyingPosition(literal.GlobalPosition[Never]):
             implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
                 ImpliedAction,
             )
 
         particle = literal.Particle()
-        particle.assign_position(ImplyingPosition)
+        particle.assign_quality(ImplyingPosition)
 
-        quality_types = [type(quality) for quality in particle._assigned_qualities]
+        quality_types = list(particle._qualities)
         assert quality_types == [ImpliedAction, ImplyingPosition]
 
     def test_assign_position_twice_is_idempotent(self):
-        class MyPosition(literal.GlobalPosition):
+        class MyPosition(literal.GlobalPosition[Never]):
             pass
 
         particle = literal.Particle()
-        particle.assign_position(MyPosition)
-        particle.assign_position(MyPosition)
+        particle.assign_quality(MyPosition)
+        particle.assign_quality(MyPosition)
 
-        assert [type(quality) for quality in particle._assigned_qualities] == [
-            MyPosition
-        ]
+        assert list(particle._qualities) == [MyPosition]
 
     def test_assign_action_twice_is_idempotent(self):
         class MyAction(literal.Action):
             pass
 
         particle = literal.Particle()
-        particle.assign_action(MyAction)
-        particle.assign_action(MyAction)
+        particle.assign_quality(MyAction)
+        particle.assign_quality(MyAction)
 
-        assert [type(quality) for quality in particle._assigned_qualities] == [MyAction]
+        assert list(particle._qualities) == [MyAction]
 
     def test_create_particle_propagates_transitive_qualities(self):
-        class Inner(literal.GlobalPosition):
+        class Inner(literal.GlobalPosition[Never]):
             pass
 
-        class Outer(literal.GlobalPosition):
+        class Outer(literal.GlobalPosition[Never]):
             implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (Inner,)
 
-        class Container(literal.GlobalPosition):
+        class Container(literal.GlobalPosition[Never]):
             constraints: ClassVar[tuple[type[literal.Quality], ...]] = (Outer,)
 
         container = Container(literal.Particle())
         container.create_particle()
 
-        quality_types = [
-            type(quality) for quality in container.particle._assigned_qualities
-        ]
+        quality_types = list(container.particle._qualities)
         assert quality_types == [Inner, Outer]
 
     def test_move_succeeds_via_transitive_implied_quality(self):
-        class Implied(literal.GlobalPosition):
+        class Implied(literal.GlobalPosition[Never]):
             pass
 
-        class Implying(literal.GlobalPosition):
+        class Implying(literal.GlobalPosition[Never]):
             implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (Implied,)
 
-        source = literal.LocalPosition("source", constraints=(Implying,))
-        dest = literal.LocalPosition("dest", constraints=(Implied,))
+        source = literal.LocalPosition[Never]("source", constraints=(Implying,))
+        dest = literal.LocalPosition[Never]("dest", constraints=(Implied,))
         source.create_particle()
 
         source.move_particle_to(dest)
@@ -727,16 +737,16 @@ class TestImpliedQualities:
         assert dest.has_particle
 
     def test_assigned_qualities_recorded_in_assignment_order(self):
-        class A(literal.GlobalPosition):
+        class A(literal.GlobalPosition[Never]):
             pass
 
-        class B(literal.GlobalPosition):
+        class B(literal.GlobalPosition[Never]):
             implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (A,)
 
         particle = literal.Particle()
-        particle.assign_position(B)
+        particle.assign_quality(B)
 
-        quality_types = [type(quality) for quality in particle._assigned_qualities]
+        quality_types = list(particle._qualities)
         assert quality_types == [A, B]
 
     def test_assign_action_satisfies_its_quality_type(self):
@@ -744,7 +754,7 @@ class TestImpliedQualities:
             pass
 
         particle = literal.Particle()
-        particle.assign_action(MyAction)
+        particle.assign_quality(MyAction)
 
         assert particle.has_quality_type(MyAction)
 

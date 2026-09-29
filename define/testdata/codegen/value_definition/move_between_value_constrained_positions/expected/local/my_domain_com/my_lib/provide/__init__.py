@@ -11,8 +11,8 @@ class ProvideAction(literal.Action):
         super().__init__(
             on_particle,
             interface_positions=[
-                literal.LocalPosition("position<input>"),
-                literal.LocalPosition("position<result>"),
+                literal.LocalPosition[float]("position<input>"),
+                literal.LocalPosition[float]("position<result>"),
             ],
         )
 

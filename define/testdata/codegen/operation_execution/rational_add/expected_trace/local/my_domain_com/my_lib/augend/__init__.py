@@ -3,5 +3,5 @@
 from define.runtime import literal
 
 
-class AugendPosition(literal.GlobalPosition):
+class AugendPosition(literal.GlobalPosition[float]):
     pass

@@ -1,4 +1,4 @@
-class {{ self.class_name }}(literal.GlobalPosition):
+class {{ self.class_name }}(literal.GlobalPosition[{{ self.value_type }}]):
 {%- if !self.constraints.is_empty() %}
     constraints: ClassVar[tuple[type[literal.Quality], ...]] = (
     {%- for class_reference in self.constraints %}

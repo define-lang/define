@@ -13,6 +13,7 @@ from define.compiler.codegen.literal.python import (
     operation_labels,
     position_expression,
     template_context,
+    value_types,
 )
 from define.compiler.validator import codegen_input
 
@@ -155,6 +156,9 @@ class ActionStatementsGenerator:
                             constraints=self._converter.constraints_to_class_references(
                                 statement.constraints
                             ),
+                            value_type=value_types.constrained_python_value_type(
+                                statement.constraints
+                            ),
                         )
                     )
                 case codegen_input.Destruction():
@@ -184,13 +188,14 @@ class ActionStatementsGenerator:
                         )
                     )
                 case codegen_input.LiteralValueSetting():
-                    # TODO: Emit values of rationals as exact fractions, such
-                    # as fractions.Fraction, instead of Python floats, which
-                    # cannot represent most rationals. Encoding Operation
-                    # functions and particle values are also typed as float.
                     statements.append(
                         template_context.SetValueContext(
-                            position=positions.build(statement.target_position),
+                            position=positions.build(
+                                statement.target_position,
+                                value_type=value_types.python_value_type(
+                                    statement.value_type
+                                ),
+                            ),
                             value=statement.value,
                             operation_label=self._literal_value_label(
                                 statement.target_position, statement.value
@@ -198,10 +203,15 @@ class ActionStatementsGenerator:
                         )
                     )
                 case codegen_input.PositionValueSetting():
+                    value_type = value_types.python_value_type(statement.value_type)
                     statements.append(
                         template_context.SetValueFromContext(
-                            position=positions.build(statement.target_position),
-                            source_position=positions.build(statement.source_position),
+                            position=positions.build(
+                                statement.target_position, value_type=value_type
+                            ),
+                            source_position=positions.build(
+                                statement.source_position, value_type=value_type
+                            ),
                             operation_label=self._operation_label(
                                 template_context.StatementKind.SET_VALUE_FROM,
                                 statement.target_position,
@@ -307,10 +317,13 @@ class ActionStatementsGenerator:
             if isinstance(looking_at, str):
                 arguments.append(looking_at)
                 continue
+            value_type = value_types.constrained_python_value_type(
+                argument.interface_view.constraints
+            )
             if argument.interface_view.is_input:
-                arguments.append(positions.build(looking_at))
+                arguments.append(positions.build(looking_at, value_type=value_type))
             if argument.interface_view.is_output:
-                outputs.append(positions.build(looking_at))
+                outputs.append(positions.build(looking_at, value_type=value_type))
                 output_view_names.append(
                     argument.interface_view.typed_name.name_content.name
                 )

@@ -3,5 +3,5 @@
 from define.runtime import literal
 
 
-class DistancePosition(literal.GlobalPosition):
+class DistancePosition(literal.GlobalPosition[float]):
     pass

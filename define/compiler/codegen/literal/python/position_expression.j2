@@ -16,9 +16,9 @@ self
 .particle.get_action(
 {{ extra_indent }}            {{ class_reference.name_in_module(module_name) }}
 {{ extra_indent }}        )
-            {%- when ChainElement::PositionFromAction with (typed_name) -%}
+            {%- when ChainElement::PositionFromAction with (typed_name, value_type) -%}
 .get_interface_position(
-{{ extra_indent }}            "{{ typed_name }}"
+{{ extra_indent }}            "{{ typed_name }}"{% if let Some(value_type) = value_type %}, {{ value_type }}{% endif %}
 {{ extra_indent }}        )
             {%- when ChainElement::ImpliedAction with (class_reference) -%}
 {% if !expr.from_contract_particle %}.on_particle{% endif %}.get_action(

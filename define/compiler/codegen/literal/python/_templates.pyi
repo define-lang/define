@@ -6,8 +6,7 @@ from define.compiler.codegen.literal.python import (
 
 def render_module_header(
     imports: list[str],
-    needs_classvar: bool,
-    needs_override: bool,
+    typing_names: list[str],
     needs_runtime_import: bool,
 ) -> str: ...
 def render_position(definition: template_context.PositionDefinitionContext) -> str: ...

@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import TYPE_CHECKING, ClassVar, cast, override
+from typing import TYPE_CHECKING, ClassVar, Never, cast, overload, override
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
@@ -107,66 +107,59 @@ class Particle:
     """A particle in the Define universe."""
 
     def __init__(self):
-        """Initialize with empty positions and actions dictionaries."""
-        self._positions: dict[type[GlobalPosition], GlobalPosition] = {}
-        self._actions: dict[type[Action], Action] = {}
-        self._assigned_qualities: list[Quality] = []
-        self._value: float | None = None
+        """Initialize with no assigned qualities."""
+        self._qualities: dict[type[Quality], Quality] = {}
 
-    def assign_position(self, position_class: type[GlobalPosition]):
-        """Assign a position to this particle, or do nothing if already present."""
+    def assign_quality(self, quality_class: type[Quality]):
+        """Assign a quality to this particle, or do nothing if already present."""
         # A quality is set at most once; a repeat assignment (e.g. a constraint
         # also reached through another constraint's implication) is a no-op.
         # Genuinely duplicate constraints are rejected when a position is built.
-        if position_class in self._positions:
+        if quality_class in self._qualities:
             return
-        self._assign_implied_qualities(position_class)
-        position = position_class(self)
-        self._assigned_qualities.append(position)
-        self._positions[position_class] = position
-
-    def assign_action(self, action_class: type[Action]):
-        """Assign an action to this particle, or do nothing if already present."""
-        if action_class in self._actions:
-            return
-        self._assign_implied_qualities(action_class)
-        action = action_class(self)
-        self._assigned_qualities.append(action)
-        self._actions[action_class] = action
-
-    def _assign_implied_qualities(self, quality_class: type[Quality]):
         for implied_class in quality_class.implied_qualities:
-            if issubclass(implied_class, GlobalPosition):
-                self.assign_position(implied_class)
-            elif issubclass(implied_class, Action):
-                self.assign_action(implied_class)
+            self.assign_quality(implied_class)
+        self._qualities[quality_class] = quality_class(self)
+
+    def get_position[PositionType: Quality](
+        self, position_class: type[PositionType]
+    ) -> PositionType:
+        """Return the assigned position of the given type."""
+        return cast("PositionType", self._qualities[position_class])
+
+    def get_action[ActionType: Action](
+        self, action_class: type[ActionType]
+    ) -> ActionType:
+        """Return the assigned action of the given type."""
+        return cast("ActionType", self._qualities[action_class])
+
+    def has_quality_type(self, quality_type: type[Quality]) -> bool:
+        """Return whether this particle satisfies a constraint of the given type."""
+        return quality_type in self._qualities
+
+
+class ValueParticle[ValueType](Particle):
+    """A particle whose value has the Python type of its value type's encoding.
+
+    Every particle is a ValueParticle. Code that does not know a particle's
+    value type sees it as a Particle, which has no value.
+    """
+
+    def __init__(self):
+        """Initialize with an unset value."""
+        super().__init__()
+        self._value: ValueType | None = None
 
     @property
-    def value(self) -> float:
+    def value(self) -> ValueType:
         """Return this particle's value, raising UnsetValueError if it is not set."""
         if self._value is None:
             raise UnsetValueError
         return self._value
 
     @value.setter
-    def value(self, value: float):
+    def value(self, value: ValueType):
         self._value = value
-
-    def get_position[PositionType: GlobalPosition](
-        self, position_class: type[PositionType]
-    ) -> PositionType:
-        """Return the assigned position of the given type."""
-        return cast("PositionType", self._positions[position_class])
-
-    def get_action[ActionType: Action](
-        self, action_class: type[ActionType]
-    ) -> ActionType:
-        """Return the assigned action of the given type."""
-        return cast("ActionType", self._actions[action_class])
-
-    def has_quality_type(self, quality_type: type[Quality]) -> bool:
-        """Return whether this particle satisfies a constraint of the given type."""
-        return quality_type in self._positions or quality_type in self._actions
 
 
 class Position(ABC):
@@ -199,12 +192,11 @@ class Position(ABC):
         """Create a particle in this position. Raises if one exists."""
         if self._particle is not None:
             raise ParticleExistsError(self.name)
-        self._particle = Particle()
+        # Type arguments do not exist at runtime; subclasses that know the
+        # position's value type narrow the particle to it.
+        self._particle = ValueParticle[object]()
         for constraint_type in self._get_constraints():
-            if issubclass(constraint_type, GlobalPosition):
-                self._particle.assign_position(constraint_type)
-            elif issubclass(constraint_type, Action):
-                self._particle.assign_action(constraint_type)
+            self._particle.assign_quality(constraint_type)
 
     def move_particle_to(self, destination: Position):
         """Move the particle from this position to destination."""
@@ -236,8 +228,12 @@ def _reject_duplicate_constraints(constraints: tuple[type[Quality], ...]):
         seen.add(constraint)
 
 
-class GlobalPosition(Quality, Position):
-    """A globally-defined position with constraints."""
+class GlobalPosition[ValueType](Quality, Position):
+    """A globally-defined position with constraints.
+
+    ValueType is the Python type of the position's value, or Never when the
+    position has no value constraint.
+    """
 
     constraints: ClassVar[tuple[type[Quality], ...]] = ()
     TYPE_NAME: ClassVar[str] = "position"
@@ -247,14 +243,26 @@ class GlobalPosition(Quality, Position):
         super().__init_subclass__(**kwargs)
         _reject_duplicate_constraints(cls.constraints)
 
+    @property
+    @override
+    def particle(self) -> ValueParticle[ValueType]:
+        """Return the particle, raising NoParticleError if none exists."""
+        # Validation only allows a particle into this position if its value type
+        # is this position's value type.
+        return cast("ValueParticle[ValueType]", super().particle)
+
     @override
     def _get_constraints(self) -> tuple[type[Quality], ...]:
         """Return the constraint types from the class variable."""
         return type(self).constraints
 
 
-class LocalPosition(Position):
-    """A locally-defined position with a runtime name and optional constraints."""
+class LocalPosition[ValueType](Position):
+    """A locally-defined position with a runtime name and optional constraints.
+
+    ValueType is the Python type of the position's value, or Never when the
+    position has no value constraint.
+    """
 
     def __init__(
         self,
@@ -273,6 +281,14 @@ class LocalPosition(Position):
         """Return the name of this position."""
         return self._name
 
+    @property
+    @override
+    def particle(self) -> ValueParticle[ValueType]:
+        """Return the particle, raising NoParticleError if none exists."""
+        # Validation only allows a particle into this position if its value type
+        # is this position's value type.
+        return cast("ValueParticle[ValueType]", super().particle)
+
     @override
     def _get_constraints(self) -> tuple[type[Quality], ...]:
         """Return the constraint types for this position."""
@@ -290,20 +306,34 @@ class Action(Quality):
     def __init__(
         self,
         on_particle: Particle,
-        interface_positions: Sequence[LocalPosition] = (),
+        interface_positions: Sequence[Position] = (),
     ):
         """Initialize with the assigned particle and its interface positions."""
         super().__init__(on_particle)
-        self._interface_positions: dict[str, LocalPosition] = {
+        self._interface_positions: dict[str, Position] = {
             position.name: position for position in interface_positions
         }
 
-    def get_interface_position(self, name: str) -> LocalPosition:
-        """Return the interface position with the given name."""
+    @overload
+    def get_interface_position(self, name: str, /) -> Position: ...
+
+    @overload
+    def get_interface_position[ValueType](
+        self, name: str, value_type: type[ValueType], /
+    ) -> LocalPosition[ValueType]: ...
+
+    def get_interface_position[ValueType](
+        self, name: str, _value_type: type[ValueType] | None = None, /
+    ) -> Position:
+        """Return the interface position with the given name.
+
+        Given the Python type of the position's value, the position's particle
+        has a value of that type.
+        """
         return self._interface_positions[name]
 
     @property
-    def interface_positions(self) -> tuple[LocalPosition, ...]:
+    def interface_positions(self) -> tuple[Position, ...]:
         """Return this action's interface positions, in declaration order."""
         return tuple(self._interface_positions.values())
 
@@ -323,7 +353,9 @@ def start(entry_point: type[Action], *, trace_operations: bool = False):
     global _operation_trace  # noqa: PLW0603 - A program run has exactly one operation trace.
     _operation_trace = [] if trace_operations else None
     try:
-        view_point = LocalPosition("position<view_point>", constraints=(entry_point,))
+        view_point = LocalPosition[Never](
+            "position<view_point>", constraints=(entry_point,)
+        )
         view_point.create_particle()
         view_point.particle.get_action(entry_point).run()
         trace_file = os.environ.get("DEFINE_OPERATION_TRACE_FILE")

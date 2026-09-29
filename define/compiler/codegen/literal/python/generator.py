@@ -33,8 +33,8 @@ class _ModulePart(msgspec.Struct, frozen=True):
     definition_index: int
     body: str
     imports: list[str]
-    needs_classvar: bool
-    needs_override: bool
+    # Names that the module imports from typing.
+    typing_names: list[str]
     needs_runtime_import: bool
 
 
@@ -76,6 +76,17 @@ def _generates_module_part(definition: ast.GlobalDefinition) -> bool:
         | ast.PotentialLiteralDefinition
         | ast.ValueOperationDefinition,
     )
+
+
+def _typing_names(*, classvar: bool, never: bool, override: bool) -> list[str]:
+    typing_names: list[str] = []
+    if classvar:
+        typing_names.append("ClassVar")
+    if never:
+        typing_names.append("Never")
+    if override:
+        typing_names.append("override")
+    return typing_names
 
 
 def _module_name(
@@ -177,8 +188,11 @@ class _DefinitionGenerator:
                 definition_index=definition_index,
                 body=_templates.render_action(action),
                 imports=action.imports,
-                needs_classvar=action.needs_classvar,
-                needs_override=True,
+                typing_names=_typing_names(
+                    classvar=action.needs_classvar,
+                    never=action.needs_never,
+                    override=True,
+                ),
                 needs_runtime_import=True,
             )
         elif isinstance(definition, ast.EncodingOperationDefinition):
@@ -195,8 +209,7 @@ class _DefinitionGenerator:
                 definition_index=definition_index,
                 body=_templates.render_encoding_operation(encoding_operation),
                 imports=encoding_operation.imports,
-                needs_classvar=False,
-                needs_override=False,
+                typing_names=[],
                 needs_runtime_import=False,
             )
         else:
@@ -209,8 +222,11 @@ class _DefinitionGenerator:
                 definition_index=definition_index,
                 body=_templates.render_position(position),
                 imports=position.imports,
-                needs_classvar=position.needs_classvar,
-                needs_override=False,
+                typing_names=_typing_names(
+                    classvar=position.needs_classvar,
+                    never=position.needs_never,
+                    override=False,
+                ),
                 needs_runtime_import=True,
             )
         shared_module = self._module_plan.shared_modules.get(module_name)
@@ -237,12 +253,13 @@ class _DefinitionGenerator:
     def _write_module(self, module_name: str, parts: list[_ModulePart]) -> Path:
         """Write a module containing the given definitions' classes."""
         imports: set[str] = set()
+        typing_names: set[str] = set()
         for part in parts:
             imports.update(part.imports)
+            typing_names.update(part.typing_names)
         content = _templates.render_module_header(
             sorted(imports),
-            any(part.needs_classvar for part in parts),
-            any(part.needs_override for part in parts),
+            sorted(typing_names),
             any(part.needs_runtime_import for part in parts),
         )
         for part in parts:

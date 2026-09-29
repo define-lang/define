@@ -3,5 +3,5 @@
 from define.runtime import literal
 
 
-class BalancePosition(literal.GlobalPosition):
+class BalancePosition(literal.GlobalPosition[float]):
     pass

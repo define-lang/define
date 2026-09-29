@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 from define.compiler.codegen.literal.python import (
     naming,
     template_context,
+    value_types,
 )
 
 if TYPE_CHECKING:
@@ -45,4 +46,7 @@ class PositionDefinitionGenerator:
             module_name=module_name,
             constraints=constraints,
             implied_qualities=implied_qualities,
+            value_type=value_types.constrained_python_value_type(
+                self._definition.constraints
+            ),
         )

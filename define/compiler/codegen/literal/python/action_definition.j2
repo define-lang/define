@@ -26,7 +26,7 @@ class {{ self.class_name }}(literal.Action):
             interface_positions=[
     {%- for iface in self.interface_positions %}
         {%- if !iface.constraints.is_empty() %}
-                literal.LocalPosition(
+                literal.LocalPosition[{{ iface.value_type }}](
                     "{{ iface.typed_name }}",
                     constraints=(
             {%- for class_reference in iface.constraints %}
@@ -35,7 +35,7 @@ class {{ self.class_name }}(literal.Action):
                     ),
                 ),
         {%- else %}
-                literal.LocalPosition("{{ iface.typed_name }}"),
+                literal.LocalPosition[{{ iface.value_type }}]("{{ iface.typed_name }}"),
         {%- endif %}
     {%- endfor %}
             ],

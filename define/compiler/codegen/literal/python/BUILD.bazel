@@ -25,6 +25,7 @@ py_library(
     deps = [
         ":naming",
         ":template_context",
+        ":value_types",
         "@pypi//msgspec",
     ],
 )
@@ -38,6 +39,7 @@ py_library(
         ":action_statements",
         ":naming",
         ":template_context",
+        ":value_types",
         "//define/compiler/validator:codegen_input",
     ],
 )
@@ -52,6 +54,7 @@ py_library(
         ":operation_labels",
         ":position_expression",
         ":template_context",
+        ":value_types",
         "//define/compiler:ast",
         "//define/compiler/validator:codegen_input",
         "//define/compiler/validator/reference_graph:destruction_contract",
@@ -147,6 +150,7 @@ py_library(
     deps = [
         ":naming",
         ":template_context",
+        ":value_types",
         "//define/compiler:ast",
     ],
 )
@@ -187,8 +191,18 @@ py_library(
     visibility = ["//define/compiler/codegen:__subpackages__"],
     deps = [
         ":naming",
+        ":value_types",
         "//define/compiler:name_types",
         "@pypi//msgspec",
+    ],
+)
+
+py_library(
+    name = "value_types",
+    srcs = ["value_types.py"],
+    deps = [
+        "//define/compiler:ast",
+        "//define/compiler:constants",
     ],
 )
 
@@ -234,6 +248,7 @@ pyright_test(
         ":position_expression",
         ":python",
         ":template_context",
+        ":value_types",
     ],
 )
 

@@ -15,7 +15,7 @@
     {%- for statement in statements.iter() %}
         {%- match statement.kind %}
             {%- when StatementKind::LocalPosition with (statement) %}
-        {{ statement.name }} = literal.LocalPosition(
+        {{ statement.name }} = literal.LocalPosition[{{ statement.value_type }}](
             "{{ statement.local_typed_name }}",
                 {%- if !statement.constraints.is_empty() %}
             constraints=(

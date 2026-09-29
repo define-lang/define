@@ -6,10 +6,12 @@ from typing import TYPE_CHECKING
 
 import msgspec
 
+from define.compiler.codegen.literal.python import template_context, value_types
+
 if TYPE_CHECKING:
     from collections.abc import Collection
 
-    from define.compiler.codegen.literal.python import naming, template_context
+    from define.compiler.codegen.literal.python import naming
 
 
 class ActionDefinitionContext(msgspec.Struct):
@@ -30,3 +32,17 @@ class ActionDefinitionContext(msgspec.Struct):
     def needs_classvar(self) -> bool:
         """Whether the generated class has class variables."""
         return bool(self.implied_qualities)
+
+    @property
+    def needs_never(self) -> bool:
+        """Whether the generated class has positions whose particles have no value."""
+        for interface_position in self.interface_positions:
+            if interface_position.value_type == value_types.NO_VALUE:
+                return True
+        for statement in self.statements:
+            if (
+                isinstance(statement, template_context.LocalPositionContext)
+                and statement.value_type == value_types.NO_VALUE
+            ):
+                return True
+        return False

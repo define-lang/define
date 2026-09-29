@@ -9,6 +9,7 @@ from define.compiler.codegen.literal.python import (
     action_statements,
     naming,
     template_context,
+    value_types,
 )
 
 if TYPE_CHECKING:
@@ -45,6 +46,9 @@ class ActionDefinitionGenerator:
                 template_context.InterfacePositionContext(
                     typed_name=position.typed_name.source_typed_name,
                     constraints=self._converter.constraints_to_class_references(
+                        position.constraints
+                    ),
+                    value_type=value_types.constrained_python_value_type(
                         position.constraints
                     ),
                 )

@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, ClassVar
 import msgspec
 
 from define.compiler import name_types
+from define.compiler.codegen.literal.python import value_types
 
 if TYPE_CHECKING:
     from define.compiler.codegen.literal.python import naming
@@ -85,19 +86,23 @@ class GlobalQualityChainElement(ChainElement):
 class InterfacePositionChainElement(ChainElement):
     """An interface position in a position reference chain."""
 
-    __slots__: ClassVar[tuple[str, ...]] = ("typed_name",)
+    __slots__: ClassVar[tuple[str, ...]] = ("typed_name", "value_type")
 
     typed_name: str
+    # The Python type of the position's value, when the expression uses it.
+    value_type: str | None
 
     def __init__(
         self,
         previous_name_type: name_types.NameType | None,
         name_type: name_types.NameType,
         typed_name: str,
+        value_type: str | None = None,
     ):
         """Initialize an interface position in a position reference chain."""
         super().__init__(previous_name_type, name_type)
         self.typed_name = typed_name
+        self.value_type = value_type
 
 
 class PositionExpr(msgspec.Struct):
@@ -153,6 +158,7 @@ class LocalPositionContext(ActionStatementContext):
     name: str
     local_typed_name: str
     constraints: list[naming.ClassReference]
+    value_type: str
 
 
 class ParticleOperationContext(ActionStatementContext, kw_only=True):
@@ -311,6 +317,7 @@ class InterfacePositionContext(msgspec.Struct):
 
     typed_name: str
     constraints: list[naming.ClassReference]
+    value_type: str
 
 
 class PositionDefinitionContext(msgspec.Struct):
@@ -320,11 +327,17 @@ class PositionDefinitionContext(msgspec.Struct):
     module_name: str
     constraints: list[naming.ClassReference]
     implied_qualities: list[naming.ClassReference]
+    value_type: str
 
     @property
     def needs_classvar(self) -> bool:
         """Whether the generated class has class variables."""
         return bool(self.constraints or self.implied_qualities)
+
+    @property
+    def needs_never(self) -> bool:
+        """Whether the generated class's particles have no value."""
+        return self.value_type == value_types.NO_VALUE
 
     @property
     def imports(self) -> list[str]:
