@@ -254,8 +254,9 @@ class EncodingOperationDefinitionValidator(
         statement: ast.EncodingOperationExecutionStatement
         | ast.ComputerOperationExecutionStatement,
     ):
-        # TODO: Report a computer operation that the compiler cannot perform.
-        # Code generation relies on performing every one.
+        # TODO: Once users can define Encoding Operations that associate with
+        # Value Operations, report a computer operation that the compiler
+        # cannot perform. Code generation relies on performing every one.
         self._fulfill_every_view_direction()
         # The grammar allows only computer operations in an Encoding
         # Operation.

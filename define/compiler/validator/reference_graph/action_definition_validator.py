@@ -837,9 +837,10 @@ class ActionDefinitionValidator:
                 typing.cast("ast.ValueOperationDefinition", executed)
             )
         )
-        # TODO: Report executing a Value Operation that no Encoding Operation
-        # performs. Code generation relies on every executed Value Operation
-        # having one.
+        # TODO: Once users can define Value Operations and Encoding Operations
+        # that associate, report executing a Value Operation that no Encoding
+        # Operation performs. Code generation relies on every executed Value
+        # Operation having one.
         if encoding_operation is None:
             return
         arguments = self._operation_arguments_validator.operation_arguments(
