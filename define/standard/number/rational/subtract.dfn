@@ -1,11 +1,11 @@
 define the operation<standard:/number/rational/subtract> {
-    define the view<from> {
+    define the view<a> {
         it is read.
         it may only contain particles where {
             it has the value</number/rational>.
         }
     }
-    define the view<take_away> {
+    define the view<b> {
         it is read.
         it may only contain particles where {
             it has the value</number/rational>.

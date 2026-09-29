@@ -143,8 +143,8 @@ define the potential action<my.domain.com:my_lib:/test> {
             with view<value> looking at position</total>.
         }
         execute the operation<standard:/number/rational/subtract> {
-            with view<from> looking at literal<standard:/number>"5".
-            with view<take_away> looking at position</total>.
+            with view<a> looking at literal<standard:/number>"5".
+            with view<b> looking at position</total>.
             with view<result> looking at position</remaining>.
         }
         execute the operation<standard:/number/rational/multiply> {

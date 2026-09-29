@@ -1,11 +1,11 @@
 define the encoding_operation<standard:/number/decimal/ascii/infix_subtract> {
-    define the view<from> {
+    define the view<a> {
         it is read.
         it may only contain particles where {
             it has the encoding</number/decimal/ascii>.
         }
     }
-    define the view<take_away> {
+    define the view<b> {
         it is read.
         it may only contain particles where {
             it has the encoding</number/decimal/ascii>.

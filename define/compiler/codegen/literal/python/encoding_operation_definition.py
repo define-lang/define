@@ -154,8 +154,8 @@ _COMPUTER_OPERATIONS: Final[
     ),
     f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/infix_subtract>": _BinaryOperation(
         operator=template_context.BinaryOperator.SUBTRACT,
-        left_view="view<from>",
-        right_view="view<take_away>",
+        left_view="view<a>",
+        right_view="view<b>",
         result_view="view<result>",
     ),
     f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/decimal/ascii/negate>": _PrefixOperation(
