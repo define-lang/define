@@ -128,6 +128,19 @@ def _parse_binary_ascii_as_decimal_ascii(content: str) -> str:
     return str(int(_parse_binary_ascii(content), 2))
 
 
+def _parse_decimal_ascii_as_binary_ascii(content: str) -> str:
+    decimal = _parse_decimal_ascii(content)
+    if decimal.startswith("-"):
+        raise LiteralParseError("binary values cannot be negative", 0)
+    decimal_point = decimal.find(".")
+    if decimal_point != -1:
+        raise LiteralParseError("binary values are whole numbers", decimal_point)
+    # TODO: Convert decimal literals longer than 4300 digits, which exceed
+    # Python's limit on converting a decimal string to an int and so raise
+    # ValueError.
+    return format(int(decimal), "b")
+
+
 # Keyed by the Potential Literal's encoding and then the value's encoding.
 LITERAL_PARSERS: Final[dict[tuple[str, str], Callable[[str], str]]] = {
     (
@@ -142,6 +155,10 @@ LITERAL_PARSERS: Final[dict[tuple[str, str], Callable[[str], str]]] = {
         constants.BOOLEAN_ASCII_ENCODING,
         constants.BOOLEAN_ASCII_ENCODING,
     ): _parse_boolean_ascii,
+    (
+        constants.DECIMAL_ASCII_ENCODING,
+        constants.BINARY_ASCII_ENCODING,
+    ): _parse_decimal_ascii_as_binary_ascii,
     (
         constants.DECIMAL_ASCII_ENCODING,
         constants.DECIMAL_ASCII_ENCODING,

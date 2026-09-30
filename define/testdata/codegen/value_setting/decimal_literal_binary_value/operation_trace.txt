@@ -1,0 +1,2 @@
+test.create(/bits)
+test.set_value(/bits, 0b1011)

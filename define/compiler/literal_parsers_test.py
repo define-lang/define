@@ -13,6 +13,9 @@ _PARSE_BINARY_ASCII_AS_DECIMAL_ASCII = literal_parsers.LITERAL_PARSERS[
 _PARSE_BOOLEAN_ASCII = literal_parsers.LITERAL_PARSERS[
     constants.BOOLEAN_ASCII_ENCODING, constants.BOOLEAN_ASCII_ENCODING
 ]
+_PARSE_DECIMAL_ASCII_AS_BINARY_ASCII = literal_parsers.LITERAL_PARSERS[
+    constants.DECIMAL_ASCII_ENCODING, constants.BINARY_ASCII_ENCODING
+]
 _PARSE_DECIMAL_ASCII = literal_parsers.LITERAL_PARSERS[
     constants.DECIMAL_ASCII_ENCODING, constants.DECIMAL_ASCII_ENCODING
 ]
@@ -122,5 +125,31 @@ def test_decimal_ascii_accepts(content: str):
 def test_decimal_ascii_rejects(content: str, reason: str, content_index: int):
     with pytest.raises(literal_parsers.LiteralParseError) as error:
         _ = _PARSE_DECIMAL_ASCII(content)
+    assert error.value.reason == reason
+    assert error.value.content_index == content_index
+
+
+@pytest.mark.parametrize(
+    ("content", "binary"),
+    [("0", "0"), ("1", "1"), ("11", "1011"), ("256", "100000000")],
+)
+def test_decimal_ascii_as_binary_ascii_accepts(content: str, binary: str):
+    assert _PARSE_DECIMAL_ASCII_AS_BINARY_ASCII(content) == binary
+
+
+@pytest.mark.parametrize(
+    ("content", "reason", "content_index"),
+    [
+        ("-3", "binary values cannot be negative", 0),
+        ("2.5", "binary values are whole numbers", 1),
+        ("-2.5", "binary values cannot be negative", 0),
+        ("03", "numbers are written without leading zeros", 0),
+    ],
+)
+def test_decimal_ascii_as_binary_ascii_rejects(
+    content: str, reason: str, content_index: int
+):
+    with pytest.raises(literal_parsers.LiteralParseError) as error:
+        _ = _PARSE_DECIMAL_ASCII_AS_BINARY_ASCII(content)
     assert error.value.reason == reason
     assert error.value.content_index == content_index
