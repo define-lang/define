@@ -1,0 +1,24 @@
+# The pending Guarantee from action</middle> writes nothing itself, but its
+# callee action</empty_marker> empties a particle that this action created
+# below a particle that action</middle> did not create. Destroying
+# position<holder> must apply the pending Guarantee rather than destroy that
+# particle again. That particle's Destructor action</retire> needs
+# position</needed>, which is never filled, so each time the particle is
+# destroyed adds one violation.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<holder> {
+            it may only contain particles where {
+                it has the action</wrapper>.
+                it has the position</box>.
+            }
+        }
+        create a particle in position<holder>.
+        create a particle in position<holder>::position</box>.
+        create a particle in position<holder>::position</box>::position</inner>.
+        create a particle in position<holder>::position</box>::position</inner>::position</marker>.
+        create a particle in position<holder>::action</wrapper>::position<run>.
+    }
+}

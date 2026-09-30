@@ -1,6 +1,8 @@
 # The pending Guarantee from action</empty_marker> empties a particle that this
 # action created, so destroying position<holder> must apply it rather than
-# destroy that particle again.
+# destroy that particle again. That particle's Destructor action</retire> needs
+# position</needed>, which is never filled, so each time the particle is
+# destroyed adds one violation.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.

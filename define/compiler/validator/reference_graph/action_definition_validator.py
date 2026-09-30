@@ -1201,49 +1201,22 @@ class ActionDefinitionValidator:
                 )
             ),
             guarantees_discardable_on_destruction=(
-                self._guarantees_discardable_on_destruction(guarantees, callees)
+                self._tracker.guarantees_discardable_on_destruction(
+                    self._has_destructor
+                )
             ),
         )
 
-    def _guarantees_discardable_on_destruction(
-        self,
-        guarantees: dict[
-            chained_name.PositionReferenceTuple, action_contract.PositionGuarantee
-        ],
-        callees: list[action_contract.CalleeContract],
-    ) -> bool:
-        created: set[chained_name.ChainedNameTuple] = set()
-        # A particle from outside the contract, or an error mark, may matter to
-        # the destroyer, so either one prevents discarding. Of the other
-        # Guarantees, only a new particle can bring a Destructor. Empty and
-        # unchanged Guarantees add nothing, and discarding separately requires
-        # that nothing be tracked where they apply.
-        for position, guarantee in guarantees.items():
-            if isinstance(
-                guarantee,
-                (
-                    action_contract.OccupiedByExistingGuarantee,
-                    action_contract.ErrorGuarantee,
-                ),
-            ):
-                return False
-            if not isinstance(guarantee, action_contract.OccupiedByNewGuarantee):
+    def _has_destructor(self, particle: particle_info.ParticleInfo) -> bool:
+        for quality in particle.qualities.assignments:
+            if quality.name_type != name_types.NameType.ACTION:
                 continue
-            for quality in guarantee.qualities.assignments:
-                if quality.name_type != name_types.NameType.ACTION:
-                    continue
-                definition = self._action_definition(quality)
-                # A Destructor must be triggered when its particle is destroyed,
-                # so the walk has to apply this Guarantee to find it. (The destruction
-                # walk skips unresolved qualities, so they are not relevant here.)
-                if definition is not None and definition.is_destructor:
-                    return False
-            created.add(position)
-        return all(
-            callee.contract.guarantees_discardable_on_destruction
-            and chained_name.parent(callee.action_chain) in created
-            for callee in callees
-        )
+            definition = self._action_definition(quality)
+            # The destruction walk skips unresolved qualities, so they are not
+            # relevant here.
+            if definition is not None and definition.is_destructor:
+                return True
+        return False
 
     def _check_destructor_guarantees(
         self,

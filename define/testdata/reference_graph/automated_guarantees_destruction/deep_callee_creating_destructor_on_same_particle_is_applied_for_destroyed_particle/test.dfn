@@ -1,0 +1,18 @@
+# Each action implies and triggers the next on the same particle, and
+# action</builder> creates a particle with a Destructor. action</wrapper>'s
+# final state still holds that as a pending Guarantee on its own particle.
+# Destroying position<holder> must still find the particle and trigger its
+# Destructor, whose requirement on position</needed> then fails.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<holder> {
+            it may only contain particles where {
+                it has the action</outer>.
+            }
+        }
+        create a particle in position<holder>.
+        create a particle in position<holder>::action</outer>::position<run>.
+    }
+}

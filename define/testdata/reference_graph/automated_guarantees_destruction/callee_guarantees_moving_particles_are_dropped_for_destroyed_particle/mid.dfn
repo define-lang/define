@@ -1,0 +1,12 @@
+define the potential action<my.domain.com:my_lib:/mid> {
+    it also assigns the action</make_a>.
+    it also assigns the action</move_a>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+        create a particle in action</make_a>::position<run>.
+        create a particle in action</move_a>::position<run>.
+    }
+}

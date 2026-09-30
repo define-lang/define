@@ -19,7 +19,7 @@ import typing
 from define.compiler import chained_name
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Callable, ItemsView, Iterable, Iterator
+    from collections.abc import Callable, ItemsView, Iterable, Iterator, ValuesView
     from collections.abc import Set as AbstractSet
 
 type TrieKey = chained_name.ChainedNameTuple
@@ -278,6 +278,10 @@ class StrictReparentingTrie[V]:
     def items(self) -> ItemsView[TrieKey, V]:
         """Yield all (key, value) pairs in the trie."""
         return typing.cast("ItemsView[TrieKey, V]", self._values.items())
+
+    def values(self) -> ValuesView[V]:
+        """Yield every value in the trie."""
+        return self._values.values()
 
     def direct_child_items(self, key: TrieKey) -> Iterator[tuple[TrieKey, V]]:
         """Yield each direct child's full key and value in key order."""

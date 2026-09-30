@@ -207,11 +207,13 @@ Checks CPU growth when a destroyed particle's transitive children were filled by
 a tree of triggered actions, so linearly many actions give exponentially many
 children. Each shape has its own control: `local` destroys a local particle,
 `destructors` also gives every child a Destructor, `contracted` destroys a
-particle from an interface position (making a Destruction Contract), and `move`
-moves the particle between interface positions before destroying it.
+particle from an interface position (making a Destruction Contract), `move`
+moves the particle between interface positions before destroying it, and
+`rearrange` has every action also move particles its caller and its callees
+created and trigger another action on the particle it received.
 
 ```sh
-for shape in local destructors contracted move; do
+for shape in local destructors contracted move rearrange; do
   suffix=$([ "$shape" = local ] && echo "" || echo "_${shape}")
   bazelisk run --noshow_progress --ui_event_filters=-info \
     //tools/generators:generate_triggered_children_destruction_source -- \

@@ -316,6 +316,39 @@ class ParticleStateStore:
         self._pending_guarantee_count -= len(guarantees)
         return guarantees.values()
 
+    def guarantees_discardable_on_destruction(
+        self, has_destructor: typing.Callable[[particle_info.ParticleInfo], bool]
+    ) -> bool:
+        """Return whether this action's guarantees can be dropped unapplied when their particle is destroyed.
+
+        That holds when no error is recorded, no particle this action created
+        has a Destructor, and every pending Guarantee can itself be dropped.
+        """
+        for error in self._error.values():
+            if error.caused_by is not None:
+                return False
+        for pending in self._root_pending_guarantees.values():
+            if not pending.contract.guarantees_discardable_on_destruction:
+                return False
+        for state in self._state.values():
+            if not isinstance(state, _PositionNodeState):
+                continue
+            particle = state.particle_info
+            # A particle from the caller is already known to whoever destroys
+            # it, so it adds nothing here.
+            if (
+                particle is not None
+                and not particle.from_caller
+                and has_destructor(particle)
+            ):
+                return False
+            if state.pending_guarantees is None:
+                continue
+            for pending in state.pending_guarantees.values():
+                if not pending.contract.guarantees_discardable_on_destruction:
+                    return False
+        return True
+
     def pending_prefixes_at_or_below(
         self, key: chained_name.ChainedNameTuple
     ) -> list[chained_name.ChainedNameTuple]:

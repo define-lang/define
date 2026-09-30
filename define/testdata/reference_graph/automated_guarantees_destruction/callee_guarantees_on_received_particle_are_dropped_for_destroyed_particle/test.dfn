@@ -1,0 +1,20 @@
+# The pending Guarantee from action</middle> has a callee, action</add_marker>,
+# that acts on a particle this action created. Nothing is recorded where
+# action</add_marker> writes, and no result creates a particle with a
+# Destructor, so destroying position<holder> drops them unapplied.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<holder> {
+            it may only contain particles where {
+                it has the action</wrapper>.
+                it has the position</box>.
+            }
+        }
+        create a particle in position<holder>.
+        create a particle in position<holder>::position</box>.
+        create a particle in position<holder>::position</box>::position</inner>.
+        create a particle in position<holder>::action</wrapper>::position<run>.
+    }
+}

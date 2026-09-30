@@ -1,5 +1,6 @@
 # position</child_2> has a destructor, so destroying position<holder> must still
-# find it and trigger the destructor.
+# find it and trigger the destructor, whose requirement on position</needed>
+# then fails.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.

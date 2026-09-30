@@ -227,6 +227,15 @@ def test_retained_memory(case: MemoryCase, tmp_path: Path):
             ),
             id="triggered_children_destruction_move",
         ),
+        pytest.param(
+            CpuGrowthCase(
+                control_variable="TRIGGERED_CHILDREN_DESTRUCTION_REARRANGE_CONTROL",
+                source_variable="TRIGGERED_CHILDREN_DESTRUCTION_REARRANGE",
+                filesystem=False,
+                maximum_ratio=4,
+            ),
+            id="triggered_children_destruction_rearrange",
+        ),
     ],
 )
 def test_cpu_growth(case: CpuGrowthCase, tmp_path: Path):

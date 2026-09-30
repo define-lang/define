@@ -29,6 +29,8 @@ filegroup(
         ":triggered_children_destruction_destructors_control",
         ":triggered_children_destruction_move",
         ":triggered_children_destruction_move_control",
+        ":triggered_children_destruction_rearrange",
+        ":triggered_children_destruction_rearrange_control",
         ":wide_destruction",
     ],
     visibility = [
@@ -221,6 +223,20 @@ filegroup(
     name = "triggered_children_destruction_move_control",
     testonly = True,
     srcs = ["triggered_children_destruction_move_control.dfn"],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)
+
+filegroup(
+    name = "triggered_children_destruction_rearrange",
+    testonly = True,
+    srcs = ["triggered_children_destruction_rearrange.dfn"],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)
+
+filegroup(
+    name = "triggered_children_destruction_rearrange_control",
+    testonly = True,
+    srcs = ["triggered_children_destruction_rearrange_control.dfn"],
     visibility = ["//define/compiler/resource_tests:__pkg__"],
 )
 

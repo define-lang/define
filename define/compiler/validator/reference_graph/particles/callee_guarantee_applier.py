@@ -343,7 +343,8 @@ class CalleeGuaranteeApplier:
         #   That covers what the action creates and what every action it
         #   triggered creates, too.
         # - We don't already have any state recorded (a particle, a known-empty
-        #   position, or an error) at or below the positions it writes.
+        #   position, or an error) at or below the positions it writes, or
+        #   that the actions it triggered write.
         # - No particle that came from the calling action is at or above
         #   ``key``.
         #
@@ -356,12 +357,10 @@ class CalleeGuaranteeApplier:
         for pending in pending_guarantees:
             if not pending.contract.guarantees_discardable_on_destruction:
                 return
-            action_chain = pending.action_chain(key)
-            for position in pending.contract.guarantees:
-                if self._store.tracks_at_or_below(
-                    chained_name.in_caller(action_chain, position)
-                ):
-                    return
+            if self._result_overwrites_recorded_state(
+                pending, pending.action_chain(key)
+            ):
+                return
         _ = self._store.pop_pending_guarantees(key)
 
     def apply_overwriting_pending_guarantees(
@@ -388,12 +387,43 @@ class CalleeGuaranteeApplier:
         for pending in self._store.pending_guarantees_at(
             chained_name.position(particle)
         ):
-            action_chain = pending.action_chain(particle)
-            for position in pending.contract.guarantees:
-                if self._store.tracks_at_or_below(
-                    chained_name.in_caller(action_chain, position)
-                ):
-                    return True
+            if self._result_overwrites_recorded_state(
+                pending, pending.action_chain(particle)
+            ):
+                return True
+        return False
+
+    def _result_overwrites_recorded_state(
+        self,
+        pending: pending_guarantee.PendingGuarantee,
+        action_chain: chained_name.ActionReferenceTuple,
+    ) -> bool:
+        for position in pending.contract.guarantees:
+            key = chained_name.in_caller(action_chain, position)
+            # A shallower guarantee from the same Action Execution recorded
+            # its final state here after this one, so this one would not
+            # apply.
+            if not self._store.is_superseded(
+                key, pending.execution, pending.call_chain_depth
+            ) and self._store.tracks_at_or_below(key):
+                return True
+        for callee in pending.contract.callees:
+            callee_chain = chained_name.in_caller(action_chain, callee.action_chain)
+            # A callee writes only below the particle it acts on, so if
+            # nothing is recorded there, its guarantees and those of the
+            # actions it triggered cannot overwrite anything.
+            if self._store.tracks_at_or_below(
+                chained_name.position(chained_name.parent(callee_chain))
+            ) and self._result_overwrites_recorded_state(
+                pending_guarantee.PendingGuarantee(
+                    callee_chain[-1],
+                    callee.contract,
+                    pending.execution,
+                    call_chain_depth=pending.call_chain_depth + 1,
+                ),
+                callee_chain,
+            ):
+                return True
         return False
 
     def fully_resolve_all_pending_guarantees(self):

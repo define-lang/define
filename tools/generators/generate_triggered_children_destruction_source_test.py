@@ -13,18 +13,20 @@ if TYPE_CHECKING:
 
 
 @pytest.mark.parametrize(
-    ("shape", "additional_actions"),
+    ("shape", "additional_actions", "additional_positions"),
     [
-        (gen.Shape.LOCAL, 1),
-        (gen.Shape.DESTRUCTORS, 2),
-        (gen.Shape.CONTRACTED, 2),
-        (gen.Shape.MOVE, 2),
+        (gen.Shape.LOCAL, 1, 0),
+        (gen.Shape.DESTRUCTORS, 2, 0),
+        (gen.Shape.CONTRACTED, 2, 0),
+        (gen.Shape.MOVE, 2, 0),
+        (gen.Shape.REARRANGE, 2, 4),
     ],
 )
 @pytest.mark.parametrize(("depth", "fan_out"), [(1, 1), (1, 3), (4, 1), (4, 2)])
 def test_valid_program(
     shape: gen.Shape,
     additional_actions: int,
+    additional_positions: int,
     depth: int,
     fan_out: int,
     tmp_path: Path,
@@ -34,7 +36,10 @@ def test_valid_program(
     assert result.all_exceptions == []
     assert result.all_diagnostics == []
     assert source.count("define the potential action<") == depth + additional_actions
-    assert source.count("define the potential position<") == (depth - 1) * fan_out
+    assert (
+        source.count("define the potential position<")
+        == (depth - 1) * fan_out + additional_positions
+    )
     assert source.count("::action</fill_") == (depth - 1) * fan_out + 1
 
 
