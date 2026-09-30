@@ -365,6 +365,14 @@ class CalleeGuaranteeApplier:
         self, key: chained_name.PositionReferenceTuple
     ):
         """Apply the pending guarantees at or below ``key`` that would overwrite state already recorded there."""
+        self._apply_overwriting_at_or_below(key)
+
+    def apply_all_overwriting_pending_guarantees(self):
+        """Apply every pending guarantee that would overwrite state already recorded."""
+        # Every stored prefix is at or below the empty chain.
+        self._apply_overwriting_at_or_below(chained_name.ChainedNameTuple(()))
+
+    def _apply_overwriting_at_or_below(self, key: chained_name.ChainedNameTuple):
         # State recorded below a pending guarantee is older than it, and only
         # queries that walk into the guarantee's particle know to apply it
         # first. Code that reads whole subtrees would read that older state.
@@ -381,10 +389,7 @@ class CalleeGuaranteeApplier:
     def _overwrites_recorded_state(
         self, particle: chained_name.ChainedNameTuple
     ) -> bool:
-        # Pending guarantees below a position always sit on particle positions.
-        for pending in self._store.pending_guarantees_at(
-            chained_name.position(particle)
-        ):
+        for pending in self._store.pending_guarantees_at(particle):
             if self._result_overwrites_recorded_state(
                 pending, pending.action_chain(particle)
             ):
@@ -405,11 +410,16 @@ class CalleeGuaranteeApplier:
             ) and self._store.tracks_at_or_below(key):
                 return True
         for callee_chain, callee_pending in pending.callees(action_chain):
+            callee_particle = chained_name.parent(callee_chain)
             # A callee writes only below the particle it acts on, so if
             # nothing is recorded there, its guarantees and those of the
-            # actions it triggered cannot overwrite anything.
-            if self._store.tracks_at_or_below(
-                chained_name.position(chained_name.parent(callee_chain))
+            # actions it triggered cannot overwrite anything. The action's own
+            # particle, the empty chain, has no entry of its own to check.
+            if (
+                not callee_particle
+                or self._store.tracks_at_or_below(
+                    chained_name.position(callee_particle)
+                )
             ) and self._result_overwrites_recorded_state(callee_pending, callee_chain):
                 return True
         return False

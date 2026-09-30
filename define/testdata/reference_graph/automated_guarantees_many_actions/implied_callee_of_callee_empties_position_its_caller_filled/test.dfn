@@ -1,0 +1,20 @@
+# action</outer> fills position</item> itself and then triggers action</mid>,
+# whose callee action</mid_2> triggers action</clear_item>, which empties it
+# again. Each acts on the same particle, and action</clear_item> is still
+# pending when action</outer> publishes its own Guarantees, so position</item>
+# is empty and destroying it is an error.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<holder> {
+            it may only contain particles where {
+                it has the action</outer>.
+                it has the position</box>.
+            }
+        }
+        create a particle in position<holder>.
+        create a particle in position<holder>::action</outer>::position<run>.
+        destroy the particle in position<holder>::position</box>::position</item>.
+    }
+}

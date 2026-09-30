@@ -311,3 +311,41 @@ def test_later_sibling_callee_empties_position_an_earlier_sibling_filled(
     assert (
         diagnostic.position_name == "position<holder>::position</box>::position</item>"
     )
+
+
+def test_callee_of_callee_empties_position_its_caller_filled(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    diagnostic = all_diags[0]
+    assert isinstance(diagnostic, diagnostics.DestroyInEmptyPositionDiagnostic)
+    assert diagnostic.location.line == 17
+    assert diagnostic.location.column == 33
+    assert diagnostic.location.end_line == 17
+    assert diagnostic.location.end_column == 82
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert (
+        diagnostic.position_name == "position<holder>::position</box>::position</item>"
+    )
+
+
+def test_implied_callee_of_callee_empties_position_its_caller_filled(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    diagnostic = all_diags[0]
+    assert isinstance(diagnostic, diagnostics.DestroyInEmptyPositionDiagnostic)
+    assert diagnostic.location.line == 18
+    assert diagnostic.location.column == 33
+    assert diagnostic.location.end_line == 18
+    assert diagnostic.location.end_column == 82
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert (
+        diagnostic.position_name == "position<holder>::position</box>::position</item>"
+    )

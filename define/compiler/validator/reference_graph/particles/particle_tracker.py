@@ -450,6 +450,9 @@ class ParticleTracker:
         interface or implied quality. ``requirements`` is the validator's
         inferred-requirements dict.
         """
+        # A pending guarantee that finished later than state recorded here
+        # would otherwise leave that older state in these guarantees.
+        self._callee_guarantees.apply_all_overwriting_pending_guarantees()
         return self._guarantee_generator.contracted_position_guarantees(
             interface_names,
             implied_quality_names,

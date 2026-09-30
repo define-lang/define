@@ -172,14 +172,14 @@ class GuaranteeGenerator:
             and requirement.required_state
             == position_occupancy.PositionOccupancyState.EMPTY
         ):
-            # A requirement propagated from a callee doesn't mean the callee
-            # operated on that position directly. (It could have been a transitive
-            # callee that did it.)
-            if self._store.was_written(key):
-                return action_contract.UnchangedGuarantee(
-                    caused_by=caused_by,
-                )
-            return None
+            # The position was required to be empty when this action started,
+            # and it is empty again. Something wrote it in between: a
+            # requirement from a callee's callee comes with a pending guarantee
+            # that writes the position, and those are applied before this action
+            # publishes its guarantees.
+            return action_contract.UnchangedGuarantee(
+                caused_by=caused_by,
+            )
         return action_contract.EmptyGuarantee(
             caused_by=caused_by,
         )

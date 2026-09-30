@@ -291,11 +291,13 @@ class ParticleStateStore:
         return state is not None and bool(state.pending_guarantees)
 
     def pending_guarantees_at(
-        self, key: chained_name.PositionReferenceTuple
+        self, prefix: chained_name.ChainedNameTuple
     ) -> Iterable[pending_guarantee.PendingGuarantee]:
-        """Return the pending Guarantees that describe the children of the particle at ``key``."""
-        # Only action names hold _ActionNodeState.
-        state = typing.cast("_PositionNodeState", self._state[key])
+        """Return the pending Guarantees that describe the children of the particle at ``prefix``."""
+        if not prefix:
+            return self._root_pending_guarantees.values()
+        # Pending Guarantees below a position always sit on particle positions.
+        state = typing.cast("_PositionNodeState", self._state[prefix])
         pending_guarantees = state.pending_guarantees
         return () if pending_guarantees is None else pending_guarantees.values()
 
@@ -326,7 +328,7 @@ class ParticleStateStore:
         for error in self._error.values():
             if error.caused_by is not None:
                 return False
-        for pending in self._root_pending_guarantees.values():
+        for pending in self._all_pending_guarantees():
             if not pending.contract.guarantees_discardable_on_destruction:
                 return False
         for state in self._state.values():
@@ -341,12 +343,16 @@ class ParticleStateStore:
                 and has_destructor(particle)
             ):
                 return False
-            if state.pending_guarantees is None:
-                continue
-            for pending in state.pending_guarantees.values():
-                if not pending.contract.guarantees_discardable_on_destruction:
-                    return False
         return True
+
+    def _all_pending_guarantees(self) -> Iterator[pending_guarantee.PendingGuarantee]:
+        yield from self._root_pending_guarantees.values()
+        for state in self._state.values():
+            if (
+                isinstance(state, _PositionNodeState)
+                and state.pending_guarantees is not None
+            ):
+                yield from state.pending_guarantees.values()
 
     def pending_prefixes_at_or_below(
         self, key: chained_name.ChainedNameTuple
