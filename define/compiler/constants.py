@@ -42,6 +42,7 @@ BUILT_IN_VALUE_ENCODINGS: Final = {
 # it exists.
 BUILT_IN_ENCODING_OPERATIONS: Final = {
     f"operation<{STANDARD_UNIVERSE}:/binary/and>": "/binary/ascii/and",
+    f"operation<{STANDARD_UNIVERSE}:/binary/equal>": "/binary/ascii/equal",
     f"operation<{STANDARD_UNIVERSE}:/binary/exclusive_or>": (
         "/binary/ascii/exclusive_or"
     ),

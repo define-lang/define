@@ -1,0 +1,17 @@
+# An action checks whether a position's value equals a literal with the built-in binary equal.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</flags>.
+    it also assigns the position</matches>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</flags>.
+        create a particle in position</matches>.
+        set the value of position</flags> to literal<standard:/binary>"1100".
+        execute the operation<standard:/binary/equal> {
+            with view<a> looking at position</flags>.
+            with view<b> looking at literal<standard:/binary>"1100".
+            with view<result> looking at position</matches>.
+        }
+    }
+}

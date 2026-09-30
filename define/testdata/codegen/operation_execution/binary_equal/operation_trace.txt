@@ -1,0 +1,4 @@
+test.create(/flags)
+test.create(/matches)
+test.set_value(/flags, 0b1100)
+test.execute(operation<standard:/binary/equal>, /flags, 0b1100, /matches)

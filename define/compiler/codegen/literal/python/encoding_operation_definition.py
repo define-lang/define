@@ -82,6 +82,12 @@ _COMPUTER_OPERATIONS: Final[
         right_view="view<b>",
         result_view="view<result>",
     ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/binary/ascii/equal>": _BinaryOperation(
+        operator=template_context.BinaryOperator.EQUAL,
+        left_view="view<a>",
+        right_view="view<b>",
+        result_view="view<result>",
+    ),
     f"encoding_operation<{constants.STANDARD_UNIVERSE}:/binary/ascii/or>": _BinaryOperation(
         operator=template_context.BinaryOperator.BITWISE_OR,
         left_view="view<a>",

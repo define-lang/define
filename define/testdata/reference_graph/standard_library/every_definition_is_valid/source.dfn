@@ -19,6 +19,11 @@ define the potential position<my.domain.com:my_lib:/differing> {
         it has the value<standard:/binary>.
     }
 }
+define the potential position<my.domain.com:my_lib:/bits_match> {
+    it may only contain particles where {
+        it has the value<standard:/boolean>.
+    }
+}
 define the potential position<my.domain.com:my_lib:/flag> {
     it may only contain particles where {
         it has the value<standard:/boolean>.
@@ -106,6 +111,7 @@ define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the position</masked>.
     it also assigns the position</combined>.
     it also assigns the position</differing>.
+    it also assigns the position</bits_match>.
     it also assigns the position</flag>.
     it also assigns the position</both>.
     it also assigns the position</either>.
@@ -126,6 +132,7 @@ define the potential action<my.domain.com:my_lib:/test> {
         create a particle in position</masked>.
         create a particle in position</combined>.
         create a particle in position</differing>.
+        create a particle in position</bits_match>.
         execute the operation<standard:/binary/and> {
             with view<a> looking at position</bits>.
             with view<b> looking at literal<standard:/binary>"110".
@@ -140,6 +147,11 @@ define the potential action<my.domain.com:my_lib:/test> {
             with view<a> looking at position</bits>.
             with view<b> looking at literal<standard:/binary>"110".
             with view<result> looking at position</differing>.
+        }
+        execute the operation<standard:/binary/equal> {
+            with view<a> looking at position</bits>.
+            with view<b> looking at literal<standard:/binary>"1011".
+            with view<result> looking at position</bits_match>.
         }
         create a particle in position</flag>.
         create a particle in position</both>.
