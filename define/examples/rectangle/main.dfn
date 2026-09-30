@@ -1,46 +1,86 @@
-# This is a super-basic example of values, operations, and encodings.
+# This is a super-basic example of values and operations.
 define the potential action<define-lang.org:rectangle:/main> {
+    it also assigns the position</same_volume>.
     it happens when {
         this particle is created.
     } and it does {
         define the position<width> {
             it may only contain particles where {
-                it has the value</integer>.
+                it has the value<standard:/number/rational>.
             }
         }
         define the position<height> {
             it may only contain particles where {
-                it has the value</integer>.
+                it has the value<standard:/number/rational>.
             }
         }
         define the position<area> {
             it may only contain particles where {
-                it has the value</integer>.
+                it has the value<standard:/number/rational>.
             }
         }
 
         # We start off as a square.
         create a particle in position<width>.
-        set the value of position<width> to 5.
+        set the value of position<width> to literal<standard:/number>"5".
         create a particle in position<height>.
         set the value of position<height> to position<width>.
-        create a particle in position<area>.
 
-        # After this, position<area> will be 25.
-        execute the operation</integer/multiply> {
+        # position<area> is now 25.
+        create a particle in position<area>.
+        execute the operation<standard:/number/rational/multiply> {
             with view<a> looking at position<width>.
             with view<b> looking at position<height>.
             with view<result> looking at position<area>.
         }
-        # Note: Failing to consume position<area> here would result in a
-        # dead code error.
 
-        set the value of position<width> to 10.
-        # position<area> will contain 50.
-        execute the operation</integer/multiply> {
+        define the position<square_volume> {
+            it may only contain particles where {
+                it has the value<standard:/number/rational>.
+            }
+        }
+
+        # Now we multiply that area by 10 to get volume.
+        create a particle in position<square_volume>.
+        execute the operation<standard:/number/rational/multiply> {
+            with view<a> looking at position<area>.
+            with view<b> looking at literal<standard:/number>"10".
+            with view<result> looking at position<square_volume>.
+        }
+
+        # Or we could make a rectangle.
+        set the value of position<width> to literal<standard:/number>"10".
+        set the value of position<height> to literal<standard:/number>"5".
+
+        # After this, position<area> will contain 50.
+        execute the operation<standard:/number/rational/multiply> {
             with view<a> looking at position<width>.
             with view<b> looking at position<height>.
             with view<result> looking at position<area>.
+        }
+
+        define the position<volume> {
+            it may only contain particles where {
+                it has the value<standard:/number/rational>.
+            }
+        }
+
+        # And give that a third dimension to make volume 250.
+        create a particle in position<volume>.
+        execute the operation<standard:/number/rational/multiply> {
+            with view<a> looking at position<area>.
+            with view<b> looking at literal<standard:/number>"5".
+            with view<result> looking at position<volume>.
+        }
+
+        # Both shapes have a volume of 250, so position</same_volume> will be
+        # true.
+        # TODO: Once we have I/O we can print this out.
+        create a particle in position</same_volume>.
+        execute the operation<standard:/number/rational/equal> {
+            with view<a> looking at position<square_volume>.
+            with view<b> looking at position<volume>.
+            with view<result> looking at position</same_volume>.
         }
     }
 }

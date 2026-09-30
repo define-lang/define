@@ -1,0 +1,5 @@
+define the potential position<define-lang.org:rectangle:/same_volume> {
+    it may only contain particles where {
+        it has the value<standard:/boolean>.
+    }
+}
