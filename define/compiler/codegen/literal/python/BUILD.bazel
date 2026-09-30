@@ -139,6 +139,7 @@ py_library(
     srcs = ["operation_labels.py"],
     deps = [
         ":template_context",
+        ":value_types",
         "//define/compiler:ast",
         "//define/compiler/validator:codegen_input",
     ],
@@ -205,6 +206,7 @@ py_library(
         "//define/compiler:ast",
         "//define/compiler:constants",
         "//define/compiler:name_types",
+        "//define/compiler/validator:codegen_input",
     ],
 )
 

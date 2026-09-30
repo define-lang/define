@@ -97,7 +97,9 @@ class ActionStatementsGenerator:
                         ).module_name
                     )
                     for argument in step.arguments:
-                        if not isinstance(argument.looking_at, str):
+                        if not isinstance(
+                            argument.looking_at, codegen_input.EncodedLiteral
+                        ):
                             modules.update(
                                 self._converter.referenced_modules(argument.looking_at)
                             )
@@ -188,6 +190,7 @@ class ActionStatementsGenerator:
                         )
                     )
                 case codegen_input.LiteralValueSetting():
+                    value = value_types.python_literal(statement.value)
                     statements.append(
                         template_context.SetValueContext(
                             position=positions.build(
@@ -196,9 +199,9 @@ class ActionStatementsGenerator:
                                     statement.value_type
                                 ),
                             ),
-                            value=statement.value,
+                            value=value,
                             operation_label=self._literal_value_label(
-                                statement.target_position, statement.value
+                                statement.target_position, value
                             ),
                         )
                     )
@@ -314,8 +317,8 @@ class ActionStatementsGenerator:
             looking_at = argument.looking_at
             # Validation reports output views that look at literals, so a
             # literal is always an argument and never receives a result.
-            if isinstance(looking_at, str):
-                arguments.append(looking_at)
+            if isinstance(looking_at, codegen_input.EncodedLiteral):
+                arguments.append(value_types.python_literal(looking_at))
                 continue
             value_type = value_types.constrained_python_value_type(
                 argument.interface_view.constraints

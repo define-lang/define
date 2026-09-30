@@ -165,6 +165,7 @@ py_library(
         "//define/compiler:literal_parsers",
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/errors:diagnostics",
+        "//define/compiler/validator:codegen_input",
         "//define/compiler/validator:validation_result",
     ],
 )

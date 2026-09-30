@@ -7,7 +7,10 @@ from typing import TYPE_CHECKING, Final
 from define.compiler import constants, name_types
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from define.compiler import ast
+    from define.compiler.validator import codegen_input
 
 # The type argument of positions whose particles have no value that code
 # looking through them can use.
@@ -19,6 +22,28 @@ _ENCODING_PYTHON_TYPES: Final = {
     constants.BOOLEAN_ASCII_ENCODING: "bool",
     constants.DECIMAL_ASCII_ENCODING: "float",
 }
+
+_PYTHON_BOOLEANS: Final = {"true": "True", "false": "False"}
+
+
+def _python_boolean(content: str) -> str:
+    return _PYTHON_BOOLEANS[content]
+
+
+def _python_decimal(content: str) -> str:
+    # Decimal ASCII content is already a valid Python number.
+    return content
+
+
+_ENCODING_PYTHON_LITERALS: Final[dict[str, Callable[[str], str]]] = {
+    constants.BOOLEAN_ASCII_ENCODING: _python_boolean,
+    constants.DECIMAL_ASCII_ENCODING: _python_decimal,
+}
+
+
+def python_literal(literal: codegen_input.EncodedLiteral) -> str:
+    """Return the Python expression for a literal's value."""
+    return _ENCODING_PYTHON_LITERALS[literal.encoding](literal.content)
 
 
 def python_value_type(value_type: ast.GlobalTypedNameReference) -> str:

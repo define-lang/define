@@ -45,7 +45,10 @@ class OperationArgumentsValidator:
         self,
         statement: ast.OperationExecutionStatement,
         looked_at_qualities: Mapping[ast.OperationArgumentStatement, frozenset[str]],
-    ) -> tuple[list[diagnostics.Diagnostic], dict[ast.OperationArgumentStatement, str]]:
+    ) -> tuple[
+        list[diagnostics.Diagnostic],
+        dict[ast.OperationArgumentStatement, codegen_input.EncodedLiteral],
+    ]:
         """Validate the statement's arguments against the executed operation's interface views.
 
         looked_at_qualities maps each argument that looks at a position or view
@@ -57,7 +60,9 @@ class OperationArgumentsValidator:
         its interface view requires.
         """
         validation_diagnostics: list[diagnostics.Diagnostic] = []
-        literal_values: dict[ast.OperationArgumentStatement, str] = {}
+        literal_values: dict[
+            ast.OperationArgumentStatement, codegen_input.EncodedLiteral
+        ] = {}
         executed = self.get_executed_operation(statement)
         if executed is None:
             return validation_diagnostics, literal_values
@@ -101,7 +106,9 @@ class OperationArgumentsValidator:
     ](
         statement: ast.OperationExecutionStatement,
         executed: ast.OperationDefinition,
-        literal_values: Mapping[ast.OperationArgumentStatement, str],
+        literal_values: Mapping[
+            ast.OperationArgumentStatement, codegen_input.EncodedLiteral
+        ],
         looked_at_type: type[LookedAt],
     ) -> list[codegen_input.OperationArgument[LookedAt]] | None:
         """Describe the statement's arguments for code generation, if all of them could be resolved.
@@ -238,7 +245,7 @@ class OperationArgumentsValidator:
         operation_name: str,
         looked_at_qualities: Mapping[ast.OperationArgumentStatement, frozenset[str]],
         validation_diagnostics: list[diagnostics.Diagnostic],
-    ) -> str | None:
+    ) -> codegen_input.EncodedLiteral | None:
         """Check that the particle the argument looks at meets the constraints of the executed operation's interface view.
 
         Returns the literal the argument looks at, translated into what the
@@ -291,12 +298,12 @@ class OperationArgumentsValidator:
         executed: ast.OperationDefinition,
         interface_view: ast.ViewDefinition,
         validation_diagnostics: list[diagnostics.Diagnostic],
-    ) -> str | None:
+    ) -> codegen_input.EncodedLiteral | None:
         """Check that the literal can be translated into what the executed operation's interface view requires, and return it translated."""
         # The literal is translated into whatever the view requires, so it
         # always has the view's qualities; only that translation can fail.
         if isinstance(executed, ast.EncodingOperationDefinition):
-            translated: str | None = None
+            translated: codegen_input.EncodedLiteral | None = None
             for requirement in interface_view.constraints.requirements:
                 constraint = requirement.typed_global_name
                 if constraint.name_type == name_types.NameType.ENCODING:

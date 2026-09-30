@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.codegen.literal.python import template_context
+from define.compiler.codegen.literal.python import template_context, value_types
+from define.compiler.validator import codegen_input
 
 if TYPE_CHECKING:
     from define.compiler import ast
-    from define.compiler.validator import codegen_input
 
 _OPERATION_NAMES = {
     template_context.StatementKind.CREATE_PARTICLE: "create",
@@ -48,8 +48,8 @@ def operation_execution_label(
     arguments: list[str] = [execution.operation.full_typed_name]
     for argument in execution.arguments:
         looking_at = argument.looking_at
-        if isinstance(looking_at, str):
-            arguments.append(looking_at)
+        if isinstance(looking_at, codegen_input.EncodedLiteral):
+            arguments.append(value_types.python_literal(looking_at))
         else:
             arguments.append(_trace_position_name(looking_at))
     return _label(action, "execute", ", ".join(arguments))

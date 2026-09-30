@@ -34,6 +34,14 @@ class Destruction(msgspec.Struct):
     positions: list[ast.PositionReference] = msgspec.field(default_factory=list)
 
 
+class EncodedLiteral(msgspec.Struct):
+    """A literal's content, validated and in the encoding that its use requires."""
+
+    # The full typed name of the encoding.
+    encoding: str
+    content: str
+
+
 class ValueSetting(msgspec.Struct):
     """A validated Value Setting Statement."""
 
@@ -45,8 +53,7 @@ class ValueSetting(msgspec.Struct):
 class LiteralValueSetting(ValueSetting):
     """A Value Setting Statement whose source is a literal."""
 
-    # Already in the value's encoding, so code generation never parses it.
-    value: str
+    value: EncodedLiteral
 
 
 class PositionValueSetting(ValueSetting):
@@ -59,9 +66,7 @@ class OperationArgument[LookedAt](msgspec.Struct):
     """What one interface view of an executed operation looks at."""
 
     interface_view: ast.ViewDefinition
-    # A literal is already in the interface view's encoding, so code generation
-    # never parses it.
-    looking_at: LookedAt | str
+    looking_at: LookedAt | EncodedLiteral
 
 
 class ActionOperationExecution(msgspec.Struct):

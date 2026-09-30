@@ -6,6 +6,7 @@ import typing
 
 from define.compiler import ast, constants, literal_parsers
 from define.compiler.errors import diagnostics
+from define.compiler.validator import codegen_input
 
 if typing.TYPE_CHECKING:
     from collections.abc import Callable
@@ -37,7 +38,7 @@ class LiteralEncoder:
 
     def encode(
         self, literal: ast.Literal, value_type: ast.GlobalTypedNameReference
-    ) -> tuple[str | None, list[diagnostics.Diagnostic]]:
+    ) -> tuple[codegen_input.EncodedLiteral | None, list[diagnostics.Diagnostic]]:
         """Return the literal in the value's encoding, if it can be encoded, and the diagnostics explaining why not."""
         potential_literal = literal.potential_literal
         literal_encoding = self._literal_encoding(potential_literal)
@@ -78,7 +79,7 @@ class LiteralEncoder:
 
     def encode_in_encoding(
         self, literal: ast.Literal, encoding: ast.GlobalTypedNameReference
-    ) -> tuple[str | None, list[diagnostics.Diagnostic]]:
+    ) -> tuple[codegen_input.EncodedLiteral | None, list[diagnostics.Diagnostic]]:
         """Return the literal in the encoding, if it can be translated, and the diagnostics explaining why not."""
         potential_literal = literal.potential_literal
         literal_encoding = self._literal_encoding(potential_literal)
@@ -122,9 +123,11 @@ class LiteralEncoder:
         literal: ast.Literal,
         parser: Callable[[str], str],
         destination_encoding: str,
-    ) -> tuple[str | None, list[diagnostics.Diagnostic]]:
+    ) -> tuple[codegen_input.EncodedLiteral | None, list[diagnostics.Diagnostic]]:
         try:
-            return parser(literal.content), []
+            return codegen_input.EncodedLiteral(
+                encoding=destination_encoding, content=parser(literal.content)
+            ), []
         except literal_parsers.LiteralParseError as e:
             return None, [
                 diagnostics.InvalidLiteralContentDiagnostic(

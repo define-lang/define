@@ -88,7 +88,9 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
         self,
         statement: ast.OperationExecutionStatement,
         executed: ast.OperationDefinition,
-        literal_values: Mapping[ast.OperationArgumentStatement, str],
+        literal_values: Mapping[
+            ast.OperationArgumentStatement, codegen_input.EncodedLiteral
+        ],
     ): ...
 
     @abc.abstractmethod
@@ -140,7 +142,10 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
         self,
         statement: ast.OperationExecutionStatement,
         executed: ast.OperationDefinition | None,
-    ) -> tuple[list[diagnostics.Diagnostic], dict[ast.OperationArgumentStatement, str]]:
+    ) -> tuple[
+        list[diagnostics.Diagnostic],
+        dict[ast.OperationArgumentStatement, codegen_input.EncodedLiteral],
+    ]:
         """Validate an Operation Execution Statement, and return its diagnostics and its translated literals."""
         statement_diagnostics: list[diagnostics.Diagnostic] = []
         operation_name = statement.operation.source_form_in_universe(
@@ -218,7 +223,9 @@ class ValueOperationDefinitionValidator(
         self,
         statement: ast.OperationExecutionStatement,
         executed: ast.OperationDefinition,
-        literal_values: Mapping[ast.OperationArgumentStatement, str],
+        literal_values: Mapping[
+            ast.OperationArgumentStatement, codegen_input.EncodedLiteral
+        ],
     ):
         # Value Operations have no code of their own: executing one runs the
         # Encoding Operation that performs it.
@@ -269,7 +276,9 @@ class EncodingOperationDefinitionValidator(
         self,
         statement: ast.OperationExecutionStatement,
         executed: ast.OperationDefinition,
-        literal_values: Mapping[ast.OperationArgumentStatement, str],
+        literal_values: Mapping[
+            ast.OperationArgumentStatement, codegen_input.EncodedLiteral
+        ],
     ):
         arguments = self._arguments_validator.operation_arguments(
             statement, executed, literal_values, ast.LocalTypedNameReference

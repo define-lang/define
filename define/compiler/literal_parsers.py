@@ -92,13 +92,12 @@ def _decimal_error(content: str) -> LiteralParseError:
     raise ValueError(f"valid decimal content was rejected: {content!r}")
 
 
-_BOOLEANS: Final = {"true": "True", "false": "False"}
+_BOOLEANS: Final = frozenset({"true", "false"})
 
 
 def _parse_boolean_ascii(content: str) -> str:
-    boolean = _BOOLEANS.get(content)
-    if boolean is not None:
-        return boolean
+    if content in _BOOLEANS:
+        return content
     if content.lower() in _BOOLEANS:
         for index, char in enumerate(content):
             if char.isupper():

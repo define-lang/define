@@ -12,9 +12,9 @@ _PARSE_DECIMAL_ASCII = literal_parsers.LITERAL_PARSERS[
 ]
 
 
-@pytest.mark.parametrize(("content", "python"), [("true", "True"), ("false", "False")])
-def test_boolean_ascii_accepts(content: str, python: str):
-    assert _PARSE_BOOLEAN_ASCII(content) == python
+@pytest.mark.parametrize("content", ["true", "false"])
+def test_boolean_ascii_accepts(content: str):
+    assert _PARSE_BOOLEAN_ASCII(content) == content
 
 
 @pytest.mark.parametrize(

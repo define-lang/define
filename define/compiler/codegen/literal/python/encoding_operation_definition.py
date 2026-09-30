@@ -259,8 +259,8 @@ class EncodingOperationDefinitionGenerator:
         results: list[str] = []
         for argument in execution.arguments:
             looking_at = argument.looking_at
-            if isinstance(looking_at, str):
-                looked_at = looking_at
+            if isinstance(looking_at, codegen_input.EncodedLiteral):
+                looked_at = value_types.python_literal(looking_at)
             else:
                 looked_at = view_names[looking_at.source_typed_name]
             if argument.interface_view.is_input:
