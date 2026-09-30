@@ -1,0 +1,12 @@
+define the potential action<my.domain.com:my_lib:/touch> {
+    it also assigns the position</file>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<_holder>.
+        move the particle in position</file> to position<_holder>.
+        move the particle in position<_holder> to position</file>.
+        destroy the particle in position<run>.
+    }
+}

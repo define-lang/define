@@ -29,6 +29,7 @@ _DESTRUCTOR = "action<my.domain.com:my_lib:/destructor>"
 _DESTRUCTOR_A = "action<my.domain.com:my_lib:/destructor_a>"
 _DESTRUCTOR_B = "action<my.domain.com:my_lib:/destructor_b>"
 _DESTRUCTOR_C = "action<my.domain.com:my_lib:/destructor_c>"
+_TOUCH = "action<my.domain.com:my_lib:/touch>"
 
 
 def test_circular_destructor_contract_is_skipped(
@@ -161,6 +162,101 @@ def test_caller_known_child_state_requirement_violated(
         },
     )
     assert action_graph(result.reference_graph_result) == [
+        (_CLOSE_FILE, _DELETE_FILE_DESTRUCTOR),
+        (_TEST, _CLOSE_FILE),
+    ]
+
+
+def test_caller_unknown_child_state_requirement_violated(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 2
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
+    assert all_diags[0].location.line == 20
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].required_empty is False
+    assert all_diags[0].action_name == _TOUCH
+    assert all_diags[0].position_name == "position<my_file>::position</file>"
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _TOUCH,
+            "line": 20,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _TOUCH,
+            "triggered_quality_name": None,
+            "line": 8,
+            "column": 30,
+            "file_path": "touch.dfn",
+        },
+    )
+    assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[1].required_value is False
+    assert all_diags[1].location.line == 22
+    assert all_diags[1].location.column == 30
+    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[1].required_empty is False
+    assert all_diags[1].action_name == _CLOSE_FILE
+    assert (
+        all_diags[1].position_name
+        == "position<box>::action</close_file>::position<target>::position</file>"
+    )
+    assert_propagation_chain(
+        all_diags[1],
+        {
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "enclosing_quality_name": "position<my_file>",
+            "triggered_quality_name": _DELETE_FILE_DESTRUCTOR,
+            "line": 14,
+            "column": 28,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "enclosing_quality_name": "position<box>::action</close_file>::position<target>",
+            "triggered_quality_name": None,
+            "line": 19,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _CLOSE_FILE,
+            "line": 22,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": _CLOSE_FILE,
+            "triggered_quality_name": _DELETE_FILE_DESTRUCTOR,
+            "line": 7,
+            "column": 33,
+            "file_path": "close_file.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _DELETE_FILE_DESTRUCTOR,
+            "triggered_quality_name": None,
+            "line": 7,
+            "column": 30,
+            "file_path": "delete_file_destructor.dfn",
+        },
+    )
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _TOUCH),
         (_CLOSE_FILE, _DELETE_FILE_DESTRUCTOR),
         (_TEST, _CLOSE_FILE),
     ]

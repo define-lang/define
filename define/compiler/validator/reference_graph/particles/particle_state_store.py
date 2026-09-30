@@ -29,6 +29,10 @@ type _PendingGuarantees = dict[
 
 
 class _NodeState(msgspec.Struct):
+    """Mutable state for a position or action name in the state trie."""
+
+
+class _PositionNodeState(_NodeState):
     """Mutable state for a position in the state trie."""
 
     particle_info: particle_info.ParticleInfo | None = None
@@ -39,8 +43,18 @@ class _NodeState(msgspec.Struct):
     pending_guarantees: _PendingGuarantees | None = None
 
 
+class _ActionNodeState(_NodeState):
+    """Mutable state for an action name in the state trie."""
+
+    # This action's executions of that action, in triggering order. They move
+    # and are deleted with this node.
+    triggered_executions: list[codegen_input.ActionExecution] = msgspec.field(
+        default_factory=list
+    )
+
+
 def _node_is_occupied(state: _NodeState) -> bool:
-    return state.particle_info is not None
+    return isinstance(state, _PositionNodeState) and state.particle_info is not None
 
 
 class _ErrorState(msgspec.Struct):
@@ -54,6 +68,8 @@ class _ErrorState(msgspec.Struct):
 
 
 def _child_occupancy(node: _NodeState) -> position_occupancy.ChildOccupancy | None:
+    if not isinstance(node, _PositionNodeState):
+        return None
     if node.particle_info is not None:
         return position_occupancy.ChildOccupancy(
             position_occupancy.PositionOccupancyState.OCCUPIED,
@@ -65,6 +81,8 @@ def _child_occupancy(node: _NodeState) -> position_occupancy.ChildOccupancy | No
 
 
 def _child_value(node: _NodeState) -> particle_info.ParticleValueState | None:
+    if not isinstance(node, _PositionNodeState):
+        return None
     particle = node.particle_info
     if particle is None or particle.qualities.value_type is None:
         return None
@@ -114,10 +132,6 @@ class DetachedSubtrees(msgspec.Struct):
     error: dict[
         chained_name.ChainedNameTuple, trie.StrictReparentingTrie[_ErrorState]
     ] = msgspec.field(default_factory=dict)
-    nested_guarantees: dict[
-        chained_name.ChainedNameTuple,
-        trie.StrictReparentingTrie[list[codegen_input.ActionExecution]],
-    ] = msgspec.field(default_factory=dict)
 
     def has_state(self, key: chained_name.ChainedNameTuple) -> bool:
         """Return whether the Position at ``key`` had state when it was detached."""
@@ -127,113 +141,9 @@ class DetachedSubtrees(msgspec.Struct):
         self, key: chained_name.ChainedNameTuple
     ) -> particle_info.ParticleInfo | None:
         """Return the particle detached from ``key``, or None if the Position was empty."""
-        return self.state[key][chained_name.last_name(key)].particle_info
-
-
-class _CurrentActionNestedGuarantees:
-    """Nested guarantees keyed by the action chain where they currently apply.
-
-    Stores the nested guarantees that will directly become part of this action's
-    contract.
-    """
-
-    def __init__(self):
-        self._by_action_chain: trie.LenientReparentingTrie[
-            list[codegen_input.ActionExecution]
-        ] = trie.LenientReparentingTrie(default_factory=list)
-        self._contracts: dict[
-            codegen_input.ActionExecution, action_contract.ActionContract
-        ] = {}
-
-    def add(
-        self,
-        action_chain: chained_name.ActionReferenceTuple,
-        execution: codegen_input.ActionExecution,
-        contract: action_contract.ActionContract,
-    ):
-        at_action_chain = self._by_action_chain.get(action_chain)
-        if at_action_chain is None:
-            at_action_chain = []
-            self._by_action_chain[action_chain] = at_action_chain
-        at_action_chain.append(execution)
-        self._contracts[execution] = contract
-
-    def move(
-        self,
-        source: chained_name.PositionReferenceTuple,
-        target: chained_name.PositionReferenceTuple,
-    ):
-        """Move nested guarantees beneath a moved particle."""
-        if source not in self._by_action_chain:
-            return
-        self._by_action_chain.move_subtree(source, target)
-
-    def discard_for_destroyed_particle(
-        self, position: chained_name.PositionReferenceTuple
-    ):
-        """Discard nested guarantees belonging to a destroyed particle."""
-        if position in self._by_action_chain:
-            self._by_action_chain.delete_subtree(position)
-
-    def pop_subtrees(
-        self, positions: Iterable[chained_name.PositionReferenceTuple]
-    ) -> dict[
-        chained_name.ChainedNameTuple,
-        trie.StrictReparentingTrie[list[codegen_input.ActionExecution]],
-    ]:
-        """Detach nested guarantees belonging to particles that may move."""
-        return self._by_action_chain.pop_subtrees(positions)
-
-    def restore_moved_particle(
-        self,
-        source: chained_name.PositionReferenceTuple,
-        target: chained_name.PositionReferenceTuple,
-        saved_subtree: trie.StrictReparentingTrie[list[codegen_input.ActionExecution]],
-    ):
-        """Restore a saved particle's nested guarantees at its destination."""
-        self._by_action_chain.restore_subtree(
-            target, saved_subtree, saved_subtree[chained_name.last_name(source)]
-        )
-
-    def items(self) -> list[action_contract.CalleeContract]:
-        """Return nested guarantees in triggering order."""
-        by_execution: dict[
-            codegen_input.ActionExecution,
-            action_contract.CalleeContract,
-        ] = {}
-        # The trie alone tracks current action chains during Moves, so moving
-        # one particle does not rewrite every repeated execution of its actions.
-        for action_chain, guarantees in self._by_action_chain.items():
-            for nested_guarantees in guarantees:
-                by_execution[nested_guarantees] = action_contract.CalleeContract(
-                    _stored_action_chain(action_chain),
-                    self._contracts[nested_guarantees],
-                )
-        return [
-            by_execution[execution]
-            for execution in self._contracts
-            if execution in by_execution
-        ]
-
-    def action_chains_with_most_recent_trigger(
-        self,
-    ) -> Iterator[
-        tuple[chained_name.ActionReferenceTuple, ast.GlobalTypedNameReference]
-    ]:
-        """Yield each triggered action chain and its most recent direct trigger."""
-        for action_chain, nested_guarantees in self._by_action_chain.items():
-            if not nested_guarantees:
-                continue
-            yield (
-                _stored_action_chain(action_chain),
-                nested_guarantees[-1].action.get_last_action(),
-            )
-
-
-def _stored_action_chain(key: trie.TrieKey) -> chained_name.ActionReferenceTuple:
-    # Only action chains are added, and a Move replaces only a key's parent
-    # names, so every key in the trie still ends in its action.
-    return chained_name.action(key)
+        state = self.state[key][chained_name.last_name(key)]
+        # Only positions are detached.
+        return typing.cast("_PositionNodeState", state).particle_info
 
 
 class ParticleStateStore:
@@ -267,9 +177,12 @@ class ParticleStateStore:
         # Keyed generically because a Move re-keys records by subtree keys, which
         # include action names; only positions ever have a record.
         self._write_record: dict[chained_name.ChainedNameTuple, _WriteRecord] = {}
-        self._nested_guarantees: _CurrentActionNestedGuarantees = (
-            _CurrentActionNestedGuarantees()
-        )
+        # Every Action Execution this action triggered, in triggering order.
+        # Each one also sits on the node of its action name, which tracks where
+        # it currently is.
+        self._triggered_contracts: dict[
+            codegen_input.ActionExecution, action_contract.ActionContract
+        ] = {}
         # Pending Guarantees on the action's own parent particle, which is the
         # empty chained name, so the trie cannot hold them.
         self._root_pending_guarantees: _PendingGuarantees = {}
@@ -299,7 +212,7 @@ class ParticleStateStore:
         emptied_by: ast.PositionReference,
     ):
         """Record that a Position is known to be empty, replacing any state it had."""
-        self._state[key] = _NodeState(
+        self._state[key] = _PositionNodeState(
             emptied_by=emptied_by, pending_guarantees=self._node_pending(key)
         )
 
@@ -307,15 +220,34 @@ class ParticleStateStore:
         self, key: chained_name.PositionReferenceTuple, info: particle_info.ParticleInfo
     ):
         """Record that a particle occupies a Position, replacing any state it had."""
-        self._state[key] = _NodeState(
+        self._state[key] = _PositionNodeState(
             particle_info=info, pending_guarantees=self._node_pending(key)
         )
 
     def _node_pending(
         self, key: chained_name.PositionReferenceTuple
     ) -> _PendingGuarantees | None:
-        state = self._state.get(key)
+        state = self._position_state(key)
         return None if state is None else state.pending_guarantees
+
+    def _position_state(
+        self, key: chained_name.PositionReferenceTuple
+    ) -> _PositionNodeState | None:
+        # Only action names hold _ActionNodeState.
+        return typing.cast("_PositionNodeState | None", self._state.get(key))
+
+    def _action_state(
+        self, key: chained_name.ActionReferenceTuple
+    ) -> _ActionNodeState | None:
+        # Only action names hold _ActionNodeState.
+        return typing.cast("_ActionNodeState | None", self._state.get(key))
+
+    def _pending_state(
+        self, prefix: chained_name.ChainedNameTuple
+    ) -> _PositionNodeState | None:
+        """Return the state at ``prefix`` if it is a tracked position, which is where pending Guarantees are stored."""
+        state = self._state.get(prefix)
+        return state if isinstance(state, _PositionNodeState) else None
 
     def add_pending_guarantee(
         self,
@@ -324,7 +256,8 @@ class ParticleStateStore:
     ):
         """Record a callee's Guarantees to apply once something reaches the particle at ``prefix``, whose children they describe."""
         if prefix:
-            state = self._state.get(prefix)
+            # An action name always follows its particle's position.
+            state = self._position_state(chained_name.position(prefix))
             # The caller never filled the particle's position, which requirement
             # checking already reported, so nothing can reach these Guarantees.
             if state is None:
@@ -355,14 +288,16 @@ class ParticleStateStore:
         """Return whether pending Guarantees describe the children of the particle at ``prefix``."""
         if not prefix:
             return bool(self._root_pending_guarantees)
-        state = self._state.get(prefix)
+        state = self._pending_state(prefix)
         return state is not None and bool(state.pending_guarantees)
 
     def pending_guarantees_at(
         self, key: chained_name.PositionReferenceTuple
     ) -> Iterable[pending_guarantee.PendingGuarantee]:
         """Return the pending Guarantees that describe the children of the particle at ``key``."""
-        pending_guarantees = self._state[key].pending_guarantees
+        # Only action names hold _ActionNodeState.
+        state = typing.cast("_PositionNodeState", self._state[key])
+        pending_guarantees = state.pending_guarantees
         return () if pending_guarantees is None else pending_guarantees.values()
 
     def pop_pending_guarantees(
@@ -373,7 +308,7 @@ class ParticleStateStore:
             guarantees = self._root_pending_guarantees
             self._root_pending_guarantees = {}
         else:
-            state = self._state.get(prefix)
+            state = self._pending_state(prefix)
             if state is None or state.pending_guarantees is None:
                 return ()
             guarantees = state.pending_guarantees
@@ -391,13 +326,13 @@ class ParticleStateStore:
             if self._root_pending_guarantees:
                 prefixes.append(key)
             for candidate_key, state in self._state.items():
-                if state.pending_guarantees:
+                if isinstance(state, _PositionNodeState) and state.pending_guarantees:
                     found.append(candidate_key)
         else:
-            if self._state[key].pending_guarantees:
+            if self._has_stored_pending_guarantees(key):
                 found.append(key)
             for child_key in self._state.subtree_keys(key):
-                if self._state[child_key].pending_guarantees:
+                if self._has_stored_pending_guarantees(child_key):
                     found.append(child_key)
         # Results above a particle must be applied before results below it,
         # because applying them can change or replace what is below. The trie
@@ -406,10 +341,16 @@ class ParticleStateStore:
         prefixes.extend(found)
         return prefixes
 
+    def _has_stored_pending_guarantees(
+        self, key: chained_name.ChainedNameTuple
+    ) -> bool:
+        state = self._state[key]
+        return isinstance(state, _PositionNodeState) and bool(state.pending_guarantees)
+
     def mark_unchanged(self, key: chained_name.PositionReferenceTuple):
         """Record that a callee left a Position unchanged, tracking it with unknown occupancy if it has no state."""
         if key not in self._state:
-            self._state[key] = _NodeState()
+            self._state[key] = _PositionNodeState()
 
     def ensure_action_parent(self, key: chained_name.PositionReferenceTuple):
         """Ensure the action name preceding the position has tracker state."""
@@ -418,9 +359,10 @@ class ParticleStateStore:
             if parent_key not in self._state:
                 # This is the other repeated allocation from the default
                 # action-graph full-compiler experiment documented in
-                # try_add_action_parent: replacing both paths' fresh _NodeState
-                # values with one shared object showed no measurable wall-time change.
-                self._state[parent_key] = _NodeState()
+                # try_add_action_parent: replacing both paths' fresh
+                # _ActionNodeState values with one shared object showed no
+                # measurable wall-time change.
+                self._state[parent_key] = _ActionNodeState()
 
     def delete_subtree(
         self,
@@ -430,7 +372,10 @@ class ParticleStateStore:
         """Delete everything tracked at or below a Position, passing each removed particle to ``removed_particle_callback``."""
 
         def call_with_removed_particle(state: _NodeState):
-            if state.particle_info is not None:
+            if (
+                isinstance(state, _PositionNodeState)
+                and state.particle_info is not None
+            ):
                 removed_particle_callback(state.particle_info)
 
         if key in self._state:
@@ -439,7 +384,6 @@ class ParticleStateStore:
             )
         if key in self._error:
             self._error.delete_subtree(key)
-        self._nested_guarantees.discard_for_destroyed_particle(key)
 
     def move_subtree(
         self,
@@ -481,11 +425,6 @@ class ParticleStateStore:
                     moved_particle_callback
                 ),
             )
-            detached_nested_guarantees = detached.nested_guarantees.pop(from_key, None)
-            if detached_nested_guarantees is not None:
-                self._nested_guarantees.restore_moved_particle(
-                    from_key, to_key, detached_nested_guarantees
-                )
 
         detached_error = detached.error.pop(from_key, None)
         # Guarantees reset the error state of particles they touch directly.
@@ -516,7 +455,6 @@ class ParticleStateStore:
                 moved_particle_callback
             ),
         )
-        self._nested_guarantees.move(from_key, to_key)
 
     def _move_error_subtree(
         self,
@@ -537,8 +475,10 @@ class ParticleStateStore:
         def call_with_moved_particle(
             position: chained_name.ChainedNameTuple, state: _NodeState
         ):
-            if state.particle_info is not None:
-                # Only positions hold particles.
+            if (
+                isinstance(state, _PositionNodeState)
+                and state.particle_info is not None
+            ):
                 moved_particle_callback(
                     chained_name.position(position), state.particle_info
                 )
@@ -553,7 +493,6 @@ class ParticleStateStore:
         """Detach everything tracked at or below each of ``keys`` into ``detached``."""
         detached.state.update(self._state.pop_subtrees(keys))
         detached.error.update(self._error.pop_subtrees(keys))
-        detached.nested_guarantees.update(self._nested_guarantees.pop_subtrees(keys))
 
     def record_triggered_action(
         self,
@@ -562,11 +501,32 @@ class ParticleStateStore:
         contract: action_contract.ActionContract,
     ):
         """Record an Action Execution whose nested guarantees this action's contract carries."""
-        self._nested_guarantees.add(action_chain, execution, contract)
+        state = self._action_state(action_chain)
+        # A constructor or destructor triggers without a trigger position, so
+        # nothing may have tracked its action name yet.
+        if state is None:
+            state = _ActionNodeState()
+            self._state[action_chain] = state
+        state.triggered_executions.append(execution)
+        self._triggered_contracts[execution] = contract
 
     def nested_guarantees(self) -> list[action_contract.CalleeContract]:
         """Return the guarantees of actions this action triggered, in triggering order."""
-        return self._nested_guarantees.items()
+        action_chains: dict[
+            codegen_input.ActionExecution, chained_name.ActionReferenceTuple
+        ] = {}
+        for key, state in self._state.items():
+            if not isinstance(state, _ActionNodeState):
+                continue
+            for execution in state.triggered_executions:
+                action_chains[execution] = chained_name.action(key)
+        callees: list[action_contract.CalleeContract] = []
+        # Executions deleted with their particle are no longer in the state.
+        for execution, contract in self._triggered_contracts.items():
+            action_chain = action_chains.get(execution)
+            if action_chain is not None:
+                callees.append(action_contract.CalleeContract(action_chain, contract))
+        return callees
 
     def unconsumed_action_interfaces(
         self,
@@ -574,16 +534,21 @@ class ParticleStateStore:
         tuple[ast.GlobalTypedNameReference, chained_name.PositionReferenceTuple]
     ]:
         """Yield occupied interfaces of callees directly triggered by this action."""
-        for (
-            action_chain,
-            action,
-        ) in self._nested_guarantees.action_chains_with_most_recent_trigger():
+        for key, action_state in self._state.items():
+            if (
+                not isinstance(action_state, _ActionNodeState)
+                or not action_state.triggered_executions
+            ):
+                continue
+            action_chain = chained_name.action(key)
+            action = action_state.triggered_executions[-1].action.get_last_action()
             if self.has_error_in_chain(action_chain):
                 continue
             for child_key, state in self._state.direct_child_items(action_chain):
                 # An action's child names are its interface positions.
                 position = chained_name.position(child_key)
-                if state.particle_info is None or self.has_error_at(position):
+                particle = typing.cast("_PositionNodeState", state).particle_info
+                if particle is None or self.has_error_at(position):
                     continue
                 yield action, position
 
@@ -604,15 +569,15 @@ class ParticleStateStore:
 
     def is_occupied(self, key: chained_name.PositionReferenceTuple) -> bool:
         """Return whether a particle is known to exist at this position."""
-        state = self._state.get(key)
+        state = self._position_state(key)
         return state is not None and state.particle_info is not None
 
     def occupant(
         self, key: chained_name.PositionReferenceTuple
     ) -> particle_info.ParticleInfo:
         """Return the particle at this position, raising KeyError if it is empty."""
-        state = self._state[key]
-        if state.particle_info is None:
+        state = self._position_state(key)
+        if state is None or state.particle_info is None:
             raise KeyError(key)
         return state.particle_info
 
@@ -620,7 +585,7 @@ class ParticleStateStore:
         self, key: chained_name.PositionReferenceTuple
     ) -> particle_info.ParticleInfo | None:
         """Return the particle at this position, or None if it is empty."""
-        state = self._state.get(key)
+        state = self._position_state(key)
         return state.particle_info if state is not None else None
 
     def snapshot_child_state(
@@ -668,6 +633,8 @@ class ParticleStateStore:
             key_prefix=position_in_child_state,
             excluded_keys=contract_positions,
         ):
+            if not isinstance(node, _PositionNodeState):
+                continue
             particle = node.particle_info
             if particle is not None:
                 caller_position_key = chained_name.replace_prefix(
@@ -723,12 +690,12 @@ class ParticleStateStore:
         self, key: chained_name.PositionReferenceTuple
     ) -> ast.PositionReference | None:
         """Return the position reference that emptied this position, if it is known-empty."""
-        state = self._state.get(key)
+        state = self._position_state(key)
         return state.emptied_by if state is not None else None
 
     def has_known_occupancy(self, key: chained_name.PositionReferenceTuple) -> bool:
         """Return whether the Position is known to be occupied or empty."""
-        state = self._state.get(key)
+        state = self._position_state(key)
         if state is None:
             return False
         return state.particle_info is not None or state.emptied_by is not None
@@ -780,6 +747,8 @@ class ParticleStateStore:
         # Only positions hold a particle, emptied state, or error state.
         keys: set[chained_name.PositionReferenceTuple] = set()
         for key, state in self._state.items():
+            if not isinstance(state, _PositionNodeState):
+                continue
             position = chained_name.position(key)
             if (state.particle_info is not None or state.emptied_by is not None) and (
                 include_callee_derived or self._include_in_own_guarantees(position)
@@ -866,12 +835,12 @@ class ParticleStateStore:
             # where the compiler may add a tracker entry for an action name. Any
             # other absent parent name is a position the caller never filled.
             if chained_name.is_action_key(parent_key[-1]):
-                # Repeated _NodeState construction for action-name trie
+                # Repeated _ActionNodeState construction for action-name trie
                 # keys looked costly in the default action-graph full-compiler
                 # benchmark. An August 2026 experiment replaced every fresh value
-                # here and in ensure_action_parent with one shared _NodeState;
+                # here and in ensure_action_parent with one shared value;
                 # unprofiled runs showed no measurable wall-time change.
-                self._state[parent_key] = _NodeState()
+                self._state[parent_key] = _ActionNodeState()
                 return None
             return chained_name.position(parent_key)
         # Two or more names are absent, so only a walk can say which of them the

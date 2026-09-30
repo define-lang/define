@@ -1,0 +1,24 @@
+# Verifying a caller-attached destructor close_file cannot see fails when /test never filled the destructor's required position</file>, even after /touch moved that position's particle out and back.
+# /touch's Guarantee only tells /test that position</file> is unchanged, so /test supplies no occupancy for it and the destructor's violation is observed at the line that triggered close_file, separately from /touch's own violation.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</close_file>.
+            }
+        }
+        define the position<my_file> {
+            it may only contain particles where {
+                it has the action</delete_file_destructor>.
+                it has the action</touch>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<my_file>.
+        create a particle in position<my_file>::action</touch>::position<run>.
+        move the particle in position<my_file> to position<box>::action</close_file>::position<target>.
+        create a particle in position<box>::action</close_file>::position<run>.
+    }
+}
