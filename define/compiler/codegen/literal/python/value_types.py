@@ -19,11 +19,16 @@ NO_VALUE: Final = "Never"
 # fractions.Fraction, instead of Python floats, which cannot represent most
 # rationals and so can also make rational comparisons give the wrong answer.
 _ENCODING_PYTHON_TYPES: Final = {
+    constants.BINARY_ASCII_ENCODING: "int",
     constants.BOOLEAN_ASCII_ENCODING: "bool",
     constants.DECIMAL_ASCII_ENCODING: "float",
 }
 
 _PYTHON_BOOLEANS: Final = {"true": "True", "false": "False"}
+
+
+def _python_binary(content: str) -> str:
+    return f"0b{content}"
 
 
 def _python_boolean(content: str) -> str:
@@ -36,6 +41,7 @@ def _python_decimal(content: str) -> str:
 
 
 _ENCODING_PYTHON_LITERALS: Final[dict[str, Callable[[str], str]]] = {
+    constants.BINARY_ASCII_ENCODING: _python_binary,
     constants.BOOLEAN_ASCII_ENCODING: _python_boolean,
     constants.DECIMAL_ASCII_ENCODING: _python_decimal,
 }

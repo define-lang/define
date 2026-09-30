@@ -1,0 +1,4 @@
+define the potential value<standard:/binary>.
+define the potential literal<standard:/binary> {
+    it has the encoding</binary/ascii>.
+}

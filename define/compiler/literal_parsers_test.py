@@ -4,12 +4,38 @@ import pytest
 
 from define.compiler import constants, literal_parsers
 
+_PARSE_BINARY_ASCII = literal_parsers.LITERAL_PARSERS[
+    constants.BINARY_ASCII_ENCODING, constants.BINARY_ASCII_ENCODING
+]
 _PARSE_BOOLEAN_ASCII = literal_parsers.LITERAL_PARSERS[
     constants.BOOLEAN_ASCII_ENCODING, constants.BOOLEAN_ASCII_ENCODING
 ]
 _PARSE_DECIMAL_ASCII = literal_parsers.LITERAL_PARSERS[
     constants.DECIMAL_ASCII_ENCODING, constants.DECIMAL_ASCII_ENCODING
 ]
+
+
+@pytest.mark.parametrize("content", ["0", "1", "1001"])
+def test_binary_ascii_accepts(content: str):
+    assert _PARSE_BINARY_ASCII(content) == content
+
+
+@pytest.mark.parametrize(
+    ("content", "reason", "content_index"),
+    [
+        ("", "there must be at least one bit", 0),
+        ("102", "only the bits 0 and 1 are allowed", 2),
+        ("0b1", "only the bits 0 and 1 are allowed", 1),
+        ("1 0", "only the bits 0 and 1 are allowed", 1),
+        ("00", "binary values are written without leading zeros", 0),
+        ("0101", "binary values are written without leading zeros", 0),
+    ],
+)
+def test_binary_ascii_rejects(content: str, reason: str, content_index: int):
+    with pytest.raises(literal_parsers.LiteralParseError) as error:
+        _ = _PARSE_BINARY_ASCII(content)
+    assert error.value.reason == reason
+    assert error.value.content_index == content_index
 
 
 @pytest.mark.parametrize("content", ["true", "false"])

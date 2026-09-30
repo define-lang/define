@@ -1,0 +1,15 @@
+# Binary literal content contains only the bits 0 and 1.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<target> {
+            it may only contain particles where {
+                it has the value<standard:/binary>.
+            }
+        }
+        create a particle in position<target>.
+        set the value of position<target> to literal<standard:/binary>"1021".
+        destroy the particle in position<target>.
+    }
+}

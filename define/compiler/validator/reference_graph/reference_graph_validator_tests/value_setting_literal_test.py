@@ -374,3 +374,44 @@ def test_boolean_literal_sets_rational(
     ]
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 46
+
+
+def test_binary_literal(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph().program_result
+    assert_no_errors(result)
+
+
+def test_invalid_binary_literal_content(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph().program_result
+    assert result.all_exceptions == []
+    assert len(result.all_diagnostics) == 1
+    diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.InvalidLiteralContentDiagnostic)
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.content == "1021"
+    assert diagnostic.potential_literal == "literal<standard:/binary>"
+    assert diagnostic.value_encoding == "encoding<standard:/binary/ascii>"
+    assert diagnostic.reason == "only the bits 0 and 1 are allowed"
+    assert diagnostic.location.line == 12
+    assert diagnostic.location.column == 74
+
+
+def test_binary_literal_sets_boolean(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph().program_result
+    assert result.all_exceptions == []
+    assert len(result.all_diagnostics) == 1
+    diagnostic = result.all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.LiteralCannotSetValueDiagnostic)
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.potential_literal == "literal<standard:/binary>"
+    assert diagnostic.literal_encoding == "encoding<standard:/binary/ascii>"
+    assert diagnostic.value_type == "value<standard:/boolean>"
+    assert diagnostic.supported_encodings == ["encoding<standard:/boolean/ascii>"]
+    assert diagnostic.location.line == 12
+    assert diagnostic.location.column == 46

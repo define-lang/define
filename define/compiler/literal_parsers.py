@@ -105,8 +105,28 @@ def _parse_boolean_ascii(content: str) -> str:
     raise LiteralParseError("a boolean is either true or false", 0)
 
 
+# Binary values have no length, so leading zeros would give one value several
+# spellings.
+_BINARY: Final = re.compile(r"0|1[01]*")
+
+
+def _parse_binary_ascii(content: str) -> str:
+    if _BINARY.fullmatch(content) is not None:
+        return content
+    if not content:
+        raise LiteralParseError("there must be at least one bit", 0)
+    for index, char in enumerate(content):
+        if char not in "01":
+            raise LiteralParseError("only the bits 0 and 1 are allowed", index)
+    raise LiteralParseError("binary values are written without leading zeros", 0)
+
+
 # Keyed by the Potential Literal's encoding and then the value's encoding.
 LITERAL_PARSERS: Final[dict[tuple[str, str], Callable[[str], str]]] = {
+    (
+        constants.BINARY_ASCII_ENCODING,
+        constants.BINARY_ASCII_ENCODING,
+    ): _parse_binary_ascii,
     (
         constants.BOOLEAN_ASCII_ENCODING,
         constants.BOOLEAN_ASCII_ENCODING,

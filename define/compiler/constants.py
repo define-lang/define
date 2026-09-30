@@ -26,11 +26,13 @@ STANDARD_LIBRARY_ROOT: Final = define_path.DefinePathFromPosix(
     )
 )
 # The standard universe's files in define/standard define these encodings.
+BINARY_ASCII_ENCODING: Final = f"encoding<{STANDARD_UNIVERSE}:/binary/ascii>"
 BOOLEAN_ASCII_ENCODING: Final = f"encoding<{STANDARD_UNIVERSE}:/boolean/ascii>"
 DECIMAL_ASCII_ENCODING: Final = f"encoding<{STANDARD_UNIVERSE}:/number/decimal/ascii>"
 # TODO: Read value encodings from encodings configuration (DLP 47) once it
 # exists.
 BUILT_IN_VALUE_ENCODINGS: Final = {
+    f"value<{STANDARD_UNIVERSE}:/binary>": BINARY_ASCII_ENCODING,
     f"value<{STANDARD_UNIVERSE}:/boolean>": BOOLEAN_ASCII_ENCODING,
     f"value<{STANDARD_UNIVERSE}:/number/rational>": DECIMAL_ASCII_ENCODING,
 }
