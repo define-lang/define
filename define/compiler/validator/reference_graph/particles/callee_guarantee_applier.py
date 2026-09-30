@@ -216,7 +216,8 @@ class _PendingNestedGuarantees:
         with common prefixes are faster when adjacent because their already
         drained prefixes are reused, but adjacency is not required for
         correctness. Guarantees on each individual path are yielded from the
-        shortest prefix to the longest.
+        shortest prefix to the longest. Guarantees that applying a yielded one
+        adds at a prefix already passed stay pending.
         """
         # Requirement propagation usually has no pending guarantees, so avoid
         # consuming its keys or performing any chained-name comparisons then.
@@ -250,8 +251,9 @@ class _PendingNestedGuarantees:
             while length < key_len and length <= self._longest_pending_guarantee_key:
                 prefix = chained_name.ChainedNameTuple(key[:length])
                 # Applying a guarantee can add another pending guarantee at this
-                # same prefix, so do not advance until the prefix stays empty.
-                while prefix in self._by_prefix:
+                # same prefix. Callers never read positions below it before a
+                # later expansion applies that one, so it can wait.
+                if prefix in self._by_prefix:
                     yield from self._pop_prefix(prefix)
                 # Once no pending guarantees remain, no later path can yield
                 # anything.
