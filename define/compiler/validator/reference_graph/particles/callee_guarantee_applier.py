@@ -11,288 +11,16 @@ from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.particles import (
     particle_info,
     particle_state_store,
+    pending_guarantee,
 )
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator, Sequence
+    from collections.abc import Iterable
 
     from define.compiler.validator import codegen_input
     from define.compiler.validator.reference_graph.dead_code import (
         dead_interface_tracker,
     )
-
-
-class _PendingGuarantee(msgspec.Struct, frozen=True):
-    """A callee's guarantees and the execution path where they apply."""
-
-    # The triggered action's chain.
-    action_chain: chained_name.ActionReferenceTuple
-    contract: action_contract.ActionContract
-    # The Action Execution that produced this nested guarantee. All of a
-    # triggered contract's guarantees (own and nested) carry it, so guarantees
-    # from the same Action Execution can be ordered by call_chain_depth.
-    execution: codegen_input.ActionExecution
-    # Call-chain depth from the directly-applied contract: its own guarantees
-    # are depth 0; each nested guarantee increments the depth. Within a single
-    # Action Execution, a lower-depth guarantee outranks a higher-depth one it
-    # resolved.
-    call_chain_depth: int = 0
-
-    @property
-    def parent_position(self) -> chained_name.ChainedNameTuple:
-        """The parent of the callee's implied (global) positions.
-
-        This is ``action_chain`` with its trailing action stripped: an implied
-        quality lives on the action's parent particle, at the parent name of the
-        action's interface position names. ``action_chain`` always ends in the
-        triggered action, since that is the only thing that produces guarantees.
-        """
-        return chained_name.parent(self.action_chain)
-
-    def key_for[T: chained_name.ChainedNameTuple](self, name: T) -> T:
-        """Return the absolute key for a guarantee this action names ``name``."""
-        return chained_name.in_caller(self.action_chain, name)
-
-    @property
-    def identity(self) -> _PendingGuaranteeIdentity:
-        """Fields that make two pending guarantees apply identical effects."""
-        return _PendingGuaranteeIdentity(
-            self.action_chain,
-            id(self.contract),
-            self.execution,
-            self.call_chain_depth,
-        )
-
-
-class _PendingGuaranteeIdentity(msgspec.Struct, frozen=True):
-    """Fields that make two pending guarantees apply identical effects."""
-
-    action_chain: chained_name.ActionReferenceTuple
-    # Contracts are compared by identity because comparing their contents
-    # would walk every guarantee, and each definition has one contract.
-    contract_id: int
-    # Action Executions already compare by identity.
-    execution: codegen_input.ActionExecution
-    call_chain_depth: int
-
-
-# Nested guarantees are deferred here instead of being flattened into every
-# caller's state, and this laziness is a critical performance optimization.
-# Eagerly flattening the whole guarantee list re-copies a callee's entire
-# guarantee subtree at each level of a deep call chain, so an action graph with
-# fan-out F and call depth D produces O(F^D) guarantees: an exponential blowup
-# that eventually makes compilation impossible.
-#
-# Deferring the resolution of guarantees keeps each contract at a size of
-# O(own guarantees + F references) and only materializes the guarantees a
-# specific caller actually depends on directly in their code.
-class _PendingNestedGuarantees:
-    """A prefix multimap of nested guarantees, keyed by a position prefix.
-
-    Each nested guarantee is stored by a position prefix.
-    ``drain_shortest_first`` yields the ones whose prefix is a parent name of a
-    queried position (shortest prefix first); ``drain_at_or_below_for`` yields the
-    ones for which a queried position is a parent name. Both remove what they
-    yield and re-query as they go: applying a yielded nested guarantee can add
-    ones with additional child names, which the drain then picks up.
-    """
-
-    # The two drain directions need different lookups. Shortest-first queries
-    # can probe successive prefixes directly in _by_prefix. Queries for child
-    # names would otherwise have to scan every stored prefix, so we also index
-    # each stored prefix under all of its nonempty prefixes.
-    #
-    # For example, _by_prefix[("a", "b")] holds the guarantees stored at that
-    # name. Both _by_requested_prefix[("a",)] and
-    # _by_requested_prefix[("a", "b")] contain the key ("a", "b"). A query
-    # for ("a",) can therefore find those guarantees without examining unrelated
-    # names. The index holds keys rather than guarantees, so adding another
-    # guarantee at an existing name needs only an insertion into its ordered set.
-
-    def __init__(self):
-        # Each inner dictionary is an ordered set of the guarantees stored at
-        # that name.
-        self._by_prefix: dict[
-            chained_name.ChainedNameTuple,
-            dict[_PendingGuaranteeIdentity, _PendingGuarantee],
-        ] = {}
-        # Queries must skip unrelated guarantees even when many share a parent name.
-        self._by_requested_prefix: dict[
-            chained_name.ChainedNameTuple, set[chained_name.ChainedNameTuple]
-        ] = {}
-        # Draining several indexed names must preserve their original insertion order.
-        # The sets in _by_requested_prefix do not preserve insertion order, so these
-        # numbers recover the order of keys in _by_prefix. Removing and re-adding a
-        # key gives it a new place in that order.
-        self._prefix_order: dict[chained_name.ChainedNameTuple, int] = {}
-        self._next_prefix_order: int = 0
-        self._longest_pending_guarantee_key: int = 0
-
-    def add(self, nested_guarantee: _PendingGuarantee):
-        """Record a nested guarantee to apply once a query reaches ``prefix`` or one of its child names."""
-        # Interface guarantees use action_chain as their prefix; implied-position
-        # guarantees use parent_position. Store both under parent_position so that
-        # queries on implied positions can find the pending guarantee too.
-        prefix = nested_guarantee.parent_position
-        guarantees = self._by_prefix.get(prefix)
-        if guarantees is None:
-            for requested_prefix in chained_name.prefixes(prefix):
-                matching = self._by_requested_prefix.get(requested_prefix)
-                if matching is None:
-                    self._by_requested_prefix[requested_prefix] = {prefix}
-                else:
-                    matching.add(prefix)
-            self._prefix_order[prefix] = self._next_prefix_order
-            self._next_prefix_order += 1
-            self._by_prefix[prefix] = {nested_guarantee.identity: nested_guarantee}
-        else:
-            # When several implying qualities imply the same quality, each of
-            # them adds that quality's action as a nested guarantee. From the
-            # caller's perspective, an implied action's chain drops the action
-            # that implied it, so all of those copies have the same chain. Over
-            # layers of shared implied qualities, the copies multiply with every
-            # layer. Applying each copy would take exponential time. Keeping
-            # only the latest copy preserves which guarantee writes each
-            # position last.
-            identity = nested_guarantee.identity
-            _ = guarantees.pop(identity, None)
-            guarantees[identity] = nested_guarantee
-        self._longest_pending_guarantee_key = max(
-            self._longest_pending_guarantee_key, len(prefix)
-        )
-
-    def _pop_prefix(
-        self, prefix: chained_name.ChainedNameTuple
-    ) -> Iterable[_PendingGuarantee]:
-        # Every drain must remove the index entries before yielding the guarantees:
-        # applying one can query the index again or add new guarantees at this same name.
-        guarantees = self._by_prefix.pop(prefix)
-        for requested_prefix in chained_name.prefixes(prefix):
-            matching = self._by_requested_prefix[requested_prefix]
-            matching.remove(prefix)
-            if not matching:
-                del self._by_requested_prefix[requested_prefix]
-        del self._prefix_order[prefix]
-        return guarantees.values()
-
-    def stored_at(
-        self, prefix: chained_name.ChainedNameTuple
-    ) -> Iterable[_PendingGuarantee]:
-        """Return the pending nested guarantees stored at exactly ``prefix``."""
-        guarantees = self._by_prefix.get(prefix)
-        return () if guarantees is None else guarantees.values()
-
-    def discard(self, prefix: chained_name.ChainedNameTuple):
-        """Remove the pending nested guarantees stored at exactly ``prefix`` without applying them."""
-        _ = self._pop_prefix(prefix)
-
-    def drain_shortest_first(
-        self, key: chained_name.ChainedNameTuple
-    ) -> Iterator[_PendingGuarantee]:
-        """Yield and remove the pending nested guarantees on the path to ``key``, shortest prefix first."""
-        # The common case is no pending guarantees; bail before doing any work,
-        # as a performance optimization.
-        if not self._by_prefix:
-            self._longest_pending_guarantee_key = 0
-            return
-        # Walk the prefixes of key from shortest to longest, but no longer than
-        # the longest pending guarantee key.
-        key_len = len(key)
-        length = 0
-        while length < key_len and length <= self._longest_pending_guarantee_key:
-            prefix = chained_name.ChainedNameTuple(key[:length])
-            # Applying a yielded guarantee can re-add one at this same prefix, so
-            # drain it fully before moving to a prefix with another child name.
-            while prefix in self._by_prefix:
-                yield from self._pop_prefix(prefix)
-            length += 1
-
-    def drain_shortest_first_for(
-        self, keys: Iterable[chained_name.ChainedNameTuple]
-    ) -> Iterator[_PendingGuarantee]:
-        """Yield and remove pending guarantees on the paths to ``keys``.
-
-        Keys may be in any order and are processed in the order supplied. Keys
-        with common prefixes are faster when adjacent because their already
-        drained prefixes are reused, but adjacency is not required for
-        correctness. Guarantees on each individual path are yielded from the
-        shortest prefix to the longest. Guarantees that applying a yielded one
-        adds at a prefix already passed stay pending.
-        """
-        # Requirement propagation usually has no pending guarantees, so avoid
-        # consuming its keys or performing any chained-name comparisons then.
-        if not self._by_prefix:
-            self._longest_pending_guarantee_key = 0
-            return
-        previous_key: chained_name.ChainedNameTuple | None = None
-        previous_drained_prefix_count = 0
-        for key in keys:
-            if previous_key is None:
-                # A pending implied-action guarantee can use the empty tuple as
-                # its prefix, so the first path must begin there.
-                length = 0
-            else:
-                # Reuse only prefixes actually drained for the preceding path.
-                common_depth = 0
-                common_depth_limit = min(
-                    len(previous_key),
-                    len(key),
-                    previous_drained_prefix_count,
-                )
-                while (
-                    common_depth < common_depth_limit
-                    and previous_key[common_depth] == key[common_depth]
-                ):
-                    common_depth += 1
-                length = min(common_depth + 1, previous_drained_prefix_count)
-            key_len = len(key)
-            # A guarantee can affect the queried position only when its prefix
-            # is one of the queried position's parent names.
-            while length < key_len and length <= self._longest_pending_guarantee_key:
-                prefix = chained_name.ChainedNameTuple(key[:length])
-                # Applying a guarantee can add another pending guarantee at this
-                # same prefix. Callers never read positions below it before a
-                # later expansion applies that one, so it can wait.
-                if prefix in self._by_prefix:
-                    yield from self._pop_prefix(prefix)
-                # Once no pending guarantees remain, no later path can yield
-                # anything.
-                if not self._by_prefix:
-                    self._longest_pending_guarantee_key = 0
-                    return
-                length += 1
-            previous_key = key
-            previous_drained_prefix_count = length
-
-    def drain_at_or_below_for(
-        self, keys: Sequence[chained_name.ChainedNameTuple]
-    ) -> Iterator[_PendingGuarantee]:
-        """Yield guarantees at or below any of the equally long keys."""
-        if not self._by_prefix or not keys:
-            return
-        # Automatic Destruction can request thousands of locally defined
-        # Positions. They all have one name; other callers request just one key.
-        # Combining their indexed matches avoids scanning unrelated pending prefixes.
-        length = len(keys[0])
-        requested = set(keys)
-        # Applying a guarantee can add more pending guarantees, even at
-        # a name just drained. Finish each batch in stored-prefix insertion order,
-        # then query again until none of the requested names have matches.
-        while self._by_prefix:
-            if length == 0:
-                # An empty prefix matches every name, so indexing it would only
-                # duplicate the complete set of stored keys.
-                matching = list(self._by_prefix)
-            else:
-                matching: list[chained_name.ChainedNameTuple] = []
-                # Distinct requested names of equal length have disjoint matches.
-                for key in requested:
-                    matching.extend(self._by_requested_prefix.get(key, ()))
-                matching.sort(key=self._prefix_order.__getitem__)
-            if not matching:
-                return
-            for prefix in matching:
-                yield from self._pop_prefix(prefix)
 
 
 class _GuaranteeApplicationState(msgspec.Struct, frozen=True):
@@ -305,15 +33,15 @@ class _GuaranteeApplicationState(msgspec.Struct, frozen=True):
     )
 
     @classmethod
-    def for_callee(cls, pending_guarantee: _PendingGuarantee) -> typing.Self:
+    def for_callee(cls, pending: pending_guarantee.PendingGuarantee) -> typing.Self:
         """Prepare shared state for applying the callee's guarantees."""
         # Existing particles must survive earlier Guarantees that overwrite
         # their origin Positions before the particles reach their destinations.
         origin_keys: set[chained_name.PositionReferenceTuple] = set()
-        for guarantee in pending_guarantee.contract.guarantees.values():
+        for guarantee in pending.contract.guarantees.values():
             if isinstance(guarantee, action_contract.OccupiedByExistingGuarantee):
                 origin_tuple = guarantee.origin_position.canonical_chained_name_tuple
-                origin_keys.add(pending_guarantee.key_for(origin_tuple))
+                origin_keys.add(pending.key_for(origin_tuple))
 
         return cls(origin_keys=origin_keys)
 
@@ -347,7 +75,6 @@ class CalleeGuaranteeApplier:
         """Apply Guarantees to ``store``, recording particle changes in ``dead_interfaces``."""
         self._store = store
         self._dead_interfaces = dead_interfaces
-        self._pending = _PendingNestedGuarantees()
 
     def apply_triggered_action(
         self,
@@ -379,7 +106,7 @@ class CalleeGuaranteeApplier:
         # These measurements predate operation-graph removal; graph-specific
         # failures describe the former implementation, not current requirements.
         action_chain_key = execution.action.canonical_chained_name_tuple
-        callee_guarantees = _PendingGuarantee(
+        callee_guarantees = pending_guarantee.PendingGuarantee(
             action_chain_key,
             contract,
             execution,
@@ -387,21 +114,21 @@ class CalleeGuaranteeApplier:
         self._store.record_triggered_action(action_chain_key, execution, contract)
         self._apply_pending_guarantee(callee_guarantees)
 
-    def _apply_pending_guarantee(self, pending_guarantee: _PendingGuarantee):
+    def _apply_pending_guarantee(self, pending: pending_guarantee.PendingGuarantee):
         """Apply a callee's guarantees and add one child name to nested guarantee prefixes."""
-        application = _GuaranteeApplicationState.for_callee(pending_guarantee)
+        application = _GuaranteeApplicationState.for_callee(pending)
 
         # A preceding Guarantee may create or move a later Guarantee's parent,
         # so acceptance checks must alternate with occupancy updates.
-        for position, guarantee in pending_guarantee.contract.guarantees.items():
-            key = pending_guarantee.key_for(position)
+        for position, guarantee in pending.contract.guarantees.items():
+            key = pending.key_for(position)
 
             # A shallower guarantee from the same Action Execution already
             # decided this key, so this one must not override it.
             if self._store.is_superseded(
                 key,
-                pending_guarantee.execution,
-                pending_guarantee.call_chain_depth,
+                pending.execution,
+                pending.call_chain_depth,
             ):
                 continue
 
@@ -421,10 +148,10 @@ class CalleeGuaranteeApplier:
                 continue
 
             self._update_store_from_callee_direct_guarantee(
-                pending_guarantee, key, guarantee, application
+                pending, key, guarantee, application
             )
 
-        for child in pending_guarantee.contract.callees:
+        for child in pending.contract.callees:
             # The original triggering chain is the full chain the action had from
             # the perspective of its caller, when it was triggered. CalleeContract
             # does not retain that chain; the examples below show it for comparison.
@@ -435,11 +162,11 @@ class CalleeGuaranteeApplier:
             #
             # However, nested guarantees can _also_ be moved without their
             # more-deeply nested guarantees being applied in the callee. Composing
-            # child.action_chain with pending_guarantee.action_chain places those
+            # child.action_chain with pending.action_chain places those
             # deeper guarantees at the moved particle's current chain when we
             # apply them in the current action.
             #
-            # Thus, pending_guarantee.action_chain is the callee's current chained
+            # Thus, pending.action_chain is the callee's current chained
             # name, where its guarantees apply, from this action's perspective.
             #
             # We have this system to avoid the same potentially exponential work that
@@ -506,7 +233,7 @@ class CalleeGuaranteeApplier:
             # which adds the pending guarantees of:
             # position<gateway>::action</relocate_particle>::position<stationary>::action</inspect_particle>.
             #
-            # pending_guarantee.action_chain =
+            # pending.action_chain =
             #     position<gateway>::action</relocate_particle>
             # child.action_chain =
             #     position<stationary>::action</inspect_particle>
@@ -520,7 +247,7 @@ class CalleeGuaranteeApplier:
             # which adds the pending guarantees of:
             # position<gateway>::action</relocate_particle>::position<destination>::action</process_particle>.
             #
-            # pending_guarantee.action_chain =
+            # pending.action_chain =
             #     position<gateway>::action</relocate_particle>
             # child.action_chain =
             #     position<destination>::action</process_particle>
@@ -534,7 +261,7 @@ class CalleeGuaranteeApplier:
             # which adds the pending guarantees of:
             # position<gateway>::action</relocate_particle>::position<destination>::action</process_particle>::position<marker_parent>::action</fill_marker>.
             #
-            # pending_guarantee.action_chain =
+            # pending.action_chain =
             #     position<gateway>::action</relocate_particle>::position<destination>::action</process_particle>
             # child.action_chain =
             #     position<marker_parent>::action</fill_marker>
@@ -542,31 +269,44 @@ class CalleeGuaranteeApplier:
             #     position<marker_parent>::action</fill_marker>
             # child_action_chain_in_caller =
             #     position<gateway>::action</relocate_particle>::position<destination>::action</process_particle>::position<marker_parent>::action</fill_marker>
-            child_action_chain_in_caller = pending_guarantee.key_for(child.action_chain)
-            child_nested_guarantee = _PendingGuarantee(
+            child_action_chain_in_caller = pending.key_for(child.action_chain)
+            child_nested_guarantee = pending_guarantee.PendingGuarantee(
                 child_action_chain_in_caller,
                 child.contract,
-                pending_guarantee.execution,
-                call_chain_depth=pending_guarantee.call_chain_depth + 1,
+                pending.execution,
+                call_chain_depth=pending.call_chain_depth + 1,
             )
-            self._pending.add(child_nested_guarantee)
+            self._store.add_pending_guarantee(child_nested_guarantee)
 
     def apply_pending_guarantees_up_to(self, key: chained_name.PositionReferenceTuple):
         """Apply any nested guarantee on the path from root to ``key``."""
-        self._apply_drained(self._pending.drain_shortest_first(key))
+        if not self._store.has_any_pending_guarantees():
+            return
+        for prefix in chained_name.proper_prefixes(key):
+            # Applying a guarantee can add another pending guarantee at this
+            # same prefix, so do not advance until the prefix stays empty.
+            while self._store.has_pending_guarantees(prefix):
+                self._apply_all(self._store.pop_pending_guarantees(prefix))
 
     def apply_pending_guarantees_up_to_all(
         self, keys: Iterable[chained_name.PositionReferenceTuple]
     ):
         """Apply nested guarantees on the paths to any of ``keys``."""
-        self._apply_drained(self._pending.drain_shortest_first_for(keys))
+        if not self._store.has_any_pending_guarantees():
+            return
+        for key in keys:
+            for prefix in chained_name.proper_prefixes(key):
+                # Applying a guarantee can add another pending guarantee at
+                # this same prefix. Callers never read positions below it
+                # before a later expansion applies that one, so it can wait.
+                self._apply_all(self._store.pop_pending_guarantees(prefix))
 
     def fully_resolve_pending_guarantees(
         self, *keys: chained_name.PositionReferenceTuple
     ):
-        """Apply guarantees affecting any of the equally long keys or their children."""
+        """Apply guarantees affecting any of the keys or their children."""
         self.apply_pending_guarantees_up_to_all(keys)
-        self._apply_drained(self._pending.drain_at_or_below_for(keys))
+        self._apply_at_or_below(keys)
 
     def discard_discardable_pending_guarantees(
         self, key: chained_name.PositionReferenceTuple
@@ -593,33 +333,43 @@ class CalleeGuaranteeApplier:
         # Every pending Guarantee stored for this particle has to qualify, or
         # we apply them all as usual. They can overwrite each other, so
         # applying only some of them could change what the others would do.
-        pending_guarantees = self._pending.stored_at(key)
+        pending_guarantees = self._store.pending_guarantees_at(key)
         if not pending_guarantees:
             return
-        for pending_guarantee in pending_guarantees:
-            if not pending_guarantee.contract.guarantees_discardable_on_destruction:
+        for pending in pending_guarantees:
+            if not pending.contract.guarantees_discardable_on_destruction:
                 return
-            for position in pending_guarantee.contract.guarantees:
-                if self._store.tracks_at_or_below(pending_guarantee.key_for(position)):
+            for position in pending.contract.guarantees:
+                if self._store.tracks_at_or_below(pending.key_for(position)):
                     return
-        self._pending.discard(key)
+        _ = self._store.pop_pending_guarantees(key)
 
     def fully_resolve_all_pending_guarantees(self):
         """Apply every pending guarantee."""
         # Every stored prefix is at or below the empty chain.
-        self._apply_drained(
-            self._pending.drain_at_or_below_for([chained_name.ChainedNameTuple(())])
-        )
+        self._apply_at_or_below([chained_name.ChainedNameTuple(())])
 
-    def _apply_drained(self, pending_guarantees: Iterator[_PendingGuarantee]):
-        # The drains re-query as they go, so each guarantee must be applied
-        # before the next one is drawn.
-        for pending_guarantee in pending_guarantees:
-            self._apply_pending_guarantee(pending_guarantee)
+    def _apply_at_or_below(self, keys: Iterable[chained_name.ChainedNameTuple]):
+        # Applying a guarantee can add pending guarantees below it, so look
+        # again until none remain.
+        while True:
+            prefixes: list[chained_name.ChainedNameTuple] = []
+            for key in keys:
+                prefixes.extend(self._store.pending_prefixes_at_or_below(key))
+            if not prefixes:
+                return
+            for prefix in prefixes:
+                self._apply_all(self._store.pop_pending_guarantees(prefix))
+
+    def _apply_all(
+        self, pending_guarantees: Iterable[pending_guarantee.PendingGuarantee]
+    ):
+        for pending in pending_guarantees:
+            self._apply_pending_guarantee(pending)
 
     def _update_store_from_callee_direct_guarantee(
         self,
-        pending_guarantee: _PendingGuarantee,
+        pending: pending_guarantee.PendingGuarantee,
         key: chained_name.PositionReferenceTuple,
         guarantee: action_contract.PositionGuarantee,
         application: _GuaranteeApplicationState,
@@ -631,8 +381,8 @@ class CalleeGuaranteeApplier:
         # are re-derivable in any caller, so they stay behind the nested guarantee.
         self._store.record_callee_write(
             key,
-            pending_guarantee.execution,
-            pending_guarantee.call_chain_depth,
+            pending.execution,
+            pending.call_chain_depth,
             include_in_own_guarantees=isinstance(
                 guarantee, action_contract.OccupiedByExistingGuarantee
             ),
@@ -642,14 +392,14 @@ class CalleeGuaranteeApplier:
         # without the replacement logic below deleting its child positions.
         if isinstance(
             guarantee, action_contract.OccupiedByExistingGuarantee
-        ) and key == pending_guarantee.key_for(
+        ) and key == pending.key_for(
             guarantee.origin_position.canonical_chained_name_tuple
         ):
             occupant = self._store.occupant_or_none(key)
             if occupant is not None:
                 occupant.set_value_state(
                     guarantee.value_effect,
-                    pending_guarantee.execution.action.get_last_action().location,
+                    pending.execution.action.get_last_action().location,
                 )
             return
 
@@ -682,7 +432,7 @@ class CalleeGuaranteeApplier:
             case action_contract.OccupiedByExistingGuarantee():
                 self._apply_existing_guarantee(
                     key,
-                    pending_guarantee,
+                    pending,
                     guarantee,
                     application,
                 )
@@ -696,13 +446,13 @@ class CalleeGuaranteeApplier:
                 )
                 new_info.set_value_state(
                     guarantee.value_effect,
-                    pending_guarantee.execution.action.get_last_action().location,
+                    pending.execution.action.get_last_action().location,
                 )
                 self._store.mark_occupied(key, new_info)
                 self._dead_interfaces.register_occupied_interface_child_position(
                     key,
                     new_info,
-                    pending_guarantee.execution.action.get_last_action().location,
+                    pending.execution.action.get_last_action().location,
                 )
             case action_contract.ErrorGuarantee():
                 self._store.mark_error(key, guarantee.caused_by)
@@ -720,13 +470,13 @@ class CalleeGuaranteeApplier:
     def _apply_existing_guarantee(
         self,
         dest_key: chained_name.PositionReferenceTuple,
-        pending_guarantee: _PendingGuarantee,
+        pending: pending_guarantee.PendingGuarantee,
         guarantee: action_contract.OccupiedByExistingGuarantee,
         application: _GuaranteeApplicationState,
     ):
         """Apply an OccupiedByExisting guarantee at dest_key."""
         origin_tuple = guarantee.origin_position.canonical_chained_name_tuple
-        origin_key = pending_guarantee.key_for(origin_tuple)
+        origin_key = pending.key_for(origin_tuple)
 
         # Get origin's particle_info — from saved copy if already processed,
         # else from the live trie.
@@ -748,7 +498,7 @@ class CalleeGuaranteeApplier:
             self._store.mark_error(dest_key, guarantee.caused_by)
             return
 
-        source_location = pending_guarantee.execution.action.get_last_action().location
+        source_location = pending.execution.action.get_last_action().location
         moved_info.set_value_state(guarantee.value_effect, source_location)
         moved_info.last_position = guarantee.caused_by
         self._dead_interfaces.mark_particle_departed(moved_info)

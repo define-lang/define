@@ -83,9 +83,9 @@ def replace_prefix[T: ChainedNameTuple](
     return typing.cast("T", new_prefix + chain[len(old_prefix) :])
 
 
-def prefixes(chain: ChainedNameTuple) -> Iterator[ChainedNameTuple]:
-    """Yield each nonempty prefix of the chain, shortest first."""
-    for length in range(1, len(chain) + 1):
+def proper_prefixes(chain: ChainedNameTuple) -> Iterator[ChainedNameTuple]:
+    """Yield each proper prefix of the chain, shortest first, starting with the empty chain."""
+    for length in range(len(chain)):
         yield ChainedNameTuple(chain[:length])
 
 

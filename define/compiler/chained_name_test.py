@@ -81,12 +81,12 @@ def test_replace_prefix_moves_chain_to_new_prefix():
     ) == _chain("position<x>", "position<c>")
 
 
-def test_prefixes_are_nonempty_and_shortest_first():
+def test_proper_prefixes_start_empty_and_exclude_the_chain():
     chain = _chain("position<a>", "action<b>", "position<c>")
-    assert list(chained_name.prefixes(chain)) == [
+    assert list(chained_name.proper_prefixes(chain)) == [
+        _chain(),
         _chain("position<a>"),
         _chain("position<a>", "action<b>"),
-        _chain("position<a>", "action<b>", "position<c>"),
     ]
 
 

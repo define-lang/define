@@ -18,7 +18,14 @@ if typing.TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Sequence
 
     from define.compiler.validator import codegen_input
-    from define.compiler.validator.reference_graph.particles import particle_info
+    from define.compiler.validator.reference_graph.particles import (
+        particle_info,
+        pending_guarantee,
+    )
+
+type _PendingGuarantees = dict[
+    pending_guarantee.PendingGuaranteeIdentity, pending_guarantee.PendingGuarantee
+]
 
 
 class _NodeState(msgspec.Struct):
@@ -26,6 +33,10 @@ class _NodeState(msgspec.Struct):
 
     particle_info: particle_info.ParticleInfo | None = None
     emptied_by: ast.PositionReference | None = None
+    # Callee Guarantees that describe this particle's children and have not
+    # been applied yet, in the order they were added. They move and are
+    # deleted with this node.
+    pending_guarantees: _PendingGuarantees | None = None
 
 
 def _node_is_occupied(state: _NodeState) -> bool:
@@ -259,6 +270,13 @@ class ParticleStateStore:
         self._nested_guarantees: _CurrentActionNestedGuarantees = (
             _CurrentActionNestedGuarantees()
         )
+        # Pending Guarantees on the action's own parent particle, which is the
+        # empty chained name, so the trie cannot hold them.
+        self._root_pending_guarantees: _PendingGuarantees = {}
+        # Lets expansions skip their walk when nothing is pending, the common
+        # case. Guarantees deleted with a subtree, or in a detached subtree that
+        # is never restored, stay counted, which only costs that shortcut.
+        self._pending_guarantee_count: int = 0
 
     def has_state(self, key: chained_name.PositionReferenceTuple) -> bool:
         """Return whether the store tracks this Position, whether or not its occupancy is known."""
@@ -281,13 +299,109 @@ class ParticleStateStore:
         emptied_by: ast.PositionReference,
     ):
         """Record that a Position is known to be empty, replacing any state it had."""
-        self._state[key] = _NodeState(emptied_by=emptied_by)
+        self._state[key] = _NodeState(
+            emptied_by=emptied_by, pending_guarantees=self._node_pending(key)
+        )
 
     def mark_occupied(
         self, key: chained_name.PositionReferenceTuple, info: particle_info.ParticleInfo
     ):
         """Record that a particle occupies a Position, replacing any state it had."""
-        self._state[key] = _NodeState(particle_info=info)
+        self._state[key] = _NodeState(
+            particle_info=info, pending_guarantees=self._node_pending(key)
+        )
+
+    def _node_pending(
+        self, key: chained_name.PositionReferenceTuple
+    ) -> _PendingGuarantees | None:
+        state = self._state.get(key)
+        return None if state is None else state.pending_guarantees
+
+    def add_pending_guarantee(self, pending: pending_guarantee.PendingGuarantee):
+        """Record a callee's Guarantees to apply once something reaches the particle whose children they describe."""
+        prefix = pending.parent_position
+        if prefix:
+            state = self._state.get(prefix)
+            # The caller never filled the particle's position, which requirement
+            # checking already reported, so nothing can reach these Guarantees.
+            if state is None:
+                return
+            if state.pending_guarantees is None:
+                state.pending_guarantees = {}
+            guarantees = state.pending_guarantees
+        else:
+            guarantees = self._root_pending_guarantees
+        # When several implying qualities imply the same quality, each of
+        # them adds that quality's action as a nested guarantee. From the
+        # caller's perspective, an implied action's chain drops the action
+        # that implied it, so all of those copies have the same chain. Over
+        # layers of shared implied qualities, the copies multiply with every
+        # layer. Applying each copy would take exponential time. Keeping
+        # only the latest copy preserves which guarantee writes each
+        # position last.
+        identity = pending.identity
+        if guarantees.pop(identity, None) is None:
+            self._pending_guarantee_count += 1
+        guarantees[identity] = pending
+
+    def has_any_pending_guarantees(self) -> bool:
+        """Return whether any pending Guarantees might remain."""
+        return self._pending_guarantee_count > 0
+
+    def has_pending_guarantees(self, prefix: chained_name.ChainedNameTuple) -> bool:
+        """Return whether pending Guarantees describe the children of the particle at ``prefix``."""
+        if not prefix:
+            return bool(self._root_pending_guarantees)
+        state = self._state.get(prefix)
+        return state is not None and bool(state.pending_guarantees)
+
+    def pending_guarantees_at(
+        self, key: chained_name.PositionReferenceTuple
+    ) -> Iterable[pending_guarantee.PendingGuarantee]:
+        """Return the pending Guarantees that describe the children of the particle at ``key``."""
+        pending_guarantees = self._state[key].pending_guarantees
+        return () if pending_guarantees is None else pending_guarantees.values()
+
+    def pop_pending_guarantees(
+        self, prefix: chained_name.ChainedNameTuple
+    ) -> Iterable[pending_guarantee.PendingGuarantee]:
+        """Remove and return the pending Guarantees that describe the children of the particle at ``prefix``."""
+        if not prefix:
+            guarantees = self._root_pending_guarantees
+            self._root_pending_guarantees = {}
+        else:
+            state = self._state.get(prefix)
+            if state is None or state.pending_guarantees is None:
+                return ()
+            guarantees = state.pending_guarantees
+            state.pending_guarantees = None
+        self._pending_guarantee_count -= len(guarantees)
+        return guarantees.values()
+
+    def pending_prefixes_at_or_below(
+        self, key: chained_name.ChainedNameTuple
+    ) -> list[chained_name.ChainedNameTuple]:
+        """Return each name at or below ``key`` with pending Guarantees, parent names first."""
+        prefixes: list[chained_name.ChainedNameTuple] = []
+        found: list[chained_name.ChainedNameTuple] = []
+        if not key:
+            if self._root_pending_guarantees:
+                prefixes.append(key)
+            for candidate_key, state in self._state.items():
+                if state.pending_guarantees:
+                    found.append(candidate_key)
+        else:
+            if self._state[key].pending_guarantees:
+                found.append(key)
+            for child_key in self._state.subtree_keys(key):
+                if self._state[child_key].pending_guarantees:
+                    found.append(child_key)
+        # Results above a particle must be applied before results below it,
+        # because applying them can change or replace what is below. The trie
+        # does not keep its keys in that order, since moves reinsert them.
+        found.sort(key=len)
+        prefixes.extend(found)
+        return prefixes
 
     def mark_unchanged(self, key: chained_name.PositionReferenceTuple):
         """Record that a callee left a Position unchanged, tracking it with unknown occupancy if it has no state."""
