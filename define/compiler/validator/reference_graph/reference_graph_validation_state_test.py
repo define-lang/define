@@ -43,6 +43,7 @@ def test_contract_access():
         destruction_contracts=[],
         trigger_position_name="position<trigger>",
         implied_quality_names=frozenset(),
+        guarantees_discardable_on_destruction=True,
     )
 
     assert state.get_contract_or_none(action_name) is None

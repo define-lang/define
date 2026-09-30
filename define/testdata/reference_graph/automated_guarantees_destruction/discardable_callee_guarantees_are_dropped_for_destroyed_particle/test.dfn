@@ -1,0 +1,16 @@
+# action</fill_2> and action</fill_3> create children on a particle that
+# action</fill_1> created, and nothing can observe them when position<holder> is
+# automatically destroyed, so the destruction does not destroy them individually.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<holder> {
+            it may only contain particles where {
+                it has the action</fill_1>.
+            }
+        }
+        create a particle in position<holder>.
+        create a particle in position<holder>::action</fill_1>::position<run>.
+    }
+}

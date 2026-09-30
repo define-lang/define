@@ -262,6 +262,11 @@ class ParticleStateStore:
         """Return whether the store tracks this Position, whether or not its occupancy is known."""
         return key in self._state
 
+    def tracks_at_or_below(self, key: chained_name.PositionReferenceTuple) -> bool:
+        """Return whether the store tracks any state or error at this Position or below it."""
+        # Both tries hold every parent name of each key they hold.
+        return key in self._state or key in self._error
+
     def mark_error(
         self, key: chained_name.PositionReferenceTuple, caused_by: ast.PositionReference
     ):

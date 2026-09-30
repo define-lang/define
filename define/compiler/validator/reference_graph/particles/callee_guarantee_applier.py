@@ -179,6 +179,17 @@ class _PendingNestedGuarantees:
         del self._prefix_order[prefix]
         return guarantees.values()
 
+    def stored_at(
+        self, prefix: chained_name.ChainedNameTuple
+    ) -> Iterable[_PendingGuarantee]:
+        """Return the pending nested guarantees stored at exactly ``prefix``."""
+        guarantees = self._by_prefix.get(prefix)
+        return () if guarantees is None else guarantees.values()
+
+    def discard(self, prefix: chained_name.ChainedNameTuple):
+        """Remove the pending nested guarantees stored at exactly ``prefix`` without applying them."""
+        _ = self._pop_prefix(prefix)
+
     def drain_shortest_first(
         self, key: chained_name.ChainedNameTuple
     ) -> Iterator[_PendingGuarantee]:
@@ -561,6 +572,42 @@ class CalleeGuaranteeApplier:
         """Apply guarantees affecting any of the equally long keys or their children."""
         self.apply_pending_guarantees_up_to_all(keys)
         self._apply_drained(self._pending.drain_at_or_below_for(keys))
+
+    def discard_discardable_pending_guarantees(
+        self, key: chained_name.PositionReferenceTuple
+    ):
+        """Discard the nested guarantees for ``key``'s children if each is discardable on destruction and nothing is tracked where it applies."""
+        # When we destroy a particle, we walk all of its children to find their
+        # Destructors, and that walk applies every pending Guarantee below the
+        # particle. If a tree of triggered actions built those children, that's
+        # exponentially many Guarantees for a linear amount of source code.
+        #
+        # Often, though, applying a pending Guarantee makes no difference. If
+        # all it would do is create children that have no Destructors, those
+        # children just vanish along with the particle we're destroying, so we
+        # can throw the Guarantee away instead. That's only safe when all of
+        # these are true:
+        # - Its contract says so (ActionContract.guarantees_discardable_on_destruction).
+        #   That covers what the action creates and what every action it
+        #   triggered creates, too.
+        # - We don't already have any state recorded (a particle, a known-empty
+        #   position, or an error) at or below the positions it writes.
+        # - No particle that came from the calling action is at or above
+        #   ``key``.
+        #
+        # Every pending Guarantee stored for this particle has to qualify, or
+        # we apply them all as usual. They can overwrite each other, so
+        # applying only some of them could change what the others would do.
+        pending_guarantees = self._pending.stored_at(key)
+        if not pending_guarantees:
+            return
+        for pending_guarantee in pending_guarantees:
+            if not pending_guarantee.contract.guarantees_discardable_on_destruction:
+                return
+            for position in pending_guarantee.contract.guarantees:
+                if self._store.tracks_at_or_below(pending_guarantee.key_for(position)):
+                    return
+        self._pending.discard(key)
 
     def fully_resolve_all_pending_guarantees(self):
         """Apply every pending guarantee."""

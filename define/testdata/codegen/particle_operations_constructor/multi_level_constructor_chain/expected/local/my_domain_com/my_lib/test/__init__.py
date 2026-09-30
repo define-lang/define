@@ -6,7 +6,6 @@ from define.runtime import literal
 
 import local.my_domain_com.my_lib.construct_b
 import local.my_domain_com.my_lib.inner
-import local.my_domain_com.my_lib.leaf
 
 
 class TestAction(literal.Action):
@@ -23,11 +22,6 @@ class TestAction(literal.Action):
         box.particle.get_action(
             local.my_domain_com.my_lib.construct_b.ConstructBAction
         ).run()
-        box.particle.get_position(
-            local.my_domain_com.my_lib.inner.InnerPosition
-        ).particle.get_position(
-            local.my_domain_com.my_lib.leaf.LeafPosition
-        ).destroy_particle()
         box.particle.get_position(
             local.my_domain_com.my_lib.inner.InnerPosition
         ).destroy_particle()

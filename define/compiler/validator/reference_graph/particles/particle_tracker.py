@@ -263,6 +263,12 @@ class ParticleTracker:
         self._callee_guarantees.fully_resolve_pending_guarantees(*keys)
         return [self._store.snapshot_child_state(key) for key in keys]
 
+    def discard_discardable_pending_guarantees(self, position: ast.PositionReference):
+        """Discard the pending callee Guarantees for this particle's children if each is discardable on destruction and nothing is tracked where it applies."""
+        self._callee_guarantees.discard_discardable_pending_guarantees(
+            position.canonical_chained_name_tuple
+        )
+
     def collect_caller_destruction_state(
         self,
         occupancies: child_state.ChildOccupancyMap,

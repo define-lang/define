@@ -319,6 +319,9 @@ class ActionContract(msgspec.Struct, frozen=True):
     trigger_position_name: str
     # The action's transitively implied qualities.
     implied_quality_names: frozenset[str]
+    # Whether these Guarantees can be dropped unapplied when their particle is
+    # destroyed. See CalleeGuaranteeApplier.discard_discardable_pending_guarantees.
+    guarantees_discardable_on_destruction: bool
 
     def occupancy_requirements_in_caller(
         self, action_chain: ast.ActionReference

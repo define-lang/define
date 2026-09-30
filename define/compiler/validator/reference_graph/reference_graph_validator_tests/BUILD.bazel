@@ -58,6 +58,20 @@ py_test(
 )
 
 py_test(
+    name = "automated_guarantees_destruction_test",
+    size = "small",
+    srcs = ["automated_guarantees_destruction_test.py"],
+    data = ["//define/testdata/reference_graph/automated_guarantees_destruction"],
+    deps = [
+        "//define/compiler:ast",
+        "//define/compiler:conftest",
+        "//define/compiler/errors:diagnostics",
+        "//define/compiler/validator:codegen_input",
+        "//define/compiler/validator:test_helpers",
+    ],
+)
+
+py_test(
     name = "automated_guarantees_destructor_test",
     size = "small",
     srcs = ["automated_guarantees_destructor_test.py"],
@@ -1062,6 +1076,7 @@ pyright_test(
         ":action_triggering_test",
         ":automated_guarantees_constructor_implied_test",
         ":automated_guarantees_constructor_test",
+        ":automated_guarantees_destruction_test",
         ":automated_guarantees_destructor_test",
         ":automated_guarantees_error_test",
         ":automated_guarantees_implied_position_test",

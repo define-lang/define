@@ -189,6 +189,15 @@ class ActionDefinitionValidator:
             impl.typed_global_name for impl in self._definition.quality_implications
         )
 
+    def _action_definition(
+        self, quality: ast.GlobalTypedNameReference
+    ) -> ast.ActionDefinition | None:
+        """Return the definition of an action quality, or None if it is unresolved."""
+        definition_result = self._definition_results.get(quality)
+        if definition_result is None:
+            return None
+        return typing.cast("ast.ActionDefinition", definition_result.definition)
+
     def _run_constructors(
         self,
         statement: ast.CreateParticleStatement,
@@ -200,15 +209,12 @@ class ActionDefinitionValidator:
         for quality in qualities.assignments:
             if quality.name_type != name_types.NameType.ACTION:
                 continue
-            definition_result = self._definition_results.get(quality)
+            definition = self._action_definition(quality)
             # The constructor's file may have failed to load or parse, which is
             # reported elsewhere; skipping it here keeps destruction analysis
             # from failing on an already-reported error.
-            if definition_result is None:
+            if definition is None:
                 continue
-            definition = typing.cast(
-                "ast.ActionDefinition", definition_result.definition
-            )
             if not definition.is_constructor:
                 continue
             parent_particle = self._tracker.get_occupant(position)
@@ -263,6 +269,7 @@ class ActionDefinitionValidator:
                 destructors,
                 pending_contracts,
                 step.positions,
+                within_caller_particle=False,
             )
             if pending_contracts:
                 snapshot_positions.append(target.position)
@@ -302,6 +309,8 @@ class ActionDefinitionValidator:
         ],
         pending_contracts: list[_PendingDestructionContract],
         destruction: list[ast.PositionReference],
+        *,
+        within_caller_particle: bool,
     ):
         """Collect one particle and every occupied transitive child."""
         destruction_fact = destruction_contract_types.DestructionFact(
@@ -310,6 +319,12 @@ class ActionDefinitionValidator:
         )
         destruction_facts.append(destruction_fact)
         destructor_qualities: list[ast.GlobalTypedNameReference] = []
+        within_caller_particle = within_caller_particle or particle.from_caller
+        # A Destruction Contract's Child State can look up the children of a
+        # particle from the caller, so pending Guarantees below one must be
+        # applied rather than discarded.
+        if not within_caller_particle:
+            self._tracker.discard_discardable_pending_guarantees(position)
 
         # A particle keeps its own qualities across Moves, so its qualities—not
         # the current Position's constraints—determine its child Positions and
@@ -324,16 +339,14 @@ class ActionDefinitionValidator:
                     destructors,
                     pending_contracts,
                     destruction,
+                    within_caller_particle=within_caller_particle,
                 )
             elif quality.name_type == name_types.NameType.ACTION:
-                definition_result = self._definition_results.get(quality)
+                definition = self._action_definition(quality)
                 # Reference validation has already reported unresolved qualities;
                 # their absence must not prevent checking the remaining Destructors.
-                if definition_result is None:
+                if definition is None:
                     continue
-                definition = typing.cast(
-                    "ast.ActionDefinition", definition_result.definition
-                )
                 if definition.is_destructor:
                     destructor_qualities.append(quality)
                     destructors.append(
@@ -357,6 +370,7 @@ class ActionDefinitionValidator:
                         destructors,
                         pending_contracts,
                         destruction,
+                        within_caller_particle=within_caller_particle,
                     )
 
         if particle.from_caller:
@@ -382,6 +396,8 @@ class ActionDefinitionValidator:
         ],
         pending_contracts: list[_PendingDestructionContract],
         destruction: list[ast.PositionReference],
+        *,
+        within_caller_particle: bool,
     ):
         """Collect an occupied child Position's transitive destruction."""
         occupancy = self._tracker.get_occupancy_info(position)
@@ -395,6 +411,7 @@ class ActionDefinitionValidator:
             destructors,
             pending_contracts,
             destruction,
+            within_caller_particle=within_caller_particle,
         )
 
     def _record_destruction_contract(
@@ -1183,6 +1200,49 @@ class ActionDefinitionValidator:
                     self._implied_quality_list
                 )
             ),
+            guarantees_discardable_on_destruction=(
+                self._guarantees_discardable_on_destruction(guarantees, callees)
+            ),
+        )
+
+    def _guarantees_discardable_on_destruction(
+        self,
+        guarantees: dict[
+            chained_name.PositionReferenceTuple, action_contract.PositionGuarantee
+        ],
+        callees: list[action_contract.CalleeContract],
+    ) -> bool:
+        created: set[chained_name.ChainedNameTuple] = set()
+        # A particle from outside the contract, or an error mark, may matter to
+        # the destroyer, so either one prevents discarding. Of the other
+        # Guarantees, only a new particle can bring a Destructor. Empty and
+        # unchanged Guarantees add nothing, and discarding separately requires
+        # that nothing be tracked where they apply.
+        for position, guarantee in guarantees.items():
+            if isinstance(
+                guarantee,
+                (
+                    action_contract.OccupiedByExistingGuarantee,
+                    action_contract.ErrorGuarantee,
+                ),
+            ):
+                return False
+            if not isinstance(guarantee, action_contract.OccupiedByNewGuarantee):
+                continue
+            for quality in guarantee.qualities.assignments:
+                if quality.name_type != name_types.NameType.ACTION:
+                    continue
+                definition = self._action_definition(quality)
+                # A Destructor must be triggered when its particle is destroyed,
+                # so the walk has to apply this Guarantee to find it. (The destruction
+                # walk skips unresolved qualities, so they are not relevant here.)
+                if definition is not None and definition.is_destructor:
+                    return False
+            created.add(position)
+        return all(
+            callee.contract.guarantees_discardable_on_destruction
+            and chained_name.parent(callee.action_chain) in created
+            for callee in callees
         )
 
     def _check_destructor_guarantees(

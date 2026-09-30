@@ -1,0 +1,19 @@
+# The pending Guarantee from action</empty_marker> empties a particle that this
+# action created, so destroying position<holder> must apply it rather than
+# destroy that particle again.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<holder> {
+            it may only contain particles where {
+                it has the action</wrapper>.
+                it has the position</box>.
+            }
+        }
+        create a particle in position<holder>.
+        create a particle in position<holder>::position</box>.
+        create a particle in position<holder>::position</box>::position</marker>.
+        create a particle in position<holder>::action</wrapper>::position<run>.
+    }
+}
