@@ -118,7 +118,8 @@ def test_no_literal_parser(
     assert diagnostic.literal_encoding == "encoding</text_encoding>"
     assert diagnostic.value_type == "value<standard:/number/rational>"
     assert diagnostic.supported_encodings == [
-        "encoding<standard:/number/decimal/ascii>"
+        "encoding<standard:/binary/ascii>",
+        "encoding<standard:/number/decimal/ascii>",
     ]
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 46
@@ -142,7 +143,8 @@ def test_only_matching_encodings_suggested(
     assert diagnostic.literal_encoding == "encoding</text_encoding>"
     assert diagnostic.value_type == "value<standard:/number/rational>"
     assert diagnostic.supported_encodings == [
-        "encoding<standard:/number/decimal/ascii>"
+        "encoding<standard:/binary/ascii>",
+        "encoding<standard:/number/decimal/ascii>",
     ]
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 46
@@ -370,7 +372,8 @@ def test_boolean_literal_sets_rational(
     assert diagnostic.literal_encoding == "encoding<standard:/boolean/ascii>"
     assert diagnostic.value_type == "value<standard:/number/rational>"
     assert diagnostic.supported_encodings == [
-        "encoding<standard:/number/decimal/ascii>"
+        "encoding<standard:/binary/ascii>",
+        "encoding<standard:/number/decimal/ascii>",
     ]
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 46
@@ -415,3 +418,10 @@ def test_binary_literal_sets_boolean(
     assert diagnostic.supported_encodings == ["encoding<standard:/boolean/ascii>"]
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 46
+
+
+def test_binary_literal_sets_rational(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph().program_result
+    assert_no_errors(result)

@@ -821,6 +821,7 @@ def test_literal_cannot_set_value_format(validate_project: ValidateProject):
                                                  ^^^^^^^^^^^^^^
         literal</text> cannot set a value<standard:/number/rational>, because literals with the encoding</text_encoding> cannot be read as value<standard:/number/rational>.
         To set a value<standard:/number/rational>, use a literal with one of these encodings:
+            encoding<standard:/binary/ascii>
             encoding<standard:/number/decimal/ascii>""")
 
 
@@ -866,6 +867,7 @@ def test_literal_cannot_be_converted_format(validate_project: ValidateProject):
                                          ^^^^^^^^^^^^^^
         literal</text> cannot be looked at as encoding<standard:/number/decimal/ascii>, because literals with the encoding</text_encoding> cannot be translated into encoding<standard:/number/decimal/ascii>.
         To look at a literal as encoding<standard:/number/decimal/ascii>, use a literal with one of these encodings:
+            encoding<standard:/binary/ascii>
             encoding<standard:/number/decimal/ascii>""")
 
 

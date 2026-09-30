@@ -1,0 +1,10 @@
+# A binary literal sets a rational value to the integer it represents.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</count>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</count>.
+        set the value of position</count> to literal<standard:/binary>"1011".
+    }
+}

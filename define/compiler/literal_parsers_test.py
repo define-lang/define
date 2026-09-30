@@ -7,6 +7,9 @@ from define.compiler import constants, literal_parsers
 _PARSE_BINARY_ASCII = literal_parsers.LITERAL_PARSERS[
     constants.BINARY_ASCII_ENCODING, constants.BINARY_ASCII_ENCODING
 ]
+_PARSE_BINARY_ASCII_AS_DECIMAL_ASCII = literal_parsers.LITERAL_PARSERS[
+    constants.BINARY_ASCII_ENCODING, constants.DECIMAL_ASCII_ENCODING
+]
 _PARSE_BOOLEAN_ASCII = literal_parsers.LITERAL_PARSERS[
     constants.BOOLEAN_ASCII_ENCODING, constants.BOOLEAN_ASCII_ENCODING
 ]
@@ -36,6 +39,21 @@ def test_binary_ascii_rejects(content: str, reason: str, content_index: int):
         _ = _PARSE_BINARY_ASCII(content)
     assert error.value.reason == reason
     assert error.value.content_index == content_index
+
+
+@pytest.mark.parametrize(
+    ("content", "decimal"),
+    [("0", "0"), ("1", "1"), ("1011", "11"), ("100000000", "256")],
+)
+def test_binary_ascii_as_decimal_ascii_accepts(content: str, decimal: str):
+    assert _PARSE_BINARY_ASCII_AS_DECIMAL_ASCII(content) == decimal
+
+
+def test_binary_ascii_as_decimal_ascii_rejects():
+    with pytest.raises(literal_parsers.LiteralParseError) as error:
+        _ = _PARSE_BINARY_ASCII_AS_DECIMAL_ASCII("0101")
+    assert error.value.reason == "binary values are written without leading zeros"
+    assert error.value.content_index == 0
 
 
 @pytest.mark.parametrize("content", ["true", "false"])

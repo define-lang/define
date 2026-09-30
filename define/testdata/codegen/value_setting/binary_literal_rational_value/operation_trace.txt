@@ -1,0 +1,2 @@
+test.create(/count)
+test.set_value(/count, 11)

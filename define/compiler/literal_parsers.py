@@ -121,12 +121,23 @@ def _parse_binary_ascii(content: str) -> str:
     raise LiteralParseError("binary values are written without leading zeros", 0)
 
 
+def _parse_binary_ascii_as_decimal_ascii(content: str) -> str:
+    # TODO: Convert binary literals longer than about 14,000 bits, which exceed
+    # Python's limit on converting an int to a decimal string and so raise
+    # ValueError.
+    return str(int(_parse_binary_ascii(content), 2))
+
+
 # Keyed by the Potential Literal's encoding and then the value's encoding.
 LITERAL_PARSERS: Final[dict[tuple[str, str], Callable[[str], str]]] = {
     (
         constants.BINARY_ASCII_ENCODING,
         constants.BINARY_ASCII_ENCODING,
     ): _parse_binary_ascii,
+    (
+        constants.BINARY_ASCII_ENCODING,
+        constants.DECIMAL_ASCII_ENCODING,
+    ): _parse_binary_ascii_as_decimal_ascii,
     (
         constants.BOOLEAN_ASCII_ENCODING,
         constants.BOOLEAN_ASCII_ENCODING,
