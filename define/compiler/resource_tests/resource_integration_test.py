@@ -226,7 +226,6 @@ def test_retained_memory(case: MemoryCase, tmp_path: Path):
                 maximum_ratio=4,
             ),
             id="triggered_children_destruction_move",
-            marks=_TRIGGERED_CHILDREN_EXPONENTIAL,
         ),
     ],
 )

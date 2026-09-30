@@ -242,3 +242,53 @@ def test_transitive_child_guarantee_at_moved_position_follows_particle(
         (_MIDDLE, _OUTER),
         (_TEST, _MIDDLE),
     ]
+
+
+def test_body_move_carries_pending_callee_guarantees(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    diagnostic = all_diags[0]
+    assert isinstance(diagnostic, diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert diagnostic.location.line == 22
+    assert diagnostic.location.column == 30
+    assert diagnostic.location.end_line == 22
+    assert diagnostic.location.end_column == 110
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert (
+        diagnostic.position_name
+        == "position<destination>::position</holder>::position</child_1>::position</child_2>"
+    )
+    assert diagnostic.populated_at.line == 8
+    assert diagnostic.populated_at.column == 30
+    assert diagnostic.populated_at.end_line == 8
+    assert diagnostic.populated_at.end_column == 48
+    assert diagnostic.populated_at.file_path == PurePosixPath("fill_2.dfn")
+
+
+def test_guarantee_move_carries_pending_callee_guarantees(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    diagnostic = all_diags[0]
+    assert isinstance(diagnostic, diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert diagnostic.location.line == 17
+    assert diagnostic.location.column == 30
+    assert diagnostic.location.end_line == 17
+    assert diagnostic.location.end_column == 133
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert (
+        diagnostic.position_name
+        == "position<box>::action</mover>::position<out>::position</holder>::position</child_1>::position</child_2>"
+    )
+    assert diagnostic.populated_at.line == 8
+    assert diagnostic.populated_at.column == 30
+    assert diagnostic.populated_at.end_line == 8
+    assert diagnostic.populated_at.end_column == 48
+    assert diagnostic.populated_at.file_path == PurePosixPath("fill_2.dfn")

@@ -25,10 +25,11 @@ if typing.TYPE_CHECKING:
 
 
 class PendingGuarantee(msgspec.Struct, frozen=True):
-    """A callee's guarantees and the execution path where they apply."""
+    """A callee's guarantees, waiting on the particle its action acts on."""
 
-    # The triggered action's chain.
-    action_chain: chained_name.ActionReferenceTuple
+    # The triggered action's typed name. Its chain is the particle's position
+    # followed by this name, so the guarantee follows the particle when it moves.
+    action: str
     contract: action_contract.ActionContract
     # The Action Execution that produced this nested guarantee. All of a
     # triggered contract's guarantees (own and nested) carry it, so guarantees
@@ -40,26 +41,17 @@ class PendingGuarantee(msgspec.Struct, frozen=True):
     # resolved.
     call_chain_depth: int = 0
 
-    @property
-    def parent_position(self) -> chained_name.ChainedNameTuple:
-        """The parent of the callee's implied (global) positions.
-
-        This is ``action_chain`` with its trailing action stripped: an implied
-        quality lives on the action's parent particle, at the parent name of the
-        action's interface position names. ``action_chain`` always ends in the
-        triggered action, since that is the only thing that produces guarantees.
-        """
-        return chained_name.parent(self.action_chain)
-
-    def key_for[T: chained_name.ChainedNameTuple](self, name: T) -> T:
-        """Return the absolute key for a guarantee this action names ``name``."""
-        return chained_name.in_caller(self.action_chain, name)
+    def action_chain(
+        self, particle: chained_name.ChainedNameTuple
+    ) -> chained_name.ActionReferenceTuple:
+        """Return the triggered action's chain when it acts on the particle at ``particle``."""
+        return chained_name.action((*particle, self.action))
 
     @property
     def identity(self) -> PendingGuaranteeIdentity:
         """Fields that make two pending guarantees apply identical effects."""
         return PendingGuaranteeIdentity(
-            self.action_chain,
+            self.action,
             id(self.contract),
             self.execution,
             self.call_chain_depth,
@@ -69,7 +61,7 @@ class PendingGuarantee(msgspec.Struct, frozen=True):
 class PendingGuaranteeIdentity(msgspec.Struct, frozen=True):
     """Fields that make two pending guarantees apply identical effects."""
 
-    action_chain: chained_name.ActionReferenceTuple
+    action: str
     # Contracts are compared by identity because comparing their contents
     # would walk every guarantee, and each definition has one contract.
     contract_id: int

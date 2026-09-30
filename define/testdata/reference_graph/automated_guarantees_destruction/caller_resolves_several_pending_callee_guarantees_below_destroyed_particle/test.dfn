@@ -1,0 +1,22 @@
+# action</fill_2> is still pending on both children of a particle that
+# action</destroyer> destroys. Checking action</cleanup>, which only this action
+# knows the particle has, applies both, and action</cleanup> then finds
+# position</child_2> already occupied.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</destroyer>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<mine> {
+            it may only contain particles where {
+                it has the action</fill_1>.
+                it has the action</cleanup>.
+            }
+        }
+        create a particle in position<mine>.
+        create a particle in action</destroyer>::position<holder>.
+        move the particle in position<mine> to action</destroyer>::position<holder>::position</box>.
+        create a particle in action</destroyer>::position<holder>::position</box>::action</fill_1>::position<run>.
+        create a particle in action</destroyer>::position<run>.
+    }
+}

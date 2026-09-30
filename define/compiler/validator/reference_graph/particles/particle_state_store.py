@@ -317,9 +317,12 @@ class ParticleStateStore:
         state = self._state.get(key)
         return None if state is None else state.pending_guarantees
 
-    def add_pending_guarantee(self, pending: pending_guarantee.PendingGuarantee):
-        """Record a callee's Guarantees to apply once something reaches the particle whose children they describe."""
-        prefix = pending.parent_position
+    def add_pending_guarantee(
+        self,
+        prefix: chained_name.ChainedNameTuple,
+        pending: pending_guarantee.PendingGuarantee,
+    ):
+        """Record a callee's Guarantees to apply once something reaches the particle at ``prefix``, whose children they describe."""
         if prefix:
             state = self._state.get(prefix)
             # The caller never filled the particle's position, which requirement

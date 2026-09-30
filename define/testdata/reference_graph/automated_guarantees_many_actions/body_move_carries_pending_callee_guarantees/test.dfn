@@ -1,0 +1,24 @@
+# action</fill_2> and action</fill_3> are still pending on the particle in
+# position</child_1> when the particle in position<source> moves, so
+# position</child_2> is already occupied at position<destination>.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<source> {
+            it may only contain particles where {
+                it has the position</holder>.
+            }
+        }
+        define the position<destination> {
+            it may only contain particles where {
+                it has the position</holder>.
+            }
+        }
+        create a particle in position<source>.
+        create a particle in position<source>::position</holder>.
+        create a particle in position<source>::position</holder>::action</fill_1>::position<run>.
+        move the particle in position<source> to position<destination>.
+        create a particle in position<destination>::position</holder>::position</child_1>::position</child_2>.
+    }
+}

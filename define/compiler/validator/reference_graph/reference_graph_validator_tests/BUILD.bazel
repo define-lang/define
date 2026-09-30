@@ -63,11 +63,12 @@ py_test(
     srcs = ["automated_guarantees_destruction_test.py"],
     data = ["//define/testdata/reference_graph/automated_guarantees_destruction"],
     deps = [
-        "//define/compiler:ast",
+        ":test_helpers",
         "//define/compiler:conftest",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:codegen_input",
         "//define/compiler/validator:test_helpers",
+        "//define/compiler/validator/reference_graph:action_contract",
     ],
 )
 

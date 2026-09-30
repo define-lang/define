@@ -396,7 +396,11 @@ class ParticleTracker:
         """
         from_key = source.canonical_chained_name_tuple
         to_key = target.canonical_chained_name_tuple
-        self._callee_guarantees.fully_resolve_pending_guarantees(from_key)
+        # Pending Guarantees below the source move with it, so only those on
+        # the path to each position, and those that would write over state
+        # moving with them, need applying.
+        self._callee_guarantees.apply_pending_guarantees_up_to(from_key)
+        self._callee_guarantees.apply_overwriting_pending_guarantees(from_key)
         self._callee_guarantees.apply_pending_guarantees_up_to(to_key)
         self._store.ensure_action_parent(to_key)
         source_info = self._store.occupant(from_key)

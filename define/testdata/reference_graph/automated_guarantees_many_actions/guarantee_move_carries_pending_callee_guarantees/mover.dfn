@@ -1,0 +1,19 @@
+define the potential action<my.domain.com:my_lib:/mover> {
+    define the position<run>.
+    define the position<in> {
+        it may only contain particles where {
+            it has the position</holder>.
+        }
+    }
+    define the position<out> {
+        it may only contain particles where {
+            it has the position</holder>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+        move the particle in position<in> to position<out>.
+    }
+}
