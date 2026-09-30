@@ -68,23 +68,27 @@ def _child_error_occupancy(
     return None
 
 
-# Body statements and a directly-applied contract's own guarantees are both at
-# call-chain depth 0.
-_BODY_DEPTH = 0
-
-
 class _WriteRecord(msgspec.Struct, frozen=True):
-    """A record of a write to a position, containing the information necessary to resolve it when applying guarantees.
+    """A record of a write to a position."""
 
-    Writes are ordered by execution: a higher ``body_operation_number`` wins, and
-    at the same number the lower ``depth`` wins (a contract's own guarantee
-    outranks a nested guarantee that shares the trigger's operation number).
-    """
-
-    body_operation_number: int
-    depth: int
     # Results left in a callee's contract need not be published again by this action.
     include_in_own_guarantees: bool
+
+
+# Every write from the action body has the same record.
+_BODY_WRITE = _WriteRecord(include_in_own_guarantees=True)
+
+
+class _CalleeWriteRecord(_WriteRecord, frozen=True):
+    """A write by a callee's guarantee.
+
+    Within one Action Execution, the lower ``depth`` wins: a contract's own
+    guarantee outranks a nested guarantee that it already resolved.
+    """
+
+    # Action Executions compare by identity.
+    execution: codegen_input.ActionExecution
+    depth: int
 
 
 class DetachedSubtrees(msgspec.Struct):
@@ -230,17 +234,15 @@ class ParticleStateStore:
     error states to avoid cascading diagnostics.
 
     Each Position written during an Action Statements Block also has a
-    ``_WriteRecord``. This records execution order and whether the Position's
-    Guarantee must be published directly in this action's contract or can remain
-    in a callee's contract. Marking a Position erroneous also records a write;
-    assuming its starting occupancy does not.
+    ``_WriteRecord``. This records whether the Position's Guarantee must be
+    published directly in this action's contract or can remain in a callee's
+    contract, and, for a callee's write, which Action Execution and call-chain
+    depth wrote it. Marking a Position erroneous also records a write; assuming
+    its starting occupancy does not.
 
-    Because Guarantees are applied lazily, a Guarantee from an earlier Action
-    Execution can be processed after a later statement has changed the Position.
-    ``is_superseded`` uses the write record to prevent that earlier Guarantee
-    from overwriting the later state, including error state. Within one Action
-    Execution, a contract's own Guarantee takes precedence over a deeper callee's
-    Guarantee that it already resolved.
+    Within one Action Execution, a contract's own Guarantee takes precedence
+    over a deeper callee's Guarantee that it already resolved; ``is_superseded``
+    uses the write record to enforce that.
     """
 
     def __init__(self):
@@ -677,20 +679,20 @@ class ParticleStateStore:
     def is_superseded(
         self,
         key: chained_name.PositionReferenceTuple,
-        body_operation_number: int,
+        execution: codegen_input.ActionExecution,
         depth: int,
     ) -> bool:
-        """Return whether a later-ordered write already decided this key.
-
-        "Later" means a higher body operation number, or the same number at a
-        lower call-chain depth (a contract's own guarantee outranks the
-        nested guarantee it resolved).
-        """
+        """Return whether a shallower guarantee from the same Action Execution already decided this key."""
         existing = self._write_record.get(key)
         if existing is None:
             return False
-        return existing.body_operation_number > body_operation_number or (
-            existing.body_operation_number == body_operation_number
+        # Guarantees from different Action Executions need no ordering here:
+        # before anything writes below an earlier execution's pending
+        # Guarantees, a requirement check, a Destruction Contract's resolution,
+        # or the destruction walk applies or drops them.
+        return (
+            isinstance(existing, _CalleeWriteRecord)
+            and existing.execution is execution
             and existing.depth < depth
         )
 
@@ -705,33 +707,23 @@ class ParticleStateStore:
         """Return whether the action body or a callee wrote this position."""
         return key in self._write_record
 
-    def record_write(
-        self,
-        key: chained_name.PositionReferenceTuple,
-        body_operation_number: int,
-    ):
-        """Record an ordered state write from the action body.
-
-        A later body operation overrides earlier callee Guarantees, even if it
-        leaves the position in its initial state.
-        """
-        self._write_record[key] = _WriteRecord(
-            body_operation_number,
-            _BODY_DEPTH,
-            include_in_own_guarantees=True,
-        )
+    def record_write(self, key: chained_name.PositionReferenceTuple):
+        """Record a state write from the action body, whose Guarantee this action publishes itself."""
+        self._write_record[key] = _BODY_WRITE
 
     def record_callee_write(
         self,
         key: chained_name.PositionReferenceTuple,
-        body_operation_number: int,
+        execution: codegen_input.ActionExecution,
         depth: int,
         *,
         include_in_own_guarantees: bool,
     ):
         """Record that a callee's contract authored ``key``."""
-        self._write_record[key] = _WriteRecord(
-            body_operation_number, depth, include_in_own_guarantees
+        self._write_record[key] = _CalleeWriteRecord(
+            include_in_own_guarantees=include_in_own_guarantees,
+            execution=execution,
+            depth=depth,
         )
 
     def try_add_action_parent(

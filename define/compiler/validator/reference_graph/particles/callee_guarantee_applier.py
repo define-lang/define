@@ -28,16 +28,14 @@ class _PendingGuarantee(msgspec.Struct, frozen=True):
     # The triggered action's chain.
     action_chain: chained_name.ActionReferenceTuple
     contract: action_contract.ActionContract
-    # The body operation number of the Action Execution that produced this nested
-    # guarantee.
-    # All of a triggered contract's guarantees (own and nested) carry it, so a
-    # body statement that executes later supersedes them.
-    body_operation_number: int
+    # The Action Execution that produced this nested guarantee. All of a
+    # triggered contract's guarantees (own and nested) carry it, so guarantees
+    # from the same Action Execution can be ordered by call_chain_depth.
     execution: codegen_input.ActionExecution
     # Call-chain depth from the directly-applied contract: its own guarantees
     # are depth 0; each nested guarantee increments the depth. Within a single
-    # Action Execution (same sequence), a lower-depth guarantee outranks a higher-depth
-    # one it resolved.
+    # Action Execution, a lower-depth guarantee outranks a higher-depth one it
+    # resolved.
     call_chain_depth: int = 0
 
     @property
@@ -61,7 +59,6 @@ class _PendingGuarantee(msgspec.Struct, frozen=True):
         return _PendingGuaranteeIdentity(
             self.action_chain,
             id(self.contract),
-            self.body_operation_number,
             self.execution,
             self.call_chain_depth,
         )
@@ -74,7 +71,6 @@ class _PendingGuaranteeIdentity(msgspec.Struct, frozen=True):
     # Contracts are compared by identity because comparing their contents
     # would walk every guarantee, and each definition has one contract.
     contract_id: int
-    body_operation_number: int
     # Action Executions already compare by identity.
     execution: codegen_input.ActionExecution
     call_chain_depth: int
@@ -355,7 +351,6 @@ class CalleeGuaranteeApplier:
         self,
         execution: codegen_input.ActionExecution,
         contract: action_contract.ActionContract,
-        body_operation_number: int,
     ):
         """Apply a triggered action's own Guarantees and defer its nested Guarantees."""
         # Profiles make eager guarantee application look like duplicated work
@@ -385,7 +380,6 @@ class CalleeGuaranteeApplier:
         callee_guarantees = _PendingGuarantee(
             action_chain_key,
             contract,
-            body_operation_number,
             execution,
         )
         self._store.record_triggered_action(action_chain_key, execution, contract)
@@ -400,11 +394,11 @@ class CalleeGuaranteeApplier:
         for position, guarantee in pending_guarantee.contract.guarantees.items():
             key = pending_guarantee.key_for(position)
 
-            # A later-running statement already finalized this key, so this
-            # guarantee must not override it.
+            # A shallower guarantee from the same Action Execution already
+            # decided this key, so this one must not override it.
             if self._store.is_superseded(
                 key,
-                pending_guarantee.body_operation_number,
+                pending_guarantee.execution,
                 pending_guarantee.call_chain_depth,
             ):
                 continue
@@ -550,7 +544,6 @@ class CalleeGuaranteeApplier:
             child_nested_guarantee = _PendingGuarantee(
                 child_action_chain_in_caller,
                 child.contract,
-                pending_guarantee.body_operation_number,
                 pending_guarantee.execution,
                 call_chain_depth=pending_guarantee.call_chain_depth + 1,
             )
@@ -636,7 +629,7 @@ class CalleeGuaranteeApplier:
         # are re-derivable in any caller, so they stay behind the nested guarantee.
         self._store.record_callee_write(
             key,
-            pending_guarantee.body_operation_number,
+            pending_guarantee.execution,
             pending_guarantee.call_chain_depth,
             include_in_own_guarantees=isinstance(
                 guarantee, action_contract.OccupiedByExistingGuarantee
@@ -716,8 +709,8 @@ class CalleeGuaranteeApplier:
                 # which the caller's store already reflects (the cleanup above
                 # kept any occupant). A later Move of its parent must still
                 # collect the callee's operations on an otherwise-untracked
-                # empty child position. The write record above still supersedes
-                # a conflicting nested guarantee.
+                # empty child position. The write record above still outranks a
+                # deeper guarantee from the same Action Execution.
                 self._store.mark_unchanged(key)
             case _:
                 raise TypeError(f"Unexpected guarantee type: {type(guarantee)}")

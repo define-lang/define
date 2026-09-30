@@ -72,17 +72,15 @@ class ParticleTracker:
             self._store
         )
         self._guarantee_generator = guarantee_generation.GuaranteeGenerator(self._store)
-        self._body_operation_number = 0
 
     def _delete_subtree(self, key: chained_name.PositionReferenceTuple):
         """Delete everything tracked at or below a Position while preserving interface-rule history."""
         self._store.delete_subtree(key, self._dead_interfaces.mark_particle_destroyed)
 
     def _record_write(self, *keys: chained_name.PositionReferenceTuple):
-        """Record Position state changes at one point in execution order."""
-        self._body_operation_number += 1
+        """Record Position state changes from the action body."""
         for key in keys:
-            self._store.record_write(key, self._body_operation_number)
+            self._store.record_write(key)
 
     def mark_error(self, in_position: ast.PositionReference):
         """Mark a position as having error occupancy state."""
@@ -374,11 +372,6 @@ class ParticleTracker:
         destruction: ParticleDestruction,
     ):
         """Record state changes for a target and its transitive children."""
-        # Pending Guarantees compare writes by Position, so children still
-        # need write records even though their state is deleted with the parent.
-        for fact in itertools.islice(destruction.facts, 1, None):
-            child = fact.destroyed_position_in_destroyer
-            self._record_write(child.canonical_chained_name_tuple)
         key = destruction.position.canonical_chained_name_tuple
         # Subtree deletion notifies the interface trackers for every removed
         # particle. Only the target's empty state survives the destruction.
@@ -408,8 +401,6 @@ class ParticleTracker:
         self._store.ensure_action_parent(to_key)
         source_info = self._store.occupant(from_key)
         self._dead_interfaces.mark_particle_departed(source_info)
-        # Both positions are touched by this one move statement, so they share a
-        # body operation number.
         self._record_write(from_key, to_key)
         source_info.last_position = target
 
@@ -495,10 +486,7 @@ class ParticleTracker:
                 action, contract.implied_quality_names, parent_particle
             )
         )
-        self._body_operation_number += 1
-        self._callee_guarantees.apply_triggered_action(
-            execution, contract, self._body_operation_number
-        )
+        self._callee_guarantees.apply_triggered_action(execution, contract)
         return occupied_interface_child_position_violations
 
     def nested_guarantees(
