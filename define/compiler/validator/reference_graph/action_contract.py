@@ -322,6 +322,21 @@ class ActionContract(msgspec.Struct, frozen=True):
     # Whether these Guarantees can be dropped unapplied when their particle is
     # destroyed. See CalleeGuaranteeApplier.discard_discardable_pending_guarantees.
     guarantees_discardable_on_destruction: bool
+    # How many actions run in one execution of this action: itself, plus every
+    # callee transitively, once per triggering. It is
+    # computed from ``callees`` when the contract is created; see
+    # PendingGuarantee.completion_index.
+    action_execution_count: int = 0
+
+    def __post_init__(self):
+        """Compute the fields derived from the other fields."""
+        # Every action that reference graph validation reaches is triggered,
+        # so its count is always read.
+        msgspec.structs.force_setattr(
+            self,
+            "action_execution_count",
+            1 + sum(callee.contract.action_execution_count for callee in self.callees),
+        )
 
     def occupancy_requirements_in_caller(
         self, action_chain: ast.ActionReference

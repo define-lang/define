@@ -120,6 +120,8 @@ class CalleeGuaranteeApplier:
             action_chain_key[-1],
             contract,
             execution,
+            # The directly-applied action finishes last in its Action Execution.
+            contract.action_execution_count - 1,
         )
         self._store.record_triggered_action(action_chain_key, execution, contract)
         self._apply_pending_guarantee(callee_guarantees, action_chain_key)
@@ -137,12 +139,13 @@ class CalleeGuaranteeApplier:
         for position, guarantee in pending.contract.guarantees.items():
             key = application.key_for(position)
 
-            # A shallower guarantee from the same Action Execution already
-            # decided this key, so this one must not override it.
+            # A guarantee from an action that finished later in the same Action
+            # Execution already decided this key, so this one must not override
+            # it.
             if self._store.is_superseded(
                 key,
                 pending.execution,
-                pending.call_chain_depth,
+                pending.completion_index,
             ):
                 continue
 
@@ -165,18 +168,20 @@ class CalleeGuaranteeApplier:
                 pending, key, guarantee, application
             )
 
-        for child in pending.contract.callees:
+        for child_action_chain_in_caller, child_nested_guarantee in pending.callees(
+            action_chain
+        ):
             # The original triggering chain is the full chain the action had from
             # the perspective of its caller, when it was triggered. CalleeContract
             # does not retain that chain; the examples below show it for comparison.
             #
-            # child.action_chain is where that action was, from the
+            # CalleeContract.action_chain is where that action was, from the
             # perspective of its caller, when that caller finally generated its
             # guarantees.
             #
             # However, nested guarantees can _also_ be moved without their
             # more-deeply nested guarantees being applied in the callee. Composing
-            # child.action_chain with pending.action_chain places those
+            # CalleeContract.action_chain with pending.action_chain places those
             # deeper guarantees at the moved particle's current chain when we
             # apply them in the current action.
             #
@@ -249,7 +254,7 @@ class CalleeGuaranteeApplier:
             #
             # pending.action_chain =
             #     position<gateway>::action</relocate_particle>
-            # child.action_chain =
+            # CalleeContract.action_chain =
             #     position<stationary>::action</inspect_particle>
             # Original triggering chain (for comparison):
             #     position<stationary>::action</inspect_particle>
@@ -263,7 +268,7 @@ class CalleeGuaranteeApplier:
             #
             # pending.action_chain =
             #     position<gateway>::action</relocate_particle>
-            # child.action_chain =
+            # CalleeContract.action_chain =
             #     position<destination>::action</process_particle>
             # Original triggering chain (for comparison):
             #     position<source>::action</process_particle>
@@ -277,19 +282,12 @@ class CalleeGuaranteeApplier:
             #
             # pending.action_chain =
             #     position<gateway>::action</relocate_particle>::position<destination>::action</process_particle>
-            # child.action_chain =
+            # CalleeContract.action_chain =
             #     position<marker_parent>::action</fill_marker>
             # Original triggering chain (for comparison):
             #     position<marker_parent>::action</fill_marker>
             # child_action_chain_in_caller =
             #     position<gateway>::action</relocate_particle>::position<destination>::action</process_particle>::position<marker_parent>::action</fill_marker>
-            child_action_chain_in_caller = application.key_for(child.action_chain)
-            child_nested_guarantee = pending_guarantee.PendingGuarantee(
-                child_action_chain_in_caller[-1],
-                child.contract,
-                pending.execution,
-                call_chain_depth=pending.call_chain_depth + 1,
-            )
             self._store.add_pending_guarantee(
                 chained_name.parent(child_action_chain_in_caller),
                 child_nested_guarantee,
@@ -400,29 +398,19 @@ class CalleeGuaranteeApplier:
     ) -> bool:
         for position in pending.contract.guarantees:
             key = chained_name.in_caller(action_chain, position)
-            # A shallower guarantee from the same Action Execution recorded
-            # its final state here after this one, so this one would not
-            # apply.
+            # A guarantee from an action that finished later in the same Action
+            # Execution is recorded here, so this one would not apply.
             if not self._store.is_superseded(
-                key, pending.execution, pending.call_chain_depth
+                key, pending.execution, pending.completion_index
             ) and self._store.tracks_at_or_below(key):
                 return True
-        for callee in pending.contract.callees:
-            callee_chain = chained_name.in_caller(action_chain, callee.action_chain)
+        for callee_chain, callee_pending in pending.callees(action_chain):
             # A callee writes only below the particle it acts on, so if
             # nothing is recorded there, its guarantees and those of the
             # actions it triggered cannot overwrite anything.
             if self._store.tracks_at_or_below(
                 chained_name.position(chained_name.parent(callee_chain))
-            ) and self._result_overwrites_recorded_state(
-                pending_guarantee.PendingGuarantee(
-                    callee_chain[-1],
-                    callee.contract,
-                    pending.execution,
-                    call_chain_depth=pending.call_chain_depth + 1,
-                ),
-                callee_chain,
-            ):
+            ) and self._result_overwrites_recorded_state(callee_pending, callee_chain):
                 return True
         return False
 
@@ -466,7 +454,7 @@ class CalleeGuaranteeApplier:
         self._store.record_callee_write(
             key,
             pending.execution,
-            pending.call_chain_depth,
+            pending.completion_index,
             include_in_own_guarantees=isinstance(
                 guarantee, action_contract.OccupiedByExistingGuarantee
             ),

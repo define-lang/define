@@ -9,6 +9,8 @@ import msgspec
 from define.compiler import chained_name
 
 if typing.TYPE_CHECKING:
+    from collections.abc import Iterator
+
     from define.compiler.validator import codegen_input
     from define.compiler.validator.reference_graph import action_contract
 
@@ -33,13 +35,16 @@ class PendingGuarantee(msgspec.Struct, frozen=True):
     contract: action_contract.ActionContract
     # The Action Execution that produced this nested guarantee. All of a
     # triggered contract's guarantees (own and nested) carry it, so guarantees
-    # from the same Action Execution can be ordered by call_chain_depth.
+    # from the same Action Execution can be ordered by completion_index.
     execution: codegen_input.ActionExecution
-    # Call-chain depth from the directly-applied contract: its own guarantees
-    # are depth 0; each nested guarantee increments the depth. Within a single
-    # Action Execution, a lower-depth guarantee outranks a higher-depth one it
-    # resolved.
-    call_chain_depth: int = 0
+    # Where this action finished among every action in the Action Execution.
+    # Callees finish in triggering order, and each action finishes after its
+    # callees. Within one Action Execution, a guarantee with a higher index
+    # comes from an action that finished later.
+    completion_index: int
+    # How many nested guarantees separate this one from the directly-applied
+    # contract, whose depth is 0.
+    call_depth: int = 0
 
     def action_chain(
         self, particle: chained_name.ChainedNameTuple
@@ -54,8 +59,28 @@ class PendingGuarantee(msgspec.Struct, frozen=True):
             self.action,
             id(self.contract),
             self.execution,
-            self.call_chain_depth,
+            self.call_depth,
         )
+
+    def callees(
+        self, action_chain: chained_name.ActionReferenceTuple
+    ) -> Iterator[tuple[chained_name.ActionReferenceTuple, PendingGuarantee]]:
+        """Yield each callee's chain and pending guarantee, in triggering order, when this action acts through ``action_chain``."""
+        # This action's callees own the completion indexes just before its own.
+        completed = self.completion_index - self.contract.action_execution_count
+        for callee in self.contract.callees:
+            callee_chain = chained_name.in_caller(action_chain, callee.action_chain)
+            completed += callee.contract.action_execution_count
+            yield (
+                callee_chain,
+                PendingGuarantee(
+                    callee_chain[-1],
+                    callee.contract,
+                    self.execution,
+                    completed,
+                    self.call_depth + 1,
+                ),
+            )
 
 
 class PendingGuaranteeIdentity(msgspec.Struct, frozen=True):
@@ -67,4 +92,4 @@ class PendingGuaranteeIdentity(msgspec.Struct, frozen=True):
     contract_id: int
     # Action Executions already compare by identity.
     execution: codegen_input.ActionExecution
-    call_chain_depth: int
+    call_depth: int

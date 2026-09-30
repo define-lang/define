@@ -292,3 +292,22 @@ def test_guarantee_move_carries_pending_callee_guarantees(
     assert diagnostic.populated_at.end_line == 8
     assert diagnostic.populated_at.end_column == 48
     assert diagnostic.populated_at.file_path == PurePosixPath("fill_2.dfn")
+
+
+def test_later_sibling_callee_empties_position_an_earlier_sibling_filled(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    diagnostic = all_diags[0]
+    assert isinstance(diagnostic, diagnostics.DestroyInEmptyPositionDiagnostic)
+    assert diagnostic.location.line == 17
+    assert diagnostic.location.column == 33
+    assert diagnostic.location.end_line == 17
+    assert diagnostic.location.end_column == 82
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert (
+        diagnostic.position_name == "position<holder>::position</box>::position</item>"
+    )

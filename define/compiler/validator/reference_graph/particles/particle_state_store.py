@@ -111,13 +111,13 @@ _BODY_WRITE = _WriteRecord(include_in_own_guarantees=True)
 class _CalleeWriteRecord(_WriteRecord, frozen=True):
     """A write by a callee's guarantee.
 
-    Within one Action Execution, the lower ``depth`` wins: a contract's own
-    guarantee outranks a nested guarantee that it already resolved.
+    Within one Action Execution, the guarantee with the higher
+    ``completion_index`` comes from an action that finished later, and wins.
     """
 
     # Action Executions compare by identity.
     execution: codegen_input.ActionExecution
-    depth: int
+    completion_index: int
 
 
 class DetachedSubtrees(msgspec.Struct):
@@ -157,13 +157,12 @@ class ParticleStateStore:
     Each Position written during an Action Statements Block also has a
     ``_WriteRecord``. This records whether the Position's Guarantee must be
     published directly in this action's contract or can remain in a callee's
-    contract, and, for a callee's write, which Action Execution and call-chain
-    depth wrote it. Marking a Position erroneous also records a write; assuming
-    its starting occupancy does not.
+    contract, and, for a callee's write, which Action Execution and which
+    action in its call tree wrote it. Marking a Position erroneous also records
+    a write; assuming its starting occupancy does not.
 
-    Within one Action Execution, a contract's own Guarantee takes precedence
-    over a deeper callee's Guarantee that it already resolved; ``is_superseded``
-    uses the write record to enforce that.
+    Within one Action Execution, a Guarantee from an action that finished later
+    takes precedence; ``is_superseded`` uses the write record to enforce that.
     """
 
     def __init__(self):
@@ -799,9 +798,9 @@ class ParticleStateStore:
         self,
         key: chained_name.PositionReferenceTuple,
         execution: codegen_input.ActionExecution,
-        depth: int,
+        completion_index: int,
     ) -> bool:
-        """Return whether a shallower guarantee from the same Action Execution already decided this key."""
+        """Return whether a guarantee from an action that finished later in the same Action Execution already decided this key."""
         existing = self._write_record.get(key)
         if existing is None:
             return False
@@ -812,7 +811,7 @@ class ParticleStateStore:
         return (
             isinstance(existing, _CalleeWriteRecord)
             and existing.execution is execution
-            and existing.depth < depth
+            and existing.completion_index > completion_index
         )
 
     def _include_in_own_guarantees(
@@ -834,7 +833,7 @@ class ParticleStateStore:
         self,
         key: chained_name.PositionReferenceTuple,
         execution: codegen_input.ActionExecution,
-        depth: int,
+        completion_index: int,
         *,
         include_in_own_guarantees: bool,
     ):
@@ -842,7 +841,7 @@ class ParticleStateStore:
         self._write_record[key] = _CalleeWriteRecord(
             include_in_own_guarantees=include_in_own_guarantees,
             execution=execution,
-            depth=depth,
+            completion_index=completion_index,
         )
 
     def try_add_action_parent(
