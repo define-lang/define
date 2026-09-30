@@ -1,0 +1,14 @@
+# Creates the Fibonacci generator and generates the sequence.
+define the potential action<define-lang.org:fibonacci:/main> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<fibonacci> {
+            it may only contain particles where {
+                it has the action</generate>.
+            }
+        }
+        create a particle in position<fibonacci>.
+        create a particle in position<fibonacci>::action</generate>::position<run>.
+    }
+}

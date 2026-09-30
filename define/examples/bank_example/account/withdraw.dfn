@@ -6,21 +6,31 @@ define the potential action<define-lang.org:bank:/account/withdraw> {
     }
     define the position<amount> {
         it may only contain particles where {
-            it has a value that is a decimal.
+            it has the value<standard:/number/rational>.
             it has the constraint</positive>.
         }
     }
 
     it happens when {
         the position<run> has a particle.
-        AND
-        the position<amount> has a particle.
     } and it requires {
         the value in position</account/balance> is greater than the value in position<amount>.
         OR
         the value in position</account/balance> is equal to the value in position<amount>.
     } and it does {
-        set the value in position</account/balance> to position</account/balance> minus position<amount>.
+        define the position<new_balance> {
+            it may only contain particles where {
+                it has the value<standard:/number/rational>.
+            }
+        }
+        create a particle in position<new_balance>.
+        execute the operation<standard:/number/rational/subtract> {
+            with view<a> looking at position</account/balance>.
+            with view<b> looking at position<amount>.
+            with view<result> looking at position<new_balance>.
+        }
+        set the value of position</account/balance> to position<new_balance>.
+        destroy the particle in position<amount>.
         destroy the particle in position<run>.
     }
 }

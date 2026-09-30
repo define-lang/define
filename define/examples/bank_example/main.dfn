@@ -1,0 +1,14 @@
+# Creates the bank and runs the transfers.
+define the potential action<define-lang.org:bank:/main> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<bank> {
+            it may only contain particles where {
+                it has the action</do_transfers>.
+            }
+        }
+        create a particle in position<bank>.
+        create a particle in position<bank>::action</do_transfers>::position<run>.
+    }
+}

@@ -1,0 +1,11 @@
+# Every account starts with a balance of 0.
+define the potential action<define-lang.org:bank:/account/construct> {
+    it also assigns the position</account/balance>.
+
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</account/balance>.
+        set the value of position</account/balance> to literal<standard:/number>"0".
+    }
+}

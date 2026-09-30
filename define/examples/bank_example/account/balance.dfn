@@ -1,0 +1,6 @@
+define the potential position<define-lang.org:bank:/account/balance> {
+    it may only contain particles where {
+        it has the value<standard:/number/rational>.
+        it has the constraint</non_negative>.
+    }
+}

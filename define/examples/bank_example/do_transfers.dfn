@@ -8,53 +8,40 @@ define the potential action<define-lang.org:bank:/do_transfers> {
     } and it does {
         define the position<account1> {
             it may only contain particles where {
-                it has the action</account/withdraw>.
+                it has the action</account/construct>.
                 it has the action</account/deposit>.
                 it has the action</account/transfer_to>.
             }
         }
         create a particle in position<account1>.
         create a particle in position<account1>::action</account/deposit>::position<amount>.
-        set the value in position<account1>::action</account/deposit>::position<amount> to 100.
+        set the value of position<account1>::action</account/deposit>::position<amount> to literal<standard:/number>"100".
         create a particle in position<account1>::action</account/deposit>::position<run>.
 
         define the position<account2> {
             it may only contain particles where {
-                it has the action</account/withdraw>.
+                it has the action</account/construct>.
                 it has the action</account/deposit>.
                 it has the action</account/transfer_to>.
             }
         }
         create a particle in position<account2>.
         create a particle in position<account2>::action</account/deposit>::position<amount>.
-        set the value in position<account2>::action</account/deposit>::position<amount> to 50.
+        set the value of position<account2>::action</account/deposit>::position<amount> to literal<standard:/number>"50".
         create a particle in position<account2>::action</account/deposit>::position<run>.
 
-        # We probably need "wait until."
-        it happens when {
-            the position<account1>::action</account/deposit>::position<run> is empty.
-            AND
-            the position<account2>::action</account/deposit>::position<run> is empty.
-        } and it does {
-            create a particle in position<account1>::action</account/transfer_to>::position<amount>.
-            set the value in position<account1>::action</account/transfer_to>::position<amount> to 50.
-            move the particle in position<account2> to position<account1>::action</account/transfer_to>::position<to>.
-            create a particle in position<account1>::action</account/transfer_to>::position<run>.
+        create a particle in position<account1>::action</account/transfer_to>::position<amount>.
+        set the value of position<account1>::action</account/transfer_to>::position<amount> to literal<standard:/number>"50".
+        move the particle in position<account2> to position<account1>::action</account/transfer_to>::position<to>.
+        create a particle in position<account1>::action</account/transfer_to>::position<run>.
 
-            # During parallelism, we will need to ensure there is an enforced order of triggers
-            # that get attached so that we know the order of these triggers resolving.
-            it happens when {
-                the position<account1>::action</account/transfer_to>::position<run> is empty.
-            } and it does {
-                move the particle in position<account1>::action</account/transfer_to>::position<to> to position<account2>.
-                create a particle in position<account2>::action</account/transfer_to>::position<amount>.
-                # This number is too high, it will definitely fail.
-                set the value in position<account2>::action</account/transfer_to>::position<amount> to 200.
-                move the particle in position<account1> to position<account2>::action</account/transfer_to>::position<to>.
-                # At some point here now a constraint will fail because the trigger attempts
-                # to reduce this to below 0.
-                create a particle in position<account2>::action</account/transfer_to>::position<run>.
-            }
-        }
+        move the particle in position<account1>::action</account/transfer_to>::position<to> to position<account2>.
+        create a particle in position<account2>::action</account/transfer_to>::position<amount>.
+        # This number is too high, it will definitely fail.
+        set the value of position<account2>::action</account/transfer_to>::position<amount> to literal<standard:/number>"200".
+        move the particle in position<account1> to position<account2>::action</account/transfer_to>::position<to>.
+        # At some point here now a constraint will fail because the trigger attempts
+        # to reduce this to below 0.
+        create a particle in position<account2>::action</account/transfer_to>::position<run>.
     }
 }

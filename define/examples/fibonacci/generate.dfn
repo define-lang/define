@@ -8,8 +8,7 @@ define the potential action<define-lang.org:fibonacci:/generate> {
     } and it does {
         define the position<sequence> {
             it may only contain particles where {
-                it has the position</sequence/current>.
-                it has the position</sequence/previous>.
+                it has the action</sequence/construct>.
                 it has the action</sequence/next>.
             }
         }
@@ -20,9 +19,6 @@ define the potential action<define-lang.org:fibonacci:/generate> {
         # Z3 proves: non_negative preserved by current + previous (O(1) proof)
         repeat 500 times {
             create a particle in position<sequence>::action</sequence/next>::position<run>.
-            wait until {
-                NOT position<sequence>::action</sequence/next>::position<run> has a particle.
-            }
         }
 
         # Result: sequence computes F(500) and F(499)

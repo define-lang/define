@@ -1,0 +1,14 @@
+# The sequence starts at F(0) = 0 and F(1) = 1.
+define the potential action<define-lang.org:fibonacci:/sequence/construct> {
+    it also assigns the position</sequence/current>.
+    it also assigns the position</sequence/previous>.
+
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</sequence/current>.
+        set the value of position</sequence/current> to literal<standard:/number>"1".
+        create a particle in position</sequence/previous>.
+        set the value of position</sequence/previous> to literal<standard:/number>"0".
+    }
+}

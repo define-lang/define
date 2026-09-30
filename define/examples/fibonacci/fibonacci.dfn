@@ -1,8 +1,0 @@
-define the potential position<define-lang.org:fibonacci:/fibonacci> {
-    it may only contain particles where {
-        it has the action</generate>.
-    }
-    after it is assigned {
-        create a particle in action</generate>::position<run>.
-    }
-}

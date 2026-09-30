@@ -1,8 +1,0 @@
-define the potential position<define-lang.org:bank:/bank> {
-    it may only contain particles where {
-        it has the action</do_transfers>.
-    }
-    after it is assigned {
-        create a particle in action</do_transfers>::position<run>.
-    }
-}

@@ -1,0 +1,52 @@
+define the potential action<define-lang.org:bank:/account/transfer_to> {
+    it also assigns the position</account/balance>.
+    it also assigns the action</account/withdraw>.
+
+    define the position<run> {
+        it may only be destroyed by this action.
+    }
+    define the position<to> {
+        it may only contain particles where {
+            it has the action</account/deposit>.
+            it has the position</account/balance>.
+        }
+    }
+    define the position<amount> {
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+            it has the constraint</positive>.
+        }
+    }
+
+    it happens when {
+        the position<run> has a particle.
+    } and it requires {
+        the value in position</account/balance> is greater than the value in position<amount>.
+        OR
+        the value in position</account/balance> is equal to the value in position<amount>.
+    } and it does {
+        define the position<original_balance> {
+            it may only contain particles where {
+                it has the same qualities as position<to>::position</account/balance>.
+            }
+        }
+        create a particle in position<original_balance>.
+        set the value of position<original_balance> to position<to>::position</account/balance>.
+
+        create a particle in action</account/withdraw>::position<amount>.
+        set the value of action</account/withdraw>::position<amount> to position<amount>.
+        create a particle in action</account/withdraw>::position<run>.
+
+        # It's too easy to human-error this and write the wrong trigger names.
+        create a particle in position<to>::action</account/deposit>::position<amount>.
+        set the value of position<to>::action</account/deposit>::position<amount> to position<amount>.
+        create a particle in position<to>::action</account/deposit>::position<run>.
+
+        require that {
+            the position<to>::position</account/balance> is equal to position<original_balance> plus position<amount>.
+        }
+
+        destroy the particle in position<amount>.
+        destroy the particle in position<run>.
+    }
+}
