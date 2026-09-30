@@ -41,6 +41,11 @@ BUILT_IN_VALUE_ENCODINGS: Final = {
 # TODO: Read Encoding Operation associations from configuration (DLP 48) once
 # it exists.
 BUILT_IN_ENCODING_OPERATIONS: Final = {
+    f"operation<{STANDARD_UNIVERSE}:/binary/and>": "/binary/ascii/and",
+    f"operation<{STANDARD_UNIVERSE}:/binary/exclusive_or>": (
+        "/binary/ascii/exclusive_or"
+    ),
+    f"operation<{STANDARD_UNIVERSE}:/binary/or>": "/binary/ascii/or",
     f"operation<{STANDARD_UNIVERSE}:/boolean/and>": "/boolean/ascii/and",
     f"operation<{STANDARD_UNIVERSE}:/boolean/exclusive_or>": (
         "/boolean/ascii/exclusive_or"

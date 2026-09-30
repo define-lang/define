@@ -76,6 +76,24 @@ def _binary_function_call(module_name: str, function_name: str) -> _FunctionCall
 _COMPUTER_OPERATIONS: Final[
     dict[str, _BinaryOperation | _LiteralOperation | _PrefixOperation | _FunctionCall]
 ] = {
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/binary/ascii/and>": _BinaryOperation(
+        operator=template_context.BinaryOperator.BITWISE_AND,
+        left_view="view<a>",
+        right_view="view<b>",
+        result_view="view<result>",
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/binary/ascii/or>": _BinaryOperation(
+        operator=template_context.BinaryOperator.BITWISE_OR,
+        left_view="view<a>",
+        right_view="view<b>",
+        result_view="view<result>",
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/binary/ascii/exclusive_or>": _BinaryOperation(
+        operator=template_context.BinaryOperator.EXCLUSIVE_OR,
+        left_view="view<a>",
+        right_view="view<b>",
+        result_view="view<result>",
+    ),
     f"encoding_operation<{constants.STANDARD_UNIVERSE}:/boolean/ascii/and>": _BinaryOperation(
         operator=template_context.BinaryOperator.AND,
         left_view="view<a>",

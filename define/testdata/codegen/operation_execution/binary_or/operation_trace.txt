@@ -1,0 +1,6 @@
+test.create(/flags)
+test.create(/mask)
+test.create(/combined)
+test.set_value(/flags, 0b1100)
+test.set_value(/mask, 0b1010)
+test.execute(operation<standard:/binary/or>, /flags, /mask, /combined)

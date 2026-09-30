@@ -4,6 +4,21 @@ define the potential position<my.domain.com:my_lib:/bits> {
         it has the value<standard:/binary>.
     }
 }
+define the potential position<my.domain.com:my_lib:/masked> {
+    it may only contain particles where {
+        it has the value<standard:/binary>.
+    }
+}
+define the potential position<my.domain.com:my_lib:/combined> {
+    it may only contain particles where {
+        it has the value<standard:/binary>.
+    }
+}
+define the potential position<my.domain.com:my_lib:/differing> {
+    it may only contain particles where {
+        it has the value<standard:/binary>.
+    }
+}
 define the potential position<my.domain.com:my_lib:/flag> {
     it may only contain particles where {
         it has the value<standard:/boolean>.
@@ -88,6 +103,9 @@ define the encoding_operation<my.domain.com:my_lib:/increment> {
 }
 define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the position</bits>.
+    it also assigns the position</masked>.
+    it also assigns the position</combined>.
+    it also assigns the position</differing>.
     it also assigns the position</flag>.
     it also assigns the position</both>.
     it also assigns the position</either>.
@@ -105,6 +123,24 @@ define the potential action<my.domain.com:my_lib:/test> {
     } and it does {
         create a particle in position</bits>.
         set the value of position</bits> to literal<standard:/binary>"1011".
+        create a particle in position</masked>.
+        create a particle in position</combined>.
+        create a particle in position</differing>.
+        execute the operation<standard:/binary/and> {
+            with view<a> looking at position</bits>.
+            with view<b> looking at literal<standard:/binary>"110".
+            with view<result> looking at position</masked>.
+        }
+        execute the operation<standard:/binary/or> {
+            with view<a> looking at position</bits>.
+            with view<b> looking at literal<standard:/binary>"110".
+            with view<result> looking at position</combined>.
+        }
+        execute the operation<standard:/binary/exclusive_or> {
+            with view<a> looking at position</bits>.
+            with view<b> looking at literal<standard:/binary>"110".
+            with view<result> looking at position</differing>.
+        }
         create a particle in position</flag>.
         create a particle in position</both>.
         create a particle in position</either>.

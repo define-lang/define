@@ -26,7 +26,13 @@ def test_every_definition_is_valid(
         [
             "<string>",
             standard_library_file("binary.dfn"),
+            standard_library_file("binary/and.dfn"),
             standard_library_file("binary/ascii.dfn"),
+            standard_library_file("binary/ascii/and.dfn"),
+            standard_library_file("binary/ascii/exclusive_or.dfn"),
+            standard_library_file("binary/ascii/or.dfn"),
+            standard_library_file("binary/exclusive_or.dfn"),
+            standard_library_file("binary/or.dfn"),
             standard_library_file("boolean.dfn"),
             standard_library_file("boolean/and.dfn"),
             standard_library_file("boolean/ascii.dfn"),

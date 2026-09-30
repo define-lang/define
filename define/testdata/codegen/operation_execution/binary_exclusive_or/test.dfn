@@ -1,0 +1,20 @@
+# Two positions' values differ in some bits with the built-in binary exclusive or.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</flags>.
+    it also assigns the position</mask>.
+    it also assigns the position</differing>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</flags>.
+        create a particle in position</mask>.
+        create a particle in position</differing>.
+        set the value of position</flags> to literal<standard:/binary>"1100".
+        set the value of position</mask> to literal<standard:/binary>"1010".
+        execute the operation<standard:/binary/exclusive_or> {
+            with view<a> looking at position</flags>.
+            with view<b> looking at position</mask>.
+            with view<result> looking at position</differing>.
+        }
+    }
+}
