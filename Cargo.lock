@@ -194,9 +194,9 @@ dependencies = [
 
 [[package]]
 name = "pyo3-introspection"
-version = "0.29.2"
+version = "0.29.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f7dec9663b0beae4f0945ad355ac7146d7d58f442ffaf993751aaee38ed559e4"
+checksum = "d7db9bbcb6d6679df2655f3b3dcd84f74a5c5fc4903eb3f89a6888b5c1a90793"
 dependencies = [
  "anyhow",
  "goblin",
