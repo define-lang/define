@@ -9,6 +9,7 @@ import msgspec
 from define.compiler import ast
 
 if TYPE_CHECKING:
+    from define.compiler import chained_name
     from define.compiler.graphs import reference_graph_order
     from define.compiler.validator.reference_graph import destruction_contract
 
@@ -32,6 +33,39 @@ class Destruction(msgspec.Struct):
         msgspec.field(default_factory=list)
     )
     positions: list[ast.PositionReference] = msgspec.field(default_factory=list)
+    # Callees whose pending Guarantees were dropped. The Destructors their
+    # callers recorded for them still run.
+    guaranteed_particle_destructors: list[CalleeDestructorsReference] = msgspec.field(
+        default_factory=list
+    )
+
+
+class CalleeDestructorsReference(msgspec.Struct):
+    """The Destructors a caller recorded for one of its callees."""
+
+    caller: ast.ActionReference
+    # The callee's action chain from the caller's perspective.
+    callee: chained_name.ActionReferenceTuple
+    # Which of the caller's callees with that chain this is: 1 for the first,
+    # 2 for the second, and so on, since the same action can be triggered
+    # more than once there.
+    occurrence: int
+
+
+class GuaranteedParticleDestructors(msgspec.Struct):
+    """The Destructors that still run for one of an action's callees when its Guarantees are dropped, as the action's final state has its particles."""
+
+    # The callee's action chain from this action's perspective.
+    callee: chained_name.ActionReferenceTuple
+    # Which of this action's callees with that chain this is: 1 for the first,
+    # 2 for the second, and so on.
+    occurrence: int
+
+    # Destructors of particles the callee created.
+    destructors: list[ast.ActionReference]
+    # Callees of the callee whose Guarantees are still pending in this action,
+    # whose own callers' recorded Destructors also run.
+    callee_destructors: list[CalleeDestructorsReference]
 
 
 class EncodedLiteral(msgspec.Struct):
@@ -109,6 +143,9 @@ class ActionCodegenInput(msgspec.Struct):
     definition: ast.ActionDefinition
     steps: list[ActionStep]
     propagated_destructions: list[destruction_contract.PropagatedDestruction]
+    # One entry for each of the action's callees whose Destructors run when
+    # its Guarantees are dropped.
+    guaranteed_particle_destructors: list[GuaranteedParticleDestructors]
 
 
 class EncodingOperationCodegenInput(msgspec.Struct):

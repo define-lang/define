@@ -34,6 +34,40 @@ if typing.TYPE_CHECKING:
     from define.compiler.validator.reference_graph import (
         destruction_contract as destruction_contract_types,
     )
+    from define.compiler.validator.reference_graph.particles import pending_guarantee
+
+
+class CalleeDestructors(msgspec.Struct, frozen=True):
+    """The Destructors a caller recorded for one of its callees, whose Guarantees describe particles below a particle being destroyed."""
+
+    # The caller's action chain from this action's perspective.
+    triggering_action_chain: chained_name.ActionReferenceTuple
+    # The callee's entry in the caller's contract.
+    callee: action_contract.CalleeContract
+    # The Action Execution in this action's state that the callee's Guarantees
+    # came from.
+    execution: codegen_input.ActionExecution
+
+    @property
+    def triggering_action_is_implied(self) -> bool:
+        """Whether the caller is one of this action's implied actions, assigned to this action's parent particle."""
+        # No position precedes the action's name in its chain.
+        return len(self.triggering_action_chain) == 1
+
+
+def _callee_destructors(
+    position: chained_name.ChainedNameTuple, pending: pending_guarantee.PendingGuarantee
+) -> CalleeDestructors:
+    entry = pending.caller_contract_entry
+    return CalleeDestructors(
+        triggering_action_chain=chained_name.chain_of_caller(
+            pending.action_chain(position),
+            entry.callee.action_chain,
+            entry.caller_action,
+        ),
+        callee=entry.callee,
+        execution=pending.execution,
+    )
 
 
 class ParticleDestruction(msgspec.Struct, frozen=True):
@@ -59,7 +93,13 @@ class OccupancyInfo(msgspec.Struct, frozen=True):
 
 @typing.final
 class ParticleTracker:
-    """Tracks which positions contain particles and what qualities those particles currently have."""
+    """Tracks which positions contain particles and what qualities those particles currently have.
+
+    Methods that read or change particle state see the state that every
+    callee's Guarantees leave, applying pending Guarantees as needed. Methods
+    named for recorded state instead read only what this action has recorded,
+    and methods about pending Guarantees themselves leave them pending.
+    """
 
     def __init__(self):
         """Initialize an empty particle tracker."""
@@ -211,10 +251,16 @@ class ParticleTracker:
         self._callee_guarantees.apply_pending_guarantees_up_to(key)
         return self._store.occupant_or_none(key)
 
-    def get_occupant_or_none_by_key(
+    def recorded_occupant(
+        self, in_position: ast.PositionReference
+    ) -> particle_info.ParticleInfo:
+        """Return the particle this action has recorded at this position, without applying any pending Guarantees."""
+        return self._store.occupant(in_position.canonical_chained_name_tuple)
+
+    def recorded_occupant_or_none_by_key(
         self, key: chained_name.PositionReferenceTuple
     ) -> particle_info.ParticleInfo | None:
-        """Get the particle at this position, if one exists."""
+        """Return the particle this action has recorded at ``key``, if any, without applying any pending Guarantees."""
         return self._store.occupant_or_none(key)
 
     def set_value(
@@ -261,17 +307,43 @@ class ParticleTracker:
         self._callee_guarantees.fully_resolve_pending_guarantees(*keys)
         return [self._store.snapshot_child_state(key) for key in keys]
 
-    def guarantees_discardable_on_destruction(
-        self, has_destructor: typing.Callable[[particle_info.ParticleInfo], bool]
-    ) -> bool:
-        """Return whether this action's guarantees can be dropped unapplied when their particle is destroyed."""
-        return self._store.guarantees_discardable_on_destruction(has_destructor)
+    def has_any_recorded_error(self) -> bool:
+        """Return whether this action has recorded error occupancy state at any Position, without applying any pending Guarantees."""
+        return self._store.has_any_error()
 
-    def discard_discardable_pending_guarantees(self, position: ast.PositionReference):
-        """Discard the pending callee Guarantees for this particle's children if each is discardable on destruction and nothing is tracked where it applies."""
-        self._callee_guarantees.discard_discardable_pending_guarantees(
-            position.canonical_chained_name_tuple
-        )
+    def unapplied_callee_destructors(
+        self, position: chained_name.ChainedNameTuple
+    ) -> list[CalleeDestructors]:
+        """Return what destroying the particle in ``position`` does for each callee whose Guarantees about it have not been applied.
+
+        An empty ``position`` means this action's parent particle.
+        """
+        callee_destructors: list[CalleeDestructors] = []
+        for pending in self._store.pending_guarantees_at(position):
+            callee_destructors.append(_callee_destructors(position, pending))
+        return callee_destructors
+
+    def drop_callee_guarantees_for_destruction(
+        self, position: ast.PositionReference
+    ) -> list[CalleeDestructors]:
+        """Drop the unapplied Guarantees of the callees assigned to the particle at ``position``, if its destruction does not depend on them.
+
+        Returns the Destructors that must still run for them, because their
+        particles will not appear among its children.
+        """
+        key = position.canonical_chained_name_tuple
+        callee_destructors: list[CalleeDestructors] = []
+        for pending in self._callee_guarantees.discard_discardable_pending_guarantees(
+            key
+        ):
+            callee_destructors.append(_callee_destructors(key, pending))
+        return callee_destructors
+
+    def callee_execution_that_wrote(
+        self, key: chained_name.PositionReferenceTuple
+    ) -> codegen_input.ActionExecution:
+        """Return the Action Execution whose guarantee last wrote this position, which a callee's guarantee must have written."""
+        return self._store.callee_execution_that_wrote(key)
 
     def collect_caller_destruction_state(
         self,
@@ -451,7 +523,8 @@ class ParticleTracker:
         inferred-requirements dict.
         """
         # A pending guarantee that finished later than state recorded here
-        # would otherwise leave that older state in these guarantees.
+        # would otherwise leave that older state in these guarantees. The
+        # destruction plan also reads this final state.
         self._callee_guarantees.apply_all_overwriting_pending_guarantees()
         return self._guarantee_generator.contracted_position_guarantees(
             interface_names,
@@ -502,8 +575,8 @@ class ParticleTracker:
         self._callee_guarantees.apply_triggered_action(execution, contract)
         return occupied_interface_child_position_violations
 
-    def nested_guarantees(
+    def tracked_action_executions(
         self,
-    ) -> list[action_contract.CalleeContract]:
-        """Return the guarantees of actions this action triggered."""
-        return self._store.nested_guarantees()
+    ) -> dict[codegen_input.ActionExecution, chained_name.ActionReferenceTuple]:
+        """Return each Action Execution this action triggered that is still tracked, in triggering order, with its current action chain."""
+        return self._store.tracked_action_executions()

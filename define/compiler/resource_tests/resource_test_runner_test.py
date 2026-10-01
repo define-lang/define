@@ -92,6 +92,15 @@ def test_allocation_limit_is_enforced(tmp_path: Path):
         measured.check(rss_bytes=256 * _MIB, stderr=stderr)
 
 
+def test_expected_exit_code_is_success(tmp_path: Path):
+    measured, _, stderr = _run(
+        tmp_path, "import sys; print('diagnostic', file=sys.stderr); sys.exit(1)"
+    )
+    measured.check(rss_bytes=256 * _MIB, stderr=stderr, expected_returncode=1)
+    assert measured.returncode == 1
+    assert stderr == "diagnostic\n"
+
+
 def test_unrelated_failure_is_not_a_budget_failure(tmp_path: Path):
     measured, _, stderr = _run(tmp_path, "raise ValueError('broken')")
     with pytest.raises(

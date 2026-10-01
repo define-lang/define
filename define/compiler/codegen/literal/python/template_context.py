@@ -24,6 +24,7 @@ class StatementKind(enum.Enum):
     SET_VALUE = enum.auto()
     SET_VALUE_FROM = enum.auto()
     RUN_ACTION = enum.auto()
+    RUN_GUARANTEED_PARTICLE_DESTRUCTORS = enum.auto()
     RUN_CONTRACT_DESTRUCTORS = enum.auto()
     DESTROY_CONTRACT_CHILDREN = enum.auto()
     EXECUTE_OPERATION = enum.auto()
@@ -135,6 +136,13 @@ class DestructionContractMethod(msgspec.Struct):
     statements: list[ActionStatementContext]
 
 
+class GuaranteedParticleDestructorsContext(msgspec.Struct):
+    """The method that runs the Destructors an action recorded for one of its callees."""
+
+    method_name: str
+    statements: list[ActionStatementContext]
+
+
 class DestructionContractDefinition(msgspec.Struct):
     """Methods implementing caller-contributed destruction work."""
 
@@ -206,6 +214,14 @@ class RunActionContext(ActionStatementContext):
     kind: ClassVar[StatementKind] = StatementKind.RUN_ACTION
     position: PositionExpr
     destruction_contract: DestructionContractArgument | None = None
+
+
+class RunGuaranteedParticleDestructorsContext(ActionStatementContext):
+    """Run the Destructors an action recorded for one of its callees."""
+
+    kind: ClassVar[StatementKind] = StatementKind.RUN_GUARANTEED_PARTICLE_DESTRUCTORS
+    position: PositionExpr
+    method_name: str
 
 
 class ContractContributionContext(ActionStatementContext):

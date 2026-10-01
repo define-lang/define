@@ -10,7 +10,7 @@ from define.compiler.validator import codegen_input
 from define.compiler.validator.structural import name_validators
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Collection, Mapping
 
     from define.compiler.data_structures import typed_name_dict
     from define.compiler.validator import validation_result
@@ -44,7 +44,7 @@ class OperationArgumentsValidator:
     def validate(
         self,
         statement: ast.OperationExecutionStatement,
-        looked_at_qualities: Mapping[ast.OperationArgumentStatement, frozenset[str]],
+        looked_at_qualities: Mapping[ast.OperationArgumentStatement, Collection[str]],
     ) -> tuple[
         list[diagnostics.Diagnostic],
         dict[ast.OperationArgumentStatement, codegen_input.EncodedLiteral],
@@ -243,7 +243,7 @@ class OperationArgumentsValidator:
         executed: ast.OperationDefinition,
         interface_view: ast.ViewDefinition,
         operation_name: str,
-        looked_at_qualities: Mapping[ast.OperationArgumentStatement, frozenset[str]],
+        looked_at_qualities: Mapping[ast.OperationArgumentStatement, Collection[str]],
         validation_diagnostics: list[diagnostics.Diagnostic],
     ) -> codegen_input.EncodedLiteral | None:
         """Check that the particle the argument looks at meets the constraints of the executed operation's interface view.

@@ -134,6 +134,12 @@ class PositionQualityResolver:
             direct, self._implications_for
         )
 
+    def get_transitive_implied_qualities(
+        self, implied_qualities: tuple[ast.GlobalTypedNameReference, ...]
+    ) -> quality_assignment.QualityAssignments:
+        """Return the implied qualities and everything they transitively imply, in assignment order."""
+        return self._build_quality_assignments(implied_qualities)
+
     def get_transitive_implied_quality_names(
         self, implied_qualities: tuple[ast.GlobalTypedNameReference, ...]
     ) -> frozenset[str]:

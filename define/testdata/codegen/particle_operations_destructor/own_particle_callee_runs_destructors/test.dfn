@@ -1,0 +1,18 @@
+# action</wrapper> creates position</q> and triggers action</mid> on its own
+# particle, which triggers action</builder> there too. action</builder> creates
+# position</q>::position</r> with action</cleanup>, and is still pending on the
+# particle of action</wrapper> when it publishes, so the Destructors it records
+# for action</mid> call those action</mid> records for action</builder>.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<holder> {
+            it may only contain particles where {
+                it has the action</wrapper>.
+            }
+        }
+        create a particle in position<holder>.
+        create a particle in position<holder>::action</wrapper>::position<run>.
+    }
+}

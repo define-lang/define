@@ -10,6 +10,7 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         "//define/compiler:ast",
+        "//define/compiler:chained_name",
         "//define/compiler/graphs:reference_graph_order",
         "//define/compiler/validator/reference_graph:destruction_contract",
         "@pypi//msgspec",

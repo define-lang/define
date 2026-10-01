@@ -40,6 +40,8 @@ class CpuGrowthCase:
     source_variable: str
     filesystem: bool
     maximum_ratio: float
+    # Whether both programs are expected to report diagnostics and fail.
+    expect_diagnostics: bool = False
 
 
 def _measure(
@@ -206,7 +208,6 @@ def test_retained_memory(case: MemoryCase, tmp_path: Path):
                 maximum_ratio=4,
             ),
             id="triggered_children_destruction_destructors",
-            marks=_TRIGGERED_CHILDREN_EXPONENTIAL,
         ),
         pytest.param(
             CpuGrowthCase(
@@ -236,9 +237,38 @@ def test_retained_memory(case: MemoryCase, tmp_path: Path):
             ),
             id="triggered_children_destruction_rearrange",
         ),
+        pytest.param(
+            CpuGrowthCase(
+                control_variable="TRIGGERED_CHILDREN_DESTRUCTION_REARRANGE_DESTRUCTORS_CONTROL",
+                source_variable="TRIGGERED_CHILDREN_DESTRUCTION_REARRANGE_DESTRUCTORS",
+                filesystem=False,
+                maximum_ratio=4,
+            ),
+            id="triggered_children_destruction_rearrange_destructors",
+        ),
+        pytest.param(
+            CpuGrowthCase(
+                control_variable="TRIGGERED_CHILDREN_DESTRUCTION_ERROR_CONTROL",
+                source_variable="TRIGGERED_CHILDREN_DESTRUCTION_ERROR",
+                filesystem=False,
+                maximum_ratio=4,
+                expect_diagnostics=True,
+            ),
+            id="triggered_children_destruction_error",
+        ),
+        pytest.param(
+            CpuGrowthCase(
+                control_variable="TRIGGERED_CHILDREN_DESTRUCTION_DEPENDENT_SIBLINGS_CONTROL",
+                source_variable="TRIGGERED_CHILDREN_DESTRUCTION_DEPENDENT_SIBLINGS",
+                filesystem=False,
+                maximum_ratio=4,
+            ),
+            id="triggered_children_destruction_dependent_siblings",
+        ),
     ],
 )
 def test_cpu_growth(case: CpuGrowthCase, tmp_path: Path):
+    expected_returncode = 1 if case.expect_diagnostics else 0
     control_directory = tmp_path / "control"
     control = _measure(
         test_runfiles.resolve_from_env(case.control_variable),
@@ -250,8 +280,15 @@ def test_cpu_growth(case: CpuGrowthCase, tmp_path: Path):
         wall_limit=_WALL_GROWTH_SAFETY_SECONDS,
     )
     control_stderr = _stderr(control_directory)
-    control.check(rss_bytes=384 * _MIB, stderr=control_stderr)
-    assert control_stderr == ""
+    control.check(
+        rss_bytes=384 * _MIB,
+        stderr=control_stderr,
+        expected_returncode=expected_returncode,
+    )
+    if case.expect_diagnostics:
+        assert control_stderr != ""
+    else:
+        assert control_stderr == ""
 
     # Stop shortly after excessive growth can be established on this machine.
     # The whole-second CPU limit must exceed the relative allowance.
@@ -272,5 +309,9 @@ def test_cpu_growth(case: CpuGrowthCase, tmp_path: Path):
         maximum_ratio=case.maximum_ratio,
         rss_bytes=384 * _MIB,
         stderr=stderr,
+        expected_returncode=expected_returncode,
     )
-    assert stderr == ""
+    if case.expect_diagnostics:
+        assert stderr != ""
+    else:
+        assert stderr == ""

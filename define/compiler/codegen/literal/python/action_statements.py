@@ -27,6 +27,11 @@ class GeneratedActionStatements(msgspec.Struct):
     statements: list[template_context.ActionStatementContext]
     imports: set[str]
     contract_definitions: list[template_context.DestructionContractDefinition]
+    # One method for each callee whose Destructors run when its Guarantees are
+    # dropped.
+    guaranteed_particle_destructors: list[
+        template_context.GuaranteedParticleDestructorsContext
+    ]
 
 
 @final
@@ -88,6 +93,10 @@ class ActionStatementsGenerator:
                 case codegen_input.Destruction():
                     for action in step.destructors:
                         modules.update(self._converter.referenced_modules(action))
+                    for reference in step.guaranteed_particle_destructors:
+                        modules.update(
+                            self._converter.referenced_modules(reference.caller)
+                        )
                     for position in step.positions:
                         modules.update(self._converter.referenced_modules(position))
                 case codegen_input.ActionOperationExecution():
@@ -103,6 +112,11 @@ class ActionStatementsGenerator:
                             modules.update(
                                 self._converter.referenced_modules(argument.looking_at)
                             )
+        for guaranteed in self._action_input.guaranteed_particle_destructors:
+            for action in guaranteed.destructors:
+                modules.update(self._converter.referenced_modules(action))
+            for reference in guaranteed.callee_destructors:
+                modules.update(self._converter.referenced_modules(reference.caller))
         return modules
 
     def generate(self) -> GeneratedActionStatements:
@@ -231,10 +245,44 @@ class ActionStatementsGenerator:
                     statements.append(
                         self._execute_operation(statement, positions, names)
                     )
+        guaranteed_particle_destructors: list[
+            template_context.GuaranteedParticleDestructorsContext
+        ] = []
+        for guaranteed in self._action_input.guaranteed_particle_destructors:
+            method_statements: list[template_context.ActionStatementContext] = []
+            for action in guaranteed.destructors:
+                method_statements.append(
+                    template_context.RunActionContext(position=positions.build(action))
+                )
+            for reference in guaranteed.callee_destructors:
+                method_statements.append(
+                    self._run_guaranteed_particle_destructors(reference, positions)
+                )
+            guaranteed_particle_destructors.append(
+                template_context.GuaranteedParticleDestructorsContext(
+                    method_name=naming.NameConverter.callee_destructors_method_name(
+                        guaranteed.callee, guaranteed.occurrence
+                    ),
+                    statements=method_statements,
+                )
+            )
         return GeneratedActionStatements(
             statements=statements,
             imports=imports,
             contract_definitions=contract_definitions,
+            guaranteed_particle_destructors=guaranteed_particle_destructors,
+        )
+
+    @staticmethod
+    def _run_guaranteed_particle_destructors(
+        reference: codegen_input.CalleeDestructorsReference,
+        positions: position_expression.PositionExpressionBuilder,
+    ) -> template_context.RunGuaranteedParticleDestructorsContext:
+        return template_context.RunGuaranteedParticleDestructorsContext(
+            position=positions.build(reference.caller),
+            method_name=naming.NameConverter.callee_destructors_method_name(
+                reference.callee, reference.occurrence
+            ),
         )
 
     def _destruction(
@@ -254,6 +302,10 @@ class ActionStatementsGenerator:
             # their invocations have no incoming destruction contributions.
             statements.append(
                 template_context.RunActionContext(position=positions.build(action))
+            )
+        for reference in destruction.guaranteed_particle_destructors:
+            statements.append(
+                self._run_guaranteed_particle_destructors(reference, positions)
             )
         for context_type, prefix in (
             (

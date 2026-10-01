@@ -565,3 +565,101 @@ def test_caller_resolves_several_pending_callee_guarantees_below_destroyed_parti
             "file_path": "cleanup.dfn",
         },
     )
+
+
+def test_pending_callee_on_own_particle_creating_failing_destructor_is_applied_for_destroyed_particle(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    diagnostic = all_diags[0]
+    assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diagnostic.location.line == 16
+    assert diagnostic.location.column == 30
+    assert diagnostic.location.end_line == 16
+    assert diagnostic.location.end_column == 46
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert (
+        diagnostic.position_name
+        == "position<holder>::position</q>::position</r>::position</needed>"
+    )
+    assert diagnostic.required_empty is False
+    assert diagnostic.required_value is False
+    assert diagnostic.action_name == _CLEANUP
+    assert_propagation_chain(
+        diagnostic,
+        {
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "enclosing_quality_name": "position<my.domain.com:my_lib:/r>",
+            "triggered_quality_name": _CLEANUP,
+            "line": 3,
+            "column": 20,
+            "file_path": "r.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "enclosing_quality_name": "position<holder>::position</q>::position</r>",
+            "triggered_quality_name": None,
+            "line": 8,
+            "column": 30,
+            "file_path": "builder.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.AUTO_DESTRUCTION,
+            "enclosing_quality_name": _HOLDER,
+            "triggered_quality_name": _TEST,
+            "line": 16,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _CLEANUP,
+            "line": 16,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _CLEANUP,
+            "triggered_quality_name": None,
+            "line": 7,
+            "column": 30,
+            "file_path": "cleanup.dfn",
+        },
+    )
+
+
+def test_unpublished_destructor_contract_is_skipped_for_destroyed_particle(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 2
+    untriggered = all_diags[0]
+    assert isinstance(untriggered, diagnostics.UntriggeredActionDiagnostic)
+    assert untriggered.location.line == 7
+    assert untriggered.location.column == 28
+    assert untriggered.location.end_line == 7
+    assert untriggered.location.end_column == 43
+    assert untriggered.location.file_path == PurePosixPath("cleanup.dfn")
+    assert untriggered.constraint_name == "action</fill_1>"
+    assert untriggered.position_name == "position<dependency>"
+    circular = all_diags[1]
+    assert isinstance(circular, diagnostics.CircularGlobalReferenceDiagnostic)
+    assert circular.location.line == 3
+    assert circular.location.column == 20
+    assert circular.location.end_line == 3
+    assert circular.location.end_column == 36
+    assert circular.location.file_path == PurePosixPath("child_2.dfn")
+    assert circular.cycle == [
+        _CLEANUP,
+        "action<my.domain.com:my_lib:/fill_1>",
+        "action<my.domain.com:my_lib:/fill_2>",
+        "position<my.domain.com:my_lib:/child_2>",
+        _CLEANUP,
+    ]

@@ -40,6 +40,7 @@ py_library(
     deps = [
         ":action_contract",
         ":action_requirement_validator",
+        ":callee_destruction_validator",
         ":chained_name_validator",
         ":destruction_contract",
         ":destruction_contract_validator",
@@ -81,6 +82,27 @@ py_library(
         "//define/compiler/validator:scope_tracker",
         "//define/compiler/validator/reference_graph/particles:particle_info",
         "//define/compiler/validator/reference_graph/particles:particle_tracker",
+    ],
+)
+
+py_library(
+    name = "callee_destruction_validator",
+    srcs = ["callee_destruction_validator.py"],
+    deps = [
+        ":action_contract",
+        ":action_requirement_validator",
+        ":position_quality_resolver",
+        ":quality_assignment",
+        ":reference_graph_validation_state",
+        "//define/compiler:ast",
+        "//define/compiler:chained_name",
+        "//define/compiler:name_types",
+        "//define/compiler/data_structures:typed_name_dict",
+        "//define/compiler/validator:codegen_input",
+        "//define/compiler/validator:validation_result",
+        "//define/compiler/validator/reference_graph/particles:particle_info",
+        "//define/compiler/validator/reference_graph/particles:particle_tracker",
+        "@pypi//msgspec",
     ],
 )
 
@@ -371,6 +393,7 @@ pyright_test(
         ":action_contract_test",
         ":action_definition_validator",
         ":action_requirement_validator",
+        ":callee_destruction_validator",
         ":chained_name_validator",
         ":child_state",
         ":child_state_test",

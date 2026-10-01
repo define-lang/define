@@ -25,12 +25,18 @@ filegroup(
         ":triggered_children_destruction_contracted",
         ":triggered_children_destruction_contracted_control",
         ":triggered_children_destruction_control",
+        ":triggered_children_destruction_dependent_siblings",
+        ":triggered_children_destruction_dependent_siblings_control",
         ":triggered_children_destruction_destructors",
         ":triggered_children_destruction_destructors_control",
+        ":triggered_children_destruction_error",
+        ":triggered_children_destruction_error_control",
         ":triggered_children_destruction_move",
         ":triggered_children_destruction_move_control",
         ":triggered_children_destruction_rearrange",
         ":triggered_children_destruction_rearrange_control",
+        ":triggered_children_destruction_rearrange_destructors",
+        ":triggered_children_destruction_rearrange_destructors_control",
         ":wide_destruction",
     ],
     visibility = [
@@ -199,6 +205,20 @@ filegroup(
 )
 
 filegroup(
+    name = "triggered_children_destruction_dependent_siblings",
+    testonly = True,
+    srcs = ["triggered_children_destruction_dependent_siblings.dfn"],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)
+
+filegroup(
+    name = "triggered_children_destruction_dependent_siblings_control",
+    testonly = True,
+    srcs = ["triggered_children_destruction_dependent_siblings_control.dfn"],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)
+
+filegroup(
     name = "triggered_children_destruction_destructors",
     testonly = True,
     srcs = ["triggered_children_destruction_destructors.dfn"],
@@ -209,6 +229,20 @@ filegroup(
     name = "triggered_children_destruction_destructors_control",
     testonly = True,
     srcs = ["triggered_children_destruction_destructors_control.dfn"],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)
+
+filegroup(
+    name = "triggered_children_destruction_error",
+    testonly = True,
+    srcs = ["triggered_children_destruction_error.dfn"],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)
+
+filegroup(
+    name = "triggered_children_destruction_error_control",
+    testonly = True,
+    srcs = ["triggered_children_destruction_error_control.dfn"],
     visibility = ["//define/compiler/resource_tests:__pkg__"],
 )
 
@@ -237,6 +271,20 @@ filegroup(
     name = "triggered_children_destruction_rearrange_control",
     testonly = True,
     srcs = ["triggered_children_destruction_rearrange_control.dfn"],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)
+
+filegroup(
+    name = "triggered_children_destruction_rearrange_destructors",
+    testonly = True,
+    srcs = ["triggered_children_destruction_rearrange_destructors.dfn"],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)
+
+filegroup(
+    name = "triggered_children_destruction_rearrange_destructors_control",
+    testonly = True,
+    srcs = ["triggered_children_destruction_rearrange_destructors_control.dfn"],
     visibility = ["//define/compiler/resource_tests:__pkg__"],
 )
 

@@ -251,6 +251,7 @@ py_test(
     deps = [
         ":generate_triggered_children_destruction_source",
         "//define/compiler:driver",
+        "//define/compiler/errors:diagnostics",
         "@pypi//click",
         "@pypi//pytest",
     ],

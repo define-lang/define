@@ -27,6 +27,9 @@ class ActionDefinitionContext(msgspec.Struct):
     contract_class_name: str | None
     contract_methods: Collection[str]
     contract_definitions: list[template_context.DestructionContractDefinition]
+    guaranteed_particle_destructors: list[
+        template_context.GuaranteedParticleDestructorsContext
+    ]
 
     @property
     def needs_classvar(self) -> bool:

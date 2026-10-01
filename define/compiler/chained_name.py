@@ -90,12 +90,43 @@ def proper_prefixes(chain: ChainedNameTuple) -> Iterator[ChainedNameTuple]:
 
 
 def in_caller[T: ChainedNameTuple](
-    caller_chain: ActionReferenceTuple, local_chain: T
+    callee_chain: ActionReferenceTuple, chain_from_callee: T
 ) -> T:
-    """Return a callee-local chain from the perspective of a caller that triggers it via ``caller_chain``."""
-    if starts_with_global(local_chain):
-        return typing.cast("T", caller_chain[:-1] + local_chain)
-    return typing.cast("T", caller_chain + local_chain)
+    """Return ``chain_from_callee``, a chain from a callee's perspective, from the perspective of the caller that triggers that callee through ``callee_chain``."""
+    if starts_with_global(chain_from_callee):
+        return typing.cast("T", callee_chain[:-1] + chain_from_callee)
+    return typing.cast("T", callee_chain + chain_from_callee)
+
+
+def chain_of_caller(
+    callee_chain: ActionReferenceTuple,
+    callee_chain_from_caller: ActionReferenceTuple,
+    caller_action: str,
+) -> ActionReferenceTuple:
+    """Return the chain of the action that triggered a callee, from the same perspective as ``callee_chain``.
+
+    ``callee_chain_from_caller`` is the callee's chain from the perspective of
+    that caller, whose action is ``caller_action``. This undoes ``in_caller``.
+
+    For a callee on one of the caller's implied positions:
+
+    - ``callee_chain``: ``position<holder>::position</child_a>::action</fill_2>``
+    - ``callee_chain_from_caller``: ``position</child_a>::action</fill_2>``
+    - ``caller_action``: ``action</fill_1>``
+    - returns ``position<holder>::action</fill_1>``
+
+    For a callee on one of the caller's interface positions:
+
+    - ``callee_chain``:
+      ``position<holder>::action</outer>::position<box>::action</make_part>``
+    - ``callee_chain_from_caller``: ``position<box>::action</make_part>``
+    - ``caller_action``: ``action</outer>``
+    - returns ``position<holder>::action</outer>``
+    """
+    caller_prefix = callee_chain[: len(callee_chain) - len(callee_chain_from_caller)]
+    if starts_with_global(callee_chain_from_caller):
+        return action((*caller_prefix, caller_action))
+    return action(caller_prefix)
 
 
 def last_action_index(chain: ChainedNameTuple) -> int | None:

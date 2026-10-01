@@ -1,0 +1,17 @@
+# action</fill_1> is applied here, but the Guarantees of action</fill_2> and
+# action</fill_3> are still pending when position<holder> is destroyed. The
+# destruction drops them and runs their run_guaranteed_particle_destructors
+# methods instead, so every action</cleanup> still runs exactly once.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<holder> {
+            it may only contain particles where {
+                it has the action</fill_1>.
+            }
+        }
+        create a particle in position<holder>.
+        create a particle in position<holder>::action</fill_1>::position<run>.
+    }
+}

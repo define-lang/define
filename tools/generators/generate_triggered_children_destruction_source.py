@@ -32,6 +32,19 @@ class Shape(enum.StrEnum):
     # the particle it acts on, triggers another action on that particle, and
     # moves a particle that its callees moved.
     REARRANGE = "rearrange"
+    # As REARRANGE, but every particle it moves also has a Destructor.
+    REARRANGE_DESTRUCTORS = "rearrange-destructors"
+    # As LOCAL, but every action also triggers a shared action that has an
+    # error on each child it fills, so the program reports that error.
+    ERROR = "error"
+    # As LOCAL, but every action also triggers, on each child it fills, an
+    # action that creates a particle with a Destructor and then one that
+    # destroys it.
+    DEPENDENT_SIBLINGS = "dependent-siblings"
+
+
+def _rearranges(shape: Shape) -> bool:
+    return shape in (Shape.REARRANGE, Shape.REARRANGE_DESTRUCTORS)
 
 
 def _position_with_fill(
@@ -55,8 +68,15 @@ def _entry_lines(shape: Shape, fqun_prefix: str) -> list[str]:
         "    } and it does {",
     ]
     match shape:
-        case Shape.LOCAL | Shape.DESTRUCTORS | Shape.REARRANGE:
-            if shape == Shape.REARRANGE:
+        case (
+            Shape.LOCAL
+            | Shape.DESTRUCTORS
+            | Shape.REARRANGE
+            | Shape.REARRANGE_DESTRUCTORS
+            | Shape.ERROR
+            | Shape.DEPENDENT_SIBLINGS
+        ):
+            if _rearranges(shape):
                 qualities = ("position</item>",)
                 item = [
                     "        create a particle in position<filled>::position</item>."
@@ -138,7 +158,11 @@ def generate_source_lines(
     if depth < 1 or fan_out < 1:
         raise ValueError("depth and fan_out must be at least 1")
     lines: list[str] = []
-    if shape == Shape.DESTRUCTORS:
+    if shape in (
+        Shape.DESTRUCTORS,
+        Shape.DEPENDENT_SIBLINGS,
+        Shape.REARRANGE_DESTRUCTORS,
+    ):
         lines.extend(
             [
                 f"define the potential action<{fqun_prefix}:/cleanup> {{",
@@ -151,11 +175,21 @@ def generate_source_lines(
                 "}",
             ]
         )
-    if shape == Shape.REARRANGE:
-        lines.extend(
-            f"define the potential position<{fqun_prefix}:/{name}>."
-            for name in ("item", "kept", "done", "mark")
-        )
+    if _rearranges(shape):
+        for name in ("item", "kept", "done"):
+            if shape == Shape.REARRANGE_DESTRUCTORS:
+                lines.extend(
+                    [
+                        f"define the potential position<{fqun_prefix}:/{name}> {{",
+                        "    it may only contain particles where {",
+                        "        it has the action</cleanup>.",
+                        "    }",
+                        "}",
+                    ]
+                )
+            else:
+                lines.append(f"define the potential position<{fqun_prefix}:/{name}>.")
+        lines.append(f"define the potential position<{fqun_prefix}:/mark>.")
         lines.extend(
             [
                 f"define the potential action<{fqun_prefix}:/stamp> {{",
@@ -166,6 +200,56 @@ def generate_source_lines(
                 "    } and it does {",
                 "        destroy the particle in position<run>.",
                 "        create a particle in position</mark>.",
+                "    }",
+                "}",
+            ]
+        )
+    if shape == Shape.DEPENDENT_SIBLINGS:
+        lines.extend(
+            [
+                f"define the potential position<{fqun_prefix}:/item> {{",
+                "    it may only contain particles where {",
+                "        it has the action</cleanup>.",
+                "    }",
+                "}",
+                f"define the potential action<{fqun_prefix}:/make_item> {{",
+                "    it also assigns the position</item>.",
+                "    define the position<run>.",
+                "    it happens when {",
+                "        the position<run> has a particle.",
+                "    } and it does {",
+                "        destroy the particle in position<run>.",
+                "        create a particle in position</item>.",
+                "    }",
+                "}",
+                f"define the potential action<{fqun_prefix}:/clear_item> {{",
+                "    it also assigns the position</item>.",
+                "    define the position<run>.",
+                "    it happens when {",
+                "        the position<run> has a particle.",
+                "    } and it does {",
+                "        destroy the particle in position<run>.",
+                "        destroy the particle in position</item>.",
+                "    }",
+                "}",
+            ]
+        )
+    if shape == Shape.ERROR:
+        lines.extend(
+            [
+                f"define the potential position<{fqun_prefix}:/detail>.",
+                f"define the potential action<{fqun_prefix}:/broken> {{",
+                "    define the position<run>.",
+                "    it happens when {",
+                "        the position<run> has a particle.",
+                "    } and it does {",
+                "        destroy the particle in position<run>.",
+                "        define the position<scratch> {",
+                "            it may only contain particles where {",
+                "                it has the position</detail>.",
+                "            }",
+                "        }",
+                "        create a particle in position<scratch>::position</detail>.",
                 "    }",
                 "}",
             ]
@@ -183,7 +267,16 @@ def generate_source_lines(
                 )
                 if shape == Shape.DESTRUCTORS:
                     lines.append("        it has the action</cleanup>.")
-                if shape == Shape.REARRANGE:
+                if shape == Shape.ERROR:
+                    lines.append("        it has the action</broken>.")
+                if shape == Shape.DEPENDENT_SIBLINGS:
+                    lines.extend(
+                        [
+                            "        it has the action</make_item>.",
+                            "        it has the action</clear_item>.",
+                        ]
+                    )
+                if _rearranges(shape):
                     lines.extend(
                         f"        it has the {quality}."
                         for quality in (
@@ -199,7 +292,7 @@ def generate_source_lines(
                 f"    it also assigns the position</child_{level}_{child}>."
                 for child in range(fan_out)
             )
-        if shape == Shape.REARRANGE:
+        if _rearranges(shape):
             lines.extend(
                 [
                     "    it also assigns the position</item>.",
@@ -216,7 +309,7 @@ def generate_source_lines(
                 "        destroy the particle in position<run>.",
             ]
         )
-        if shape == Shape.REARRANGE:
+        if _rearranges(shape):
             lines.extend(
                 [
                     "        move the particle in position</item> to position</kept>.",
@@ -227,14 +320,25 @@ def generate_source_lines(
             for child in range(fan_out):
                 child_name = f"position</child_{level}_{child}>"
                 lines.append(f"        create a particle in {child_name}.")
-                if shape == Shape.REARRANGE:
+                if _rearranges(shape):
                     lines.append(
                         f"        create a particle in {child_name}::position</item>."
                     )
                 lines.append(
                     f"        create a particle in {child_name}::action</fill_{level + 1}>::position<run>."
                 )
-                if shape == Shape.REARRANGE:
+                if shape == Shape.ERROR:
+                    lines.append(
+                        f"        create a particle in {child_name}::action</broken>::position<run>."
+                    )
+                if shape == Shape.DEPENDENT_SIBLINGS:
+                    lines.extend(
+                        [
+                            f"        create a particle in {child_name}::action</make_item>::position<run>.",
+                            f"        create a particle in {child_name}::action</clear_item>::position<run>.",
+                        ]
+                    )
+                if _rearranges(shape):
                     lines.append(
                         f"        move the particle in {child_name}::position</kept> to {child_name}::position</done>."
                     )

@@ -1,0 +1,22 @@
+# Every action moves a particle its caller created below its own particle,
+# and then moves a particle its callee moved. Each of those particles has
+# action</cleanup>, so destroying position<filled> runs action</cleanup>
+# exactly once for each particle that is still there: the one in
+# position</kept> on position<filled> and the one in position</done> on each
+# child and grandchild.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<filled> {
+            it may only contain particles where {
+                it has the action</fill_1>.
+                it has the position</item>.
+            }
+        }
+        create a particle in position<filled>.
+        create a particle in position<filled>::position</item>.
+        create a particle in position<filled>::action</fill_1>::position<run>.
+        destroy the particle in position<filled>.
+    }
+}

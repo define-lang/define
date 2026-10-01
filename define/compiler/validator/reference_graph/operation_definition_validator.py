@@ -15,7 +15,7 @@ from define.compiler.validator.reference_graph import (
 )
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Collection, Mapping
 
     from define.compiler.data_structures import typed_name_dict
 
@@ -151,7 +151,7 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
         operation_name = statement.operation.source_form_in_universe(
             self._definition.typed_name.name_content.fqun
         )
-        looked_at_qualities: dict[ast.OperationArgumentStatement, frozenset[str]] = {}
+        looked_at_qualities: dict[ast.OperationArgumentStatement, Collection[str]] = {}
         for argument in statement.arguments:
             looking_at = argument.looking_at
             # Structural validation reports views looking at positions within an

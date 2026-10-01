@@ -14,6 +14,7 @@ from define.compiler import ast, constants, name_types
 if typing.TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Sequence
 
+    from define.compiler import chained_name
     from define.compiler.data_structures import define_path
     from define.compiler.validator.reference_graph import destruction_contract
 
@@ -22,6 +23,16 @@ _RESERVED_NAMES = (*keyword.kwlist, "self", "literal", "destruction_contracts")
 
 RUN_DESTRUCTORS_PREFIX = "run_destructors_"
 DESTROY_PREFIX = "destroy_"
+RUN_CALLEE_DESTRUCTORS_PREFIX = "run_destructors_of_"
+# A method name joins one part per typed name in a chained name with this.
+_CHAIN_PART_SEPARATOR = "__"
+# Within one part, the typed name's type, path components, and any repeat count
+# are joined with this.
+_NAME_PART_SEPARATOR = "_"
+# The type a chained name's first part uses when it starts with a global
+# position, to tell it apart from a local position with the same name.
+_GLOBAL_POSITION_TYPE = "global_position"
+_PATH_SEPARATOR = "/"
 
 # Filesystems commonly limit each path component to 255 bytes. Python
 # identifiers have no such limit, but a module's dotted name is also written
@@ -64,6 +75,69 @@ def _escape_module_component(component: str) -> str:
     if keyword.iskeyword(component) or component.endswith("_"):
         return component + "_"
     return component
+
+
+def _local_name_part(name_type: name_types.NameType, name: str) -> str:
+    """Return the part of a method name for a local typed name."""
+    return f"{name_type.value}{_NAME_PART_SEPARATOR}{name}"
+
+
+def _global_name_part(
+    index: int, name_type: name_types.NameType, path: Sequence[str]
+) -> str:
+    """Return the part of a method name for a global typed name at ``index`` in a chained name, whose path has the components ``path``."""
+    type_part = name_type.value
+    if index == 0 and name_type == name_types.NameType.POSITION:
+        type_part = _GLOBAL_POSITION_TYPE
+    return f"{type_part}{_NAME_PART_SEPARATOR}{_NAME_PART_SEPARATOR.join(path)}"
+
+
+def _tuple_chained_name_part(chain: chained_name.ChainedNameTuple) -> str:
+    """Return the part of a method name that identifies a chained-name tuple."""
+    parts: list[str] = []
+    for index, typed_name in enumerate(chain):
+        typed_name_parts = ast.source_form_typed_name_parts(typed_name, "")
+        if typed_name_parts.is_global:
+            # A global's canonical name is its universe, then its path.
+            path = typed_name_parts.source_name.split(_PATH_SEPARATOR, 1)[1]
+            parts.append(
+                _global_name_part(
+                    index, typed_name_parts.name_type, path.split(_PATH_SEPARATOR)
+                )
+            )
+        else:
+            parts.append(
+                _local_name_part(
+                    typed_name_parts.name_type, typed_name_parts.source_name
+                )
+            )
+    return _CHAIN_PART_SEPARATOR.join(parts)
+
+
+def _chained_name_part(chain: ast.PositionReference) -> str:
+    """Return the part of a method name that identifies a chained name."""
+    parts: list[str] = []
+    for index, typed_name in enumerate(chain.typed_names):
+        if isinstance(typed_name, ast.GlobalTypedNameReference):
+            parts.append(
+                _global_name_part(
+                    index,
+                    typed_name.name_type,
+                    typed_name.name_content.path.relative_path.parts,
+                )
+            )
+        else:
+            parts.append(
+                _local_name_part(typed_name.name_type, typed_name.name_content.name)
+            )
+    return _CHAIN_PART_SEPARATOR.join(parts)
+
+
+def _with_occurrence(name: str, occurrence: int) -> str:
+    """Return ``name``, prefixed with ``occurrence`` when it repeats."""
+    if occurrence > 1:
+        return f"{occurrence}{_NAME_PART_SEPARATOR}{name}"
+    return name
 
 
 class ClassReference(msgspec.Struct):
@@ -349,6 +423,15 @@ class NameConverter:
         return class_reference
 
     @staticmethod
+    def callee_destructors_method_name(
+        callee: chained_name.ActionReferenceTuple, occurrence: int
+    ) -> str:
+        """Return the name of the method that runs the Destructors an action recorded for one of its callees."""
+        return RUN_CALLEE_DESTRUCTORS_PREFIX + _with_occurrence(
+            _tuple_chained_name_part(callee), occurrence
+        )
+
+    @staticmethod
     def destruction_method_names(
         destructions: Iterable[destruction_contract.PropagatedDestruction],
     ) -> dict[destruction_contract.PropagatedDestruction, str]:
@@ -356,21 +439,9 @@ class NameConverter:
         names: dict[destruction_contract.PropagatedDestruction, str] = {}
         occurrences: dict[str, int] = {}
         for destruction in destructions:
-            parts: list[str] = []
-            for index, name in enumerate(destruction.contracted_position.typed_names):
-                prefix = name.name_type.value
-                if isinstance(name, ast.GlobalTypedNameReference):
-                    if index == 0 and name.name_type == name_types.NameType.POSITION:
-                        prefix = "global_position"
-                    content = "_".join(name.name_content.path.relative_path.parts)
-                else:
-                    content = name.name_content.name
-                parts.append(f"{prefix}_{content}")
-            candidate = "__".join(parts)
+            candidate = _chained_name_part(destruction.contracted_position)
             occurrence = occurrences.get(candidate, 0) + 1
             occurrences[candidate] = occurrence
-            if occurrence > 1:
-                candidate = f"{occurrence}_{candidate}"
             # Separate invocations can propagate the same Destruction Fact.
-            names[destruction] = candidate
+            names[destruction] = _with_occurrence(candidate, occurrence)
         return names

@@ -208,13 +208,18 @@ a tree of triggered actions, so linearly many actions give exponentially many
 children. Each shape has its own control: `local` destroys a local particle,
 `destructors` also gives every child a Destructor, `contracted` destroys a
 particle from an interface position (making a Destruction Contract), `move`
-moves the particle between interface positions before destroying it, and
-`rearrange` has every action also move particles its caller and its callees
-created and trigger another action on the particle it received.
+moves the particle between interface positions before destroying it, `rearrange`
+has every action also move particles its caller and its callees created and
+trigger another action on the particle it received, `rearrange-destructors` is
+`rearrange` where every particle it moves has a Destructor, `error` has every
+action also trigger a shared action that has an error, so both programs report
+that error, and `dependent-siblings` has every action also trigger, on each
+child it fills, an action that creates a particle with a Destructor and then one
+that destroys it.
 
 ```sh
-for shape in local destructors contracted move rearrange; do
-  suffix=$([ "$shape" = local ] && echo "" || echo "_${shape}")
+for shape in local destructors contracted move rearrange rearrange-destructors error dependent-siblings; do
+  suffix=$([ "$shape" = local ] && echo "" || echo "_${shape//-/_}")
   bazelisk run --noshow_progress --ui_event_filters=-info \
     //tools/generators:generate_triggered_children_destruction_source -- \
     --output "define/testdata/compiler_resources/triggered_children_destruction${suffix}_control.dfn" \

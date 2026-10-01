@@ -1,4 +1,4 @@
-"""A callee's Guarantees that have not been applied to the caller's state yet."""
+"""A callee's Guarantees as the caller applies them, and those not applied yet."""
 
 from __future__ import annotations
 
@@ -26,11 +26,17 @@ if typing.TYPE_CHECKING:
 # specific caller actually depends on directly in their code.
 
 
-class PendingGuarantee(msgspec.Struct, frozen=True):
-    """A callee's guarantees, waiting on the particle its action acts on."""
+class CallerContractEntry(msgspec.Struct, frozen=True):
+    """The entry for a callee in its caller's contract."""
 
-    # The triggered action's typed name. Its chain is the particle's position
-    # followed by this name, so the guarantee follows the particle when it moves.
+    caller_action: str
+    callee: action_contract.CalleeContract
+
+
+class CalleeGuarantees(msgspec.Struct, frozen=True):
+    """A triggered action's guarantees, in the Action Execution that produced them."""
+
+    # The triggered action's typed name.
     action: str
     contract: action_contract.ActionContract
     # The Action Execution that produced this nested guarantee. All of a
@@ -42,25 +48,9 @@ class PendingGuarantee(msgspec.Struct, frozen=True):
     # callees. Within one Action Execution, a guarantee with a higher index
     # comes from an action that finished later.
     completion_index: int
-    # How many nested guarantees separate this one from the directly-applied
+    # How many nested guarantees separate these from the directly-applied
     # contract, whose depth is 0.
-    call_depth: int = 0
-
-    def action_chain(
-        self, particle: chained_name.ChainedNameTuple
-    ) -> chained_name.ActionReferenceTuple:
-        """Return the triggered action's chain when it acts on the particle at ``particle``."""
-        return chained_name.action((*particle, self.action))
-
-    @property
-    def identity(self) -> PendingGuaranteeIdentity:
-        """Fields that make two pending guarantees apply identical effects."""
-        return PendingGuaranteeIdentity(
-            self.action,
-            id(self.contract),
-            self.execution,
-            self.call_depth,
-        )
+    call_depth: int
 
     def callees(
         self, action_chain: chained_name.ActionReferenceTuple
@@ -79,8 +69,38 @@ class PendingGuarantee(msgspec.Struct, frozen=True):
                     self.execution,
                     completed,
                     self.call_depth + 1,
+                    CallerContractEntry(self.action, callee),
                 ),
             )
+
+
+class PendingGuarantee(CalleeGuarantees, frozen=True):
+    """A callee's guarantees, waiting on the particle its action is assigned to."""
+
+    caller_contract_entry: CallerContractEntry
+
+    def action_chain(
+        self, position: chained_name.ChainedNameTuple
+    ) -> chained_name.ActionReferenceTuple:
+        """Return the triggered action's chain when it is assigned to the particle in ``position``, where an empty chain means this action's parent particle."""
+        # The chain is the particle's position followed by the action's name, so
+        # the guarantee follows the particle when it moves.
+        return chained_name.action((*position, self.action))
+
+    @property
+    def identity(self) -> PendingGuaranteeIdentity:
+        """Fields that make two pending guarantees apply identical effects."""
+        return PendingGuaranteeIdentity(
+            self.action,
+            id(self.contract),
+            self.execution,
+            self.call_depth,
+        )
+
+    @property
+    def on_destruction(self) -> action_contract.GuaranteesOnDestruction:
+        """What destroying this guarantee's particle does with it, as its caller decided."""
+        return self.caller_contract_entry.callee.on_destruction
 
 
 class PendingGuaranteeIdentity(msgspec.Struct, frozen=True):

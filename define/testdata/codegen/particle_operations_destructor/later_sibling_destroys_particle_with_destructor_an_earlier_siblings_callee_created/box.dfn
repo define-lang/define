@@ -1,0 +1,9 @@
+define the potential position<my.domain.com:my_lib:/box> {
+    it may only contain particles where {
+        it has the action</fill_spare>.
+        it has the action</fill_item>.
+        it has the action</empty_item>.
+        it has the position</spare>.
+        it has the position</item>.
+    }
+}

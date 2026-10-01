@@ -55,6 +55,8 @@
                 {%- else %}
         {{ expressions::position_expression(statement.position, "", module_name) }}.run()
                 {%- endif %}
+            {%- when StatementKind::RunGuaranteedParticleDestructors with (statement) %}
+        {{ expressions::position_expression(statement.position, "", module_name) }}.{{ statement.method_name }}()
             {%- when StatementKind::ContractContribution with (statement) %}
         destruction_contracts.{{ statement.contract_method }}(
             {{ expressions::position_expression(statement.position, "    ", module_name) }}.particle

@@ -18,6 +18,7 @@ from define.compiler.validator import codegen_input, scope_tracker, validation_r
 from define.compiler.validator.reference_graph import (
     action_contract,
     action_requirement_validator,
+    callee_destruction_validator,
     chained_name_validator,
     destruction_contract_validator,
     literal_encoder,
@@ -41,7 +42,7 @@ from define.compiler.validator.reference_graph.particles import (
 )
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Iterator, Sequence
+    from collections.abc import Collection, Iterator, Sequence
 
     from define.compiler.data_structures import typed_name_dict
 
@@ -184,6 +185,20 @@ class ActionDefinitionValidator:
         )
 
     @cached_property
+    def _callee_destruction_validator(
+        self,
+    ) -> callee_destruction_validator.CalleeDestructionValidator:
+        return callee_destruction_validator.CalleeDestructionValidator(
+            self._definition,
+            self._implied_quality_list,
+            self._definition_results,
+            self._validation_state,
+            self._tracker,
+            self._position_quality_resolver,
+            self._requirement_validator,
+        )
+
+    @cached_property
     def _implied_quality_list(self) -> tuple[ast.GlobalTypedNameReference, ...]:
         return tuple(
             impl.typed_global_name for impl in self._definition.quality_implications
@@ -268,7 +283,7 @@ class ActionDefinitionValidator:
                 destruction_facts,
                 destructors,
                 pending_contracts,
-                step.positions,
+                step,
                 within_caller_particle=False,
             )
             if pending_contracts:
@@ -308,7 +323,7 @@ class ActionDefinitionValidator:
             tuple[action_contract.Destructor, ast.PositionReference | None]
         ],
         pending_contracts: list[_PendingDestructionContract],
-        destruction: list[ast.PositionReference],
+        step: codegen_input.Destruction,
         *,
         within_caller_particle: bool,
     ):
@@ -318,60 +333,46 @@ class ActionDefinitionValidator:
             destroyed_position_in_destroyer=position,
         )
         destruction_facts.append(destruction_fact)
-        destructor_qualities: list[ast.GlobalTypedNameReference] = []
         within_caller_particle = within_caller_particle or particle.from_caller
         # A Destruction Contract's Child State can look up the children of a
-        # particle from the caller, so pending Guarantees below one must be
-        # applied rather than discarded.
+        # particle from the caller, so every child below one must appear in
+        # the walk.
         if not within_caller_particle:
-            self._tracker.discard_discardable_pending_guarantees(position)
-
-        # A particle keeps its own qualities across Moves, so its qualities—not
-        # the current Position's constraints—determine its child Positions and
-        # Destructors.
-        for quality in particle.qualities.assignments:
-            if quality.name_type == name_types.NameType.POSITION:
-                child = position.with_position_suffix(quality)
-                self._collect_child_particle_destructions(
-                    child,
-                    target,
-                    destruction_facts,
-                    destructors,
-                    pending_contracts,
-                    destruction,
-                    within_caller_particle=within_caller_particle,
+            for (
+                callee_destructors
+            ) in self._tracker.drop_callee_guarantees_for_destruction(position):
+                step.guaranteed_particle_destructors.append(
+                    self._callee_destruction_validator.callee_destructors_reference(
+                        callee_destructors, position
+                    )
                 )
-            elif quality.name_type == name_types.NameType.ACTION:
-                definition = self._action_definition(quality)
-                # Reference validation has already reported unresolved qualities;
-                # their absence must not prevent checking the remaining Destructors.
-                if definition is None:
-                    continue
-                if definition.is_destructor:
-                    destructor_qualities.append(quality)
-                    destructors.append(
-                        (
-                            action_contract.Destructor(
-                                destructor=quality,
-                                position=position,
-                                origin_position=particle.origin_position,
-                            ),
-                            target.auto_destruction_target,
-                        )
-                    )
-                for interface_position in definition.interface_positions:
-                    child = position.with_position_suffix(
-                        quality, interface_position.typed_name
-                    )
-                    self._collect_child_particle_destructions(
-                        child,
-                        target,
-                        destruction_facts,
-                        destructors,
-                        pending_contracts,
-                        destruction,
-                        within_caller_particle=within_caller_particle,
-                    )
+
+        children_and_destructors = (
+            self._callee_destruction_validator.child_positions_and_destructors(
+                position, particle
+            )
+        )
+        for destructor in children_and_destructors.destructors:
+            destructors.append(
+                (
+                    action_contract.Destructor(
+                        destructor=destructor,
+                        position=position,
+                        origin_position=particle.origin_position,
+                    ),
+                    target.auto_destruction_target,
+                )
+            )
+        for child in children_and_destructors.child_positions:
+            self._collect_child_particle_destructions(
+                child,
+                target,
+                destruction_facts,
+                destructors,
+                pending_contracts,
+                step,
+                within_caller_particle=within_caller_particle,
+            )
 
         if particle.from_caller:
             pending_contracts.append(
@@ -379,12 +380,12 @@ class ActionDefinitionValidator:
                     particle=particle,
                     destruction_fact=destruction_fact,
                     verified_destructors=quality_assignment.QualityAssignments(
-                        tuple(destructor_qualities)
+                        tuple(children_and_destructors.destructors)
                     ),
                 )
             )
         # Children must remain accessible until their own Destroy executes.
-        destruction.append(position)
+        step.positions.append(position)
 
     def _collect_child_particle_destructions(
         self,
@@ -395,7 +396,7 @@ class ActionDefinitionValidator:
             tuple[action_contract.Destructor, ast.PositionReference | None]
         ],
         pending_contracts: list[_PendingDestructionContract],
-        destruction: list[ast.PositionReference],
+        step: codegen_input.Destruction,
         *,
         within_caller_particle: bool,
     ):
@@ -410,7 +411,7 @@ class ActionDefinitionValidator:
             destruction_facts,
             destructors,
             pending_contracts,
-            destruction,
+            step,
             within_caller_particle=within_caller_particle,
         )
 
@@ -806,7 +807,7 @@ class ActionDefinitionValidator:
     ):
         statement_diagnostics: list[diagnostics.Diagnostic] = []
         executed = self._operation_arguments_validator.get_executed_operation(stmt)
-        looked_at_qualities: dict[ast.OperationArgumentStatement, frozenset[str]] = {}
+        looked_at_qualities: dict[ast.OperationArgumentStatement, Collection[str]] = {}
         written_positions: list[ast.PositionReference] = []
         for argument in stmt.arguments:
             position = argument.looking_at
@@ -1068,7 +1069,7 @@ class ActionDefinitionValidator:
         self,
     ) -> validation_result.ActionPostorderValidationResult:
         """Run post-order validation and return diagnostics, contract, and codegen input."""
-        contract = self._analyze_action_definition()
+        contract, guaranteed_particle_destructors = self._analyze_action_definition()
         propagated_destructions: list[
             destruction_contract_types.PropagatedDestruction
         ] = []
@@ -1084,6 +1085,7 @@ class ActionDefinitionValidator:
                 definition=self._definition,
                 steps=self._steps,
                 propagated_destructions=propagated_destructions,
+                guaranteed_particle_destructors=guaranteed_particle_destructors,
             ),
         )
 
@@ -1112,7 +1114,12 @@ class ActionDefinitionValidator:
             )
         )
 
-    def _analyze_action_definition(self) -> action_contract.ActionContract:
+    def _analyze_action_definition(
+        self,
+    ) -> tuple[
+        action_contract.ActionContract,
+        list[codegen_input.GuaranteedParticleDestructors],
+    ]:
         scope = scope_tracker.ScopeTracker()
         self._dead_constraint_validator.register_implied_actions(
             self._definition.quality_implications
@@ -1146,14 +1153,14 @@ class ActionDefinitionValidator:
         self._analyze_statements(self._definition.action_statements, scope)
         self._check_unconsumed_action_interfaces()
 
-        contract = self._generate_contract()
+        contract, guaranteed_particle_destructors = self._generate_contract()
         self._diagnostics.extend(
             self._dead_constraint_validator.validate(contract.guarantees, scope)
         )
         self._diagnostics.extend(
             self._dead_value_write_validator.validate(contract.guarantees)
         )
-        return contract
+        return contract, guaranteed_particle_destructors
 
     def _check_unconsumed_action_interfaces(self):
         """Diagnose occupied interface positions of actions triggered by this action."""
@@ -1168,16 +1175,28 @@ class ActionDefinitionValidator:
                 )
             )
 
-    def _generate_contract(self) -> action_contract.ActionContract:
-        """Generate the action contract from inferred requirements and final tracker state."""
+    def _generate_contract(
+        self,
+    ) -> tuple[
+        action_contract.ActionContract,
+        list[codegen_input.GuaranteedParticleDestructors],
+    ]:
+        """Generate the action contract from inferred requirements and final tracker state.
+
+        Also returns, for each callee whose Destructors run when its Guarantees
+        are dropped, the Destructors that run.
+        """
         requirements = self._requirement_validator.occupancy_requirements
+        callees: list[action_contract.CalleeContract] = []
+        guaranteed_particle_destructors: list[
+            codegen_input.GuaranteedParticleDestructors
+        ] = []
         if self._definition.is_destructor:
             guarantees = self._tracker.generate_destructor_guarantees(
                 self._definition.interface_position_names,
                 self._implied_quality_list,
                 requirements,
             )
-            callees: list[action_contract.CalleeContract] = []
             self._check_destructor_guarantees(guarantees)
         else:
             guarantees = self._tracker.generate_own_guarantees(
@@ -1185,8 +1204,14 @@ class ActionDefinitionValidator:
                 self._implied_quality_list,
                 requirements,
             )
-            callees = self._tracker.nested_guarantees()
-        return action_contract.ActionContract(
+            with_destruction = (
+                self._callee_destruction_validator.callees_with_destruction(guarantees)
+            )
+            callees = with_destruction.callees
+            guaranteed_particle_destructors = (
+                with_destruction.guaranteed_particle_destructors
+            )
+        contract = action_contract.ActionContract(
             occupancy_requirements=list(requirements.values()),
             value_requirements=list(
                 self._requirement_validator.value_requirements.values()
@@ -1200,23 +1225,8 @@ class ActionDefinitionValidator:
                     self._implied_quality_list
                 )
             ),
-            guarantees_discardable_on_destruction=(
-                self._tracker.guarantees_discardable_on_destruction(
-                    self._has_destructor
-                )
-            ),
         )
-
-    def _has_destructor(self, particle: particle_info.ParticleInfo) -> bool:
-        for quality in particle.qualities.assignments:
-            if quality.name_type != name_types.NameType.ACTION:
-                continue
-            definition = self._action_definition(quality)
-            # The destruction walk skips unresolved qualities, so they are not
-            # relevant here.
-            if definition is not None and definition.is_destructor:
-                return True
-        return False
+        return contract, guaranteed_particle_destructors
 
     def _check_destructor_guarantees(
         self,

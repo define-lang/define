@@ -8,14 +8,10 @@ import msgspec
 
 from define.compiler import ast, chained_name
 from define.compiler.data_structures import trie
-from define.compiler.validator.reference_graph import (
-    action_contract,
-    child_state,
-    position_occupancy,
-)
+from define.compiler.validator.reference_graph import child_state, position_occupancy
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator, Sequence
+    from collections.abc import Collection, Iterable, Iterator, Sequence
 
     from define.compiler.validator import codegen_input
     from define.compiler.validator.reference_graph.particles import (
@@ -179,10 +175,8 @@ class ParticleStateStore:
         # Every Action Execution this action triggered, in triggering order.
         # Each one also sits on the node of its action name, which tracks where
         # it currently is.
-        self._triggered_contracts: dict[
-            codegen_input.ActionExecution, action_contract.ActionContract
-        ] = {}
-        # Pending Guarantees on the action's own parent particle, which is the
+        self._triggered_executions: list[codegen_input.ActionExecution] = []
+        # Pending Guarantees on the action's parent particle, which is the
         # empty chained name, so the trie cannot hold them.
         self._root_pending_guarantees: _PendingGuarantees = {}
         # Lets expansions skip their walk when nothing is pending, the common
@@ -292,7 +286,7 @@ class ParticleStateStore:
 
     def pending_guarantees_at(
         self, prefix: chained_name.ChainedNameTuple
-    ) -> Iterable[pending_guarantee.PendingGuarantee]:
+    ) -> Collection[pending_guarantee.PendingGuarantee]:
         """Return the pending Guarantees that describe the children of the particle at ``prefix``."""
         if not prefix:
             return self._root_pending_guarantees.values()
@@ -317,42 +311,9 @@ class ParticleStateStore:
         self._pending_guarantee_count -= len(guarantees)
         return guarantees.values()
 
-    def guarantees_discardable_on_destruction(
-        self, has_destructor: typing.Callable[[particle_info.ParticleInfo], bool]
-    ) -> bool:
-        """Return whether this action's guarantees can be dropped unapplied when their particle is destroyed.
-
-        That holds when no error is recorded, no particle this action created
-        has a Destructor, and every pending Guarantee can itself be dropped.
-        """
-        for error in self._error.values():
-            if error.caused_by is not None:
-                return False
-        for pending in self._all_pending_guarantees():
-            if not pending.contract.guarantees_discardable_on_destruction:
-                return False
-        for state in self._state.values():
-            if not isinstance(state, _PositionNodeState):
-                continue
-            particle = state.particle_info
-            # A particle from the caller is already known to whoever destroys
-            # it, so it adds nothing here.
-            if (
-                particle is not None
-                and not particle.from_caller
-                and has_destructor(particle)
-            ):
-                return False
-        return True
-
-    def _all_pending_guarantees(self) -> Iterator[pending_guarantee.PendingGuarantee]:
-        yield from self._root_pending_guarantees.values()
-        for state in self._state.values():
-            if (
-                isinstance(state, _PositionNodeState)
-                and state.pending_guarantees is not None
-            ):
-                yield from state.pending_guarantees.values()
+    def has_any_error(self) -> bool:
+        """Return whether any Position has error occupancy state."""
+        return any(error.caused_by is not None for error in self._error.values())
 
     def pending_prefixes_at_or_below(
         self, key: chained_name.ChainedNameTuple
@@ -536,7 +497,6 @@ class ParticleStateStore:
         self,
         action_chain: chained_name.ActionReferenceTuple,
         execution: codegen_input.ActionExecution,
-        contract: action_contract.ActionContract,
     ):
         """Record an Action Execution whose nested guarantees this action's contract carries."""
         state = self._action_state(action_chain)
@@ -546,10 +506,12 @@ class ParticleStateStore:
             state = _ActionNodeState()
             self._state[action_chain] = state
         state.triggered_executions.append(execution)
-        self._triggered_contracts[execution] = contract
+        self._triggered_executions.append(execution)
 
-    def nested_guarantees(self) -> list[action_contract.CalleeContract]:
-        """Return the guarantees of actions this action triggered, in triggering order."""
+    def tracked_action_executions(
+        self,
+    ) -> dict[codegen_input.ActionExecution, chained_name.ActionReferenceTuple]:
+        """Return each Action Execution this action triggered that is still tracked, in triggering order, with its current action chain."""
         action_chains: dict[
             codegen_input.ActionExecution, chained_name.ActionReferenceTuple
         ] = {}
@@ -558,13 +520,15 @@ class ParticleStateStore:
                 continue
             for execution in state.triggered_executions:
                 action_chains[execution] = chained_name.action(key)
-        callees: list[action_contract.CalleeContract] = []
+        tracked: dict[
+            codegen_input.ActionExecution, chained_name.ActionReferenceTuple
+        ] = {}
         # Executions deleted with their particle are no longer in the state.
-        for execution, contract in self._triggered_contracts.items():
+        for execution in self._triggered_executions:
             action_chain = action_chains.get(execution)
             if action_chain is not None:
-                callees.append(action_contract.CalleeContract(action_chain, contract))
-        return callees
+                tracked[execution] = action_chain
+        return tracked
 
     def unconsumed_action_interfaces(
         self,
@@ -826,6 +790,12 @@ class ParticleStateStore:
         """Whether to include this position when collecting this action's own Guarantees."""
         record = self._write_record.get(key)
         return record is None or record.include_in_own_guarantees
+
+    def callee_execution_that_wrote(
+        self, key: chained_name.PositionReferenceTuple
+    ) -> codegen_input.ActionExecution:
+        """Return the Action Execution whose guarantee last wrote this position, which a callee's guarantee must have written."""
+        return typing.cast("_CalleeWriteRecord", self._write_record[key]).execution
 
     def was_written(self, key: chained_name.PositionReferenceTuple) -> bool:
         """Return whether the action body or a callee wrote this position."""

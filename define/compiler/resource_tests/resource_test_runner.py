@@ -47,8 +47,8 @@ class Measurement(msgspec.Struct):
     wall_seconds: float
     timed_out: bool
 
-    def check(self, *, rss_bytes: int, stderr: str):
-        """Require successful completion within the memory budget."""
+    def check(self, *, rss_bytes: int, stderr: str, expected_returncode: int = 0):
+        """Require completion with ``expected_returncode`` within the memory budget."""
         description = (
             f"CPU {self.cpu_seconds:.3f}s; "
             f"RSS {self.peak_rss_bytes / 1024**2:.1f} / {rss_bytes / 1024**2:.1f} MiB; "
@@ -56,7 +56,7 @@ class Measurement(msgspec.Struct):
         )
         if self.timed_out:
             raise WallDeadlineExceededError(description)
-        if self.returncode not in (0, -signal.SIGXCPU):
+        if self.returncode not in (expected_returncode, -signal.SIGXCPU):
             raise CommandFailedError(f"{description}\n{stderr}")
         # A known CPU regression must not conceal a new memory regression.
         if self.peak_rss_bytes > rss_bytes:
@@ -65,12 +65,22 @@ class Measurement(msgspec.Struct):
             raise CpuSafetyLimitExceededError(description)
 
     def check_cpu_growth(
-        self, control: Measurement, *, maximum_ratio: float, rss_bytes: int, stderr: str
+        self,
+        control: Measurement,
+        *,
+        maximum_ratio: float,
+        rss_bytes: int,
+        stderr: str,
+        expected_returncode: int = 0,
     ):
         """Require bounded CPU growth relative to a successfully measured control."""
         allowance = control.cpu_seconds * maximum_ratio
         try:
-            self.check(rss_bytes=rss_bytes, stderr=stderr)
+            self.check(
+                rss_bytes=rss_bytes,
+                stderr=stderr,
+                expected_returncode=expected_returncode,
+            )
         except CpuSafetyLimitExceededError:
             # A stopped run proves excessive growth only if its measured lower
             # bound already exceeds the relative allowance.

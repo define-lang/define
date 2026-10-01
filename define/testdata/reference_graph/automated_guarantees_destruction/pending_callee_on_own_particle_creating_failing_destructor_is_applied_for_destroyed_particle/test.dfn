@@ -1,0 +1,19 @@
+# action</outer> creates position</q> itself, so when it publishes, the
+# pending Guarantee of action</builder> on its own particle writes below a
+# particle it created and stays pending. action</builder> creates
+# position</q>::position</r>, whose Destructor fails its requirement on
+# position</needed>, so destroying position<holder> must apply the Guarantees
+# of action</outer> and report that failure.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<holder> {
+            it may only contain particles where {
+                it has the action</wrapper>.
+            }
+        }
+        create a particle in position<holder>.
+        create a particle in position<holder>::action</wrapper>::position<run>.
+    }
+}

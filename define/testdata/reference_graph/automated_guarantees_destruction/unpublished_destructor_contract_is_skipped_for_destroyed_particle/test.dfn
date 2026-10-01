@@ -1,0 +1,21 @@
+# action</cleanup> refers to action</fill_1>, whose callee action</fill_2>
+# creates position</child_2> with action</cleanup>. position<holder> names
+# action</cleanup> first, so the reference from position</child_2> back to
+# action</cleanup> is the one rejected, and action</fill_1> publishes its
+# contract before action</cleanup> has one. Like a destroyer, it skips that
+# Destructor on the particle its callee created, which the reported circular
+# reference already accounts for.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<holder> {
+            it may only contain particles where {
+                it has the action</cleanup>.
+                it has the action</fill_1>.
+            }
+        }
+        create a particle in position<holder>.
+        create a particle in position<holder>::action</fill_1>::position<run>.
+    }
+}

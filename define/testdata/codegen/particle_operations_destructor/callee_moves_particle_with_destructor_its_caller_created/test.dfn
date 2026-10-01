@@ -1,0 +1,18 @@
+# action</outer> creates position</a> with action</cleanup>, and its callee
+# action</mover> moves that particle to position</b>. action</outer>
+# publishes the particle in position</b> itself, so destroying position<holder>
+# runs action</cleanup> for it there, and the Destructors action</outer>
+# records for action</mover> must not run it again.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<holder> {
+            it may only contain particles where {
+                it has the action</outer>.
+            }
+        }
+        create a particle in position<holder>.
+        create a particle in position<holder>::action</outer>::position<run>.
+    }
+}

@@ -115,6 +115,7 @@ py_library(
     visibility = ["//define/compiler/codegen:__subpackages__"],
     deps = [
         "//define/compiler:ast",
+        "//define/compiler:chained_name",
         "//define/compiler:constants",
         "//define/compiler:name_types",
         "//define/compiler/data_structures:define_path",

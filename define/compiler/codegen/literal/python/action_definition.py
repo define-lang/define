@@ -88,5 +88,6 @@ class ActionDefinitionGenerator:
             ),
             contract_methods=contract_methods,
             contract_definitions=generated.contract_definitions,
+            guaranteed_particle_destructors=generated.guaranteed_particle_destructors,
             trace_operations=self._trace_operations,
         )

@@ -143,6 +143,12 @@ struct RunAction {
 }
 
 #[derive(FromPyObject)]
+struct RunGuaranteedParticleDestructors {
+    position: PositionExpression,
+    method_name: String,
+}
+
+#[derive(FromPyObject)]
 struct ContractContribution {
     position: PositionExpression,
     contract_method: String,
@@ -175,6 +181,7 @@ enum StatementKind {
     SetValue(SetValue),
     SetValueFrom(SetValueFrom),
     RunAction(RunAction),
+    RunGuaranteedParticleDestructors(RunGuaranteedParticleDestructors),
     ContractContribution(ContractContribution),
     ExecuteOperation(ExecuteOperation),
 }
@@ -201,6 +208,9 @@ impl<'a, 'py> FromPyObject<'a, 'py> for StatementKind {
             "SET_VALUE" => Ok(Self::SetValue(object.extract()?)),
             "SET_VALUE_FROM" => Ok(Self::SetValueFrom(object.extract()?)),
             "RUN_ACTION" => Ok(Self::RunAction(object.extract()?)),
+            "RUN_GUARANTEED_PARTICLE_DESTRUCTORS" => {
+                Ok(Self::RunGuaranteedParticleDestructors(object.extract()?))
+            }
             "RUN_CONTRACT_DESTRUCTORS" | "DESTROY_CONTRACT_CHILDREN" => {
                 Ok(Self::ContractContribution(object.extract()?))
             }
@@ -251,6 +261,13 @@ struct ActionDefinition {
     contract_class_name: Option<String>,
     contract_methods: Vec<String>,
     contract_definitions: Vec<ContractDefinition>,
+    guaranteed_particle_destructors: Vec<GuaranteedParticleDestructors>,
+}
+
+#[derive(FromPyObject)]
+struct GuaranteedParticleDestructors {
+    method_name: String,
+    statements: Vec<Statement>,
 }
 
 enum BinaryOperator {

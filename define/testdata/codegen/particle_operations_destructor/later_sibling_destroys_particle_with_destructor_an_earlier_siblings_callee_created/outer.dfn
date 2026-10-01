@@ -1,0 +1,14 @@
+define the potential action<my.domain.com:my_lib:/outer> {
+    it also assigns the position</box>.
+    it also assigns the action</make_item>.
+    it also assigns the action</clear_item>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+        create a particle in position</box>.
+        create a particle in action</make_item>::position<run>.
+        create a particle in action</clear_item>::position<run>.
+    }
+}

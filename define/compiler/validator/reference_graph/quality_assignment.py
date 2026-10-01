@@ -8,7 +8,7 @@ from functools import cached_property
 from define.compiler import ast, name_types
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Callable, Iterator
+    from collections.abc import Callable, Iterator, KeysView
 
     type _ImplicationsFor = Callable[
         [ast.GlobalTypedNameReference],
@@ -66,13 +66,21 @@ class QualityAssignments:
         assignments.append(quality)
 
     @cached_property
-    def names(self) -> frozenset[str]:
+    def _by_name(self) -> dict[str, ast.GlobalTypedNameReference]:
+        return {quality.full_typed_name: quality for quality in self.assignments}
+
+    @property
+    def names(self) -> KeysView[str]:
         """The full typed names of the assigned qualities."""
-        return frozenset(quality.full_typed_name for quality in self.assignments)
+        return self._by_name.keys()
 
     def has_quality(self, quality: ast.GlobalTypedNameReference) -> bool:
         """Return whether the quality is assigned."""
-        return quality.full_typed_name in self.names
+        return quality.full_typed_name in self._by_name
+
+    def quality_named(self, name: str) -> ast.GlobalTypedNameReference:
+        """Return the assigned quality whose full typed name is ``name``."""
+        return self._by_name[name]
 
     @cached_property
     def value_type(self) -> ast.GlobalTypedNameReference | None:

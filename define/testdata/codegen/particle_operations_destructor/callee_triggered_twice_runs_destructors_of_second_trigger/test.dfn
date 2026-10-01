@@ -1,0 +1,17 @@
+# action</outer> triggers action</make_part> twice on its own particle, and
+# destroys the particle in position</part> that the first one created in
+# between. Destroying position<holder> runs the Destructors action</outer>
+# recorded for the second trigger, for the particle that is still there.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<holder> {
+            it may only contain particles where {
+                it has the action</outer>.
+            }
+        }
+        create a particle in position<holder>.
+        create a particle in position<holder>::action</outer>::position<run>.
+    }
+}

@@ -69,7 +69,7 @@ class DeadValueWriteValidator:
         if not self._unused_writes:
             return []
         for key in guarantees:
-            occupant = self._tracker.get_occupant_or_none_by_key(key)
+            occupant = self._tracker.recorded_occupant_or_none_by_key(key)
             if occupant is not None:
                 self.mark_particle_used(occupant)
         return [

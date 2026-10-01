@@ -235,6 +235,13 @@ class CalleeContract(msgspec.Struct, frozen=True):
 
     action_chain: chained_name.ActionReferenceTuple
     contract: ActionContract
+    # Decided by the caller from its own final state, which already reflects
+    # how its callees changed each other's particles.
+    on_destruction: GuaranteesOnDestruction
+    # Which of the caller's callees with this action chain this is: 1 for the
+    # first, 2 for the second, and so on, since the same action can be
+    # triggered more than once there.
+    occurrence: int
 
 
 class DestructionContract(msgspec.Struct, frozen=True):
@@ -303,6 +310,36 @@ class Destructor(msgspec.Struct, frozen=True):
         )
 
 
+class GuaranteesOnDestruction(enum.Enum):
+    """What a caller does with a callee's pending Guarantees when it destroys the particle the callee is assigned to.
+
+    The callee decides this from its final state when it publishes its contract.
+    It describes only the callee's implied positions and their children: the
+    callee's own caller must consume whatever is in its interface positions.
+    """
+
+    # A Destructor on a particle these Guarantees describe can't be verified
+    # from the callee's final state yet, so, as with a Destruction Contract,
+    # the caller verifies it when it destroys the particle, which means
+    # applying the Guarantees. This also applies when one of the callee's own
+    # pending Guarantees must be applied.
+    APPLY = enum.auto()
+    # None of the particles the Guarantees describe needs anything done when
+    # it is destroyed: no particle the callee created has a Destructor, and
+    # the same is true of its pending Guarantees. Those particles vanish with
+    # the destroyed particle, so the caller drops the Guarantees unapplied. The
+    # callee also chooses this when its final state has an error: that error
+    # is already reported, and applying the Guarantees would find nothing
+    # more to report.
+    DISCARD = enum.auto()
+    # Every Destructor on a particle these Guarantees describe is verified
+    # from the callee's final state. A caller that changes anything below
+    # such a particle applies the Guarantees to reach it, and then verifies
+    # the Destructor again when it destroys the particle. Otherwise the caller
+    # drops the Guarantees unapplied and runs those Destructors directly.
+    DISCARD_AFTER_DESTRUCTORS = enum.auto()
+
+
 class ActionContract(msgspec.Struct, frozen=True):
     """The automatically inferred requirements and guarantees for an action."""
 
@@ -319,13 +356,10 @@ class ActionContract(msgspec.Struct, frozen=True):
     trigger_position_name: str
     # The action's transitively implied qualities.
     implied_quality_names: frozenset[str]
-    # Whether these Guarantees can be dropped unapplied when their particle is
-    # destroyed. See CalleeGuaranteeApplier.discard_discardable_pending_guarantees.
-    guarantees_discardable_on_destruction: bool
     # How many actions run in one execution of this action: itself, plus every
     # callee transitively, once per triggering. It is
     # computed from ``callees`` when the contract is created; see
-    # PendingGuarantee.completion_index.
+    # CalleeGuarantees.completion_index.
     action_execution_count: int = 0
 
     def __post_init__(self):

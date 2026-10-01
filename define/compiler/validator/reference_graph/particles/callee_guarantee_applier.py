@@ -37,14 +37,14 @@ class _GuaranteeApplicationState(msgspec.Struct, frozen=True):
     @classmethod
     def for_callee(
         cls,
-        pending: pending_guarantee.PendingGuarantee,
+        callee_guarantees: pending_guarantee.CalleeGuarantees,
         action_chain: chained_name.ActionReferenceTuple,
     ) -> typing.Self:
         """Prepare shared state for applying the callee's guarantees."""
         # Existing particles must survive earlier Guarantees that overwrite
         # their origin Positions before the particles reach their destinations.
         origin_keys: set[chained_name.PositionReferenceTuple] = set()
-        for guarantee in pending.contract.guarantees.values():
+        for guarantee in callee_guarantees.contract.guarantees.values():
             if isinstance(guarantee, action_contract.OccupiedByExistingGuarantee):
                 origin_tuple = guarantee.origin_position.canonical_chained_name_tuple
                 origin_keys.add(chained_name.in_caller(action_chain, origin_tuple))
@@ -116,27 +116,30 @@ class CalleeGuaranteeApplier:
         # These measurements predate operation-graph removal; graph-specific
         # failures describe the former implementation, not current requirements.
         action_chain_key = execution.action.canonical_chained_name_tuple
-        callee_guarantees = pending_guarantee.PendingGuarantee(
+        callee_guarantees = pending_guarantee.CalleeGuarantees(
             action_chain_key[-1],
             contract,
             execution,
             # The directly-applied action finishes last in its Action Execution.
             contract.action_execution_count - 1,
+            call_depth=0,
         )
-        self._store.record_triggered_action(action_chain_key, execution, contract)
-        self._apply_pending_guarantee(callee_guarantees, action_chain_key)
+        self._store.record_triggered_action(action_chain_key, execution)
+        self._apply_callee_guarantees(callee_guarantees, action_chain_key)
 
-    def _apply_pending_guarantee(
+    def _apply_callee_guarantees(
         self,
-        pending: pending_guarantee.PendingGuarantee,
+        callee_guarantees: pending_guarantee.CalleeGuarantees,
         action_chain: chained_name.ActionReferenceTuple,
     ):
         """Apply a callee's guarantees and add one child name to nested guarantee prefixes."""
-        application = _GuaranteeApplicationState.for_callee(pending, action_chain)
+        application = _GuaranteeApplicationState.for_callee(
+            callee_guarantees, action_chain
+        )
 
         # A preceding Guarantee may create or move a later Guarantee's parent,
         # so acceptance checks must alternate with occupancy updates.
-        for position, guarantee in pending.contract.guarantees.items():
+        for position, guarantee in callee_guarantees.contract.guarantees.items():
             key = application.key_for(position)
 
             # A guarantee from an action that finished later in the same Action
@@ -144,8 +147,8 @@ class CalleeGuaranteeApplier:
             # it.
             if self._store.is_superseded(
                 key,
-                pending.execution,
-                pending.completion_index,
+                callee_guarantees.execution,
+                callee_guarantees.completion_index,
             ):
                 continue
 
@@ -165,12 +168,13 @@ class CalleeGuaranteeApplier:
                 continue
 
             self._update_store_from_callee_direct_guarantee(
-                pending, key, guarantee, application
+                callee_guarantees, key, guarantee, application
             )
 
-        for child_action_chain_in_caller, child_nested_guarantee in pending.callees(
-            action_chain
-        ):
+        for (
+            child_action_chain_in_caller,
+            child_nested_guarantee,
+        ) in callee_guarantees.callees(action_chain):
             # The original triggering chain is the full chain the action had from
             # the perspective of its caller, when it was triggered. CalleeContract
             # does not retain that chain; the examples below show it for comparison.
@@ -181,11 +185,11 @@ class CalleeGuaranteeApplier:
             #
             # However, nested guarantees can _also_ be moved without their
             # more-deeply nested guarantees being applied in the callee. Composing
-            # CalleeContract.action_chain with pending.action_chain places those
+            # CalleeContract.action_chain with action_chain places those
             # deeper guarantees at the moved particle's current chain when we
             # apply them in the current action.
             #
-            # Thus, pending.action_chain is the callee's current chained
+            # Thus, action_chain is the callee's current chained
             # name, where its guarantees apply, from this action's perspective.
             #
             # We have this system to avoid the same potentially exponential work that
@@ -252,7 +256,7 @@ class CalleeGuaranteeApplier:
             # which adds the pending guarantees of:
             # position<gateway>::action</relocate_particle>::position<stationary>::action</inspect_particle>.
             #
-            # pending.action_chain =
+            # action_chain =
             #     position<gateway>::action</relocate_particle>
             # CalleeContract.action_chain =
             #     position<stationary>::action</inspect_particle>
@@ -266,7 +270,7 @@ class CalleeGuaranteeApplier:
             # which adds the pending guarantees of:
             # position<gateway>::action</relocate_particle>::position<destination>::action</process_particle>.
             #
-            # pending.action_chain =
+            # action_chain =
             #     position<gateway>::action</relocate_particle>
             # CalleeContract.action_chain =
             #     position<destination>::action</process_particle>
@@ -280,7 +284,7 @@ class CalleeGuaranteeApplier:
             # which adds the pending guarantees of:
             # position<gateway>::action</relocate_particle>::position<destination>::action</process_particle>::position<marker_parent>::action</fill_marker>.
             #
-            # pending.action_chain =
+            # action_chain =
             #     position<gateway>::action</relocate_particle>::position<destination>::action</process_particle>
             # CalleeContract.action_chain =
             #     position<marker_parent>::action</fill_marker>
@@ -325,8 +329,12 @@ class CalleeGuaranteeApplier:
 
     def discard_discardable_pending_guarantees(
         self, key: chained_name.PositionReferenceTuple
-    ):
-        """Discard the nested guarantees for ``key``'s children if each is discardable on destruction and nothing is tracked where it applies."""
+    ) -> list[pending_guarantee.PendingGuarantee]:
+        """Discard the nested guarantees for ``key``'s children if each is discardable on destruction and nothing is tracked where it applies.
+
+        Returns the discarded guarantees that describe particles with
+        Destructors, which must still run.
+        """
         # When we destroy a particle, we walk all of its children to find their
         # Destructors, and that walk applies every pending Guarantee below the
         # particle. If a tree of triggered actions built those children, that's
@@ -335,11 +343,13 @@ class CalleeGuaranteeApplier:
         # Often, though, applying a pending Guarantee makes no difference. If
         # all it would do is create children that have no Destructors, those
         # children just vanish along with the particle we're destroying, so we
-        # can throw the Guarantee away instead. That's only safe when all of
-        # these are true:
-        # - Its contract says so (ActionContract.guarantees_discardable_on_destruction).
-        #   That covers what the action creates and what every action it
-        #   triggered creates, too.
+        # can throw the Guarantee away instead. If some of those children do
+        # have Destructors, the caller recorded them when it published its
+        # contract, and they still run without the Guarantee being applied.
+        # That's only safe when all of these are true:
+        # - Its caller's contract says so (CalleeContract.on_destruction). That
+        #   covers what the action creates and what every action it triggered
+        #   creates, too, as the caller's final state has them.
         # - We don't already have any state recorded (a particle, a known-empty
         #   position, or an error) at or below the positions it writes, or
         #   that the actions it triggered write.
@@ -350,16 +360,22 @@ class CalleeGuaranteeApplier:
         # we apply them all as usual. They can overwrite each other, so
         # applying only some of them could change what the others would do.
         pending_guarantees = self._store.pending_guarantees_at(key)
-        if not pending_guarantees:
-            return
         for pending in pending_guarantees:
-            if not pending.contract.guarantees_discardable_on_destruction:
-                return
+            if pending.on_destruction == action_contract.GuaranteesOnDestruction.APPLY:
+                return []
             if self._result_overwrites_recorded_state(
                 pending, pending.action_chain(key)
             ):
-                return
+                return []
+        destructors: list[pending_guarantee.PendingGuarantee] = []
+        for pending in pending_guarantees:
+            if (
+                pending.on_destruction
+                == action_contract.GuaranteesOnDestruction.DISCARD_AFTER_DESTRUCTORS
+            ):
+                destructors.append(pending)
         _ = self._store.pop_pending_guarantees(key)
+        return destructors
 
     def apply_overwriting_pending_guarantees(
         self, key: chained_name.PositionReferenceTuple
@@ -387,11 +403,11 @@ class CalleeGuaranteeApplier:
                     applied = True
 
     def _overwrites_recorded_state(
-        self, particle: chained_name.ChainedNameTuple
+        self, position: chained_name.ChainedNameTuple
     ) -> bool:
-        for pending in self._store.pending_guarantees_at(particle):
+        for pending in self._store.pending_guarantees_at(position):
             if self._result_overwrites_recorded_state(
-                pending, pending.action_chain(particle)
+                pending, pending.action_chain(position)
             ):
                 return True
         return False
@@ -410,15 +426,15 @@ class CalleeGuaranteeApplier:
             ) and self._store.tracks_at_or_below(key):
                 return True
         for callee_chain, callee_pending in pending.callees(action_chain):
-            callee_particle = chained_name.parent(callee_chain)
-            # A callee writes only below the particle it acts on, so if
+            callee_position = chained_name.parent(callee_chain)
+            # A callee writes only below the particle it is assigned to, so if
             # nothing is recorded there, its guarantees and those of the
-            # actions it triggered cannot overwrite anything. The action's own
-            # particle, the empty chain, has no entry of its own to check.
+            # actions it triggered cannot overwrite anything. The action's
+            # parent particle, the empty chain, has no entry of its own to check.
             if (
-                not callee_particle
+                not callee_position
                 or self._store.tracks_at_or_below(
-                    chained_name.position(callee_particle)
+                    chained_name.position(callee_position)
                 )
             ) and self._result_overwrites_recorded_state(callee_pending, callee_chain):
                 return True
@@ -443,15 +459,15 @@ class CalleeGuaranteeApplier:
 
     def _apply_all(
         self,
-        particle: chained_name.ChainedNameTuple,
+        position: chained_name.ChainedNameTuple,
         pending_guarantees: Iterable[pending_guarantee.PendingGuarantee],
     ):
         for pending in pending_guarantees:
-            self._apply_pending_guarantee(pending, pending.action_chain(particle))
+            self._apply_callee_guarantees(pending, pending.action_chain(position))
 
     def _update_store_from_callee_direct_guarantee(
         self,
-        pending: pending_guarantee.PendingGuarantee,
+        callee_guarantees: pending_guarantee.CalleeGuarantees,
         key: chained_name.PositionReferenceTuple,
         guarantee: action_contract.PositionGuarantee,
         application: _GuaranteeApplicationState,
@@ -463,8 +479,8 @@ class CalleeGuaranteeApplier:
         # are re-derivable in any caller, so they stay behind the nested guarantee.
         self._store.record_callee_write(
             key,
-            pending.execution,
-            pending.completion_index,
+            callee_guarantees.execution,
+            callee_guarantees.completion_index,
             include_in_own_guarantees=isinstance(
                 guarantee, action_contract.OccupiedByExistingGuarantee
             ),
@@ -481,7 +497,7 @@ class CalleeGuaranteeApplier:
             if occupant is not None:
                 occupant.set_value_state(
                     guarantee.value_effect,
-                    pending.execution.action.get_last_action().location,
+                    callee_guarantees.execution.action.get_last_action().location,
                 )
             return
 
@@ -514,7 +530,7 @@ class CalleeGuaranteeApplier:
             case action_contract.OccupiedByExistingGuarantee():
                 self._apply_existing_guarantee(
                     key,
-                    pending,
+                    callee_guarantees,
                     guarantee,
                     application,
                 )
@@ -528,13 +544,13 @@ class CalleeGuaranteeApplier:
                 )
                 new_info.set_value_state(
                     guarantee.value_effect,
-                    pending.execution.action.get_last_action().location,
+                    callee_guarantees.execution.action.get_last_action().location,
                 )
                 self._store.mark_occupied(key, new_info)
                 self._dead_interfaces.register_occupied_interface_child_position(
                     key,
                     new_info,
-                    pending.execution.action.get_last_action().location,
+                    callee_guarantees.execution.action.get_last_action().location,
                 )
             case action_contract.ErrorGuarantee():
                 self._store.mark_error(key, guarantee.caused_by)
@@ -552,7 +568,7 @@ class CalleeGuaranteeApplier:
     def _apply_existing_guarantee(
         self,
         dest_key: chained_name.PositionReferenceTuple,
-        pending: pending_guarantee.PendingGuarantee,
+        callee_guarantees: pending_guarantee.CalleeGuarantees,
         guarantee: action_contract.OccupiedByExistingGuarantee,
         application: _GuaranteeApplicationState,
     ):
@@ -580,7 +596,7 @@ class CalleeGuaranteeApplier:
             self._store.mark_error(dest_key, guarantee.caused_by)
             return
 
-        source_location = pending.execution.action.get_last_action().location
+        source_location = callee_guarantees.execution.action.get_last_action().location
         moved_info.set_value_state(guarantee.value_effect, source_location)
         moved_info.last_position = guarantee.caused_by
         self._dead_interfaces.mark_particle_departed(moved_info)

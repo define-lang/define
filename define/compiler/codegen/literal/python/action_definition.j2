@@ -48,6 +48,10 @@ class {{ self.class_name }}(literal.Action):
     def run(self):
 {%- endif %}
 {{- statements::action_statements(self.statements, module_name) -}}
+{%- for guaranteed in self.guaranteed_particle_destructors %}
+    def {{ guaranteed.method_name }}(self):
+{{- statements::action_statements(guaranteed.statements, module_name) -}}
+{%- endfor -%}
 
 {% for contract in self.contract_definitions -%}
 {{ "\n\n" }}class {{ contract.class_name }}({{ contract.base.name_in_module(module_name) }}):
