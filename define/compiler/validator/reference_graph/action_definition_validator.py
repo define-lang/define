@@ -1242,7 +1242,14 @@ class ActionDefinitionValidator:
         that leaves the position's post-destructor state undetermined for any
         consumer of the contract. Guarantees from actions triggered by the
         Destructor must also be checked, even when they are applied lazily.
+
+        A particle that is not from the caller, left below another such
+        particle, is not reported: removing the upper one removes it too.
         """
+        occupied_by_new_positions: set[chained_name.ChainedNameTuple] = set()
+        for position, guarantee in guarantees.items():
+            if isinstance(guarantee, action_contract.OccupiedByNewGuarantee):
+                occupied_by_new_positions.add(position)
         for position, guarantee in guarantees.items():
             # A guarantee from a triggered action names its position the way that
             # callee wrote it. The key is the position's full chained name from
@@ -1259,12 +1266,19 @@ class ActionDefinitionValidator:
                         )
                     )
                 case action_contract.OccupiedByNewGuarantee():
-                    self._diagnostics.append(
-                        diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic(
-                            location=guarantee.caused_by.location,
-                            position_name=position_name,
+                    # Removing a particle that is not from the caller also
+                    # removes every such particle below it, so reporting
+                    # those too would only repeat the same error.
+                    if not any(
+                        parent in occupied_by_new_positions
+                        for parent in chained_name.proper_prefixes(position)
+                    ):
+                        self._diagnostics.append(
+                            diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic(
+                                location=guarantee.caused_by.location,
+                                position_name=position_name,
+                            )
                         )
-                    )
                 case action_contract.OccupiedByExistingGuarantee() if (
                     guarantee.origin_position.canonical_chained_name_tuple == position
                 ):

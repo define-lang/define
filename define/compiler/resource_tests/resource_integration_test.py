@@ -26,6 +26,13 @@ _TRIGGERED_CHILDREN_EXPONENTIAL = pytest.mark.xfail(
     reason="destruction resolves exponentially many pending Guarantees",
 )
 
+# Every pending Guarantee of a callee on the action's parent particle is stored
+# at that one particle, so reading any position applies all of them.
+_SAME_PARTICLE_EXPONENTIAL = pytest.mark.xfail(
+    strict=True,
+    reason="reading a position applies every pending Guarantee on the parent particle",
+)
+
 
 @dataclasses.dataclass(kw_only=True)
 class MemoryCase:
@@ -264,6 +271,35 @@ def test_retained_memory(case: MemoryCase, tmp_path: Path):
                 maximum_ratio=4,
             ),
             id="triggered_children_destruction_dependent_siblings",
+        ),
+        pytest.param(
+            CpuGrowthCase(
+                control_variable="TRIGGERED_CHILDREN_DESTRUCTION_IN_DESTRUCTOR_CONTROL",
+                source_variable="TRIGGERED_CHILDREN_DESTRUCTION_IN_DESTRUCTOR",
+                filesystem=False,
+                maximum_ratio=4,
+            ),
+            id="triggered_children_destruction_in_destructor",
+        ),
+        pytest.param(
+            CpuGrowthCase(
+                control_variable="TRIGGERED_CHILDREN_DESTRUCTION_IN_DESTRUCTOR_CONTRACTED_CONTROL",
+                source_variable="TRIGGERED_CHILDREN_DESTRUCTION_IN_DESTRUCTOR_CONTRACTED",
+                filesystem=False,
+                maximum_ratio=4,
+                expect_diagnostics=True,
+            ),
+            id="triggered_children_destruction_in_destructor_contracted",
+        ),
+        pytest.param(
+            CpuGrowthCase(
+                control_variable="TRIGGERED_CHILDREN_DESTRUCTION_SAME_PARTICLE_CONTROL",
+                source_variable="TRIGGERED_CHILDREN_DESTRUCTION_SAME_PARTICLE",
+                filesystem=False,
+                maximum_ratio=4,
+            ),
+            id="triggered_children_destruction_same_particle",
+            marks=_SAME_PARTICLE_EXPONENTIAL,
         ),
     ],
 )

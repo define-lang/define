@@ -1,5 +1,5 @@
-# A destructor must surface a transitive implied-position guarantee after the
-# direct caller moves its callee's interface particle to an implied position.
+# The Guarantee of action</b> is pending on the particle the Destructor leaves
+# in position</saved>, so the particle it creates below is not reported.
 define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the action</a>.
     it also assigns the position</saved>.

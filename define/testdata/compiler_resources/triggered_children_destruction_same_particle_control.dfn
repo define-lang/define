@@ -1,0 +1,178 @@
+define the potential position<mv:define-lang.org:triggered_children_destruction:/made_10>.
+define the potential action<mv:define-lang.org:triggered_children_destruction:/fill_10> {
+    it also assigns the position</made_10>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+        create a particle in position</made_10>.
+    }
+}
+define the potential position<mv:define-lang.org:triggered_children_destruction:/made_9>.
+define the potential action<mv:define-lang.org:triggered_children_destruction:/fill_9> {
+    it also assigns the position</made_9>.
+    it also assigns the action</fill_10>.
+    it also assigns the position</made_10>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+        create a particle in action</fill_10>::position<run>.
+        destroy the particle in position</made_10>.
+        create a particle in action</fill_10>::position<run>.
+        destroy the particle in position</made_10>.
+        create a particle in position</made_9>.
+    }
+}
+define the potential position<mv:define-lang.org:triggered_children_destruction:/made_8>.
+define the potential action<mv:define-lang.org:triggered_children_destruction:/fill_8> {
+    it also assigns the position</made_8>.
+    it also assigns the action</fill_9>.
+    it also assigns the position</made_9>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+        create a particle in action</fill_9>::position<run>.
+        destroy the particle in position</made_9>.
+        create a particle in action</fill_9>::position<run>.
+        destroy the particle in position</made_9>.
+        create a particle in position</made_8>.
+    }
+}
+define the potential position<mv:define-lang.org:triggered_children_destruction:/made_7>.
+define the potential action<mv:define-lang.org:triggered_children_destruction:/fill_7> {
+    it also assigns the position</made_7>.
+    it also assigns the action</fill_8>.
+    it also assigns the position</made_8>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+        create a particle in action</fill_8>::position<run>.
+        destroy the particle in position</made_8>.
+        create a particle in action</fill_8>::position<run>.
+        destroy the particle in position</made_8>.
+        create a particle in position</made_7>.
+    }
+}
+define the potential position<mv:define-lang.org:triggered_children_destruction:/made_6>.
+define the potential action<mv:define-lang.org:triggered_children_destruction:/fill_6> {
+    it also assigns the position</made_6>.
+    it also assigns the action</fill_7>.
+    it also assigns the position</made_7>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+        create a particle in action</fill_7>::position<run>.
+        destroy the particle in position</made_7>.
+        create a particle in action</fill_7>::position<run>.
+        destroy the particle in position</made_7>.
+        create a particle in position</made_6>.
+    }
+}
+define the potential position<mv:define-lang.org:triggered_children_destruction:/made_5>.
+define the potential action<mv:define-lang.org:triggered_children_destruction:/fill_5> {
+    it also assigns the position</made_5>.
+    it also assigns the action</fill_6>.
+    it also assigns the position</made_6>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+        create a particle in action</fill_6>::position<run>.
+        destroy the particle in position</made_6>.
+        create a particle in action</fill_6>::position<run>.
+        destroy the particle in position</made_6>.
+        create a particle in position</made_5>.
+    }
+}
+define the potential position<mv:define-lang.org:triggered_children_destruction:/made_4>.
+define the potential action<mv:define-lang.org:triggered_children_destruction:/fill_4> {
+    it also assigns the position</made_4>.
+    it also assigns the action</fill_5>.
+    it also assigns the position</made_5>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+        create a particle in action</fill_5>::position<run>.
+        destroy the particle in position</made_5>.
+        create a particle in action</fill_5>::position<run>.
+        destroy the particle in position</made_5>.
+        create a particle in position</made_4>.
+    }
+}
+define the potential position<mv:define-lang.org:triggered_children_destruction:/made_3>.
+define the potential action<mv:define-lang.org:triggered_children_destruction:/fill_3> {
+    it also assigns the position</made_3>.
+    it also assigns the action</fill_4>.
+    it also assigns the position</made_4>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+        create a particle in action</fill_4>::position<run>.
+        destroy the particle in position</made_4>.
+        create a particle in action</fill_4>::position<run>.
+        destroy the particle in position</made_4>.
+        create a particle in position</made_3>.
+    }
+}
+define the potential position<mv:define-lang.org:triggered_children_destruction:/made_2>.
+define the potential action<mv:define-lang.org:triggered_children_destruction:/fill_2> {
+    it also assigns the position</made_2>.
+    it also assigns the action</fill_3>.
+    it also assigns the position</made_3>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+        create a particle in action</fill_3>::position<run>.
+        destroy the particle in position</made_3>.
+        create a particle in action</fill_3>::position<run>.
+        destroy the particle in position</made_3>.
+        create a particle in position</made_2>.
+    }
+}
+define the potential position<mv:define-lang.org:triggered_children_destruction:/made_1>.
+define the potential action<mv:define-lang.org:triggered_children_destruction:/fill_1> {
+    it also assigns the position</made_1>.
+    it also assigns the action</fill_2>.
+    it also assigns the position</made_2>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+        create a particle in action</fill_2>::position<run>.
+        destroy the particle in position</made_2>.
+        create a particle in action</fill_2>::position<run>.
+        destroy the particle in position</made_2>.
+        create a particle in position</made_1>.
+    }
+}
+define the potential action<mv:define-lang.org:triggered_children_destruction:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<filled> {
+            it may only contain particles where {
+                it has the action</fill_1>.
+            }
+        }
+        create a particle in position<filled>.
+        create a particle in position<filled>::action</fill_1>::position<run>.
+        destroy the particle in position<filled>.
+    }
+}

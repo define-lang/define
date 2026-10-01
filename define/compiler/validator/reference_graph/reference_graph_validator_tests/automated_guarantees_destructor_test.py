@@ -174,24 +174,49 @@ def test_destructor_triggering_action_then_destroying_what_it_filled_generates_n
     assert_no_errors(result.program_result)
 
 
-def test_destructor_surfaces_nested_guarantee_pending_under_an_interface_position(
+def test_destructor_reports_new_particle_it_leaves_but_not_particles_below_it(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 2
+    assert len(all_diags) == 1
+    assert isinstance(
+        all_diags[0], diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic
+    )
+    assert all_diags[0].location.line == 10
+    assert all_diags[0].location.column == 59
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].position_name == "position</saved>"
+
+
+def test_destructor_creating_particle_and_particle_below_it_reports_only_the_upper_particle(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(
+        all_diags[0], diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic
+    )
+    assert all_diags[0].location.line == 6
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].position_name == "position</saved>"
+
+
+def test_destructor_triggering_action_whose_callee_fills_an_implied_position_is_forbidden(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
     assert isinstance(
         all_diags[0], diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic
     )
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("b.dfn")
-    assert all_diags[0].position_name == "position</saved>::position</out>"
-    assert isinstance(
-        all_diags[1], diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic
-    )
-    assert all_diags[1].location.line == 10
-    assert all_diags[1].location.column == 59
-    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[1].position_name == "position</saved>"
+    assert all_diags[0].position_name == "position</out>"

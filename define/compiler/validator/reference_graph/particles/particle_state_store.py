@@ -583,6 +583,20 @@ class ParticleStateStore:
             raise KeyError(key)
         return state.particle_info
 
+    def has_particle_not_from_caller_at_or_above(
+        self, key: chained_name.ChainedNameTuple
+    ) -> bool:
+        """Return whether ``key`` or any of its parent names holds a particle that is not from the caller."""
+        for length in range(1, len(key) + 1):
+            state = self._state.get(chained_name.ChainedNameTuple(key[:length]))
+            if (
+                isinstance(state, _PositionNodeState)
+                and state.particle_info is not None
+                and not state.particle_info.from_caller
+            ):
+                return True
+        return False
+
     def occupant_or_none(
         self, key: chained_name.PositionReferenceTuple
     ) -> particle_info.ParticleInfo | None:

@@ -267,7 +267,7 @@ class CalleeDestructionValidator:
         A ``position`` of None means this action's parent particle.
         """
         for callee_destructors in self._tracker.unapplied_callee_destructors(
-            chained_name.ChainedNameTuple(())
+            chained_name.ACTION_PARENT_PARTICLE
             if position is None
             else position.canonical_chained_name_tuple
         ):

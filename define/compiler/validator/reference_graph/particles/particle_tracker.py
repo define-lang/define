@@ -544,9 +544,11 @@ class ParticleTracker:
         """Produce every guarantee a destructor makes on its contracted positions.
 
         Guarantees about implied positions from triggered actions are expanded
-        into the destructor's state rather than deferred.
+        into the destructor's state rather than deferred, except those below a
+        particle the destructor leaves in a contracted position, which is
+        already a violation.
         """
-        self._callee_guarantees.fully_resolve_all_pending_guarantees()
+        self._callee_guarantees.apply_pending_guarantees_on_particles_from_caller()
         return self._guarantee_generator.contracted_position_guarantees(
             interface_names,
             implied_quality_names,

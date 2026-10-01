@@ -385,8 +385,7 @@ class CalleeGuaranteeApplier:
 
     def apply_all_overwriting_pending_guarantees(self):
         """Apply every pending guarantee that would overwrite state already recorded."""
-        # Every stored prefix is at or below the empty chain.
-        self._apply_overwriting_at_or_below(chained_name.ChainedNameTuple(()))
+        self._apply_overwriting_at_or_below(chained_name.ACTION_PARENT_PARTICLE)
 
     def _apply_overwriting_at_or_below(self, key: chained_name.ChainedNameTuple):
         # State recorded below a pending guarantee is older than it, and only
@@ -440,10 +439,20 @@ class CalleeGuaranteeApplier:
                 return True
         return False
 
-    def fully_resolve_all_pending_guarantees(self):
-        """Apply every pending guarantee."""
-        # Every stored prefix is at or below the empty chain.
-        self._apply_at_or_below([chained_name.ChainedNameTuple(())])
+    def apply_pending_guarantees_on_particles_from_caller(self):
+        """Apply every pending guarantee except those at or below a particle that is not from the caller."""
+        # Applying a guarantee can add pending guarantees below it, so look
+        # again until none that qualifies remains.
+        applied = True
+        while applied:
+            applied = False
+            for prefix in self._store.pending_prefixes_at_or_below(
+                chained_name.ACTION_PARENT_PARTICLE
+            ):
+                if self._store.has_particle_not_from_caller_at_or_above(prefix):
+                    continue
+                self._apply_all(prefix, self._store.pop_pending_guarantees(prefix))
+                applied = True
 
     def _apply_at_or_below(self, keys: Iterable[chained_name.ChainedNameTuple]):
         # Applying a guarantee can add pending guarantees below it, so look

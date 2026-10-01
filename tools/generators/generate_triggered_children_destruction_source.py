@@ -41,6 +41,18 @@ class Shape(enum.StrEnum):
     # action that creates a particle with a Destructor and then one that
     # destroys it.
     DEPENDENT_SIBLINGS = "dependent-siblings"
+    # As LOCAL, but a Destructor creates and fills the local particle, which is
+    # destroyed when the Destructor ends.
+    IN_DESTRUCTOR = "in-destructor"
+    # A Destructor triggers the first action on a particle in one of its
+    # implied positions, so the program reports each particle that action
+    # leaves there.
+    IN_DESTRUCTOR_CONTRACTED = "in-destructor-contracted"
+    # Every action triggers the next one on its own parent particle, once per
+    # ``fan_out``, and destroys the particle that action created there before
+    # triggering it again, so no child particles exist and the entry action
+    # destroys only the one particle.
+    SAME_PARTICLE = "same-particle"
 
 
 def _rearranges(shape: Shape) -> bool:
@@ -89,6 +101,66 @@ def _entry_lines(shape: Shape, fqun_prefix: str) -> list[str]:
                 *_position_with_fill("filled", "        ", qualities),
                 "        create a particle in position<filled>.",
                 *item,
+                "        create a particle in position<filled>::action</fill_1>::position<run>.",
+                "        destroy the particle in position<filled>.",
+                "    }",
+                "}",
+            ]
+        case Shape.IN_DESTRUCTOR:
+            return [
+                f"define the potential action<{fqun_prefix}:/filling_destructor> {{",
+                "    it happens when {",
+                "        this particle is being destroyed.",
+                "    } and it does {",
+                *_position_with_fill("filled", "        "),
+                "        create a particle in position<filled>.",
+                "        create a particle in position<filled>::action</fill_1>::position<run>.",
+                "    }",
+                "}",
+                *header,
+                "        define the position<holder> {",
+                "            it may only contain particles where {",
+                "                it has the action</filling_destructor>.",
+                "            }",
+                "        }",
+                "        create a particle in position<holder>.",
+                "        destroy the particle in position<holder>.",
+                "    }",
+                "}",
+            ]
+        case Shape.IN_DESTRUCTOR_CONTRACTED:
+            return [
+                f"define the potential position<{fqun_prefix}:/kept> {{",
+                "    it may only contain particles where {",
+                "        it has the action</fill_1>.",
+                "    }",
+                "}",
+                f"define the potential action<{fqun_prefix}:/filling_destructor> {{",
+                "    it also assigns the position</kept>.",
+                "    it happens when {",
+                "        this particle is being destroyed.",
+                "    } and it does {",
+                "        create a particle in position</kept>::action</fill_1>::position<run>.",
+                "    }",
+                "}",
+                *header,
+                "        define the position<holder> {",
+                "            it may only contain particles where {",
+                "                it has the action</filling_destructor>.",
+                "                it has the position</kept>.",
+                "            }",
+                "        }",
+                "        create a particle in position<holder>.",
+                "        create a particle in position<holder>::position</kept>.",
+                "        destroy the particle in position<holder>.",
+                "    }",
+                "}",
+            ]
+        case Shape.SAME_PARTICLE:
+            return [
+                *header,
+                *_position_with_fill("filled", "        "),
+                "        create a particle in position<filled>.",
                 "        create a particle in position<filled>::action</fill_1>::position<run>.",
                 "        destroy the particle in position<filled>.",
                 "    }",
@@ -144,6 +216,48 @@ def _entry_lines(shape: Shape, fqun_prefix: str) -> list[str]:
             ]
 
 
+def _same_particle_lines(depth: int, fan_out: int, fqun_prefix: str) -> list[str]:
+    lines: list[str] = []
+    # A single-file program must define each global name before referencing it.
+    for level in reversed(range(1, depth + 1)):
+        lines.extend(
+            [
+                f"define the potential position<{fqun_prefix}:/made_{level}>.",
+                f"define the potential action<{fqun_prefix}:/fill_{level}> {{",
+                f"    it also assigns the position</made_{level}>.",
+            ]
+        )
+        if level < depth:
+            lines.extend(
+                [
+                    f"    it also assigns the action</fill_{level + 1}>.",
+                    f"    it also assigns the position</made_{level + 1}>.",
+                ]
+            )
+        lines.extend(
+            [
+                "    define the position<run>.",
+                "    it happens when {",
+                "        the position<run> has a particle.",
+                "    } and it does {",
+                "        destroy the particle in position<run>.",
+            ]
+        )
+        if level < depth:
+            for _ in range(fan_out):
+                lines.extend(
+                    [
+                        f"        create a particle in action</fill_{level + 1}>::position<run>.",
+                        f"        destroy the particle in position</made_{level + 1}>.",
+                    ]
+                )
+        lines.extend(
+            [f"        create a particle in position</made_{level}>.", "    }", "}"]
+        )
+    lines.extend(_entry_lines(Shape.SAME_PARTICLE, fqun_prefix))
+    return lines
+
+
 def generate_source_lines(
     depth: int = 20,
     fan_out: int = 2,
@@ -157,6 +271,8 @@ def generate_source_lines(
     """
     if depth < 1 or fan_out < 1:
         raise ValueError("depth and fan_out must be at least 1")
+    if shape == Shape.SAME_PARTICLE:
+        return _same_particle_lines(depth, fan_out, fqun_prefix)
     lines: list[str] = []
     if shape in (
         Shape.DESTRUCTORS,

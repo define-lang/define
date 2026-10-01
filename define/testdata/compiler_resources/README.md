@@ -213,12 +213,18 @@ has every action also move particles its caller and its callees created and
 trigger another action on the particle it received, `rearrange-destructors` is
 `rearrange` where every particle it moves has a Destructor, `error` has every
 action also trigger a shared action that has an error, so both programs report
-that error, and `dependent-siblings` has every action also trigger, on each
-child it fills, an action that creates a particle with a Destructor and then one
-that destroys it.
+that error, `dependent-siblings` has every action also trigger, on each child it
+fills, an action that creates a particle with a Destructor and then one that
+destroys it, `in-destructor` has a Destructor create and fill the particle,
+which is destroyed when the Destructor ends, `in-destructor-contracted` has a
+Destructor fill a particle in one of its implied positions, so both programs
+report the particles that leaves there, and `same-particle` has every action
+trigger the next one on its own parent particle and destroy the particle that
+action created there before triggering it again, so there are no child
+particles.
 
 ```sh
-for shape in local destructors contracted move rearrange rearrange-destructors error dependent-siblings; do
+for shape in local destructors contracted move rearrange rearrange-destructors error dependent-siblings in-destructor in-destructor-contracted same-particle; do
   suffix=$([ "$shape" = local ] && echo "" || echo "_${shape//-/_}")
   bazelisk run --noshow_progress --ui_event_filters=-info \
     //tools/generators:generate_triggered_children_destruction_source -- \

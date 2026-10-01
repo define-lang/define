@@ -1,0 +1,9 @@
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</saved>.
+    it happens when {
+        this particle is being destroyed.
+    } and it does {
+        create a particle in position</saved>.
+        create a particle in position</saved>::position</out>.
+    }
+}

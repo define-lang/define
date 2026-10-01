@@ -20,6 +20,10 @@ ChainedNameTuple = typing.NewType("ChainedNameTuple", tuple[str, ...])
 PositionReferenceTuple = typing.NewType("PositionReferenceTuple", ChainedNameTuple)
 ActionReferenceTuple = typing.NewType("ActionReferenceTuple", ChainedNameTuple)
 
+# The chain of the particle an action is assigned to, from that action's
+# perspective: no name precedes the names of that particle's children.
+ACTION_PARENT_PARTICLE: typing.Final = ChainedNameTuple(())
+
 
 def position(names: tuple[str, ...]) -> PositionReferenceTuple:
     """Tag canonical typed names that end in a position."""

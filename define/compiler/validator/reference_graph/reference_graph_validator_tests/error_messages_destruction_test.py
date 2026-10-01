@@ -1153,15 +1153,13 @@ def test_diagnostic_in_callee_file_shows_callee_source_line_format(
     files = {
         "a.dfn": (
             "define the potential action<my.domain.com:my_lib:/a> {\n"
-            "    define the position<box> {\n"
-            "        it may only contain particles where {\n"
-            "            it has the action</b>.\n"
-            "        }\n"
-            "    }\n"
+            "    it also assigns the action</b>.\n"
+            "    define the position<run>.\n"
             "    it happens when {\n"
-            "        the position<box> has a particle.\n"
+            "        the position<run> has a particle.\n"
             "    } and it does {\n"
-            "        create a particle in position<box>::action</b>::position<run>.\n"
+            "        destroy the particle in position<run>.\n"
+            "        create a particle in action</b>::position<run>.\n"
             "    }\n"
             "}\n"
         ),
@@ -1178,29 +1176,20 @@ def test_diagnostic_in_callee_file_shows_callee_source_line_format(
             "}\n"
         ),
         "out.dfn": "define the potential position<my.domain.com:my_lib:/out>.\n",
-        "saved.dfn": (
-            "define the potential position<my.domain.com:my_lib:/saved> {\n"
-            "    it may only contain particles where {\n"
-            "        it has the action</b>.\n"
-            "    }\n"
-            "}\n"
-        ),
         "test.dfn": (
             "define the potential action<my.domain.com:my_lib:/test> {\n"
             "    it also assigns the action</a>.\n"
-            "    it also assigns the position</saved>.\n"
             "    it happens when {\n"
             "        this particle is being destroyed.\n"
             "    } and it does {\n"
-            "        create a particle in action</a>::position<box>.\n"
-            "        move the particle in action</a>::position<box> to position</saved>.\n"
+            "        create a particle in action</a>::position<run>.\n"
             "    }\n"
             "}\n"
         ),
     }
     result = validate_project(files)
     all_diags = result.program_result.all_diagnostics
-    assert len(all_diags) == 2
+    assert len(all_diags) == 1
     # test.dfn's Destructor reports this, but it is located in b.dfn.
     assert (
         all_diags[0].format(result.program_result.source_map)
@@ -1209,14 +1198,5 @@ def test_diagnostic_in_callee_file_shows_callee_source_line_format(
             create a particle in position</out>.
                                  ^^^^^^^^^^^^^^
         a destructor must leave every contracted position in the state it was in when it started.
-        However, this line creates a new particle in 'position</saved>::position</out>' and then nothing removes it from that position.""")
-    )
-    assert (
-        all_diags[1].format(result.program_result.source_map)
-        == textwrap.dedent("""\
-        File "test.dfn", line 8, column 59
-            move the particle in action</a>::position<box> to position</saved>.
-                                                              ^^^^^^^^^^^^^^^^
-        a destructor must leave every contracted position in the state it was in when it started.
-        However, this line creates a new particle in 'position</saved>' and then nothing removes it from that position.""")
+        However, this line creates a new particle in 'position</out>' and then nothing removes it from that position.""")
     )

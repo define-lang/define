@@ -23,6 +23,7 @@ if TYPE_CHECKING:
         (gen.Shape.REARRANGE, 2, 4),
         (gen.Shape.REARRANGE_DESTRUCTORS, 3, 4),
         (gen.Shape.DEPENDENT_SIBLINGS, 4, 1),
+        (gen.Shape.IN_DESTRUCTOR, 2, 0),
     ],
 )
 @pytest.mark.parametrize(("depth", "fan_out"), [(1, 1), (1, 3), (4, 1), (4, 2)])
@@ -46,6 +47,20 @@ def test_valid_program(
     assert source.count("::action</fill_") == (depth - 1) * fan_out + 1
 
 
+@pytest.mark.parametrize(("depth", "fan_out"), [(1, 1), (1, 3), (4, 1), (4, 2)])
+def test_valid_same_particle_program(depth: int, fan_out: int, tmp_path: Path):
+    source = (
+        "\n".join(gen.generate_source_lines(depth, fan_out, gen.Shape.SAME_PARTICLE))
+        + "\n"
+    )
+    result = driver.Driver().compile_source(source, tmp_path / "generated")
+    assert result.all_exceptions == []
+    assert result.all_diagnostics == []
+    assert source.count("define the potential action<") == depth + 1
+    assert source.count("define the potential position<") == depth
+    assert source.count("create a particle in action</fill_") == (depth - 1) * fan_out
+
+
 def test_error_program_reports_its_one_error(tmp_path: Path):
     source = "\n".join(gen.generate_source_lines(4, 2, gen.Shape.ERROR)) + "\n"
     result = driver.Driver().compile_source(source, tmp_path / "generated")
@@ -59,6 +74,31 @@ def test_error_program_reports_its_one_error(tmp_path: Path):
     assert diagnostic.location.end_column == 66
     assert diagnostic.position_name == "position<scratch>::position</detail>"
     assert diagnostic.parent_position_name == "position<scratch>"
+
+
+def test_in_destructor_contracted_program_reports_each_particle_left_on_the_contracted_particle(
+    tmp_path: Path,
+):
+    source = (
+        "\n".join(gen.generate_source_lines(4, 2, gen.Shape.IN_DESTRUCTOR_CONTRACTED))
+        + "\n"
+    )
+    result = driver.Driver().compile_source(source, tmp_path / "generated")
+    assert result.all_exceptions == []
+    assert len(result.all_diagnostics) == 2
+    first, second = result.all_diagnostics
+    assert isinstance(first, diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic)
+    assert first.location.line == 75
+    assert first.location.column == 30
+    assert first.location.end_line == 75
+    assert first.location.end_column == 50
+    assert first.position_name == "position</kept>::position</child_1_0>"
+    assert isinstance(second, diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic)
+    assert second.location.line == 77
+    assert second.location.column == 30
+    assert second.location.end_line == 77
+    assert second.location.end_column == 50
+    assert second.position_name == "position</kept>::position</child_1_1>"
 
 
 @pytest.mark.parametrize(("depth", "fan_out"), [(0, 1), (1, 0)])

@@ -31,12 +31,18 @@ filegroup(
         ":triggered_children_destruction_destructors_control",
         ":triggered_children_destruction_error",
         ":triggered_children_destruction_error_control",
+        ":triggered_children_destruction_in_destructor",
+        ":triggered_children_destruction_in_destructor_contracted",
+        ":triggered_children_destruction_in_destructor_contracted_control",
+        ":triggered_children_destruction_in_destructor_control",
         ":triggered_children_destruction_move",
         ":triggered_children_destruction_move_control",
         ":triggered_children_destruction_rearrange",
         ":triggered_children_destruction_rearrange_control",
         ":triggered_children_destruction_rearrange_destructors",
         ":triggered_children_destruction_rearrange_destructors_control",
+        ":triggered_children_destruction_same_particle",
+        ":triggered_children_destruction_same_particle_control",
         ":wide_destruction",
     ],
     visibility = [
@@ -247,6 +253,34 @@ filegroup(
 )
 
 filegroup(
+    name = "triggered_children_destruction_in_destructor",
+    testonly = True,
+    srcs = ["triggered_children_destruction_in_destructor.dfn"],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)
+
+filegroup(
+    name = "triggered_children_destruction_in_destructor_contracted",
+    testonly = True,
+    srcs = ["triggered_children_destruction_in_destructor_contracted.dfn"],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)
+
+filegroup(
+    name = "triggered_children_destruction_in_destructor_contracted_control",
+    testonly = True,
+    srcs = ["triggered_children_destruction_in_destructor_contracted_control.dfn"],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)
+
+filegroup(
+    name = "triggered_children_destruction_in_destructor_control",
+    testonly = True,
+    srcs = ["triggered_children_destruction_in_destructor_control.dfn"],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)
+
+filegroup(
     name = "triggered_children_destruction_move",
     testonly = True,
     srcs = ["triggered_children_destruction_move.dfn"],
@@ -285,6 +319,20 @@ filegroup(
     name = "triggered_children_destruction_rearrange_destructors_control",
     testonly = True,
     srcs = ["triggered_children_destruction_rearrange_destructors_control.dfn"],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)
+
+filegroup(
+    name = "triggered_children_destruction_same_particle",
+    testonly = True,
+    srcs = ["triggered_children_destruction_same_particle.dfn"],
+    visibility = ["//define/compiler/resource_tests:__pkg__"],
+)
+
+filegroup(
+    name = "triggered_children_destruction_same_particle_control",
+    testonly = True,
+    srcs = ["triggered_children_destruction_same_particle_control.dfn"],
     visibility = ["//define/compiler/resource_tests:__pkg__"],
 )
 
