@@ -38,7 +38,7 @@ local_path_override(
 # TODO: Upgrade to an aspect_rules_py release with PR #1538 and remove this override.
 git_override(
     module_name = "aspect_rules_py",
-    commit = "64ac812ee41bd7e3becec4ca1efa2a14e5337614",
+    commit = "25fdcc0a9ac09784a62720203a425fe84fe188ec",
     remote = "https://github.com/aspect-build/rules_py.git",
 )
 
