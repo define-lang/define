@@ -25,10 +25,10 @@ if typing.TYPE_CHECKING:
     from define.compiler.validator import codegen_input
     from define.compiler.validator.reference_graph import (
         action_contract,
-        child_state,
         position_occupancy,
         quality_assignment,
     )
+    from define.compiler.validator.reference_graph.destruction import child_state
 
 
 class OccupancyInfo(msgspec.Struct, frozen=True):

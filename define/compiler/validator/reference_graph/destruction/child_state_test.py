@@ -5,9 +5,9 @@ import random
 from define.compiler import ast, chained_name
 from define.compiler.validator.reference_graph import (
     action_contract,
-    child_state,
     position_occupancy,
 )
+from define.compiler.validator.reference_graph.destruction import child_state
 from define.compiler.validator.reference_graph.particles import particle_info
 
 

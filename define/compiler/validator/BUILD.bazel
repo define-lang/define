@@ -12,7 +12,7 @@ py_library(
         "//define/compiler:ast",
         "//define/compiler:chained_name",
         "//define/compiler/graphs:reference_graph_order",
-        "//define/compiler/validator/reference_graph:destruction_contract",
+        "//define/compiler/validator/reference_graph/destruction:destruction_contract",
         "@pypi//msgspec",
     ],
 )

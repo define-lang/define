@@ -19,8 +19,6 @@ from define.compiler.validator.reference_graph import (
     action_contract,
     action_requirement_validator,
     chained_name_validator,
-    destruction_contract_validator,
-    destruction_planner,
     literal_encoder,
     operation_arguments_validator,
     particle_operation_validator,
@@ -29,12 +27,16 @@ from define.compiler.validator.reference_graph import (
     quality_assignment,
     reference_graph_validation_state,
 )
-from define.compiler.validator.reference_graph import (
-    destruction_contract as destruction_contract_types,
-)
 from define.compiler.validator.reference_graph.dead_code import (
     dead_constraint_validator,
     dead_value_write_validator,
+)
+from define.compiler.validator.reference_graph.destruction import (
+    destruction_contract as destruction_contract_types,
+)
+from define.compiler.validator.reference_graph.destruction import (
+    destruction_contract_validator,
+    destruction_planner,
 )
 from define.compiler.validator.reference_graph.particles import (
     particle_info,

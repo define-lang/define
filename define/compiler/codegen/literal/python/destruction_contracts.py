@@ -16,7 +16,9 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
     from define.compiler.validator import codegen_input
-    from define.compiler.validator.reference_graph import destruction_contract
+    from define.compiler.validator.reference_graph.destruction import (
+        destruction_contract,
+    )
 
 
 @final

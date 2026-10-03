@@ -57,7 +57,7 @@ py_library(
         ":value_types",
         "//define/compiler:ast",
         "//define/compiler/validator:codegen_input",
-        "//define/compiler/validator/reference_graph:destruction_contract",
+        "//define/compiler/validator/reference_graph/destruction:destruction_contract",
         "@pypi//msgspec",
     ],
 )
@@ -72,7 +72,7 @@ py_library(
         ":template_context",
         "//define/compiler:ast",
         "//define/compiler/validator:codegen_input",
-        "//define/compiler/validator/reference_graph:destruction_contract",
+        "//define/compiler/validator/reference_graph/destruction:destruction_contract",
     ],
 )
 
@@ -119,7 +119,7 @@ py_library(
         "//define/compiler:constants",
         "//define/compiler:name_types",
         "//define/compiler/data_structures:define_path",
-        "//define/compiler/validator/reference_graph:destruction_contract",
+        "//define/compiler/validator/reference_graph/destruction:destruction_contract",
         "@pypi//msgspec",
     ],
 )

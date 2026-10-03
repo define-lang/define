@@ -16,11 +16,9 @@ if typing.TYPE_CHECKING:
     from collections.abc import Iterator
 
     from define.compiler import ast
-    from define.compiler.validator.reference_graph import (
-        child_state,
-        quality_assignment,
-    )
-    from define.compiler.validator.reference_graph import (
+    from define.compiler.validator.reference_graph import quality_assignment
+    from define.compiler.validator.reference_graph.destruction import child_state
+    from define.compiler.validator.reference_graph.destruction import (
         destruction_contract as destruction_contract_types,
     )
 

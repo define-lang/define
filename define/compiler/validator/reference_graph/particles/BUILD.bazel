@@ -47,8 +47,8 @@ py_library(
         "//define/compiler:chained_name",
         "//define/compiler/data_structures:trie",
         "//define/compiler/validator/reference_graph:action_contract",
-        "//define/compiler/validator/reference_graph:child_state",
         "//define/compiler/validator/reference_graph:position_occupancy",
+        "//define/compiler/validator/reference_graph/destruction:child_state",
         "@pypi//msgspec",
     ],
 )
@@ -67,9 +67,9 @@ py_library(
         "//define/compiler:chained_name",
         "//define/compiler/validator:codegen_input",
         "//define/compiler/validator/reference_graph:action_contract",
-        "//define/compiler/validator/reference_graph:child_state",
         "//define/compiler/validator/reference_graph:position_occupancy",
         "//define/compiler/validator/reference_graph:quality_assignment",
+        "//define/compiler/validator/reference_graph/destruction:child_state",
         "@pypi//msgspec",
     ],
 )

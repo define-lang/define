@@ -16,7 +16,9 @@ if typing.TYPE_CHECKING:
 
     from define.compiler import chained_name
     from define.compiler.data_structures import define_path
-    from define.compiler.validator.reference_graph import destruction_contract
+    from define.compiler.validator.reference_graph.destruction import (
+        destruction_contract,
+    )
 
 _AUTHORITY_CHAR_TABLE = str.maketrans(".-~/", "____")
 _RESERVED_NAMES = (*keyword.kwlist, "self", "literal", "destruction_contracts")

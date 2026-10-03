@@ -9,10 +9,10 @@ import pytest
 from define.compiler import chained_name
 from define.compiler.validator.reference_graph import (
     action_contract,
-    child_state,
     position_occupancy,
     reference_graph_validation_state,
 )
+from define.compiler.validator.reference_graph.destruction import child_state
 from define.compiler.validator.reference_graph.test_helpers import action_graph
 from define.compiler.validator.test_helpers import assert_no_errors
 

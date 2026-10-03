@@ -1,0 +1,109 @@
+load("@aspect_rules_py//py:defs.bzl", "py_library")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+load("//tools/bzl:format.bzl", "format_test")
+load("//tools/bzl:py_test.bzl", "py_test")
+load("//tools/bzl:pyright.bzl", "pyright_test")
+
+py_library(
+    name = "child_state",
+    srcs = ["child_state.py"],
+    visibility = ["//define/compiler/validator/reference_graph:__subpackages__"],
+    deps = [
+        "//define/compiler:chained_name",
+        "//define/compiler/validator/reference_graph:position_occupancy",
+        "//define/compiler/validator/reference_graph/particles:particle_info",
+    ],
+)
+
+py_test(
+    name = "child_state_test",
+    size = "small",
+    srcs = ["child_state_test.py"],
+    deps = [
+        ":child_state",
+        "//define/compiler:ast",
+        "//define/compiler:chained_name",
+        "//define/compiler/validator/reference_graph:action_contract",
+        "//define/compiler/validator/reference_graph:position_occupancy",
+        "//define/compiler/validator/reference_graph/particles:particle_info",
+    ],
+)
+
+py_library(
+    name = "destruction_contract",
+    srcs = ["destruction_contract.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        "//define/compiler:ast",
+        "//define/compiler:chained_name",
+        "@pypi//msgspec",
+    ],
+)
+
+py_library(
+    name = "destruction_contract_validator",
+    srcs = ["destruction_contract_validator.py"],
+    visibility = ["//define/compiler/validator/reference_graph:__subpackages__"],
+    deps = [
+        ":child_state",
+        ":destruction_contract",
+        ":destruction_planner",
+        "//define/compiler:ast",
+        "//define/compiler:chained_name",
+        "//define/compiler:name_types",
+        "//define/compiler/data_structures:typed_name_dict",
+        "//define/compiler/errors:diagnostics",
+        "//define/compiler/validator:validation_result",
+        "//define/compiler/validator/reference_graph:action_contract",
+        "//define/compiler/validator/reference_graph:position_occupancy",
+        "//define/compiler/validator/reference_graph:quality_assignment",
+        "//define/compiler/validator/reference_graph:reference_graph_validation_state",
+        "//define/compiler/validator/reference_graph:requirement_violation",
+        "//define/compiler/validator/reference_graph/dead_code:dead_value_write_validator",
+        "//define/compiler/validator/reference_graph/particles:particle_info",
+        "//define/compiler/validator/reference_graph/particles:particle_tracker",
+        "@pypi//msgspec",
+    ],
+)
+
+py_library(
+    name = "destruction_planner",
+    srcs = ["destruction_planner.py"],
+    visibility = ["//define/compiler/validator/reference_graph:__subpackages__"],
+    deps = [
+        ":destruction_contract",
+        "//define/compiler:ast",
+        "//define/compiler:chained_name",
+        "//define/compiler:name_types",
+        "//define/compiler/data_structures:typed_name_dict",
+        "//define/compiler/validator:codegen_input",
+        "//define/compiler/validator:validation_result",
+        "//define/compiler/validator/reference_graph:action_contract",
+        "//define/compiler/validator/reference_graph:action_requirement_validator",
+        "//define/compiler/validator/reference_graph:position_quality_resolver",
+        "//define/compiler/validator/reference_graph:quality_assignment",
+        "//define/compiler/validator/reference_graph:reference_graph_validation_state",
+        "//define/compiler/validator/reference_graph/particles:particle_info",
+        "//define/compiler/validator/reference_graph/particles:particle_tracker",
+        "@pypi//msgspec",
+    ],
+)
+
+format_test(
+    name = "format_test",
+    srcs = glob(["*.py"]),
+    python = "@multitool//tools/ruff",
+)
+
+pyright_test(
+    name = "pyright_test",
+    deps = [
+        ":child_state",
+        ":child_state_test",
+        ":destruction_contract",
+        ":destruction_contract_validator",
+        ":destruction_planner",
+    ],
+)
+
+check_build_file()

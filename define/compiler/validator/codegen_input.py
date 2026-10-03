@@ -11,7 +11,9 @@ from define.compiler import ast
 if TYPE_CHECKING:
     from define.compiler import chained_name
     from define.compiler.graphs import reference_graph_order
-    from define.compiler.validator.reference_graph import destruction_contract
+    from define.compiler.validator.reference_graph.destruction import (
+        destruction_contract,
+    )
 
 
 # Repeated executions of the same action must remain distinct while nested

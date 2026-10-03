@@ -9,10 +9,8 @@ import msgspec
 
 from define.compiler import ast, chained_name, name_types
 from define.compiler.validator import codegen_input
-from define.compiler.validator.reference_graph import (
-    action_contract,
-    destruction_contract,
-)
+from define.compiler.validator.reference_graph import action_contract
+from define.compiler.validator.reference_graph.destruction import destruction_contract
 from define.compiler.validator.reference_graph.particles import particle_info
 
 if typing.TYPE_CHECKING:

@@ -18,7 +18,9 @@ from define.compiler.codegen.literal.python import (
 from define.compiler.validator import codegen_input
 
 if TYPE_CHECKING:
-    from define.compiler.validator.reference_graph import destruction_contract
+    from define.compiler.validator.reference_graph.destruction import (
+        destruction_contract,
+    )
 
 
 class GeneratedActionStatements(msgspec.Struct):

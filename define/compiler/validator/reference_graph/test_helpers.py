@@ -10,9 +10,9 @@ from define.compiler.validator import codegen_input
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
 
-    from define.compiler.validator.reference_graph import (
+    from define.compiler.validator.reference_graph import reference_graph_validator
+    from define.compiler.validator.reference_graph.destruction import (
         destruction_contract,
-        reference_graph_validator,
     )
 
 

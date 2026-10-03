@@ -651,10 +651,10 @@ py_test(
         "//define/compiler:conftest",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/reference_graph:action_contract",
-        "//define/compiler/validator/reference_graph:child_state",
         "//define/compiler/validator/reference_graph:position_occupancy",
         "//define/compiler/validator/reference_graph:reference_graph_validation_state",
         "//define/compiler/validator/reference_graph:test_helpers",
+        "//define/compiler/validator/reference_graph/destruction:child_state",
         "@pypi//pytest",
     ],
 )

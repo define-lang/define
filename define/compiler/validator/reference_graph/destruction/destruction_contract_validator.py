@@ -10,13 +10,13 @@ import msgspec
 from define.compiler import ast, chained_name, name_types
 from define.compiler.validator.reference_graph import (
     action_contract,
-    child_state,
     position_occupancy,
     quality_assignment,
     reference_graph_validation_state,
     requirement_violation,
 )
-from define.compiler.validator.reference_graph import (
+from define.compiler.validator.reference_graph.destruction import child_state
+from define.compiler.validator.reference_graph.destruction import (
     destruction_contract as destruction_contract_types,
 )
 from define.compiler.validator.reference_graph.particles import particle_info
@@ -27,11 +27,11 @@ if typing.TYPE_CHECKING:
     from define.compiler.data_structures import typed_name_dict
     from define.compiler.errors import diagnostics
     from define.compiler.validator import validation_result
-    from define.compiler.validator.reference_graph import (
-        destruction_planner,
-    )
     from define.compiler.validator.reference_graph.dead_code import (
         dead_value_write_validator,
+    )
+    from define.compiler.validator.reference_graph.destruction import (
+        destruction_planner,
     )
     from define.compiler.validator.reference_graph.particles import (
         particle_tracker,
