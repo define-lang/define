@@ -7,13 +7,13 @@ from typing import TYPE_CHECKING
 import msgspec
 
 from define.compiler import ast
+from define.compiler.validator.reference_graph.destruction import (
+    destruction_contract,
+)
 
 if TYPE_CHECKING:
     from define.compiler import chained_name
     from define.compiler.graphs import reference_graph_order
-    from define.compiler.validator.reference_graph.destruction import (
-        destruction_contract,
-    )
 
 
 # Repeated executions of the same action must remain distinct while nested
@@ -30,23 +30,17 @@ class ActionExecution(msgspec.Struct, eq=False):
 class Destruction(msgspec.Struct):
     """Known Destructors, contract contributions, and particle destructions."""
 
-    destructors: list[ast.ActionReference] = msgspec.field(default_factory=list)
+    work: destruction_contract.KnownDestructionWork = msgspec.field(
+        default_factory=destruction_contract.KnownDestructionWork
+    )
     contract_destructions: list[destruction_contract.PropagatedDestruction] = (
         msgspec.field(default_factory=list)
     )
-    positions: list[ast.PositionReference] = msgspec.field(default_factory=list)
-    # What runs for particles that callees left below the destroyed
-    # particles and that this action never expanded.
-    guaranteed_particle_destructors: list[
-        destruction_contract.RunGuaranteedParticleDestructors
-    ] = msgspec.field(default_factory=list)
 
 
 class GuaranteedParticleDestructors(msgspec.Struct):
     """What runs when what an action left at and below one of its contracted positions is destroyed without being applied."""
 
-    # From the action's perspective.
-    position: ast.PositionReference
     # Named as action_contract.GuaranteedPosition.position names positions.
     position_in_action: chained_name.PositionReferenceTuple
     # Destructors of the particle the action left there.

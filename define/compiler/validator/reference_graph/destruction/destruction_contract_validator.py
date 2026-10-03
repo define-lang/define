@@ -7,7 +7,7 @@ import typing
 
 import msgspec
 
-from define.compiler import ast, chained_name, name_types
+from define.compiler import ast, chained_name
 from define.compiler.validator.reference_graph import (
     action_contract,
     position_occupancy,
@@ -15,7 +15,10 @@ from define.compiler.validator.reference_graph import (
     reference_graph_validation_state,
     requirement_violation,
 )
-from define.compiler.validator.reference_graph.destruction import child_state
+from define.compiler.validator.reference_graph.destruction import (
+    child_state,
+    destroyed_particles,
+)
 from define.compiler.validator.reference_graph.destruction import (
     destruction_contract as destruction_contract_types,
 )
@@ -29,9 +32,6 @@ if typing.TYPE_CHECKING:
     from define.compiler.validator import validation_result
     from define.compiler.validator.reference_graph.dead_code import (
         dead_value_write_validator,
-    )
-    from define.compiler.validator.reference_graph.destruction import (
-        destruction_planner,
     )
     from define.compiler.validator.reference_graph.particles import (
         particle_tracker,
@@ -61,28 +61,88 @@ class _ResolvedRequirement(msgspec.Struct, frozen=True):
     value_state: particle_info.ParticleValueState | None
 
 
-class _DestructionContractInCaller(msgspec.Struct, frozen=True):
-    """A callee's Destruction Contract and its particle from the caller's perspective."""
+class _CalleeDestructionContractInCaller(msgspec.Struct):
+    """One Destruction Contract of a callee destruction from the caller's perspective, with what the caller contributes to that destruction."""
 
     contract: action_contract.DestructionContract
+    # The contract's particle, and its position from the caller's perspective.
     position: ast.PositionReference
+    particle: particle_info.ParticleInfo
     connection: destruction_contract_types.DestructionConnection
-
-
-class _CallerDestructionState(msgspec.Struct):
-    """What a caller knows about the particles one callee destruction destroyed, by Child State position."""
-
-    contracts: list[_DestructionContractInCaller] = msgspec.field(default_factory=list)
-    occupancy: child_state.ChildOccupancyMap = msgspec.field(default_factory=dict)
-    values: child_state.ChildValueMap = msgspec.field(default_factory=dict)
-    # Every Destruction Contract from one destruction shares these, so a
-    # destructor can find a particle that another of those contracts collected.
-    particles: dict[chained_name.ChainedNameTuple, particle_info.ParticleInfo] = (
-        msgspec.field(default_factory=dict)
+    destroying_definition: ast.ActionDefinition
+    # What the caller contributes, with positions from the perspective of the
+    # contract's particle, as the callee's generated method names them.
+    work: destruction_contract_types.KnownDestructionWork = msgspec.field(
+        default_factory=destruction_contract_types.KnownDestructionWork
     )
-    unexpanded: dict[
-        chained_name.ChainedNameTuple, action_contract.ChildPositionParticles
-    ] = msgspec.field(default_factory=dict)
+
+    def names_below_contract_particle(
+        self, position: ast.PositionReference
+    ) -> chained_name.ChainedNameTuple:
+        """Return the names of ``position``, a position from the caller's perspective at or below the contract's particle, after the particle's position."""
+        return chained_name.without_prefix(
+            position.canonical_chained_name_tuple,
+            self.position.canonical_chained_name_tuple,
+        )
+
+    def position_in_child_state(
+        self, position: ast.PositionReference
+    ) -> chained_name.ChainedNameTuple:
+        """Return the Child State name of ``position``, a position from the caller's perspective at or below the contract's particle."""
+        return chained_name.with_prefix(
+            self.names_below_contract_particle(position),
+            self.contract.position_in_child_state,
+        )
+
+    def from_particle[Reference: ast.ChainedName](
+        self, reference: Reference
+    ) -> Reference:
+        """Return ``reference``, a chained name from the caller's perspective at or below the contract's particle, from the particle's perspective."""
+        return type(reference)(
+            location=reference.location,
+            typed_names=reference.typed_names[len(self.position.typed_names) :],
+        )
+
+
+class _CalleeDestructionInCaller(msgspec.Struct):
+    """One callee destruction from the caller's perspective, shared by all of its Destruction Contracts."""
+
+    callee_contracts: action_contract.DestructionContracts
+    # The ones whose particle the caller has.
+    contracts: list[_CalleeDestructionContractInCaller]
+    propagated_contracts: action_contract.DestructionContracts
+    trigger_step: action_contract.PropagationStep
+    # The caller's particles at the moment of destruction, by Child State
+    # position, which can differ from where the caller has them now when the
+    # callee moved them. Every Destruction Contract from one destruction
+    # shares these, so a destructor can find a particle that another of those
+    # contracts collected.
+    caller_particles: dict[chained_name.ChainedNameTuple, particle_info.ParticleInfo]
+    validation_diagnostics: list[diagnostics.Diagnostic]
+
+    def another_contract_starts_at(
+        self, position_in_child_state: chained_name.ChainedNameTuple
+    ) -> bool:
+        """Return whether another Destruction Contract of this destruction starts at ``position_in_child_state``."""
+        # That contract validates this position and its child names, so
+        # continuing this traversal would record their caller-contributed
+        # Destroys twice.
+        return position_in_child_state in self.callee_contracts.positions
+
+    def child_state_records_empty(
+        self, position_in_child_state: chained_name.ChainedNameTuple
+    ) -> bool:
+        """Return whether the merged Child State records ``position_in_child_state`` as empty."""
+        # A position the destruction-time picture records as empty was emptied
+        # before the destruction, so nothing there was destroyed and thus there
+        # is no more work to do.
+        occupancy = self.propagated_contracts.child_state.occupancy.get(
+            position_in_child_state
+        )
+        return (
+            occupancy is not None
+            and occupancy.state == position_occupancy.PositionOccupancyState.EMPTY
+        )
 
 
 class DestructionContractValidator:
@@ -96,7 +156,7 @@ class DestructionContractValidator:
     _validation_state: reference_graph_validation_state.ReferenceGraphValidationState
     _tracker: particle_tracker.ParticleTracker
     _dead_value_write_validator: dead_value_write_validator.DeadValueWriteValidator
-    _destruction_planner: destruction_planner.DestructionPlanner
+    _destroyed_particles: destroyed_particles.DestroyedParticles
 
     def __init__(
         self,
@@ -108,7 +168,7 @@ class DestructionContractValidator:
         validation_state: reference_graph_validation_state.ReferenceGraphValidationState,
         tracker: particle_tracker.ParticleTracker,
         dead_value_write_validator: dead_value_write_validator.DeadValueWriteValidator,
-        destruction_planner: destruction_planner.DestructionPlanner,
+        destroyed_particles: destroyed_particles.DestroyedParticles,
     ):
         """Initialize with the caller's definition, particle state, and known definitions."""
         self._definition = definition
@@ -116,7 +176,7 @@ class DestructionContractValidator:
         self._validation_state = validation_state
         self._tracker = tracker
         self._dead_value_write_validator = dead_value_write_validator
-        self._destruction_planner = destruction_planner
+        self._destroyed_particles = destroyed_particles
 
     def validate(
         self,
@@ -141,41 +201,73 @@ class DestructionContractValidator:
             )
         return result
 
-    def _destruction_contracts_in_caller(
+    def _callee_destruction_in_caller(
         self,
         callee_contracts: action_contract.DestructionContracts,
         action_chain: ast.ActionReference,
-        connections: list[destruction_contract_types.DestructionConnection],
-    ) -> _CallerDestructionState:
-        """Resolve contracted positions and collect the caller's Child State and particles."""
-        state = _CallerDestructionState()
+        trigger_step: action_contract.PropagationStep,
+        result: DestructionContractValidationResult,
+    ) -> _CalleeDestructionInCaller:
+        """Resolve a callee destruction's contracted positions in the caller, and collect the caller's Child State and particles for them."""
+        contracts: list[_CalleeDestructionContractInCaller] = []
+        occupancy: child_state.ChildOccupancyMap = {}
+        values: child_state.ChildValueMap = {}
+        particles: dict[chained_name.ChainedNameTuple, particle_info.ParticleInfo] = {}
+        unexpanded: dict[
+            chained_name.ChainedNameTuple, action_contract.ChildPositionParticles
+        ] = {}
         for destruction_contract in callee_contracts.particles:
             connection = destruction_contract_types.DestructionConnection(
                 callee_destruction=destruction_contract.propagated_destruction,
             )
-            connections.append(connection)
+            result.connections.append(connection)
             position = destruction_contract.propagated_destruction.contracted_position.in_caller(
                 action_chain
             )
             # The action's requirement check already handles missing or
             # error-state particles, so there is nothing more to verify here.
-            occupancy = self._tracker.get_occupancy_info(position)
-            if occupancy.occupant is None:
+            particle = self._tracker.get_occupancy_info(position).occupant
+            if particle is None:
                 continue
             self._tracker.collect_caller_destruction_state(
-                state.occupancy,
-                state.values,
-                state.particles,
-                state.unexpanded,
+                occupancy,
+                values,
+                particles,
+                unexpanded,
                 callee_contracts.child_state,
                 position,
                 destruction_contract.position_in_child_state,
                 callee_contracts.positions,
             )
-            state.contracts.append(
-                _DestructionContractInCaller(destruction_contract, position, connection)
+            destroying_definition_result = self._definition_results[
+                destruction_contract.propagated_destruction.destruction_fact.destruction.destroying_action
+            ]
+            contracts.append(
+                _CalleeDestructionContractInCaller(
+                    contract=destruction_contract,
+                    position=position,
+                    particle=particle,
+                    connection=connection,
+                    destroying_definition=typing.cast(
+                        "ast.ActionDefinition", destroying_definition_result.definition
+                    ),
+                )
             )
-        return state
+        return _CalleeDestructionInCaller(
+            callee_contracts=callee_contracts,
+            contracts=contracts,
+            propagated_contracts=action_contract.DestructionContracts(
+                child_state=callee_contracts.child_state.with_caller(
+                    occupancy, values, unexpanded
+                ),
+                propagation=action_contract.PropagationHistory(
+                    trigger_step, callee_contracts.propagation
+                ),
+            ),
+            trigger_step=trigger_step,
+            caller_particles=particles,
+            validation_diagnostics=result.diagnostics,
+        )
 
     def _check_destruction_contract_group(
         self,
@@ -185,82 +277,24 @@ class DestructionContractValidator:
         result: DestructionContractValidationResult,
     ):
         """Verify particles sharing Child State and record their contributions."""
-        caller_state = self._destruction_contracts_in_caller(
-            callee_contracts, action_chain, result.connections
+        destruction = self._callee_destruction_in_caller(
+            callee_contracts, action_chain, trigger_step, result
         )
-        propagated_contracts = action_contract.DestructionContracts(
-            child_state=callee_contracts.child_state.with_caller(
-                caller_state.occupancy, caller_state.values, caller_state.unexpanded
-            ),
-            propagation=action_contract.PropagationHistory(
-                trigger_step, callee_contracts.propagation
-            ),
-        )
-        for caller_contract in caller_state.contracts:
-            self._check_one_destruction_contract(
-                caller_contract,
-                trigger_step,
-                callee_contracts,
-                propagated_contracts,
-                caller_state.particles,
-                result.diagnostics,
-            )
-        if propagated_contracts.particles:
-            result.propagated_contracts.append(propagated_contracts)
+        for contract in destruction.contracts:
+            self._check_one_destruction_contract(contract, destruction)
+        if destruction.propagated_contracts.particles:
+            result.propagated_contracts.append(destruction.propagated_contracts)
 
     def _check_one_destruction_contract(
         self,
-        caller_contract: _DestructionContractInCaller,
-        trigger_step: action_contract.PropagationStep,
-        callee_contracts: action_contract.DestructionContracts,
-        propagated_contracts: action_contract.DestructionContracts,
-        caller_particles: dict[
-            chained_name.ChainedNameTuple, particle_info.ParticleInfo
-        ],
-        validation_diagnostics: list[diagnostics.Diagnostic],
+        contract: _CalleeDestructionContractInCaller,
+        destruction: _CalleeDestructionInCaller,
     ):
-        destruction_contract = caller_contract.contract
-        caller_particle_position = caller_contract.position
-        destroying_definition_result = self._definition_results[
-            destruction_contract.propagated_destruction.destruction_fact.destruction.destroying_action
-        ]
-        destroying_definition = typing.cast(
-            "ast.ActionDefinition", destroying_definition_result.definition
+        self._verify_destroyed(
+            contract.position, contract.particle, contract, destruction
         )
-        destructor_contributions: list[ast.ActionReference] = []
-        guaranteed_particle_destructors: list[
-            destruction_contract_types.RunGuaranteedParticleDestructors
-        ] = []
-        newly_occupied_children: list[ast.PositionReference] = []
-        self._verify_destruction_cascade(
-            caller_particle_position,
-            (),
-            destruction_contract.position_in_child_state,
-            caller_particles=caller_particles,
-            destruction_contract=destruction_contract,
-            destroying_definition=destroying_definition,
-            caller_prefix_length=len(caller_particle_position.typed_names),
-            trigger_step=trigger_step,
-            callee_contracts=callee_contracts,
-            propagated_contracts=propagated_contracts,
-            connection=caller_contract.connection,
-            destructor_contributions=destructor_contributions,
-            guaranteed_particle_destructors=guaranteed_particle_destructors,
-            newly_occupied_children=newly_occupied_children,
-            validation_diagnostics=validation_diagnostics,
-        )
-        if (
-            destructor_contributions
-            or guaranteed_particle_destructors
-            or newly_occupied_children
-        ):
-            caller_contract.connection.contribution = destruction_contract_types.DestructionContribution(
-                destruction_fact=destruction_contract.propagated_destruction.destruction_fact,
-                position_in_caller=caller_particle_position,
-                destructors=destructor_contributions,
-                guaranteed_particle_destructors=guaranteed_particle_destructors,
-                positions=newly_occupied_children,
-            )
+        if contract.work.has_work():
+            contract.connection.contribution = contract.work
 
     def _re_record_destruction_contract(
         self,
@@ -291,177 +325,86 @@ class DestructionContractValidator:
         )
         connection.forwarded_destructions.append(propagated_destruction)
 
-    def _verify_destruction_cascade(
+    def _verify_destroyed(
         self,
-        position_prefix: ast.PositionReference,
-        position_suffix: tuple[ast.TypedNameReference, ...],
-        position_in_child_state: chained_name.ChainedNameTuple,
-        *,
-        caller_particles: dict[
-            chained_name.ChainedNameTuple, particle_info.ParticleInfo
-        ],
-        destruction_contract: action_contract.DestructionContract,
-        destroying_definition: ast.ActionDefinition,
-        caller_prefix_length: int,
-        trigger_step: action_contract.PropagationStep,
-        callee_contracts: action_contract.DestructionContracts,
-        propagated_contracts: action_contract.DestructionContracts,
-        connection: destruction_contract_types.DestructionConnection,
-        destructor_contributions: list[ast.ActionReference],
-        guaranteed_particle_destructors: list[
-            destruction_contract_types.RunGuaranteedParticleDestructors
-        ],
-        newly_occupied_children: list[ast.PositionReference],
-        validation_diagnostics: list[diagnostics.Diagnostic],
+        position: ast.PositionReference,
+        particle: particle_info.ParticleInfo,
+        contract: _CalleeDestructionContractInCaller,
+        destruction: _CalleeDestructionInCaller,
     ):
-        # Another Destruction Contract for this simultaneous destruction starts at this
-        # position. It validates this position and its child names, so continuing
-        # this traversal would record their caller-contributed Destroys twice.
-        if position_suffix and position_in_child_state in callee_contracts.positions:
-            return
-        position = (
-            position_prefix.with_position_suffix(*position_suffix)
-            if position_suffix
-            else position_prefix
-        )
-        particle = self._caller_particle(
-            position,
-            position_in_child_state,
-            caller_particles,
-            guaranteed_particle_destructors,
-        )
-        if particle is None:
-            return
-        occupancy = propagated_contracts.child_state.occupancy.get(
-            position_in_child_state
-        )
-        # A position the destruction-time picture records as empty was emptied
-        # before the destruction, so nothing there was destroyed and thus there
-        # is no more work to do.
-        if (
-            occupancy is not None
-            and occupancy.state == position_occupancy.PositionOccupancyState.EMPTY
-        ):
-            return
-        relative_key = chained_name.without_prefix(
-            position_in_child_state, destruction_contract.position_in_child_state
-        )
+        """Verify the Destructors on ``particle``, in ``position``, and on the particles in its transitive child positions that this action knows and the callee did not, and record what this action contributes to destroying them."""
+        destruction_contract = contract.contract
+        relative_key = contract.names_below_contract_particle(position)
         # A child absent from the contract was unknown to the callee but is
         # occupied from this caller's perspective, so this caller contributes
         # its Destroy. The contracted position itself is already destroyed by
         # the callee and therefore is not a contributed child Destroy.
-        callee_occupancy = callee_contracts.child_occupancy(
+        callee_occupancy = destruction.callee_contracts.child_occupancy(
             destruction_contract, relative_key
         )
         is_newly_occupied_child = bool(relative_key and callee_occupancy is None)
         from_caller = particle.source is particle_info.ParticleSource.CALLER
         newly_verified: list[ast.GlobalTypedNameReference] = []
-        if relative_key:
-            destruction_fact = destruction_contract_types.DestructionFact(
-                destruction=destruction_contract.propagated_destruction.destruction_fact.destruction,
-                # The contracted position can have a different name in the caller,
-                # but its child-name suffix is unchanged. Append only that suffix
-                # to express the child's position in the destroying action.
-                # For example, if the caller's position<box> corresponds to the
-                # destroyer's position<target>, position<box>::position</child>
-                # becomes position<target>::position</child>.
-                destroyed_position_in_destroyer=destruction_contract.propagated_destruction.destruction_fact.destroyed_position_in_destroyer.with_position_suffix(
-                    *position.typed_names[caller_prefix_length:]
-                ),
+        destruction_fact, verified_destructors = (
+            _destruction_fact_and_verified_destructors(position, particle, contract)
+        )
+        # A particle keeps its own qualities across Moves, so its qualities,
+        # not the current position's constraints, decide what is below it.
+        child_names, destructors = (
+            self._destroyed_particles.child_names_and_destructors(
+                particle.qualities.assignments
             )
-            verified_destructors = quality_assignment.EMPTY_QUALITY_ASSIGNMENTS
-        else:
-            destruction_fact = (
-                destruction_contract.propagated_destruction.destruction_fact
+        )
+        for destructor in destructors:
+            if verified_destructors.has_quality(destructor):
+                continue
+            destructor_contribution = self._verify_one_cascade_destructor(
+                destructor,
+                position,
+                particle,
+                contract,
+                destruction,
+                from_caller=from_caller,
+                newly_verified=newly_verified,
             )
-            verified_destructors = destruction_contract.verified_destructors
-        for quality in reversed(particle.qualities.assignments):
-            if quality.name_type == name_types.NameType.POSITION:
-                child_position_suffix = (quality,)
-                child_position_in_child_state = chained_name.with_suffix(
-                    position_in_child_state, quality.full_typed_name
+            if destructor_contribution is not None:
+                contract.work.destructors.append(
+                    contract.from_particle(destructor_contribution)
                 )
-                self._verify_destruction_cascade(
-                    position,
-                    child_position_suffix,
-                    child_position_in_child_state,
-                    caller_particles=caller_particles,
-                    destruction_contract=destruction_contract,
-                    destroying_definition=destroying_definition,
-                    caller_prefix_length=caller_prefix_length,
-                    trigger_step=trigger_step,
-                    callee_contracts=callee_contracts,
-                    propagated_contracts=propagated_contracts,
-                    connection=connection,
-                    destructor_contributions=destructor_contributions,
-                    guaranteed_particle_destructors=guaranteed_particle_destructors,
-                    newly_occupied_children=newly_occupied_children,
-                    validation_diagnostics=validation_diagnostics,
+        for names in child_names:
+            child_position = position.with_position_suffix(*names)
+            found = (
+                self._destroyed_particles.particle_to_destroy_or_destructors_call_at(
+                    child_position, particle
                 )
-            elif quality.name_type == name_types.NameType.ACTION:
-                definition_result = self._definition_results.get(quality)
-                if definition_result is None:
-                    continue
-                definition = typing.cast(
-                    "ast.ActionDefinition", definition_result.definition
+            )
+            if isinstance(
+                found, destruction_contract_types.RunGuaranteedParticleDestructors
+            ):
+                contract.work.guaranteed_particle_destructors.append(
+                    msgspec.structs.replace(
+                        found, position=contract.from_particle(found.position)
+                    )
                 )
-                destructor_contribution = None
-                if definition.is_destructor and not verified_destructors.has_quality(
-                    quality
-                ):
-                    destructor_contribution = self._verify_one_cascade_destructor(
-                        destructor_quality=quality,
-                        particle_position=position,
-                        particle=particle,
-                        destruction_contract=destruction_contract,
-                        callee_contracts=callee_contracts,
-                        destroying_definition=destroying_definition,
-                        caller_prefix_length=caller_prefix_length,
-                        trigger_step=trigger_step,
-                        merged_child_state=propagated_contracts.child_state,
-                        caller_particles=caller_particles,
-                        from_caller=from_caller,
-                        newly_verified=newly_verified,
-                        validation_diagnostics=validation_diagnostics,
-                    )
-                if destructor_contribution is not None:
-                    destructor_contributions.append(destructor_contribution)
-                for interface_position in reversed(definition.interface_positions):
-                    interface_position_name = interface_position.typed_name
-                    child_position_suffix = (quality, interface_position_name)
-                    child_position_in_child_state = chained_name.with_suffix(
-                        position_in_child_state,
-                        quality.full_typed_name,
-                        interface_position_name.full_typed_name,
-                    )
-                    self._verify_destruction_cascade(
-                        position,
-                        child_position_suffix,
-                        child_position_in_child_state,
-                        caller_particles=caller_particles,
-                        destruction_contract=destruction_contract,
-                        destroying_definition=destroying_definition,
-                        caller_prefix_length=caller_prefix_length,
-                        trigger_step=trigger_step,
-                        callee_contracts=callee_contracts,
-                        propagated_contracts=propagated_contracts,
-                        connection=connection,
-                        destructor_contributions=destructor_contributions,
-                        guaranteed_particle_destructors=guaranteed_particle_destructors,
-                        newly_occupied_children=newly_occupied_children,
-                        validation_diagnostics=validation_diagnostics,
-                    )
-
+                continue
+            if found is None:
+                continue
+            child_in_child_state = contract.position_in_child_state(child_position)
+            if destruction.another_contract_starts_at(
+                child_in_child_state
+            ) or destruction.child_state_records_empty(child_in_child_state):
+                continue
+            self._verify_destroyed(child_position, found, contract, destruction)
         # A caller-passed child particle still needs its own contract even when
         # the particle at its parent position was created locally: higher callers
         # may know additional Destructors assigned to the child particle.
-        if particle.source is particle_info.ParticleSource.CALLER:
+        if from_caller:
             self._re_record_destruction_contract(
                 destruction_fact,
                 particle,
-                propagated_contracts,
-                connection,
-                position_in_child_state,
+                destruction.propagated_contracts,
+                contract.connection,
+                contract.position_in_child_state(position),
                 verified_destructors,
                 newly_verified,
             )
@@ -470,61 +413,23 @@ class DestructionContractValidator:
         # contributed Destroy operations are recorded child before parent; the
         # contracted position itself is destroyed by the callee.
         if is_newly_occupied_child:
-            newly_occupied_children.append(position)
-
-    def _caller_particle(
-        self,
-        position: ast.PositionReference,
-        position_in_child_state: chained_name.ChainedNameTuple,
-        caller_particles: dict[
-            chained_name.ChainedNameTuple, particle_info.ParticleInfo
-        ],
-        guaranteed_particle_destructors: list[
-            destruction_contract_types.RunGuaranteedParticleDestructors
-        ],
-    ) -> particle_info.ParticleInfo | None:
-        """Return the particle this action knows in ``position``, which the destruction destroyed, if it has to be expanded.
-
-        What a callee of this action left there that this action never
-        expanded is not expanded now either, unless something there needs it
-        to be. The call that runs its Destructors, if any run, is added to
-        ``guaranteed_particle_destructors``.
-        """
-        particle = caller_particles.get(position_in_child_state)
-        if particle is not None:
-            return particle
-        on_destruction = self._destruction_planner.on_unexpanded_destruction(position)
-        if isinstance(
-            on_destruction, destruction_contract_types.RunGuaranteedParticleDestructors
-        ):
-            guaranteed_particle_destructors.append(on_destruction)
-            return None
-        if on_destruction == action_contract.OnDestruction.NOTHING:
-            return None
-        occupancy = self._tracker.get_occupancy_info(position)
-        if occupancy.has_error or occupancy.occupant is None:
-            return None
-        caller_particles[position_in_child_state] = occupancy.occupant
-        return occupancy.occupant
+            contract.work.positions.append(
+                destruction_contract_types.DestroyedPosition(
+                    contract.from_particle(position),
+                    destruction_fact.destroyed_position_in_destroyer,
+                )
+            )
 
     def _verify_one_cascade_destructor(
         self,
-        *,
         destructor_quality: ast.GlobalTypedNameReference,
-        particle_position: ast.PositionReference,
+        position: ast.PositionReference,
         particle: particle_info.ParticleInfo,
-        destruction_contract: action_contract.DestructionContract,
-        callee_contracts: action_contract.DestructionContracts,
-        destroying_definition: ast.ActionDefinition,
-        caller_prefix_length: int,
-        trigger_step: action_contract.PropagationStep,
-        merged_child_state: action_contract.ChildState,
-        caller_particles: dict[
-            chained_name.ChainedNameTuple, particle_info.ParticleInfo
-        ],
+        contract: _CalleeDestructionContractInCaller,
+        destruction: _CalleeDestructionInCaller,
+        *,
         from_caller: bool,
         newly_verified: list[ast.GlobalTypedNameReference],
-        validation_diagnostics: list[diagnostics.Diagnostic],
     ) -> ast.ActionReference | None:
         """Verify one Destructor discovered through a Destruction Contract."""
         destructor_contract = self._validation_state.get_contract_or_none(
@@ -532,7 +437,7 @@ class DestructionContractValidator:
         )
         if destructor_contract is None:
             return None
-        action_chain = particle_position.with_action_suffix(destructor_quality)
+        action_chain = position.with_action_suffix(destructor_quality)
         # A destructor is checked exactly once: only at the action that knows the
         # state of every position it requires. Resolve the state of all required positions
         # first, before we attempt to check its requirements.
@@ -544,9 +449,8 @@ class DestructionContractValidator:
             resolution = self._resolve_destructor_requirement(
                 inner_req=inner_req,
                 action_chain=action_chain,
-                caller_prefix_length=caller_prefix_length,
-                destruction_contract=destruction_contract,
-                merged_child_state=merged_child_state,
+                contract=contract,
+                destruction=destruction,
                 from_caller=from_caller,
             )
             # If the state of any required position is not yet known, we
@@ -558,7 +462,9 @@ class DestructionContractValidator:
             if isinstance(
                 resolved_requirement.requirement, action_contract.ValueRequirement
             ):
-                required_particle = caller_particles.get(resolved_requirement.state_key)
+                required_particle = destruction.caller_particles.get(
+                    resolved_requirement.state_key
+                )
                 if required_particle is not None:
                     self._dead_value_write_validator.mark_particle_used(
                         required_particle
@@ -570,18 +476,18 @@ class DestructionContractValidator:
                 resolved_requirement.value_state,
             ):
                 continue
-            validation_diagnostics.append(
+            destruction.validation_diagnostics.append(
                 requirement_violation.contract_destructor(
                     propagated_requirement=resolved_requirement.requirement,
                     resolved_position=resolved_requirement.position,
                     occupancy=occupancy,
                     definition=self._definition,
-                    destroying_definition=destroying_definition,
-                    destruction_contract=destruction_contract,
-                    propagation_steps=callee_contracts.propagation_steps(),
-                    particle_position=particle_position,
+                    destroying_definition=contract.destroying_definition,
+                    destruction_contract=contract.contract,
+                    propagation_steps=destruction.callee_contracts.propagation_steps(),
+                    particle_position=position,
                     particle=particle,
-                    trigger_step=trigger_step,
+                    trigger_step=destruction.trigger_step,
                     destructor_quality=destructor_quality,
                 )
             )
@@ -593,9 +499,8 @@ class DestructionContractValidator:
         *,
         inner_req: action_contract.PositionRequirement,
         action_chain: ast.ActionReference,
-        caller_prefix_length: int,
-        destruction_contract: action_contract.DestructionContract,
-        merged_child_state: action_contract.ChildState,
+        contract: _CalleeDestructionContractInCaller,
+        destruction: _CalleeDestructionInCaller,
         from_caller: bool,
     ) -> _ResolvedRequirement | None:
         """Resolve one requirement's position to its destruction-time state, or None if this action cannot know it."""
@@ -603,15 +508,11 @@ class DestructionContractValidator:
         #   position<box>::action</close_file>::position<target>::action</delete_file_destructor>
         # required_position:
         #   position<box>::action</close_file>::position<target>::position</file>
-        # relative_key:
+        # names below the contract's particle:
         #   ("position</file>",)
         required_position = inner_req.position.in_caller(action_chain)
-        relative_key = chained_name.names_after(
-            required_position.canonical_chained_name_tuple, caller_prefix_length
-        )
-        state_key = chained_name.with_prefix(
-            relative_key, destruction_contract.position_in_child_state
-        )
+        state_key = contract.position_in_child_state(required_position)
+        merged_child_state = destruction.propagated_contracts.child_state
         occupancy = merged_child_state.occupancy_at(state_key)
         value_state = None
         if isinstance(inner_req, action_contract.ValueRequirement):
@@ -642,3 +543,29 @@ class DestructionContractValidator:
             occupancy=occupancy,
             value_state=value_state,
         )
+
+
+def _destruction_fact_and_verified_destructors(
+    position: ast.PositionReference,
+    particle: particle_info.ParticleInfo,
+    contract: _CalleeDestructionContractInCaller,
+) -> tuple[
+    destruction_contract_types.DestructionFact, quality_assignment.QualityAssignments
+]:
+    """Return the Destruction Fact of ``particle``, in ``position``, the contract's particle or one below it, and the Destructors on it that the callee already verified."""
+    contract_fact = contract.contract.propagated_destruction.destruction_fact
+    if particle is contract.particle:
+        return contract_fact, contract.contract.verified_destructors
+    fact = destruction_contract_types.DestructionFact(
+        destruction=contract_fact.destruction,
+        # The contracted position can have a different name in the caller,
+        # but its child-name suffix is unchanged. Append only that suffix
+        # to express the child's position in the destroying action.
+        # For example, if the caller's position<box> corresponds to the
+        # destroyer's position<target>, position<box>::position</child>
+        # becomes position<target>::position</child>.
+        destroyed_position_in_destroyer=contract_fact.destroyed_position_in_destroyer.with_position_suffix(
+            *contract.from_particle(position).typed_names
+        ),
+    )
+    return fact, quality_assignment.EMPTY_QUALITY_ASSIGNMENTS

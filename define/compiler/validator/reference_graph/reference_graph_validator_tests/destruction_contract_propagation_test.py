@@ -109,14 +109,14 @@ def test_inner_emptied_child_overrides_caller_knowledge_violated(
     ]
 
 
-def test_cascade_fires_child_then_parent_caller_attached_destructors(
+def test_cascade_fires_caller_attached_destructors_of_parent_and_child(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
     assert action_graph(result.reference_graph_result) == [
-        (_CLOSE_FILE, _CHILD_DESTRUCTOR),
         (_CLOSE_FILE, _PARENT_DESTRUCTOR),
+        (_CLOSE_FILE, _CHILD_DESTRUCTOR),
         (_TEST, _CLOSE_FILE),
     ]
 
@@ -613,26 +613,26 @@ def test_auto_destruction_re_records_through_middle_and_owner_verifies(
     ]
 
 
-def test_cascade_re_records_through_middle_and_owner_verifies_child_then_parent(
+def test_cascade_re_records_through_middle_and_owner_verifies_parent_and_child(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].required_value is False
-    assert all_diags[0].action_name == _MID
-    assert all_diags[0].required_empty is False
-    assert all_diags[0].location.line == 22
-    assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[1].required_value is False
+    assert all_diags[1].action_name == _MID
+    assert all_diags[1].required_empty is False
+    assert all_diags[1].location.line == 22
+    assert all_diags[1].location.column == 30
+    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
     assert (
-        all_diags[0].position_name
+        all_diags[1].position_name
         == "position<outer_box>::action</mid>::position<incoming>::position</child>::position</cfile>"
     )
     assert_propagation_chain(
-        all_diags[0],
+        all_diags[1],
         {
             "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my.domain.com:my_lib:/child>",
@@ -682,19 +682,19 @@ def test_cascade_re_records_through_middle_and_owner_verifies_child_then_parent(
             "file_path": "child_destructor.dfn",
         },
     )
-    assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[1].required_value is False
-    assert all_diags[1].action_name == _MID
-    assert all_diags[1].required_empty is False
-    assert all_diags[1].location.line == 22
-    assert all_diags[1].location.column == 30
-    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
+    assert all_diags[0].action_name == _MID
+    assert all_diags[0].required_empty is False
+    assert all_diags[0].location.line == 22
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert (
-        all_diags[1].position_name
+        all_diags[0].position_name
         == "position<outer_box>::action</mid>::position<incoming>::position</pfile>"
     )
     assert_propagation_chain(
-        all_diags[1],
+        all_diags[0],
         {
             "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my_file>",
@@ -746,8 +746,8 @@ def test_cascade_re_records_through_middle_and_owner_verifies_child_then_parent(
     )
     assert action_graph(result.reference_graph_result) == [
         (_MID, _CLOSE_FILE),
-        (_CLOSE_FILE, _CHILD_DESTRUCTOR),
         (_CLOSE_FILE, _PARENT_DESTRUCTOR),
+        (_CLOSE_FILE, _CHILD_DESTRUCTOR),
         (_TEST, _MID),
     ]
 

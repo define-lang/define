@@ -75,10 +75,10 @@ class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.Destroy
     @override
     def run_destructors_position_parent(self, particle: literal.Particle):
         particle.get_action(
-            local.my_domain_com.my_lib.destruct_sibling.DestructSiblingAction
+            local.my_domain_com.my_lib.destruct_required.DestructRequiredAction
         ).run()
         particle.get_action(
-            local.my_domain_com.my_lib.destruct_required.DestructRequiredAction
+            local.my_domain_com.my_lib.destruct_sibling.DestructSiblingAction
         ).run()
 
     @override

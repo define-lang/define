@@ -5,8 +5,6 @@ from __future__ import annotations
 import typing
 from functools import cached_property
 
-import msgspec
-
 from define.compiler import (
     ast,
     chained_name,
@@ -32,11 +30,13 @@ from define.compiler.validator.reference_graph.dead_code import (
     dead_value_write_validator,
 )
 from define.compiler.validator.reference_graph.destruction import (
-    destruction_contract as destruction_contract_types,
+    destroyed_particles,
+    destroyer,
+    destruction_contract_validator,
+    guaranteed_particle_destruction,
 )
 from define.compiler.validator.reference_graph.destruction import (
-    destruction_contract_validator,
-    destruction_planner,
+    destruction_contract as destruction_contract_types,
 )
 from define.compiler.validator.reference_graph.particles import (
     particle_info,
@@ -47,22 +47,6 @@ if typing.TYPE_CHECKING:
     from collections.abc import Collection, Iterator, Sequence
 
     from define.compiler.data_structures import typed_name_dict
-
-
-class _DestructionTarget(msgspec.Struct, frozen=True):
-    """A particle whose destruction also destroys its occupied children."""
-
-    position: ast.PositionReference
-    destruction: destruction_contract_types.SimultaneousDestruction
-    auto_destruction_target: ast.PositionReference | None
-
-
-class _PendingDestructionContract(msgspec.Struct, frozen=True):
-    """A Destruction Contract captured before tracked particle state changes."""
-
-    particle: particle_info.ParticleInfo
-    destruction_fact: destruction_contract_types.DestructionFact
-    verified_destructors: quality_assignment.QualityAssignments
 
 
 class ActionDefinitionValidator:
@@ -148,7 +132,7 @@ class ActionDefinitionValidator:
             self._validation_state,
             self._tracker,
             self._dead_value_write_validator,
-            self._destruction_planner,
+            self._destroyed_particles,
         )
 
     @cached_property
@@ -188,17 +172,13 @@ class ActionDefinitionValidator:
         )
 
     @cached_property
-    def _destruction_planner(
-        self,
-    ) -> destruction_planner.DestructionPlanner:
-        return destruction_planner.DestructionPlanner(
-            self._definition,
-            self._implied_quality_list,
-            self._definition_results,
-            self._validation_state,
-            self._tracker,
-            self._position_quality_resolver,
-            self._requirement_validator,
+    def _destroyer(self) -> destroyer.Destroyer:
+        return destroyer.Destroyer(self._destroyed_particles, self._tracker)
+
+    @cached_property
+    def _destroyed_particles(self) -> destroyed_particles.DestroyedParticles:
+        return destroyed_particles.DestroyedParticles(
+            self._tracker, self._definition_results
         )
 
     @cached_property
@@ -262,190 +242,26 @@ class ActionDefinitionValidator:
 
     def _destroy_particles(
         self,
-        targets: Sequence[_DestructionTarget],
+        targets: Sequence[destroyer.DestructionTarget],
         scope: scope_tracker.ScopeTracker,
     ):
-        """Destroy the target particles and their occupied transitive children."""
-        step = codegen_input.Destruction()
-        destructors: list[
-            tuple[action_contract.Destructor, ast.PositionReference | None]
-        ] = []
-        snapshot_positions: list[ast.PositionReference] = []
-        pending_contracts_by_target: list[list[_PendingDestructionContract]] = []
-        for target in targets:
-            pending_contracts: list[_PendingDestructionContract] = []
-            self._collect_particle_destructions(
-                target.position,
-                self._tracker.get_occupant(target.position),
-                target,
-                destructors,
-                pending_contracts,
-                step,
-                within_caller_particle=False,
-            )
-            if pending_contracts:
-                snapshot_positions.append(target.position)
-                pending_contracts_by_target.append(pending_contracts)
-
-        child_states = self._tracker.snapshot_child_states(snapshot_positions)
-
-        for destructor, auto_destruction_target in destructors:
-            self._run_destructor(
-                destructor,
-                scope,
-                step.destructors,
-                auto_destruction_target=auto_destruction_target,
-            )
-
-        self._tracker.destroy_simultaneously([target.position for target in targets])
-        for shared_state, pending_contracts in zip(
-            child_states, pending_contracts_by_target, strict=True
-        ):
-            contracts = action_contract.DestructionContracts(child_state=shared_state)
-            for pending_contract in pending_contracts:
-                propagated = self._record_destruction_contract(
-                    pending_contract, contracts
-                )
-                step.contract_destructions.append(propagated)
-            self._destruction_contracts.append(contracts)
+        """Destroy the target particles and every particle below them."""
+        step, contracts = self._destroyer.destroy(
+            targets,
+            lambda destructor, auto_destruction_target: self._run_destructor(
+                destructor, scope, auto_destruction_target
+            ),
+        )
+        self._destruction_contracts.extend(contracts)
         self._steps.append(step)
-
-    def _collect_particle_destructions(
-        self,
-        position: ast.PositionReference,
-        particle: particle_info.ParticleInfo,
-        target: _DestructionTarget,
-        destructors: list[
-            tuple[action_contract.Destructor, ast.PositionReference | None]
-        ],
-        pending_contracts: list[_PendingDestructionContract],
-        step: codegen_input.Destruction,
-        *,
-        within_caller_particle: bool,
-    ):
-        """Collect one particle and every occupied transitive child."""
-        destruction_fact = destruction_contract_types.DestructionFact(
-            destruction=target.destruction,
-            destroyed_position_in_destroyer=position,
-        )
-        within_caller_particle = (
-            within_caller_particle
-            or particle.source is particle_info.ParticleSource.CALLER
-        )
-        children_and_destructors = (
-            self._destruction_planner.child_positions_and_destructors(
-                position, particle
-            )
-        )
-        for destructor in children_and_destructors.destructors:
-            destructors.append(
-                (
-                    action_contract.Destructor(
-                        destructor=destructor,
-                        position=position,
-                        origin_position=particle.origin_position,
-                    ),
-                    target.auto_destruction_target,
-                )
-            )
-        for child in children_and_destructors.child_positions:
-            self._collect_child_particle_destructions(
-                child,
-                target,
-                destructors,
-                pending_contracts,
-                step,
-                within_caller_particle=within_caller_particle,
-            )
-
-        if particle.source is particle_info.ParticleSource.CALLER:
-            pending_contracts.append(
-                _PendingDestructionContract(
-                    particle=particle,
-                    destruction_fact=destruction_fact,
-                    verified_destructors=quality_assignment.QualityAssignments(
-                        tuple(children_and_destructors.destructors)
-                    ),
-                )
-            )
-        # Children must remain accessible until their own Destroy executes.
-        step.positions.append(position)
-
-    def _collect_child_particle_destructions(
-        self,
-        position: ast.PositionReference,
-        target: _DestructionTarget,
-        destructors: list[
-            tuple[action_contract.Destructor, ast.PositionReference | None]
-        ],
-        pending_contracts: list[_PendingDestructionContract],
-        step: codegen_input.Destruction,
-        *,
-        within_caller_particle: bool,
-    ):
-        """Collect an occupied child Position's transitive destruction."""
-        # What a callee left here and below is destroyed without this action
-        # expanding it, unless something there needs it to.
-        on_destruction = self._destruction_planner.on_unexpanded_destruction(position)
-        if isinstance(
-            on_destruction, destruction_contract_types.RunGuaranteedParticleDestructors
-        ):
-            step.guaranteed_particle_destructors.append(on_destruction)
-            return
-        if on_destruction == action_contract.OnDestruction.NOTHING:
-            return
-        occupancy = self._tracker.get_occupancy_info(position)
-        if occupancy.has_error or occupancy.occupant is None:
-            return
-        self._collect_particle_destructions(
-            position,
-            occupancy.occupant,
-            target,
-            destructors,
-            pending_contracts,
-            step,
-            within_caller_particle=within_caller_particle,
-        )
-
-    def _record_destruction_contract(
-        self,
-        pending_contract: _PendingDestructionContract,
-        contracts: action_contract.DestructionContracts,
-    ) -> destruction_contract_types.PropagatedDestruction:
-        """Record the Destruction Contract for one caller-passed particle."""
-        destruction_fact = pending_contract.destruction_fact
-        propagated = destruction_contract_types.PropagatedDestruction(
-            destruction_fact=destruction_fact,
-            contracted_position=pending_contract.particle.origin_position,
-        )
-        contracts.append(
-            action_contract.DestructionContract(
-                propagated_destruction=propagated,
-                # The snapshot's names are relative to the directly destroyed
-                # Position. For a Destroy of position<box>, a particle at
-                # position<box>::position</child> uses just position</child>
-                # to find its child state; the particle at position<box> uses ().
-                position_in_child_state=chained_name.without_prefix(
-                    destruction_fact.destroyed_position_in_destroyer.canonical_chained_name_tuple,
-                    destruction_fact.destruction.directly_destroyed_position.canonical_chained_name_tuple,
-                ),
-                # We know these destructors exist at destruction time, so they are
-                # handled through the normal requirements mechanism (fired and
-                # propagated as this action's own requirements), not through the
-                # Destruction Contract's requirement-verification mechanism.
-                verified_destructors=pending_contract.verified_destructors,
-            )
-        )
-        return propagated
 
     def _run_destructor(
         self,
         destructor: action_contract.Destructor,
         scope: scope_tracker.ScopeTracker,
-        known_destructors: list[ast.ActionReference],
-        auto_destruction_target: ast.PositionReference | None = None,
-    ):
-        """Trigger one directly known destructor before particle destruction."""
+        auto_destruction_target: ast.PositionReference | None,
+    ) -> ast.ActionReference | None:
+        """Trigger one directly known destructor before particle destruction, and return its action chain, or None when it has no contract to trigger."""
         # A destructor's requirements are checked as though it triggered
         # synchronously at the moment of destruction (DLP 41). The destructor is a
         # quality of the particle in `position`, so its interface positions
@@ -454,9 +270,8 @@ class ActionDefinitionValidator:
         destructor_name = destructor.destructor
         contract = self._validation_state.get_contract_or_none(destructor_name)
         if contract is None:
-            return
+            return None
         action_chain = destructor.position.with_action_suffix(destructor_name)
-        known_destructors.append(action_chain)
         parent_particle = self._tracker.get_occupant(destructor.position)
         requirements_in_caller = contract.occupancy_requirements_in_caller(action_chain)
         self._dead_constraint_validator.mark_callee_contract_constraints_alive(
@@ -504,6 +319,7 @@ class ActionDefinitionValidator:
             ),
             occupied_interface_child_position_violations,
         )
+        return action_chain
 
     def _process_interface_arrival(
         self,
@@ -680,7 +496,7 @@ class ActionDefinitionValidator:
         occupying Positions defined only within this block are simultaneously
         automatically destroyed.
         """
-        targets: list[_DestructionTarget] = []
+        targets: list[destroyer.DestructionTarget] = []
         for definition in scope.current_scope_definitions():
             position = ast.PositionReference(
                 typed_names=(definition.typed_name,),
@@ -694,9 +510,8 @@ class ActionDefinitionValidator:
                 continue
             auto_destruction_target = occupancy.occupant.last_position
             targets.append(
-                _DestructionTarget(
-                    position=position,
-                    destruction=destruction_contract_types.SimultaneousDestruction(
+                destroyer.DestructionTarget(
+                    destruction=destruction_contract_types.DirectDestruction(
                         directly_destroyed_position=position,
                         destroying_action=self._definition.typed_name,
                         is_automatic=True,
@@ -968,7 +783,7 @@ class ActionDefinitionValidator:
         if diagnostic is not None:
             self._diagnostics.append(diagnostic)
             return
-        destruction = destruction_contract_types.SimultaneousDestruction(
+        destruction = destruction_contract_types.DirectDestruction(
             directly_destroyed_position=stmt.target_position,
             destroying_action=self._definition.typed_name,
             is_automatic=False,
@@ -976,10 +791,8 @@ class ActionDefinitionValidator:
 
         self._destroy_particles(
             (
-                _DestructionTarget(
-                    position=stmt.target_position,
-                    destruction=destruction,
-                    auto_destruction_target=None,
+                destroyer.DestructionTarget(
+                    destruction=destruction, auto_destruction_target=None
                 ),
             ),
             scope,
@@ -1148,11 +961,19 @@ class ActionDefinitionValidator:
         self._analyze_statements(self._definition.action_statements, scope)
         self._check_unconsumed_action_interfaces()
 
-        guaranteed_particle_destruction = (
-            self._destruction_planner.guaranteed_particle_destruction()
+        guaranteed_destruction = (
+            guaranteed_particle_destruction.guaranteed_particle_destruction(
+                self._definition,
+                self._position_quality_resolver.get_transitive_implied_qualities(
+                    self._implied_quality_list
+                ),
+                self._destroyed_particles,
+                self._validation_state,
+                self._tracker,
+            )
         )
         contract, guarantees = self._generate_contract(
-            guaranteed_particle_destruction.on_destruction
+            guaranteed_destruction.on_destruction
         )
         self._diagnostics.extend(
             self._dead_constraint_validator.validate(guarantees, scope)
@@ -1160,7 +981,7 @@ class ActionDefinitionValidator:
         self._diagnostics.extend(self._dead_value_write_validator.validate(guarantees))
         return (
             contract,
-            guaranteed_particle_destruction.guaranteed_particle_destructors,
+            guaranteed_destruction.guaranteed_particle_destructors,
         )
 
     def _check_unconsumed_action_interfaces(self):

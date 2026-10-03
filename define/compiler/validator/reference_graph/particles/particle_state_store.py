@@ -68,6 +68,27 @@ def _child_value(node: PositionState) -> particle_info.ParticleValueState | None
     return particle.value_state
 
 
+def _state_in_map(
+    particles: action_contract.ChildPositionParticles,
+    names: tuple[str, ...],
+) -> tuple[
+    position_occupancy.PositionOccupancyState, particle_info.ParticleValueState | None
+]:
+    """Return the occupancy and value state at ``names``, below the particle that ``particles``, what a callee left below it, belongs to."""
+    # Interface positions of actions on the particle are never in its map:
+    # they are empty when the action that left the particle ends.
+    left = particles.particle_left_below(names)
+    if left is None:
+        return position_occupancy.PositionOccupancyState.EMPTY, None
+    guarantee = left.guarantee
+    if isinstance(guarantee, action_contract.ErrorGuarantee):
+        return position_occupancy.PositionOccupancyState.ERROR, None
+    return (
+        position_occupancy.PositionOccupancyState.OCCUPIED,
+        guarantee.value_effect,
+    )
+
+
 def _action_parent_position_key(
     action: ast.ActionReference,
 ) -> chained_name.ChainedNameTuple:
@@ -421,6 +442,29 @@ class ParticleStateStore:
             and known_values.get(position) is None
         ):
             values[position] = particle.value_state
+
+    def state_without_expanding(
+        self, key: chained_name.PositionReferenceTuple
+    ) -> tuple[
+        position_occupancy.PositionOccupancyState,
+        particle_info.ParticleValueState | None,
+    ]:
+        """Return the occupancy and value state of a Position whose state is known, reading what callees left without expanding it."""
+        node = self._state.get(key)
+        if node is None:
+            prefix = self._state.existing_prefix(key)
+            above = self._state[prefix]
+            if above.is_in_error_chain:
+                return position_occupancy.PositionOccupancyState.ERROR, None
+            if above.unexpanded is not None:
+                return _state_in_map(above.unexpanded, key[len(prefix) :])
+            return position_occupancy.PositionOccupancyState.EMPTY, None
+        if node.is_in_error_chain:
+            return position_occupancy.PositionOccupancyState.ERROR, None
+        particle = node.particle
+        if particle is None:
+            return position_occupancy.PositionOccupancyState.EMPTY, None
+        return position_occupancy.PositionOccupancyState.OCCUPIED, particle.value_state
 
     def has_known_occupancy_or_error(
         self, key: chained_name.PositionReferenceTuple

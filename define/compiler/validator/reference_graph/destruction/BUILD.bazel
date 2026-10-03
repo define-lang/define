@@ -30,6 +30,42 @@ py_test(
 )
 
 py_library(
+    name = "destroyed_particles",
+    srcs = ["destroyed_particles.py"],
+    visibility = ["//define/compiler/validator/reference_graph:__pkg__"],
+    deps = [
+        ":destruction_contract",
+        "//define/compiler:ast",
+        "//define/compiler:chained_name",
+        "//define/compiler:name_types",
+        "//define/compiler/data_structures:typed_name_dict",
+        "//define/compiler/validator:validation_result",
+        "//define/compiler/validator/reference_graph:action_contract",
+        "//define/compiler/validator/reference_graph/particles:particle_info",
+        "//define/compiler/validator/reference_graph/particles:particle_tracker",
+        "@pypi//msgspec",
+    ],
+)
+
+py_library(
+    name = "destroyer",
+    srcs = ["destroyer.py"],
+    visibility = ["//define/compiler/validator/reference_graph:__pkg__"],
+    deps = [
+        ":destroyed_particles",
+        ":destruction_contract",
+        "//define/compiler:ast",
+        "//define/compiler:chained_name",
+        "//define/compiler/validator:codegen_input",
+        "//define/compiler/validator/reference_graph:action_contract",
+        "//define/compiler/validator/reference_graph:quality_assignment",
+        "//define/compiler/validator/reference_graph/particles:particle_info",
+        "//define/compiler/validator/reference_graph/particles:particle_tracker",
+        "@pypi//msgspec",
+    ],
+)
+
+py_library(
     name = "destruction_contract",
     srcs = ["destruction_contract.py"],
     visibility = ["//define/compiler:__subpackages__"],
@@ -46,11 +82,10 @@ py_library(
     visibility = ["//define/compiler/validator/reference_graph:__subpackages__"],
     deps = [
         ":child_state",
+        ":destroyed_particles",
         ":destruction_contract",
-        ":destruction_planner",
         "//define/compiler:ast",
         "//define/compiler:chained_name",
-        "//define/compiler:name_types",
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:validation_result",
@@ -67,22 +102,19 @@ py_library(
 )
 
 py_library(
-    name = "destruction_planner",
-    srcs = ["destruction_planner.py"],
-    visibility = ["//define/compiler/validator/reference_graph:__subpackages__"],
+    name = "guaranteed_particle_destruction",
+    srcs = ["guaranteed_particle_destruction.py"],
+    visibility = ["//define/compiler/validator/reference_graph:__pkg__"],
     deps = [
+        ":destroyed_particles",
         ":destruction_contract",
         "//define/compiler:ast",
         "//define/compiler:chained_name",
-        "//define/compiler:name_types",
-        "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/validator:codegen_input",
-        "//define/compiler/validator:validation_result",
         "//define/compiler/validator/reference_graph:action_contract",
-        "//define/compiler/validator/reference_graph:action_requirement_validator",
-        "//define/compiler/validator/reference_graph:position_quality_resolver",
         "//define/compiler/validator/reference_graph:quality_assignment",
         "//define/compiler/validator/reference_graph:reference_graph_validation_state",
+        "//define/compiler/validator/reference_graph:requirement_violation",
         "//define/compiler/validator/reference_graph/particles:particle_info",
         "//define/compiler/validator/reference_graph/particles:particle_tracker",
         "@pypi//msgspec",
@@ -100,9 +132,11 @@ pyright_test(
     deps = [
         ":child_state",
         ":child_state_test",
+        ":destroyed_particles",
+        ":destroyer",
         ":destruction_contract",
         ":destruction_contract_validator",
-        ":destruction_planner",
+        ":guaranteed_particle_destruction",
     ],
 )
 

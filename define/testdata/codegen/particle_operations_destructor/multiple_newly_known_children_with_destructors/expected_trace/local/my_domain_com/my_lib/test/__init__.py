@@ -53,23 +53,23 @@ class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.Destroy
     @override
     def run_destructors_position_run(self, particle: literal.Particle):
         particle.get_position(
-            local.my_domain_com.my_lib.extra_b.ExtraBPosition
-        ).particle.get_action(
-            local.my_domain_com.my_lib.destruct_b.DestructBAction
-        ).run()
-        particle.get_position(
             local.my_domain_com.my_lib.extra_a.ExtraAPosition
         ).particle.get_action(
             local.my_domain_com.my_lib.destruct_a.DestructAAction
+        ).run()
+        particle.get_position(
+            local.my_domain_com.my_lib.extra_b.ExtraBPosition
+        ).particle.get_action(
+            local.my_domain_com.my_lib.destruct_b.DestructBAction
         ).run()
 
     @override
     def destroy_position_run(self, particle: literal.Particle):
         particle.get_position(
-            local.my_domain_com.my_lib.extra_b.ExtraBPosition
-        ).destroy_particle()
-        literal.record_operation("destroyer.destroy(local::/extra_b)")
-        particle.get_position(
             local.my_domain_com.my_lib.extra_a.ExtraAPosition
         ).destroy_particle()
         literal.record_operation("destroyer.destroy(local::/extra_a)")
+        particle.get_position(
+            local.my_domain_com.my_lib.extra_b.ExtraBPosition
+        ).destroy_particle()
+        literal.record_operation("destroyer.destroy(local::/extra_b)")

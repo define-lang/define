@@ -9,6 +9,7 @@ import msgspec
 from define.compiler import ast
 from define.compiler.codegen.literal.python import (
     destruction_contracts,
+    known_destruction_work,
     naming,
     operation_labels,
     position_expression,
@@ -56,6 +57,7 @@ class ActionStatementsGenerator:
     def _collect_imports(
         self,
         contracts: destruction_contracts.DestructionContractsGenerator,
+        work: known_destruction_work.KnownDestructionWorkGenerator,
     ) -> set[str]:
         """Collect modules needed by statements and their triggered actions."""
         modules: set[str] = set()
@@ -93,12 +95,7 @@ class ActionStatementsGenerator:
                     for connection in step.destruction_connections:
                         modules.update(contracts.referenced_modules(connection))
                 case codegen_input.Destruction():
-                    for action in step.destructors:
-                        modules.update(self._converter.referenced_modules(action))
-                    for reference in step.guaranteed_particle_destructors:
-                        modules.update(self._referenced_modules(reference))
-                    for position in step.positions:
-                        modules.update(self._converter.referenced_modules(position))
+                    modules.update(work.referenced_modules(step.work))
                 case codegen_input.ActionOperationExecution():
                     modules.add(
                         self._converter.function_reference(
@@ -119,18 +116,7 @@ class ActionStatementsGenerator:
                 modules.add(
                     self._converter.class_reference(reference.action).module_name
                 )
-                modules.update(
-                    self._converter.referenced_modules(
-                        _child_position(guaranteed, reference)
-                    )
-                )
-        return modules
-
-    def _referenced_modules(
-        self, reference: destruction_contract.RunGuaranteedParticleDestructors
-    ) -> set[str]:
-        modules = set(self._converter.referenced_modules(reference.position))
-        modules.add(self._converter.class_reference(reference.action).module_name)
+                modules.update(self._converter.referenced_modules(reference.position))
         return modules
 
     def generate(self) -> GeneratedActionStatements:
@@ -170,7 +156,10 @@ class ActionStatementsGenerator:
         # imported module names throughout the method, even before assignment.
         # Collecting imports as we generate statements would discover conflicts
         # after earlier local names have already been allocated.
-        imports = self._collect_imports(contracts)
+        work = known_destruction_work.KnownDestructionWorkGenerator(
+            self._converter, positions, trace_operations=self._trace_operations
+        )
+        imports = self._collect_imports(contracts, work)
         names.reserve_module_first_names(imports)
         statements: list[template_context.ActionStatementContext] = []
         for statement in self._action_input.steps:
@@ -193,7 +182,7 @@ class ActionStatementsGenerator:
                     )
                 case codegen_input.Destruction():
                     statements.extend(
-                        self._destruction(statement, positions, contract_names)
+                        self._destruction(statement, positions, contract_names, work)
                     )
                 case ast.CreateParticleStatement():
                     statements.append(
@@ -280,12 +269,8 @@ class ActionStatementsGenerator:
                 )
             for reference in guaranteed.for_child_positions:
                 method_statements.append(
-                    self._run_guaranteed_particle_destructors(
-                        reference,
-                        positions.build(
-                            _child_position(guaranteed, reference),
-                            from_contract_particle=True,
-                        ),
+                    work.run_guaranteed_particle_destructors_statement(
+                        reference, from_contract_particle=True
                     )
                 )
             guaranteed_particle_destructors.append(
@@ -303,43 +288,21 @@ class ActionStatementsGenerator:
             guaranteed_particle_destructors=guaranteed_particle_destructors,
         )
 
-    def _run_guaranteed_particle_destructors(
-        self,
-        reference: destruction_contract.RunGuaranteedParticleDestructors,
-        position: template_context.PositionExpr,
-    ) -> template_context.RunGuaranteedParticleDestructorsContext:
-        return template_context.RunGuaranteedParticleDestructorsContext(
-            action=self._converter.class_reference(reference.action),
-            method_name=naming.NameConverter.guaranteed_particle_destructors_method_name(
-                reference.position_in_action
-            ),
-            position=position,
-        )
-
     def _destruction(
         self,
         destruction: codegen_input.Destruction,
         positions: position_expression.PositionExpressionBuilder,
         contract_names: dict[destruction_contract.PropagatedDestruction, str],
+        work: known_destruction_work.KnownDestructionWorkGenerator,
     ) -> list[template_context.ActionStatementContext]:
         # TODO: Investigate running each particle's Destructors, completing each
         # child's destruction, then destroying the particle. This could avoid
         # keeping independent sibling particles alive until all Destructors finish,
         # but contracts would need to preserve contributions per particle rather
         # than flattening them into separate Destructor and destruction lists.
-        statements: list[template_context.ActionStatementContext] = []
-        for action in destruction.destructors:
-            # Destructors preserve caller-provided contracted particles, so
-            # their invocations have no incoming destruction contributions.
-            statements.append(
-                template_context.RunActionContext(position=positions.build(action))
-            )
-        for reference in destruction.guaranteed_particle_destructors:
-            statements.append(
-                self._run_guaranteed_particle_destructors(
-                    reference, positions.build(reference.position)
-                )
-            )
+        statements = work.destructor_statements(
+            destruction.work, from_contract_particle=False
+        )
         for context_type, prefix in (
             (
                 template_context.RunContractDestructorsContext,
@@ -356,15 +319,13 @@ class ActionStatementsGenerator:
                         contract_method=prefix + name,
                     )
                 )
-        for position in destruction.positions:
-            statements.append(
-                template_context.DestroyParticleContext(
-                    position=positions.build(position),
-                    operation_label=self._operation_label(
-                        template_context.StatementKind.DESTROY_PARTICLE, position
-                    ),
-                )
+        statements.extend(
+            work.destroy_statements(
+                destruction.work,
+                self._action_input.definition.typed_name,
+                from_contract_particle=False,
             )
+        )
         return statements
 
     def _run(
@@ -460,16 +421,3 @@ class ActionStatementsGenerator:
                 self._action_input.definition.typed_name, position, value
             )
         return None
-
-
-def _child_position(
-    guaranteed: codegen_input.GuaranteedParticleDestructors,
-    reference: destruction_contract.RunGuaranteedParticleDestructors,
-) -> ast.PositionReference:
-    """Return the position of ``reference`` from the particle whose Destructors ``guaranteed`` runs."""
-    return ast.PositionReference(
-        location=reference.position.location,
-        typed_names=reference.position.typed_names[
-            len(guaranteed.position.typed_names) :
-        ],
-    )

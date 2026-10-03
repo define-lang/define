@@ -72,15 +72,15 @@ class MiddleDestructionContracts(local.my_domain_com.my_lib.middle.MiddleDestruc
         particle.get_position(
             local.my_domain_com.my_lib.extra.ExtraPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.marker_b.MarkerBPosition
-        ).destroy_particle()
-        literal.record_operation("destroyer.destroy(run::/extra::/marker_b)")
-        particle.get_position(
-            local.my_domain_com.my_lib.extra.ExtraPosition
-        ).particle.get_position(
             local.my_domain_com.my_lib.marker_a.MarkerAPosition
         ).destroy_particle()
         literal.record_operation("destroyer.destroy(run::/extra::/marker_a)")
+        particle.get_position(
+            local.my_domain_com.my_lib.extra.ExtraPosition
+        ).particle.get_position(
+            local.my_domain_com.my_lib.marker_b.MarkerBPosition
+        ).destroy_particle()
+        literal.record_operation("destroyer.destroy(run::/extra::/marker_b)")
         particle.get_position(
             local.my_domain_com.my_lib.extra.ExtraPosition
         ).destroy_particle()

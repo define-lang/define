@@ -1351,28 +1351,28 @@ def test_multiple_destructor_requirements_unset(
     assert result.all_exceptions == []
     assert len(result.all_diagnostics) == 2
     first, second = result.all_diagnostics
-    assert first.location.file_path == PurePosixPath("test.dfn")
-    assert first.location.line == 23
-    assert first.location.column == 47
     assert second.location.file_path == PurePosixPath("test.dfn")
     assert second.location.line == 23
     assert second.location.column == 47
-    assert isinstance(first, diagnostics.InferredRequirementViolationDiagnostic)
+    assert first.location.file_path == PurePosixPath("test.dfn")
+    assert first.location.line == 23
+    assert first.location.column == 47
     assert isinstance(second, diagnostics.InferredRequirementViolationDiagnostic)
-    assert first.required_value is True
+    assert isinstance(first, diagnostics.InferredRequirementViolationDiagnostic)
     assert second.required_value is True
+    assert first.required_value is True
     assert (
-        first.position_name
+        second.position_name
         == "position<worker>::action</relay>::position<input>::position</value>"
     )
     assert (
-        second.position_name
+        first.position_name
         == "position<worker>::action</relay>::position<input>::position</other_value>"
     )
-    assert first.required_empty is False
-    assert first.action_name == "action<my.domain.com:my_lib:/relay>"
+    assert second.required_empty is False
+    assert second.action_name == "action<my.domain.com:my_lib:/relay>"
     assert_propagation_chain(
-        first,
+        second,
         {
             "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
@@ -1422,10 +1422,10 @@ def test_multiple_destructor_requirements_unset(
             "file_path": "cleanup.dfn",
         },
     )
-    assert second.required_empty is False
-    assert second.action_name == "action<my.domain.com:my_lib:/relay>"
+    assert first.required_empty is False
+    assert first.action_name == "action<my.domain.com:my_lib:/relay>"
     assert_propagation_chain(
-        second,
+        first,
         {
             "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",

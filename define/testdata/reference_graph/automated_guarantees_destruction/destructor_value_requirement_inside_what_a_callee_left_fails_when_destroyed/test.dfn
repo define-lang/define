@@ -1,0 +1,16 @@
+# action</make> leaves the value below position</box>::position</child> unset,
+# so action</build> cannot run the child's Destructor for its callers, and
+# destroying position<holder> reports the unset value the Destructor reads.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<holder> {
+            it may only contain particles where {
+                it has the action</build>.
+            }
+        }
+        create a particle in position<holder>.
+        create a particle in position<holder>::action</build>::position<run>.
+    }
+}

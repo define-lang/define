@@ -66,10 +66,6 @@ class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.Destroy
     @override
     def destroy_position_target(self, particle: literal.Particle):
         particle.get_position(
-            local.my_domain_com.my_lib.occupied_last.OccupiedLastPosition
-        ).destroy_particle()
-        literal.record_operation("destroyer.destroy(target::/occupied_last)")
-        particle.get_position(
             local.my_domain_com.my_lib.occupied_first.OccupiedFirstPosition
         ).particle.get_position(
             local.my_domain_com.my_lib.transitive.TransitivePosition
@@ -79,3 +75,7 @@ class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.Destroy
             local.my_domain_com.my_lib.occupied_first.OccupiedFirstPosition
         ).destroy_particle()
         literal.record_operation("destroyer.destroy(target::/occupied_first)")
+        particle.get_position(
+            local.my_domain_com.my_lib.occupied_last.OccupiedLastPosition
+        ).destroy_particle()
+        literal.record_operation("destroyer.destroy(target::/occupied_last)")

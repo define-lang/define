@@ -67,10 +67,10 @@ class MiddleDestructionContracts(local.my_domain_com.my_lib.middle.MiddleDestruc
     @override
     def destroy_global_position_parent(self, particle: literal.Particle):
         particle.get_position(
-            local.my_domain_com.my_lib.guaranteed_child.GuaranteedChildPosition
-        ).destroy_particle()
-        literal.record_operation("middle.destroy(/mover::destination::/guaranteed_child)")
-        particle.get_position(
             local.my_domain_com.my_lib.direct_child.DirectChildPosition
         ).destroy_particle()
         literal.record_operation("middle.destroy(/mover::destination::/direct_child)")
+        particle.get_position(
+            local.my_domain_com.my_lib.guaranteed_child.GuaranteedChildPosition
+        ).destroy_particle()
+        literal.record_operation("middle.destroy(/mover::destination::/guaranteed_child)")

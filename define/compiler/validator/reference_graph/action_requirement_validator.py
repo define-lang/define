@@ -373,32 +373,6 @@ class ActionRequirementValidator:
             self._tracker.mark_value_error(requirement.caller_position)
         return validation_diagnostics
 
-    def requirements_satisfied(
-        self,
-        occupancy_requirements: list[
-            action_contract.PositionRequirementInCaller[
-                action_contract.PositionOccupancyRequirement
-            ]
-        ],
-        value_requirements: list[
-            action_contract.PositionRequirementInCaller[
-                action_contract.ValueRequirement
-            ]
-        ],
-    ) -> bool:
-        """Return whether the current state satisfies every requirement, without reporting anything or changing any state."""
-        for requirement_in_caller in occupancy_requirements:
-            violated, _ = self._requirement_violation_occupant(
-                requirement_in_caller.caller_position,
-                requirement_in_caller.requirement,
-            )
-            if violated:
-                return False
-        for requirement in value_requirements:
-            if self._value_requirement_violation(requirement) is not None:
-                return False
-        return True
-
     def _value_requirement_violation(
         self,
         requirement: action_contract.PositionRequirementInCaller[

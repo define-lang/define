@@ -94,6 +94,15 @@ class ParticleTracker:
             occupant=self._store.occupant_or_none(key),
         )
 
+    def state_without_expanding_by_key(
+        self, key: chained_name.PositionReferenceTuple
+    ) -> tuple[
+        position_occupancy.PositionOccupancyState,
+        particle_info.ParticleValueState | None,
+    ]:
+        """Return the occupancy and value state of a Position whose state is known, reading what callees left without expanding it."""
+        return self._store.state_without_expanding(key)
+
     def unexpanded_entry(
         self, position: ast.PositionReference
     ) -> (

@@ -10,8 +10,8 @@ if TYPE_CHECKING:
     from define.compiler import ast, chained_name
 
 
-class SimultaneousDestruction(msgspec.Struct, frozen=True, eq=False):
-    """The directly destroyed particle and its Simultaneous Transitive Destruction."""
+class DirectDestruction(msgspec.Struct, frozen=True, eq=False):
+    """The destruction of one directly destroyed position, which also destroys every particle in its transitive child positions."""
 
     directly_destroyed_position: ast.PositionReference
     destroying_action: ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]]
@@ -21,7 +21,7 @@ class SimultaneousDestruction(msgspec.Struct, frozen=True, eq=False):
 class DestructionFact(msgspec.Struct, frozen=True, eq=False):
     """Identifies the destruction of one specific particle."""
 
-    destruction: SimultaneousDestruction
+    destruction: DirectDestruction
     destroyed_position_in_destroyer: ast.PositionReference
 
 
@@ -44,23 +44,40 @@ class RunGuaranteedParticleDestructors(msgspec.Struct):
     position_in_action: chained_name.PositionReferenceTuple
 
 
-class DestructionContribution(msgspec.Struct):
-    """Additional destruction work known by one caller."""
+class DestroyedPosition(msgspec.Struct, frozen=True):
+    """A position whose particle a destruction destroys."""
 
-    destruction_fact: DestructionFact
-    position_in_caller: ast.PositionReference
-    destructors: list[ast.ActionReference]
-    # What runs for particles that the caller's callees left below the
-    # destroyed particle and that the caller never expanded.
-    guaranteed_particle_destructors: list[RunGuaranteedParticleDestructors]
-    positions: list[ast.PositionReference]
+    # From the perspective of the action whose step or method destroys it.
+    position: ast.PositionReference
+    # From the perspective of the action that destroys it.
+    position_in_destroyer: ast.PositionReference
+
+
+class KnownDestructionWork(msgspec.Struct):
+    """The part of one Simultaneous Transitive Destruction that one action knows about: what it runs and what it destroys."""
+
+    destructors: list[ast.ActionReference] = msgspec.field(default_factory=list)
+    # What runs for particles that callees left below the destroyed particles
+    # and that the action never expanded.
+    guaranteed_particle_destructors: list[RunGuaranteedParticleDestructors] = (
+        msgspec.field(default_factory=list)
+    )
+    # Child positions come before their parent positions.
+    positions: list[DestroyedPosition] = msgspec.field(default_factory=list)
+
+    def has_work(self) -> bool:
+        """Return whether there is anything to run or destroy."""
+        return bool(
+            self.destructors or self.guaranteed_particle_destructors or self.positions
+        )
 
 
 class DestructionConnection(msgspec.Struct):
     """Contributions supplied or forwarded to one callee destruction."""
 
     callee_destruction: PropagatedDestruction
-    contribution: DestructionContribution | None = None
+    # Positions are from the perspective of the particle the callee destroyed.
+    contribution: KnownDestructionWork | None = None
     forwarded_destructions: list[PropagatedDestruction] = msgspec.field(
         default_factory=list
     )

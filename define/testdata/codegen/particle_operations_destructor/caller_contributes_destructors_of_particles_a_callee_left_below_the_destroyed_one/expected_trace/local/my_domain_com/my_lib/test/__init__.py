@@ -63,13 +63,13 @@ class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.Destroy
 
     @override
     def run_destructors_position_target(self, particle: literal.Particle):
-        local.my_domain_com.my_lib.make.MakeAction.run_guaranteed_particle_destructors_global_position_box__position_spare(
-            particle.get_position(
-                local.my_domain_com.my_lib.spare.SparePosition
-            ).particle
-        )
         local.my_domain_com.my_lib.make.MakeAction.run_guaranteed_particle_destructors_global_position_box__position_inner(
             particle.get_position(
                 local.my_domain_com.my_lib.inner.InnerPosition
+            ).particle
+        )
+        local.my_domain_com.my_lib.make.MakeAction.run_guaranteed_particle_destructors_global_position_box__position_spare(
+            particle.get_position(
+                local.my_domain_com.my_lib.spare.SparePosition
             ).particle
         )

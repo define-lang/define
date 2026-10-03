@@ -410,8 +410,8 @@ def test_two_caller_attached_destructors_verified_independently(
         },
     )
     assert action_graph(result.reference_graph_result) == [
-        (_CLOSE_FILE, _DESTRUCTOR_B),
         (_CLOSE_FILE, _DESTRUCTOR_A),
+        (_CLOSE_FILE, _DESTRUCTOR_B),
         (_TEST, _CLOSE_FILE),
     ]
 
@@ -422,8 +422,8 @@ def test_all_caller_attached_destructors_satisfied(
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
     assert action_graph(result.reference_graph_result) == [
-        (_CLOSE_FILE, _DESTRUCTOR_B),
         (_CLOSE_FILE, _DESTRUCTOR_A),
+        (_CLOSE_FILE, _DESTRUCTOR_B),
         (_TEST, _CLOSE_FILE),
     ]
 
@@ -435,19 +435,19 @@ def test_three_destructors_with_two_violated(
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].required_value is False
-    assert all_diags[0].location.line == 25
-    assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[0].required_empty is False
-    assert all_diags[0].action_name == _CLOSE_FILE
+    assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[1].required_value is False
+    assert all_diags[1].location.line == 25
+    assert all_diags[1].location.column == 30
+    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[1].required_empty is False
+    assert all_diags[1].action_name == _CLOSE_FILE
     assert (
-        all_diags[0].position_name
+        all_diags[1].position_name
         == "position<box>::action</close_file>::position<target>::position</c>"
     )
     assert_propagation_chain(
-        all_diags[0],
+        all_diags[1],
         {
             "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my_file>",
@@ -489,19 +489,19 @@ def test_three_destructors_with_two_violated(
             "file_path": "destructor_c.dfn",
         },
     )
-    assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[1].required_value is False
-    assert all_diags[1].location.line == 25
-    assert all_diags[1].location.column == 30
-    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
-    assert all_diags[1].required_empty is False
-    assert all_diags[1].action_name == _CLOSE_FILE
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
+    assert all_diags[0].location.line == 25
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].required_empty is False
+    assert all_diags[0].action_name == _CLOSE_FILE
     assert (
-        all_diags[1].position_name
+        all_diags[0].position_name
         == "position<box>::action</close_file>::position<target>::position</b>"
     )
     assert_propagation_chain(
-        all_diags[1],
+        all_diags[0],
         {
             "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<my_file>",
@@ -544,9 +544,9 @@ def test_three_destructors_with_two_violated(
         },
     )
     assert action_graph(result.reference_graph_result) == [
-        (_CLOSE_FILE, _DESTRUCTOR_C),
-        (_CLOSE_FILE, _DESTRUCTOR_B),
         (_CLOSE_FILE, _DESTRUCTOR_A),
+        (_CLOSE_FILE, _DESTRUCTOR_B),
+        (_CLOSE_FILE, _DESTRUCTOR_C),
         (_TEST, _CLOSE_FILE),
     ]
 

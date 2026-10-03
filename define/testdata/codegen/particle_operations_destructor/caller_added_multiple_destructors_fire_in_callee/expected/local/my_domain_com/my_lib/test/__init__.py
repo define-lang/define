@@ -56,8 +56,8 @@ class CalleeDestructionContracts(local.my_domain_com.my_lib.callee.CalleeDestruc
     @override
     def run_destructors_position_target(self, particle: literal.Particle):
         particle.get_action(
-            local.my_domain_com.my_lib.destructor_b.DestructorBAction
+            local.my_domain_com.my_lib.destructor_a.DestructorAAction
         ).run()
         particle.get_action(
-            local.my_domain_com.my_lib.destructor_a.DestructorAAction
+            local.my_domain_com.my_lib.destructor_b.DestructorBAction
         ).run()

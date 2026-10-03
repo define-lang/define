@@ -45,9 +45,9 @@ def _definition_edges(
             yield from _destruction_contract_edges(step.destruction_connections)
             yield source, step.action.get_last_action().full_typed_name
         elif isinstance(step, codegen_input.Destruction):
-            for destructor in step.destructors:
+            for destructor in step.work.destructors:
                 yield source, destructor.get_last_action().full_typed_name
-            for reference in step.guaranteed_particle_destructors:
+            for reference in step.work.guaranteed_particle_destructors:
                 for destructor in _guaranteed_particle_destructors(result, reference):
                     yield source, destructor
 
@@ -75,7 +75,9 @@ def _destruction_contract_edges(
         contribution = connection.contribution
         if contribution is None:
             continue
-        destroyer = contribution.destruction_fact.destruction.destroying_action
+        destroyer = (
+            connection.callee_destruction.destruction_fact.destruction.destroying_action
+        )
         for destructor in contribution.destructors:
             yield (
                 destroyer.source_typed_name,

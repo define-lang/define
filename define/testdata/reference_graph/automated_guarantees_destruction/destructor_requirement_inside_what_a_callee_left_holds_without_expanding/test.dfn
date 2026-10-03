@@ -1,0 +1,17 @@
+# action</make> leaves a particle in position</box>::position</child> with a set
+# value below it. action</build> sees that the child's Destructor reads that
+# value without expanding what action</make> left, so destroying position<holder>
+# runs the Destructor through action</build>'s method.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<holder> {
+            it may only contain particles where {
+                it has the action</build>.
+            }
+        }
+        create a particle in position<holder>.
+        create a particle in position<holder>::action</build>::position<run>.
+    }
+}

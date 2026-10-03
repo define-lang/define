@@ -175,6 +175,10 @@ def direct_destructor(
     )
 
 
+# TODO: Take the objects these arguments come from instead of their fields:
+# most of them are pieces of the resolved requirement, the Destruction
+# Contract check, and the destroyed particle, which the caller already holds.
+# direct_destructor and trigger_violation have the same problem.
 def contract_destructor(
     *,
     propagated_requirement: action_contract.PositionRequirement,

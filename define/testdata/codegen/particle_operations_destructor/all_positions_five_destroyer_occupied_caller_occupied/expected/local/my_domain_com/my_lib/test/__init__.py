@@ -62,11 +62,11 @@ class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.Destroy
     @override
     def destroy_position_target(self, particle: literal.Particle):
         particle.get_position(
-            local.my_domain_com.my_lib.fifth.FifthPosition
+            local.my_domain_com.my_lib.first.FirstPosition
         ).destroy_particle()
         particle.get_position(
             local.my_domain_com.my_lib.third.ThirdPosition
         ).destroy_particle()
         particle.get_position(
-            local.my_domain_com.my_lib.first.FirstPosition
+            local.my_domain_com.my_lib.fifth.FifthPosition
         ).destroy_particle()

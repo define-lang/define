@@ -46,8 +46,8 @@ class MiddleDestructionContracts(local.my_domain_com.my_lib.middle.MiddleDestruc
     @override
     def destroy_global_position_parent(self, particle: literal.Particle):
         particle.get_position(
-            local.my_domain_com.my_lib.b.BPosition
+            local.my_domain_com.my_lib.a.APosition
         ).destroy_particle()
         particle.get_position(
-            local.my_domain_com.my_lib.a.APosition
+            local.my_domain_com.my_lib.b.BPosition
         ).destroy_particle()

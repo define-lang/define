@@ -102,10 +102,10 @@ class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.Destroy
             particle
         )
         particle.get_action(
-            local.my_domain_com.my_lib.fifth_destructor.FifthDestructorAction
+            local.my_domain_com.my_lib.first_destructor.FirstDestructorAction
         ).run()
         particle.get_action(
-            local.my_domain_com.my_lib.first_destructor.FirstDestructorAction
+            local.my_domain_com.my_lib.fifth_destructor.FifthDestructorAction
         ).run()
 
     @override
@@ -114,8 +114,8 @@ class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.Destroy
             particle
         )
         particle.get_position(
-            local.my_domain_com.my_lib.fifth.FifthPosition
+            local.my_domain_com.my_lib.first.FirstPosition
         ).destroy_particle()
         particle.get_position(
-            local.my_domain_com.my_lib.first.FirstPosition
+            local.my_domain_com.my_lib.fifth.FifthPosition
         ).destroy_particle()

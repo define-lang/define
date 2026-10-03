@@ -68,14 +68,14 @@ class MiddleDestructionContracts(local.my_domain_com.my_lib.middle.MiddleDestruc
     @override
     def destroy_position_target(self, particle: literal.Particle):
         particle.get_position(
-            local.my_domain_com.my_lib.second_interface.SecondInterfacePosition
+            local.my_domain_com.my_lib.third.ThirdPosition
         ).destroy_particle()
-        literal.record_operation("destroyer.destroy(target::/second_interface)")
+        literal.record_operation("destroyer.destroy(target::/third)")
         particle.get_position(
             local.my_domain_com.my_lib.first_interface.FirstInterfacePosition
         ).destroy_particle()
         literal.record_operation("destroyer.destroy(target::/first_interface)")
         particle.get_position(
-            local.my_domain_com.my_lib.third.ThirdPosition
+            local.my_domain_com.my_lib.second_interface.SecondInterfacePosition
         ).destroy_particle()
-        literal.record_operation("destroyer.destroy(target::/third)")
+        literal.record_operation("destroyer.destroy(target::/second_interface)")

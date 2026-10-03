@@ -50,6 +50,7 @@ py_library(
     visibility = ["//define/compiler/codegen:__subpackages__"],
     deps = [
         ":destruction_contracts",
+        ":known_destruction_work",
         ":naming",
         ":operation_labels",
         ":position_expression",
@@ -66,8 +67,8 @@ py_library(
     name = "destruction_contracts",
     srcs = ["destruction_contracts.py"],
     deps = [
+        ":known_destruction_work",
         ":naming",
-        ":operation_labels",
         ":position_expression",
         ":template_context",
         "//define/compiler:ast",
@@ -106,6 +107,19 @@ py_library(
         "//define/compiler/graphs:reference_graph_executor",
         "//define/compiler/validator:codegen_input",
         "@pypi//msgspec",
+    ],
+)
+
+py_library(
+    name = "known_destruction_work",
+    srcs = ["known_destruction_work.py"],
+    deps = [
+        ":naming",
+        ":operation_labels",
+        ":position_expression",
+        ":template_context",
+        "//define/compiler:ast",
+        "//define/compiler/validator/reference_graph/destruction:destruction_contract",
     ],
 )
 
@@ -246,6 +260,7 @@ pyright_test(
         ":destruction_contracts",
         ":encoding_operation_definition",
         ":generator",
+        ":known_destruction_work",
         ":naming",
         ":naming_test",
         ":operation_labels",

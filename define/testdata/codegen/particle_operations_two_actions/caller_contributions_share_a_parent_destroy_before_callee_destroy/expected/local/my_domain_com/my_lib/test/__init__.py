@@ -66,12 +66,12 @@ class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.Destroy
         particle.get_position(
             local.my_domain_com.my_lib.branch.BranchPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.b.BPosition
+            local.my_domain_com.my_lib.a.APosition
         ).destroy_particle()
         particle.get_position(
             local.my_domain_com.my_lib.branch.BranchPosition
         ).particle.get_position(
-            local.my_domain_com.my_lib.a.APosition
+            local.my_domain_com.my_lib.b.BPosition
         ).destroy_particle()
         particle.get_position(
             local.my_domain_com.my_lib.branch.BranchPosition

@@ -125,3 +125,9 @@ def test_callee_written_value_on_destroyed_particle_is_not_tracked_by_caller(
     assert diagnostic.location.line == 56
     assert diagnostic.location.column == 26
     assert diagnostic.position_name == "position<input>::position</value>"
+
+
+def test_value_below_particle_a_callee_left_required_by_destructor_a_callee_destroys_is_used(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    assert_no_errors(validate_testdata_non_filesystem_with_reference_graph())

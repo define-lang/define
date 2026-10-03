@@ -64,11 +64,11 @@ class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.Destroy
     @override
     def run_destructors_position_target(self, particle: literal.Particle):
         particle.get_action(
-            local.my_domain_com.my_lib.fifth_destructor.FifthDestructorAction
+            local.my_domain_com.my_lib.first_destructor.FirstDestructorAction
         ).run()
         particle.get_action(
             local.my_domain_com.my_lib.third_destructor.ThirdDestructorAction
         ).run()
         particle.get_action(
-            local.my_domain_com.my_lib.first_destructor.FirstDestructorAction
+            local.my_domain_com.my_lib.fifth_destructor.FifthDestructorAction
         ).run()

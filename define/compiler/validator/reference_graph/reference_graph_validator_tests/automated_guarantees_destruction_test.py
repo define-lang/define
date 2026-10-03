@@ -22,6 +22,7 @@ _CLEANUP = "action<my.domain.com:my_lib:/cleanup>"
 _RETIRE = "action<my.domain.com:my_lib:/retire>"
 _WRAPPER = "action<my.domain.com:my_lib:/wrapper>"
 _EMPTY_MARKER = "action<my.domain.com:my_lib:/empty_marker>"
+_BUILD = "action<my.domain.com:my_lib:/build>"
 
 
 def _destroyed_positions(
@@ -29,7 +30,10 @@ def _destroyed_positions(
 ) -> list[tuple[str, ...]]:
     step = result.reference_graph_result.codegen_input.actions[_TEST].steps[-1]
     assert isinstance(step, codegen_input.Destruction)
-    return [position.canonical_chained_name_tuple for position in step.positions]
+    return [
+        destroyed.position.canonical_chained_name_tuple
+        for destroyed in step.work.positions
+    ]
 
 
 def test_discardable_callee_guarantees_are_dropped_for_destroyed_particle(
@@ -768,4 +772,505 @@ def test_callee_particle_whose_destructor_requirements_hold_is_not_expanded_when
         (_CLEANUP, "action<my.domain.com:my_lib:/keep>"),
         (_TEST, "action<my.domain.com:my_lib:/make>"),
         (_TEST, _CLEANUP),
+    ]
+
+
+def test_destructor_requirement_inside_what_a_callee_left_holds_without_expanding(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    step = result.reference_graph_result.codegen_input.actions[_TEST].steps[-1]
+    assert isinstance(step, codegen_input.Destruction)
+    assert step.work.destructors == []
+    (run,) = step.work.guaranteed_particle_destructors
+    assert run.position.canonical_chained_name_tuple == (
+        _HOLDER,
+        "position<my.domain.com:my_lib:/box>",
+        "position<my.domain.com:my_lib:/child>",
+    )
+    assert run.action.full_typed_name == _BUILD
+    assert run.position_in_action == (
+        "position<my.domain.com:my_lib:/box>",
+        "position<my.domain.com:my_lib:/child>",
+    )
+    assert _destroyed_positions(result) == [
+        (_HOLDER, "position<my.domain.com:my_lib:/box>"),
+        (_HOLDER,),
+    ]
+
+
+def test_destructor_value_requirement_inside_what_a_callee_left_fails_when_destroyed(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    (diagnostic,) = result.program_result.all_diagnostics
+    assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diagnostic.location.line == 13
+    assert diagnostic.location.column == 30
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert (
+        diagnostic.position_name
+        == "position<holder>::position</box>::position</child>::position</inner>::position</value>"
+    )
+    assert diagnostic.action_name == _CLEANUP
+    assert diagnostic.required_value is True
+    assert diagnostic.required_empty is False
+    assert_propagation_chain(
+        diagnostic,
+        {
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "enclosing_quality_name": "position<my.domain.com:my_lib:/child>",
+            "triggered_quality_name": _CLEANUP,
+            "line": 3,
+            "column": 20,
+            "file_path": "child.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "enclosing_quality_name": "position<holder>::position</box>::position</child>",
+            "triggered_quality_name": None,
+            "line": 8,
+            "column": 30,
+            "file_path": "make.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<holder>::position</box>::position</child>::position</inner>::position</value>",
+            "triggered_quality_name": None,
+            "line": 10,
+            "column": 30,
+            "file_path": "make.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.AUTO_DESTRUCTION,
+            "enclosing_quality_name": _HOLDER,
+            "triggered_quality_name": _TEST,
+            "line": 13,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _CLEANUP,
+            "line": 13,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _CLEANUP,
+            "triggered_quality_name": None,
+            "line": 13,
+            "column": 78,
+            "file_path": "cleanup.dfn",
+        },
+    )
+    step = result.reference_graph_result.codegen_input.actions[_TEST].steps[-1]
+    assert isinstance(step, codegen_input.Destruction)
+    assert [
+        destructor.canonical_chained_name_tuple for destructor in step.work.destructors
+    ] == [
+        (
+            *(
+                _HOLDER,
+                "position<my.domain.com:my_lib:/box>",
+                "position<my.domain.com:my_lib:/child>",
+            ),
+            _CLEANUP,
+        )
+    ]
+    assert step.work.guaranteed_particle_destructors == []
+    assert _destroyed_positions(result) == [
+        (
+            _HOLDER,
+            "position<my.domain.com:my_lib:/box>",
+            "position<my.domain.com:my_lib:/child>",
+        ),
+        (_HOLDER, "position<my.domain.com:my_lib:/box>"),
+        (_HOLDER,),
+    ]
+
+
+def test_destructor_requirement_below_empty_position_a_callee_left_fails_when_destroyed(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    (diagnostic,) = result.program_result.all_diagnostics
+    assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diagnostic.location.line == 13
+    assert diagnostic.location.column == 30
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert (
+        diagnostic.position_name
+        == "position<holder>::position</box>::position</child>::position</inner>::position</value>"
+    )
+    assert diagnostic.action_name == _CLEANUP
+    assert diagnostic.required_value is False
+    assert diagnostic.required_empty is False
+    assert_propagation_chain(
+        diagnostic,
+        {
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "enclosing_quality_name": "position<my.domain.com:my_lib:/child>",
+            "triggered_quality_name": _CLEANUP,
+            "line": 3,
+            "column": 20,
+            "file_path": "child.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "enclosing_quality_name": "position<holder>::position</box>::position</child>",
+            "triggered_quality_name": None,
+            "line": 8,
+            "column": 30,
+            "file_path": "make.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.AUTO_DESTRUCTION,
+            "enclosing_quality_name": _HOLDER,
+            "triggered_quality_name": _TEST,
+            "line": 13,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _CLEANUP,
+            "line": 13,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _CLEANUP,
+            "triggered_quality_name": None,
+            "line": 13,
+            "column": 78,
+            "file_path": "cleanup.dfn",
+        },
+    )
+    step = result.reference_graph_result.codegen_input.actions[_TEST].steps[-1]
+    assert isinstance(step, codegen_input.Destruction)
+    assert [
+        destructor.canonical_chained_name_tuple for destructor in step.work.destructors
+    ] == [
+        (
+            *(
+                _HOLDER,
+                "position<my.domain.com:my_lib:/box>",
+                "position<my.domain.com:my_lib:/child>",
+            ),
+            _CLEANUP,
+        )
+    ]
+    assert step.work.guaranteed_particle_destructors == []
+    assert _destroyed_positions(result) == [
+        (
+            _HOLDER,
+            "position<my.domain.com:my_lib:/box>",
+            "position<my.domain.com:my_lib:/child>",
+        ),
+        (_HOLDER, "position<my.domain.com:my_lib:/box>"),
+        (_HOLDER,),
+    ]
+
+
+def test_destructor_requirement_on_position_a_callee_never_filled_fails_when_destroyed(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    inner, value = result.program_result.all_diagnostics
+    assert isinstance(inner, diagnostics.InferredRequirementViolationDiagnostic)
+    assert inner.location.line == 12
+    assert inner.location.column == 30
+    assert inner.location.file_path == PurePosixPath("test.dfn")
+    assert (
+        inner.position_name
+        == "position<holder>::position</box>::position</child>::position</inner>"
+    )
+    assert inner.action_name == _CLEANUP
+    assert inner.required_value is False
+    assert inner.required_empty is False
+    assert_propagation_chain(
+        inner,
+        {
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "enclosing_quality_name": "position<my.domain.com:my_lib:/child>",
+            "triggered_quality_name": _CLEANUP,
+            "line": 3,
+            "column": 20,
+            "file_path": "child.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "enclosing_quality_name": "position<holder>::position</box>::position</child>",
+            "triggered_quality_name": None,
+            "line": 8,
+            "column": 30,
+            "file_path": "make.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.AUTO_DESTRUCTION,
+            "enclosing_quality_name": _HOLDER,
+            "triggered_quality_name": _TEST,
+            "line": 12,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _CLEANUP,
+            "line": 12,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _CLEANUP,
+            "triggered_quality_name": None,
+            "line": 13,
+            "column": 78,
+            "file_path": "cleanup.dfn",
+        },
+    )
+    assert isinstance(value, diagnostics.InferredRequirementViolationDiagnostic)
+    assert value.location.line == 12
+    assert value.location.column == 30
+    assert value.location.file_path == PurePosixPath("test.dfn")
+    assert (
+        value.position_name
+        == "position<holder>::position</box>::position</child>::position</inner>::position</value>"
+    )
+    assert value.action_name == _CLEANUP
+    assert value.required_value is False
+    assert value.required_empty is False
+    assert_propagation_chain(
+        value,
+        {
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "enclosing_quality_name": "position<my.domain.com:my_lib:/child>",
+            "triggered_quality_name": _CLEANUP,
+            "line": 3,
+            "column": 20,
+            "file_path": "child.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "enclosing_quality_name": "position<holder>::position</box>::position</child>",
+            "triggered_quality_name": None,
+            "line": 8,
+            "column": 30,
+            "file_path": "make.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.AUTO_DESTRUCTION,
+            "enclosing_quality_name": _HOLDER,
+            "triggered_quality_name": _TEST,
+            "line": 12,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _CLEANUP,
+            "line": 12,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _CLEANUP,
+            "triggered_quality_name": None,
+            "line": 13,
+            "column": 78,
+            "file_path": "cleanup.dfn",
+        },
+    )
+    step = result.reference_graph_result.codegen_input.actions[_TEST].steps[-1]
+    assert isinstance(step, codegen_input.Destruction)
+    assert [
+        destructor.canonical_chained_name_tuple for destructor in step.work.destructors
+    ] == [
+        (
+            *(
+                _HOLDER,
+                "position<my.domain.com:my_lib:/box>",
+                "position<my.domain.com:my_lib:/child>",
+            ),
+            _CLEANUP,
+        )
+    ]
+    assert step.work.guaranteed_particle_destructors == []
+    assert _destroyed_positions(result) == [
+        (
+            _HOLDER,
+            "position<my.domain.com:my_lib:/box>",
+            "position<my.domain.com:my_lib:/child>",
+        ),
+        (_HOLDER, "position<my.domain.com:my_lib:/box>"),
+        (_HOLDER,),
+    ]
+
+
+def test_destructor_requirement_on_position_a_callee_left_in_error_does_not_prevent_running_it(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    (diagnostic,) = result.program_result.all_diagnostics
+    assert isinstance(diagnostic, diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert diagnostic.location.line == 12
+    assert diagnostic.location.column == 49
+    assert diagnostic.location.file_path == PurePosixPath("make.dfn")
+    assert diagnostic.position_name == "position</child>::position</inner>"
+    assert diagnostic.occupied_at.line == 9
+    assert diagnostic.occupied_at.column == 30
+    assert diagnostic.occupied_at.file_path == PurePosixPath("make.dfn")
+    step = result.reference_graph_result.codegen_input.actions[_TEST].steps[-1]
+    assert isinstance(step, codegen_input.Destruction)
+    assert step.work.destructors == []
+    (run,) = step.work.guaranteed_particle_destructors
+    assert run.position.canonical_chained_name_tuple == (
+        _HOLDER,
+        "position<my.domain.com:my_lib:/box>",
+        "position<my.domain.com:my_lib:/child>",
+    )
+    assert run.action.full_typed_name == _BUILD
+    assert run.position_in_action == (
+        "position<my.domain.com:my_lib:/box>",
+        "position<my.domain.com:my_lib:/child>",
+    )
+    assert _destroyed_positions(result) == [
+        (_HOLDER, "position<my.domain.com:my_lib:/box>"),
+        (_HOLDER,),
+    ]
+
+
+def test_destructor_requirement_on_position_the_caller_emptied_fails_when_destroyed(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    (diagnostic,) = result.program_result.all_diagnostics
+    assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diagnostic.location.line == 12
+    assert diagnostic.location.column == 30
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert (
+        diagnostic.position_name
+        == "position<holder>::position</box>::position</child>::position</inner>::position</value>"
+    )
+    assert diagnostic.action_name == _CLEANUP
+    assert diagnostic.required_value is False
+    assert diagnostic.required_empty is False
+    assert_propagation_chain(
+        diagnostic,
+        {
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "enclosing_quality_name": "position<my.domain.com:my_lib:/child>",
+            "triggered_quality_name": _CLEANUP,
+            "line": 3,
+            "column": 20,
+            "file_path": "child.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "enclosing_quality_name": "position<holder>::position</box>::position</child>",
+            "triggered_quality_name": None,
+            "line": 8,
+            "column": 30,
+            "file_path": "make.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.AUTO_DESTRUCTION,
+            "enclosing_quality_name": _HOLDER,
+            "triggered_quality_name": _TEST,
+            "line": 12,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _CLEANUP,
+            "line": 12,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _CLEANUP,
+            "triggered_quality_name": None,
+            "line": 13,
+            "column": 78,
+            "file_path": "cleanup.dfn",
+        },
+    )
+    step = result.reference_graph_result.codegen_input.actions[_TEST].steps[-1]
+    assert isinstance(step, codegen_input.Destruction)
+    assert [
+        destructor.canonical_chained_name_tuple for destructor in step.work.destructors
+    ] == [
+        (
+            *(
+                _HOLDER,
+                "position<my.domain.com:my_lib:/box>",
+                "position<my.domain.com:my_lib:/child>",
+            ),
+            _CLEANUP,
+        )
+    ]
+    assert step.work.guaranteed_particle_destructors == []
+    assert _destroyed_positions(result) == [
+        (
+            _HOLDER,
+            "position<my.domain.com:my_lib:/box>",
+            "position<my.domain.com:my_lib:/child>",
+        ),
+        (_HOLDER, "position<my.domain.com:my_lib:/box>"),
+        (_HOLDER,),
+    ]
+
+
+def test_destructor_requirement_on_position_the_caller_left_in_error_does_not_prevent_running_it(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    (diagnostic,) = result.program_result.all_diagnostics
+    assert isinstance(diagnostic, diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert diagnostic.location.line == 12
+    assert diagnostic.location.column == 49
+    assert diagnostic.location.file_path == PurePosixPath("build.dfn")
+    assert (
+        diagnostic.position_name == "position</box>::position</child>::position</inner>"
+    )
+    assert diagnostic.occupied_at.line == 9
+    assert diagnostic.occupied_at.column == 30
+    assert diagnostic.occupied_at.file_path == PurePosixPath("make.dfn")
+    step = result.reference_graph_result.codegen_input.actions[_TEST].steps[-1]
+    assert isinstance(step, codegen_input.Destruction)
+    assert step.work.destructors == []
+    (run,) = step.work.guaranteed_particle_destructors
+    assert run.position.canonical_chained_name_tuple == (
+        _HOLDER,
+        "position<my.domain.com:my_lib:/box>",
+        "position<my.domain.com:my_lib:/child>",
+    )
+    assert run.action.full_typed_name == _BUILD
+    assert run.position_in_action == (
+        "position<my.domain.com:my_lib:/box>",
+        "position<my.domain.com:my_lib:/child>",
+    )
+    assert _destroyed_positions(result) == [
+        (_HOLDER, "position<my.domain.com:my_lib:/box>"),
+        (_HOLDER,),
     ]

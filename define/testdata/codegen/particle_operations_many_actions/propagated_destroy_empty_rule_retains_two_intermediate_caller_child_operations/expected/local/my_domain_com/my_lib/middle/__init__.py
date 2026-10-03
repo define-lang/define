@@ -83,8 +83,8 @@ class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.Destroy
             particle
         )
         particle.get_position(
-            local.my_domain_com.my_lib.second.SecondPosition
+            local.my_domain_com.my_lib.first.FirstPosition
         ).destroy_particle()
         particle.get_position(
-            local.my_domain_com.my_lib.first.FirstPosition
+            local.my_domain_com.my_lib.second.SecondPosition
         ).destroy_particle()

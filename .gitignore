@@ -9,6 +9,7 @@
 
 /.claude/settings.local.json
 /.todo-worktrees/
+/.claude/worktrees
 
 # Bazel
 /bazel-*

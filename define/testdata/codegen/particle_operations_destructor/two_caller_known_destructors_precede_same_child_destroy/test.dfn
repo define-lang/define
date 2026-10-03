@@ -1,5 +1,5 @@
 # /destroyer shuttles the /maker guarantee into /required. Both caller-known
-# Destructors operate on that particle, so they run in reverse assignment order
+# Destructors operate on that particle, so they run in assignment order
 # before it is destroyed.
 define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the action</destroyer>.

@@ -51,10 +51,10 @@ class MiddleDestructionContracts(local.my_domain_com.my_lib.middle.MiddleDestruc
     @override
     def destroy_position_run(self, particle: literal.Particle):
         particle.get_position(
-            local.my_domain_com.my_lib.b.BPosition
-        ).destroy_particle()
-        literal.record_operation("inner.destroy(inner_run::/b)")
-        particle.get_position(
             local.my_domain_com.my_lib.a.APosition
         ).destroy_particle()
         literal.record_operation("inner.destroy(inner_run::/a)")
+        particle.get_position(
+            local.my_domain_com.my_lib.b.BPosition
+        ).destroy_particle()
+        literal.record_operation("inner.destroy(inner_run::/b)")

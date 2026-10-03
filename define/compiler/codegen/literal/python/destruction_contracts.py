@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING, final
 
 from define.compiler import ast
 from define.compiler.codegen.literal.python import (
+    known_destruction_work,
     naming,
-    operation_labels,
     position_expression,
     template_context,
 )
@@ -39,7 +39,9 @@ class DestructionContractsGenerator:
         self._positions = positions
         self._contract_names = contract_names
         self._class_names = class_names
-        self._trace_operations = trace_operations
+        self._work = known_destruction_work.KnownDestructionWorkGenerator(
+            converter, positions, trace_operations=trace_operations
+        )
 
     def referenced_modules(
         self,
@@ -52,19 +54,7 @@ class DestructionContractsGenerator:
         contribution = connection.contribution
         if contribution is None:
             return
-        for action in contribution.destructors:
-            yield from self._converter.referenced_modules(
-                self._relative_to_contracted_particle(contribution, action)
-            )
-        for reference in contribution.guaranteed_particle_destructors:
-            yield from self._converter.referenced_modules(
-                self._relative_to_contracted_particle(contribution, reference.position)
-            )
-            yield self._converter.class_reference(reference.action).module_name
-        for position in contribution.positions:
-            yield from self._converter.referenced_modules(
-                self._relative_to_contracted_particle(contribution, position)
-            )
+        yield from self._work.referenced_modules(contribution)
 
     def generate(
         self,
@@ -107,14 +97,17 @@ class DestructionContractsGenerator:
                         )
                     )
                 statements = []
-                if connection.contribution is not None:
+                contribution = connection.contribution
+                if contribution is not None:
                     if kind == template_context.StatementKind.RUN_CONTRACT_DESTRUCTORS:
-                        statements = self._destructor_statements(
-                            connection.contribution
+                        statements = self._work.destructor_statements(
+                            contribution, from_contract_particle=True
                         )
                     else:
-                        statements = self._destruction_statements(
-                            connection.contribution
+                        statements = self._work.destroy_statements(
+                            contribution,
+                            connection.callee_destruction.destruction_fact.destruction.destroying_action,
+                            from_contract_particle=True,
                         )
                 if forwarded or statements:
                     methods.append(
@@ -161,81 +154,3 @@ class DestructionContractsGenerator:
             )
             forwarded.append((self._contract_names[destruction], relative))
         return forwarded
-
-    def _destructor_statements(
-        self,
-        contribution: destruction_contract.DestructionContribution,
-    ) -> list[template_context.ActionStatementContext]:
-        statements: list[template_context.ActionStatementContext] = []
-        for destructor in contribution.destructors:
-            relative = self._relative_to_contracted_particle(contribution, destructor)
-            statements.append(
-                template_context.RunActionContext(
-                    position=self._positions.build(
-                        relative,
-                        from_contract_particle=True,
-                    ),
-                )
-            )
-        for reference in contribution.guaranteed_particle_destructors:
-            relative = self._relative_to_contracted_particle(
-                contribution, reference.position
-            )
-            statements.append(
-                template_context.RunGuaranteedParticleDestructorsContext(
-                    action=self._converter.class_reference(reference.action),
-                    method_name=naming.NameConverter.guaranteed_particle_destructors_method_name(
-                        reference.position_in_action
-                    ),
-                    position=self._positions.build(
-                        relative,
-                        from_contract_particle=True,
-                    ),
-                )
-            )
-        return statements
-
-    def _destruction_statements(
-        self,
-        contribution: destruction_contract.DestructionContribution,
-    ) -> list[template_context.ActionStatementContext]:
-        statements: list[template_context.ActionStatementContext] = []
-        for position in contribution.positions:
-            relative = self._relative_to_contracted_particle(contribution, position)
-            label = None
-            if self._trace_operations:
-                fact = contribution.destruction_fact
-                full_position = (
-                    fact.destroyed_position_in_destroyer.with_position_suffix(
-                        *position.typed_names[
-                            len(contribution.position_in_caller.typed_names) :
-                        ]
-                    )
-                )
-                label = operation_labels.operation_label(
-                    fact.destruction.destroying_action,
-                    template_context.StatementKind.DESTROY_PARTICLE,
-                    full_position,
-                )
-            statements.append(
-                template_context.DestroyParticleContext(
-                    position=self._positions.build(
-                        relative,
-                        from_contract_particle=True,
-                    ),
-                    operation_label=label,
-                )
-            )
-        return statements
-
-    @staticmethod
-    def _relative_to_contracted_particle(
-        contribution: destruction_contract.DestructionContribution,
-        reference: ast.ChainedName,
-    ) -> ast.ChainedName:
-        return type(reference)(
-            location=reference.location,
-            typed_names=reference.typed_names[
-                len(contribution.position_in_caller.typed_names) :
-            ],
-        )
