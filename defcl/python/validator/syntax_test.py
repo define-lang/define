@@ -483,6 +483,14 @@ class TestInvalidStrings:
 
 
 class TestInvalidToplevel:
+    def test_unmatched_close_brace(self):
+        with pytest.raises(lark_standalone.UnexpectedToken) as exc_info:
+            _parser.parse("}\n")
+        assert exc_info.value.token.type == "RBRACE"
+        assert str(exc_info.value.token) == "}"
+        assert exc_info.value.line == 1
+        assert exc_info.value.column == 1
+
     def test_missing_toplevel_colon(self):
         with pytest.raises(exceptions.MissingColonError) as exc_info:
             _parser.parse_file(

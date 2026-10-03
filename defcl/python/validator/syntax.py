@@ -147,9 +147,9 @@ class Parser:
     ) -> type[dcl_exceptions.DclTokenError] | None:
         """Classify a token error using pattern matching and example matching."""
         if e.token.type == "RBRACE" and e.token_history:
-            prev = e.token_history[-1]
-            if prev.type == "FIELD_NAME":
-                val = str(prev)
+            previous_token = e.token_history[-1]
+            if previous_token is not None and previous_token.type == "FIELD_NAME":
+                val = str(previous_token)
                 if val in ("f", "d", "l") or (val[0] == "e" and val[1:].isdigit()):
                     return dcl_exceptions.InvalidNumberFormatError
 

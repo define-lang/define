@@ -161,6 +161,7 @@ def raise_token_error(
     if (
         e.token.type == "SPACE"
         and e.token_history
+        and e.token_history[-1] is not None
         and e.token_history[-1].type == "SPACE"
     ):
         raise parser_exceptions.ExtraWhitespace(e, file_path)
@@ -219,8 +220,9 @@ def raise_token_error(
         if e.token.type == "GLOBAL_NAME_CONTENT":
             raise parser_exceptions.GlobalNameWhereLocalNameExpected(e, file_path)
         if e.token_history:
+            previous_token = typing.cast("lark_cython.Token", e.token_history[-1])
             raise parser_exceptions.MissingCloseAngleBracket(
-                e, file_path, e.token_history[-1].value
+                e, file_path, previous_token.value
             )
         # Due to some quirks of Lark, $END never has token_history.
         if e.token.type == "$END":
@@ -246,7 +248,8 @@ def raise_token_error(
         raise parser_exceptions.MissingOpenBrace(e, file_path)
 
     if e.accepts == {"NEWLINE"} and e.token_history:
-        match e.token_history[-1].type:
+        previous_token = typing.cast("lark_cython.Token", e.token_history[-1])
+        match previous_token.type:
             case "DOT":
                 raise parser_exceptions.MissingNewlineAfterTerminator(e, file_path)
             case "SPACE_AND_OPEN_BRACE":

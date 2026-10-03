@@ -75,13 +75,16 @@ class InteractiveParser:
 class UnexpectedCharacters(UnexpectedInput):
     allowed: set[str]
     char: str
-    token_history: list[lark_cython.Token] | None
+    token_history: list[lark_cython.Token | None] | None
     interactive_parser: InteractiveParser
 
 class UnexpectedToken(UnexpectedInput):
     token: lark_cython.Token
     expected: set[str]
-    token_history: list[lark_cython.Token] | None
+    # Lark and lark_cython's contextual lexers unconditionally use [last_token]
+    # here, so an unexpected first token has history [None]. EOF errors can
+    # instead have token_history=None; these are distinct cases.
+    token_history: list[lark_cython.Token | None] | None
     interactive_parser: InteractiveParser | None
 
     def __init__(
@@ -90,7 +93,7 @@ class UnexpectedToken(UnexpectedInput):
         expected: set[str],
         *,
         interactive_parser: InteractiveParser | None = None,
-        token_history: list[lark_cython.Token] | None = None,
+        token_history: list[lark_cython.Token | None] | None = None,
     ) -> None: ...
     @property
     def accepts(self) -> set[str]: ...

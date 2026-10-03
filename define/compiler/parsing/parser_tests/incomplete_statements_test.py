@@ -33,6 +33,15 @@ def test_unmatched_close_brace(parse: Parse):
     assert exc_info.value.location.column == 1
 
 
+def test_file_starts_with_indented_trigger_conditions(parse: Parse):
+    with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
+        parse("    it happens when {\n")
+    assert exc_info.value.token == " "
+    assert exc_info.value.token.type == "SPACE"
+    assert exc_info.value.location.line == 1
+    assert exc_info.value.location.column == 1
+
+
 def test_file_all_newlines(parse: Parse):
     with pytest.raises(parser_exceptions.ExpectedGlobalDefinition) as exc_info:
         parse("\n\n\n")
