@@ -1,0 +1,27 @@
+# action</mover> creates a particle below the one in position</box> and moves
+# the particle action</test> created in position</item>, with its child
+# particle, below that. action</test> applies that when it triggers
+# action</mover>, and then passes the particle in position</box> to action</destroyer>, which
+# destroys it. The Destruction Contract makes action</test> find its particles
+# where action</mover> put them.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</destroyer>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<holder> {
+            it may only contain particles where {
+                it has the action</mover>.
+                it has the position</item>.
+                it has the position</box>.
+            }
+        }
+        create a particle in position<holder>.
+        create a particle in position<holder>::position</box>.
+        create a particle in position<holder>::position</item>.
+        create a particle in position<holder>::position</item>::position</kept>.
+        create a particle in position<holder>::action</mover>::position<run>.
+        move the particle in position<holder>::position</box> to action</destroyer>::position<target>.
+        create a particle in action</destroyer>::position<run>.
+    }
+}

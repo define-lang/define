@@ -49,7 +49,8 @@ class {{ self.class_name }}(literal.Action):
 {%- endif %}
 {{- statements::action_statements(self.statements, module_name) -}}
 {%- for guaranteed in self.guaranteed_particle_destructors %}
-    def {{ guaranteed.method_name }}(self):
+    @staticmethod
+    def {{ guaranteed.method_name }}(particle: literal.Particle):
 {{- statements::action_statements(guaranteed.statements, module_name) -}}
 {%- endfor -%}
 

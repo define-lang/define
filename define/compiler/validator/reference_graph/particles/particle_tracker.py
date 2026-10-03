@@ -2,16 +2,14 @@
 
 from __future__ import annotations
 
-import itertools
 import typing
 
 import msgspec
 
 from define.compiler import ast, chained_name
-from define.compiler.validator.reference_graph.dead_code import dead_interface_tracker
 from define.compiler.validator.reference_graph.particles import (
-    callee_guarantee_applier,
     guarantee_generation,
+    interface_arrival_tracker,
     particle_info,
     particle_state_store,
     requirement_resolution,
@@ -31,55 +29,6 @@ if typing.TYPE_CHECKING:
         position_occupancy,
         quality_assignment,
     )
-    from define.compiler.validator.reference_graph import (
-        destruction_contract as destruction_contract_types,
-    )
-    from define.compiler.validator.reference_graph.particles import pending_guarantee
-
-
-class CalleeDestructors(msgspec.Struct, frozen=True):
-    """The Destructors a caller recorded for one of its callees, whose Guarantees describe particles below a particle being destroyed."""
-
-    # The caller's action chain from this action's perspective.
-    triggering_action_chain: chained_name.ActionReferenceTuple
-    # The callee's entry in the caller's contract.
-    callee: action_contract.CalleeContract
-    # The Action Execution in this action's state that the callee's Guarantees
-    # came from.
-    execution: codegen_input.ActionExecution
-
-    @property
-    def triggering_action_is_implied(self) -> bool:
-        """Whether the caller is one of this action's implied actions, assigned to this action's parent particle."""
-        # No position precedes the action's name in its chain.
-        return len(self.triggering_action_chain) == 1
-
-
-def _callee_destructors(
-    position: chained_name.ChainedNameTuple, pending: pending_guarantee.PendingGuarantee
-) -> CalleeDestructors:
-    entry = pending.caller_contract_entry
-    return CalleeDestructors(
-        triggering_action_chain=chained_name.chain_of_caller(
-            pending.action_chain(position),
-            entry.callee.action_chain,
-            entry.caller_action,
-        ),
-        callee=entry.callee,
-        execution=pending.execution,
-    )
-
-
-class ParticleDestruction(msgspec.Struct, frozen=True):
-    """A destruction target and its occupied transitive child Positions."""
-
-    position: ast.PositionReference
-    facts: list[destruction_contract_types.DestructionFact]
-
-    def positions(self) -> Iterator[ast.PositionReference]:
-        """Yield the target Position followed by its transitive child Positions."""
-        for fact in self.facts:
-            yield fact.destroyed_position_in_destroyer
 
 
 class OccupancyInfo(msgspec.Struct, frozen=True):
@@ -96,50 +45,33 @@ class ParticleTracker:
     """Tracks which positions contain particles and what qualities those particles currently have.
 
     Methods that read or change particle state see the state that every
-    callee's Guarantees leave, applying pending Guarantees as needed. Methods
-    named for recorded state instead read only what this action has recorded,
-    and methods about pending Guarantees themselves leave them pending.
+    callee's Guarantees leave.
     """
 
     def __init__(self):
         """Initialize an empty particle tracker."""
         self._store = particle_state_store.ParticleStateStore()
-        self._dead_interfaces = dead_interface_tracker.DeadInterfaceTracker(self._store)
-        self._callee_guarantees = callee_guarantee_applier.CalleeGuaranteeApplier(
-            self._store, self._dead_interfaces
-        )
+        self._interface_arrivals = interface_arrival_tracker.InterfaceArrivalTracker()
         self._requirement_resolver = requirement_resolution.RequirementResolver(
             self._store
         )
         self._guarantee_generator = guarantee_generation.GuaranteeGenerator(self._store)
 
-    def _delete_subtree(self, key: chained_name.PositionReferenceTuple):
-        """Delete everything tracked at or below a Position while preserving interface-rule history."""
-        self._store.delete_subtree(key, self._dead_interfaces.mark_particle_destroyed)
-
-    def _record_write(self, *keys: chained_name.PositionReferenceTuple):
-        """Record Position state changes from the action body."""
-        for key in keys:
-            self._store.record_write(key)
-
     def mark_error(self, in_position: ast.PositionReference):
         """Mark a position as having error occupancy state."""
-        key = in_position.canonical_chained_name_tuple
-        self._callee_guarantees.apply_pending_guarantees_up_to(key)
-        self._record_write(key)
-        self._store.mark_error(key, in_position)
+        self._store.mark_error(in_position.canonical_chained_name_tuple)
+
+    def mark_error_by_key(self, key: chained_name.PositionReferenceTuple):
+        """Mark the position ``key`` as having error occupancy state."""
+        self._store.mark_error(key)
 
     def assume_empty(self, in_position: ast.PositionReference):
         """Record that a required position starts empty."""
-        key = in_position.canonical_chained_name_tuple
-        self._callee_guarantees.apply_pending_guarantees_up_to(key)
-        self._store.ensure_action_parent(key)
-        self._store.mark_emptied(key, in_position)
+        self._store.assume_empty(in_position)
 
     def has_error_state(self, in_position: ast.PositionReference) -> bool:
         """Return whether a position or any ancestor has error occupancy state."""
         key = in_position.canonical_chained_name_tuple
-        self._callee_guarantees.apply_pending_guarantees_up_to(key)
         return self._store.has_error_in_chain(key)
 
     def get_occupancy_info(self, in_position: ast.PositionReference) -> OccupancyInfo:
@@ -155,7 +87,6 @@ class ParticleTracker:
         position rather than reusing an earlier result.
         """
         key = in_position.canonical_chained_name_tuple
-        self._callee_guarantees.apply_pending_guarantees_up_to(key)
         if self._store.has_error_in_chain(key):
             return OccupancyInfo(has_error=True, occupant=None)
         return OccupancyInfo(
@@ -163,22 +94,34 @@ class ParticleTracker:
             occupant=self._store.occupant_or_none(key),
         )
 
+    def unexpanded_entry(
+        self, position: ast.PositionReference
+    ) -> (
+        tuple[
+            action_contract.ChildPositionParticles,
+            action_contract.ParticleLeftBelow | None,
+        ]
+        | None
+    ):
+        """Return what a callee left in ``position``, a child position, that this action never expanded: the map it is in, and its entry, which is None when the position is empty.
+
+        None when this action has expanded what is at ``position``.
+        """
+        return self._store.unexpanded_entry(position.canonical_chained_name_tuple)
+
     def unconsumed_action_interfaces(
         self,
-    ) -> Iterator[
-        tuple[ast.GlobalTypedNameReference, chained_name.PositionReferenceTuple]
-    ]:
-        """Yield occupied interfaces of callees directly triggered by this action."""
+    ) -> Iterator[tuple[ast.SourceLocation, chained_name.PositionReferenceTuple]]:
+        """Yield each occupied interface position of a callee directly triggered by this action, with where the callee was last triggered."""
         return self._store.unconsumed_action_interfaces()
 
-    def dead_action_interface_arrivals(self) -> Iterator[ast.PositionReference]:
+    def dead_interface_arrivals(self) -> Iterator[ast.PositionReference]:
         """Yield explicit interface arrivals not satisfied by a callee trigger."""
-        return self._dead_interfaces.dead_arrivals()
+        return self._interface_arrivals.dead_interface_arrivals()
 
     def is_occupied(self, in_position: ast.PositionReference) -> bool:
         """Return whether a particle exists at this position."""
         key = in_position.canonical_chained_name_tuple
-        self._callee_guarantees.apply_pending_guarantees_up_to(key)
         return self._store.is_occupied(key)
 
     def first_unoccupied_parent(
@@ -192,7 +135,6 @@ class ParticleTracker:
         parent_key = chained_name.parent_position(key)
         if parent_key is None:
             return None
-        self._callee_guarantees.apply_pending_guarantees_up_to(parent_key)
         deepest_occupied_parent = self._store.longest_occupied_prefix(parent_key)
         occupied_name_count = (
             len(deepest_occupied_parent) if deepest_occupied_parent is not None else 0
@@ -213,9 +155,6 @@ class ParticleTracker:
         interface_position_names: Collection[str],
     ) -> list[requirement_resolution.ResolvedRequirementPosition]:
         """Infer direct requirements needed by this action."""
-        self._callee_guarantees.apply_pending_guarantees_up_to(
-            position.canonical_chained_name_tuple
-        )
         return self._requirement_resolver.infer_direct_requirements(
             position, required_state, interface_position_names
         )
@@ -229,10 +168,6 @@ class ParticleTracker:
         ],
     ) -> list[requirement_resolution.PropagatedRequirement]:
         """Propagate requirements that the current action does not satisfy."""
-        self._callee_guarantees.apply_pending_guarantees_up_to_all(
-            requirement.caller_position.canonical_chained_name_tuple
-            for requirement in requirements_in_caller
-        )
         return self._requirement_resolver.propagate_requirements(requirements_in_caller)
 
     def get_occupant(
@@ -240,7 +175,6 @@ class ParticleTracker:
     ) -> particle_info.ParticleInfo:
         """Return the info for the particle at this position."""
         key = in_position.canonical_chained_name_tuple
-        self._callee_guarantees.apply_pending_guarantees_up_to(key)
         return self._store.occupant(key)
 
     def get_occupant_or_none(
@@ -248,19 +182,12 @@ class ParticleTracker:
     ) -> particle_info.ParticleInfo | None:
         """Get the particle at this position, if one exists."""
         key = in_position.canonical_chained_name_tuple
-        self._callee_guarantees.apply_pending_guarantees_up_to(key)
         return self._store.occupant_or_none(key)
 
-    def recorded_occupant(
-        self, in_position: ast.PositionReference
-    ) -> particle_info.ParticleInfo:
-        """Return the particle this action has recorded at this position, without applying any pending Guarantees."""
-        return self._store.occupant(in_position.canonical_chained_name_tuple)
-
-    def recorded_occupant_or_none_by_key(
+    def occupant_or_none_by_key(
         self, key: chained_name.PositionReferenceTuple
     ) -> particle_info.ParticleInfo | None:
-        """Return the particle this action has recorded at ``key``, if any, without applying any pending Guarantees."""
+        """Get the particle at ``key``, if one exists."""
         return self._store.occupant_or_none(key)
 
     def set_value(
@@ -270,7 +197,6 @@ class ParticleTracker:
     ):
         """Apply a validated Value Setting Statement."""
         self.get_occupant(position).set_value_state(value_state, position.location)
-        self._record_write(position.canonical_chained_name_tuple)
 
     def value_written_at(
         self, key: chained_name.PositionReferenceTuple
@@ -286,11 +212,10 @@ class ParticleTracker:
         self.get_occupant(position).set_value_state(
             particle_info.ParticleValueState.ERROR, position.location
         )
-        self._record_write(position.canonical_chained_name_tuple)
 
     def snapshot_child_states(
         self, for_positions: Sequence[ast.PositionReference]
-    ) -> list[child_state.ChildState]:
+    ) -> list[action_contract.ChildState]:
         """Capture child occupancy for Positions destroyed together, in order.
 
         An explicit Destroy has one target; Automatic Destruction targets
@@ -302,66 +227,28 @@ class ParticleTracker:
         space and merges directly.
         """
         keys = [position.canonical_chained_name_tuple for position in for_positions]
-        # TODO: Not sure we actually need to fully resolve this; I think there's a world
-        # in which we use references somehow here just like we do with normal guarantees.
-        self._callee_guarantees.fully_resolve_pending_guarantees(*keys)
         return [self._store.snapshot_child_state(key) for key in keys]
-
-    def has_any_recorded_error(self) -> bool:
-        """Return whether this action has recorded error occupancy state at any Position, without applying any pending Guarantees."""
-        return self._store.has_any_error()
-
-    def unapplied_callee_destructors(
-        self, position: chained_name.ChainedNameTuple
-    ) -> list[CalleeDestructors]:
-        """Return what destroying the particle in ``position`` does for each callee whose Guarantees about it have not been applied.
-
-        An empty ``position`` means this action's parent particle.
-        """
-        callee_destructors: list[CalleeDestructors] = []
-        for pending in self._store.pending_guarantees_at(position):
-            callee_destructors.append(_callee_destructors(position, pending))
-        return callee_destructors
-
-    def drop_callee_guarantees_for_destruction(
-        self, position: ast.PositionReference
-    ) -> list[CalleeDestructors]:
-        """Drop the unapplied Guarantees of the callees assigned to the particle at ``position``, if its destruction does not depend on them.
-
-        Returns the Destructors that must still run for them, because their
-        particles will not appear among its children.
-        """
-        key = position.canonical_chained_name_tuple
-        callee_destructors: list[CalleeDestructors] = []
-        for pending in self._callee_guarantees.discard_discardable_pending_guarantees(
-            key
-        ):
-            callee_destructors.append(_callee_destructors(key, pending))
-        return callee_destructors
-
-    def callee_execution_that_wrote(
-        self, key: chained_name.PositionReferenceTuple
-    ) -> codegen_input.ActionExecution:
-        """Return the Action Execution whose guarantee last wrote this position, which a callee's guarantee must have written."""
-        return self._store.callee_execution_that_wrote(key)
 
     def collect_caller_destruction_state(
         self,
         occupancies: child_state.ChildOccupancyMap,
         values: child_state.ChildValueMap,
         particles: dict[chained_name.ChainedNameTuple, particle_info.ParticleInfo],
-        snapshot: child_state.ChildState,
+        unexpanded: dict[
+            chained_name.ChainedNameTuple, action_contract.ChildPositionParticles
+        ],
+        snapshot: action_contract.ChildState,
         for_position: ast.PositionReference,
         position_in_child_state: chained_name.ChainedNameTuple,
         contract_positions: set[chained_name.ChainedNameTuple],
     ):
         """Collect caller particles and additional Child State, keyed by Child State position."""
         key = for_position.canonical_chained_name_tuple
-        self._callee_guarantees.fully_resolve_pending_guarantees(key)
         self._store.collect_caller_destruction_state(
             occupancies,
             values,
             particles,
+            unexpanded,
             snapshot,
             key,
             position_in_child_state,
@@ -382,19 +269,14 @@ class ParticleTracker:
         Raises ValueError if the position is already occupied.
         """
         key = in_position.canonical_chained_name_tuple
-        self._callee_guarantees.apply_pending_guarantees_up_to(key)
-        self._store.ensure_action_parent(key)
-        self._record_write(key)
         info = particle_info.ParticleInfo(
             last_position=in_position,
             qualities=qualities,
             origin_position=in_position,
             value_state=particle_info.ParticleValueState.UNSET,
         )
-        self._set_occupied(in_position, info)
-        self._dead_interfaces.register_explicit_action_interface_arrival(
-            in_position, info
-        )
+        self._store.create(key, info)
+        self._register_explicit_interface_arrival(in_position, info)
 
     def assume_occupied(
         self,
@@ -405,65 +287,31 @@ class ParticleTracker:
     ):
         """Record that a required position starts occupied."""
         key = in_position.canonical_chained_name_tuple
-        self._callee_guarantees.apply_pending_guarantees_up_to(key)
-        self._store.ensure_action_parent(key)
-        self._set_occupied(
-            in_position,
-            particle_info.ParticleInfo(
-                last_position=in_position,
-                qualities=qualities,
-                origin_position=position_in_caller,
-                from_caller=True,
-            ),
+        info = particle_info.ParticleInfo(
+            last_position=in_position,
+            qualities=qualities,
+            origin_position=position_in_caller,
+            from_caller=True,
         )
-
-    def _set_occupied(
-        self,
-        in_position: ast.PositionReference,
-        info: particle_info.ParticleInfo,
-    ):
-        key = in_position.canonical_chained_name_tuple
-        self._store.mark_occupied(key, info)
-        self._dead_interfaces.register_occupied_interface_child_position(
-            key, info, in_position.location
-        )
+        self._store.assume_occupied(key, info)
 
     def destroy_simultaneously(
         self,
-        destructions: Sequence[ParticleDestruction],
+        targets: Sequence[ast.PositionReference],
     ):
         """Record and apply a simultaneous set of particle destructions.
 
         Each target includes all its occupied transitive children; targets must
         have disjoint state subtrees.
         """
-        positions = (destruction.positions() for destruction in destructions)
-        self._callee_guarantees.apply_pending_guarantees_up_to_all(
-            position.canonical_chained_name_tuple
-            for position in itertools.chain.from_iterable(positions)
-        )
-        for destruction in destructions:
-            self._record_destroyed_state(destruction)
-
-    def _record_destroyed_state(
-        self,
-        destruction: ParticleDestruction,
-    ):
-        """Record state changes for a target and its transitive children."""
-        key = destruction.position.canonical_chained_name_tuple
-        # Subtree deletion notifies the interface trackers for every removed
-        # particle. Only the target's empty state survives the destruction.
-        # Destroying puts all children back into a known state (they don't exist).
-        self._delete_subtree(key)
-        self._record_write(key)
-        self._store.mark_emptied(key, destruction.position)
+        for target in targets:
+            self._store.empty(target)
 
     def get_emptied_by(
         self, position: ast.PositionReference
     ) -> ast.PositionReference | None:
         """Return the position reference that emptied this position, if any."""
         key = position.canonical_chained_name_tuple
-        self._callee_guarantees.apply_pending_guarantees_up_to(key)
         return self._store.emptied_by(key)
 
     def move(self, source: ast.PositionReference, target: ast.PositionReference):
@@ -472,40 +320,24 @@ class ParticleTracker:
         Children of the source position move with it. After the move,
         the source position is marked as emptied.
         """
-        from_key = source.canonical_chained_name_tuple
-        to_key = target.canonical_chained_name_tuple
-        # Pending Guarantees below the source move with it, so only those on
-        # the path to each position, and those that would write over state
-        # moving with them, need applying.
-        self._callee_guarantees.apply_pending_guarantees_up_to(from_key)
-        self._callee_guarantees.apply_overwriting_pending_guarantees(from_key)
-        self._callee_guarantees.apply_pending_guarantees_up_to(to_key)
-        self._store.ensure_action_parent(to_key)
-        source_info = self._store.occupant(from_key)
-        self._dead_interfaces.mark_particle_departed(source_info)
-        self._record_write(from_key, to_key)
+        source_info = self._store.occupant(source.canonical_chained_name_tuple)
+        self._interface_arrivals.mark_particle_departed(source_info)
         source_info.last_position = target
+        self._store.move(source, target)
+        self._register_explicit_interface_arrival(target, source_info)
 
-        # The target may already exist as an empty node (previously
-        # destroyed), and its child positions may have error state. Whatever
-        # was below the target no longer exists, so delete it before moving.
-        self._delete_subtree(to_key)
-
-        def update_interface_occupancy(
-            moved_position: chained_name.PositionReferenceTuple,
-            moved_particle: particle_info.ParticleInfo,
-        ):
-            self._dead_interfaces.replace_occupied_interface_child_position(
-                moved_position, moved_particle, target.location
-            )
-
-        # Neither position has error state itself, but their child positions
-        # can. The particle's children keep their unknown state as they move.
-        self._store.move_subtree(from_key, to_key, update_interface_occupancy)
-        self._store.mark_emptied(from_key, source)
-        self._dead_interfaces.register_explicit_action_interface_arrival(
-            target, source_info
+    def _register_explicit_interface_arrival(
+        self, position: ast.PositionReference, particle: particle_info.ParticleInfo
+    ):
+        """Record a body Create or Move whose target names an action interface."""
+        action_chain = position.get_chain_to_last_action()
+        if action_chain is None:
+            return
+        parent_position = action_chain.parent_position()
+        parent_particle = (
+            self.get_occupant(parent_position) if parent_position is not None else None
         )
+        self._interface_arrivals.register(position, parent_particle, particle)
 
     def generate_own_guarantees(
         self,
@@ -515,45 +347,40 @@ class ParticleTracker:
             chained_name.PositionReferenceTuple,
             action_contract.PositionOccupancyRequirement,
         ],
-    ) -> dict[chained_name.PositionReferenceTuple, action_contract.PositionGuarantee]:
-        """Generate this block's own guarantees, excluding the callee-derived keys carried via nested guarantees.
+    ) -> dict[
+        chained_name.PositionReferenceTuple, action_contract.PositionGuarantee | None
+    ]:
+        """Generate this block's own guarantees, for every contracted position it tracks.
 
-        The own guarantees come from keys whose first element matches an
-        interface or implied quality. ``requirements`` is the validator's
-        inferred-requirements dict.
+        A position the block wrote but left in the state it found it in maps
+        to None. ``requirements`` is the validator's inferred-requirements
+        dict.
         """
-        # A pending guarantee that finished later than state recorded here
-        # would otherwise leave that older state in these guarantees. The
-        # destruction plan also reads this final state.
-        self._callee_guarantees.apply_all_overwriting_pending_guarantees()
         return self._guarantee_generator.contracted_position_guarantees(
             interface_names,
             implied_quality_names,
             requirements,
         )
 
-    def generate_destructor_guarantees(
+    def published_guarantees(
         self,
-        interface_names: tuple[ast.TypedName[ast.NameContent], ...],
-        implied_quality_names: tuple[ast.GlobalTypedNameReference, ...],
-        requirements: dict[
+        action: ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
+        own_guarantees: dict[
             chained_name.PositionReferenceTuple,
-            action_contract.PositionOccupancyRequirement,
+            action_contract.PositionGuarantee | None,
         ],
-    ) -> dict[chained_name.PositionReferenceTuple, action_contract.PositionGuarantee]:
-        """Produce every guarantee a destructor makes on its contracted positions.
+        on_destruction: dict[
+            chained_name.PositionReferenceTuple, action_contract.OnDestruction
+        ],
+    ) -> list[action_contract.GuaranteedPosition]:
+        """Return the Guarantees this block's contract publishes, with what it left below the particles it created in their Guarantees.
 
-        Guarantees about implied positions from triggered actions are expanded
-        into the destructor's state rather than deferred, except those below a
-        particle the destructor leaves in a contracted position, which is
-        already a violation.
+        ``on_destruction`` says what destroying each particle the block left
+        below a particle it created takes, by its position from the block's
+        parent particle; a particle that is not in it takes nothing.
         """
-        self._callee_guarantees.apply_pending_guarantees_on_particles_from_caller()
-        return self._guarantee_generator.contracted_position_guarantees(
-            interface_names,
-            implied_quality_names,
-            requirements,
-            is_destructor=True,
+        return self._guarantee_generator.published_guarantees(
+            action, own_guarantees, on_destruction
         )
 
     def trigger_action(
@@ -563,22 +390,51 @@ class ParticleTracker:
         *,
         parent_particle: particle_info.ParticleInfo | None,
     ) -> list[tuple[chained_name.PositionReferenceTuple, ast.SourceLocation]]:
-        """Record an Action Execution and apply the triggered action's guarantees.
-
-        The callee's own guarantees are applied immediately. Any nested guarantees
-        from the callee will be applied lazily during later operations.
-        """
-        action = execution.action.get_last_action()
+        """Record an Action Execution and apply the triggered action's guarantees."""
         occupied_interface_child_position_violations = (
-            self._dead_interfaces.mark_action_triggered(
-                action, contract.implied_quality_names, parent_particle
+            self._occupied_interface_child_positions(
+                execution.action, contract.implied_quality_names
             )
         )
-        self._callee_guarantees.apply_triggered_action(execution, contract)
+        self._mark_interface_arrivals_passed_to_callee(
+            execution.action, parent_particle
+        )
+        self._store.trigger(execution.action, contract, parent_particle)
         return occupied_interface_child_position_violations
 
-    def tracked_action_executions(
+    def _occupied_interface_child_positions(
         self,
-    ) -> dict[codegen_input.ActionExecution, chained_name.ActionReferenceTuple]:
-        """Return each Action Execution this action triggered that is still tracked, in triggering order, with its current action chain."""
-        return self._store.tracked_action_executions()
+        action: ast.ActionReference,
+        implied_quality_names: frozenset[str],
+    ) -> list[tuple[chained_name.PositionReferenceTuple, ast.SourceLocation]]:
+        """Return the occupied positions that may not hold a particle when this callee triggers, with where each particle arrived."""
+        occupied_positions = self._store.occupied_positions_past_an_action(
+            action, implied_quality_names
+        )
+        # This sort keeps multiple diagnostics on the same line/column in deterministic
+        # order, and only fires in the error path.
+        occupied_positions.sort(key=lambda occupied_position: occupied_position[0])
+        return occupied_positions
+
+    def _mark_interface_arrivals_passed_to_callee(
+        self,
+        action: ast.ActionReference,
+        parent_particle: particle_info.ParticleInfo | None,
+    ):
+        """Satisfy each interface arrival awaiting this callee whose particle is still where it arrived."""
+        for particle, arrived_at in self._interface_arrivals.pending_interface_arrivals(
+            action, parent_particle
+        ):
+            # Only a position below an action is registered as an interface arrival.
+            arrived_action_chain = typing.cast(
+                "ast.ActionReference", arrived_at.get_chain_to_last_action()
+            )
+            # The callee's particle can have moved since the interface arrival, taking
+            # the arrived particle with it.
+            position = action.with_position_suffix(
+                *arrived_at.typed_names[len(arrived_action_chain.typed_names) :]
+            )
+            if self.get_occupant_or_none(position) is particle:
+                self._interface_arrivals.mark_particle_passed_to_callee(particle)
+            else:
+                self._interface_arrivals.mark_particle_departed(particle)

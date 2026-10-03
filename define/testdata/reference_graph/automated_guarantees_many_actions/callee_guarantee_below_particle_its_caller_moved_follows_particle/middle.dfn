@@ -1,0 +1,13 @@
+define the potential action<my.domain.com:my_lib:/middle> {
+    it also assigns the position</h>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+        create a particle in position</h>.
+        create a particle in position</h>::position</box>.
+        create a particle in position</h>::action</fill_child>::position<run>.
+        move the particle in position</h>::position</box> to position</h>::position</box2>.
+    }
+}

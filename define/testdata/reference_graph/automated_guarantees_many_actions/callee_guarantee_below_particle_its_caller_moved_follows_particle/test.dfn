@@ -1,0 +1,17 @@
+# action</fill_child> creates a particle below the particle in position</box>,
+# which action</middle> then moves to position</box2>.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<top> {
+            it may only contain particles where {
+                it has the action</middle>.
+                it has the position</h>.
+            }
+        }
+        create a particle in position<top>.
+        create a particle in position<top>::action</middle>::position<run>.
+        create a particle in position<top>::position</h>::position</box2>::position</child>.
+    }
+}

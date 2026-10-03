@@ -1,0 +1,17 @@
+# action</make> leaves a particle whose value it never sets below the particles
+# it creates in position</box> and position</child>, and the Destructor of the
+# particle in position</child> reads that value. Destroying position<holder>
+# reports the unset value.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<holder> {
+            it may only contain particles where {
+                it has the action</make>.
+            }
+        }
+        create a particle in position<holder>.
+        create a particle in position<holder>::action</make>::position<run>.
+    }
+}

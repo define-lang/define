@@ -1,0 +1,20 @@
+# action</destroyer> triggers action</make_child> on the particle it is given,
+# and destroys the particle without expanding what action</make_child> left
+# below position</child>. action</watcher>, which only action</test> knows
+# about, requires position</child>::position</grandchild> to be empty.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</destroyer>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<holder> {
+            it may only contain particles where {
+                it has the action</make_child>.
+                it has the action</watcher>.
+            }
+        }
+        create a particle in position<holder>.
+        move the particle in position<holder> to action</destroyer>::position<target>.
+        create a particle in action</destroyer>::position<run>.
+    }
+}

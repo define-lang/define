@@ -6,11 +6,14 @@ from define.runtime import literal
 
 import local.my_domain_com.my_lib.child_1_0
 import local.my_domain_com.my_lib.child_1_1
+import local.my_domain_com.my_lib.child_2_0
+import local.my_domain_com.my_lib.child_2_1
 import local.my_domain_com.my_lib.cleanup
 import local.my_domain_com.my_lib.done
 import local.my_domain_com.my_lib.fill_1
 import local.my_domain_com.my_lib.item
 import local.my_domain_com.my_lib.kept
+import local.my_domain_com.my_lib.mark
 
 
 class TestAction(literal.Action):
@@ -40,46 +43,56 @@ class TestAction(literal.Action):
             local.my_domain_com.my_lib.fill_1.Fill1Action
         ).run()
         filled.particle.get_position(
-            local.my_domain_com.my_lib.child_1_0.Child10Position
-        ).particle.get_position(
-            local.my_domain_com.my_lib.done.DonePosition
-        ).particle.get_action(
-            local.my_domain_com.my_lib.cleanup.CleanupAction
-        ).run()
-        filled.particle.get_position(
-            local.my_domain_com.my_lib.child_1_1.Child11Position
-        ).particle.get_position(
-            local.my_domain_com.my_lib.done.DonePosition
-        ).particle.get_action(
-            local.my_domain_com.my_lib.cleanup.CleanupAction
-        ).run()
-        filled.particle.get_position(
             local.my_domain_com.my_lib.kept.KeptPosition
         ).particle.get_action(
             local.my_domain_com.my_lib.cleanup.CleanupAction
         ).run()
-        filled.particle.get_action(
-            local.my_domain_com.my_lib.fill_1.Fill1Action
-        ).run_destructors_of_global_position_child_1_0__action_fill_2()
-        filled.particle.get_action(
-            local.my_domain_com.my_lib.fill_1.Fill1Action
-        ).run_destructors_of_global_position_child_1_1__action_fill_2()
-        filled.particle.get_position(
-            local.my_domain_com.my_lib.child_1_0.Child10Position
-        ).particle.get_position(
-            local.my_domain_com.my_lib.done.DonePosition
-        ).destroy_particle()
-        literal.record_operation("test.destroy(filled::/child_1_0::/done)")
+        local.my_domain_com.my_lib.fill_1.Fill1Action.run_guaranteed_particle_destructors_global_position_child_1_0__position_child_2_0(
+            filled.particle.get_position(
+                local.my_domain_com.my_lib.child_1_0.Child10Position
+            ).particle.get_position(
+                local.my_domain_com.my_lib.child_2_0.Child20Position
+            ).particle
+        )
+        local.my_domain_com.my_lib.fill_1.Fill1Action.run_guaranteed_particle_destructors_global_position_child_1_0__position_child_2_1(
+            filled.particle.get_position(
+                local.my_domain_com.my_lib.child_1_0.Child10Position
+            ).particle.get_position(
+                local.my_domain_com.my_lib.child_2_1.Child21Position
+            ).particle
+        )
+        local.my_domain_com.my_lib.fill_1.Fill1Action.run_guaranteed_particle_destructors_global_position_child_1_0__position_done(
+            filled.particle.get_position(
+                local.my_domain_com.my_lib.child_1_0.Child10Position
+            ).particle.get_position(
+                local.my_domain_com.my_lib.done.DonePosition
+            ).particle
+        )
+        local.my_domain_com.my_lib.fill_1.Fill1Action.run_guaranteed_particle_destructors_global_position_child_1_1__position_child_2_0(
+            filled.particle.get_position(
+                local.my_domain_com.my_lib.child_1_1.Child11Position
+            ).particle.get_position(
+                local.my_domain_com.my_lib.child_2_0.Child20Position
+            ).particle
+        )
+        local.my_domain_com.my_lib.fill_1.Fill1Action.run_guaranteed_particle_destructors_global_position_child_1_1__position_child_2_1(
+            filled.particle.get_position(
+                local.my_domain_com.my_lib.child_1_1.Child11Position
+            ).particle.get_position(
+                local.my_domain_com.my_lib.child_2_1.Child21Position
+            ).particle
+        )
+        local.my_domain_com.my_lib.fill_1.Fill1Action.run_guaranteed_particle_destructors_global_position_child_1_1__position_done(
+            filled.particle.get_position(
+                local.my_domain_com.my_lib.child_1_1.Child11Position
+            ).particle.get_position(
+                local.my_domain_com.my_lib.done.DonePosition
+            ).particle
+        )
         filled.particle.get_position(
             local.my_domain_com.my_lib.child_1_0.Child10Position
         ).destroy_particle()
         literal.record_operation("test.destroy(filled::/child_1_0)")
-        filled.particle.get_position(
-            local.my_domain_com.my_lib.child_1_1.Child11Position
-        ).particle.get_position(
-            local.my_domain_com.my_lib.done.DonePosition
-        ).destroy_particle()
-        literal.record_operation("test.destroy(filled::/child_1_1::/done)")
         filled.particle.get_position(
             local.my_domain_com.my_lib.child_1_1.Child11Position
         ).destroy_particle()
@@ -88,5 +101,9 @@ class TestAction(literal.Action):
             local.my_domain_com.my_lib.kept.KeptPosition
         ).destroy_particle()
         literal.record_operation("test.destroy(filled::/kept)")
+        filled.particle.get_position(
+            local.my_domain_com.my_lib.mark.MarkPosition
+        ).destroy_particle()
+        literal.record_operation("test.destroy(filled::/mark)")
         filled.destroy_particle()
         literal.record_operation("test.destroy(filled)")

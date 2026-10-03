@@ -23,7 +23,7 @@ _RESERVED_NAMES = (*keyword.kwlist, "self", "literal", "destruction_contracts")
 
 RUN_DESTRUCTORS_PREFIX = "run_destructors_"
 DESTROY_PREFIX = "destroy_"
-RUN_CALLEE_DESTRUCTORS_PREFIX = "run_destructors_of_"
+RUN_GUARANTEED_PARTICLE_DESTRUCTORS_PREFIX = "run_guaranteed_particle_destructors_"
 # A method name joins one part per typed name in a chained name with this.
 _CHAIN_PART_SEPARATOR = "__"
 # Within one part, the typed name's type, path components, and any repeat count
@@ -423,12 +423,12 @@ class NameConverter:
         return class_reference
 
     @staticmethod
-    def callee_destructors_method_name(
-        callee: chained_name.ActionReferenceTuple, occurrence: int
+    def guaranteed_particle_destructors_method_name(
+        position_in_action: chained_name.PositionReferenceTuple,
     ) -> str:
-        """Return the name of the method that runs the Destructors an action recorded for one of its callees."""
-        return RUN_CALLEE_DESTRUCTORS_PREFIX + _with_occurrence(
-            _tuple_chained_name_part(callee), occurrence
+        """Return the name of an action's method that runs the Destructors for what it left at and below one position of its contract."""
+        return RUN_GUARANTEED_PARTICLE_DESTRUCTORS_PREFIX + _tuple_chained_name_part(
+            position_in_action
         )
 
     @staticmethod

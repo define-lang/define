@@ -47,6 +47,25 @@ def _definition_edges(
         elif isinstance(step, codegen_input.Destruction):
             for destructor in step.destructors:
                 yield source, destructor.get_last_action().full_typed_name
+            for reference in step.guaranteed_particle_destructors:
+                for destructor in _guaranteed_particle_destructors(result, reference):
+                    yield source, destructor
+
+
+def _guaranteed_particle_destructors(
+    result: reference_graph_validator.ReferenceGraphValidationResult,
+    reference: destruction_contract.RunGuaranteedParticleDestructors,
+) -> Iterator[str]:
+    """Yield each Destructor that a call to an action's method for what it left behind runs."""
+    for guaranteed in result.codegen_input.actions[
+        reference.action.full_typed_name
+    ].guaranteed_particle_destructors:
+        if guaranteed.position_in_action != reference.position_in_action:
+            continue
+        for destructor in guaranteed.destructors:
+            yield destructor.full_typed_name
+        for child_reference in guaranteed.for_child_positions:
+            yield from _guaranteed_particle_destructors(result, child_reference)
 
 
 def _destruction_contract_edges(

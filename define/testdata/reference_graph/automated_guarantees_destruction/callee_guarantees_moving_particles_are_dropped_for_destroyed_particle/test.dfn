@@ -1,7 +1,7 @@
 # action</mid> triggers action</make_a>, which creates a particle, and then
-# action</move_a>, which moves that particle. action</mid>'s result is still
-# pending when position<holder> is destroyed, and no result creates a particle
-# with a Destructor, so the destruction drops it unapplied.
+# action</move_a>, which moves that particle. What action</fill_1> left below the
+# particle it created is never expanded, and no result creates a particle with
+# a Destructor, so the destruction drops it without expanding it.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.

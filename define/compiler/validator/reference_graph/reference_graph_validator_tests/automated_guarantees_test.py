@@ -47,12 +47,7 @@ def test_consumed_nested_interface_stays_empty(
     assert all_diags[0].position_name == (
         "position<box>::action</outer>::position<iface>::action</inner>::position<output>"
     )
-    assert all_diags[0].inferred_at is not None
-    assert all_diags[0].inferred_at.line == 12
-    assert all_diags[0].inferred_at.column == 33
-    assert all_diags[0].inferred_at.end_line == 12
-    assert all_diags[0].inferred_at.end_column == 82
-    assert all_diags[0].inferred_at.file_path == PurePosixPath("outer.dfn")
+    assert all_diags[0].inferred_at is None
 
 
 def test_consumed_nested_interface_can_be_filled_again(

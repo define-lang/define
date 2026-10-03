@@ -1,0 +1,23 @@
+# The Destructor moves the particle in position<box>::position</part> away,
+# moves the particle in position<box> to position<moved>, creates a new
+# particle in position<box>, and moves the first particle back. Only the
+# changes to position<moved>, position<moved>::position</part> and
+# position<box> are reported: the particle in position<box>::position</part>
+# is where it started.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<box> {
+        it may only contain particles where {
+            it has the position</part>.
+        }
+    }
+    define the position<moved>.
+    it happens when {
+        this particle is being destroyed.
+    } and it does {
+        define the position<spare>.
+        move the particle in position<box>::position</part> to position<spare>.
+        move the particle in position<box> to position<moved>.
+        create a particle in position<box>.
+        move the particle in position<spare> to position<box>::position</part>.
+    }
+}

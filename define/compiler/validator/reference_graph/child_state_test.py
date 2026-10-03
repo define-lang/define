@@ -3,7 +3,11 @@ from __future__ import annotations
 import random
 
 from define.compiler import ast, chained_name
-from define.compiler.validator.reference_graph import child_state, position_occupancy
+from define.compiler.validator.reference_graph import (
+    action_contract,
+    child_state,
+    position_occupancy,
+)
 from define.compiler.validator.reference_graph.particles import particle_info
 
 
@@ -101,17 +105,18 @@ def test_resolve_value_without_changing_occupancy():
     occupied = position_occupancy.ChildOccupancy(
         position_occupancy.PositionOccupancyState.OCCUPIED, ast.start_of_file_location()
     )
-    original = child_state.ChildState(
+    original = action_contract.ChildState(
         child_state.FlatChildStateStore({_chain("value"): occupied}),
         child_state.FlatChildStateStore({}),
+        {},
     )
     first = original.with_caller(
-        {}, {_chain("value"): particle_info.ParticleValueState.SET}
+        {}, {_chain("value"): particle_info.ParticleValueState.SET}, {}
     )
     second = original.with_caller(
-        {}, {_chain("value"): particle_info.ParticleValueState.UNSET}
+        {}, {_chain("value"): particle_info.ParticleValueState.UNSET}, {}
     )
-    assert original.with_caller({}, {}) is original
+    assert original.with_caller({}, {}, {}) is original
     assert first.occupancy is original.occupancy
     assert second.occupancy is original.occupancy
     assert original.occupancy.get(_chain("value")) is occupied
@@ -119,7 +124,7 @@ def test_resolve_value_without_changing_occupancy():
     assert first.values.get(_chain("value")) == particle_info.ParticleValueState.SET
     assert second.values.get(_chain("value")) == particle_info.ParticleValueState.UNSET
     conflicting = first.with_caller(
-        {}, {_chain("value"): particle_info.ParticleValueState.UNSET}
+        {}, {_chain("value"): particle_info.ParticleValueState.UNSET}, {}
     )
     assert (
         conflicting.values.get(_chain("value")) == particle_info.ParticleValueState.SET
@@ -134,21 +139,24 @@ def test_value_and_occupancy_stores_compact_independently():
     values = {
         _chain(str(index)): particle_info.ParticleValueState.SET for index in range(16)
     }
-    original = child_state.ChildState(
+    original = action_contract.ChildState(
         child_state.FlatChildStateStore(occupancies),
         child_state.FlatChildStateStore(values),
+        {},
     )
     first = original.with_caller(
-        {}, {_chain("16"): particle_info.ParticleValueState.UNSET}
+        {}, {_chain("16"): particle_info.ParticleValueState.UNSET}, {}
     )
-    second = first.with_caller({}, {_chain("17"): particle_info.ParticleValueState.SET})
+    second = first.with_caller(
+        {}, {_chain("17"): particle_info.ParticleValueState.SET}, {}
+    )
     assert isinstance(second.values, child_state.ExtendedChildStateStore)
     assert second.occupancy is original.occupancy
     additions = {
         _chain(str(index)): particle_info.ParticleValueState.UNSET
         for index in range(18, 32)
     }
-    final = second.with_caller({}, additions)
+    final = second.with_caller({}, additions, {})
     assert isinstance(final.values, child_state.FlatChildStateStore)
     assert final.occupancy is original.occupancy
     assert original.values.get(_chain("16")) is None
@@ -161,13 +169,13 @@ def test_value_and_occupancy_stores_compact_independently():
             else particle_info.ParticleValueState.UNSET
         )
         assert final.values.get(_chain(str(index))) == expected
-    expanded = final.with_caller({_chain("32"): occupied}, {})
+    expanded = final.with_caller({_chain("32"): occupied}, {}, {})
     assert expanded.values is final.values
     assert isinstance(expanded.occupancy, child_state.ExtendedChildStateStore)
     assert expanded.occupancy.get(_chain("32")) is occupied
     assert final.occupancy.get(_chain("32")) is None
     resolved = expanded.with_caller(
-        {}, {_chain("32"): particle_info.ParticleValueState.SET}
+        {}, {_chain("32"): particle_info.ParticleValueState.SET}, {}
     )
     assert resolved.occupancy is expanded.occupancy
     assert resolved.values.get(_chain("32")) == particle_info.ParticleValueState.SET

@@ -54,6 +54,11 @@ class DestructionContractsGenerator:
             yield from self._converter.referenced_modules(
                 self._relative_to_contracted_particle(contribution, action)
             )
+        for reference in contribution.guaranteed_particle_destructors:
+            yield from self._converter.referenced_modules(
+                self._relative_to_contracted_particle(contribution, reference.position)
+            )
+            yield self._converter.class_reference(reference.action).module_name
         for position in contribution.positions:
             yield from self._converter.referenced_modules(
                 self._relative_to_contracted_particle(contribution, position)
@@ -164,6 +169,22 @@ class DestructionContractsGenerator:
             relative = self._relative_to_contracted_particle(contribution, destructor)
             statements.append(
                 template_context.RunActionContext(
+                    position=self._positions.build(
+                        relative,
+                        from_contract_particle=True,
+                    ),
+                )
+            )
+        for reference in contribution.guaranteed_particle_destructors:
+            relative = self._relative_to_contracted_particle(
+                contribution, reference.position
+            )
+            statements.append(
+                template_context.RunGuaranteedParticleDestructorsContext(
+                    action=self._converter.class_reference(reference.action),
+                    method_name=naming.NameConverter.guaranteed_particle_destructors_method_name(
+                        reference.position_in_action
+                    ),
                     position=self._positions.build(
                         relative,
                         from_contract_particle=True,

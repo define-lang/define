@@ -144,8 +144,9 @@ struct RunAction {
 
 #[derive(FromPyObject)]
 struct RunGuaranteedParticleDestructors {
-    position: PositionExpression,
+    action: ClassReference,
     method_name: String,
+    position: PositionExpression,
 }
 
 #[derive(FromPyObject)]

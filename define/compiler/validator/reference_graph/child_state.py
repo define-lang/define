@@ -5,8 +5,6 @@ from __future__ import annotations
 import abc
 import typing
 
-import msgspec
-
 if typing.TYPE_CHECKING:
     from define.compiler import chained_name
     from define.compiler.validator.reference_graph import position_occupancy
@@ -128,24 +126,3 @@ type ChildOccupancyMap = dict[
 type ChildValueMap = dict[
     chained_name.ChainedNameTuple, particle_info.ParticleValueState
 ]
-
-
-class ChildState(msgspec.Struct, frozen=True):
-    """Independent occupancy and value knowledge at destruction time."""
-
-    occupancy: ChildStateStore[position_occupancy.ChildOccupancy]
-    # Unknown values have no entry, so resolving a value only adds knowledge.
-    values: ChildStateStore[particle_info.ParticleValueState]
-
-    def with_caller(
-        self,
-        occupancy: ChildOccupancyMap,
-        values: ChildValueMap,
-    ) -> ChildState:
-        """Take ownership of additional caller knowledge without changing earlier facts."""
-        if not occupancy and not values:
-            return self
-        return ChildState(
-            self.occupancy.with_caller(occupancy),
-            self.values.with_caller(values),
-        )

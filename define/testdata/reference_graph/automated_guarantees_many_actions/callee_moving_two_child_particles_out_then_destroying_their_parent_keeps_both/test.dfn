@@ -1,0 +1,25 @@
+# action</filler> creates a particle below each child particle of the particle
+# in position</input>. action</mover> then moves both child particles out and
+# destroys their parent. Reading position</input> first must not lose either
+# child particle or what action</filler> left below it.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</input>.
+    it also assigns the position</first>.
+    it also assigns the position</second>.
+    it also assigns the action</filler>.
+    it also assigns the action</mover>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</input>.
+        create a particle in position</input>::position</a>.
+        create a particle in position</input>::position</b>.
+        create a particle in action</filler>::position<trigger_pos>.
+        destroy the particle in action</filler>::position<trigger_pos>.
+        create a particle in action</mover>::position<trigger_pos>.
+        destroy the particle in action</mover>::position<trigger_pos>.
+        create a particle in position</input>.
+        create a particle in position</first>::position</x>.
+        create a particle in position</second>::position</x>.
+    }
+}

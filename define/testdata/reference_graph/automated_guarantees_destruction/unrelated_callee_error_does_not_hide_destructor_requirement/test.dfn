@@ -1,0 +1,16 @@
+# action</fill_1> reports an error that has nothing to do with position</child_2>.
+# Destroying position<holder> still triggers the destructor of position</child_2>,
+# whose requirement on position</needed> then fails.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<holder> {
+            it may only contain particles where {
+                it has the action</fill_1>.
+            }
+        }
+        create a particle in position<holder>.
+        create a particle in position<holder>::action</fill_1>::position<run>.
+    }
+}

@@ -4,7 +4,9 @@ from typing import ClassVar, override
 
 from define.runtime import literal
 
+import local.my_domain_com.my_lib.cleanup
 import local.my_domain_com.my_lib.outer
+import local.my_domain_com.my_lib.part
 
 
 class TestAction(literal.Action):
@@ -29,7 +31,20 @@ class TestAction(literal.Action):
         ).run()
         self.on_particle.get_action(
             local.my_domain_com.my_lib.outer.OuterAction
-        ).run_destructors_of_position_box__action_make_part()
+        ).get_interface_position(
+            "position<box>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.part.PartPosition
+        ).particle.get_action(
+            local.my_domain_com.my_lib.cleanup.CleanupAction
+        ).run()
+        self.on_particle.get_action(
+            local.my_domain_com.my_lib.outer.OuterAction
+        ).get_interface_position(
+            "position<box>"
+        ).particle.get_position(
+            local.my_domain_com.my_lib.part.PartPosition
+        ).destroy_particle()
         self.on_particle.get_action(
             local.my_domain_com.my_lib.outer.OuterAction
         ).get_interface_position(

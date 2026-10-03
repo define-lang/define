@@ -5,7 +5,6 @@ from typing import Never, override
 from define.runtime import literal
 
 import local.my_domain_com.my_lib.destructor
-import local.my_domain_com.my_lib.marker
 import local.my_domain_com.my_lib.middle
 
 
@@ -35,13 +34,6 @@ class TestAction(literal.Action):
         ).particle.get_action(
             local.my_domain_com.my_lib.destructor.DestructorAction
         ).run()
-        gateway.particle.get_action(
-            local.my_domain_com.my_lib.middle.MiddleAction
-        ).get_interface_position(
-            "position<result>"
-        ).particle.get_position(
-            local.my_domain_com.my_lib.marker.MarkerPosition
-        ).destroy_particle()
         gateway.particle.get_action(
             local.my_domain_com.my_lib.middle.MiddleAction
         ).get_interface_position(

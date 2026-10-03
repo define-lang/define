@@ -1,10 +1,9 @@
 # action</outer> creates position</box> and triggers action</make_item>, whose
 # callees action</fill_spare> and action</fill_item> create position</spare> and
 # position</item> with action</cleanup>, and then action</clear_item>, whose
-# callee action</empty_item> destroys position</item>. Only a callee of
-# action</make_item> guarantees position</item>, but the final state of
-# action</outer> already shows it destroyed, so the destruction of
-# position<holder> drops both without running action</cleanup> a second time.
+# callee action</empty_item> destroys position</item>. action</outer> publishes
+# the particle in position</box> with only position</spare> filled below it, so
+# destroying position<holder> does not run action</cleanup> a second time.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.

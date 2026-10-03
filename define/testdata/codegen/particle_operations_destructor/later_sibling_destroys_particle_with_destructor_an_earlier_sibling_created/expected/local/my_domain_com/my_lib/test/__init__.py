@@ -4,6 +4,7 @@ from typing import Never, override
 
 from define.runtime import literal
 
+import local.my_domain_com.my_lib.box
 import local.my_domain_com.my_lib.outer
 
 
@@ -26,4 +27,7 @@ class TestAction(literal.Action):
         holder.particle.get_action(
             local.my_domain_com.my_lib.outer.OuterAction
         ).run()
+        holder.particle.get_position(
+            local.my_domain_com.my_lib.box.BoxPosition
+        ).destroy_particle()
         holder.destroy_particle()

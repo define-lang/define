@@ -4,8 +4,6 @@ from typing import ClassVar, Never, override
 
 from define.runtime import literal
 
-import local.my_domain_com.my_lib.child
-import local.my_domain_com.my_lib.destructor
 import local.my_domain_com.my_lib.inner
 
 
@@ -37,10 +35,3 @@ class MiddleAction(literal.Action):
         ).get_interface_position(
             "position<run>"
         ).destroy_particle()
-
-    def run_destructors_of_action_inner(self):
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.child.ChildPosition
-        ).particle.get_action(
-            local.my_domain_com.my_lib.destructor.DestructorAction
-        ).run()

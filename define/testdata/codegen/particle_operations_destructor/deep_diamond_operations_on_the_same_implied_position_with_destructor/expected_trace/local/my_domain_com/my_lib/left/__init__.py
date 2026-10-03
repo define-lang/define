@@ -4,9 +4,7 @@ from typing import ClassVar, Never, override
 
 from define.runtime import literal
 
-import local.my_domain_com.my_lib.destructor
 import local.my_domain_com.my_lib.left_child
-import local.my_domain_com.my_lib.marker
 
 
 class LeftAction(literal.Action):
@@ -39,10 +37,3 @@ class LeftAction(literal.Action):
             "position<trigger_pos>"
         ).destroy_particle()
         literal.record_operation("left.destroy(/left_child::trigger_pos)")
-
-    def run_destructors_of_action_left_child(self):
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.marker.MarkerPosition
-        ).particle.get_action(
-            local.my_domain_com.my_lib.destructor.DestructorAction
-        ).run()

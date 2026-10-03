@@ -77,10 +77,3 @@ class OuterAction(literal.Action):
         self.on_particle.get_action(
             local.my_domain_com.my_lib.make_part.MakePartAction
         ).run()
-
-    def run_destructors_of_2_action_make_part(self):
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.part.PartPosition
-        ).particle.get_action(
-            local.my_domain_com.my_lib.cleanup.CleanupAction
-        ).run()

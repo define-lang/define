@@ -1,0 +1,13 @@
+# action</make> creates a particle in its interface position<item>, and
+# action</mid> moves it to position<box>. action</mid> also has a local
+# position<item> whose constraint nothing uses, which is dead even though the
+# particle in position<box> came from a callee's position<item>.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</mid>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in action</mid>::position<run>.
+        destroy the particle in action</mid>::position<box>.
+    }
+}

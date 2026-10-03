@@ -18,9 +18,9 @@ from define.compiler.validator import codegen_input, scope_tracker, validation_r
 from define.compiler.validator.reference_graph import (
     action_contract,
     action_requirement_validator,
-    callee_destruction_validator,
     chained_name_validator,
     destruction_contract_validator,
+    destruction_planner,
     literal_encoder,
     operation_arguments_validator,
     particle_operation_validator,
@@ -146,6 +146,7 @@ class ActionDefinitionValidator:
             self._validation_state,
             self._tracker,
             self._dead_value_write_validator,
+            self._destruction_planner,
         )
 
     @cached_property
@@ -185,10 +186,10 @@ class ActionDefinitionValidator:
         )
 
     @cached_property
-    def _callee_destruction_validator(
+    def _destruction_planner(
         self,
-    ) -> callee_destruction_validator.CalleeDestructionValidator:
-        return callee_destruction_validator.CalleeDestructionValidator(
+    ) -> destruction_planner.DestructionPlanner:
+        return destruction_planner.DestructionPlanner(
             self._definition,
             self._implied_quality_list,
             self._definition_results,
@@ -264,23 +265,17 @@ class ActionDefinitionValidator:
     ):
         """Destroy the target particles and their occupied transitive children."""
         step = codegen_input.Destruction()
-        particle_destructions: list[particle_tracker.ParticleDestruction] = []
         destructors: list[
             tuple[action_contract.Destructor, ast.PositionReference | None]
         ] = []
         snapshot_positions: list[ast.PositionReference] = []
         pending_contracts_by_target: list[list[_PendingDestructionContract]] = []
         for target in targets:
-            destruction_facts: list[destruction_contract_types.DestructionFact] = []
             pending_contracts: list[_PendingDestructionContract] = []
-            particle_destructions.append(
-                particle_tracker.ParticleDestruction(target.position, destruction_facts)
-            )
             self._collect_particle_destructions(
                 target.position,
                 self._tracker.get_occupant(target.position),
                 target,
-                destruction_facts,
                 destructors,
                 pending_contracts,
                 step,
@@ -300,7 +295,7 @@ class ActionDefinitionValidator:
                 auto_destruction_target=auto_destruction_target,
             )
 
-        self._tracker.destroy_simultaneously(particle_destructions)
+        self._tracker.destroy_simultaneously([target.position for target in targets])
         for shared_state, pending_contracts in zip(
             child_states, pending_contracts_by_target, strict=True
         ):
@@ -318,7 +313,6 @@ class ActionDefinitionValidator:
         position: ast.PositionReference,
         particle: particle_info.ParticleInfo,
         target: _DestructionTarget,
-        destruction_facts: list[destruction_contract_types.DestructionFact],
         destructors: list[
             tuple[action_contract.Destructor, ast.PositionReference | None]
         ],
@@ -332,23 +326,9 @@ class ActionDefinitionValidator:
             destruction=target.destruction,
             destroyed_position_in_destroyer=position,
         )
-        destruction_facts.append(destruction_fact)
         within_caller_particle = within_caller_particle or particle.from_caller
-        # A Destruction Contract's Child State can look up the children of a
-        # particle from the caller, so every child below one must appear in
-        # the walk.
-        if not within_caller_particle:
-            for (
-                callee_destructors
-            ) in self._tracker.drop_callee_guarantees_for_destruction(position):
-                step.guaranteed_particle_destructors.append(
-                    self._callee_destruction_validator.callee_destructors_reference(
-                        callee_destructors, position
-                    )
-                )
-
         children_and_destructors = (
-            self._callee_destruction_validator.child_positions_and_destructors(
+            self._destruction_planner.child_positions_and_destructors(
                 position, particle
             )
         )
@@ -367,7 +347,6 @@ class ActionDefinitionValidator:
             self._collect_child_particle_destructions(
                 child,
                 target,
-                destruction_facts,
                 destructors,
                 pending_contracts,
                 step,
@@ -391,7 +370,6 @@ class ActionDefinitionValidator:
         self,
         position: ast.PositionReference,
         target: _DestructionTarget,
-        destruction_facts: list[destruction_contract_types.DestructionFact],
         destructors: list[
             tuple[action_contract.Destructor, ast.PositionReference | None]
         ],
@@ -401,6 +379,16 @@ class ActionDefinitionValidator:
         within_caller_particle: bool,
     ):
         """Collect an occupied child Position's transitive destruction."""
+        # What a callee left here and below is destroyed without this action
+        # expanding it, unless something there needs it to.
+        on_destruction = self._destruction_planner.on_unexpanded_destruction(position)
+        if isinstance(
+            on_destruction, destruction_contract_types.RunGuaranteedParticleDestructors
+        ):
+            step.guaranteed_particle_destructors.append(on_destruction)
+            return
+        if on_destruction == action_contract.OnDestruction.NOTHING:
+            return
         occupancy = self._tracker.get_occupancy_info(position)
         if occupancy.has_error or occupancy.occupant is None:
             return
@@ -408,7 +396,6 @@ class ActionDefinitionValidator:
             position,
             occupancy.occupant,
             target,
-            destruction_facts,
             destructors,
             pending_contracts,
             step,
@@ -506,20 +493,20 @@ class ActionDefinitionValidator:
         self._record_occupied_interface_child_position_violations(
             destructor_name,
             (
-                destructor.position.location
+                destructor.position
                 if auto_destruction_target is None
-                else auto_destruction_target.location
+                else auto_destruction_target
             ),
             occupied_interface_child_position_violations,
         )
 
-    def _process_action_position_arrival(
+    def _process_interface_arrival(
         self,
         statement: ast.CreateParticleStatement | ast.MoveParticleStatement,
         action_chain: ast.ActionReference,
         scope: scope_tracker.ScopeTracker,
     ):
-        """Record an action-position arrival and trigger its final action if appropriate."""
+        """Record an interface arrival and trigger its action if appropriate."""
         position = statement.target_position
         particle = self._tracker.get_occupant(position)
         action = action_chain.get_last_action()
@@ -620,23 +607,26 @@ class ActionDefinitionValidator:
         )
         self._record_occupied_interface_child_position_violations(
             action,
-            acting_on_position.location,
+            acting_on_position,
             occupied_interface_child_position_violations,
         )
 
     def _record_occupied_interface_child_position_violations(
         self,
         action: ast.GlobalTypedNameReference,
-        trigger_location: ast.SourceLocation,
+        triggered_by: ast.PositionReference,
         occupied_interface_child_position_violations: Sequence[
             tuple[chained_name.PositionReferenceTuple, ast.SourceLocation]
         ],
     ):
         """Record occupied interface child positions found when one callee triggers."""
         for position, arrived_at in occupied_interface_child_position_violations:
+            # The callee ran with a particle where it expected none, so what
+            # is there now cannot be trusted.
+            self._tracker.mark_error_by_key(position)
             self._diagnostics.append(
                 diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic(
-                    location=trigger_location,
+                    location=triggered_by.location,
                     arrived_at=arrived_at,
                     action_name=action.source_typed_name,
                     position_name=ast.source_form_chained_name(
@@ -1098,7 +1088,7 @@ class ActionDefinitionValidator:
         position = statement.target_position
         action_chain = position.get_chain_to_last_action()
         if action_chain is not None:
-            self._process_action_position_arrival(statement, action_chain, scope)
+            self._process_interface_arrival(statement, action_chain, scope)
             return
         if self._trigger_position_name is None:
             return
@@ -1153,22 +1143,33 @@ class ActionDefinitionValidator:
         self._analyze_statements(self._definition.action_statements, scope)
         self._check_unconsumed_action_interfaces()
 
-        contract, guaranteed_particle_destructors = self._generate_contract()
-        self._diagnostics.extend(
-            self._dead_constraint_validator.validate(contract.guarantees, scope)
+        guaranteed_particle_destruction = (
+            self._destruction_planner.guaranteed_particle_destruction()
+        )
+        contract, guarantees = self._generate_contract(
+            guaranteed_particle_destruction.on_destruction
         )
         self._diagnostics.extend(
-            self._dead_value_write_validator.validate(contract.guarantees)
+            self._dead_constraint_validator.validate(guarantees, scope)
         )
-        return contract, guaranteed_particle_destructors
+        self._diagnostics.extend(self._dead_value_write_validator.validate(guarantees))
+        return (
+            contract,
+            guaranteed_particle_destruction.guaranteed_particle_destructors,
+        )
 
     def _check_unconsumed_action_interfaces(self):
         """Diagnose occupied interface positions of actions triggered by this action."""
-        for action, position in self._tracker.unconsumed_action_interfaces():
+        for triggered_at, position in self._tracker.unconsumed_action_interfaces():
             self._diagnostics.append(
                 diagnostics.UnconsumedActionInterfaceDiagnostic(
-                    location=action.location,
-                    action_name=action.source_typed_name,
+                    location=triggered_at,
+                    # The action whose interface position this is comes just
+                    # before it in the chained name.
+                    action_name=ast.source_form_chained_name(
+                        chained_name.ChainedNameTuple(position[-2:-1]),
+                        self._enclosing_fqun.canonical,
+                    ),
                     position_name=ast.source_form_chained_name(
                         position, self._enclosing_fqun.canonical
                     ),
@@ -1177,47 +1178,37 @@ class ActionDefinitionValidator:
 
     def _generate_contract(
         self,
+        on_destruction: dict[
+            chained_name.PositionReferenceTuple, action_contract.OnDestruction
+        ],
     ) -> tuple[
         action_contract.ActionContract,
-        list[codegen_input.GuaranteedParticleDestructors],
+        dict[
+            chained_name.PositionReferenceTuple,
+            action_contract.PositionGuarantee | None,
+        ],
     ]:
         """Generate the action contract from inferred requirements and final tracker state.
 
-        Also returns, for each callee whose Destructors run when its Guarantees
-        are dropped, the Destructors that run.
+        Also returns the action's own Guarantees, by position, where a
+        position it wrote but left in the state it found it in maps to None.
         """
         requirements = self._requirement_validator.occupancy_requirements
-        callees: list[action_contract.CalleeContract] = []
-        guaranteed_particle_destructors: list[
-            codegen_input.GuaranteedParticleDestructors
-        ] = []
+        guarantees = self._tracker.generate_own_guarantees(
+            self._definition.interface_position_names,
+            self._implied_quality_list,
+            requirements,
+        )
         if self._definition.is_destructor:
-            guarantees = self._tracker.generate_destructor_guarantees(
-                self._definition.interface_position_names,
-                self._implied_quality_list,
-                requirements,
-            )
             self._check_destructor_guarantees(guarantees)
-        else:
-            guarantees = self._tracker.generate_own_guarantees(
-                self._definition.interface_position_names,
-                self._implied_quality_list,
-                requirements,
-            )
-            with_destruction = (
-                self._callee_destruction_validator.callees_with_destruction(guarantees)
-            )
-            callees = with_destruction.callees
-            guaranteed_particle_destructors = (
-                with_destruction.guaranteed_particle_destructors
-            )
         contract = action_contract.ActionContract(
             occupancy_requirements=list(requirements.values()),
             value_requirements=list(
                 self._requirement_validator.value_requirements.values()
             ),
-            guarantees=guarantees,
-            callees=callees,
+            guarantees=self._tracker.published_guarantees(
+                self._definition.typed_name, guarantees, on_destruction
+            ),
             destruction_contracts=self._destruction_contracts,
             trigger_position_name=self._trigger_position_name or "",
             implied_quality_names=(
@@ -1226,12 +1217,13 @@ class ActionDefinitionValidator:
                 )
             ),
         )
-        return contract, guaranteed_particle_destructors
+        return contract, guarantees
 
     def _check_destructor_guarantees(
         self,
         guarantees: dict[
-            chained_name.PositionReferenceTuple, action_contract.PositionGuarantee
+            chained_name.PositionReferenceTuple,
+            action_contract.PositionGuarantee | None,
         ],
     ):
         """Report forbidden Destructor Guarantees and replace them with Error Guarantees.
@@ -1240,8 +1232,10 @@ class ActionDefinitionValidator:
         each guarantee it produces is a violation. The contract may not
         advertise such a guarantee, so each is replaced with an ErrorGuarantee
         that leaves the position's post-destructor state undetermined for any
-        consumer of the contract. Guarantees from actions triggered by the
-        Destructor must also be checked, even when they are applied lazily.
+        consumer of the contract. A change one of its callees makes shows in
+        its own Guarantees, because a callee can only change a position that
+        it or the Destructor requires something of, or one below a particle
+        that is itself reported.
 
         A particle that is not from the caller, left below another such
         particle, is not reported: removing the upper one removes it too.
@@ -1300,14 +1294,10 @@ class ActionDefinitionValidator:
                             ),
                         )
                     )
-                case action_contract.ErrorGuarantee():
-                    continue
-                case action_contract.UnchangedGuarantee():
+                case action_contract.ErrorGuarantee() | None:
                     continue
                 case _:
                     raise TypeError(
                         f"unexpected guarantee type {type(guarantee).__name__}"
                     )
-            guarantees[position] = action_contract.ErrorGuarantee(
-                caused_by=guarantee.caused_by,
-            )
+            guarantees[position] = action_contract.ErrorGuarantee()

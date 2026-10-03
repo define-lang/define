@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 import msgspec
 
 if TYPE_CHECKING:
-    from define.compiler import ast
+    from define.compiler import ast, chained_name
 
 
 class SimultaneousDestruction(msgspec.Struct, frozen=True, eq=False):
@@ -33,12 +33,26 @@ class PropagatedDestruction(msgspec.Struct, eq=False):
     contracted_position: ast.PositionReference
 
 
+class RunGuaranteedParticleDestructors(msgspec.Struct):
+    """A call to one of an action's methods that run the Destructors for what it left at and below a position."""
+
+    # The particle to run them for, from the perspective of the action whose
+    # step or method this is in.
+    position: ast.PositionReference
+    action: ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]]
+    # The position in that action's contract that the method is for.
+    position_in_action: chained_name.PositionReferenceTuple
+
+
 class DestructionContribution(msgspec.Struct):
     """Additional destruction work known by one caller."""
 
     destruction_fact: DestructionFact
     position_in_caller: ast.PositionReference
     destructors: list[ast.ActionReference]
+    # What runs for particles that the caller's callees left below the
+    # destroyed particle and that the caller never expanded.
+    guaranteed_particle_destructors: list[RunGuaranteedParticleDestructors]
     positions: list[ast.PositionReference]
 
 

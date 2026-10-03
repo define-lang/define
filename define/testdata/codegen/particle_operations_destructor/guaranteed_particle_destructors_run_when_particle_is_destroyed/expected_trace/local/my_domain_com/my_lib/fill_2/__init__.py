@@ -6,7 +6,6 @@ from define.runtime import literal
 
 import local.my_domain_com.my_lib.cleanup
 import local.my_domain_com.my_lib.fill_3
-import local.my_domain_com.my_lib.leaf
 import local.my_domain_com.my_lib.middle
 
 
@@ -68,11 +67,8 @@ class Fill2Action(literal.Action):
             local.my_domain_com.my_lib.fill_3.Fill3Action
         ).run()
 
-    def run_destructors_of_global_position_middle__action_fill_3(self):
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.middle.MiddlePosition
-        ).particle.get_position(
-            local.my_domain_com.my_lib.leaf.LeafPosition
-        ).particle.get_action(
+    @staticmethod
+    def run_guaranteed_particle_destructors_global_position_middle__position_leaf(particle: literal.Particle):
+        particle.get_action(
             local.my_domain_com.my_lib.cleanup.CleanupAction
         ).run()

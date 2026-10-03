@@ -126,6 +126,11 @@ class TypedNameDict[K: ast.TypedName[ast.NameContent], V](_AstNodeDict[K, V]):
     def _canonical_name(self, key: K) -> str:
         return key.full_typed_name
 
+    def get_by_full_typed_name(self, full_typed_name: str) -> V | None:
+        """Return the value whose key has ``full_typed_name``, if there is one."""
+        entry = self._data.get(full_typed_name)
+        return None if entry is None else entry[1]
+
 
 class ChainedNameDict[K: ast.ChainedName, V](_AstNodeDict[K, V]):
     """A mapping whose keys are identified by their canonical chained name.

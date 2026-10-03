@@ -6,6 +6,7 @@ from define.runtime import literal
 
 import local.my_domain_com.my_lib.child_2_0
 import local.my_domain_com.my_lib.child_2_1
+import local.my_domain_com.my_lib.cleanup
 import local.my_domain_com.my_lib.done
 import local.my_domain_com.my_lib.fill_3
 import local.my_domain_com.my_lib.item
@@ -133,3 +134,15 @@ class Fill2Action(literal.Action):
                 local.my_domain_com.my_lib.done.DonePosition
             )
         )
+
+    @staticmethod
+    def run_guaranteed_particle_destructors_global_position_child_2_0__position_done(particle: literal.Particle):
+        particle.get_action(
+            local.my_domain_com.my_lib.cleanup.CleanupAction
+        ).run()
+
+    @staticmethod
+    def run_guaranteed_particle_destructors_global_position_child_2_1__position_done(particle: literal.Particle):
+        particle.get_action(
+            local.my_domain_com.my_lib.cleanup.CleanupAction
+        ).run()

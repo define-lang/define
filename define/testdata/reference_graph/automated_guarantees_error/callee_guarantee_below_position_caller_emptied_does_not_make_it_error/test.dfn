@@ -1,0 +1,20 @@
+# action</fill> requires position</box> to be occupied, but this action emptied
+# it. Nothing is below an empty position for action</fill>'s Guarantee to
+# change, so position</box> stays empty rather than getting error state.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<holder> {
+            it may only contain particles where {
+                it has the action</fill>.
+                it has the position</box>.
+            }
+        }
+        create a particle in position<holder>.
+        create a particle in position<holder>::position</box>.
+        destroy the particle in position<holder>::position</box>.
+        create a particle in position<holder>::action</fill>::position<run>.
+        destroy the particle in position<holder>::position</box>.
+    }
+}

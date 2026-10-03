@@ -62,14 +62,15 @@ class DeadValueWriteValidator:
     def validate(
         self,
         guarantees: dict[
-            chained_name.PositionReferenceTuple, action_contract.PositionGuarantee
+            chained_name.PositionReferenceTuple,
+            action_contract.PositionGuarantee | None,
         ],
     ) -> list[diagnostics.DeadValueWriteDiagnostic]:
         """Diagnose value writes that nothing used, unless this action guarantees them."""
         if not self._unused_writes:
             return []
         for key in guarantees:
-            occupant = self._tracker.recorded_occupant_or_none_by_key(key)
+            occupant = self._tracker.occupant_or_none_by_key(key)
             if occupant is not None:
                 self.mark_particle_used(occupant)
         return [

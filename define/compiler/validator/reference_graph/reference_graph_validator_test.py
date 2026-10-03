@@ -202,6 +202,24 @@ def test_callers_share_the_completed_callee_contract():
             "        destroy the particle in position<gateway>::position</gateway>::action</callee>::position<made>.\n"
         ),
     )
+    # A caller's contract refers to the callee's contract only for what the
+    # callee left below a particle it created.
+    source = source.replace(
+        "    define the position<made>.\n",
+        "    it also assigns the position</mark>.\n    define the position<made>.\n",
+    )
+    source = source.replace(
+        "        create a particle in position<made>.\n",
+        "        create a particle in position<made>.\n        create a particle in position</mark>.\n        create a particle in position</mark>::position</note>.\n",
+    )
+    source = (
+        "define the potential position<my.domain.com:my_lib:/note>.\n"
+        "define the potential position<my.domain.com:my_lib:/mark> {\n"
+        "    it may only contain particles where {\n"
+        "        it has the position</note>.\n"
+        "    }\n"
+        "}\n"
+    ) + source
     structural_result = _structural_result(source)
     contracts: dict[str, action_contract.ActionContract] = {}
     original_analyze = action_definition_validator.ActionDefinitionValidator.analyze
@@ -228,11 +246,33 @@ def test_callers_share_the_completed_callee_contract():
         ).validate(max_workers=1)
 
     assert_no_errors(structural_result)
-    callee_contract = contracts[_CALLEE_NAME]
-    (first_callee,) = contracts[_CALLER_NAME].callees
-    (second_callee,) = contracts[_OTHER_CALLER_NAME].callees
-    assert first_callee.contract is callee_contract
-    assert second_callee.contract is callee_contract
+    (callee_mark,) = [
+        guaranteed.guarantee
+        for guaranteed in contracts[_CALLEE_NAME].guarantees
+        if guaranteed.position == ("position<my.domain.com:my_lib:/mark>",)
+    ]
+    assert isinstance(callee_mark, action_contract.OccupiedByNewGuarantee)
+    assert callee_mark.left_in_child_positions is not None
+    for caller_name in (_CALLER_NAME, _OTHER_CALLER_NAME):
+        (caller_gateway,) = [
+            guaranteed.guarantee
+            for guaranteed in contracts[caller_name].guarantees
+            if guaranteed.position == (caller_name, "position<gateway>")
+        ]
+        assert isinstance(caller_gateway, action_contract.OccupiedByNewGuarantee)
+        assert caller_gateway.left_in_child_positions is not None
+        left_in_gateway = caller_gateway.left_in_child_positions.particles[
+            "position<my.domain.com:my_lib:/gateway>"
+        ].guarantee
+        assert isinstance(left_in_gateway, action_contract.OccupiedByNewGuarantee)
+        assert left_in_gateway.left_in_child_positions is not None
+        left_in_mark = left_in_gateway.left_in_child_positions.particles[
+            "position<my.domain.com:my_lib:/mark>"
+        ].guarantee
+        assert isinstance(left_in_mark, action_contract.OccupiedByNewGuarantee)
+        assert (
+            left_in_mark.left_in_child_positions is callee_mark.left_in_child_positions
+        )
 
 
 def test_reference_failure_prevents_referencing_action_validation():

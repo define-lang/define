@@ -1,0 +1,27 @@
+# action</mover> moves the particle in position</a> below the particle in
+# position</s>, which action</test> then moves to position<second>.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<first> {
+            it may only contain particles where {
+                it has the action</mover>.
+                it has the position</a>.
+                it has the position</s>.
+            }
+        }
+        define the position<second> {
+            it may only contain particles where {
+                it has the position</s>.
+            }
+        }
+        create a particle in position<first>.
+        create a particle in position<first>::position</a>.
+        create a particle in position<first>::position</s>.
+        create a particle in position<second>.
+        create a particle in position<first>::action</mover>::position<run>.
+        move the particle in position<first>::position</s> to position<second>::position</s>.
+        create a particle in position<second>::position</s>::position</b>.
+    }
+}

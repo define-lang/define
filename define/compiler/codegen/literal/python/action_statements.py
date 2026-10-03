@@ -27,8 +27,8 @@ class GeneratedActionStatements(msgspec.Struct):
     statements: list[template_context.ActionStatementContext]
     imports: set[str]
     contract_definitions: list[template_context.DestructionContractDefinition]
-    # One method for each callee whose Destructors run when its Guarantees are
-    # dropped.
+    # One method for each contracted position where Destructors run for what
+    # the action left.
     guaranteed_particle_destructors: list[
         template_context.GuaranteedParticleDestructorsContext
     ]
@@ -94,9 +94,7 @@ class ActionStatementsGenerator:
                     for action in step.destructors:
                         modules.update(self._converter.referenced_modules(action))
                     for reference in step.guaranteed_particle_destructors:
-                        modules.update(
-                            self._converter.referenced_modules(reference.caller)
-                        )
+                        modules.update(self._referenced_modules(reference))
                     for position in step.positions:
                         modules.update(self._converter.referenced_modules(position))
                 case codegen_input.ActionOperationExecution():
@@ -113,10 +111,24 @@ class ActionStatementsGenerator:
                                 self._converter.referenced_modules(argument.looking_at)
                             )
         for guaranteed in self._action_input.guaranteed_particle_destructors:
-            for action in guaranteed.destructors:
-                modules.update(self._converter.referenced_modules(action))
-            for reference in guaranteed.callee_destructors:
-                modules.update(self._converter.referenced_modules(reference.caller))
+            for destructor in guaranteed.destructors:
+                modules.add(self._converter.class_reference(destructor).module_name)
+            for reference in guaranteed.for_child_positions:
+                modules.add(
+                    self._converter.class_reference(reference.action).module_name
+                )
+                modules.update(
+                    self._converter.referenced_modules(
+                        _child_position(guaranteed, reference)
+                    )
+                )
+        return modules
+
+    def _referenced_modules(
+        self, reference: destruction_contract.RunGuaranteedParticleDestructors
+    ) -> set[str]:
+        modules = set(self._converter.referenced_modules(reference.position))
+        modules.add(self._converter.class_reference(reference.action).module_name)
         return modules
 
     def generate(self) -> GeneratedActionStatements:
@@ -250,18 +262,34 @@ class ActionStatementsGenerator:
         ] = []
         for guaranteed in self._action_input.guaranteed_particle_destructors:
             method_statements: list[template_context.ActionStatementContext] = []
-            for action in guaranteed.destructors:
+            # The method takes the particle the action left in the position,
+            # so everything in it is reached from that particle.
+            for destructor in guaranteed.destructors:
                 method_statements.append(
-                    template_context.RunActionContext(position=positions.build(action))
+                    template_context.RunActionContext(
+                        position=positions.build(
+                            ast.ActionReference(
+                                location=destructor.location,
+                                typed_names=(destructor,),
+                            ),
+                            from_contract_particle=True,
+                        )
+                    )
                 )
-            for reference in guaranteed.callee_destructors:
+            for reference in guaranteed.for_child_positions:
                 method_statements.append(
-                    self._run_guaranteed_particle_destructors(reference, positions)
+                    self._run_guaranteed_particle_destructors(
+                        reference,
+                        positions.build(
+                            _child_position(guaranteed, reference),
+                            from_contract_particle=True,
+                        ),
+                    )
                 )
             guaranteed_particle_destructors.append(
                 template_context.GuaranteedParticleDestructorsContext(
-                    method_name=naming.NameConverter.callee_destructors_method_name(
-                        guaranteed.callee, guaranteed.occurrence
+                    method_name=naming.NameConverter.guaranteed_particle_destructors_method_name(
+                        guaranteed.position_in_action
                     ),
                     statements=method_statements,
                 )
@@ -273,16 +301,17 @@ class ActionStatementsGenerator:
             guaranteed_particle_destructors=guaranteed_particle_destructors,
         )
 
-    @staticmethod
     def _run_guaranteed_particle_destructors(
-        reference: codegen_input.CalleeDestructorsReference,
-        positions: position_expression.PositionExpressionBuilder,
+        self,
+        reference: destruction_contract.RunGuaranteedParticleDestructors,
+        position: template_context.PositionExpr,
     ) -> template_context.RunGuaranteedParticleDestructorsContext:
         return template_context.RunGuaranteedParticleDestructorsContext(
-            position=positions.build(reference.caller),
-            method_name=naming.NameConverter.callee_destructors_method_name(
-                reference.callee, reference.occurrence
+            action=self._converter.class_reference(reference.action),
+            method_name=naming.NameConverter.guaranteed_particle_destructors_method_name(
+                reference.position_in_action
             ),
+            position=position,
         )
 
     def _destruction(
@@ -305,7 +334,9 @@ class ActionStatementsGenerator:
             )
         for reference in destruction.guaranteed_particle_destructors:
             statements.append(
-                self._run_guaranteed_particle_destructors(reference, positions)
+                self._run_guaranteed_particle_destructors(
+                    reference, positions.build(reference.position)
+                )
             )
         for context_type, prefix in (
             (
@@ -427,3 +458,16 @@ class ActionStatementsGenerator:
                 self._action_input.definition.typed_name, position, value
             )
         return None
+
+
+def _child_position(
+    guaranteed: codegen_input.GuaranteedParticleDestructors,
+    reference: destruction_contract.RunGuaranteedParticleDestructors,
+) -> ast.PositionReference:
+    """Return the position of ``reference`` from the particle whose Destructors ``guaranteed`` runs."""
+    return ast.PositionReference(
+        location=reference.position.location,
+        typed_names=reference.position.typed_names[
+            len(guaranteed.position.typed_names) :
+        ],
+    )

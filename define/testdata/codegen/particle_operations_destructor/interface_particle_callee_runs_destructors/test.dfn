@@ -1,7 +1,7 @@
 # action</outer> triggers action</make_part> on the particle in its interface
 # position<box>, and action</make_part> creates position</part> with
 # action</cleanup>. When this action destroys the particle in position<box>,
-# the Destructors action</outer> recorded for action</make_part> still run.
+# action</cleanup> runs for the particle action</outer> published below it.
 define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the action</outer>.
     it happens when {

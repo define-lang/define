@@ -169,9 +169,7 @@ class RequirementResolver:
         for requirement_index, canonical_position in enumerate(canonical_positions):
             # If we have touched a position, then the current action overrides any
             # requirements from its callees.
-            if self._store.has_error_in_chain(
-                canonical_position
-            ) or self._store.has_known_occupancy(canonical_position):
+            if self._store.has_known_occupancy_or_error(canonical_position):
                 continue
             parent_position = chained_name.parent_position(canonical_position)
             unresolved_requirements.append((requirement_index, parent_position))

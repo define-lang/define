@@ -8,6 +8,7 @@ import local.my_domain_com.my_lib.child_a
 import local.my_domain_com.my_lib.child_b
 import local.my_domain_com.my_lib.cleanup
 import local.my_domain_com.my_lib.fill_1
+import local.my_domain_com.my_lib.middle
 
 
 class TestAction(literal.Action):
@@ -41,12 +42,20 @@ class TestAction(literal.Action):
         ).particle.get_action(
             local.my_domain_com.my_lib.cleanup.CleanupAction
         ).run()
-        holder.particle.get_action(
-            local.my_domain_com.my_lib.fill_1.Fill1Action
-        ).run_destructors_of_global_position_child_a__action_fill_2()
-        holder.particle.get_action(
-            local.my_domain_com.my_lib.fill_1.Fill1Action
-        ).run_destructors_of_global_position_child_b__action_fill_2()
+        local.my_domain_com.my_lib.fill_1.Fill1Action.run_guaranteed_particle_destructors_global_position_child_a__position_middle(
+            holder.particle.get_position(
+                local.my_domain_com.my_lib.child_a.ChildAPosition
+            ).particle.get_position(
+                local.my_domain_com.my_lib.middle.MiddlePosition
+            ).particle
+        )
+        local.my_domain_com.my_lib.fill_1.Fill1Action.run_guaranteed_particle_destructors_global_position_child_b__position_middle(
+            holder.particle.get_position(
+                local.my_domain_com.my_lib.child_b.ChildBPosition
+            ).particle.get_position(
+                local.my_domain_com.my_lib.middle.MiddlePosition
+            ).particle
+        )
         holder.particle.get_position(
             local.my_domain_com.my_lib.child_a.ChildAPosition
         ).destroy_particle()

@@ -747,3 +747,362 @@ def test_owner_with_error_required_position_skips_destructor_check(
         (_CLOSE_FILE, _DESTRUCTOR),
         (_TEST, _CLOSE_FILE),
     ]
+
+
+def test_destroyer_callee_fill_it_never_applied_violates_caller_destructor_requirement(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].location.line == 18
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.end_line == 18
+    assert all_diags[0].location.end_column == 63
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert (
+        all_diags[0].position_name
+        == "action</destroyer>::position<target>::position</child>::position</grandchild>"
+    )
+    assert all_diags[0].required_empty is True
+    assert all_diags[0].required_value is False
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/destroyer>"
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "enclosing_quality_name": "position<holder>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/watcher>",
+            "line": 13,
+            "column": 28,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "enclosing_quality_name": "action</destroyer>::position<target>",
+            "triggered_quality_name": None,
+            "line": 16,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": "action<my.domain.com:my_lib:/destroyer>",
+            "line": 18,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "action</destroyer>::position<target>::position</child>::position</grandchild>",
+            "triggered_quality_name": None,
+            "line": 8,
+            "column": 30,
+            "file_path": "make_grandchild.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/destroyer>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/watcher>",
+            "line": 12,
+            "column": 33,
+            "file_path": "destroyer.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/watcher>",
+            "triggered_quality_name": None,
+            "line": 6,
+            "column": 30,
+            "file_path": "watcher.dfn",
+        },
+    )
+
+
+def test_caller_callee_fill_it_never_applied_violates_caller_destructor_requirement(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].location.line == 19
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.end_line == 19
+    assert all_diags[0].location.end_column == 63
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert (
+        all_diags[0].position_name
+        == "action</destroyer>::position<target>::position</child>::position</grandchild>"
+    )
+    assert all_diags[0].required_empty is True
+    assert all_diags[0].required_value is False
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/destroyer>"
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "enclosing_quality_name": "position<holder>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/watcher>",
+            "line": 13,
+            "column": 28,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "enclosing_quality_name": "action</destroyer>::position<target>",
+            "triggered_quality_name": None,
+            "line": 16,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": "action<my.domain.com:my_lib:/destroyer>",
+            "line": 19,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "action</destroyer>::position<target>::position</child>::position</grandchild>",
+            "triggered_quality_name": None,
+            "line": 8,
+            "column": 30,
+            "file_path": "make_grandchild.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/destroyer>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/watcher>",
+            "line": 7,
+            "column": 33,
+            "file_path": "destroyer.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/watcher>",
+            "triggered_quality_name": None,
+            "line": 6,
+            "column": 30,
+            "file_path": "watcher.dfn",
+        },
+    )
+
+
+def test_caller_checks_failing_destructor_its_callee_left_below_particle_another_callee_destroys(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].location.line == 18
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.end_line == 18
+    assert all_diags[0].location.end_column == 63
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert (
+        all_diags[0].position_name
+        == "action</destroyer>::position<target>::position</child_1>::position</child_2>::position</needed>"
+    )
+    assert all_diags[0].required_empty is False
+    assert all_diags[0].required_value is False
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/destroyer>"
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "enclosing_quality_name": "position<my.domain.com:my_lib:/child_2>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
+            "line": 3,
+            "column": 20,
+            "file_path": "child_2.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "enclosing_quality_name": "action</destroyer>::position<target>::position</child_1>::position</child_2>",
+            "triggered_quality_name": None,
+            "line": 8,
+            "column": 30,
+            "file_path": "fill_2.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": "action<my.domain.com:my_lib:/destroyer>",
+            "line": 18,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/destroyer>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
+            "line": 7,
+            "column": 33,
+            "file_path": "destroyer.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
+            "triggered_quality_name": None,
+            "line": 7,
+            "column": 30,
+            "file_path": "cleanup.dfn",
+        },
+    )
+
+
+def test_caller_checks_destructor_requirement_on_position_its_callee_left_empty_below_new_particle(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].location.line == 19
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.end_line == 19
+    assert all_diags[0].location.end_column == 63
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert (
+        all_diags[0].position_name
+        == "action</destroyer>::position<target>::position</child_1>::position</needed>"
+    )
+    assert all_diags[0].required_empty is False
+    assert all_diags[0].required_value is False
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/destroyer>"
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "enclosing_quality_name": "position<my.domain.com:my_lib:/child_1>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
+            "line": 4,
+            "column": 20,
+            "file_path": "child_1.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "enclosing_quality_name": "action</destroyer>::position<target>::position</child_1>",
+            "triggered_quality_name": None,
+            "line": 8,
+            "column": 30,
+            "file_path": "fill_1.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": "action<my.domain.com:my_lib:/destroyer>",
+            "line": 19,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/destroyer>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
+            "line": 7,
+            "column": 33,
+            "file_path": "destroyer.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
+            "triggered_quality_name": None,
+            "line": 7,
+            "column": 30,
+            "file_path": "cleanup.dfn",
+        },
+    )
+
+
+def test_caller_skips_destructor_requirement_on_position_its_callee_left_in_error_below_new_particle(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert all_diags[0].location.line == 9
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.end_line == 9
+    assert all_diags[0].location.end_column == 67
+    assert all_diags[0].location.file_path == PurePosixPath("fill_1.dfn")
+    assert all_diags[0].position_name == "position</child_1>::position</needed>"
+    assert all_diags[0].is_action_interface_position is False
+    assert all_diags[0].inferred_at is None
+
+
+def test_caller_checks_destructor_value_requirement_on_particle_its_callee_left_below_new_particle(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].location.line == 19
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.end_line == 19
+    assert all_diags[0].location.end_column == 63
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert (
+        all_diags[0].position_name
+        == "action</destroyer>::position<target>::position</child_1>::position</value>"
+    )
+    assert all_diags[0].required_empty is False
+    assert all_diags[0].required_value is True
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/destroyer>"
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "enclosing_quality_name": "position<my.domain.com:my_lib:/child_1>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
+            "line": 3,
+            "column": 20,
+            "file_path": "child_1.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "enclosing_quality_name": "action</destroyer>::position<target>::position</child_1>",
+            "triggered_quality_name": None,
+            "line": 8,
+            "column": 30,
+            "file_path": "fill_1.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": "action<my.domain.com:my_lib:/destroyer>",
+            "line": 19,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/destroyer>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
+            "line": 7,
+            "column": 33,
+            "file_path": "destroyer.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
+            "triggered_quality_name": None,
+            "line": 13,
+            "column": 78,
+            "file_path": "cleanup.dfn",
+        },
+    )

@@ -250,6 +250,75 @@ def test_error_from_prefix_move_on_interface_position(
     ]
 
 
+def test_error_below_particle_callee_created_prevents_cascading_diagnostics(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.MoveIntoDefiningPositionDiagnostic)
+    assert all_diags[0].source_position == "position</box>::position</inner>"
+    assert (
+        all_diags[0].target_position
+        == "position</box>::position</inner>::position</deep>"
+    )
+    assert all_diags[0].location.file_path == PurePosixPath("make.dfn")
+    assert all_diags[0].location.line == 9
+    assert all_diags[0].location.column == 100
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, "action<my.domain.com:my_lib:/make>"),
+    ]
+
+
+def test_callee_guarantee_below_position_caller_emptied_does_not_make_it_error(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 2
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].location.line == 17
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.end_line == 17
+    assert all_diags[0].location.end_column == 76
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].position_name == "position<holder>::position</box>"
+    assert all_diags[0].required_empty is False
+    assert all_diags[0].required_value is False
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/fill>"
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": "action<my.domain.com:my_lib:/fill>",
+            "line": 17,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/fill>",
+            "triggered_quality_name": None,
+            "line": 8,
+            "column": 30,
+            "file_path": "fill.dfn",
+        },
+    )
+    assert isinstance(all_diags[1], diagnostics.DestroyInEmptyPositionDiagnostic)
+    assert all_diags[1].location.line == 18
+    assert all_diags[1].location.column == 33
+    assert all_diags[1].location.end_line == 18
+    assert all_diags[1].location.end_column == 65
+    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[1].position_name == "position<holder>::position</box>"
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, "action<my.domain.com:my_lib:/fill>"),
+    ]
+
+
 def test_unknown_global_chain_start_treats_action_guarantees_as_error(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):

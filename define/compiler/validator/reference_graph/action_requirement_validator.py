@@ -302,9 +302,6 @@ class ActionRequirementValidator:
         if particle.value_state is not None:
             return
         contracted_position = particle.origin_position
-        # Interfaces stop direct inference, including reads after a particle moves.
-        if contracted_position.get_last_action() is not None:
-            return
         self.value_requirements[contracted_position.canonical_chained_name_tuple] = (
             action_contract.ValueRequirement(
                 position=contracted_position,
@@ -351,16 +348,8 @@ class ActionRequirementValidator:
         """Check value requirements using the state immediately before triggering."""
         validation_diagnostics: list[diagnostics.Diagnostic] = []
         for requirement in requirements:
-            occupancy = self._tracker.get_occupancy_info(requirement.caller_position)
-            particle = occupancy.occupant
-            # Occupancy failures already have their own diagnostic.
-            if occupancy.has_error or particle is None:
-                continue
-            if not requirement_violation.is_violated(
-                requirement.requirement,
-                position_occupancy.PositionOccupancyState.OCCUPIED,
-                particle.value_state,
-            ):
+            particle = self._value_requirement_violation(requirement)
+            if particle is None:
                 continue
             if destructor is None:
                 diagnostic = requirement_violation.trigger_violation(
@@ -383,3 +372,49 @@ class ActionRequirementValidator:
             validation_diagnostics.append(diagnostic)
             self._tracker.mark_value_error(requirement.caller_position)
         return validation_diagnostics
+
+    def requirements_satisfied(
+        self,
+        occupancy_requirements: list[
+            action_contract.PositionRequirementInCaller[
+                action_contract.PositionOccupancyRequirement
+            ]
+        ],
+        value_requirements: list[
+            action_contract.PositionRequirementInCaller[
+                action_contract.ValueRequirement
+            ]
+        ],
+    ) -> bool:
+        """Return whether the current state satisfies every requirement, without reporting anything or changing any state."""
+        for requirement_in_caller in occupancy_requirements:
+            violated, _ = self._requirement_violation_occupant(
+                requirement_in_caller.caller_position,
+                requirement_in_caller.requirement,
+            )
+            if violated:
+                return False
+        for requirement in value_requirements:
+            if self._value_requirement_violation(requirement) is not None:
+                return False
+        return True
+
+    def _value_requirement_violation(
+        self,
+        requirement: action_contract.PositionRequirementInCaller[
+            action_contract.ValueRequirement
+        ],
+    ) -> particle_info.ParticleInfo | None:
+        """Return the particle whose value violates ``requirement``, if one does."""
+        occupancy = self._tracker.get_occupancy_info(requirement.caller_position)
+        particle = occupancy.occupant
+        # Occupancy failures already have their own diagnostic.
+        if occupancy.has_error or particle is None:
+            return None
+        if not requirement_violation.is_violated(
+            requirement.requirement,
+            position_occupancy.PositionOccupancyState.OCCUPIED,
+            particle.value_state,
+        ):
+            return None
+        return particle

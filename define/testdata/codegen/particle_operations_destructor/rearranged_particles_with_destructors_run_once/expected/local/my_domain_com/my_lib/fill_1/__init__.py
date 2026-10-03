@@ -6,8 +6,6 @@ from define.runtime import literal
 
 import local.my_domain_com.my_lib.child_1_0
 import local.my_domain_com.my_lib.child_1_1
-import local.my_domain_com.my_lib.child_2_0
-import local.my_domain_com.my_lib.child_2_1
 import local.my_domain_com.my_lib.cleanup
 import local.my_domain_com.my_lib.done
 import local.my_domain_com.my_lib.fill_2
@@ -137,42 +135,46 @@ class Fill1Action(literal.Action):
             )
         )
 
-    def run_destructors_of_global_position_child_1_0__action_fill_2(self):
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.child_1_0.Child10Position
-        ).particle.get_position(
-            local.my_domain_com.my_lib.child_2_0.Child20Position
-        ).particle.get_position(
-            local.my_domain_com.my_lib.done.DonePosition
-        ).particle.get_action(
-            local.my_domain_com.my_lib.cleanup.CleanupAction
-        ).run()
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.child_1_0.Child10Position
-        ).particle.get_position(
-            local.my_domain_com.my_lib.child_2_1.Child21Position
-        ).particle.get_position(
-            local.my_domain_com.my_lib.done.DonePosition
-        ).particle.get_action(
+    @staticmethod
+    def run_guaranteed_particle_destructors_global_position_child_1_0__position_child_2_0(particle: literal.Particle):
+        local.my_domain_com.my_lib.fill_2.Fill2Action.run_guaranteed_particle_destructors_global_position_child_2_0__position_done(
+            particle.get_position(
+                local.my_domain_com.my_lib.done.DonePosition
+            ).particle
+        )
+
+    @staticmethod
+    def run_guaranteed_particle_destructors_global_position_child_1_0__position_child_2_1(particle: literal.Particle):
+        local.my_domain_com.my_lib.fill_2.Fill2Action.run_guaranteed_particle_destructors_global_position_child_2_1__position_done(
+            particle.get_position(
+                local.my_domain_com.my_lib.done.DonePosition
+            ).particle
+        )
+
+    @staticmethod
+    def run_guaranteed_particle_destructors_global_position_child_1_0__position_done(particle: literal.Particle):
+        particle.get_action(
             local.my_domain_com.my_lib.cleanup.CleanupAction
         ).run()
 
-    def run_destructors_of_global_position_child_1_1__action_fill_2(self):
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.child_1_1.Child11Position
-        ).particle.get_position(
-            local.my_domain_com.my_lib.child_2_0.Child20Position
-        ).particle.get_position(
-            local.my_domain_com.my_lib.done.DonePosition
-        ).particle.get_action(
-            local.my_domain_com.my_lib.cleanup.CleanupAction
-        ).run()
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.child_1_1.Child11Position
-        ).particle.get_position(
-            local.my_domain_com.my_lib.child_2_1.Child21Position
-        ).particle.get_position(
-            local.my_domain_com.my_lib.done.DonePosition
-        ).particle.get_action(
+    @staticmethod
+    def run_guaranteed_particle_destructors_global_position_child_1_1__position_child_2_0(particle: literal.Particle):
+        local.my_domain_com.my_lib.fill_2.Fill2Action.run_guaranteed_particle_destructors_global_position_child_2_0__position_done(
+            particle.get_position(
+                local.my_domain_com.my_lib.done.DonePosition
+            ).particle
+        )
+
+    @staticmethod
+    def run_guaranteed_particle_destructors_global_position_child_1_1__position_child_2_1(particle: literal.Particle):
+        local.my_domain_com.my_lib.fill_2.Fill2Action.run_guaranteed_particle_destructors_global_position_child_2_1__position_done(
+            particle.get_position(
+                local.my_domain_com.my_lib.done.DonePosition
+            ).particle
+        )
+
+    @staticmethod
+    def run_guaranteed_particle_destructors_global_position_child_1_1__position_done(particle: literal.Particle):
+        particle.get_action(
             local.my_domain_com.my_lib.cleanup.CleanupAction
         ).run()

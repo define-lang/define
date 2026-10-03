@@ -114,26 +114,6 @@ class PositionRequirement(msgspec.Struct, frozen=True, kw_only=True):
     # propagate, if relevant. Used to explain that assignment in diagnostics.
     action_assignment: ActionAssignment | None = None
 
-    def root_cause_action(self) -> ast.ActionDefinition:
-        """Return the action definition that originally inferred this requirement."""
-        current = self
-        while current.propagated_from is not None:
-            current = current.propagated_from
-        return current.enclosing_action
-
-    def root_cause_action_name(self) -> str:
-        """Return the canonical name of the action that originally inferred this requirement."""
-        return self.root_cause_action().typed_name.source_typed_name
-
-    def propagated_from_locations(self) -> list[ast.SourceLocation]:
-        """Locations of intermediate propagation steps, ordered outer to inner."""
-        locations: list[ast.SourceLocation] = []
-        current = self.propagated_from
-        while current is not None:
-            locations.append(current.inferred_at)
-            current = current.propagated_from
-        return locations
-
     def propagation_chain(self) -> list[PropagationStep]:
         """Return the chain of propagation steps from this requirement down to its root cause."""
         chain: list[PropagationStep] = []
@@ -195,11 +175,11 @@ class PositionRequirementInCaller[Requirement: PositionRequirement](
 class PositionGuarantee(msgspec.Struct, frozen=True):
     """An automatically inferred guarantee about an interface position after action completion."""
 
-    caused_by: ast.PositionReference
-
 
 class EmptyGuarantee(PositionGuarantee, frozen=True):
     """The position is guaranteed to be empty after the action completes."""
+
+    caused_by: ast.PositionReference
 
 
 class OccupiedByExistingGuarantee(PositionGuarantee, frozen=True):
@@ -208,6 +188,7 @@ class OccupiedByExistingGuarantee(PositionGuarantee, frozen=True):
     A None value_effect leaves the caller's value unchanged.
     """
 
+    caused_by: ast.PositionReference
     origin_position: ast.PositionReference
     value_effect: particle_info.ParticleValueState | None = None
 
@@ -215,33 +196,170 @@ class OccupiedByExistingGuarantee(PositionGuarantee, frozen=True):
 class OccupiedByNewGuarantee(PositionGuarantee, frozen=True):
     """The position contains a new particle created by the action."""
 
+    caused_by: ast.PositionReference
     qualities: quality_assignment.QualityAssignments
     origin_position: ast.PositionReference
     value_effect: particle_info.ParticleValueState = (
         particle_info.ParticleValueState.UNSET
     )
-
-
-class UnchangedGuarantee(PositionGuarantee, frozen=True):
-    """The action operated on the position but left it in the same state it was in at the start of the action."""
+    # What the action left in the particle's child positions, or None when
+    # it left them all empty.
+    left_in_child_positions: ChildPositionParticles | None = None
 
 
 class ErrorGuarantee(PositionGuarantee, frozen=True):
     """The position's state could not be determined due to an error."""
 
 
-class CalleeContract(msgspec.Struct, frozen=True):
-    """A callee's contract at its current action chain."""
+class GuaranteedPosition(msgspec.Struct, frozen=True):
+    """What an action leaves in one position that its caller always applies."""
 
-    action_chain: chained_name.ActionReferenceTuple
-    contract: ActionContract
-    # Decided by the caller from its own final state, which already reflects
-    # how its callees changed each other's particles.
-    on_destruction: GuaranteesOnDestruction
-    # Which of the caller's callees with this action chain this is: 1 for the
-    # first, 2 for the second, and so on, since the same action can be
-    # triggered more than once there.
-    occurrence: int
+    # From the perspective of a caller that triggers the action as one of its
+    # implied actions. A caller that triggers the action through another
+    # action reference puts that reference's parent positions in front.
+    position: chained_name.PositionReferenceTuple
+    guarantee: PositionGuarantee
+
+
+class OnDestruction(enum.Enum):
+    """What destroying a particle an action left below a particle it created takes, when the destroyer has not expanded it."""
+
+    # Nothing runs. The destroyer forgets the particle.
+    #
+    # TODO: A compiled target with explicit memory management has to free a
+    # forgotten particle. Give each action a generated method that destroys
+    # what it left at a position, running any Destructors first and calling
+    # the owning action's method for each particle below, so that a destroyer
+    # frees what it never expanded without enumerating it.
+    NOTHING = enum.auto()
+    # Destructors run, and what the action left meets their requirements. The
+    # destroyer runs them through the action's method for the position.
+    RUN_DESTRUCTORS = enum.auto()
+    # The destroyer has to expand the particle's entry and destroy the
+    # particle and what is below it as it destroys its own particles.
+    EXPAND = enum.auto()
+
+
+class ParticleLeftBelow(msgspec.Struct, frozen=True):
+    """What an action left in one child position of a particle it created, and what destroying it takes."""
+
+    # ErrorGuarantee for a position whose state an error made unknown, so a
+    # caller does not report cascading diagnostics below it.
+    guarantee: OccupiedByNewGuarantee | ErrorGuarantee
+    on_destruction: OnDestruction
+    # The position whose method in the action that owns the map runs the
+    # Destructors, named as GuaranteedPosition.position names positions for
+    # that action. Set exactly when on_destruction is RUN_DESTRUCTORS.
+    guaranteed_particle_destructors_position: (
+        chained_name.PositionReferenceTuple | None
+    ) = None
+
+
+class ChildPositionParticles(msgspec.Struct, frozen=True):
+    """What an action left in the child positions of one particle it created."""
+
+    # Whose methods run the Destructors of these particles. A map an action
+    # passes on from a callee without expanding it keeps the callee's.
+    action: ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]]
+    # By child position name. Interface positions of actions on the particle
+    # are never here: they are empty when the action ends.
+    particles: dict[str, ParticleLeftBelow]
+
+    def particle_left_below(self, names: tuple[str, ...]) -> ParticleLeftBelow | None:
+        """Return what was left at the position ``names`` below the particle, or None when it is empty."""
+        left: ParticleLeftBelow | None = None
+        current: ChildPositionParticles | None = self
+        for name in names:
+            if current is None:
+                return None
+            left = current.particles.get(name)
+            if left is None:
+                return None
+            # What is below a position with error state is unknown too.
+            if isinstance(left.guarantee, ErrorGuarantee):
+                return left
+            current = left.guarantee.left_in_child_positions
+        return left
+
+
+class ChildState(msgspec.Struct, frozen=True):
+    """Independent occupancy and value knowledge at destruction time."""
+
+    occupancy: child_state.ChildStateStore[position_occupancy.ChildOccupancy]
+    # Unknown values have no entry, so resolving a value only adds knowledge.
+    values: child_state.ChildStateStore[particle_info.ParticleValueState]
+    # For each position at or below the destroyed position that the
+    # destroyer or one of its callers tracked, what callees left in its child
+    # positions that was never expanded.
+    unexpanded: dict[chained_name.ChainedNameTuple, ChildPositionParticles]
+
+    def with_caller(
+        self,
+        occupancy: child_state.ChildOccupancyMap,
+        values: child_state.ChildValueMap,
+        unexpanded: dict[chained_name.ChainedNameTuple, ChildPositionParticles],
+    ) -> ChildState:
+        """Take ownership of additional caller knowledge without changing earlier facts."""
+        if not occupancy and not values and not unexpanded:
+            return self
+        if unexpanded:
+            unexpanded.update(self.unexpanded)
+        else:
+            unexpanded = self.unexpanded
+        return ChildState(
+            self.occupancy.with_caller(occupancy),
+            self.values.with_caller(values),
+            unexpanded,
+        )
+
+    def occupancy_at(
+        self, position: chained_name.ChainedNameTuple
+    ) -> position_occupancy.ChildOccupancy | None:
+        """Return a position's destruction-time occupancy, including what callees left there that was never expanded, if it is known."""
+        occupancy = self.occupancy.get(position)
+        if occupancy is not None:
+            return occupancy
+        is_below_new_particle, left = self._left_by_callees(position)
+        if left is None:
+            # The child positions of a new particle are empty until something
+            # fills them.
+            return position_occupancy.EMPTY_OCCUPANCY if is_below_new_particle else None
+        if isinstance(left.guarantee, ErrorGuarantee):
+            return position_occupancy.ERROR_OCCUPANCY
+        return position_occupancy.ChildOccupancy(
+            position_occupancy.PositionOccupancyState.OCCUPIED,
+            filled_at=left.guarantee.caused_by.location,
+        )
+
+    def value_at(
+        self, position: chained_name.ChainedNameTuple
+    ) -> particle_info.ParticleValueState | None:
+        """Return a position's destruction-time value state, including what callees left there that was never expanded, if it is known."""
+        value = self.values.get(position)
+        if value is not None:
+            return value
+        _, left = self._left_by_callees(position)
+        if (
+            left is not None
+            and isinstance(left.guarantee, OccupiedByNewGuarantee)
+            and left.guarantee.qualities.value_type is not None
+        ):
+            return left.guarantee.value_effect
+        return None
+
+    def _left_by_callees(
+        self, position: chained_name.ChainedNameTuple
+    ) -> tuple[bool, ParticleLeftBelow | None]:
+        """Return whether ``position`` is below a new particle whose map was never expanded, and what that map says is in it."""
+        # A map stays on the nearest position above that was tracked.
+        for length in range(len(position) - 1, -1, -1):
+            prefix = chained_name.ChainedNameTuple(position[:length])
+            particles = self.unexpanded.get(prefix)
+            if particles is not None:
+                return True, particles.particle_left_below(position[length:])
+            if self.occupancy.get(prefix) is not None:
+                break
+        return False, None
 
 
 class DestructionContract(msgspec.Struct, frozen=True):
@@ -270,7 +388,7 @@ class DestructionContracts:
         default_factory=set, init=False
     )
     # Particles destroyed together share their destruction-time occupancy.
-    child_state: child_state.ChildState
+    child_state: ChildState
     # The trigger hops, in execution order, from the verifying definition's
     # immediate callee down to the destroying action must remain available for
     # diagnostics without copying every earlier hop during propagation.
@@ -310,67 +428,22 @@ class Destructor(msgspec.Struct, frozen=True):
         )
 
 
-class GuaranteesOnDestruction(enum.Enum):
-    """What a caller does with a callee's pending Guarantees when it destroys the particle the callee is assigned to.
-
-    The callee decides this from its final state when it publishes its contract.
-    It describes only the callee's implied positions and their children: the
-    callee's own caller must consume whatever is in its interface positions.
-    """
-
-    # A Destructor on a particle these Guarantees describe can't be verified
-    # from the callee's final state yet, so, as with a Destruction Contract,
-    # the caller verifies it when it destroys the particle, which means
-    # applying the Guarantees. This also applies when one of the callee's own
-    # pending Guarantees must be applied.
-    APPLY = enum.auto()
-    # None of the particles the Guarantees describe needs anything done when
-    # it is destroyed: no particle the callee created has a Destructor, and
-    # the same is true of its pending Guarantees. Those particles vanish with
-    # the destroyed particle, so the caller drops the Guarantees unapplied. The
-    # callee also chooses this when its final state has an error: that error
-    # is already reported, and applying the Guarantees would find nothing
-    # more to report.
-    DISCARD = enum.auto()
-    # Every Destructor on a particle these Guarantees describe is verified
-    # from the callee's final state. A caller that changes anything below
-    # such a particle applies the Guarantees to reach it, and then verifies
-    # the Destructor again when it destroys the particle. Otherwise the caller
-    # drops the Guarantees unapplied and runs those Destructors directly.
-    DISCARD_AFTER_DESTRUCTORS = enum.auto()
-
-
 class ActionContract(msgspec.Struct, frozen=True):
     """The automatically inferred requirements and guarantees for an action."""
 
     occupancy_requirements: list[PositionOccupancyRequirement]
     value_requirements: list[ValueRequirement]
-    guarantees: dict[chained_name.PositionReferenceTuple, PositionGuarantee]
-    # Callee contracts are referenced rather than folded in so that we don't
-    # get unbounded memory growth from re-copying guarantees as we walk up a
-    # call stack (and unbounded compute growth from having to iterate through
-    # them and copy them).
-    callees: list[CalleeContract]
+    # What the action leaves in each contracted position whose parent
+    # position holds no particle it created, and in each position holding a
+    # particle from its caller, parent positions before child positions. A
+    # position it leaves in the state it found it in is left out. What it
+    # left below the particles it created is in their Guarantees.
+    guarantees: list[GuaranteedPosition]
     destruction_contracts: list[DestructionContracts]
     # TODO: Support triggering on chained names?
     trigger_position_name: str
     # The action's transitively implied qualities.
     implied_quality_names: frozenset[str]
-    # How many actions run in one execution of this action: itself, plus every
-    # callee transitively, once per triggering. It is
-    # computed from ``callees`` when the contract is created; see
-    # CalleeGuarantees.completion_index.
-    action_execution_count: int = 0
-
-    def __post_init__(self):
-        """Compute the fields derived from the other fields."""
-        # Every action that reference graph validation reaches is triggered,
-        # so its count is always read.
-        msgspec.structs.force_setattr(
-            self,
-            "action_execution_count",
-            1 + sum(callee.contract.action_execution_count for callee in self.callees),
-        )
 
     def occupancy_requirements_in_caller(
         self, action_chain: ast.ActionReference

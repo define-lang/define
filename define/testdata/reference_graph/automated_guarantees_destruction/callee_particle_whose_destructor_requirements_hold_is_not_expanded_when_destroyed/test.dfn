@@ -1,0 +1,17 @@
+# action</make> leaves a particle with a Destructor below the particle it creates
+# in position</box>, and sets both values the Destructor reads. Its
+# requirements hold, so destroying position<holder> runs it through
+# action</make> without expanding the particle.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<holder> {
+            it may only contain particles where {
+                it has the action</make>.
+            }
+        }
+        create a particle in position<holder>.
+        create a particle in position<holder>::action</make>::position<run>.
+    }
+}

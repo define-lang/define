@@ -4,8 +4,6 @@ from typing import Never, override
 
 from define.runtime import literal
 
-import local.my_domain_com.my_lib.a
-import local.my_domain_com.my_lib.b
 import local.my_domain_com.my_lib.other
 
 
@@ -28,20 +26,6 @@ class TestAction(literal.Action):
         gateway.particle.get_action(
             local.my_domain_com.my_lib.other.OtherAction
         ).run()
-        gateway.particle.get_action(
-            local.my_domain_com.my_lib.other.OtherAction
-        ).get_interface_position(
-            "position<destination>"
-        ).particle.get_position(
-            local.my_domain_com.my_lib.a.APosition
-        ).destroy_particle()
-        gateway.particle.get_action(
-            local.my_domain_com.my_lib.other.OtherAction
-        ).get_interface_position(
-            "position<destination>"
-        ).particle.get_position(
-            local.my_domain_com.my_lib.b.BPosition
-        ).destroy_particle()
         gateway.particle.get_action(
             local.my_domain_com.my_lib.other.OtherAction
         ).get_interface_position(

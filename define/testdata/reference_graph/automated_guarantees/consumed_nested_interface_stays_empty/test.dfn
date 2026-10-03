@@ -1,5 +1,5 @@
 # A callee consumes its own callee's Interface Position before returning.
-# Applying its nested Guarantees must reject destroying that particle again.
+# Its caller sees nothing about that position, so it is empty for the caller.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.

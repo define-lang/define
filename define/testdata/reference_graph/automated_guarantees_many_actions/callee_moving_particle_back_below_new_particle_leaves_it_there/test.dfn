@@ -1,0 +1,27 @@
+# action</mover> moves the particle in position</box> away, creates a new
+# particle in position</box>, and moves the particle that was in
+# position</box>::position</part> back there. The particle from this action
+# stays in position<holder>::position</box>::position</part>, so creating a
+# particle there is an error, and position<holder>::position</moved_box> holds
+# the old particle from position</box> with nothing in its position</part>.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<holder> {
+            it may only contain particles where {
+                it has the action</mover>.
+                it has the position</box>.
+                it has the position</moved_box>.
+                it has the position</moved_part>.
+            }
+        }
+        create a particle in position<holder>.
+        create a particle in position<holder>::position</box>.
+        create a particle in position<holder>::position</box>::position</part>.
+        create a particle in position<holder>::action</mover>::position<run>.
+        create a particle in position<holder>::position</box>::position</part>.
+        create a particle in position<holder>::position</moved_box>::position</part>.
+        create a particle in position<holder>::position</moved_part>.
+    }
+}

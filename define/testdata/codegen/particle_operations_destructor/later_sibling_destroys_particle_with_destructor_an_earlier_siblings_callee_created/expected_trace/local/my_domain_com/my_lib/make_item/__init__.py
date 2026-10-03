@@ -5,10 +5,8 @@ from typing import ClassVar, Never, override
 from define.runtime import literal
 
 import local.my_domain_com.my_lib.box
-import local.my_domain_com.my_lib.cleanup
 import local.my_domain_com.my_lib.fill_item
 import local.my_domain_com.my_lib.fill_spare
-import local.my_domain_com.my_lib.item
 
 
 class MakeItemDestructionContracts:
@@ -76,13 +74,4 @@ class MakeItemAction(literal.Action):
             local.my_domain_com.my_lib.box.BoxPosition
         ).particle.get_action(
             local.my_domain_com.my_lib.fill_item.FillItemAction
-        ).run()
-
-    def run_destructors_of_global_position_box__action_fill_item(self):
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.box.BoxPosition
-        ).particle.get_position(
-            local.my_domain_com.my_lib.item.ItemPosition
-        ).particle.get_action(
-            local.my_domain_com.my_lib.cleanup.CleanupAction
         ).run()

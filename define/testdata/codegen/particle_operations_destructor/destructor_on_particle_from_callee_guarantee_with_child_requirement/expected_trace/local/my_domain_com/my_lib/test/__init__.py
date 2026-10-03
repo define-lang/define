@@ -6,7 +6,6 @@ from define.runtime import literal
 
 import local.my_domain_com.my_lib.destructor
 import local.my_domain_com.my_lib.maker
-import local.my_domain_com.my_lib.marker
 
 
 class TestAction(literal.Action):
@@ -37,14 +36,6 @@ class TestAction(literal.Action):
         ).particle.get_action(
             local.my_domain_com.my_lib.destructor.DestructorAction
         ).run()
-        box.particle.get_action(
-            local.my_domain_com.my_lib.maker.MakerAction
-        ).get_interface_position(
-            "position<result>"
-        ).particle.get_position(
-            local.my_domain_com.my_lib.marker.MarkerPosition
-        ).destroy_particle()
-        literal.record_operation("test.destroy(box::/maker::result::/marker)")
         box.particle.get_action(
             local.my_domain_com.my_lib.maker.MakerAction
         ).get_interface_position(

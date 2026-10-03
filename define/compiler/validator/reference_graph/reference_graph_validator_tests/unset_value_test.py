@@ -1849,3 +1849,76 @@ def test_value_error_recovered_by_copy(
     assert diagnostic.location.line == 14
     assert diagnostic.location.column == 26
     assert diagnostic.position_name == "position</value>"
+
+
+def test_unset_value_a_callee_left_below_particle_it_created_is_reported_when_destroyed(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].location.line == 14
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.end_line == 14
+    assert all_diags[0].location.end_column == 46
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert (
+        all_diags[0].position_name
+        == "position<holder>::position</box>::position</child>::position</value>"
+    )
+    assert all_diags[0].required_empty is False
+    assert all_diags[0].required_value is True
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/cleanup>"
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "enclosing_quality_name": "position<my.domain.com:my_lib:/child>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
+            "line": 3,
+            "column": 20,
+            "file_path": "child.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "enclosing_quality_name": "position<holder>::position</box>::position</child>",
+            "triggered_quality_name": None,
+            "line": 9,
+            "column": 30,
+            "file_path": "make.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<holder>::position</box>::position</child>::position</value>",
+            "triggered_quality_name": None,
+            "line": 10,
+            "column": 30,
+            "file_path": "make.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.AUTO_DESTRUCTION,
+            "enclosing_quality_name": "position<holder>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/test>",
+            "line": 14,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
+            "line": 14,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
+            "triggered_quality_name": None,
+            "line": 13,
+            "column": 78,
+            "file_path": "cleanup.dfn",
+        },
+    )

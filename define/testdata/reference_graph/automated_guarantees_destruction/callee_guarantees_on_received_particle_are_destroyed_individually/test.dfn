@@ -1,0 +1,20 @@
+# action</add_marker> creates a particle below a particle this action created
+# and passed down through action</wrapper> and action</middle>. Every caller
+# applies that Guarantee, so destroying position<holder> destroys the particle
+# individually.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<holder> {
+            it may only contain particles where {
+                it has the action</wrapper>.
+                it has the position</box>.
+            }
+        }
+        create a particle in position<holder>.
+        create a particle in position<holder>::position</box>.
+        create a particle in position<holder>::position</box>::position</inner>.
+        create a particle in position<holder>::action</wrapper>::position<run>.
+    }
+}

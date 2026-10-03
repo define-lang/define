@@ -1,0 +1,18 @@
+# action</middle> leaves a particle in an interface position of action</worker>,
+# which is reported there. action</outer> implies position</slot>, which that
+# interface position is below, and destroys the particle in it, but the particle is not reported again here.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<holder> {
+            it may only contain particles where {
+                it has the action</middle>.
+                it has the action</outer>.
+            }
+        }
+        create a particle in position<holder>.
+        create a particle in position<holder>::action</middle>::position<run>.
+        create a particle in position<holder>::action</outer>::position<run>.
+    }
+}

@@ -1,0 +1,21 @@
+# action</make_part> leaves a particle with action</cleanup> below the particle
+# in position<holder>. action</test> then passes the particle to
+# action</destroyer>, which destroys it without knowing about that particle. The
+# Destruction Contract makes action</test> run action</cleanup> for it and
+# destroy it.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</destroyer>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<holder> {
+            it may only contain particles where {
+                it has the action</make_part>.
+            }
+        }
+        create a particle in position<holder>.
+        create a particle in position<holder>::action</make_part>::position<run>.
+        move the particle in position<holder> to action</destroyer>::position<target>.
+        create a particle in action</destroyer>::position<run>.
+    }
+}

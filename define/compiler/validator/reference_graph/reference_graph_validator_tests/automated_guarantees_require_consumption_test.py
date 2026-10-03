@@ -597,6 +597,42 @@ def test_unchanged_guarantee_preserves_caller_move_as_diagnostic_source(
     ]
 
 
+def test_unconsumed_interface_inside_callee_is_reported_only_in_that_callee(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diagnostics = result.program_result.all_diagnostics
+    assert len(all_diagnostics) == 1
+    diagnostic = all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.UnconsumedActionInterfaceDiagnostic)
+    assert diagnostic.action_name == "action</worker>"
+    assert (
+        diagnostic.position_name == "position</slot>::action</worker>::position<result>"
+    )
+    assert diagnostic.location.line == 9
+    assert diagnostic.location.column == 47
+    assert diagnostic.location.file_path == PurePosixPath("middle.dfn")
+
+
+def test_unconsumed_interface_inside_callee_is_reported_only_in_that_callee_when_particle_above_is_destroyed(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diagnostics = result.program_result.all_diagnostics
+    assert len(all_diagnostics) == 1
+    diagnostic = all_diagnostics[0]
+    assert isinstance(diagnostic, diagnostics.UnconsumedActionInterfaceDiagnostic)
+    assert diagnostic.action_name == "action</worker>"
+    assert (
+        diagnostic.position_name == "position</slot>::action</worker>::position<result>"
+    )
+    assert diagnostic.location.line == 9
+    assert diagnostic.location.column == 47
+    assert diagnostic.location.file_path == PurePosixPath("middle.dfn")
+
+
 def test_error_on_action_interface_suppresses_unconsumed_diagnostic(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -732,7 +768,7 @@ def test_action_interface_two_actions_below_callee_interface_occupied_when_calle
     result = validate_testdata_project_with_reference_graph()
     assert result.program_result.all_exceptions == []
     all_diagnostics = result.program_result.all_diagnostics
-    assert len(all_diagnostics) == 2
+    assert len(all_diagnostics) == 1
     first_diagnostic = all_diagnostics[0]
     assert isinstance(
         first_diagnostic,
@@ -749,22 +785,6 @@ def test_action_interface_two_actions_below_callee_interface_occupied_when_calle
     assert first_diagnostic.arrived_at.line == 12
     assert first_diagnostic.arrived_at.column == 30
     assert first_diagnostic.arrived_at.file_path == PurePosixPath("test.dfn")
-    second_diagnostic = all_diagnostics[1]
-    assert isinstance(
-        second_diagnostic,
-        diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
-    )
-    assert second_diagnostic.action_name == "action</parent>"
-    assert (
-        second_diagnostic.position_name
-        == "position<box>::action</parent>::position<iface>::action</child>::position<holder>::action</worker>::position<result>"
-    )
-    assert second_diagnostic.location.line == 15
-    assert second_diagnostic.location.column == 30
-    assert second_diagnostic.location.file_path == PurePosixPath("test.dfn")
-    assert second_diagnostic.arrived_at.line == 14
-    assert second_diagnostic.arrived_at.column == 113
-    assert second_diagnostic.arrived_at.file_path == PurePosixPath("test.dfn")
     assert action_graph(result.reference_graph_result) == [
         (_CHILD, _WORKER),
         (_PARENT, _CHILD),

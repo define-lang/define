@@ -32,6 +32,7 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         "//define/compiler:chained_name",
+        "@pypi//msgspec",
     ],
 )
 

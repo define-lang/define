@@ -137,7 +137,7 @@ class DestructionContractMethod(msgspec.Struct):
 
 
 class GuaranteedParticleDestructorsContext(msgspec.Struct):
-    """The method that runs the Destructors an action recorded for one of its callees."""
+    """The method that runs the Destructors for what an action left at and below one position."""
 
     method_name: str
     statements: list[ActionStatementContext]
@@ -217,11 +217,12 @@ class RunActionContext(ActionStatementContext):
 
 
 class RunGuaranteedParticleDestructorsContext(ActionStatementContext):
-    """Run the Destructors an action recorded for one of its callees."""
+    """Run the Destructors for what an action left at and below a position."""
 
     kind: ClassVar[StatementKind] = StatementKind.RUN_GUARANTEED_PARTICLE_DESTRUCTORS
-    position: PositionExpr
+    action: naming.ClassReference
     method_name: str
+    position: PositionExpr
 
 
 class ContractContributionContext(ActionStatementContext):

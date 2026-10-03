@@ -9,6 +9,7 @@ from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
 )
+from define.compiler.validator.reference_graph.test_helpers import action_graph
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if typing.TYPE_CHECKING:
@@ -36,7 +37,10 @@ def test_discardable_callee_guarantees_are_dropped_for_destroyed_particle(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert _destroyed_positions(result) == [(_HOLDER, _CHILD_1), (_HOLDER,)]
+    assert _destroyed_positions(result) == [
+        (_HOLDER, "position<my.domain.com:my_lib:/child_1>"),
+        (_HOLDER,),
+    ]
 
 
 def test_callee_guarantees_moving_particles_are_dropped_for_destroyed_particle(
@@ -44,15 +48,24 @@ def test_callee_guarantees_moving_particles_are_dropped_for_destroyed_particle(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert _destroyed_positions(result) == [(_HOLDER, _CHILD_1), (_HOLDER,)]
+    assert _destroyed_positions(result) == [
+        (_HOLDER, "position<my.domain.com:my_lib:/child_1>"),
+        (_HOLDER,),
+    ]
 
 
-def test_callee_guarantees_on_received_particle_are_dropped_for_destroyed_particle(
+def test_callee_guarantees_on_received_particle_are_destroyed_individually(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
     assert _destroyed_positions(result) == [
+        (
+            _HOLDER,
+            "position<my.domain.com:my_lib:/box>",
+            "position<my.domain.com:my_lib:/inner>",
+            "position<my.domain.com:my_lib:/marker>",
+        ),
         (
             _HOLDER,
             "position<my.domain.com:my_lib:/box>",
@@ -127,6 +140,79 @@ def test_callee_guarantees_creating_destructor_are_applied_for_destroyed_particl
             "file_path": "cleanup.dfn",
         },
     )
+
+
+def test_unrelated_callee_error_does_not_hide_destructor_requirement(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 2
+    diagnostic = all_diags[0]
+    assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
+    assert diagnostic.location.line == 13
+    assert diagnostic.location.column == 30
+    assert diagnostic.location.end_line == 13
+    assert diagnostic.location.end_column == 46
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert (
+        diagnostic.position_name
+        == "position<holder>::position</child_1>::position</child_2>::position</needed>"
+    )
+    assert diagnostic.required_empty is False
+    assert diagnostic.required_value is False
+    assert diagnostic.action_name == _CLEANUP
+    assert_propagation_chain(
+        diagnostic,
+        {
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "enclosing_quality_name": "position<my.domain.com:my_lib:/child_2>",
+            "triggered_quality_name": _CLEANUP,
+            "line": 3,
+            "column": 20,
+            "file_path": "child_2.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "enclosing_quality_name": "position<holder>::position</child_1>::position</child_2>",
+            "triggered_quality_name": None,
+            "line": 8,
+            "column": 30,
+            "file_path": "fill_2.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.AUTO_DESTRUCTION,
+            "enclosing_quality_name": _HOLDER,
+            "triggered_quality_name": _TEST,
+            "line": 13,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _CLEANUP,
+            "line": 13,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _CLEANUP,
+            "triggered_quality_name": None,
+            "line": 7,
+            "column": 30,
+            "file_path": "cleanup.dfn",
+        },
+    )
+    assert isinstance(all_diags[1], diagnostics.DestroyInEmptyPositionDiagnostic)
+    assert all_diags[1].location.line == 9
+    assert all_diags[1].location.column == 33
+    assert all_diags[1].location.end_line == 9
+    assert all_diags[1].location.end_column == 48
+    assert all_diags[1].location.file_path == PurePosixPath("fill_1.dfn")
+    assert all_diags[1].position_name == "position<spare>"
 
 
 def test_deep_callee_creating_destructor_below_child_particle_is_applied_for_destroyed_particle(
@@ -490,7 +576,10 @@ def test_unresolved_quality_does_not_prevent_dropping_for_destroyed_particle(
     assert diagnostic.location.end_column == 35
     assert diagnostic.location.file_path == PurePosixPath("child_2.dfn")
     assert diagnostic.file_path == "missing.dfn"
-    assert _destroyed_positions(result) == [(_HOLDER, _CHILD_1), (_HOLDER,)]
+    assert _destroyed_positions(result) == [
+        (_HOLDER, "position<my.domain.com:my_lib:/child_1>"),
+        (_HOLDER,),
+    ]
 
 
 def test_caller_resolves_several_pending_callee_guarantees_below_destroyed_particle(
@@ -636,7 +725,7 @@ def test_pending_callee_on_own_particle_creating_failing_destructor_is_applied_f
 def test_unpublished_destructor_contract_is_skipped_for_destroyed_particle(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph(max_workers=1)
     assert result.program_result.all_exceptions == []
     all_diags = result.program_result.all_diagnostics
     assert len(all_diags) == 2
@@ -662,4 +751,21 @@ def test_unpublished_destructor_contract_is_skipped_for_destroyed_particle(
         "action<my.domain.com:my_lib:/fill_2>",
         "position<my.domain.com:my_lib:/child_2>",
         _CLEANUP,
+    ]
+
+
+def test_callee_particle_whose_destructor_requirements_hold_is_not_expanded_when_destroyed(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_result)
+    assert _destroyed_positions(result) == [
+        (_HOLDER, "position<my.domain.com:my_lib:/box>"),
+        (_HOLDER,),
+    ]
+    assert action_graph(result.reference_graph_result) == [
+        (_CLEANUP, "action<my.domain.com:my_lib:/keep>"),
+        (_CLEANUP, "action<my.domain.com:my_lib:/keep>"),
+        (_TEST, "action<my.domain.com:my_lib:/make>"),
+        (_TEST, _CLEANUP),
     ]

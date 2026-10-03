@@ -122,7 +122,7 @@ def direct_destructor(
     """Build the diagnostic for an unmet requirement of a destructor this body fires."""
     enclosing_fqun = definition.typed_name.name_content.fqun
     definition_name = definition.typed_name.source_typed_name
-    destructor_name = req.root_cause_action_name()
+    destructor_name = req.enclosing_action.typed_name.source_typed_name
     position_name = full_caller_chain.source_form_in_universe(enclosing_fqun)
     if auto_destruction_target is None:
         location = destructor.position.location

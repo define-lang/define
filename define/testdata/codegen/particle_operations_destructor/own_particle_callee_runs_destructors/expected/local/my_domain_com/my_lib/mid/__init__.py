@@ -5,9 +5,6 @@ from typing import ClassVar, Never, override
 from define.runtime import literal
 
 import local.my_domain_com.my_lib.builder
-import local.my_domain_com.my_lib.cleanup
-import local.my_domain_com.my_lib.q
-import local.my_domain_com.my_lib.r
 
 
 class MidDestructionContracts:
@@ -56,13 +53,4 @@ class MidAction(literal.Action):
         ).create_particle()
         self.on_particle.get_action(
             local.my_domain_com.my_lib.builder.BuilderAction
-        ).run()
-
-    def run_destructors_of_action_builder(self):
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.q.QPosition
-        ).particle.get_position(
-            local.my_domain_com.my_lib.r.RPosition
-        ).particle.get_action(
-            local.my_domain_com.my_lib.cleanup.CleanupAction
         ).run()

@@ -8,7 +8,7 @@ import local.my_domain_com.my_lib.child_a
 import local.my_domain_com.my_lib.child_b
 import local.my_domain_com.my_lib.cleanup
 import local.my_domain_com.my_lib.fill_2
-import local.my_domain_com.my_lib.middle
+import local.my_domain_com.my_lib.leaf
 
 
 class Fill1DestructionContracts:
@@ -82,30 +82,24 @@ class Fill1Action(literal.Action):
             local.my_domain_com.my_lib.fill_2.Fill2Action
         ).run()
 
-    def run_destructors_of_global_position_child_a__action_fill_2(self):
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.child_a.ChildAPosition
-        ).particle.get_position(
-            local.my_domain_com.my_lib.middle.MiddlePosition
-        ).particle.get_action(
+    @staticmethod
+    def run_guaranteed_particle_destructors_global_position_child_a__position_middle(particle: literal.Particle):
+        particle.get_action(
             local.my_domain_com.my_lib.cleanup.CleanupAction
         ).run()
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.child_a.ChildAPosition
-        ).particle.get_action(
-            local.my_domain_com.my_lib.fill_2.Fill2Action
-        ).run_destructors_of_global_position_middle__action_fill_3()
+        local.my_domain_com.my_lib.fill_2.Fill2Action.run_guaranteed_particle_destructors_global_position_middle__position_leaf(
+            particle.get_position(
+                local.my_domain_com.my_lib.leaf.LeafPosition
+            ).particle
+        )
 
-    def run_destructors_of_global_position_child_b__action_fill_2(self):
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.child_b.ChildBPosition
-        ).particle.get_position(
-            local.my_domain_com.my_lib.middle.MiddlePosition
-        ).particle.get_action(
+    @staticmethod
+    def run_guaranteed_particle_destructors_global_position_child_b__position_middle(particle: literal.Particle):
+        particle.get_action(
             local.my_domain_com.my_lib.cleanup.CleanupAction
         ).run()
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.child_b.ChildBPosition
-        ).particle.get_action(
-            local.my_domain_com.my_lib.fill_2.Fill2Action
-        ).run_destructors_of_global_position_middle__action_fill_3()
+        local.my_domain_com.my_lib.fill_2.Fill2Action.run_guaranteed_particle_destructors_global_position_middle__position_leaf(
+            particle.get_position(
+                local.my_domain_com.my_lib.leaf.LeafPosition
+            ).particle
+        )

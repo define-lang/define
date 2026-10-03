@@ -5,6 +5,7 @@ from typing import ClassVar, Never, override
 from define.runtime import literal
 
 import local.my_domain_com.my_lib.box
+import local.my_domain_com.my_lib.cleanup
 import local.my_domain_com.my_lib.outer
 
 
@@ -63,14 +64,14 @@ class WrapperAction(literal.Action):
             local.my_domain_com.my_lib.outer.OuterAction
         ).run()
 
-    def run_destructors_of_global_position_box__action_outer(self):
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.box.BoxPosition
-        ).particle.get_action(
-            local.my_domain_com.my_lib.outer.OuterAction
-        ).run_destructors_of_action_make_a()
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.box.BoxPosition
-        ).particle.get_action(
-            local.my_domain_com.my_lib.outer.OuterAction
-        ).run_destructors_of_action_make_b()
+    @staticmethod
+    def run_guaranteed_particle_destructors_global_position_box__position_part_a(particle: literal.Particle):
+        particle.get_action(
+            local.my_domain_com.my_lib.cleanup.CleanupAction
+        ).run()
+
+    @staticmethod
+    def run_guaranteed_particle_destructors_global_position_box__position_part_b(particle: literal.Particle):
+        particle.get_action(
+            local.my_domain_com.my_lib.cleanup.CleanupAction
+        ).run()

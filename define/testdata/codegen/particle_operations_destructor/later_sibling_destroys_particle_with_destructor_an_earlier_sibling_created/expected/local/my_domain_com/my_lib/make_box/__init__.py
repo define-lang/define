@@ -5,6 +5,7 @@ from typing import ClassVar, Never, override
 from define.runtime import literal
 
 import local.my_domain_com.my_lib.box
+import local.my_domain_com.my_lib.cleanup
 import local.my_domain_com.my_lib.item
 
 
@@ -55,3 +56,9 @@ class MakeBoxAction(literal.Action):
         ).particle.get_position(
             local.my_domain_com.my_lib.item.ItemPosition
         ).create_particle()
+
+    @staticmethod
+    def run_guaranteed_particle_destructors_global_position_box__position_item(particle: literal.Particle):
+        particle.get_action(
+            local.my_domain_com.my_lib.cleanup.CleanupAction
+        ).run()

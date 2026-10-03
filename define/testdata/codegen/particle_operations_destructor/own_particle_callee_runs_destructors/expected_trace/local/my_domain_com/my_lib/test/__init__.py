@@ -5,6 +5,7 @@ from typing import Never, override
 from define.runtime import literal
 
 import local.my_domain_com.my_lib.q
+import local.my_domain_com.my_lib.r
 import local.my_domain_com.my_lib.wrapper
 
 
@@ -29,9 +30,13 @@ class TestAction(literal.Action):
         holder.particle.get_action(
             local.my_domain_com.my_lib.wrapper.WrapperAction
         ).run()
-        holder.particle.get_action(
-            local.my_domain_com.my_lib.wrapper.WrapperAction
-        ).run_destructors_of_action_mid()
+        local.my_domain_com.my_lib.wrapper.WrapperAction.run_guaranteed_particle_destructors_global_position_q__position_r(
+            holder.particle.get_position(
+                local.my_domain_com.my_lib.q.QPosition
+            ).particle.get_position(
+                local.my_domain_com.my_lib.r.RPosition
+            ).particle
+        )
         holder.particle.get_position(
             local.my_domain_com.my_lib.q.QPosition
         ).destroy_particle()

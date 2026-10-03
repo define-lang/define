@@ -1,0 +1,20 @@
+# action</inner> is assigned to the particle in position</box>, which
+# action</middle> received, so its Guarantee is not part of action</middle>'s
+# own Guarantees. action</middle> destroys the particle it created.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<holder> {
+            it may only contain particles where {
+                it has the action</middle>.
+                it has the position</box>.
+            }
+        }
+        create a particle in position<holder>.
+        create a particle in position<holder>::position</box>.
+        create a particle in position<holder>::action</middle>::position<run>.
+        create a particle in position<holder>::position</box>::position</child>.
+        create a particle in position<holder>::position</box>::position</child>.
+    }
+}

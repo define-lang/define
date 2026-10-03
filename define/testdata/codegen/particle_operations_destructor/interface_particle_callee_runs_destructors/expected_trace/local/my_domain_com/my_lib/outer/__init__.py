@@ -4,9 +4,7 @@ from typing import Never, override
 
 from define.runtime import literal
 
-import local.my_domain_com.my_lib.cleanup
 import local.my_domain_com.my_lib.make_part
-import local.my_domain_com.my_lib.part
 
 
 class OuterDestructionContracts:
@@ -64,13 +62,4 @@ class OuterAction(literal.Action):
             "position<box>"
         ).particle.get_action(
             local.my_domain_com.my_lib.make_part.MakePartAction
-        ).run()
-
-    def run_destructors_of_position_box__action_make_part(self):
-        self.get_interface_position(
-            "position<box>"
-        ).particle.get_position(
-            local.my_domain_com.my_lib.part.PartPosition
-        ).particle.get_action(
-            local.my_domain_com.my_lib.cleanup.CleanupAction
         ).run()

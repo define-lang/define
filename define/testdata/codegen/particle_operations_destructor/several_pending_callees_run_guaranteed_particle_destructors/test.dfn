@@ -1,9 +1,8 @@
 # action</wrapper> creates position</box> and triggers action</outer> on it,
 # which triggers action</make_a> and action</make_b>. Both create a particle
-# with action</cleanup>, and both are still pending on position</box> when
-# action</wrapper> publishes its contract, so the Destructors it records
-# include both of theirs. Destroying position<holder> runs action</cleanup>
-# once for each particle.
+# with action</cleanup>, and action</wrapper> publishes both below the particle
+# it created in position</box>. Destroying position<holder> runs
+# action</cleanup> once for each particle.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.

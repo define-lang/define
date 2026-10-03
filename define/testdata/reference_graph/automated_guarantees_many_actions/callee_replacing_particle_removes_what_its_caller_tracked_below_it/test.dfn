@@ -1,0 +1,17 @@
+# action</inner> replaces the particle in position</input>, and creates a
+# particle in the new one's position</a>. What action</test> created below the
+# old particle is gone, so position</a>::position</x> is empty again.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</input>.
+    it also assigns the action</inner>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</input>.
+        create a particle in position</input>::position</a>.
+        create a particle in position</input>::position</a>::position</x>.
+        create a particle in action</inner>::position<trigger_pos>.
+        destroy the particle in action</inner>::position<trigger_pos>.
+        destroy the particle in position</input>::position</a>::position</x>.
+    }
+}

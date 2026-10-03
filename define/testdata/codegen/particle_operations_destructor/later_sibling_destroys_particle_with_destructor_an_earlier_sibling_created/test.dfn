@@ -1,9 +1,8 @@
 # action</outer> triggers action</make_box>, which creates position</item> with
 # action</cleanup>, and then action</clear_box>, whose callee
-# action</empty_item> destroys it. Both are still pending when
-# position<holder> is destroyed, but the final state of action</outer> already
-# shows position</item> destroyed, so the destruction drops both without
-# running action</cleanup> a second time.
+# action</empty_item> destroys it. action</outer> publishes the particle in
+# position</box> with nothing below it, so destroying position<holder> does not
+# run action</cleanup> a second time.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.

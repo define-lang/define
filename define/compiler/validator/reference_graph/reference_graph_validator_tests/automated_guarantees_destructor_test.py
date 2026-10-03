@@ -220,3 +220,37 @@ def test_destructor_triggering_action_whose_callee_fills_an_implied_position_is_
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == PurePosixPath("b.dfn")
     assert all_diags[0].position_name == "position</out>"
+
+
+def test_destructor_moving_received_particle_back_below_new_particle_does_not_report_it(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    )
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 3
+    assert isinstance(
+        all_diags[0], diagnostics.DestructorProducesEmptyGuaranteeDiagnostic
+    )
+    assert all_diags[0].location.line == 18
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].position_name == "position<moved>::position</part>"
+    assert isinstance(
+        all_diags[1],
+        diagnostics.DestructorProducesOccupiedByExistingGuaranteeDiagnostic,
+    )
+    assert all_diags[1].location.line == 19
+    assert all_diags[1].location.column == 47
+    assert all_diags[1].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[1].position_name == "position<moved>"
+    assert all_diags[1].origin_name == "position<box>"
+    assert isinstance(
+        all_diags[2], diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic
+    )
+    assert all_diags[2].location.line == 20
+    assert all_diags[2].location.column == 30
+    assert all_diags[2].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[2].position_name == "position<box>"

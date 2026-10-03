@@ -1,0 +1,22 @@
+define the potential action<my.domain.com:my_lib:/mid> {
+    it also assigns the action</make>.
+    define the position<run>.
+    define the position<box> {
+        it may only contain particles where {
+            it has the position</extra>.
+        }
+    }
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<item> {
+            it may only contain particles where {
+                it has the position</extra>.
+            }
+        }
+        destroy the particle in position<run>.
+        create a particle in action</make>::position<run>.
+        move the particle in action</make>::position<item> to position<box>.
+        create a particle in position<item>.
+    }
+}

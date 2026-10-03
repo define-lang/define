@@ -6,16 +6,16 @@ import typing
 
 from define.compiler import ast, chained_name, name_types
 from define.compiler.errors import diagnostics
-from define.compiler.validator.reference_graph import position_occupancy
+from define.compiler.validator.reference_graph import (
+    action_contract,
+    position_occupancy,
+)
 from define.compiler.validator.reference_graph.dead_code import dead_constraint_tracker
 
 if typing.TYPE_CHECKING:
     from define.compiler.data_structures import typed_name_dict
     from define.compiler.validator import scope_tracker, validation_result
-    from define.compiler.validator.reference_graph import (
-        action_contract,
-        position_quality_resolver,
-    )
+    from define.compiler.validator.reference_graph import position_quality_resolver
     from define.compiler.validator.reference_graph.particles import (
         particle_info,
         particle_tracker,
@@ -174,7 +174,8 @@ class DeadConstraintValidator:
     def validate(
         self,
         own_guarantees: dict[
-            chained_name.PositionReferenceTuple, action_contract.PositionGuarantee
+            chained_name.PositionReferenceTuple,
+            action_contract.PositionGuarantee | None,
         ],
         scope: scope_tracker.ScopeTracker,
     ) -> list[diagnostics.Diagnostic]:
@@ -221,7 +222,7 @@ class DeadConstraintValidator:
                     implied_action_name=implied_action.source_typed_name,
                 )
             )
-        for position in self._tracker.dead_action_interface_arrivals():
+        for position in self._tracker.dead_interface_arrivals():
             action = typing.cast(
                 "ast.GlobalTypedNameReference", position.get_last_action()
             )
@@ -237,15 +238,33 @@ class DeadConstraintValidator:
     def _mark_own_contract_guarantees_alive(
         self,
         own_guarantees: dict[
-            chained_name.PositionReferenceTuple, action_contract.PositionGuarantee
+            chained_name.PositionReferenceTuple,
+            action_contract.PositionGuarantee | None,
         ],
         scope: scope_tracker.ScopeTracker,
     ):
         """Keep origin and final position constraints alive through this action's guarantees."""
         if not self._dead_constraint_tracker.has_constraint_candidates():
             return
-        for guarantee in own_guarantees.values():
-            final_position = guarantee.caused_by
+        for key, guarantee in own_guarantees.items():
+            if guarantee is None:
+                # The action wrote the position but left it as it found it.
+                occupant = self._tracker.occupant_or_none_by_key(key)
+                if occupant is None:
+                    continue
+                final_position = occupant.last_position
+            elif isinstance(
+                guarantee,
+                (
+                    action_contract.OccupiedByNewGuarantee,
+                    action_contract.OccupiedByExistingGuarantee,
+                ),
+            ):
+                final_position = guarantee.caused_by
+            else:
+                # Only a position the action guarantees to be occupied keeps
+                # constraints alive.
+                continue
             origin_position = self._particle_origin_position(final_position)
             if origin_position is None:
                 continue

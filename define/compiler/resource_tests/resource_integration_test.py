@@ -19,19 +19,6 @@ _CPU_SAFETY_SECONDS = 10
 _CPU_GROWTH_SAFETY_SECONDS = 30
 _WALL_SAFETY_SECONDS = 20
 _WALL_GROWTH_SAFETY_SECONDS = 45
-# Destruction resolves the pending Guarantees of every triggered action below the
-# destroyed particle, one execution path at a time.
-_TRIGGERED_CHILDREN_EXPONENTIAL = pytest.mark.xfail(
-    strict=True,
-    reason="destruction resolves exponentially many pending Guarantees",
-)
-
-# Every pending Guarantee of a callee on the action's parent particle is stored
-# at that one particle, so reading any position applies all of them.
-_SAME_PARTICLE_EXPONENTIAL = pytest.mark.xfail(
-    strict=True,
-    reason="reading a position applies every pending Guarantee on the parent particle",
-)
 
 
 @dataclasses.dataclass(kw_only=True)
@@ -224,7 +211,6 @@ def test_retained_memory(case: MemoryCase, tmp_path: Path):
                 maximum_ratio=4,
             ),
             id="triggered_children_destruction_contracted",
-            marks=_TRIGGERED_CHILDREN_EXPONENTIAL,
         ),
         pytest.param(
             CpuGrowthCase(
@@ -299,7 +285,6 @@ def test_retained_memory(case: MemoryCase, tmp_path: Path):
                 maximum_ratio=4,
             ),
             id="triggered_children_destruction_same_particle",
-            marks=_SAME_PARTICLE_EXPONENTIAL,
         ),
     ],
 )

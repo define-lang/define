@@ -1,0 +1,13 @@
+define the potential action<my.domain.com:my_lib:/mover> {
+    it also assigns the position</box>.
+    it also assigns the position</moved_box>.
+    it also assigns the position</moved_part>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+        move the particle in position</box>::position</part> to position</moved_part>.
+        move the particle in position</box> to position</moved_box>.
+    }
+}
