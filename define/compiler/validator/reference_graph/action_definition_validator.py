@@ -1185,13 +1185,12 @@ class ActionDefinitionValidator:
         action_contract.ActionContract,
         dict[
             chained_name.PositionReferenceTuple,
-            action_contract.PositionGuarantee | None,
+            action_contract.PositionGuarantee,
         ],
     ]:
         """Generate the action contract from inferred requirements and final tracker state.
 
-        Also returns the action's own Guarantees, by position, where a
-        position it wrote but left in the state it found it in maps to None.
+        Also returns the action's own Guarantees, by position.
         """
         requirements = self._requirement_validator.occupancy_requirements
         guarantees = self._tracker.generate_own_guarantees(
@@ -1223,7 +1222,7 @@ class ActionDefinitionValidator:
         self,
         guarantees: dict[
             chained_name.PositionReferenceTuple,
-            action_contract.PositionGuarantee | None,
+            action_contract.PositionGuarantee,
         ],
     ):
         """Report forbidden Destructor Guarantees and replace them with Error Guarantees.
@@ -1276,7 +1275,12 @@ class ActionDefinitionValidator:
                 case action_contract.OccupiedByExistingGuarantee() if (
                     guarantee.origin_position.canonical_chained_name_tuple == position
                 ):
-                    if guarantee.value_effect == particle_info.ParticleValueState.ERROR:
+                    # A particle whose value did not change is where it started.
+                    # A change to the particle above it is reported on its own.
+                    if guarantee.value_effect in (
+                        None,
+                        particle_info.ParticleValueState.ERROR,
+                    ):
                         continue
                     self._diagnostics.append(
                         diagnostics.DestructorChangesValueDiagnostic(
@@ -1294,7 +1298,7 @@ class ActionDefinitionValidator:
                             ),
                         )
                     )
-                case action_contract.ErrorGuarantee() | None:
+                case action_contract.ErrorGuarantee():
                     continue
                 case _:
                     raise TypeError(

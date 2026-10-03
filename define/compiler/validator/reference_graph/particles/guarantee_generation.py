@@ -11,10 +11,10 @@ from define.compiler.validator.reference_graph import (
     action_contract,
     position_occupancy,
 )
-from define.compiler.validator.reference_graph.particles import particle_info
 
 if typing.TYPE_CHECKING:
     from define.compiler.validator.reference_graph.particles import (
+        particle_info,
         particle_state_store,
     )
 
@@ -35,40 +35,23 @@ class GuaranteeGenerator:
             chained_name.PositionReferenceTuple,
             action_contract.PositionOccupancyRequirement,
         ],
-    ) -> dict[
-        chained_name.PositionReferenceTuple, action_contract.PositionGuarantee | None
-    ]:
-        """Collect and sort the guarantees for every contracted key the action wrote or changed.
-
-        A key the action wrote but left in the state it found it in maps to
-        None.
-        """
+    ) -> dict[chained_name.PositionReferenceTuple, action_contract.PositionGuarantee]:
+        """Collect and sort the guarantees for every contracted key that holds a particle or whose state the action changed."""
         include_names = {
             name.full_typed_name for name in (*interface_names, *implied_quality_names)
         }
 
         guarantees: list[
             tuple[
-                chained_name.PositionReferenceTuple,
-                action_contract.PositionGuarantee | None,
+                chained_name.PositionReferenceTuple, action_contract.PositionGuarantee
             ]
         ] = []
         for key, state in self._store.positions_with_state():
             if not _is_contracted(key, include_names):
                 continue
             guarantee = self._guarantee_for_key(key, state, requirements)
-            # An assumed particle can remain untouched, including the trigger
-            # particle.
-            #
-            # TODO: Should we simply require people to always touch the trigger
-            # position? It eliminates a lot of "more than one way to do it."
-            if (
-                guarantee is None
-                and state.particle is not None
-                and not state.was_written
-            ):
-                continue
-            guarantees.append((key, guarantee))
+            if guarantee is not None:
+                guarantees.append((key, guarantee))
 
         # Parent-before-child ordering: Our first sort is by the key length
         # (the number of names in a chain). To understand why this is necessary,
@@ -95,8 +78,7 @@ class GuaranteeGenerator:
         self,
         action: ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
         own_guarantees: dict[
-            chained_name.PositionReferenceTuple,
-            action_contract.PositionGuarantee | None,
+            chained_name.PositionReferenceTuple, action_contract.PositionGuarantee
         ],
         on_destruction: dict[
             chained_name.PositionReferenceTuple, action_contract.OnDestruction
@@ -112,8 +94,6 @@ class GuaranteeGenerator:
             dict[str, action_contract.ParticleLeftBelow],
         ] = {}
         for key, own_guarantee in reversed(own_guarantees.items()):
-            if own_guarantee is None:
-                continue
             guarantee = self._with_left_in_child_positions(
                 action, key, own_guarantee, left_below
             )
@@ -192,7 +172,7 @@ class GuaranteeGenerator:
             action_contract.PositionOccupancyRequirement,
         ],
     ) -> action_contract.PositionGuarantee | None:
-        """Build a guarantee describing ``state``, the state of ``key``, or None for a position the action left in the state it found it in."""
+        """Build a guarantee describing ``state``, the state of ``key``, or None for an empty position the action left in the state it found it in."""
         if state.has_error:
             return action_contract.ErrorGuarantee()
 
@@ -207,18 +187,18 @@ class GuaranteeGenerator:
                         "particle_info.ParticleValueState", info.value_state
                     ),
                 )
-            if (
-                key != info.origin_position.canonical_chained_name_tuple
-                or info.value_written_at is not None
-                or info.value_state == particle_info.ParticleValueState.ERROR
-            ):
-                return action_contract.OccupiedByExistingGuarantee(
-                    origin_position=info.origin_position,
-                    caused_by=info.last_position,
-                    value_effect=info.value_effect(),
-                )
-            # The caller's particle is right where it started.
-            return None
+            # Every particle from the caller gets a Guarantee, even one the
+            # action never touched, including the trigger particle. Its
+            # parent position may hold a different particle than when the
+            # action started, and the caller has to know where it is.
+            #
+            # TODO: Should we simply require people to always touch the trigger
+            # position? It eliminates a lot of "more than one way to do it."
+            return action_contract.OccupiedByExistingGuarantee(
+                origin_position=info.origin_position,
+                caused_by=info.last_position,
+                value_effect=info.value_effect(),
+            )
 
         # positions_with_state returns an unoccupied Position without error
         # state only when it is known to be empty.
@@ -258,9 +238,7 @@ def _particle_left_below(
 
 
 def _guarantee_order(
-    item: tuple[
-        chained_name.PositionReferenceTuple, action_contract.PositionGuarantee | None
-    ],
+    item: tuple[chained_name.PositionReferenceTuple, action_contract.PositionGuarantee],
 ) -> tuple[int, int, int]:
     key, guarantee = item
     if not isinstance(

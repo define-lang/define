@@ -1,0 +1,16 @@
+# The action sets the value of the particle its caller passed in
+# position<iface>, but never creates or moves a particle there, so nothing
+# keeps the position</c> constraint alive.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<iface> {
+        it may only contain particles where {
+            it has the value<standard:/number/rational>.
+            it has the position</c>.
+        }
+    }
+    it happens when {
+        this particle is created.
+    } and it does {
+        set the value of position<iface> to literal<standard:/number>"5".
+    }
+}

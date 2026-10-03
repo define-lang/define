@@ -320,6 +320,23 @@ def test_unused_constraint_on_interface_position_with_inferred_occupied_requirem
     assert all_diags[0].location.column == 24
 
 
+def test_unused_constraint_on_interface_position_whose_particle_only_has_its_value_set_is_dead(
+    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    )
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].constraint_name == "position</c>"
+    assert all_diags[0].position_name == "position<iface>"
+    assert all_diags[0].location.line == 8
+    assert all_diags[0].location.column == 24
+
+
 def test_dead_child_position_inside_constructor(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):

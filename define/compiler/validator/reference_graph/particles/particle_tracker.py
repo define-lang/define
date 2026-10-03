@@ -190,6 +190,10 @@ class ParticleTracker:
         """Get the particle at ``key``, if one exists."""
         return self._store.occupant_or_none(key)
 
+    def was_placed_by_key(self, key: chained_name.PositionReferenceTuple) -> bool:
+        """Return whether a Move or trigger in this action put the particle at ``key``, or a particle above it, in place."""
+        return self._store.was_placed(key)
+
     def set_value(
         self,
         position: ast.PositionReference,
@@ -275,7 +279,7 @@ class ParticleTracker:
             origin_position=in_position,
             value_state=particle_info.ParticleValueState.UNSET,
         )
-        self._store.create(key, info)
+        self._store.put_particle(key, info)
         self._register_explicit_interface_arrival(in_position, info)
 
     def assume_occupied(
@@ -293,7 +297,7 @@ class ParticleTracker:
             origin_position=position_in_caller,
             from_caller=True,
         )
-        self._store.assume_occupied(key, info)
+        self._store.put_particle(key, info)
 
     def destroy_simultaneously(
         self,
@@ -347,9 +351,7 @@ class ParticleTracker:
             chained_name.PositionReferenceTuple,
             action_contract.PositionOccupancyRequirement,
         ],
-    ) -> dict[
-        chained_name.PositionReferenceTuple, action_contract.PositionGuarantee | None
-    ]:
+    ) -> dict[chained_name.PositionReferenceTuple, action_contract.PositionGuarantee]:
         """Generate this block's own guarantees, for every contracted position it tracks.
 
         A position the block wrote but left in the state it found it in maps
@@ -367,7 +369,7 @@ class ParticleTracker:
         action: ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
         own_guarantees: dict[
             chained_name.PositionReferenceTuple,
-            action_contract.PositionGuarantee | None,
+            action_contract.PositionGuarantee,
         ],
         on_destruction: dict[
             chained_name.PositionReferenceTuple, action_contract.OnDestruction

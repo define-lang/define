@@ -1984,9 +1984,10 @@ particle.
 #### Aliveness Through An Action's Own Contract
 
 At the end of an action, if a particle is in a position on which the current
-action guarantees to be occupied upon its completion, all constraints on that
-final position are marked as alive on both that final position and the origin
-position of the particle.
+action guarantees to be occupied upon its completion, and the particle was
+created in or moved into that position during the action, all constraints on
+that final position are marked as alive on both that final position and the
+origin position of the particle.
 
 #### Destructors
 

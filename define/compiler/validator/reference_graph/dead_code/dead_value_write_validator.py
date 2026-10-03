@@ -63,7 +63,7 @@ class DeadValueWriteValidator:
         self,
         guarantees: dict[
             chained_name.PositionReferenceTuple,
-            action_contract.PositionGuarantee | None,
+            action_contract.PositionGuarantee,
         ],
     ) -> list[diagnostics.DeadValueWriteDiagnostic]:
         """Diagnose value writes that nothing used, unless this action guarantees them."""

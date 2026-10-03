@@ -8,8 +8,6 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
-import pytest
-
 from define.compiler.errors import diagnostics
 from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
@@ -390,14 +388,6 @@ def test_callee_moving_particle_and_one_below_it_moves_each_to_its_own_destinati
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "A particle from the caller that a callee moves away and back to where it"
-        " started gets no Guarantee, so its caller moves it along with the"
-        " particle above it and then loses it."
-    ),
-)
 def test_callee_moving_particle_back_below_new_particle_leaves_it_there(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):

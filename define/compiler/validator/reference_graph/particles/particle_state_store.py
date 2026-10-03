@@ -34,9 +34,6 @@ class PositionState(msgspec.Struct):
     has_error: bool = False
     # Whether this position or any position above it has error state.
     is_in_error_chain: bool = False
-    # Whether the action body or a callee's Guarantee wrote this position.
-    # Assuming its starting state does not.
-    was_written: bool = False
     # The Move or trigger in this action that put the particle here, or put
     # a particle above it in place since. None where the particle's
     # last_position already says so.
@@ -155,7 +152,6 @@ class ParticleStateStore:
         for name, left in particles.particles.items():
             guarantee = left.guarantee
             child = PositionState(
-                was_written=True,
                 placed_here_by=placed_here_by,
                 is_in_error_chain=node.is_in_error_chain,
             )
@@ -542,6 +538,11 @@ class ParticleStateStore:
             return self._has_error_above(key)
         return node.is_in_error_chain
 
+    def was_placed(self, key: chained_name.PositionReferenceTuple) -> bool:
+        """Return whether a Move or trigger in this action put the particle in ``key``, or a particle above it, in place."""
+        node = self._node(key)
+        return node is not None and node.placed_here_by is not None
+
     def emptied_by(
         self, key: chained_name.PositionReferenceTuple
     ) -> ast.PositionReference | None:
@@ -552,7 +553,7 @@ class ParticleStateStore:
     def mark_error(self, key: chained_name.PositionReferenceTuple):
         """Mark a Position as having error occupancy state, as an operation of the action body."""
         _ = self._node(key)
-        self._mark_error(key).was_written = True
+        _ = self._mark_error(key)
 
     def assume_empty(self, position: ast.PositionReference):
         """Record that a Position starts empty."""
@@ -560,19 +561,12 @@ class ParticleStateStore:
         _ = self._node(key)
         _ = self._put(key, PositionState(emptied_by=position))
 
-    def assume_occupied(
+    def put_particle(
         self, key: chained_name.PositionReferenceTuple, info: particle_info.ParticleInfo
     ):
-        """Record that a particle occupies a Position when the action starts."""
+        """Record that a particle is in a Position, either when the action starts or because the action body created it."""
         _ = self._node(key)
         _ = self._put(key, PositionState(particle=info))
-
-    def create(
-        self, key: chained_name.PositionReferenceTuple, info: particle_info.ParticleInfo
-    ):
-        """Put a new particle in a Position, as an operation of the action body."""
-        _ = self._node(key)
-        _ = self._put(key, PositionState(particle=info, was_written=True))
 
     def empty(self, position: ast.PositionReference):
         """Destroy the particle in a Position and everything below it, as an operation of the action body."""
@@ -581,7 +575,7 @@ class ParticleStateStore:
         # Destroying puts all children back into a known state (they don't
         # exist), and clears the target's error state.
         self._clear(key)
-        _ = self._put(key, PositionState(emptied_by=position, was_written=True))
+        _ = self._put(key, PositionState(emptied_by=position))
 
     def move(self, source: ast.PositionReference, target: ast.PositionReference):
         """Move a particle and everything below it to another Position, as an operation of the action body."""
@@ -596,10 +590,9 @@ class ParticleStateStore:
         # Neither position has error state itself, but their child positions
         # can. The particle's children keep their unknown state as they move,
         # and what is unexpanded below it moves with it.
-        self._state[from_key].was_written = True
         self._state.move_subtree(from_key, to_key)
         self._placed(to_key, target.location)
-        _ = self._put(from_key, PositionState(emptied_by=source, was_written=True))
+        _ = self._put(from_key, PositionState(emptied_by=source))
 
     def trigger(
         self,
@@ -622,6 +615,10 @@ class ParticleStateStore:
                 chained_name.PositionReferenceTuple, chained_name.PositionReferenceTuple
             ]
         ] = []
+        # Each position whose Guarantee replaces or moves what is below it.
+        # A particle from the caller that stays where it is below one of
+        # these leaves too, or it would go along with what is above it.
+        replaced: set[chained_name.PositionReferenceTuple] = set()
         for guaranteed in contract.guarantees:
             destination = chained_name.position(
                 (*action_parent_position, *guaranteed.position)
@@ -629,11 +626,15 @@ class ParticleStateStore:
             guaranteed_keys.append(destination)
             guarantee = guaranteed.guarantee
             if not isinstance(guarantee, action_contract.OccupiedByExistingGuarantee):
+                replaced.add(destination)
                 continue
             origin = guarantee.origin_position.in_caller(
                 action
             ).canonical_chained_name_tuple
             if origin != destination:
+                replaced.add(destination)
+                moved_to.append((origin, destination))
+            elif chained_name.parent_position(destination) in replaced:
                 moved_to.append((origin, destination))
         # A particle moved out from below another moved particle leaves first,
         # so that it does not go along with the other one.
@@ -663,9 +664,9 @@ class ParticleStateStore:
     ):
         """Put ``key`` in the state a callee's Guarantee says it has.
 
-        ``moving`` has the node and subtree of each particle the callee moved
-        from the caller's state, by its destination, or None when the caller
-        had no particle at its origin.
+        ``moving`` has the node and subtree of each particle from the caller
+        taken out of the caller's state, by its destination, or None when the
+        caller had no particle at its origin.
         """
         parent_position = chained_name.parent_position(key)
         if parent_position is not None:
@@ -694,7 +695,7 @@ class ParticleStateStore:
             if moved_entry is None:
                 # The caller never filled the origin position, so the callee's
                 # Move cannot supply a particle here.
-                self._mark_error(key).was_written = True
+                _ = self._mark_error(key)
                 return
             moved_node, moved = moved_entry
             moved_particle = typing.cast(
@@ -702,7 +703,6 @@ class ParticleStateStore:
             )
             moved_particle.set_value_state(guarantee.value_effect, triggered_at)
             moved_particle.last_position = guarantee.caused_by
-            moved_node.was_written = True
             # The destination keeps the particle's error state: the Guarantee
             # fills it with whatever was at the origin, including the
             # uncertainty.
@@ -713,9 +713,7 @@ class ParticleStateStore:
         self._clear(key)
         match guarantee:
             case action_contract.EmptyGuarantee():
-                _ = self._put(
-                    key, PositionState(emptied_by=guarantee.caused_by, was_written=True)
-                )
+                _ = self._put(key, PositionState(emptied_by=guarantee.caused_by))
             case action_contract.OccupiedByNewGuarantee():
                 unexpanded = guarantee.left_in_child_positions
                 if unexpanded is not None:
@@ -724,12 +722,11 @@ class ParticleStateStore:
                     key,
                     PositionState(
                         particle=_new_particle(guarantee, triggered_at),
-                        was_written=True,
                         placed_here_by=triggered_at,
                         unexpanded=unexpanded,
                     ),
                 )
             case action_contract.ErrorGuarantee():
-                self._mark_error(key).was_written = True
+                _ = self._mark_error(key)
             case _:
                 raise TypeError(f"Unexpected guarantee type: {type(guarantee)}")

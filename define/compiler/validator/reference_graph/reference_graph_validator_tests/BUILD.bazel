@@ -135,7 +135,6 @@ py_test(
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/reference_graph:action_contract",
         "//define/compiler/validator/reference_graph:test_helpers",
-        "@pypi//pytest",
     ],
 )
 

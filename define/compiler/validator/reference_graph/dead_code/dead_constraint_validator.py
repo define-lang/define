@@ -175,7 +175,7 @@ class DeadConstraintValidator:
         self,
         own_guarantees: dict[
             chained_name.PositionReferenceTuple,
-            action_contract.PositionGuarantee | None,
+            action_contract.PositionGuarantee,
         ],
         scope: scope_tracker.ScopeTracker,
     ) -> list[diagnostics.Diagnostic]:
@@ -239,7 +239,7 @@ class DeadConstraintValidator:
         self,
         own_guarantees: dict[
             chained_name.PositionReferenceTuple,
-            action_contract.PositionGuarantee | None,
+            action_contract.PositionGuarantee,
         ],
         scope: scope_tracker.ScopeTracker,
     ):
@@ -247,24 +247,26 @@ class DeadConstraintValidator:
         if not self._dead_constraint_tracker.has_constraint_candidates():
             return
         for key, guarantee in own_guarantees.items():
-            if guarantee is None:
-                # The action wrote the position but left it as it found it.
-                occupant = self._tracker.occupant_or_none_by_key(key)
-                if occupant is None:
-                    continue
-                final_position = occupant.last_position
-            elif isinstance(
+            if not isinstance(
                 guarantee,
                 (
                     action_contract.OccupiedByNewGuarantee,
                     action_contract.OccupiedByExistingGuarantee,
                 ),
             ):
-                final_position = guarantee.caused_by
-            else:
                 # Only a position the action guarantees to be occupied keeps
                 # constraints alive.
                 continue
+            # Only a particle created in or moved into its final position
+            # keeps that position's constraints alive. One from the caller
+            # that never left where it started did not arrive there.
+            if (
+                isinstance(guarantee, action_contract.OccupiedByExistingGuarantee)
+                and guarantee.origin_position.canonical_chained_name_tuple == key
+                and not self._tracker.was_placed_by_key(key)
+            ):
+                continue
+            final_position = guarantee.caused_by
             origin_position = self._particle_origin_position(final_position)
             if origin_position is None:
                 continue
