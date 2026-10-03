@@ -11,12 +11,12 @@ from define.compiler.validator.reference_graph import (
     action_contract,
     position_occupancy,
 )
+from define.compiler.validator.reference_graph.particles import particle_info
 
 if typing.TYPE_CHECKING:
     from collections.abc import Collection, Iterator, Sequence
 
     from define.compiler.validator.reference_graph.particles import (
-        particle_info,
         particle_state_store,
     )
 
@@ -182,7 +182,10 @@ class RequirementResolver:
                 if parent_position is not None
                 else None
             )
-            if nearest_particle is None or nearest_particle[1].from_caller:
+            if (
+                nearest_particle is None
+                or nearest_particle[1].source is particle_info.ParticleSource.CALLER
+            ):
                 yield requirement_index, nearest_particle
 
 

@@ -295,7 +295,7 @@ class ParticleTracker:
             last_position=in_position,
             qualities=qualities,
             origin_position=position_in_caller,
-            from_caller=True,
+            source=particle_info.ParticleSource.CALLER,
         )
         self._store.put_particle(key, info)
 

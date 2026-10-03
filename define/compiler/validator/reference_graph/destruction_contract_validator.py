@@ -19,6 +19,7 @@ from define.compiler.validator.reference_graph import (
 from define.compiler.validator.reference_graph import (
     destruction_contract as destruction_contract_types,
 )
+from define.compiler.validator.reference_graph.particles import particle_info
 
 if typing.TYPE_CHECKING:
     from collections.abc import Sequence
@@ -33,7 +34,6 @@ if typing.TYPE_CHECKING:
         dead_value_write_validator,
     )
     from define.compiler.validator.reference_graph.particles import (
-        particle_info,
         particle_tracker,
     )
 
@@ -354,7 +354,7 @@ class DestructionContractValidator:
             destruction_contract, relative_key
         )
         is_newly_occupied_child = bool(relative_key and callee_occupancy is None)
-        created_in_this_action = not particle.from_caller
+        from_caller = particle.source is particle_info.ParticleSource.CALLER
         newly_verified: list[ast.GlobalTypedNameReference] = []
         if relative_key:
             destruction_fact = destruction_contract_types.DestructionFact(
@@ -420,7 +420,7 @@ class DestructionContractValidator:
                         trigger_step=trigger_step,
                         merged_child_state=propagated_contracts.child_state,
                         caller_particles=caller_particles,
-                        created_in_this_action=created_in_this_action,
+                        from_caller=from_caller,
                         newly_verified=newly_verified,
                         validation_diagnostics=validation_diagnostics,
                     )
@@ -455,7 +455,7 @@ class DestructionContractValidator:
         # A caller-passed child particle still needs its own contract even when
         # the particle at its parent position was created locally: higher callers
         # may know additional Destructors assigned to the child particle.
-        if particle.from_caller:
+        if particle.source is particle_info.ParticleSource.CALLER:
             self._re_record_destruction_contract(
                 destruction_fact,
                 particle,
@@ -522,7 +522,7 @@ class DestructionContractValidator:
         caller_particles: dict[
             chained_name.ChainedNameTuple, particle_info.ParticleInfo
         ],
-        created_in_this_action: bool,
+        from_caller: bool,
         newly_verified: list[ast.GlobalTypedNameReference],
         validation_diagnostics: list[diagnostics.Diagnostic],
     ) -> ast.ActionReference | None:
@@ -547,7 +547,7 @@ class DestructionContractValidator:
                 caller_prefix_length=caller_prefix_length,
                 destruction_contract=destruction_contract,
                 merged_child_state=merged_child_state,
-                created_in_this_action=created_in_this_action,
+                from_caller=from_caller,
             )
             # If the state of any required position is not yet known, we
             # defer verification to our caller.
@@ -596,7 +596,7 @@ class DestructionContractValidator:
         caller_prefix_length: int,
         destruction_contract: action_contract.DestructionContract,
         merged_child_state: action_contract.ChildState,
-        created_in_this_action: bool,
+        from_caller: bool,
     ) -> _ResolvedRequirement | None:
         """Resolve one requirement's position to its destruction-time state, or None if this action cannot know it."""
         # action_chain:
@@ -619,7 +619,7 @@ class DestructionContractValidator:
         if occupancy is None:
             # A passed-in particle's untouched position is decided higher up: this
             # action cannot resolve it, so the destructor travels up unchecked.
-            if not created_in_this_action:
+            if from_caller:
                 return None
             # Child State already says what is in every occupied child
             # position. Check the tracker for errors on parent names before

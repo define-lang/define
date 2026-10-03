@@ -193,13 +193,13 @@ class DeadConstraintTracker:
         self,
         action: ast.GlobalTypedNameReference,
         current_position: ast.PositionReference,
-        origin_position: ast.PositionReference,
+        origin_position: ast.PositionReference | None,
     ):
         """Keep an action constraint alive when it is triggered.
 
         ``action`` is the action that actually triggered. ``current_position`` is
         the position holding the particle to which the action is assigned, and
-        ``origin_position`` is that particle's origin position.
+        ``origin_position`` is that particle's Origin Position, if it has one.
         """
         if not self._action_constraint_candidates:
             return
@@ -213,7 +213,7 @@ class DeadConstraintTracker:
     def mark_contract_constraints_alive(
         self,
         current_position: ast.PositionReference | None,
-        origin_position: ast.PositionReference,
+        origin_position: ast.PositionReference | None,
         constraints: tuple[ast.GlobalTypedNameReference, ...],
     ):
         """Keep matching constraints alive through an action contract."""

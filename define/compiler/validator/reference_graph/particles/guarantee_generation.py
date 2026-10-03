@@ -11,10 +11,10 @@ from define.compiler.validator.reference_graph import (
     action_contract,
     position_occupancy,
 )
+from define.compiler.validator.reference_graph.particles import particle_info
 
 if typing.TYPE_CHECKING:
     from define.compiler.validator.reference_graph.particles import (
-        particle_info,
         particle_state_store,
     )
 
@@ -158,7 +158,7 @@ class GuaranteeGenerator:
         parent_particle = self._store.occupant_or_none(parent_position)
         return (
             parent_particle is not None
-            and parent_particle.from_caller
+            and parent_particle.source is particle_info.ParticleSource.CALLER
             and parent_particle.origin_position.canonical_chained_name_tuple
             == parent_position
         )
@@ -178,7 +178,7 @@ class GuaranteeGenerator:
 
         info = state.particle
         if info is not None:
-            if not info.from_caller:
+            if info.source is not particle_info.ParticleSource.CALLER:
                 return action_contract.OccupiedByNewGuarantee(
                     qualities=info.qualities,
                     origin_position=info.origin_position,

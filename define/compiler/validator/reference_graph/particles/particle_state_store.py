@@ -85,6 +85,7 @@ def _new_particle(
         last_position=guarantee.caused_by,
         qualities=guarantee.qualities,
         origin_position=guarantee.origin_position,
+        source=particle_info.ParticleSource.CALLEE,
     )
     particle.set_value_state(guarantee.value_effect, written_at)
     return particle

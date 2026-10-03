@@ -20,6 +20,17 @@ class ParticleValueState(enum.Enum):
     ERROR = enum.auto()
 
 
+class ParticleSource(enum.Enum):
+    """Where a particle this action tracks came from."""
+
+    # Created by a statement in this action.
+    THIS_ACTION = enum.auto()
+    # Passed in by this action's caller, through an Action Requirement.
+    CALLER = enum.auto()
+    # Created by a callee and left in this action's state by its Guarantees.
+    CALLEE = enum.auto()
+
+
 class ParticleInfo(msgspec.Struct, eq=False):
     """Information about a tracked particle."""
 
@@ -31,10 +42,11 @@ class ParticleInfo(msgspec.Struct, eq=False):
     qualities: quality_assignment.QualityAssignments
     # The position where this particle was created or first arrived through an
     # occupied Action Requirement. DLP 42 uses it to attribute constraint uses
-    # after the particle moves.
+    # after the particle moves. For a particle a callee created, it is where
+    # the callee created it, named the way that callee wrote it, so it is not
+    # one of this action's positions.
     origin_position: ast.PositionReference
-    # Whether this particle was passed in by the caller (trigger/inferred) vs created in the body.
-    from_caller: bool = False
+    source: ParticleSource = ParticleSource.THIS_ACTION
     value_state: ParticleValueState | None = None
     # Where this action last wrote the particle's value, or None when it has
     # not written it. Assuming a value requirement does not write it.
@@ -43,7 +55,7 @@ class ParticleInfo(msgspec.Struct, eq=False):
     def value_effect(self) -> ParticleValueState | None:
         """Value change for a guarantee, or None when the value is unchanged."""
         if (
-            self.from_caller
+            self.source is ParticleSource.CALLER
             and self.value_written_at is None
             and self.value_state != ParticleValueState.ERROR
         ):

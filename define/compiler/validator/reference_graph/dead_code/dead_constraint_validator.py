@@ -11,13 +11,13 @@ from define.compiler.validator.reference_graph import (
     position_occupancy,
 )
 from define.compiler.validator.reference_graph.dead_code import dead_constraint_tracker
+from define.compiler.validator.reference_graph.particles import particle_info
 
 if typing.TYPE_CHECKING:
     from define.compiler.data_structures import typed_name_dict
     from define.compiler.validator import scope_tracker, validation_result
     from define.compiler.validator.reference_graph import position_quality_resolver
     from define.compiler.validator.reference_graph.particles import (
-        particle_info,
         particle_tracker,
     )
 
@@ -76,7 +76,7 @@ class DeadConstraintValidator:
     ):
         """Keep Action constraints alive when the Action triggers on the particle in position."""
         self._dead_constraint_tracker.mark_action_alive(
-            action, position, parent_particle.origin_position
+            action, position, _origin_position(parent_particle)
         )
 
     def mark_value_and_encoding_constraints_alive(
@@ -86,13 +86,16 @@ class DeadConstraintValidator:
         particle = self._tracker.get_occupant_or_none(position)
         if particle is None:
             return
+        origin_position = _origin_position(particle)
+        if origin_position is None:
+            return
         for quality in particle.qualities:
             if (
                 quality.name_type
                 in dead_constraint_tracker.VALUE_AND_ENCODING_NAME_TYPES
             ):
                 self._dead_constraint_tracker.mark_value_or_encoding_alive(
-                    particle.origin_position, quality
+                    origin_position, quality
                 )
 
     def _particle_origin_position(
@@ -101,7 +104,7 @@ class DeadConstraintValidator:
         occupancy = self._tracker.get_occupancy_info(position)
         if occupancy.occupant is None:
             return None
-        return occupancy.occupant.origin_position
+        return _origin_position(occupancy.occupant)
 
     def mark_referenced_position_constraints_alive(self, chain: ast.PositionReference):
         """Keep constraints alive when their child Positions are referenced."""
@@ -162,13 +165,16 @@ class DeadConstraintValidator:
         """Keep a particle's origin constraints alive through a contracted Position."""
         if not self._dead_constraint_tracker.has_constraint_candidates():
             return
+        origin_position = _origin_position(particle)
+        if origin_position is None:
+            return
         constraints = self._position_quality_resolver.get_direct_required_qualities(
             position, scope
         )
         if constraints is None:
             return
         self._dead_constraint_tracker.mark_contract_constraints_alive(
-            None, particle.origin_position, constraints
+            None, origin_position, constraints
         )
 
     def validate(
@@ -267,8 +273,8 @@ class DeadConstraintValidator:
             ):
                 continue
             final_position = guarantee.caused_by
-            origin_position = self._particle_origin_position(final_position)
-            if origin_position is None:
+            particle = self._tracker.get_occupancy_info(final_position).occupant
+            if particle is None:
                 continue
             constraints = self._position_quality_resolver.get_direct_required_qualities(
                 final_position, scope
@@ -277,5 +283,18 @@ class DeadConstraintValidator:
             if constraints is None:
                 continue
             self._dead_constraint_tracker.mark_contract_constraints_alive(
-                final_position, origin_position, constraints
+                final_position, _origin_position(particle), constraints
             )
+
+
+def _origin_position(
+    particle: particle_info.ParticleInfo,
+) -> ast.PositionReference | None:
+    """Return the particle's Origin Position in this action, if it has one."""
+    # A particle a callee created was neither created in this action nor
+    # received through an Action Requirement, so it has no Origin Position
+    # here. Its origin_position is named the way the callee wrote it and can
+    # match an unrelated position of this action with the same name.
+    if particle.source is particle_info.ParticleSource.CALLEE:
+        return None
+    return particle.origin_position

@@ -5,8 +5,6 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
-import pytest
-
 from define.compiler.errors import diagnostics
 from define.compiler.validator.reference_graph.test_helpers import (
     action_graph,
@@ -41,14 +39,6 @@ def test_unreferenced_child_position_on_local_is_dead(
     assert all_diags[0].location.column == 28
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "A particle a callee created keeps the callee's origin reference, so its"
-        " origin can collide with a local position of the caller that has the"
-        " same name."
-    ),
-)
 def test_callee_interface_position_named_like_local_does_not_keep_local_constraint_alive(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):

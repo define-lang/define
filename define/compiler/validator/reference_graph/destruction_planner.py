@@ -13,6 +13,7 @@ from define.compiler.validator.reference_graph import (
     action_contract,
     destruction_contract,
 )
+from define.compiler.validator.reference_graph.particles import particle_info
 
 if typing.TYPE_CHECKING:
     from define.compiler.data_structures import typed_name_dict
@@ -24,7 +25,6 @@ if typing.TYPE_CHECKING:
         reference_graph_validation_state,
     )
     from define.compiler.validator.reference_graph.particles import (
-        particle_info,
         particle_tracker,
     )
 
@@ -141,7 +141,7 @@ class DestructionPlanner:
         particle = occupancy.occupant
         for child in self._child_positions(position, particle.qualities.assignments):
             child_in_action = _with_names_after(position, child, position_in_action)
-            if particle.from_caller:
+            if particle.source is particle_info.ParticleSource.CALLER:
                 self._visit_guaranteed_position(child, child_in_action, destruction)
             else:
                 _ = self._on_destruction_of_child(child, child_in_action, destruction)
@@ -218,7 +218,7 @@ class DestructionPlanner:
         from the caller is never in a map, so destroying it always takes
         EXPAND.
         """
-        if particle.from_caller:
+        if particle.source is particle_info.ParticleSource.CALLER:
             # A caller always applies the Guarantee on a particle from its
             # own state, so the particle is never left for it unexpanded.
             self._visit_guaranteed_position(position, position_in_action, destruction)

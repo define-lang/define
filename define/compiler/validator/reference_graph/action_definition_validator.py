@@ -326,7 +326,10 @@ class ActionDefinitionValidator:
             destruction=target.destruction,
             destroyed_position_in_destroyer=position,
         )
-        within_caller_particle = within_caller_particle or particle.from_caller
+        within_caller_particle = (
+            within_caller_particle
+            or particle.source is particle_info.ParticleSource.CALLER
+        )
         children_and_destructors = (
             self._destruction_planner.child_positions_and_destructors(
                 position, particle
@@ -353,7 +356,7 @@ class ActionDefinitionValidator:
                 within_caller_particle=within_caller_particle,
             )
 
-        if particle.from_caller:
+        if particle.source is particle_info.ParticleSource.CALLER:
             pending_contracts.append(
                 _PendingDestructionContract(
                     particle=particle,
