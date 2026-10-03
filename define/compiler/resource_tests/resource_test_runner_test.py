@@ -73,7 +73,9 @@ def test_wall_deadline_stops_sleeping_child(tmp_path: Path):
 def test_memory_accounting_is_independent(tmp_path: Path):
     large = tmp_path / "large"
     large.mkdir()
-    high, _, stderr = _run(large, "allocation = bytearray(128 * 1024**2)")
+    # Leave room for interpreter startup memory in the smaller command while
+    # still requiring a substantial difference between independent measurements.
+    high, _, stderr = _run(large, "allocation = bytearray(256 * 1024**2)")
     with pytest.raises(resource_test_runner.MemoryBudgetExceededError):
         high.check(rss_bytes=100 * _MIB, stderr=stderr)
     small = tmp_path / "small"
