@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextlib
 import io
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -358,59 +359,127 @@ def test_marks_unresolved_perf_map_frames_as_python_attribution_anomalies():
     assert samples[0].python_stack_leaf_first[0].function == "caller"
 
 
-def test_reports_perf_script_failure(tmp_path: Path):
-    profile_path = tmp_path / "perf.data"
+def _install_fake_perf(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    stdout: str,
+    stderr: str,
+    returncode: int,
+) -> Path:
+    """Put a perf on PATH that prints fixed output and records its arguments in the returned file."""
+    stdout_path = tmp_path / "perf-stdout.txt"
+    stderr_path = tmp_path / "perf-stderr.txt"
+    arguments_path = tmp_path / "perf-arguments.txt"
+    _ = stdout_path.write_text(stdout, encoding="utf-8")
+    _ = stderr_path.write_text(stderr, encoding="utf-8")
+    executable_dir = tmp_path / "bin"
+    executable_dir.mkdir()
+    executable = executable_dir / "perf"
+    _ = executable.write_text(
+        "#!/bin/sh\n"
+        + f"printf '%s\\n' \"$@\" >> '{arguments_path}'\n"
+        + f"cat '{stdout_path}'\n"
+        + f"cat '{stderr_path}' >&2\n"
+        + f"exit {returncode}\n",
+        encoding="utf-8",
+    )
+    executable.chmod(0o755)
+    monkeypatch.setenv("PATH", f"{executable_dir}:{os.environ['PATH']}")
+    return arguments_path
+
+
+def _write_python_map(profile_path: Path):
     _ = perf_profiler.python_map_path(profile_path).write_text(
         "100 10 py::work:/workspace/example.py\n", encoding="utf-8"
     )
-    failed = mock.Mock(returncode=1, stdout="", stderr="decode failed\n")
-    with (
-        mock.patch.object(
-            subprocess,
-            "run",
-            autospec=True,
-            return_value=failed,
+
+
+def test_reports_perf_script_failure(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    profile_path = tmp_path / "perf.data"
+    _write_python_map(profile_path)
+    _ = _install_fake_perf(
+        tmp_path, monkeypatch, stdout="", stderr="decode failed\n", returncode=1
+    )
+    with pytest.raises(perf_analyzer.PerfAnalysisError, match="decode failed"):
+        _ = perf_analyzer._decode(  # pyright: ignore[reportPrivateUsage]
+            profile_path, 999_999_999
+        )
+
+
+def test_reports_perf_script_failure_rather_than_its_malformed_output(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    profile_path = tmp_path / "perf.data"
+    _write_python_map(profile_path)
+    _ = _install_fake_perf(
+        tmp_path,
+        monkeypatch,
+        stdout=(
+            "not perf output\n"
+            "python 101/102 1003009 cpu-clock:u:\n"
+            "  7f02 py::first:/workspace/example.py (/tmp/perf-101.map)\n"
         ),
-        pytest.raises(perf_analyzer.PerfAnalysisError, match="decode failed"),
+        stderr="decode failed\n",
+        returncode=1,
+    )
+    with pytest.raises(perf_analyzer.PerfAnalysisError, match="decode failed"):
+        _ = perf_analyzer._decode(  # pyright: ignore[reportPrivateUsage]
+            profile_path, 999_999_999
+        )
+
+
+def test_reports_malformed_output_of_successful_perf_script(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    profile_path = tmp_path / "perf.data"
+    _write_python_map(profile_path)
+    _ = _install_fake_perf(
+        tmp_path, monkeypatch, stdout="not perf output\n", stderr="", returncode=0
+    )
+    with pytest.raises(
+        perf_analyzer.PerfAnalysisError, match="malformed perf script line"
     ):
         _ = perf_analyzer._decode(  # pyright: ignore[reportPrivateUsage]
             profile_path, 999_999_999
         )
 
 
-def test_decodes_all_threads_with_one_symbol_map(tmp_path: Path):
+def test_decodes_all_threads_with_one_symbol_map(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
     profile_path = tmp_path / "perf.data"
-    _ = perf_profiler.python_map_path(profile_path).write_text(
-        "100 10 py::work:/workspace/example.py\n", encoding="utf-8"
-    )
-    decoded = mock.Mock(
-        returncode=0,
+    _write_python_map(profile_path)
+    arguments_path = _install_fake_perf(
+        tmp_path,
+        monkeypatch,
         stdout=(
             "python 101/102 1003009 cpu-clock:u:\n"
             "  7f02 py::first:/workspace/example.py (/tmp/perf-101.map)\n"
             "python 101/103 1003009 cpu-clock:u:\n"
             "  7f03 py::second:/workspace/example.py (/tmp/perf-101.map)\n"
+            "python 101/102 1003009 cpu-clock:u:\n"
+            "  7f02 py::first:/workspace/example.py (/tmp/perf-101.map)\n"
         ),
         stderr="shared warning\n",
+        returncode=0,
     )
-    with mock.patch.object(
-        subprocess,
-        "run",
-        autospec=True,
-        return_value=decoded,
-    ) as run:
-        samples, warnings = perf_analyzer._decode(  # pyright: ignore[reportPrivateUsage]
-            profile_path, 999_999_999
-        )
+    samples, warnings = perf_analyzer._decode(  # pyright: ignore[reportPrivateUsage]
+        profile_path, 999_999_999
+    )
 
-    assert [sample.os_thread_id for sample in samples] == [102, 103]
+    assert [sample.os_thread_id for sample in samples] == [102, 103, 102]
     assert [sample.python_stack_leaf_first[0].function for sample in samples] == [
         "first",
         "second",
+        "first",
     ]
+    # Samples with the same stack share it.
+    assert samples[0].python_stack_leaf_first is samples[2].python_stack_leaf_first
     assert warnings == ["shared warning"]
-    assert len(run.call_args_list) == 1
-    assert "--symfs" not in run.call_args_list[0].args[0]
+    arguments = arguments_path.read_text(encoding="utf-8").splitlines()
+    assert arguments.count("script") == 1
+    assert "--symfs" not in arguments
 
 
 def test_refuses_to_attribute_samples_with_unresolved_python_frames(

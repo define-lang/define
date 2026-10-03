@@ -12,6 +12,7 @@ import pathlib
 import re
 import shutil
 import subprocess
+import tempfile
 import typing
 
 import msgspec
@@ -126,9 +127,7 @@ def is_perf_data(profile_path: pathlib.Path) -> bool:
         return profile_file.read(8) == b"PERFILE2"
 
 
-def _python_identity(symbol: str) -> analyzer_model.FunctionIdentity | None:
-    if not symbol.startswith("py::"):
-        return None
+def _python_identity(symbol: str) -> analyzer_model.FunctionIdentity:
     identity = symbol.removeprefix("py::")
     try:
         function, filename = identity.rsplit(":", maxsplit=1)
@@ -140,6 +139,13 @@ def _python_identity(symbol: str) -> analyzer_model.FunctionIdentity | None:
 def _parse_script_lines(
     lines: collections.abc.Iterable[str],
 ) -> collections.abc.Iterator[Sample]:
+    # A long capture repeats the same few functions and stacks hundreds of
+    # thousands of times, so each is kept once and shared by every sample.
+    identities: dict[str, analyzer_model.FunctionIdentity] = {}
+    stacks: dict[
+        tuple[analyzer_model.FunctionIdentity, ...],
+        tuple[analyzer_model.FunctionIdentity, ...],
+    ] = {}
     os_thread_id: int | None = None
     period_ns = 0
     python_frames: list[analyzer_model.FunctionIdentity] = []
@@ -147,13 +153,16 @@ def _parse_script_lines(
     for line in lines:
         if not line.strip():
             continue
-        header_match = _HEADER_PATTERN.match(line)
+        # Frame lines are indented below their sample's header line, so only
+        # an unindented line can start a sample.
+        header_match = None if line[0].isspace() else _HEADER_PATTERN.match(line)
         if header_match is not None:
             if os_thread_id is not None:
+                stack = tuple(python_frames)
                 yield Sample(
                     os_thread_id=os_thread_id,
                     period_ns=period_ns,
-                    python_stack_leaf_first=tuple(python_frames),
+                    python_stack_leaf_first=stacks.setdefault(stack, stack),
                     unresolved_python_frame_count=unresolved_python_frame_count,
                 )
             os_thread_id = int(header_match.group("tid"))
@@ -165,7 +174,10 @@ def _parse_script_lines(
         if os_thread_id is None or frame_match is None:
             raise PerfAnalysisError(f"malformed perf script line: {line.rstrip()}")
         symbol = frame_match.group("symbol")
-        python_identity = _python_identity(symbol)
+        python_identity = identities.get(symbol)
+        if python_identity is None and symbol.startswith("py::"):
+            python_identity = _python_identity(symbol)
+            identities[symbol] = python_identity
         if python_identity is not None:
             python_frames.append(python_identity)
         elif symbol == "[unknown]" and _PYTHON_MAP_PATTERN.fullmatch(
@@ -173,31 +185,13 @@ def _parse_script_lines(
         ):
             unresolved_python_frame_count += 1
     if os_thread_id is not None:
+        stack = tuple(python_frames)
         yield Sample(
             os_thread_id=os_thread_id,
             period_ns=period_ns,
-            python_stack_leaf_first=tuple(python_frames),
+            python_stack_leaf_first=stacks.setdefault(stack, stack),
             unresolved_python_frame_count=unresolved_python_frame_count,
         )
-
-
-def _run_perf_script(
-    profile_path: pathlib.Path, *arguments: str
-) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        (
-            _perf_executable(),
-            "--buildid-dir",
-            os.fspath(perf_profiler.buildid_path(profile_path)),
-            "script",
-            "-i",
-            os.fspath(profile_path),
-            *arguments,
-        ),
-        check=False,
-        capture_output=True,
-        text=True,
-    )
 
 
 @contextlib.contextmanager
@@ -252,18 +246,46 @@ def _materialized_python_map(
 def _decode(
     profile_path: pathlib.Path, target_pid: int
 ) -> tuple[list[Sample], list[str]]:
-    with _materialized_python_map(profile_path, target_pid):
-        completed = _run_perf_script(
-            profile_path,
-            "-F",
-            "comm,pid,tid,event,period,ip,sym,dso",
-            "--no-inline",
-        )
-    if completed.returncode != 0:
-        raise PerfAnalysisError(completed.stderr.strip() or "perf script failed")
-    return list(_parse_script_lines(completed.stdout.splitlines())), [
-        line for line in completed.stderr.splitlines() if line
-    ]
+    # The decoded text of a long capture is many times larger than the samples
+    # it describes, so it is parsed as perf writes it instead of being held.
+    samples: list[Sample] = []
+    parse_error: PerfAnalysisError | None = None
+    with (
+        _materialized_python_map(profile_path, target_pid),
+        tempfile.TemporaryFile("w+", encoding="utf-8") as stderr_file,
+    ):
+        with subprocess.Popen(
+            (
+                _perf_executable(),
+                "--buildid-dir",
+                os.fspath(perf_profiler.buildid_path(profile_path)),
+                "script",
+                "-i",
+                os.fspath(profile_path),
+                "-F",
+                "comm,pid,tid,event,period,ip,sym,dso",
+                "--no-inline",
+            ),
+            stdout=subprocess.PIPE,
+            stderr=stderr_file,
+            text=True,
+        ) as process:
+            script_lines = typing.cast("typing.IO[str]", process.stdout)
+            try:
+                samples.extend(_parse_script_lines(script_lines))
+            except PerfAnalysisError as error:
+                parse_error = error
+                # Whether perf failed decides which error to report, so it is
+                # left to finish.
+                for _ in script_lines:
+                    pass
+        _ = stderr_file.seek(0)
+        stderr = stderr_file.read()
+    if process.returncode != 0:
+        raise PerfAnalysisError(stderr.strip() or "perf script failed")
+    if parse_error is not None:
+        raise parse_error
+    return samples, [line for line in stderr.splitlines() if line]
 
 
 def _configuration(profile_path: pathlib.Path) -> tuple[str, int]:
@@ -320,14 +342,17 @@ def load(profile_path: pathlib.Path) -> Profile:
 
 
 def _add_weight[Identity](
-    weights: dict[Identity, _Weight], identity: Identity, period_ns: int
+    weights: dict[Identity, _Weight],
+    identity: Identity,
+    cpu_time_ns: int,
+    sample_hits: int,
 ):
     weight = weights.get(identity)
     if weight is None:
         weight = _Weight()
         weights[identity] = weight
-    weight.cpu_time_ns += period_ns
-    weight.sample_hits += 1
+    weight.cpu_time_ns += cpu_time_ns
+    weight.sample_hits += sample_hits
 
 
 def _confidence_95_ns(
@@ -431,24 +456,37 @@ def analyze(
     thread_weights: dict[int, _Weight] = {}
     thread_python_cpu: dict[int, int] = {}
     python_attributed_cpu_ns = 0
+    # Samples share their stacks, so each distinct stack on each thread is
+    # attributed once with the weight of all its samples.
+    stack_weights: dict[
+        tuple[int, tuple[analyzer_model.FunctionIdentity, ...]], _Weight
+    ] = {}
     for sample in profile.samples:
-        period_ns = sample.period_ns
-        _add_weight(thread_weights, sample.os_thread_id, period_ns)
-        stack = tuple(reversed(sample.python_stack_leaf_first))
-        if stack:
-            python_attributed_cpu_ns += period_ns
-            thread_python_cpu[sample.os_thread_id] = (
-                thread_python_cpu.get(sample.os_thread_id, 0) + period_ns
+        _add_weight(
+            stack_weights,
+            (sample.os_thread_id, sample.python_stack_leaf_first),
+            sample.period_ns,
+            1,
+        )
+    for (os_thread_id, stack_leaf_first), weight in stack_weights.items():
+        cpu_time_ns = weight.cpu_time_ns
+        sample_hits = weight.sample_hits
+        _add_weight(thread_weights, os_thread_id, cpu_time_ns, sample_hits)
+        if stack_leaf_first:
+            python_attributed_cpu_ns += cpu_time_ns
+            thread_python_cpu[os_thread_id] = (
+                thread_python_cpu.get(os_thread_id, 0) + cpu_time_ns
             )
-        if filters.thread_ids and sample.os_thread_id not in filters.thread_ids:
+        if filters.thread_ids and os_thread_id not in filters.thread_ids:
             continue
-        if not stack:
+        if not stack_leaf_first:
             continue
-        _add_weight(self_functions, stack[-1], period_ns)
+        stack = tuple(reversed(stack_leaf_first))
+        _add_weight(self_functions, stack[-1], cpu_time_ns, sample_hits)
         for identity in set(stack):
-            _add_weight(cumulative_functions, identity, period_ns)
+            _add_weight(cumulative_functions, identity, cpu_time_ns, sample_hits)
         for relationship in set(itertools.pairwise(stack)):
-            _add_weight(relationships, relationship, period_ns)
+            _add_weight(relationships, relationship, cpu_time_ns, sample_hits)
 
     thread_rows = [
         ThreadRow(
