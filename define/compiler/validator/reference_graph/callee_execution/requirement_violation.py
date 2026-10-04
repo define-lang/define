@@ -190,7 +190,7 @@ def contract_destructor(
     propagation_steps: Iterable[action_contract.PropagationStep],
     particle_position: ast.PositionReference,
     particle: particle_info.ParticleInfo,
-    trigger_step: action_contract.PropagationStep,
+    trigger: action_contract.PropagationHistory,
     destructor_quality: ast.GlobalTypedNameReference,
 ) -> diagnostics.InferredRequirementViolationDiagnostic:
     """Build the diagnostic for an unmet requirement of a destructor surfaced via a Destruction Contract."""
@@ -221,14 +221,9 @@ def contract_destructor(
         quality=destructor_quality,
         assigned_to_position_name=particle.origin_position.typed_names[-1],
     )
-    # The verifying definition's own trigger of the callee is the runner the
-    # requirement gates; it is the same step that would be prepended if this
-    # definition had instead carried the contract higher.
-    runner_name = trigger_step.triggered_quality_name
-    if runner_name is None:
-        raise ValueError(
-            "a Destruction Contract violation must name the triggered action"
-        )
+    # The validating definition's own trigger of the callee is the runner the
+    # requirement gates.
+    runner_name = trigger.callee.get_last_action().full_typed_name
     # If the destroyer auto-destroyed the particle at its block's end, that
     # happens after every trigger hop and just before the destructor fires (the
     # same placement direct_destructor uses).
@@ -253,14 +248,14 @@ def contract_destructor(
             ),
             triggered_quality_name=None,
         ),
-        trigger_step,
+        trigger.step(),
         *_fill(position_name, fill_at),
         *propagation_steps,
         *auto_step,
         *destruction_requirement.propagation_chain(),
     ]
     return _diagnostic(
-        location=trigger_step.location,
+        location=trigger.callee.location,
         position_name=position_name,
         required_empty=required_empty,
         required_value=isinstance(

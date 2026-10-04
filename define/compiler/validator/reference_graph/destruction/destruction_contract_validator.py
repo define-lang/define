@@ -113,9 +113,9 @@ class _CalleeDestructionInCaller(msgspec.Struct):
     # The ones whose particle the caller has.
     contracts: list[_CalleeDestructionContractInCaller]
     propagated_contracts: action_contract.DestructionContracts
-    # This action's trigger of the callee.
-    callee_chain: ast.ActionReference
-    trigger_step: action_contract.PropagationStep
+    # This action's trigger of the callee, the newest entry in the history
+    # of ``propagated_contracts``.
+    trigger: action_contract.PropagationHistory
     # The caller's particles at the moment of destruction, by Child State
     # position, which can differ from where the caller has them now when the
     # callee moved them. Every Destruction Contract from one destruction
@@ -247,14 +247,6 @@ class DestructionContractValidator:
         result = DestructionContractValidationResult()
         if not contracts:
             return result
-        # All collections use the same current step, but each extends its own
-        # preceding history without copying the earlier steps.
-        trigger_step = action_contract.PropagationStep(
-            location=action_chain.location,
-            kind=action_contract.PropagationKind.ACTION_TRIGGER,
-            enclosing_quality_name=self._definition.typed_name.source_typed_name,
-            triggered_quality_name=action_chain.typed_names[-1].full_typed_name,
-        )
         occupancy_requirements_for_caller: list[
             action_contract.OccupancyRequirementInCaller
         ] = []
@@ -264,7 +256,7 @@ class DestructionContractValidator:
         for callee_contracts in contracts:
             occupancy_requirements, value_requirements = (
                 self._check_destruction_contract_group(
-                    callee_contracts, action_chain, trigger_step, result
+                    callee_contracts, action_chain, result
                 )
             )
             occupancy_requirements_for_caller.extend(occupancy_requirements)
@@ -287,7 +279,6 @@ class DestructionContractValidator:
         self,
         callee_contracts: action_contract.DestructionContracts,
         action_chain: ast.ActionReference,
-        trigger_step: action_contract.PropagationStep,
         result: DestructionContractValidationResult,
     ) -> _CalleeDestructionInCaller:
         """Resolve a callee destruction's contracted positions in the caller, and collect the caller's Child State and particles for them."""
@@ -335,6 +326,13 @@ class DestructionContractValidator:
                     ),
                 )
             )
+        # Every group from the callee shares its caller and callee, and each
+        # extends its own earlier history without copying it.
+        trigger = action_contract.PropagationHistory(
+            caller=self._definition,
+            callee=action_chain,
+            previous=callee_contracts.propagation,
+        )
         return _CalleeDestructionInCaller(
             callee_contracts=callee_contracts,
             contracts=contracts,
@@ -342,12 +340,9 @@ class DestructionContractValidator:
                 child_state=callee_contracts.child_state.with_caller(
                     occupancy, values, unexpanded
                 ),
-                propagation=action_contract.PropagationHistory(
-                    trigger_step, callee_contracts.propagation
-                ),
+                propagation=trigger,
             ),
-            callee_chain=action_chain,
-            trigger_step=trigger_step,
+            trigger=trigger,
             caller_particles=particles,
             validation_diagnostics=result.diagnostics,
         )
@@ -356,7 +351,6 @@ class DestructionContractValidator:
         self,
         callee_contracts: action_contract.DestructionContracts,
         action_chain: ast.ActionReference,
-        trigger_step: action_contract.PropagationStep,
         result: DestructionContractValidationResult,
     ) -> tuple[
         list[action_contract.OccupancyRequirementInCaller],
@@ -364,7 +358,7 @@ class DestructionContractValidator:
     ]:
         """Validate the Destructors of particles sharing Child State and record their contributions, and return the occupancy and value requirements of their Destructors that only this action's caller can validate."""
         destruction = self._callee_destruction_in_caller(
-            callee_contracts, action_chain, trigger_step, result
+            callee_contracts, action_chain, result
         )
         for contract in destruction.contracts:
             self._check_one_destruction_contract(contract, destruction)
@@ -587,7 +581,7 @@ class DestructionContractValidator:
                     propagation_steps=destruction.callee_contracts.propagation_steps(),
                     particle_position=position,
                     particle=particle,
-                    trigger_step=destruction.trigger_step,
+                    trigger=destruction.trigger,
                     destructor_quality=destructor_quality,
                 )
             )
@@ -610,29 +604,9 @@ class DestructionContractValidator:
             ),
             action_assignment=None,
         )
-        # Each step is one action between the callee and the destroyer
-        # triggering the next, ordered from the callee down. Only the
-        # propagation chain is read from these requirements, so each keeps the
-        # destroyer's position instead of naming it from that action.
-        steps = list(destruction.callee_contracts.propagation_steps())
-        for index in range(len(steps) - 1, -1, -1):
-            if index == 0:
-                triggering_action = destruction.callee_chain.get_last_action()
-                definition_result = self._definition_results[triggering_action]
-            else:
-                definition_result = typing.cast(
-                    "validation_result.DefinitionValidationResult",
-                    self._definition_results.get_by_full_typed_name(
-                        typing.cast("str", steps[index - 1].triggered_quality_name)
-                    ),
-                )
-            requirement = requirement.propagated_to(
-                typing.cast("ast.ActionDefinition", definition_result.definition),
-                inferred_at=steps[index].location,
-                position=requirement.position,
-                action_assignment=None,
-            )
-        return requirement
+        return destruction.callee_contracts.destroyer_requirement_as_callee_requirement(
+            requirement
+        )
 
     def _resolve_destructor_requirement[
         Requirement: action_contract.PositionRequirement

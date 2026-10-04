@@ -64,16 +64,28 @@ class PropagationStep(msgspec.Struct, frozen=True):
 
 
 class PropagationHistory(msgspec.Struct, frozen=True, eq=False):
-    """A shared sequence of Destruction Contract propagation steps."""
+    """A shared sequence of the triggers between an action and a destroying action below it, one entry for each."""
 
-    step: PropagationStep
+    # The action that triggered the callee in ``callee``.
+    caller: ast.ActionDefinition
+    # The triggered callee, as the caller named it where it triggered it.
+    callee: ast.ActionReference
     previous: PropagationHistory | None
 
-    def __iter__(self) -> Iterator[PropagationStep]:
-        """Iterate from the immediate callee to the destroying action."""
+    def step(self) -> PropagationStep:
+        """Return the propagation step that describes this trigger."""
+        return PropagationStep(
+            location=self.callee.location,
+            kind=PropagationKind.ACTION_TRIGGER,
+            enclosing_quality_name=self.caller.typed_name.source_typed_name,
+            triggered_quality_name=self.callee.typed_names[-1].full_typed_name,
+        )
+
+    def __iter__(self) -> Iterator[PropagationHistory]:
+        """Iterate from the immediate callee's trigger to the destroying action's."""
         current: PropagationHistory | None = self
         while current is not None:
-            yield current.step
+            yield current
             current = current.previous
 
 
@@ -449,7 +461,26 @@ class DestructionContracts:
     def propagation_steps(self) -> Iterator[PropagationStep]:
         """Iterate from the immediate callee to the destroying action."""
         if self.propagation is not None:
-            yield from self.propagation
+            for entry in self.propagation:
+                yield entry.step()
+
+    def destroyer_requirement_as_callee_requirement[Requirement: PositionRequirement](
+        self, requirement: Requirement
+    ) -> Requirement:
+        """Return ``requirement``, a requirement of the destroying action, as a requirement of the immediate callee, propagated through each action between them."""
+        if self.propagation is None:
+            return requirement
+        # Only the propagation chain is read from these requirements, so each
+        # keeps the destroying action's position instead of naming it from
+        # that action.
+        for entry in reversed(list(self.propagation)):
+            requirement = requirement.propagated_to(
+                entry.caller,
+                inferred_at=entry.callee.location,
+                position=requirement.position,
+                action_assignment=None,
+            )
+        return requirement
 
 
 class Destructor(msgspec.Struct, frozen=True):

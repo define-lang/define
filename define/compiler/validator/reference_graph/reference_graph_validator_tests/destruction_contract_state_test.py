@@ -406,14 +406,15 @@ def test_repeated_executions_keep_distinct_shared_histories(
     assert first.propagation is not second.propagation
     assert outer_first.propagation is not None
     assert outer_second.propagation is not None
-    assert outer_first.propagation.step is outer_second.propagation.step
+    assert outer_first.propagation.caller is outer_second.propagation.caller
+    assert outer_first.propagation.callee is outer_second.propagation.callee
     assert outer_first.propagation.previous is first.propagation
     assert outer_second.propagation.previous is second.propagation
     assert list(outer_first.propagation_steps()) == [
-        outer_first.propagation.step,
-        first.propagation.step,
+        outer_first.propagation.step(),
+        first.propagation.step(),
     ]
     assert list(outer_second.propagation_steps()) == [
-        outer_second.propagation.step,
-        second.propagation.step,
+        outer_second.propagation.step(),
+        second.propagation.step(),
     ]
