@@ -49,11 +49,7 @@ class DeadValueWriteValidator:
 
     def mark_required_values_used(
         self,
-        value_requirements: list[
-            action_contract.PositionRequirementInCaller[
-                action_contract.ValueRequirement
-            ]
-        ],
+        value_requirements: list[action_contract.ValueRequirementInCaller],
     ):
         """Mark the values a triggered action requires as used."""
         for requirement in value_requirements:

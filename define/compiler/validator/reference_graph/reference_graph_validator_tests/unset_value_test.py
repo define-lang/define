@@ -5,8 +5,6 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
-import pytest
-
 from define.compiler.errors import diagnostics
 from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
@@ -880,10 +878,6 @@ def test_destructor_transitive_requirement_set(
     assert_no_errors(result)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="The knower of a Destructor gains the requirements it cannot resolve instead of carrying the Destructor up.",
-)
 def test_destructor_transitive_requirement_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -962,10 +956,6 @@ def test_destructor_untouched_requirement_set(
     assert_no_errors(result)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="The knower of a Destructor gains the requirements it cannot resolve instead of carrying the Destructor up.",
-)
 def test_destructor_untouched_requirement_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -1276,10 +1266,6 @@ def test_destructor_transitive_replaced_identity_set(
     assert_no_errors(result)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="The knower of a Destructor gains the requirements it cannot resolve instead of carrying the Destructor up.",
-)
 def test_destructor_transitive_replaced_identity_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -1358,10 +1344,6 @@ def test_multiple_destructor_requirements_set(
     assert_no_errors(result)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="The knower of a Destructor gains the requirements it cannot resolve instead of carrying the Destructor up.",
-)
 def test_multiple_destructor_requirements_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -1495,10 +1477,6 @@ def test_multiple_destructor_requirements_unset(
     )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="The knower of a Destructor gains the requirements it cannot resolve instead of carrying the Destructor up.",
-)
 def test_destructor_multiple_value_requirements(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -1639,10 +1617,6 @@ def test_knower_requires_emptiness_and_value_of_its_caller_set(
     assert_no_errors(result)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="The knower of a Destructor gains the requirements it cannot resolve instead of carrying the Destructor up.",
-)
 def test_knower_requires_emptiness_and_value_of_its_caller_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):

@@ -1,0 +1,24 @@
+# action</inner> leaves position</shelf> of the particle in error before destroying it, so what was below it at destruction is unknown.
+# action</mid>, the knower of the Destructor, skips its requirement on position</shelf>::position</book> instead of requiring it of /test.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<outer_box> {
+            it may only contain particles where {
+                it has the action</mid>.
+            }
+        }
+        define the position<my_item> {
+            it may only contain particles where {
+                it has the action</destructor>.
+                it has the position</shelf>.
+            }
+        }
+        create a particle in position<outer_box>.
+        create a particle in position<my_item>.
+        create a particle in position<my_item>::position</shelf>.
+        move the particle in position<my_item> to position<outer_box>::action</mid>::position<incoming>.
+        create a particle in position<outer_box>::action</mid>::position<run>.
+    }
+}

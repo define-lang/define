@@ -12,8 +12,6 @@ from __future__ import annotations
 import textwrap
 from typing import TYPE_CHECKING
 
-import pytest
-
 if TYPE_CHECKING:
     from define.compiler.conftest import ValidateProject
 
@@ -1204,10 +1202,6 @@ def test_diagnostic_in_callee_file_shows_callee_source_line_format(
     )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="The knower of a Destructor gains the requirements it cannot resolve instead of carrying the Destructor up.",
-)
 def test_knower_destructor_requirement_surfaces_as_action_requires_format(
     validate_project: ValidateProject,
 ):

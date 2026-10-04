@@ -1,0 +1,16 @@
+define the potential action<my.domain.com:my_lib:/close_file> {
+    define the position<target> {
+        it may only contain particles where {
+            it has the position</z>.
+        }
+    }
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        define the position<_holder>.
+        move the particle in position<target>::position</z> to position<_holder>.
+        move the particle in position<_holder> to position<target>::position</z>.
+        destroy the particle in position<target>.
+    }
+}

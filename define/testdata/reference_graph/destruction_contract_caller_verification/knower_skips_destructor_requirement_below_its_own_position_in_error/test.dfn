@@ -1,0 +1,25 @@
+# /test is the knower of the Destructor and leaves position</z> of its own particle in error, but action</close_file> knows position</z> is occupied at destruction.
+# What is below position</z> is untrustworthy to /test, so it skips the Destructor's requirement there instead of treating it as empty.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</close_file>.
+            }
+        }
+        define the position<my_item> {
+            it may only contain particles where {
+                it has the action</destructor>.
+                it has the position</z>.
+            }
+        }
+        define the position<sink>.
+        create a particle in position<box>.
+        create a particle in position<my_item>.
+        move the particle in position<my_item>::position</z> to position<sink>.
+        move the particle in position<my_item> to position<box>::action</close_file>::position<target>.
+        create a particle in position<box>::action</close_file>::position<run>.
+    }
+}

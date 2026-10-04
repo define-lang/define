@@ -32,9 +32,7 @@ class ResolvedRequirementPosition(msgspec.Struct, frozen=True):
 class PropagatedRequirement(msgspec.Struct, frozen=True):
     """A callee requirement that must be propagated into the current contract."""
 
-    requirement_in_caller: action_contract.PositionRequirementInCaller[
-        action_contract.PositionOccupancyRequirement
-    ]
+    requirement_in_caller: action_contract.OccupancyRequirementInCaller
     contracted_position: ast.PositionReference
 
 
@@ -99,11 +97,7 @@ class RequirementResolver:
     # performance optimization in the design of the compiler.
     def propagate_requirements(
         self,
-        requirements_in_caller: Sequence[
-            action_contract.PositionRequirementInCaller[
-                action_contract.PositionOccupancyRequirement
-            ]
-        ],
+        requirements_in_caller: Sequence[action_contract.OccupancyRequirementInCaller],
     ) -> list[PropagatedRequirement]:
         """Propagate requirements that the current action does not satisfy.
 

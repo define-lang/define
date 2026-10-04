@@ -81,6 +81,9 @@ class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.Destroy
         self._run_destructors_position_target(
             particle
         )
+        particle.get_action(
+            local.my_domain_com.my_lib.destructor.DestructorAction
+        ).run()
 
     @override
     def destroy_position_target(self, particle: literal.Particle):

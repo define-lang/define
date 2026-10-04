@@ -105,6 +105,9 @@ class DestroyerDestructionContracts(local.my_domain_com.my_lib.destroyer.Destroy
             local.my_domain_com.my_lib.first_destructor.FirstDestructorAction
         ).run()
         particle.get_action(
+            local.my_domain_com.my_lib.third_destructor.ThirdDestructorAction
+        ).run()
+        particle.get_action(
             local.my_domain_com.my_lib.fifth_destructor.FifthDestructorAction
         ).run()
 

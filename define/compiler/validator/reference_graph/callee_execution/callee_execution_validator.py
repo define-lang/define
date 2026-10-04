@@ -78,24 +78,25 @@ class CalleeExecutionValidator:
         # (req.position.in_caller(action_chain)). Deriving it is a fresh
         # allocation, so compute it once here and hand the same objects to both
         # rather than rebuilding it twice per requirement per trigger.
-        requirements_in_caller = contract.occupancy_requirements_in_caller(action_chain)
+        requirements_in_caller = contract.occupancy_requirements_in_caller(
+            action_chain, action_assignment
+        )
         self._dead_constraint_validator.mark_callee_contract_constraints_alive(
             requirements_in_caller, scope
         )
         self._requirement_validator.propagate_action_requirements(
-            action_chain,
-            scope,
-            requirements_in_caller,
-            action_assignment,
+            action_chain.location, requirements_in_caller, scope
         )
         validation_diagnostics = (
             self._requirement_validator.check_occupancy_requirements(
                 execution, requirements_in_caller
             )
         )
-        value_requirements = contract.value_requirements_in_caller(action_chain)
+        value_requirements = contract.value_requirements_in_caller(
+            action_chain, action_assignment
+        )
         self._requirement_validator.propagate_value_requirements(
-            action_chain, value_requirements, action_assignment
+            action_chain.location, value_requirements
         )
         self._dead_value_write_validator.mark_required_values_used(value_requirements)
         validation_diagnostics.extend(
@@ -104,8 +105,7 @@ class CalleeExecutionValidator:
             )
         )
         destruction_result = self._destruction_contract_validator.validate(
-            contract.destruction_contracts,
-            action_chain,
+            contract.destruction_contracts, action_chain, scope
         )
         validation_diagnostics.extend(destruction_result.diagnostics)
         occupied_interface_child_position_violations = self._tracker.trigger_action(

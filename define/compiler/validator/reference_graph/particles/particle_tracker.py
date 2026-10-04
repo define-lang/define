@@ -169,11 +169,7 @@ class ParticleTracker:
 
     def propagate_requirements(
         self,
-        requirements_in_caller: Sequence[
-            action_contract.PositionRequirementInCaller[
-                action_contract.PositionOccupancyRequirement
-            ]
-        ],
+        requirements_in_caller: Sequence[action_contract.OccupancyRequirementInCaller],
     ) -> list[requirement_resolution.PropagatedRequirement]:
         """Propagate requirements that the current action does not satisfy."""
         return self._requirement_resolver.propagate_requirements(requirements_in_caller)

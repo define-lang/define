@@ -112,6 +112,24 @@ class PositionRequirement(msgspec.Struct, frozen=True, kw_only=True):
     # propagate, if relevant. Used to explain that assignment in diagnostics.
     action_assignment: ActionAssignment | None = None
 
+    def propagated_to(
+        self,
+        enclosing_action: ast.ActionDefinition,
+        *,
+        inferred_at: ast.SourceLocation,
+        position: ast.PositionReference,
+        action_assignment: ActionAssignment | None,
+    ) -> typing.Self:
+        """Return this requirement as a requirement of ``enclosing_action``, propagated from this one because of ``action_assignment``, if an assignment caused it."""
+        return msgspec.structs.replace(
+            self,
+            position=position,
+            inferred_at=inferred_at,
+            enclosing_action=enclosing_action,
+            propagated_from=self,
+            action_assignment=action_assignment,
+        )
+
     def propagation_chain(self) -> list[PropagationStep]:
         """Return the chain of propagation steps from this requirement down to its root cause."""
         chain: list[PropagationStep] = []
@@ -168,6 +186,15 @@ class PositionRequirementInCaller[Requirement: PositionRequirement](
 
     requirement: Requirement
     caller_position: ast.PositionReference
+    # The constructor or destructor assignment that made the caller trigger
+    # the callee, if one did. Used to explain that assignment in diagnostics.
+    action_assignment: ActionAssignment | None
+
+
+type OccupancyRequirementInCaller = PositionRequirementInCaller[
+    PositionOccupancyRequirement
+]
+type ValueRequirementInCaller = PositionRequirementInCaller[ValueRequirement]
 
 
 class PositionGuarantee(msgspec.Struct, frozen=True):
@@ -317,6 +344,20 @@ class ChildState(msgspec.Struct, frozen=True):
         occupancy = self.occupancy.get(position)
         if occupancy is not None:
             return occupancy
+        # Nothing is below a position that was empty at destruction, and what
+        # is below one in error is in error too.
+        for length in range(len(position) - 1, 0, -1):
+            # Child State records only positions.
+            if chained_name.is_action_key(position[length - 1]):
+                continue
+            above = self.occupancy.get(chained_name.ChainedNameTuple(position[:length]))
+            if above is None:
+                continue
+            if above.state == position_occupancy.PositionOccupancyState.EMPTY:
+                return position_occupancy.EMPTY_OCCUPANCY
+            if above.state == position_occupancy.PositionOccupancyState.ERROR:
+                return position_occupancy.ERROR_OCCUPANCY
+            break
         is_below_new_particle, left = self._left_by_callees(position)
         if left is None:
             # The child positions of a new particle are empty until something
@@ -444,20 +485,30 @@ class ActionContract(msgspec.Struct, frozen=True):
     implied_quality_names: frozenset[str]
 
     def occupancy_requirements_in_caller(
-        self, action_chain: ast.ActionReference
-    ) -> list[PositionRequirementInCaller[PositionOccupancyRequirement]]:
-        """Express occupancy requirements from the caller's perspective."""
-        return self._requirements_in_caller(self.occupancy_requirements, action_chain)
+        self,
+        action_chain: ast.ActionReference,
+        action_assignment: ActionAssignment | None,
+    ) -> list[OccupancyRequirementInCaller]:
+        """Express occupancy requirements from the caller's perspective, for a trigger caused by ``action_assignment``."""
+        return self._requirements_in_caller(
+            self.occupancy_requirements, action_chain, action_assignment
+        )
 
     def value_requirements_in_caller(
-        self, action_chain: ast.ActionReference
-    ) -> list[PositionRequirementInCaller[ValueRequirement]]:
-        """Express value requirements from the caller's perspective."""
-        return self._requirements_in_caller(self.value_requirements, action_chain)
+        self,
+        action_chain: ast.ActionReference,
+        action_assignment: ActionAssignment | None,
+    ) -> list[ValueRequirementInCaller]:
+        """Express value requirements from the caller's perspective, for a trigger caused by ``action_assignment``."""
+        return self._requirements_in_caller(
+            self.value_requirements, action_chain, action_assignment
+        )
 
     @staticmethod
     def _requirements_in_caller[Requirement: PositionRequirement](
-        requirements: list[Requirement], action_chain: ast.ActionReference
+        requirements: list[Requirement],
+        action_chain: ast.ActionReference,
+        action_assignment: ActionAssignment | None,
     ) -> list[PositionRequirementInCaller[Requirement]]:
         result: list[PositionRequirementInCaller[Requirement]] = []
         for requirement in requirements:
@@ -465,6 +516,7 @@ class ActionContract(msgspec.Struct, frozen=True):
                 PositionRequirementInCaller(
                     requirement=requirement,
                     caller_position=requirement.position.in_caller(action_chain),
+                    action_assignment=action_assignment,
                 )
             )
         return result

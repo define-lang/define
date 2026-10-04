@@ -5,8 +5,6 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
-import pytest
-
 from define.compiler.errors import diagnostics
 from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
@@ -31,6 +29,7 @@ _DELETE_FILE_DESTRUCTOR = "action<my.domain.com:my_lib:/delete_file_destructor>"
 _CARRIER = "action<my.domain.com:my_lib:/carrier>"
 _D1 = "action<my.domain.com:my_lib:/d1>"
 _D2 = "action<my.domain.com:my_lib:/d2>"
+_D = "action<my.domain.com:my_lib:/d>"
 _KEEP = "action<my.domain.com:my_lib:/keep>"
 
 
@@ -238,10 +237,6 @@ def test_destructor_diagnostic_retains_callee_local_assignment(
     )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="The knower of a Destructor gains the requirements it cannot resolve instead of carrying the Destructor up.",
-)
 def test_knower_resolves_one_destructor_and_requires_state_for_another_from_its_caller(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -381,10 +376,6 @@ def test_knower_resolves_one_destructor_and_requires_state_for_another_from_its_
     ]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="The knower of a Destructor gains the requirements it cannot resolve instead of carrying the Destructor up.",
-)
 def test_five_level_implied_requirements_resolved_across_actions_satisfied(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -398,10 +389,6 @@ def test_five_level_implied_requirements_resolved_across_actions_satisfied(
     ]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="The knower of a Destructor gains the requirements it cannot resolve instead of carrying the Destructor up.",
-)
 def test_five_level_implied_requirements_resolved_across_actions_violated(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -1099,10 +1086,6 @@ def test_caller_checks_destructor_value_requirement_on_particle_its_callee_left_
     )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="A position below one the Child State records as empty is known to be empty, so the knower resolves the Destructor.",
-)
 def test_knower_resolves_destructor_requirement_below_position_its_callee_emptied(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -1171,10 +1154,6 @@ def test_knower_resolves_destructor_requirement_below_position_its_callee_emptie
     ]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="The knower of a Destructor gains the requirements it cannot resolve instead of carrying the Destructor up.",
-)
 def test_knower_requires_value_of_position_no_lower_action_knows(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -1248,6 +1227,192 @@ def test_knower_requires_value_of_position_no_lower_action_knows(
     )
     assert action_graph(result.reference_graph_result) == [
         (_DESTRUCTOR, _KEEP),
+        (_INNER, _DESTRUCTOR),
+        (_MID, _INNER),
+        (_TEST, _MID),
+    ]
+
+
+def test_knower_skips_destructor_requirement_below_position_its_callee_left_in_error(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert all_diags[0].location.line == 13
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.file_path == PurePosixPath("inner.dfn")
+    assert all_diags[0].position_name == "position<target>::position</shelf>"
+    assert all_diags[0].is_action_interface_position is False
+    assert all_diags[0].inferred_at is None
+    assert action_graph(result.reference_graph_result) == [
+        (_INNER, _DESTRUCTOR),
+        (_MID, _INNER),
+        (_TEST, _MID),
+    ]
+
+
+def test_knower_skips_destructor_requirement_below_its_own_position_in_error(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert all_diags[0].location.line == 21
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].position_name == "position<my_item>::position</z>"
+    assert all_diags[0].is_action_interface_position is False
+    assert all_diags[0].inferred_at is None
+    assert action_graph(result.reference_graph_result) == [
+        (_CLOSE_FILE, _DESTRUCTOR),
+        (_TEST, _CLOSE_FILE),
+    ]
+
+
+def test_knower_does_not_follow_requirements_it_gains_below_destroyed_particle(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 2
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
+    assert all_diags[0].location.line == 19
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.end_line == 19
+    assert all_diags[0].location.end_column == 78
+    assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
+    assert all_diags[0].action_name == _MID
+    assert all_diags[0].required_empty is False
+    assert (
+        all_diags[0].position_name
+        == "position<outer_box>::action</mid>::position<incoming>::position</node>"
+    )
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _MID,
+            "line": 19,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "enclosing_quality_name": "position<incoming>",
+            "triggered_quality_name": _D,
+            "line": 4,
+            "column": 24,
+            "file_path": "mid.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _MID,
+            "triggered_quality_name": _INNER,
+            "line": 18,
+            "column": 30,
+            "file_path": "mid.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": _INNER,
+            "triggered_quality_name": _D,
+            "line": 7,
+            "column": 33,
+            "file_path": "inner.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _D,
+            "triggered_quality_name": None,
+            "line": 7,
+            "column": 30,
+            "file_path": "d.dfn",
+        },
+    )
+    assert isinstance(all_diags[1], diagnostics.CircularGlobalReferenceDiagnostic)
+    assert all_diags[1].location.line == 3
+    assert all_diags[1].location.column == 20
+    assert all_diags[1].location.end_line == 3
+    assert all_diags[1].location.end_column == 30
+    assert all_diags[1].location.file_path == PurePosixPath("node.dfn")
+    assert all_diags[1].cycle == [_D, "position<my.domain.com:my_lib:/node>", _D]
+    assert action_graph(result.reference_graph_result) == [
+        (_INNER, _D),
+        (_MID, _INNER),
+        (_TEST, _MID),
+    ]
+
+
+def test_knower_resolves_destructor_requirement_on_its_own_interface_position(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[0].required_value is False
+    assert all_diags[0].location.line == 18
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.file_path == PurePosixPath("mid.dfn")
+    assert all_diags[0].action_name == _INNER
+    assert all_diags[0].required_empty is False
+    assert (
+        all_diags[0].position_name
+        == "position<box>::action</inner>::position<target>::action</destructor>::position<item>"
+    )
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "enclosing_quality_name": "position<incoming>",
+            "triggered_quality_name": _DESTRUCTOR,
+            "line": 4,
+            "column": 24,
+            "file_path": "mid.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
+            "enclosing_quality_name": "position<box>::action</inner>::position<target>",
+            "triggered_quality_name": None,
+            "line": 17,
+            "column": 30,
+            "file_path": "mid.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _MID,
+            "triggered_quality_name": _INNER,
+            "line": 18,
+            "column": 30,
+            "file_path": "mid.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": _INNER,
+            "triggered_quality_name": _DESTRUCTOR,
+            "line": 7,
+            "column": 33,
+            "file_path": "inner.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _DESTRUCTOR,
+            "triggered_quality_name": None,
+            "line": 7,
+            "column": 30,
+            "file_path": "destructor.dfn",
+        },
+    )
+    assert action_graph(result.reference_graph_result) == [
         (_INNER, _DESTRUCTOR),
         (_MID, _INNER),
         (_TEST, _MID),

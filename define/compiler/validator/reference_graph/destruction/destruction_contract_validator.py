@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import itertools
 import typing
 
 import msgspec
@@ -31,7 +30,8 @@ if typing.TYPE_CHECKING:
 
     from define.compiler.data_structures import typed_name_dict
     from define.compiler.errors import diagnostics
-    from define.compiler.validator import validation_result
+    from define.compiler.validator import scope_tracker, validation_result
+    from define.compiler.validator.reference_graph import action_requirement_validator
     from define.compiler.validator.reference_graph.dead_code import (
         dead_value_write_validator,
     )
@@ -113,6 +113,8 @@ class _CalleeDestructionInCaller(msgspec.Struct):
     # The ones whose particle the caller has.
     contracts: list[_CalleeDestructionContractInCaller]
     propagated_contracts: action_contract.DestructionContracts
+    # This action's trigger of the callee.
+    callee_chain: ast.ActionReference
     trigger_step: action_contract.PropagationStep
     # The caller's particles at the moment of destruction, by Child State
     # position, which can differ from where the caller has them now when the
@@ -121,6 +123,13 @@ class _CalleeDestructionInCaller(msgspec.Struct):
     # contracts collected.
     caller_particles: dict[chained_name.ChainedNameTuple, particle_info.ParticleInfo]
     validation_diagnostics: list[diagnostics.Diagnostic]
+    # The Destructor requirements that only this action's caller can validate.
+    occupancy_requirements_for_caller: list[
+        action_contract.OccupancyRequirementInCaller
+    ] = msgspec.field(default_factory=list)
+    value_requirements_for_caller: list[action_contract.ValueRequirementInCaller] = (
+        msgspec.field(default_factory=list)
+    )
 
     def another_contract_starts_at(
         self, position_in_child_state: chained_name.ChainedNameTuple
@@ -130,6 +139,48 @@ class _CalleeDestructionInCaller(msgspec.Struct):
         # continuing this traversal would record their caller-contributed
         # Destroys twice.
         return position_in_child_state in self.callee_contracts.positions
+
+    def nearest_caller_particle(
+        self, position_in_child_state: chained_name.ChainedNameTuple
+    ) -> tuple[chained_name.ChainedNameTuple, particle_info.ParticleInfo]:
+        """Return the caller's particle at ``position_in_child_state``, or the nearest one above it, with its position in the Child State."""
+        # Every position a destruction reaches is at or below the particle of
+        # one of its contracts, which the caller has.
+        length = len(position_in_child_state)
+        while (
+            particle := self.caller_particles.get(
+                chained_name.ChainedNameTuple(position_in_child_state[:length])
+            )
+        ) is None:
+            length -= 1
+        return chained_name.ChainedNameTuple(position_in_child_state[:length]), particle
+
+    def position_in_caller(
+        self,
+        position: ast.PositionReference,
+        position_in_child_state: chained_name.ChainedNameTuple,
+    ) -> ast.PositionReference:
+        """Return where ``position``, named from the caller's perspective below the particle it was found under, was when the callee was triggered."""
+        # A callee can move a particle from the caller below another one, so
+        # the nearest contract above the position decides where it was.
+        nearest: _CalleeDestructionContractInCaller | None = None
+        for contract in self.contracts:
+            start = contract.contract.position_in_child_state
+            if position_in_child_state[: len(start)] == start and (
+                nearest is None
+                or len(start) > len(nearest.contract.position_in_child_state)
+            ):
+                nearest = contract
+        # Every particle a destruction destroys is below one with a contract.
+        nearest = typing.cast("_CalleeDestructionContractInCaller", nearest)
+        names_below = len(position_in_child_state) - len(
+            nearest.contract.position_in_child_state
+        )
+        if names_below == 0:
+            return nearest.position
+        return nearest.position.with_position_suffix(
+            *position.typed_names[-names_below:]
+        )
 
     def child_state_records_empty(
         self, position_in_child_state: chained_name.ChainedNameTuple
@@ -147,6 +198,9 @@ class _CalleeDestructionInCaller(msgspec.Struct):
         )
 
 
+# TODO: The spec validates Destructors in Destruction Contracts. Rename
+# DestructionContract.verified_destructors to match, along with what uses it
+# (_destruction_fact_and_verified_destructors, newly_verified, and comments).
 class DestructionContractValidator:
     """Validate a callee's Destruction Contracts using the caller's particle state."""
 
@@ -159,6 +213,7 @@ class DestructionContractValidator:
     _tracker: particle_tracker.ParticleTracker
     _dead_value_write_validator: dead_value_write_validator.DeadValueWriteValidator
     _destroyed_particles: destroyed_particles.DestroyedParticles
+    _requirement_validator: action_requirement_validator.ActionRequirementValidator
 
     def __init__(
         self,
@@ -171,6 +226,7 @@ class DestructionContractValidator:
         tracker: particle_tracker.ParticleTracker,
         dead_value_write_validator: dead_value_write_validator.DeadValueWriteValidator,
         destroyed_particles: destroyed_particles.DestroyedParticles,
+        requirement_validator: action_requirement_validator.ActionRequirementValidator,
     ):
         """Initialize with the caller's definition, particle state, and known definitions."""
         self._definition = definition
@@ -179,11 +235,13 @@ class DestructionContractValidator:
         self._tracker = tracker
         self._dead_value_write_validator = dead_value_write_validator
         self._destroyed_particles = destroyed_particles
+        self._requirement_validator = requirement_validator
 
     def validate(
         self,
         contracts: Sequence[action_contract.DestructionContracts],
         action_chain: ast.ActionReference,
+        scope: scope_tracker.ScopeTracker,
     ) -> DestructionContractValidationResult:
         """Check a callee's Destruction Contracts from the caller's perspective."""
         result = DestructionContractValidationResult()
@@ -197,10 +255,32 @@ class DestructionContractValidator:
             enclosing_quality_name=self._definition.typed_name.source_typed_name,
             triggered_quality_name=action_chain.typed_names[-1].full_typed_name,
         )
+        occupancy_requirements_for_caller: list[
+            action_contract.OccupancyRequirementInCaller
+        ] = []
+        value_requirements_for_caller: list[
+            action_contract.ValueRequirementInCaller
+        ] = []
         for callee_contracts in contracts:
-            self._check_destruction_contract_group(
-                callee_contracts, action_chain, trigger_step, result
+            occupancy_requirements, value_requirements = (
+                self._check_destruction_contract_group(
+                    callee_contracts, action_chain, trigger_step, result
+                )
             )
+            occupancy_requirements_for_caller.extend(occupancy_requirements)
+            value_requirements_for_caller.extend(value_requirements)
+        # Gained only after every Destruction Contract of the callee is
+        # validated, so validating never follows a particle that this action
+        # only assumes because of a requirement it gained.
+        self._requirement_validator.propagate_action_requirements(
+            action_chain.location, occupancy_requirements_for_caller, scope
+        )
+        self._requirement_validator.propagate_value_requirements(
+            action_chain.location, value_requirements_for_caller
+        )
+        self._dead_value_write_validator.mark_required_values_used(
+            value_requirements_for_caller
+        )
         return result
 
     def _callee_destruction_in_caller(
@@ -266,6 +346,7 @@ class DestructionContractValidator:
                     trigger_step, callee_contracts.propagation
                 ),
             ),
+            callee_chain=action_chain,
             trigger_step=trigger_step,
             caller_particles=particles,
             validation_diagnostics=result.diagnostics,
@@ -277,8 +358,11 @@ class DestructionContractValidator:
         action_chain: ast.ActionReference,
         trigger_step: action_contract.PropagationStep,
         result: DestructionContractValidationResult,
-    ):
-        """Verify particles sharing Child State and record their contributions."""
+    ) -> tuple[
+        list[action_contract.OccupancyRequirementInCaller],
+        list[action_contract.ValueRequirementInCaller],
+    ]:
+        """Validate the Destructors of particles sharing Child State and record their contributions, and return the occupancy and value requirements of their Destructors that only this action's caller can validate."""
         destruction = self._callee_destruction_in_caller(
             callee_contracts, action_chain, trigger_step, result
         )
@@ -286,13 +370,17 @@ class DestructionContractValidator:
             self._check_one_destruction_contract(contract, destruction)
         if destruction.propagated_contracts.particles:
             result.propagated_contracts.append(destruction.propagated_contracts)
+        return (
+            destruction.occupancy_requirements_for_caller,
+            destruction.value_requirements_for_caller,
+        )
 
     def _check_one_destruction_contract(
         self,
         contract: _CalleeDestructionContractInCaller,
         destruction: _CalleeDestructionInCaller,
     ):
-        self._verify_destroyed(
+        self._validate_destroyed(
             contract.position, contract.particle, contract, destruction
         )
         if contract.work.has_work():
@@ -327,14 +415,14 @@ class DestructionContractValidator:
         )
         connection.forwarded_destructions.append(propagated_destruction)
 
-    def _verify_destroyed(
+    def _validate_destroyed(
         self,
         position: ast.PositionReference,
         particle: particle_info.ParticleInfo,
         contract: _CalleeDestructionContractInCaller,
         destruction: _CalleeDestructionInCaller,
     ):
-        """Verify the Destructors on ``particle``, in ``position``, and on the particles in its transitive child positions that this action knows and the callee did not, and record what this action contributes to destroying them."""
+        """Validate the Destructors on ``particle``, in ``position``, and on the particles in its transitive child positions that this action knows and the callee did not, and record what this action contributes to destroying them."""
         destruction_contract = contract.contract
         relative_key = contract.names_below_contract_particle(position)
         # A child absent from the contract was unknown to the callee but is
@@ -360,13 +448,12 @@ class DestructionContractValidator:
         for destructor in destructors:
             if verified_destructors.has_quality(destructor):
                 continue
-            destructor_contribution = self._verify_one_cascade_destructor(
+            destructor_contribution = self._validate_one_cascade_destructor(
                 destructor,
                 position,
                 particle,
                 contract,
                 destruction,
-                from_caller=from_caller,
                 newly_verified=newly_verified,
             )
             if destructor_contribution is not None:
@@ -396,7 +483,7 @@ class DestructionContractValidator:
                 child_in_child_state
             ) or destruction.child_state_records_empty(child_in_child_state):
                 continue
-            self._verify_destroyed(child_position, found, contract, destruction)
+            self._validate_destroyed(child_position, found, contract, destruction)
         # A caller-passed child particle still needs its own contract even when
         # the particle at its parent position was created locally: higher callers
         # may know additional Destructors assigned to the child particle.
@@ -422,7 +509,7 @@ class DestructionContractValidator:
                 )
             )
 
-    def _verify_one_cascade_destructor(
+    def _validate_one_cascade_destructor(
         self,
         destructor_quality: ast.GlobalTypedNameReference,
         position: ast.PositionReference,
@@ -430,36 +517,47 @@ class DestructionContractValidator:
         contract: _CalleeDestructionContractInCaller,
         destruction: _CalleeDestructionInCaller,
         *,
-        from_caller: bool,
         newly_verified: list[ast.GlobalTypedNameReference],
     ) -> ast.ActionReference | None:
-        """Verify one Destructor discovered through a Destruction Contract."""
+        """Validate one Destructor discovered through a Destruction Contract, and record the requirements of it that only this action's caller can validate."""
         destructor_contract = self._validation_state.get_contract_or_none(
             destructor_quality
         )
         if destructor_contract is None:
             return None
         action_chain = position.with_action_suffix(destructor_quality)
-        # A destructor is checked exactly once: only at the action that knows the
-        # state of every position it requires. Resolve the state of all required positions
-        # first, before we attempt to check its requirements.
+        action_assignment = action_contract.ActionAssignment(
+            quality=destructor_quality,
+            assigned_to_position_name=particle.origin_position.typed_names[-1],
+        )
+        # This action is the lowest that knows the destructor, so it validates
+        # every requirement it can and gains the rest, which its callers then
+        # validate as ordinary requirements.
         resolved_requirements: list[_ResolvedRequirement] = []
-        for inner_req in itertools.chain(
-            destructor_contract.occupancy_requirements,
-            destructor_contract.value_requirements,
-        ):
+        for occupancy_requirement in destructor_contract.occupancy_requirements:
             resolution = self._resolve_destructor_requirement(
-                inner_req=inner_req,
+                inner_req=occupancy_requirement,
                 action_chain=action_chain,
                 contract=contract,
                 destruction=destruction,
-                from_caller=from_caller,
+                action_assignment=action_assignment,
             )
-            # If the state of any required position is not yet known, we
-            # defer verification to our caller.
-            if resolution is None:
-                return None
-            resolved_requirements.append(resolution)
+            if isinstance(resolution, action_contract.PositionRequirementInCaller):
+                destruction.occupancy_requirements_for_caller.append(resolution)
+            else:
+                resolved_requirements.append(resolution)
+        for value_requirement in destructor_contract.value_requirements:
+            resolution = self._resolve_destructor_requirement(
+                inner_req=value_requirement,
+                action_chain=action_chain,
+                contract=contract,
+                destruction=destruction,
+                action_assignment=action_assignment,
+            )
+            if isinstance(resolution, action_contract.PositionRequirementInCaller):
+                destruction.value_requirements_for_caller.append(resolution)
+            else:
+                resolved_requirements.append(resolution)
         for resolved_requirement in resolved_requirements:
             if isinstance(
                 resolved_requirement.requirement, action_contract.ValueRequirement
@@ -496,16 +594,60 @@ class DestructionContractValidator:
         newly_verified.append(destructor_quality)
         return action_chain
 
-    def _resolve_destructor_requirement(
+    def _requirement_of_callee[Requirement: action_contract.PositionRequirement](
+        self,
+        destructor_requirement: Requirement,
+        contract: _CalleeDestructionContractInCaller,
+        destruction: _CalleeDestructionInCaller,
+    ) -> Requirement:
+        """Return ``destructor_requirement`` as a requirement of the callee: the destroyer's requirement, propagated through each action between the callee and the destroyer."""
+        destruction_fact = contract.contract.propagated_destruction.destruction_fact
+        requirement = destructor_requirement.propagated_to(
+            contract.destroying_definition,
+            inferred_at=destruction_fact.destruction.directly_destroyed_position.location,
+            position=destructor_requirement.position.in_caller(
+                destruction_fact.destroyed_position_in_destroyer
+            ),
+            action_assignment=None,
+        )
+        # Each step is one action between the callee and the destroyer
+        # triggering the next, ordered from the callee down. Only the
+        # propagation chain is read from these requirements, so each keeps the
+        # destroyer's position instead of naming it from that action.
+        steps = list(destruction.callee_contracts.propagation_steps())
+        for index in range(len(steps) - 1, -1, -1):
+            if index == 0:
+                triggering_action = destruction.callee_chain.get_last_action()
+                definition_result = self._definition_results[triggering_action]
+            else:
+                definition_result = typing.cast(
+                    "validation_result.DefinitionValidationResult",
+                    self._definition_results.get_by_full_typed_name(
+                        typing.cast("str", steps[index - 1].triggered_quality_name)
+                    ),
+                )
+            requirement = requirement.propagated_to(
+                typing.cast("ast.ActionDefinition", definition_result.definition),
+                inferred_at=steps[index].location,
+                position=requirement.position,
+                action_assignment=None,
+            )
+        return requirement
+
+    def _resolve_destructor_requirement[
+        Requirement: action_contract.PositionRequirement
+    ](
         self,
         *,
-        inner_req: action_contract.PositionRequirement,
+        inner_req: Requirement,
         action_chain: ast.ActionReference,
         contract: _CalleeDestructionContractInCaller,
         destruction: _CalleeDestructionInCaller,
-        from_caller: bool,
-    ) -> _ResolvedRequirement | None:
-        """Resolve one requirement's position to its destruction-time state, or None if this action cannot know it."""
+        action_assignment: action_contract.ActionAssignment,
+    ) -> (
+        _ResolvedRequirement | action_contract.PositionRequirementInCaller[Requirement]
+    ):
+        """Resolve one requirement's position to its destruction-time state, or return the requirement for this action's caller when only the caller can know it."""
         # action_chain:
         #   position<box>::action</close_file>::position<target>::action</delete_file_destructor>
         # required_position:
@@ -520,10 +662,34 @@ class DestructionContractValidator:
         if isinstance(inner_req, action_contract.ValueRequirement):
             value_state = merged_child_state.value_at(state_key)
         if occupancy is None:
-            # A passed-in particle's untouched position is decided higher up: this
-            # action cannot resolve it, so the destructor travels up unchecked.
-            if from_caller:
-                return None
+            # Nothing below changed a position below a particle from the
+            # caller, so it is as the caller left it.
+            owner_position, owner = destruction.nearest_caller_particle(state_key)
+            # An action that puts a particle in an interface position of an
+            # action on a particle must trigger that action itself (Dead
+            # Interface Positions), and a Destructor triggers only when its
+            # particle is destroyed. So only the destroyer could have filled
+            # one, and one that nothing below recorded is empty.
+            # TODO: That makes a Destructor's interface positions useless to
+            # every action but the destroyer. Consider a spec change that
+            # forbids Destructors from defining interface positions.
+            is_interface_position = any(
+                chained_name.is_action_key(name)
+                for name in state_key[len(owner_position) :]
+            )
+            if (
+                owner.source is particle_info.ParticleSource.CALLER
+                and not is_interface_position
+            ):
+                return action_contract.PositionRequirementInCaller(
+                    requirement=self._requirement_of_callee(
+                        inner_req, contract, destruction
+                    ),
+                    caller_position=destruction.position_in_caller(
+                        required_position, state_key
+                    ),
+                    action_assignment=action_assignment,
+                )
             # Child State already says what is in every occupied child
             # position. Check the tracker for errors on parent names before
             # treating a position Child State says nothing about as empty.
@@ -536,8 +702,17 @@ class DestructionContractValidator:
             and occupancy.state == position_occupancy.PositionOccupancyState.OCCUPIED
             and value_state is None
         ):
-            # A higher caller may know the value state, so this requirement gets propagated.
-            return None
+            # Neither the callee nor this action knows the value, so it is as
+            # this action's caller left it.
+            return action_contract.PositionRequirementInCaller(
+                requirement=self._requirement_of_callee(
+                    inner_req, contract, destruction
+                ),
+                caller_position=destruction.position_in_caller(
+                    required_position, state_key
+                ),
+                action_assignment=action_assignment,
+            )
         return _ResolvedRequirement(
             requirement=inner_req,
             position=required_position,

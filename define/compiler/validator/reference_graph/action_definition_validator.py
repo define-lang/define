@@ -138,6 +138,7 @@ class ActionDefinitionValidator:
             self._tracker,
             self._dead_value_write_validator,
             self._destroyed_particles,
+            self._requirement_validator,
         )
 
     @cached_property

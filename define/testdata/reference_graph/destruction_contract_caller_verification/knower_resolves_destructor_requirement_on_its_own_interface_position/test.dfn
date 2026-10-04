@@ -1,0 +1,22 @@
+# action</mid> is the knower of the Destructor, which requires its own position<item> to be occupied.
+# Only an action that destroys the particle could fill that interface position, and action</inner> does not know the Destructor, so it is empty at destruction.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<outer_box> {
+            it may only contain particles where {
+                it has the action</mid>.
+            }
+        }
+        define the position<my_item> {
+            it may only contain particles where {
+                it has the action</destructor>.
+            }
+        }
+        create a particle in position<outer_box>.
+        create a particle in position<my_item>.
+        move the particle in position<my_item> to position<outer_box>::action</mid>::position<incoming>.
+        create a particle in position<outer_box>::action</mid>::position<run>.
+    }
+}

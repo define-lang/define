@@ -5,7 +5,6 @@ from typing import ClassVar, override
 from define.runtime import literal
 
 import local.my_domain_com.my_lib.bundle
-import local.my_domain_com.my_lib.destructor
 import local.my_domain_com.my_lib.middle
 import local.my_domain_com.my_lib.occupied_first
 import local.my_domain_com.my_lib.transitive
@@ -49,12 +48,6 @@ class TestAction(literal.Action):
 
 
 class MiddleDestructionContracts(local.my_domain_com.my_lib.middle.MiddleDestructionContracts):
-
-    @override
-    def run_destructors_position_target(self, particle: literal.Particle):
-        particle.get_action(
-            local.my_domain_com.my_lib.destructor.DestructorAction
-        ).run()
 
     @override
     def destroy_position_target(self, particle: literal.Particle):

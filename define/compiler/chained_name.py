@@ -17,6 +17,11 @@ ChainedNameTuple = typing.NewType("ChainedNameTuple", tuple[str, ...])
 # A chained name's kind is the kind of its last typed name, so a
 # PositionReferenceTuple can still contain actions, as in
 # position<p>::action<a>::position<q>.
+# TODO: Allow a PositionReferenceTuple to be empty, naming the particle that
+# relative names start from, and then change the ChainedNameTuples that are
+# only ChainedNameTuples because they can be empty to PositionReferenceTuples:
+# ACTION_PARENT_PARTICLE, and Child State positions such as
+# DestructionContract.position_in_child_state and the Child State keys.
 PositionReferenceTuple = typing.NewType("PositionReferenceTuple", ChainedNameTuple)
 ActionReferenceTuple = typing.NewType("ActionReferenceTuple", ChainedNameTuple)
 

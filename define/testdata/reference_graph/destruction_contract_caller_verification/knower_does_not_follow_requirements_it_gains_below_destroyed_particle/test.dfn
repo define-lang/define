@@ -1,0 +1,21 @@
+# Each particle in position</node> has the Destructor action</d>, which requires its own position</node> to be occupied, so following the particles that action</mid> assumes because of the requirements it gains would never end.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<outer_box> {
+            it may only contain particles where {
+                it has the action</mid>.
+            }
+        }
+        define the position<my_item> {
+            it may only contain particles where {
+                it has the action</d>.
+            }
+        }
+        create a particle in position<outer_box>.
+        create a particle in position<my_item>.
+        move the particle in position<my_item> to position<outer_box>::action</mid>::position<incoming>.
+        create a particle in position<outer_box>::action</mid>::position<run>.
+    }
+}

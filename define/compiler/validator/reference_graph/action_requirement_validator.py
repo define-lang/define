@@ -62,28 +62,11 @@ class ActionRequirementValidator:
 
     def _record_requirement(
         self,
-        *,
-        required_state: position_occupancy.PositionOccupancyState,
-        contracted_position: ast.PositionReference,
+        requirement: action_contract.PositionOccupancyRequirement,
         local_position: ast.PositionReference,
-        inferred_at: ast.SourceLocation,
-        propagated_from: action_contract.PositionOccupancyRequirement | None,
         scope: scope_tracker.ScopeTracker,
-        action_assignment: action_contract.ActionAssignment | None = None,
     ):
-        """Record a requirement in this definition's contract and reflect it in the tracker.
-
-        Args:
-            required_state: The state that the requirement says the position must be in.
-            contracted_position: The requirement's position as we expose it in
-                this action's contract.
-            local_position: The position in this definition's local namespace
-                that we are actually operating on.
-            inferred_at: The statement this action inferred the requirement at.
-            propagated_from: The inner requirement this was propagated
-                from, or None for a directly inferred requirement.
-            scope: The scope tracker (for resolving qualities of local positions).
-        """
+        """Record ``requirement`` in this definition's contract and reflect it in the tracker at ``local_position``, the position in this definition's local namespace that the requirement's contracted position names."""
         # Profiles of dense action call graphs make requirement recording and
         # propagation look like avoidable allocation and repeated-pass costs.
         # Experiments in July 2026 showed that those apparent costs are mostly
@@ -106,21 +89,14 @@ class ActionRequirementValidator:
         #   speedup sufficient to justify the structural change, so it was rejected.
         # Revisit only if those consumers or the propagation pipeline change
         # substantially.
-        requirement_key = contracted_position.canonical_chained_name_tuple
-        self._inferred_occupancy_requirements[requirement_key] = (
-            action_contract.PositionOccupancyRequirement(
-                required_state=required_state,
-                position=contracted_position,
-                inferred_at=inferred_at,
-                enclosing_action=self._definition,
-                propagated_from=propagated_from,
-                action_assignment=action_assignment,
-            )
-        )
+        contracted_position = requirement.position
+        self._inferred_occupancy_requirements[
+            contracted_position.canonical_chained_name_tuple
+        ] = requirement
         # ERROR represents a tracker failure and is never a Position Requirement state.
         requirement_state = typing.cast(
             "typing.Literal[position_occupancy.PositionOccupancyState.OCCUPIED, position_occupancy.PositionOccupancyState.EMPTY]",
-            required_state,
+            requirement.required_state,
         )
         match requirement_state:
             case position_occupancy.PositionOccupancyState.OCCUPIED:
@@ -142,30 +118,25 @@ class ActionRequirementValidator:
 
     def propagate_action_requirements(
         self,
-        action_chain: ast.ActionReference,
+        inferred_at: ast.SourceLocation,
+        requirements_in_caller: list[action_contract.OccupancyRequirementInCaller],
         scope: scope_tracker.ScopeTracker,
-        requirements_in_caller: list[
-            action_contract.PositionRequirementInCaller[
-                action_contract.PositionOccupancyRequirement
-            ]
-        ],
-        action_assignment: action_contract.ActionAssignment | None,
     ):
-        """Propagate the triggered action's requirements into this definition's contract."""
+        """Propagate the requirements of a callee triggered at ``inferred_at`` into this definition's contract."""
         propagated_requirements = self._tracker.propagate_requirements(
             requirements_in_caller
         )
         for propagated in propagated_requirements:
+            requirement_in_caller = propagated.requirement_in_caller
             self._record_requirement(
-                required_state=(
-                    propagated.requirement_in_caller.requirement.required_state
+                requirement_in_caller.requirement.propagated_to(
+                    self._definition,
+                    inferred_at=inferred_at,
+                    position=propagated.contracted_position,
+                    action_assignment=requirement_in_caller.action_assignment,
                 ),
-                contracted_position=propagated.contracted_position,
-                local_position=propagated.requirement_in_caller.caller_position,
-                inferred_at=action_chain.location,
-                propagated_from=propagated.requirement_in_caller.requirement,
-                scope=scope,
-                action_assignment=action_assignment,
+                requirement_in_caller.caller_position,
+                scope,
             )
 
     def infer_requirements_on_chain(
@@ -186,24 +157,22 @@ class ActionRequirementValidator:
             self._definition.interface_positions_by_name,
         )
         for resolved_requirement in inferred_requirements:
-            local_position = resolved_requirement.local_position
+            contracted_position = resolved_requirement.contracted_position
             self._record_requirement(
-                required_state=resolved_requirement.required_state,
-                contracted_position=resolved_requirement.contracted_position,
-                local_position=local_position,
-                inferred_at=resolved_requirement.contracted_position.location,
-                propagated_from=None,
-                scope=scope,
+                action_contract.PositionOccupancyRequirement(
+                    required_state=resolved_requirement.required_state,
+                    position=contracted_position,
+                    inferred_at=contracted_position.location,
+                    enclosing_action=self._definition,
+                ),
+                resolved_requirement.local_position,
+                scope,
             )
 
     def check_occupancy_requirements(
         self,
         execution: callee_execution.CalleeExecution,
-        requirements_in_caller: list[
-            action_contract.PositionRequirementInCaller[
-                action_contract.PositionOccupancyRequirement
-            ]
-        ],
+        requirements_in_caller: list[action_contract.OccupancyRequirementInCaller],
     ) -> list[diagnostics.Diagnostic]:
         """Emit diagnostics for every occupancy requirement of the callee that doesn't hold before ``execution``.
 
@@ -281,31 +250,22 @@ class ActionRequirementValidator:
 
     def propagate_value_requirements(
         self,
-        action_chain: ast.ActionReference,
-        requirements: list[
-            action_contract.PositionRequirementInCaller[
-                action_contract.ValueRequirement
-            ]
-        ],
-        action_assignment: action_contract.ActionAssignment | None,
+        inferred_at: ast.SourceLocation,
+        requirements: list[action_contract.ValueRequirementInCaller],
     ):
-        """Propagate value requirements after occupancy requirements are resolved."""
+        """Propagate the value requirements of a callee triggered at ``inferred_at``, after occupancy requirements are resolved."""
         for requirement in requirements:
             self.infer_value_requirement(
                 requirement.caller_position,
-                inferred_at=action_chain.location,
+                inferred_at=inferred_at,
                 propagated_from=requirement.requirement,
-                action_assignment=action_assignment,
+                action_assignment=requirement.action_assignment,
             )
 
     def check_value_requirements(
         self,
         execution: callee_execution.CalleeExecution,
-        requirements: list[
-            action_contract.PositionRequirementInCaller[
-                action_contract.ValueRequirement
-            ]
-        ],
+        requirements: list[action_contract.ValueRequirementInCaller],
     ) -> list[diagnostics.Diagnostic]:
         """Check the callee's value requirements using the state immediately before ``execution``."""
         validation_diagnostics: list[diagnostics.Diagnostic] = []
@@ -326,9 +286,7 @@ class ActionRequirementValidator:
 
     def _value_requirement_violation(
         self,
-        requirement: action_contract.PositionRequirementInCaller[
-            action_contract.ValueRequirement
-        ],
+        requirement: action_contract.ValueRequirementInCaller,
     ) -> particle_info.ParticleInfo | None:
         """Return the particle whose value violates ``requirement``, if one does."""
         occupancy = self._tracker.get_occupancy_info(requirement.caller_position)
