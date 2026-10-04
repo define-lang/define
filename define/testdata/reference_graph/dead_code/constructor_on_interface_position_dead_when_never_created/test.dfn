@@ -2,7 +2,9 @@
 # constructor never runs in /test, leaving the constraint dead.
 #
 # TODO: However, this means that actions can never demand a constructor
-# on their interface positions, so maybe we should rethink this.
+# on their interface positions, so maybe we should rethink this. If a
+# constructor on a trigger position stays dead, a caller creating a particle
+# in that trigger position should not run the constructor either.
 define the potential action<my.domain.com:my_lib:/test> {
     define the position<run> {
         it may only contain particles where {

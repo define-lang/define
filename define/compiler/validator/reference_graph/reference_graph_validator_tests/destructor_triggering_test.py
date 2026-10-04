@@ -19,6 +19,7 @@ _DESTRUCTOR = "action<my.domain.com:my_lib:/destructor>"
 _INNER = "action<my.domain.com:my_lib:/inner>"
 _DESTRUCTOR_A = "action<my.domain.com:my_lib:/destructor_a>"
 _DESTRUCTOR_B = "action<my.domain.com:my_lib:/destructor_b>"
+_CHILD = "action<my.domain.com:my_lib:/child>"
 
 
 def test_and_normal_action(
@@ -181,3 +182,61 @@ def test_destroy_after_move_into_unconstrained_position_fires_destructor(
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
     assert action_graph(result.reference_graph_result) == [(_TEST, _DESTRUCTOR)]
+
+
+def test_destroy_triggers_destructor_with_occupied_interface_below_implied_position(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diagnostics = result.program_result.all_diagnostics
+    assert len(all_diagnostics) == 1
+    diagnostic = all_diagnostics[0]
+    assert isinstance(
+        diagnostic,
+        diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
+    )
+    assert diagnostic.action_name == "action</destructor>"
+    assert (
+        diagnostic.position_name
+        == "position<box>::position</holder>::action</child>::position<result>"
+    )
+    assert diagnostic.location.line == 14
+    assert diagnostic.location.column == 33
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.arrived_at.line == 13
+    assert diagnostic.arrived_at.column == 64
+    assert diagnostic.arrived_at.file_path == PurePosixPath("test.dfn")
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _CHILD),
+        (_TEST, _DESTRUCTOR),
+    ]
+
+
+def test_automatic_destruction_triggers_destructor_with_occupied_interface_below_implied_position(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_result.all_exceptions == []
+    all_diagnostics = result.program_result.all_diagnostics
+    assert len(all_diagnostics) == 1
+    diagnostic = all_diagnostics[0]
+    assert isinstance(
+        diagnostic,
+        diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
+    )
+    assert diagnostic.action_name == "action</destructor>"
+    assert (
+        diagnostic.position_name
+        == "position<box>::position</holder>::action</child>::position<result>"
+    )
+    assert diagnostic.location.line == 11
+    assert diagnostic.location.column == 30
+    assert diagnostic.location.file_path == PurePosixPath("test.dfn")
+    assert diagnostic.arrived_at.line == 13
+    assert diagnostic.arrived_at.column == 64
+    assert diagnostic.arrived_at.file_path == PurePosixPath("test.dfn")
+    assert action_graph(result.reference_graph_result) == [
+        (_TEST, _CHILD),
+        (_TEST, _DESTRUCTOR),
+    ]

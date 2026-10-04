@@ -12,6 +12,9 @@ from define.compiler.validator.reference_graph import (
     action_contract,
     quality_assignment,
 )
+from define.compiler.validator.reference_graph.callee_execution import (
+    callee_execution,
+)
 from define.compiler.validator.reference_graph.destruction import (
     destroyed_particles,
     destruction_contract,
@@ -19,9 +22,17 @@ from define.compiler.validator.reference_graph.destruction import (
 from define.compiler.validator.reference_graph.particles import particle_info
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Callable, Sequence
+    from collections.abc import Sequence
 
     from define.compiler import ast
+    from define.compiler.errors import diagnostics
+    from define.compiler.validator import scope_tracker
+    from define.compiler.validator.reference_graph import (
+        reference_graph_validation_state,
+    )
+    from define.compiler.validator.reference_graph.callee_execution import (
+        callee_execution_validator,
+    )
     from define.compiler.validator.reference_graph.particles import (
         particle_tracker,
     )
@@ -36,6 +47,15 @@ class DestructionTarget(msgspec.Struct, frozen=True):
     auto_destruction_target: ast.PositionReference | None
 
 
+class DestroyResult(msgspec.Struct):
+    """What destroying a set of particles produces."""
+
+    step: codegen_input.Destruction
+    destruction_contracts: list[action_contract.DestructionContracts]
+    # From the Destructors the destruction triggers.
+    diagnostics: list[diagnostics.Diagnostic]
+
+
 @typing.final
 class Destroyer:
     """Destroys particles for the action being validated."""
@@ -44,26 +64,23 @@ class Destroyer:
         self,
         destroyed_particles: destroyed_particles.DestroyedParticles,
         tracker: particle_tracker.ParticleTracker,
+        callee_execution_validator: callee_execution_validator.CalleeExecutionValidator,
+        validation_state: reference_graph_validation_state.ReferenceGraphValidationState,
     ):
         """Destroy particles in the state ``tracker`` holds."""
         self._destroyed_particles = destroyed_particles
         self._tracker = tracker
+        self._callee_execution_validator = callee_execution_validator
+        self._validation_state = validation_state
 
     def destroy(
         self,
         targets: Sequence[DestructionTarget],
-        trigger_destructor: Callable[
-            [action_contract.Destructor, ast.PositionReference | None],
-            ast.ActionReference | None,
-        ],
-    ) -> tuple[codegen_input.Destruction, list[action_contract.DestructionContracts]]:
-        """Destroy the particles in ``targets`` simultaneously, with every particle below them, and return the destruction's step and its Destruction Contracts.
-
-        ``trigger_destructor`` triggers one Destructor, given the local position
-        Automatic Destruction empties, and returns its action chain, or None
-        when it was not triggered.
-        """
+        scope: scope_tracker.ScopeTracker,
+    ) -> DestroyResult:
+        """Destroy the particles in ``targets`` simultaneously, with every particle below them, and return what the destruction produces."""
         step = codegen_input.Destruction()
+        validation_diagnostics: list[diagnostics.Diagnostic] = []
         destructors: list[
             tuple[action_contract.Destructor, ast.PositionReference | None]
         ] = []
@@ -86,9 +103,12 @@ class Destroyer:
                 contracts_by_target.append(contracts)
         child_states = self._tracker.snapshot_child_states(snapshot_positions)
         for destructor, auto_destruction_target in destructors:
-            action_chain = trigger_destructor(destructor, auto_destruction_target)
-            if action_chain is not None:
-                step.work.destructors.append(action_chain)
+            result = self._trigger_destructor(
+                destructor, auto_destruction_target, scope
+            )
+            if result is not None:
+                step.work.destructors.append(result.codegen_execution.action)
+                validation_diagnostics.extend(result.diagnostics)
         self._tracker.destroy_simultaneously(
             [target.destruction.directly_destroyed_position for target in targets]
         )
@@ -103,7 +123,42 @@ class Destroyer:
                 contracts_sharing_child_state.append(contract)
                 step.contract_destructions.append(contract.propagated_destruction)
             destruction_contracts.append(contracts_sharing_child_state)
-        return step, destruction_contracts
+        return DestroyResult(
+            step=step,
+            destruction_contracts=destruction_contracts,
+            diagnostics=validation_diagnostics,
+        )
+
+    def _trigger_destructor(
+        self,
+        destructor: action_contract.Destructor,
+        auto_destruction_target: ast.PositionReference | None,
+        scope: scope_tracker.ScopeTracker,
+    ) -> callee_execution_validator.CalleeExecutionValidationResult | None:
+        """Trigger one directly known Destructor before particle destruction, and return what validating its execution produces, or None when it has no contract to trigger."""
+        # A destructor's requirements are checked as though it triggered
+        # synchronously at the moment of destruction (DLP 41). The destructor is a
+        # quality of the particle in `position`, so its interface positions
+        # hang off position::action</destructor> while its implied qualities hang off
+        # position itself; in_caller maps both correctly from this chain.
+        contract = self._validation_state.get_contract_or_none(destructor.destructor)
+        if contract is None:
+            return None
+        # A Destructor publishes no Destruction Contracts, so the result
+        # holds none to take on.
+        return self._callee_execution_validator.validate(
+            callee_execution.DestructorCalleeExecution(
+                contract=contract,
+                action_chain=destructor.position.with_action_suffix(
+                    destructor.destructor
+                ),
+                parent_particle=self._tracker.get_occupant(destructor.position),
+                acting_on_position=destructor.position,
+                destructor=destructor,
+                auto_destruction_target=auto_destruction_target,
+            ),
+            scope,
+        )
 
     def _collect(
         self,

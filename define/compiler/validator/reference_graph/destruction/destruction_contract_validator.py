@@ -13,6 +13,8 @@ from define.compiler.validator.reference_graph import (
     position_occupancy,
     quality_assignment,
     reference_graph_validation_state,
+)
+from define.compiler.validator.reference_graph.callee_execution import (
     requirement_violation,
 )
 from define.compiler.validator.reference_graph.destruction import (

@@ -25,6 +25,10 @@ from define.compiler.validator.reference_graph import (
     quality_assignment,
     reference_graph_validation_state,
 )
+from define.compiler.validator.reference_graph.callee_execution import (
+    callee_execution,
+    callee_execution_validator,
+)
 from define.compiler.validator.reference_graph.dead_code import (
     dead_constraint_validator,
     dead_value_write_validator,
@@ -33,6 +37,7 @@ from define.compiler.validator.reference_graph.destruction import (
     destroyed_particles,
     destroyer,
     destruction_contract_validator,
+    destructor_guarantees,
     guaranteed_particle_destruction,
 )
 from define.compiler.validator.reference_graph.destruction import (
@@ -172,8 +177,26 @@ class ActionDefinitionValidator:
         )
 
     @cached_property
+    def _callee_execution_validator(
+        self,
+    ) -> callee_execution_validator.CalleeExecutionValidator:
+        return callee_execution_validator.CalleeExecutionValidator(
+            self._definition,
+            self._tracker,
+            self._requirement_validator,
+            self._dead_constraint_validator,
+            self._dead_value_write_validator,
+            self._destruction_contract_validator,
+        )
+
+    @cached_property
     def _destroyer(self) -> destroyer.Destroyer:
-        return destroyer.Destroyer(self._destroyed_particles, self._tracker)
+        return destroyer.Destroyer(
+            self._destroyed_particles,
+            self._tracker,
+            self._callee_execution_validator,
+            self._validation_state,
+        )
 
     @cached_property
     def _destroyed_particles(self) -> destroyed_particles.DestroyedParticles:
@@ -227,17 +250,14 @@ class ActionDefinitionValidator:
             # The constructor is a quality of the particle in `position`, so its
             # interface positions hang off position::action</construct> while its
             # implied qualities hang off the position itself.
-            action_chain = position.with_action_suffix(quality)
-            self._fire_triggered_action(
-                contract,
-                action_chain,
-                position,
-                scope,
-                parent_particle=parent_particle,
-                action_assignment=action_contract.ActionAssignment(
-                    quality=quality,
-                    assigned_to_position_name=position.typed_names[-1],
+            self._trigger_callee(
+                callee_execution.ConstructorCalleeExecution(
+                    contract=contract,
+                    action_chain=position.with_action_suffix(quality),
+                    parent_particle=parent_particle,
+                    acting_on_position=position,
                 ),
+                scope,
             )
 
     def _destroy_particles(
@@ -246,80 +266,10 @@ class ActionDefinitionValidator:
         scope: scope_tracker.ScopeTracker,
     ):
         """Destroy the target particles and every particle below them."""
-        step, contracts = self._destroyer.destroy(
-            targets,
-            lambda destructor, auto_destruction_target: self._run_destructor(
-                destructor, scope, auto_destruction_target
-            ),
-        )
-        self._destruction_contracts.extend(contracts)
-        self._steps.append(step)
-
-    def _run_destructor(
-        self,
-        destructor: action_contract.Destructor,
-        scope: scope_tracker.ScopeTracker,
-        auto_destruction_target: ast.PositionReference | None,
-    ) -> ast.ActionReference | None:
-        """Trigger one directly known destructor before particle destruction, and return its action chain, or None when it has no contract to trigger."""
-        # A destructor's requirements are checked as though it triggered
-        # synchronously at the moment of destruction (DLP 41). The destructor is a
-        # quality of the particle in `position`, so its interface positions
-        # hang off position::action</destructor> while its implied qualities hang off
-        # position itself; in_caller maps both correctly from this chain.
-        destructor_name = destructor.destructor
-        contract = self._validation_state.get_contract_or_none(destructor_name)
-        if contract is None:
-            return None
-        action_chain = destructor.position.with_action_suffix(destructor_name)
-        parent_particle = self._tracker.get_occupant(destructor.position)
-        requirements_in_caller = contract.occupancy_requirements_in_caller(action_chain)
-        self._dead_constraint_validator.mark_callee_contract_constraints_alive(
-            requirements_in_caller, scope
-        )
-        self._requirement_validator.propagate_action_requirements(
-            action_chain,
-            scope,
-            requirements_in_caller,
-            destructor.action_assignment(),
-        )
-        self._diagnostics.extend(
-            self._requirement_validator.check_destructor_requirements(
-                destructor,
-                requirements_in_caller,
-                auto_destruction_target=auto_destruction_target,
-            )
-        )
-        value_requirements = contract.value_requirements_in_caller(action_chain)
-        self._requirement_validator.propagate_value_requirements(
-            action_chain, value_requirements, destructor.action_assignment()
-        )
-        self._dead_value_write_validator.mark_required_values_used(value_requirements)
-        self._diagnostics.extend(
-            self._requirement_validator.check_value_requirements(
-                value_requirements,
-                acting_on_position=destructor.position,
-                action_assignment=destructor.action_assignment(),
-                destructor=destructor,
-                auto_destruction_target=auto_destruction_target,
-            )
-        )
-        execution = codegen_input.ActionExecution(action=action_chain)
-        occupied_interface_child_position_violations = self._tracker.trigger_action(
-            execution,
-            contract,
-            parent_particle=parent_particle,
-        )
-        self._record_occupied_interface_child_position_violations(
-            destructor_name,
-            (
-                destructor.position
-                if auto_destruction_target is None
-                else auto_destruction_target
-            ),
-            occupied_interface_child_position_violations,
-        )
-        return action_chain
+        result = self._destroyer.destroy(targets, scope)
+        self._diagnostics.extend(result.diagnostics)
+        self._destruction_contracts.extend(result.destruction_contracts)
+        self._steps.append(result.step)
 
     def _process_interface_arrival(
         self,
@@ -359,102 +309,25 @@ class ActionDefinitionValidator:
             position, particle, scope
         )
 
-        self._fire_triggered_action(
-            contract,
-            action_chain,
-            particle.last_position,
+        self._trigger_callee(
+            callee_execution.CalleeExecution(
+                contract=contract,
+                action_chain=action_chain,
+                parent_particle=parent_particle,
+                acting_on_position=particle.last_position,
+            ),
             scope,
-            parent_particle=parent_particle,
         )
 
-    def _fire_triggered_action(
+    def _trigger_callee(
         self,
-        contract: action_contract.ActionContract,
-        action_chain: ast.ActionReference,
-        acting_on_position: ast.PositionReference,
+        execution: callee_execution.CalleeExecution,
         scope: scope_tracker.ScopeTracker,
-        *,
-        parent_particle: particle_info.ParticleInfo | None,
-        action_assignment: action_contract.ActionAssignment | None = None,
     ):
-        execution = codegen_input.ActionExecution(action=action_chain)
-        self._steps.append(execution)
-        action = action_chain.get_last_action()
-        # Requirement propagation and requirement checking each need every
-        # requirement's position from the caller's perspective
-        # (req.position.in_caller(action_chain)). Deriving it is a fresh
-        # allocation, so compute it once here and hand the same objects to both
-        # rather than rebuilding it twice per requirement per trigger.
-        requirements_in_caller = contract.occupancy_requirements_in_caller(action_chain)
-        self._dead_constraint_validator.mark_callee_contract_constraints_alive(
-            requirements_in_caller, scope
-        )
-        self._requirement_validator.propagate_action_requirements(
-            action_chain,
-            scope,
-            requirements_in_caller,
-            action_assignment,
-        )
-        self._diagnostics.extend(
-            self._requirement_validator.check_requirements(
-                acting_on_position,
-                requirements_in_caller,
-                action_assignment=action_assignment,
-            )
-        )
-        value_requirements = contract.value_requirements_in_caller(action_chain)
-        self._requirement_validator.propagate_value_requirements(
-            action_chain, value_requirements, action_assignment
-        )
-        self._dead_value_write_validator.mark_required_values_used(value_requirements)
-        self._diagnostics.extend(
-            self._requirement_validator.check_value_requirements(
-                value_requirements,
-                acting_on_position=acting_on_position,
-                action_assignment=action_assignment,
-            )
-        )
-        destruction_result = self._destruction_contract_validator.validate(
-            contract.destruction_contracts,
-            action_chain,
-        )
-        self._diagnostics.extend(destruction_result.diagnostics)
-        self._destruction_contracts.extend(destruction_result.propagated_contracts)
-        execution.destruction_connections.extend(destruction_result.connections)
-        occupied_interface_child_position_violations = self._tracker.trigger_action(
-            execution,
-            contract,
-            parent_particle=parent_particle,
-        )
-        self._record_occupied_interface_child_position_violations(
-            action,
-            acting_on_position,
-            occupied_interface_child_position_violations,
-        )
-
-    def _record_occupied_interface_child_position_violations(
-        self,
-        action: ast.GlobalTypedNameReference,
-        triggered_by: ast.PositionReference,
-        occupied_interface_child_position_violations: Sequence[
-            tuple[chained_name.PositionReferenceTuple, ast.SourceLocation]
-        ],
-    ):
-        """Record occupied interface child positions found when one callee triggers."""
-        for position, arrived_at in occupied_interface_child_position_violations:
-            # The callee ran with a particle where it expected none, so what
-            # is there now cannot be trusted.
-            self._tracker.mark_error_by_key(position)
-            self._diagnostics.append(
-                diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic(
-                    location=triggered_by.location,
-                    arrived_at=arrived_at,
-                    action_name=action.source_typed_name,
-                    position_name=ast.source_form_chained_name(
-                        position, self._enclosing_fqun.canonical
-                    ),
-                )
-            )
+        result = self._callee_execution_validator.validate(execution, scope)
+        self._diagnostics.extend(result.diagnostics)
+        self._steps.append(result.codegen_execution)
+        self._destruction_contracts.extend(result.destruction_contracts)
 
     def _analyze_statements(
         self,
@@ -1024,8 +897,17 @@ class ActionDefinitionValidator:
             self._implied_quality_list,
             requirements,
         )
+        destruction_contracts = self._destruction_contracts
         if self._definition.is_destructor:
-            self._check_destructor_guarantees(guarantees)
+            self._diagnostics.extend(
+                destructor_guarantees.check_destructor_guarantees(
+                    guarantees, self._tracker, self._enclosing_fqun
+                )
+            )
+            # A Destructor may not destroy a particle from its caller either,
+            # so it publishes no Destruction Contracts for one; each is
+            # already reported as a forbidden Guarantee.
+            destruction_contracts = []
         contract = action_contract.ActionContract(
             occupancy_requirements=list(requirements.values()),
             value_requirements=list(
@@ -1034,7 +916,7 @@ class ActionDefinitionValidator:
             guarantees=self._tracker.published_guarantees(
                 self._definition.typed_name, guarantees, on_destruction
             ),
-            destruction_contracts=self._destruction_contracts,
+            destruction_contracts=destruction_contracts,
             trigger_position_name=self._trigger_position_name or "",
             implied_quality_names=(
                 self._position_quality_resolver.get_transitive_implied_quality_names(
@@ -1043,91 +925,3 @@ class ActionDefinitionValidator:
             ),
         )
         return contract, guarantees
-
-    def _check_destructor_guarantees(
-        self,
-        guarantees: dict[
-            chained_name.PositionReferenceTuple,
-            action_contract.PositionGuarantee,
-        ],
-    ):
-        """Report forbidden Destructor Guarantees and replace them with Error Guarantees.
-
-        A destructor may not change any contracted position's state (DLP 41), so
-        each guarantee it produces is a violation. The contract may not
-        advertise such a guarantee, so each is replaced with an ErrorGuarantee
-        that leaves the position's post-destructor state undetermined for any
-        consumer of the contract. A change one of its callees makes shows in
-        its own Guarantees, because a callee can only change a position that
-        it or the Destructor requires something of, or one below a particle
-        that is itself reported.
-
-        A particle that is not from the caller, left below another such
-        particle, is not reported: removing the upper one removes it too.
-        """
-        occupied_by_new_positions: set[chained_name.ChainedNameTuple] = set()
-        for position, guarantee in guarantees.items():
-            if isinstance(guarantee, action_contract.OccupiedByNewGuarantee):
-                occupied_by_new_positions.add(position)
-        for position, guarantee in guarantees.items():
-            # A guarantee from a triggered action names its position the way that
-            # callee wrote it. The key is the position's full chained name from
-            # this Destructor's perspective, so report that instead.
-            position_name = ast.source_form_chained_name(
-                position, self._enclosing_fqun.canonical
-            )
-            match guarantee:
-                case action_contract.EmptyGuarantee():
-                    self._diagnostics.append(
-                        diagnostics.DestructorProducesEmptyGuaranteeDiagnostic(
-                            location=guarantee.caused_by.location,
-                            position_name=position_name,
-                        )
-                    )
-                case action_contract.OccupiedByNewGuarantee():
-                    # Removing a particle that is not from the caller also
-                    # removes every such particle below it, so reporting
-                    # those too would only repeat the same error.
-                    if not any(
-                        parent in occupied_by_new_positions
-                        for parent in chained_name.proper_prefixes(position)
-                    ):
-                        self._diagnostics.append(
-                            diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic(
-                                location=guarantee.caused_by.location,
-                                position_name=position_name,
-                            )
-                        )
-                case action_contract.OccupiedByExistingGuarantee() if (
-                    guarantee.origin_position.canonical_chained_name_tuple == position
-                ):
-                    # A particle whose value did not change is where it started.
-                    # A change to the particle above it is reported on its own.
-                    if guarantee.value_effect in (
-                        None,
-                        particle_info.ParticleValueState.ERROR,
-                    ):
-                        continue
-                    self._diagnostics.append(
-                        diagnostics.DestructorChangesValueDiagnostic(
-                            location=self._tracker.value_written_at(position),
-                            position_name=position_name,
-                        )
-                    )
-                case action_contract.OccupiedByExistingGuarantee():
-                    self._diagnostics.append(
-                        diagnostics.DestructorProducesOccupiedByExistingGuaranteeDiagnostic(
-                            location=guarantee.caused_by.location,
-                            position_name=position_name,
-                            origin_name=guarantee.origin_position.source_form_in_universe(
-                                self._enclosing_fqun
-                            ),
-                        )
-                    )
-                case action_contract.ErrorGuarantee():
-                    continue
-                case _:
-                    raise TypeError(
-                        f"unexpected guarantee type {type(guarantee).__name__}"
-                    )
-            guarantees[position] = action_contract.ErrorGuarantee()

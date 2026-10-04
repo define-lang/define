@@ -1231,7 +1231,7 @@ def test_constructor_on_interface_position_dead_when_never_created(
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
     assert all_diags[0].constraint_name == "action</construct>"
     assert all_diags[0].position_name == "position<run>"
-    assert all_diags[0].location.line == 9
+    assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 24
 
 

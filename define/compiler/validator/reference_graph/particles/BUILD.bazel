@@ -65,7 +65,6 @@ py_library(
         ":requirement_resolution",
         "//define/compiler:ast",
         "//define/compiler:chained_name",
-        "//define/compiler/validator:codegen_input",
         "//define/compiler/validator/reference_graph:action_contract",
         "//define/compiler/validator/reference_graph:position_occupancy",
         "//define/compiler/validator/reference_graph:quality_assignment",

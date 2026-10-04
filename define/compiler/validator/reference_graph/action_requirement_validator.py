@@ -7,6 +7,8 @@ import typing
 from define.compiler.validator.reference_graph import (
     action_contract,
     position_occupancy,
+)
+from define.compiler.validator.reference_graph.callee_execution import (
     requirement_violation,
 )
 from define.compiler.validator.reference_graph.particles import particle_info
@@ -16,6 +18,9 @@ if typing.TYPE_CHECKING:
     from define.compiler.errors import diagnostics
     from define.compiler.validator import scope_tracker
     from define.compiler.validator.reference_graph import position_quality_resolver
+    from define.compiler.validator.reference_graph.callee_execution import (
+        callee_execution,
+    )
     from define.compiler.validator.reference_graph.particles import particle_tracker
 
 
@@ -191,20 +196,18 @@ class ActionRequirementValidator:
                 scope=scope,
             )
 
-    def check_requirements(
+    def check_occupancy_requirements(
         self,
-        acting_on_position: ast.PositionReference,
+        execution: callee_execution.CalleeExecution,
         requirements_in_caller: list[
             action_contract.PositionRequirementInCaller[
                 action_contract.PositionOccupancyRequirement
             ]
         ],
-        *,
-        action_assignment: action_contract.ActionAssignment | None,
     ) -> list[diagnostics.Diagnostic]:
-        """Emit diagnostics for every requirement in contract that doesn't hold at acting_on_position.
+        """Emit diagnostics for every occupancy requirement of the callee that doesn't hold before ``execution``.
 
-        ``requirements_in_caller`` contains the contract's requirements and
+        ``requirements_in_caller`` contains the callee's requirements and
         their positions from the caller's perspective.
         """
         validation_diagnostics: list[diagnostics.Diagnostic] = []
@@ -225,13 +228,8 @@ class ActionRequirementValidator:
             )
             if violated:
                 validation_diagnostics.append(
-                    requirement_violation.trigger_violation(
-                        req=req,
-                        definition=self._definition,
-                        full_caller_chain=full_caller_chain,
-                        acting_on_position=acting_on_position,
-                        occupant=occupant,
-                        action_assignment=action_assignment,
+                    execution.requirement_violation(
+                        req, full_caller_chain, occupant, self._definition
                     )
                 )
         return validation_diagnostics
@@ -251,38 +249,6 @@ class ActionRequirementValidator:
             else position_occupancy.PositionOccupancyState.EMPTY
         )
         return requirement_violation.is_violated(req, state, None), occupant
-
-    def check_destructor_requirements(
-        self,
-        destructor: action_contract.Destructor,
-        requirements_in_caller: list[
-            action_contract.PositionRequirementInCaller[
-                action_contract.PositionOccupancyRequirement
-            ]
-        ],
-        *,
-        auto_destruction_target: ast.PositionReference | None,
-    ) -> list[diagnostics.Diagnostic]:
-        """Check the requirements of a directly known Destructor."""
-        validation_diagnostics: list[diagnostics.Diagnostic] = []
-        for requirement_in_caller in requirements_in_caller:
-            req = requirement_in_caller.requirement
-            full_caller_chain = requirement_in_caller.caller_position
-            violated, occupant = self._requirement_violation_occupant(
-                full_caller_chain, req
-            )
-            if violated:
-                validation_diagnostics.append(
-                    requirement_violation.direct_destructor(
-                        req=req,
-                        definition=self._definition,
-                        full_caller_chain=full_caller_chain,
-                        occupant=occupant,
-                        destructor=destructor,
-                        auto_destruction_target=auto_destruction_target,
-                    )
-                )
-        return validation_diagnostics
 
     def infer_value_requirement(
         self,
@@ -334,42 +300,27 @@ class ActionRequirementValidator:
 
     def check_value_requirements(
         self,
+        execution: callee_execution.CalleeExecution,
         requirements: list[
             action_contract.PositionRequirementInCaller[
                 action_contract.ValueRequirement
             ]
         ],
-        *,
-        acting_on_position: ast.PositionReference,
-        action_assignment: action_contract.ActionAssignment | None,
-        destructor: action_contract.Destructor | None = None,
-        auto_destruction_target: ast.PositionReference | None = None,
     ) -> list[diagnostics.Diagnostic]:
-        """Check value requirements using the state immediately before triggering."""
+        """Check the callee's value requirements using the state immediately before ``execution``."""
         validation_diagnostics: list[diagnostics.Diagnostic] = []
         for requirement in requirements:
             particle = self._value_requirement_violation(requirement)
             if particle is None:
                 continue
-            if destructor is None:
-                diagnostic = requirement_violation.trigger_violation(
-                    req=requirement.requirement,
-                    definition=self._definition,
-                    full_caller_chain=requirement.caller_position,
-                    acting_on_position=acting_on_position,
-                    occupant=particle,
-                    action_assignment=action_assignment,
+            validation_diagnostics.append(
+                execution.requirement_violation(
+                    requirement.requirement,
+                    requirement.caller_position,
+                    particle,
+                    self._definition,
                 )
-            else:
-                diagnostic = requirement_violation.direct_destructor(
-                    req=requirement.requirement,
-                    definition=self._definition,
-                    full_caller_chain=requirement.caller_position,
-                    occupant=particle,
-                    destructor=destructor,
-                    auto_destruction_target=auto_destruction_target,
-                )
-            validation_diagnostics.append(diagnostic)
+            )
             self._tracker.mark_value_error(requirement.caller_position)
         return validation_diagnostics
 

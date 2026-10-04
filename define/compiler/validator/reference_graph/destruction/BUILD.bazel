@@ -56,9 +56,14 @@ py_library(
         ":destruction_contract",
         "//define/compiler:ast",
         "//define/compiler:chained_name",
+        "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:codegen_input",
+        "//define/compiler/validator:scope_tracker",
         "//define/compiler/validator/reference_graph:action_contract",
         "//define/compiler/validator/reference_graph:quality_assignment",
+        "//define/compiler/validator/reference_graph:reference_graph_validation_state",
+        "//define/compiler/validator/reference_graph/callee_execution",
+        "//define/compiler/validator/reference_graph/callee_execution:callee_execution_validator",
         "//define/compiler/validator/reference_graph/particles:particle_info",
         "//define/compiler/validator/reference_graph/particles:particle_tracker",
         "@pypi//msgspec",
@@ -93,11 +98,25 @@ py_library(
         "//define/compiler/validator/reference_graph:position_occupancy",
         "//define/compiler/validator/reference_graph:quality_assignment",
         "//define/compiler/validator/reference_graph:reference_graph_validation_state",
-        "//define/compiler/validator/reference_graph:requirement_violation",
+        "//define/compiler/validator/reference_graph/callee_execution:requirement_violation",
         "//define/compiler/validator/reference_graph/dead_code:dead_value_write_validator",
         "//define/compiler/validator/reference_graph/particles:particle_info",
         "//define/compiler/validator/reference_graph/particles:particle_tracker",
         "@pypi//msgspec",
+    ],
+)
+
+py_library(
+    name = "destructor_guarantees",
+    srcs = ["destructor_guarantees.py"],
+    visibility = ["//define/compiler/validator/reference_graph:__pkg__"],
+    deps = [
+        "//define/compiler:ast",
+        "//define/compiler:chained_name",
+        "//define/compiler/errors:diagnostics",
+        "//define/compiler/validator/reference_graph:action_contract",
+        "//define/compiler/validator/reference_graph/particles:particle_info",
+        "//define/compiler/validator/reference_graph/particles:particle_tracker",
     ],
 )
 
@@ -114,7 +133,7 @@ py_library(
         "//define/compiler/validator/reference_graph:action_contract",
         "//define/compiler/validator/reference_graph:quality_assignment",
         "//define/compiler/validator/reference_graph:reference_graph_validation_state",
-        "//define/compiler/validator/reference_graph:requirement_violation",
+        "//define/compiler/validator/reference_graph/callee_execution:requirement_violation",
         "//define/compiler/validator/reference_graph/particles:particle_info",
         "//define/compiler/validator/reference_graph/particles:particle_tracker",
         "@pypi//msgspec",
@@ -136,6 +155,7 @@ pyright_test(
         ":destroyer",
         ":destruction_contract",
         ":destruction_contract_validator",
+        ":destructor_guarantees",
         ":guaranteed_particle_destruction",
     ],
 )

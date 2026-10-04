@@ -22,7 +22,6 @@ if typing.TYPE_CHECKING:
         Sequence,
     )
 
-    from define.compiler.validator import codegen_input
     from define.compiler.validator.reference_graph import (
         action_contract,
         position_occupancy,
@@ -396,21 +395,19 @@ class ParticleTracker:
 
     def trigger_action(
         self,
-        execution: codegen_input.ActionExecution,
+        action_chain: ast.ActionReference,
         contract: action_contract.ActionContract,
         *,
         parent_particle: particle_info.ParticleInfo | None,
     ) -> list[tuple[chained_name.PositionReferenceTuple, ast.SourceLocation]]:
-        """Record an Action Execution and apply the triggered action's guarantees."""
+        """Record that this action triggered ``action_chain``, and apply the triggered action's guarantees."""
         occupied_interface_child_position_violations = (
             self._occupied_interface_child_positions(
-                execution.action, contract.implied_quality_names
+                action_chain, contract.implied_quality_names
             )
         )
-        self._mark_interface_arrivals_passed_to_callee(
-            execution.action, parent_particle
-        )
-        self._store.trigger(execution.action, contract, parent_particle)
+        self._mark_interface_arrivals_passed_to_callee(action_chain, parent_particle)
+        self._store.trigger(action_chain, contract, parent_particle)
         return occupied_interface_child_position_violations
 
     def _occupied_interface_child_positions(

@@ -44,12 +44,15 @@ py_library(
         "//define/compiler/validator:codegen_input",
         "//define/compiler/validator:scope_tracker",
         "//define/compiler/validator:validation_result",
+        "//define/compiler/validator/reference_graph/callee_execution",
+        "//define/compiler/validator/reference_graph/callee_execution:callee_execution_validator",
         "//define/compiler/validator/reference_graph/dead_code:dead_constraint_validator",
         "//define/compiler/validator/reference_graph/dead_code:dead_value_write_validator",
         "//define/compiler/validator/reference_graph/destruction:destroyed_particles",
         "//define/compiler/validator/reference_graph/destruction:destroyer",
         "//define/compiler/validator/reference_graph/destruction:destruction_contract",
         "//define/compiler/validator/reference_graph/destruction:destruction_contract_validator",
+        "//define/compiler/validator/reference_graph/destruction:destructor_guarantees",
         "//define/compiler/validator/reference_graph/destruction:guaranteed_particle_destruction",
         "//define/compiler/validator/reference_graph/particles:particle_info",
         "//define/compiler/validator/reference_graph/particles:particle_tracker",
@@ -59,16 +62,17 @@ py_library(
 py_library(
     name = "action_requirement_validator",
     srcs = ["action_requirement_validator.py"],
-    visibility = ["//define/compiler/validator/reference_graph/destruction:__pkg__"],
+    visibility = ["//define/compiler/validator/reference_graph/callee_execution:__pkg__"],
     deps = [
         ":action_contract",
         ":position_occupancy",
         ":position_quality_resolver",
-        ":requirement_violation",
         "//define/compiler:ast",
         "//define/compiler:chained_name",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:scope_tracker",
+        "//define/compiler/validator/reference_graph/callee_execution",
+        "//define/compiler/validator/reference_graph/callee_execution:requirement_violation",
         "//define/compiler/validator/reference_graph/particles:particle_info",
         "//define/compiler/validator/reference_graph/particles:particle_tracker",
     ],
@@ -265,20 +269,6 @@ py_test(
 )
 
 py_library(
-    name = "requirement_violation",
-    srcs = ["requirement_violation.py"],
-    visibility = ["//define/compiler:__subpackages__"],
-    deps = [
-        ":action_contract",
-        ":position_occupancy",
-        "//define/compiler:ast",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator/reference_graph/particles:particle_info",
-        "@pypi//msgspec",
-    ],
-)
-
-py_library(
     name = "test_helpers",
     testonly = True,
     srcs = ["test_helpers.py"],
@@ -321,7 +311,6 @@ pyright_test(
         ":reference_graph_validation_state_test",
         ":reference_graph_validator",
         ":reference_graph_validator_test",
-        ":requirement_violation",
         ":test_helpers",
     ],
 )

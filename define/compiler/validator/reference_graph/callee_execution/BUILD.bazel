@@ -4,56 +4,60 @@ load("//tools/bzl:format.bzl", "format_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
 py_library(
-    name = "dead_constraint_tracker",
-    srcs = ["dead_constraint_tracker.py"],
+    name = "callee_execution",
+    srcs = ["callee_execution.py"],
+    visibility = [
+        "//define/compiler/validator/reference_graph:__pkg__",
+        "//define/compiler/validator/reference_graph/destruction:__pkg__",
+    ],
     deps = [
+        ":requirement_violation",
         "//define/compiler:ast",
-        "//define/compiler:name_types",
-        "//define/compiler/data_structures:typed_name_dict",
-        "//define/compiler/validator:validation_result",
+        "//define/compiler/errors:diagnostics",
+        "//define/compiler/validator/reference_graph:action_contract",
+        "//define/compiler/validator/reference_graph/particles:particle_info",
         "@pypi//msgspec",
     ],
 )
 
 py_library(
-    name = "dead_constraint_validator",
-    srcs = ["dead_constraint_validator.py"],
+    name = "callee_execution_validator",
+    srcs = ["callee_execution_validator.py"],
     visibility = [
         "//define/compiler/validator/reference_graph:__pkg__",
-        "//define/compiler/validator/reference_graph/callee_execution:__pkg__",
+        "//define/compiler/validator/reference_graph/destruction:__pkg__",
     ],
     deps = [
-        ":dead_constraint_tracker",
+        ":callee_execution",
         "//define/compiler:ast",
         "//define/compiler:chained_name",
-        "//define/compiler:name_types",
-        "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/errors:diagnostics",
+        "//define/compiler/validator:codegen_input",
         "//define/compiler/validator:scope_tracker",
-        "//define/compiler/validator:validation_result",
         "//define/compiler/validator/reference_graph:action_contract",
-        "//define/compiler/validator/reference_graph:position_occupancy",
-        "//define/compiler/validator/reference_graph:position_quality_resolver",
-        "//define/compiler/validator/reference_graph/particles:particle_info",
+        "//define/compiler/validator/reference_graph:action_requirement_validator",
+        "//define/compiler/validator/reference_graph/dead_code:dead_constraint_validator",
+        "//define/compiler/validator/reference_graph/dead_code:dead_value_write_validator",
+        "//define/compiler/validator/reference_graph/destruction:destruction_contract_validator",
         "//define/compiler/validator/reference_graph/particles:particle_tracker",
+        "@pypi//msgspec",
     ],
 )
 
 py_library(
-    name = "dead_value_write_validator",
-    srcs = ["dead_value_write_validator.py"],
+    name = "requirement_violation",
+    srcs = ["requirement_violation.py"],
     visibility = [
         "//define/compiler/validator/reference_graph:__pkg__",
-        "//define/compiler/validator/reference_graph/callee_execution:__pkg__",
         "//define/compiler/validator/reference_graph/destruction:__pkg__",
     ],
     deps = [
         "//define/compiler:ast",
-        "//define/compiler:chained_name",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/validator/reference_graph:action_contract",
+        "//define/compiler/validator/reference_graph:position_occupancy",
         "//define/compiler/validator/reference_graph/particles:particle_info",
-        "//define/compiler/validator/reference_graph/particles:particle_tracker",
+        "@pypi//msgspec",
     ],
 )
 
@@ -66,9 +70,9 @@ format_test(
 pyright_test(
     name = "pyright_test",
     deps = [
-        ":dead_constraint_tracker",
-        ":dead_constraint_validator",
-        ":dead_value_write_validator",
+        ":callee_execution",
+        ":callee_execution_validator",
+        ":requirement_violation",
     ],
 )
 

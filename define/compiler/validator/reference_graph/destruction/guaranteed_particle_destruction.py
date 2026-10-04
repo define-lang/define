@@ -9,8 +9,8 @@ import msgspec
 
 from define.compiler import ast, chained_name
 from define.compiler.validator import codegen_input
-from define.compiler.validator.reference_graph import (
-    action_contract,
+from define.compiler.validator.reference_graph import action_contract
+from define.compiler.validator.reference_graph.callee_execution import (
     requirement_violation,
 )
 from define.compiler.validator.reference_graph.destruction import (
