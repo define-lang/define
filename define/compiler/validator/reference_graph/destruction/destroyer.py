@@ -7,7 +7,6 @@ import typing
 import msgspec
 
 from define.compiler import chained_name
-from define.compiler.validator import codegen_input
 from define.compiler.validator.reference_graph import (
     action_contract,
     quality_assignment,
@@ -50,7 +49,8 @@ class DestructionTarget(msgspec.Struct, frozen=True):
 class DestroyResult(msgspec.Struct):
     """What destroying a set of particles produces."""
 
-    step: codegen_input.Destruction
+    work: destruction_contract.KnownDestructionWork
+    contract_destructions: list[destruction_contract.PropagatedDestruction]
     destruction_contracts: list[action_contract.DestructionContracts]
     # From the Destructors the destruction triggers.
     diagnostics: list[diagnostics.Diagnostic]
@@ -79,7 +79,8 @@ class Destroyer:
         scope: scope_tracker.ScopeTracker,
     ) -> DestroyResult:
         """Destroy the particles in ``targets`` simultaneously, with every particle below them, and return what the destruction produces."""
-        step = codegen_input.Destruction()
+        work = destruction_contract.KnownDestructionWork()
+        contract_destructions: list[destruction_contract.PropagatedDestruction] = []
         validation_diagnostics: list[diagnostics.Diagnostic] = []
         destructors: list[
             tuple[action_contract.Destructor, ast.PositionReference | None]
@@ -94,7 +95,7 @@ class Destroyer:
                 position,
                 self._tracker.get_occupant(position),
                 target,
-                step.work,
+                work,
                 destructors,
                 contracts,
             )
@@ -103,12 +104,13 @@ class Destroyer:
                 contracts_by_target.append(contracts)
         child_states = self._tracker.snapshot_child_states(snapshot_positions)
         for destructor, auto_destruction_target in destructors:
-            result = self._trigger_destructor(
+            triggered = self._trigger_destructor(
                 destructor, auto_destruction_target, scope
             )
-            if result is not None:
-                step.work.destructors.append(result.codegen_execution.action)
-                validation_diagnostics.extend(result.diagnostics)
+            if triggered is not None:
+                action_chain, destructor_diagnostics = triggered
+                work.destructors.append(action_chain)
+                validation_diagnostics.extend(destructor_diagnostics)
         self._tracker.destroy_simultaneously(
             [target.destruction.directly_destroyed_position for target in targets]
         )
@@ -121,10 +123,11 @@ class Destroyer:
             )
             for contract in contracts:
                 contracts_sharing_child_state.append(contract)
-                step.contract_destructions.append(contract.propagated_destruction)
+                contract_destructions.append(contract.propagated_destruction)
             destruction_contracts.append(contracts_sharing_child_state)
         return DestroyResult(
-            step=step,
+            work=work,
+            contract_destructions=contract_destructions,
             destruction_contracts=destruction_contracts,
             diagnostics=validation_diagnostics,
         )
@@ -134,8 +137,8 @@ class Destroyer:
         destructor: action_contract.Destructor,
         auto_destruction_target: ast.PositionReference | None,
         scope: scope_tracker.ScopeTracker,
-    ) -> callee_execution_validator.CalleeExecutionValidationResult | None:
-        """Trigger one directly known Destructor before particle destruction, and return what validating its execution produces, or None when it has no contract to trigger."""
+    ) -> tuple[ast.ActionReference, list[diagnostics.Diagnostic]] | None:
+        """Trigger one directly known Destructor before particle destruction, and return its action chain and the diagnostics its execution causes, or None when it has no contract to trigger."""
         # A destructor's requirements are checked as though it triggered
         # synchronously at the moment of destruction (DLP 41). The destructor is a
         # quality of the particle in `position`, so its interface positions
@@ -144,14 +147,14 @@ class Destroyer:
         contract = self._validation_state.get_contract_or_none(destructor.destructor)
         if contract is None:
             return None
-        # A Destructor publishes no Destruction Contracts, so the result
-        # holds none to take on.
-        return self._callee_execution_validator.validate(
+        action_chain = destructor.position.with_action_suffix(destructor.destructor)
+        # A Destructor publishes no Destruction Contracts, and the known
+        # destruction work records only its action chain, so only the
+        # diagnostics are needed from the result.
+        result = self._callee_execution_validator.validate(
             callee_execution.DestructorCalleeExecution(
                 contract=contract,
-                action_chain=destructor.position.with_action_suffix(
-                    destructor.destructor
-                ),
+                action_chain=action_chain,
                 parent_particle=self._tracker.get_occupant(destructor.position),
                 acting_on_position=destructor.position,
                 destructor=destructor,
@@ -159,6 +162,7 @@ class Destroyer:
             ),
             scope,
         )
+        return action_chain, result.diagnostics
 
     def _collect(
         self,

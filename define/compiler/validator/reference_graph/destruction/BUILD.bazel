@@ -57,7 +57,6 @@ py_library(
         "//define/compiler:ast",
         "//define/compiler:chained_name",
         "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:codegen_input",
         "//define/compiler/validator:scope_tracker",
         "//define/compiler/validator/reference_graph:action_contract",
         "//define/compiler/validator/reference_graph:quality_assignment",

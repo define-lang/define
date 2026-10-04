@@ -269,7 +269,11 @@ class ActionDefinitionValidator:
         result = self._destroyer.destroy(targets, scope)
         self._diagnostics.extend(result.diagnostics)
         self._destruction_contracts.extend(result.destruction_contracts)
-        self._steps.append(result.step)
+        self._steps.append(
+            codegen_input.Destruction(
+                work=result.work, contract_destructions=result.contract_destructions
+            )
+        )
 
     def _process_interface_arrival(
         self,
@@ -326,7 +330,12 @@ class ActionDefinitionValidator:
     ):
         result = self._callee_execution_validator.validate(execution, scope)
         self._diagnostics.extend(result.diagnostics)
-        self._steps.append(result.codegen_execution)
+        self._steps.append(
+            codegen_input.ActionExecution(
+                action=execution.action_chain,
+                destruction_connections=result.destruction_connections,
+            )
+        )
         self._destruction_contracts.extend(result.destruction_contracts)
 
     def _analyze_statements(

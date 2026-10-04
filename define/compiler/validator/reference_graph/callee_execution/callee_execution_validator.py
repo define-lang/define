@@ -8,7 +8,6 @@ import msgspec
 
 from define.compiler import ast
 from define.compiler.errors import diagnostics
-from define.compiler.validator import codegen_input
 
 if typing.TYPE_CHECKING:
     from collections.abc import Sequence
@@ -27,6 +26,7 @@ if typing.TYPE_CHECKING:
         dead_value_write_validator,
     )
     from define.compiler.validator.reference_graph.destruction import (
+        destruction_contract,
         destruction_contract_validator,
     )
     from define.compiler.validator.reference_graph.particles import (
@@ -37,7 +37,7 @@ if typing.TYPE_CHECKING:
 class CalleeExecutionValidationResult(msgspec.Struct):
     """What validating one callee execution produces."""
 
-    codegen_execution: codegen_input.ActionExecution
+    destruction_connections: list[destruction_contract.DestructionConnection]
     # Destruction Contracts this action takes on from the callee.
     destruction_contracts: list[action_contract.DestructionContracts]
     diagnostics: list[diagnostics.Diagnostic]
@@ -108,8 +108,6 @@ class CalleeExecutionValidator:
             action_chain,
         )
         validation_diagnostics.extend(destruction_result.diagnostics)
-        codegen_execution = codegen_input.ActionExecution(action=action_chain)
-        codegen_execution.destruction_connections.extend(destruction_result.connections)
         occupied_interface_child_position_violations = self._tracker.trigger_action(
             action_chain,
             contract,
@@ -121,7 +119,7 @@ class CalleeExecutionValidator:
             )
         )
         return CalleeExecutionValidationResult(
-            codegen_execution=codegen_execution,
+            destruction_connections=destruction_result.connections,
             destruction_contracts=destruction_result.propagated_contracts,
             diagnostics=validation_diagnostics,
         )
