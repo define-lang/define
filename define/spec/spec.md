@@ -1575,35 +1575,34 @@ started. An occupied position contains the same particle in the same position
 with the same qualities. These unchanged Action Guarantees are the complete set
 of Action Guarantees produced by a destructor.
 
-### Destructor Requirement Verification
+### Destructor Requirement Validation
 
 A destructor has [Automatic Action Requirements](#automatic-action-requirements)
 that work identically to how they work for any other action. This is what the
-compiler is verifying when it verifies a destructor.
+compiler is validating when it validates a destructor.
 
-Each destructor's requirements are verified independently of every other
+Each destructor's requirements are validated independently of every other
 destructor. It is not possible for one destructor to affect the requirements of
 another destructor on the same particle.
 
 ### Destruction Contracts
 
-When compiling any individual Action Statements Block, the compiler verifies
-only the destructors that the immediate Action Statements Block is aware of
-being on the particle at the time of destruction. For contracted positions,
-those particles may have more qualities assigned to them than the immediate
-Action Statements Block is aware of.
+We call any action that directly executes a destruction a "destroyer."
 
-Thus, when an action destroys a particle that (a) the action itself did not
-create and (b) is in a contracted position, its
-[Action Contract](#action-contracts) records additional information about that
-destruction. This additional information is called a Destruction Contract.
+When compiling a destroyer, the compiler validates only the destructors that the
+destroyer is aware of being on a particle at the time of destruction. Particles
+that were provided as input to the destroyer via its contracted positions may
+have more qualities assigned to them than the destroyer is aware of in its own
+code.
+
+Thus, when an action destroys a particle that was provided as input via one of
+its contracted positions, its [Action Contract](#action-contracts) records
+additional information about that destruction. This additional information is
+called a Destruction Contract.
 
 Destruction Contracts are used by callers higher in the call stack to validate
-destructors that the action did not know were assigned to the particle, but
-which those callers _do_ know are assigned to the particle. The intention of
-Destruction Contracts is that each caller verifies the additional destructors it
-knows about as though they were running at the moment of destruction (not inside
-of the caller's code).
+destructors that the destroyer did not know were assigned to the particle, but
+which those callers _do_ know are assigned to the particle.
 
 #### Destruction Fact
 
@@ -1624,24 +1623,30 @@ For each Destruction Fact, the compiler records the known occupancy and value
 state of the destroyed particle's transitive child positions immediately before
 destruction begins. This is called the Child State.
 
-An action may not know the full state of every transitive child position,
-because it may not be aware of every quality on the destroyed particle. Each
-action in the call chain therefore maintains its own cumulative Child State,
-adding whatever it knows about the state of a child position immediately before
-the parent particle was destroyed.
+The destroyer may not know the full state of every transitive child position,
+because it may lack a few pieces of information:
 
-#### When Destructors in Contracts Are Verified
+1. What transitive child positions exist on the particle.
+2. What qualities are assigned to those child positions.
+3. The state (empty, occupied, value set, value unset, etc.) of any known
+   transitive child positions.
 
-A destructor is verified as soon as the compiler knows that it is assigned to a
-particle and knows the state of every position on which the destructor has an
-[Automatic Action Requirement](#automatic-action-requirements). The Destruction
-Contract carries each remaining destructor to the action's callers, until its
-requirements can be verified.
+Each action in the call chain therefore maintains its own cumulative Child
+State, adding whatever it knows about what the state of the particle's
+transitive children will be immediately before the particle is destroyed.
 
-When the Child State does not provide a required position's state, the action in
-which the destructor is assigned to the particle gains the corresponding
-Automatic Action Requirement. That requirement is propagated through callers
-according to the ordinary rules for Automatic Action Requirements.
+#### Validating Destructors in Destruction Contracts
+
+When a destructor is validated, it is always validated as though it were running
+at the moment of destruction in the destroyer.
+
+A destructor is validated by the lowest action in the call chain (closest to the
+destroyer) that knows it exists on a destroyed particle. We call the action that
+performs this the "knower." The knower uses the Child State and its own
+knowledge to understand what the state of the destroyed particle's transitive
+children would be at the moment of destruction. Any requirement that cannot be
+validated by the knower is propagated to the knower's callers just like any
+other Automatic Action Requirement.
 
 ## Literals
 
