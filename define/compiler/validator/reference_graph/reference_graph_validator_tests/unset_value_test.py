@@ -5,6 +5,8 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
+import pytest
+
 from define.compiler.errors import diagnostics
 from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
@@ -878,6 +880,10 @@ def test_destructor_transitive_requirement_set(
     assert_no_errors(result)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason="The knower of a Destructor gains the requirements it cannot resolve instead of carrying the Destructor up.",
+)
 def test_destructor_transitive_requirement_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -899,18 +905,10 @@ def test_destructor_transitive_requirement_unset(
     assert_propagation_chain(
         diagnostic,
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
-            "enclosing_quality_name": "position<box>",
-            "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
-            "line": 8,
-            "column": 28,
-            "file_path": "test.dfn",
-        },
-        {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
-            "enclosing_quality_name": "position<worker>::action</relay>::position<input>",
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<worker>::action</relay>::position<input>::position</value>",
             "triggered_quality_name": None,
-            "line": 12,
+            "line": 13,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -921,6 +919,14 @@ def test_destructor_transitive_requirement_unset(
             "line": 20,
             "column": 47,
             "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "enclosing_quality_name": "position<input>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
+            "line": 4,
+            "column": 24,
+            "file_path": "relay.dfn",
         },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
@@ -956,6 +962,10 @@ def test_destructor_untouched_requirement_set(
     assert_no_errors(result)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason="The knower of a Destructor gains the requirements it cannot resolve instead of carrying the Destructor up.",
+)
 def test_destructor_untouched_requirement_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -977,18 +987,10 @@ def test_destructor_untouched_requirement_unset(
     assert_propagation_chain(
         diagnostic,
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
-            "enclosing_quality_name": "position<box>",
-            "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
-            "line": 8,
-            "column": 28,
-            "file_path": "test.dfn",
-        },
-        {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
-            "enclosing_quality_name": "position<worker>::action</relay>::position<input>",
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<worker>::action</relay>::position<input>::position</value>",
             "triggered_quality_name": None,
-            "line": 12,
+            "line": 13,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -999,6 +1001,14 @@ def test_destructor_untouched_requirement_unset(
             "line": 20,
             "column": 47,
             "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "enclosing_quality_name": "position<input>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
+            "line": 4,
+            "column": 24,
+            "file_path": "relay.dfn",
         },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
@@ -1266,6 +1276,10 @@ def test_destructor_transitive_replaced_identity_set(
     assert_no_errors(result)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason="The knower of a Destructor gains the requirements it cannot resolve instead of carrying the Destructor up.",
+)
 def test_destructor_transitive_replaced_identity_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -1280,26 +1294,18 @@ def test_destructor_transitive_replaced_identity_unset(
     assert diagnostic.required_value is True
     assert (
         diagnostic.position_name
-        == "position<worker>::action</relay>::position<input>::position</value>"
+        == "position<worker>::action</relay>::position<replacement>"
     )
     assert diagnostic.required_empty is False
     assert diagnostic.action_name == "action<my.domain.com:my_lib:/relay>"
     assert_propagation_chain(
         diagnostic,
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
-            "enclosing_quality_name": "position<box>",
-            "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
-            "line": 9,
-            "column": 28,
-            "file_path": "test.dfn",
-        },
-        {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
-            "enclosing_quality_name": "position<worker>::action</relay>::position<input>",
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<worker>::action</relay>::position<replacement>",
             "triggered_quality_name": None,
-            "line": 13,
-            "column": 30,
+            "line": 30,
+            "column": 55,
             "file_path": "test.dfn",
         },
         {
@@ -1309,6 +1315,14 @@ def test_destructor_transitive_replaced_identity_unset(
             "line": 31,
             "column": 47,
             "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "enclosing_quality_name": "position<input>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
+            "line": 4,
+            "column": 24,
+            "file_path": "relay.dfn",
         },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
@@ -1344,6 +1358,10 @@ def test_multiple_destructor_requirements_set(
     assert_no_errors(result)
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason="The knower of a Destructor gains the requirements it cannot resolve instead of carrying the Destructor up.",
+)
 def test_multiple_destructor_requirements_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -1374,18 +1392,10 @@ def test_multiple_destructor_requirements_unset(
     assert_propagation_chain(
         second,
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
-            "enclosing_quality_name": "position<box>",
-            "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
-            "line": 9,
-            "column": 28,
-            "file_path": "test.dfn",
-        },
-        {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
-            "enclosing_quality_name": "position<worker>::action</relay>::position<input>",
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<worker>::action</relay>::position<input>::position</value>",
             "triggered_quality_name": None,
-            "line": 14,
+            "line": 15,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -1396,6 +1406,14 @@ def test_multiple_destructor_requirements_unset(
             "line": 23,
             "column": 47,
             "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "enclosing_quality_name": "position<input>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
+            "line": 5,
+            "column": 24,
+            "file_path": "relay.dfn",
         },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
@@ -1427,18 +1445,10 @@ def test_multiple_destructor_requirements_unset(
     assert_propagation_chain(
         first,
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
-            "enclosing_quality_name": "position<box>",
-            "triggered_quality_name": "action<my.domain.com:my_lib:/other_cleanup>",
-            "line": 8,
-            "column": 28,
-            "file_path": "test.dfn",
-        },
-        {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
-            "enclosing_quality_name": "position<worker>::action</relay>::position<input>",
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<worker>::action</relay>::position<input>::position</other_value>",
             "triggered_quality_name": None,
-            "line": 14,
+            "line": 16,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -1449,6 +1459,14 @@ def test_multiple_destructor_requirements_unset(
             "line": 23,
             "column": 47,
             "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "enclosing_quality_name": "position<input>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/other_cleanup>",
+            "line": 4,
+            "column": 24,
+            "file_path": "relay.dfn",
         },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
@@ -1477,6 +1495,10 @@ def test_multiple_destructor_requirements_unset(
     )
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason="The knower of a Destructor gains the requirements it cannot resolve instead of carrying the Destructor up.",
+)
 def test_destructor_multiple_value_requirements(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -1507,18 +1529,10 @@ def test_destructor_multiple_value_requirements(
     assert_propagation_chain(
         first,
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
-            "enclosing_quality_name": "position<box>",
-            "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
-            "line": 8,
-            "column": 28,
-            "file_path": "test.dfn",
-        },
-        {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
-            "enclosing_quality_name": "position<worker>::action</relay>::position<input>",
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<worker>::action</relay>::position<input>::position</value>",
             "triggered_quality_name": None,
-            "line": 13,
+            "line": 14,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -1529,6 +1543,14 @@ def test_destructor_multiple_value_requirements(
             "line": 22,
             "column": 47,
             "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "enclosing_quality_name": "position<input>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
+            "line": 4,
+            "column": 24,
+            "file_path": "relay.dfn",
         },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
@@ -1560,18 +1582,10 @@ def test_destructor_multiple_value_requirements(
     assert_propagation_chain(
         second,
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
-            "enclosing_quality_name": "position<box>",
-            "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
-            "line": 8,
-            "column": 28,
-            "file_path": "test.dfn",
-        },
-        {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
-            "enclosing_quality_name": "position<worker>::action</relay>::position<input>",
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<worker>::action</relay>::position<input>::position</other_value>",
             "triggered_quality_name": None,
-            "line": 13,
+            "line": 15,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -1582,6 +1596,14 @@ def test_destructor_multiple_value_requirements(
             "line": 22,
             "column": 47,
             "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "enclosing_quality_name": "position<input>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
+            "line": 4,
+            "column": 24,
+            "file_path": "relay.dfn",
         },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
@@ -1610,14 +1632,18 @@ def test_destructor_multiple_value_requirements(
     )
 
 
-def test_destructor_value_requirement_deferred_set(
+def test_knower_requires_emptiness_and_value_of_its_caller_set(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
     assert_no_errors(result)
 
 
-def test_destructor_value_requirement_deferred_unset(
+@pytest.mark.xfail(
+    strict=True,
+    reason="The knower of a Destructor gains the requirements it cannot resolve instead of carrying the Destructor up.",
+)
+def test_knower_requires_emptiness_and_value_of_its_caller_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
@@ -1638,18 +1664,10 @@ def test_destructor_value_requirement_deferred_unset(
     assert_propagation_chain(
         diagnostic,
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
-            "enclosing_quality_name": "position<box>",
-            "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
-            "line": 8,
-            "column": 28,
-            "file_path": "test.dfn",
-        },
-        {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
-            "enclosing_quality_name": "position<worker>::action</relay>::position<input>",
+            "kind": action_contract.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<worker>::action</relay>::position<input>::position</value>",
             "triggered_quality_name": None,
-            "line": 12,
+            "line": 13,
             "column": 30,
             "file_path": "test.dfn",
         },
@@ -1660,6 +1678,14 @@ def test_destructor_value_requirement_deferred_unset(
             "line": 20,
             "column": 47,
             "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "enclosing_quality_name": "position<input>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
+            "line": 4,
+            "column": 24,
+            "file_path": "relay.dfn",
         },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,

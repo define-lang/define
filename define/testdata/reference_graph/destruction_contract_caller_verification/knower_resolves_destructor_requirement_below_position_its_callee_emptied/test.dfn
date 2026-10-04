@@ -1,0 +1,24 @@
+# action</mid> is the knower of the Destructor on the particle it passes to action</inner>, which empties the particle's position</shelf> before destroying it.
+# action</mid> resolves the Destructor itself: position</shelf> is empty at destruction, so position</shelf>::position</book> below it is empty too.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<outer_box> {
+            it may only contain particles where {
+                it has the action</mid>.
+            }
+        }
+        define the position<my_item> {
+            it may only contain particles where {
+                it has the action</destructor>.
+                it has the position</shelf>.
+            }
+        }
+        create a particle in position<outer_box>.
+        create a particle in position<my_item>.
+        create a particle in position<my_item>::position</shelf>.
+        move the particle in position<my_item> to position<outer_box>::action</mid>::position<incoming>.
+        create a particle in position<outer_box>::action</mid>::position<run>.
+    }
+}

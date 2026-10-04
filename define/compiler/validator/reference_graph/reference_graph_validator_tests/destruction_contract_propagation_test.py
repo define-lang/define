@@ -5,6 +5,8 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
+import pytest
+
 from define.compiler.errors import diagnostics
 from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
@@ -421,19 +423,27 @@ def test_constructor_resolves_implied_action_destruction_contract(
     ]
 
 
-def test_middle_knows_destructor_but_not_child_state_defers_to_owner_satisfied(
+@pytest.mark.xfail(
+    strict=True,
+    reason="The knower of a Destructor gains the requirements it cannot resolve instead of carrying the Destructor up.",
+)
+def test_middle_knows_destructor_but_not_child_state_requires_it_of_its_caller_satisfied(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
     assert action_graph(result.reference_graph_result) == [
-        (_MID, _CLOSE_FILE),
         (_CLOSE_FILE, _DESTRUCTOR),
+        (_MID, _CLOSE_FILE),
         (_TEST, _MID),
     ]
 
 
-def test_middle_knows_destructor_but_not_child_state_defers_to_owner_violated(
+@pytest.mark.xfail(
+    strict=True,
+    reason="The knower of a Destructor gains the requirements it cannot resolve instead of carrying the Destructor up.",
+)
+def test_middle_knows_destructor_but_not_child_state_requires_it_of_its_caller_violated(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -454,28 +464,20 @@ def test_middle_knows_destructor_but_not_child_state_defers_to_owner_violated(
     assert_propagation_chain(
         all_diags[0],
         {
-            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
-            "enclosing_quality_name": "position<my_file>",
-            "triggered_quality_name": _DESTRUCTOR,
-            "line": 16,
-            "column": 28,
-            "file_path": "test.dfn",
-        },
-        {
-            "kind": action_contract.PropagationKind.PARTICLE_ORIGIN,
-            "enclosing_quality_name": "position<outer_box>::action</mid>::position<incoming>",
-            "triggered_quality_name": None,
-            "line": 20,
-            "column": 30,
-            "file_path": "test.dfn",
-        },
-        {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
             "triggered_quality_name": _MID,
             "line": 22,
             "column": 30,
             "file_path": "test.dfn",
+        },
+        {
+            "kind": action_contract.PropagationKind.QUALITY_ASSIGNED,
+            "enclosing_quality_name": "position<incoming>",
+            "triggered_quality_name": _DESTRUCTOR,
+            "line": 4,
+            "column": 24,
+            "file_path": "mid.dfn",
         },
         {
             "kind": action_contract.PropagationKind.ACTION_TRIGGER,
@@ -503,8 +505,8 @@ def test_middle_knows_destructor_but_not_child_state_defers_to_owner_violated(
         },
     )
     assert action_graph(result.reference_graph_result) == [
-        (_MID, _CLOSE_FILE),
         (_CLOSE_FILE, _DESTRUCTOR),
+        (_MID, _CLOSE_FILE),
         (_TEST, _MID),
     ]
 

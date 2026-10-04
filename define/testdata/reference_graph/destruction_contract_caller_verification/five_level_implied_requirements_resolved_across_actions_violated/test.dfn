@@ -1,6 +1,6 @@
-# Making the occupied-required implied position known-empty in outer and filling the empty-required one in middle means neither alone knows both states, so the destructor is checked once at outer and reports both violations there.
-# p2 was filled by middle; outer never touched it, so the fill site is the
-# one the contract carried up from middle.
+# action</middle> is the knower of the Destructor: it resolves position</p2>, which it fills, and reports that violation itself.
+# position</p1> comes from action</outer>, so action</middle> requires it to be occupied,
+# and action</outer>, which empties it, violates that requirement where it triggers action</middle>.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.

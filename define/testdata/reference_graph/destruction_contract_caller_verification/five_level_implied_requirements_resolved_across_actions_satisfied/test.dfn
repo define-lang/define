@@ -1,4 +1,4 @@
-# Filling the destructor's occupied-required implied position in outer and emptying its empty-required one in middle lets the destructor be checked once, where every required state is finally known, and pass.
+# action</middle> is the knower of the Destructor: it resolves position</p2>, which it empties, and requires position</p1> of action</outer>, which fills it.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.

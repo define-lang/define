@@ -1,4 +1,4 @@
-# A caller must verify both value requirements of one deferred destructor.
+# action</relay>, the knower of the destructor, requires both of its value requirements of its caller.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.

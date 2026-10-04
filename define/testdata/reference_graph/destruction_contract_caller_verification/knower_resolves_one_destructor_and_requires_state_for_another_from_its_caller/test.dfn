@@ -1,4 +1,6 @@
-# Mid's interface declares the destructor so mid sees it, but mid received the particle and never populated its required child, so mid defers up to /test, which filled position</file> and verifies it satisfied.
+# action</mid> is the knower of both Destructors on the particle: it resolves d1 against position</item1>, which it fills itself.
+# position</item2> comes from /test, so action</mid> gains d2's requirement that it is empty.
+# /test violates that requirement where it triggers action</mid>.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.
@@ -10,13 +12,14 @@ define the potential action<my.domain.com:my_lib:/test> {
         }
         define the position<my_file> {
             it may only contain particles where {
-                it has the position</file>.
-                it has the action</destructor>.
+                it has the action</d1>.
+                it has the action</d2>.
+                it has the position</item2>.
             }
         }
         create a particle in position<outer_box>.
         create a particle in position<my_file>.
-        create a particle in position<my_file>::position</file>.
+        create a particle in position<my_file>::position</item2>.
         move the particle in position<my_file> to position<outer_box>::action</mid>::position<incoming>.
         create a particle in position<outer_box>::action</mid>::position<run>.
     }
