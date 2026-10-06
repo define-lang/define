@@ -16,7 +16,7 @@ def main():
         f"shared=true\nabi3=false\npointer_width={struct.calcsize('P') * 8}\n"
         f"build_flags={flags}\nsuppress_build_script_link_lines=true\n"
     )
-    _ = Path(sys.argv[1]).write_text(config)
+    _ = Path(sys.argv[1]).write_text(config, encoding="utf-8")
 
 
 if __name__ == "__main__":

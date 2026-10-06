@@ -70,6 +70,7 @@ extend-select = [
   "PLR0916",
   "PLR6201", # Use set literals for membership in hashable constants.
   "PLW0717",
+  "PLW1514", # Require explicit text file encodings.
   "RUF031", # Parenthesize tuple subscripts.
   "RUF052", # Flag local variables that are named as unused but then accessed.
   "RUF067", # Keep handwritten package initializers free of executable definitions.

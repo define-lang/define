@@ -231,7 +231,7 @@ def _scan_build_file(
     py_proto_deps: dict[str, str] = {}
     relative_build_file = build_file.relative_to(repository)
     package = relative_build_file.parent
-    contents = build_file.read_text()
+    contents = build_file.read_text(encoding="utf-8")
     lines = contents.splitlines()
     tree = ast.parse(contents, filename=str(relative_build_file))
     for statement in tree.body:

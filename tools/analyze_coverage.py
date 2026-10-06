@@ -33,7 +33,7 @@ def parse_uncovered_branches(report_path: Path) -> list[UncoveredBranch]:
     branches: list[UncoveredBranch] = []
     source_file: Path | None = None
 
-    for report_line in report_path.read_text().splitlines():
+    for report_line in report_path.read_text(encoding="utf-8").splitlines():
         if report_line.startswith("SF:"):
             source_file = Path(report_line.removeprefix("SF:"))
             continue

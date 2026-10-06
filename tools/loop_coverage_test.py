@@ -17,7 +17,7 @@ def _execute_source(source_path: Path) -> dict[str, object]:
     namespace: dict[str, object] = {}
     # The collector matches runtime code to the manifest using this filename.
     exec(  # noqa: S102
-        compile(source_path.read_text(), source_path, "exec"), namespace
+        compile(source_path.read_text(encoding="utf-8"), source_path, "exec"), namespace
     )
     return namespace
 

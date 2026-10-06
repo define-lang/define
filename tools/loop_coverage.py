@@ -264,7 +264,7 @@ def _instruction_line_pairs(  # pragma: no cover
 
 def _manifest_python_paths(manifest_path: Path) -> list[tuple[Path, Path]]:
     paths: list[tuple[Path, Path]] = []
-    for manifest_line in manifest_path.read_text().splitlines():
+    for manifest_line in manifest_path.read_text(encoding="utf-8").splitlines():
         reported_path = Path(manifest_line)
         if reported_path.suffix == ".py" and not reported_path.stem.endswith("_test"):
             paths.append((reported_path, reported_path.resolve()))
@@ -274,7 +274,7 @@ def _manifest_python_paths(manifest_path: Path) -> list[tuple[Path, Path]]:
 def _loop_entries(
     source_path: Path,
 ) -> list[tuple[int, range, range]]:
-    tree = ast.parse(source_path.read_text(), filename=str(source_path))
+    tree = ast.parse(source_path.read_text(encoding="utf-8"), filename=str(source_path))
     entries: list[tuple[int, range, range]] = []
     for node in ast.walk(tree):
         if isinstance(node, (ast.For, ast.AsyncFor, ast.While)):
@@ -296,8 +296,8 @@ def _loop_entries(
 
 
 def _append_report(report_path: Path, coverage_output_path: Path):
-    with coverage_output_path.open("a") as coverage_output:
-        _ = coverage_output.write(report_path.read_text())
+    with coverage_output_path.open("a", encoding="utf-8") as coverage_output:
+        _ = coverage_output.write(report_path.read_text(encoding="utf-8"))
     report_path.unlink()
 
 
