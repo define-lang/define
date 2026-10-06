@@ -8,6 +8,7 @@ import msgspec
 
 from define.compiler.validator.reference_graph import (
     action_contract,
+    position_occupancy,
 )
 from define.compiler.validator.reference_graph.callee_execution import (
     callee_execution,
@@ -90,12 +91,6 @@ class DestructionContractValidator:
         result: DestructionContractValidationResult,
     ):
         """Add what this action knows to one destruction of the callee, whose Destruction Contracts share a Child State."""
-        occupancy: child_state.ChildOccupancyMap = {}
-        values: child_state.ChildValueMap = {}
-        particles: dict[chained_name.ChainedNameTuple, particle_info.ParticleInfo] = {}
-        unexpanded: dict[
-            chained_name.ChainedNameTuple, action_contract.ChildPositionParticles
-        ] = {}
         contracted_roots: list[destruction_walk.DestructionRoot] = []
         connections: list[destruction_contract.DestructionConnection] = []
         for callee_contract in callee_contracts.particles:
@@ -109,16 +104,6 @@ class DestructionContractValidator:
             particle = self._tracker.get_occupancy_info(position).occupant
             if particle is None:
                 continue
-            self._tracker.collect_caller_destruction_state(
-                occupancy,
-                values,
-                particles,
-                unexpanded,
-                callee_contracts.child_state,
-                position,
-                callee_contract.position_in_child_state,
-                callee_contracts.positions,
-            )
             contracted_roots.append(
                 destruction_walk.DestructionRoot(
                     position=position,
@@ -136,12 +121,8 @@ class DestructionContractValidator:
             callee=action_chain,
             previous=callee_contracts.propagation,
         )
-        state = destruction_walk.CalleeStateAtDestruction(
-            callee_contracts,
-            callee_contracts.child_state.with_caller(occupancy, values, unexpanded),
-            contracted_roots,
-            particles,
-            trigger,
+        state = _callee_state_at_destruction(
+            self._tracker, callee_contracts, contracted_roots, trigger
         )
         destruction_contracts: list[destruction_contract.DestructionContract] = []
         for root, connection in zip(contracted_roots, connections, strict=True):
@@ -177,3 +158,77 @@ def _destructor_executions(
             root=root,
             state_at_destruction=state,
         )
+
+
+def _callee_state_at_destruction(
+    tracker: particle_tracker.ParticleTracker,
+    callee_contracts: action_contract.DestructionContracts,
+    contracted_roots: list[destruction_walk.DestructionRoot],
+    trigger: action_contract.PropagationHistory,
+) -> destruction_walk.CalleeStateAtDestruction:
+    """Return the state at the moment of the callee's destruction: the callee's Child State completed with what this action knows about the transitive child positions of each of ``contracted_roots``, and this action's particles there."""
+    callee_child_state = callee_contracts.child_state
+    occupancy: child_state.ChildOccupancyMap = {}
+    values: child_state.ChildValueMap = {}
+    unexpanded: dict[
+        chained_name.ChainedNameTuple, action_contract.ChildPositionParticles
+    ] = {}
+    caller_particles: dict[
+        chained_name.ChainedNameTuple, particle_info.ParticleInfo
+    ] = {}
+    for root in contracted_roots:
+        name = root.position_in_child_state
+        root_state = tracker.state_at(root.position)
+        caller_particles[name] = root.particle
+        if root_state.unexpanded is not None:
+            unexpanded[name] = root_state.unexpanded
+        known_occupancy = callee_child_state.occupancy.get(name)
+        # The particle's value is known from where this action had it, even
+        # if the callee moved it.
+        if (
+            known_occupancy is not None
+            and known_occupancy.state
+            == position_occupancy.PositionOccupancyState.OCCUPIED
+        ):
+            value = root_state.child_value()
+            if value is not None and callee_child_state.values.get(name) is None:
+                values[name] = value
+        # Another contract can describe a child particle with an independent
+        # origin after a Move. Its own caller knowledge must determine that
+        # particle's Child State, not the old contents of this caller position.
+        for name, child_position_state in tracker.transitive_child_states_except(
+            root.position,
+            prefix_for_returned_keys=root.position_in_child_state,
+            excluded_keys=callee_contracts.positions,
+        ):
+            if (
+                child_position_state.particle is not None
+                and not child_position_state.is_in_error_chain
+            ):
+                caller_particles[name] = child_position_state.particle
+            known_occupancy = callee_child_state.occupancy.get(name)
+            if known_occupancy is None:
+                # The callee left occupancy unknown, so this action can supply it.
+                child_occupancy = child_position_state.child_occupancy()
+                if child_occupancy is not None:
+                    occupancy[name] = child_occupancy
+            elif (
+                known_occupancy.state
+                != position_occupancy.PositionOccupancyState.OCCUPIED
+            ):
+                # The callee knows this position is empty or has an error, so
+                # this action's particle cannot supply a value here.
+                continue
+            if child_position_state.unexpanded is not None:
+                unexpanded[name] = child_position_state.unexpanded
+            # Even when the callee knew the occupancy, the value may be unknown.
+            value = child_position_state.child_value()
+            if value is not None and callee_child_state.values.get(name) is None:
+                values[name] = value
+    return destruction_walk.CalleeStateAtDestruction(
+        callee_contracts=callee_contracts,
+        child_state=callee_child_state.with_caller(occupancy, values, unexpanded),
+        contracted_roots=contracted_roots,
+        caller_particles=caller_particles,
+        trigger=trigger,
+    )

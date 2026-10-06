@@ -15,6 +15,7 @@ from define.compiler.validator.reference_graph.callee_execution import (
     callee_execution,
 )
 from define.compiler.validator.reference_graph.destruction import (
+    child_state,
     destruction_contract,
     destruction_walk,
 )
@@ -132,7 +133,7 @@ class Destroyer:
                 # child positions, so the Child State is captured first.
                 destruction_contracts.append(
                     action_contract.DestructionContracts(
-                        child_state=self._tracker.snapshot_child_state(position),
+                        child_state=self._child_state_at_destruction(position),
                         particles=walked.contribution.destruction_contracts,
                     )
                 )
@@ -149,6 +150,35 @@ class Destroyer:
             contribution=contribution,
             destruction_contracts=destruction_contracts,
             diagnostics=validation_diagnostics,
+        )
+
+    def _child_state_at_destruction(
+        self, position: ast.PositionReference
+    ) -> action_contract.ChildState:
+        """Return the Child State of the particle in ``position``: what this action knows about its transitive child positions immediately before destruction begins, named after ``position``."""
+        occupancy: child_state.ChildOccupancyMap = {}
+        values: child_state.ChildValueMap = {}
+        unexpanded: dict[
+            chained_name.ChainedNameTuple, action_contract.ChildPositionParticles
+        ] = {}
+        for child_name, child_position_state in self._tracker.transitive_child_states(
+            position
+        ):
+            child_occupancy = child_position_state.child_occupancy()
+            if child_occupancy is not None:
+                occupancy[child_name] = child_occupancy
+            child_value = child_position_state.child_value()
+            if child_value is not None:
+                values[child_name] = child_value
+            # A destroyed particle with a Destruction Contract on it or one of
+            # its parent particles has had its transitive child positions
+            # expanded, since a particle from the caller is never unexpanded.
+            if child_position_state.unexpanded is not None:
+                unexpanded[child_name] = child_position_state.unexpanded
+        return action_contract.ChildState(
+            child_state.FlatChildStateStore(occupancy),
+            child_state.FlatChildStateStore(values),
+            unexpanded,
         )
 
     def _destruction_root(

@@ -204,20 +204,36 @@ class ReparentingTrie[V]:
         """
         return typing.cast("Collection[TrieKey]", self._children.get(key, ()))
 
-    def pruned_subtree_items(
+    def descendant_items(self, key: TrieKey) -> Iterator[tuple[TrieKey, V]]:
+        """Yield a ``(path from key, value)`` pair for each descendant of ``key``, in unspecified order. ``key`` itself is never yielded."""
+        name_count = len(key)
+        pending: list[tuple[str, ...]] = [key]
+        while pending:
+            parent = pending.pop()
+            for child in self._children.get(parent, ()):
+                yield (
+                    chained_name.ChainedNameTuple(child[name_count:]),
+                    self._values[child],
+                )
+                pending.append(child)
+
+    def descendant_items_except(
         self,
         key: TrieKey,
         *,
-        key_prefix: TrieKey,
+        prefix_for_returned_keys: TrieKey,
         excluded_keys: AbstractSet[TrieKey],
     ) -> Iterator[tuple[TrieKey, V]]:
-        """Yield descendants with prefixed relative keys, in unspecified order.
+        """Yield a ``(returned key, value)`` pair for each descendant of ``key``, in unspecified order.
 
-        Each returned key is key_prefix followed by its path relative to key.
-        Exclusions use those returned keys and omit both the matching node and
-        its descendants. The starting key itself is never yielded or excluded.
+        Each returned key is ``prefix_for_returned_keys`` followed by the
+        descendant's path from ``key``. A descendant whose returned key is in
+        ``excluded_keys`` is skipped with all of its own descendants.
+        ``key`` itself is never yielded or excluded.
         """
-        pending: list[tuple[tuple[str, ...], tuple[str, ...]]] = [(key, key_prefix)]
+        pending: list[tuple[tuple[str, ...], tuple[str, ...]]] = [
+            (key, prefix_for_returned_keys)
+        ]
         while pending:
             full_node, result_node = pending.pop()
             for full_child in self._children.get(full_node, ()):

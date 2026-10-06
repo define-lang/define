@@ -177,7 +177,22 @@ class TestDirectChildItems:
         assert list(t.direct_child_items(_key())) == [(_key("a"), 1)]
 
 
-class TestPrunedSubtreeItems:
+class TestDescendantItems:
+    def test_yields_paths_from_key_but_not_key(self):
+        values: trie.ReparentingTrie[int] = trie.ReparentingTrie(default_factory=int)
+        values[_key("a")] = 1
+        values[_key("a", "b")] = 2
+        values[_key("a", "b", "c")] = 3
+        values[_key("a", "d")] = 4
+        values[_key("e")] = 5
+        assert sorted(values.descendant_items(_key("a"))) == [
+            (_key("b"), 2),
+            (_key("b", "c"), 3),
+            (_key("d"), 4),
+        ]
+
+
+class TestDescendantItemsExcept:
     def test_prefixed_keys_exclude_entire_subtrees_but_not_starting_key(self):
         values: trie.ReparentingTrie[int] = trie.ReparentingTrie(default_factory=int)
         values[_key("a")] = 0
@@ -189,8 +204,10 @@ class TestPrunedSubtreeItems:
         values[_key("z")] = 6
         excluded = {_key("p", "q"), _key("p", "q", "b"), _key("p", "q", "d", "e")}
         assert dict(
-            values.pruned_subtree_items(
-                _key("a"), key_prefix=_key("p", "q"), excluded_keys=excluded
+            values.descendant_items_except(
+                _key("a"),
+                prefix_for_returned_keys=_key("p", "q"),
+                excluded_keys=excluded,
             )
         ) == {_key("p", "q", "d"): 3, _key("p", "q", "d", "f"): 5}
 
@@ -200,8 +217,8 @@ class TestPrunedSubtreeItems:
         values[_key("a", "b")] = 1
         values[_key("a", "b", "c")] = 2
         assert dict(
-            values.pruned_subtree_items(
-                _key("a"), key_prefix=_key(), excluded_keys=set()
+            values.descendant_items_except(
+                _key("a"), prefix_for_returned_keys=_key(), excluded_keys=set()
             )
         ) == {_key("b"): 1, _key("b", "c"): 2}
 
@@ -210,16 +227,18 @@ class TestPrunedSubtreeItems:
         values[_key("a")] = 0
         assert (
             list(
-                values.pruned_subtree_items(
-                    _key("a"), key_prefix=_key(), excluded_keys=set()
+                values.descendant_items_except(
+                    _key("a"), prefix_for_returned_keys=_key(), excluded_keys=set()
                 )
             )
             == []
         )
         assert (
             list(
-                values.pruned_subtree_items(
-                    _key("missing"), key_prefix=_key(), excluded_keys=set()
+                values.descendant_items_except(
+                    _key("missing"),
+                    prefix_for_returned_keys=_key(),
+                    excluded_keys=set(),
                 )
             )
             == []
@@ -230,7 +249,9 @@ class TestPrunedSubtreeItems:
         values[_key("a")] = 1
         values[_key("a", "b")] = 2
         assert sorted(
-            values.pruned_subtree_items(_key(), key_prefix=_key(), excluded_keys=set())
+            values.descendant_items_except(
+                _key(), prefix_for_returned_keys=_key(), excluded_keys=set()
+            )
         ) == [(_key("a"), 1), (_key("a", "b"), 2)]
 
 

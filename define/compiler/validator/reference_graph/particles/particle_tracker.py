@@ -20,6 +20,7 @@ if typing.TYPE_CHECKING:
         Iterator,
         Sequence,
     )
+    from collections.abc import Set as AbstractSet
 
     from define.compiler import ast
     from define.compiler.validator.reference_graph import (
@@ -27,7 +28,6 @@ if typing.TYPE_CHECKING:
         position_occupancy,
         quality_assignment,
     )
-    from define.compiler.validator.reference_graph.destruction import child_state
 
 
 @typing.final
@@ -204,42 +204,42 @@ class ParticleTracker:
             particle_info.ParticleValueState.ERROR, position.location
         )
 
-    def snapshot_child_state(
+    def state_at(
         self, position: ast.PositionReference
-    ) -> action_contract.ChildState:
-        """Capture the child occupancy of a Position about to be destroyed.
+    ) -> particle_state_store.PositionState:
+        """Return the state of ``position``, which must have state, expanding what callees left above it. The state must not be changed."""
+        return self._store.state_at(position.canonical_chained_name_tuple)
 
-        The snapshot is decoupled from later tracker mutation. Its keys are
-        chained-name suffixes below the snapshotted
-        particle, so a caller's snapshot of the same particle shares the key
-        space and merges directly.
-        """
-        return self._store.snapshot_child_state(position.canonical_chained_name_tuple)
+    def transitive_child_states(
+        self, position: ast.PositionReference
+    ) -> Iterator[
+        tuple[chained_name.ChainedNameTuple, particle_state_store.PositionState]
+    ]:
+        """Yield a ``(names after position, state)`` pair for every transitive child position of ``position`` that has state, where ``position`` has state already. The yielded states must not be changed."""
+        return self._store.transitive_child_states(
+            position.canonical_chained_name_tuple
+        )
 
-    def collect_caller_destruction_state(
+    def transitive_child_states_except(
         self,
-        occupancies: child_state.ChildOccupancyMap,
-        values: child_state.ChildValueMap,
-        particles: dict[chained_name.ChainedNameTuple, particle_info.ParticleInfo],
-        unexpanded: dict[
-            chained_name.ChainedNameTuple, action_contract.ChildPositionParticles
-        ],
-        snapshot: action_contract.ChildState,
-        for_position: ast.PositionReference,
-        position_in_child_state: chained_name.ChainedNameTuple,
-        contract_positions: set[chained_name.ChainedNameTuple],
-    ):
-        """Collect caller particles and additional Child State, keyed by Child State position."""
-        key = for_position.canonical_chained_name_tuple
-        self._store.collect_caller_destruction_state(
-            occupancies,
-            values,
-            particles,
-            unexpanded,
-            snapshot,
-            key,
-            position_in_child_state,
-            contract_positions,
+        position: ast.PositionReference,
+        *,
+        prefix_for_returned_keys: chained_name.ChainedNameTuple,
+        excluded_keys: AbstractSet[chained_name.ChainedNameTuple],
+    ) -> Iterator[
+        tuple[chained_name.ChainedNameTuple, particle_state_store.PositionState]
+    ]:
+        """Yield a ``(returned key, state)`` pair for every transitive child position of ``position`` that has state, where ``position`` has state already.
+
+        Each returned key is ``prefix_for_returned_keys`` followed by the
+        child position's names after ``position``. A child position whose
+        returned key is in ``excluded_keys`` is skipped with all of its own
+        transitive child positions. The yielded states must not be changed.
+        """
+        return self._store.transitive_child_states_except(
+            position.canonical_chained_name_tuple,
+            prefix_for_returned_keys=prefix_for_returned_keys,
+            excluded_keys=excluded_keys,
         )
 
     def create(

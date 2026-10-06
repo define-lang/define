@@ -12,11 +12,11 @@ from define.compiler.validator.reference_graph import (
     action_contract,
     position_occupancy,
 )
-from define.compiler.validator.reference_graph.destruction import child_state
 from define.compiler.validator.reference_graph.particles import particle_info
 
 if typing.TYPE_CHECKING:
     from collections.abc import Collection, Iterator, Sequence
+    from collections.abc import Set as AbstractSet
 
     from define.compiler import ast
 
@@ -54,29 +54,29 @@ class PositionState(msgspec.Struct):
     # nodes.
     unexpanded: action_contract.ChildPositionParticles | None = None
 
+    def child_occupancy(self) -> position_occupancy.ChildOccupancy | None:
+        """Return this position's occupancy as Child State records it, or None when nothing about it is known."""
+        if self.has_error:
+            return position_occupancy.ERROR_OCCUPANCY
+        if self.particle is not None:
+            return position_occupancy.ChildOccupancy(
+                position_occupancy.PositionOccupancyState.OCCUPIED,
+                filled_at=self.particle.last_position.location,
+            )
+        if self.emptied_by is not None:
+            return position_occupancy.EMPTY_OCCUPANCY
+        return None
+
+    def child_value(self) -> particle_info.ParticleValueState | None:
+        """Return the value state of this position's particle as Child State records it, or None when it has none."""
+        particle = self.particle
+        if particle is None or particle.qualities.value_type is None:
+            return None
+        return particle.value_state
+
 
 def _node_is_occupied(state: PositionState) -> bool:
     return state.particle is not None
-
-
-def _child_occupancy(node: PositionState) -> position_occupancy.ChildOccupancy | None:
-    if node.has_error:
-        return position_occupancy.ERROR_OCCUPANCY
-    if node.particle is not None:
-        return position_occupancy.ChildOccupancy(
-            position_occupancy.PositionOccupancyState.OCCUPIED,
-            filled_at=node.particle.last_position.location,
-        )
-    if node.emptied_by is not None:
-        return position_occupancy.EMPTY_OCCUPANCY
-    return None
-
-
-def _child_value(node: PositionState) -> particle_info.ParticleValueState | None:
-    particle = node.particle
-    if particle is None or particle.qualities.value_type is None:
-        return None
-    return particle.value_state
 
 
 def _state_in_map(
@@ -344,115 +344,35 @@ class ParticleStateStore:
         # Only positions hold particles.
         return None if prefix is None else chained_name.position(prefix)
 
-    def snapshot_child_state(
+    def state_at(self, key: chained_name.PositionReferenceTuple) -> PositionState:
+        """Return the state of ``key``, which must have state, expanding what callees left above it. Only the store may change it."""
+        return typing.cast("PositionState", self._node(key))
+
+    def transitive_child_states(
         self, key: chained_name.PositionReferenceTuple
-    ) -> action_contract.ChildState:
-        """Capture known descendant occupancy and values, and what callees left below that was never expanded, with keys relative to key."""
-        occupancy: child_state.ChildOccupancyMap = {}
-        values: child_state.ChildValueMap = {}
-        unexpanded: dict[
-            chained_name.ChainedNameTuple, action_contract.ChildPositionParticles
-        ] = {}
-        for below, below_node in self._state.pruned_subtree_items(
-            key, key_prefix=chained_name.ChainedNameTuple(()), excluded_keys=frozenset()
-        ):
-            below_occupancy = _child_occupancy(below_node)
-            if below_occupancy is not None:
-                occupancy[below] = below_occupancy
-            below_value = _child_value(below_node)
-            if below_value is not None:
-                values[below] = below_value
-            # A destroyed particle with a Destruction Contract at or below it
-            # has had what is below it expanded, since a particle from the
-            # caller is never unexpanded.
-            if below_node.unexpanded is not None:
-                unexpanded[below] = below_node.unexpanded
-        return action_contract.ChildState(
-            child_state.FlatChildStateStore(occupancy),
-            child_state.FlatChildStateStore(values),
-            unexpanded,
-        )
+    ) -> Iterator[tuple[chained_name.ChainedNameTuple, PositionState]]:
+        """Yield a ``(names after key, state)`` pair for every transitive child position of ``key`` that has state, where ``key`` has state already. Only the store may change the yielded states."""
+        return self._state.descendant_items(key)
 
-    def collect_caller_destruction_state(
+    def transitive_child_states_except(
         self,
-        occupancies: child_state.ChildOccupancyMap,
-        values: child_state.ChildValueMap,
-        particles: dict[chained_name.ChainedNameTuple, particle_info.ParticleInfo],
-        unexpanded: dict[
-            chained_name.ChainedNameTuple, action_contract.ChildPositionParticles
-        ],
-        snapshot: action_contract.ChildState,
         key: chained_name.PositionReferenceTuple,
-        position_in_child_state: chained_name.ChainedNameTuple,
-        contract_positions: set[chained_name.ChainedNameTuple],
-    ):
-        """Collect caller particles and additional Child State, keyed by Child State position.
+        *,
+        prefix_for_returned_keys: chained_name.ChainedNameTuple,
+        excluded_keys: AbstractSet[chained_name.ChainedNameTuple],
+    ) -> Iterator[tuple[chained_name.ChainedNameTuple, PositionState]]:
+        """Yield a ``(returned key, state)`` pair for every transitive child position of ``key`` that has state, where ``key`` has state already.
 
-        What callees left below that was never expanded is collected without
-        expanding it.
+        Each returned key is ``prefix_for_returned_keys`` followed by the
+        child position's names after ``key``. A child position whose returned
+        key is in ``excluded_keys`` is skipped with all of its own transitive
+        child positions. Only the store may change the yielded states.
         """
-        node = typing.cast("PositionState", self._node(key))
-        particle = typing.cast("particle_info.ParticleInfo", node.particle)
-        particles[position_in_child_state] = particle
-        if node.unexpanded is not None:
-            unexpanded[position_in_child_state] = node.unexpanded
-        known_occupancy = snapshot.occupancy.get(position_in_child_state)
-        # The walk below visits only child positions. For the particle itself,
-        # use its original position in the caller, even if the callee moved it.
-        if (
-            known_occupancy is not None
-            and known_occupancy.state
-            == position_occupancy.PositionOccupancyState.OCCUPIED
-        ):
-            self._collect_caller_value(
-                position_in_child_state, particle, snapshot.values, values
-            )
-        # Another contract can describe a child particle with an independent
-        # origin after a Move. Its own caller knowledge must determine that
-        # particle's Child State, not the old contents of this caller position.
-        for state_position, below_node in self._state.pruned_subtree_items(
+        return self._state.descendant_items_except(
             key,
-            key_prefix=position_in_child_state,
-            excluded_keys=contract_positions,
-        ):
-            below_particle = below_node.particle
-            if below_particle is not None and not below_node.is_in_error_chain:
-                particles[state_position] = below_particle
-            known_occupancy = snapshot.occupancy.get(state_position)
-            if known_occupancy is None:
-                # The callee left occupancy unknown, so the caller can supply it.
-                occupancy = _child_occupancy(below_node)
-                if occupancy is not None:
-                    occupancies[state_position] = occupancy
-            elif (
-                known_occupancy.state
-                != position_occupancy.PositionOccupancyState.OCCUPIED
-            ):
-                # The callee knows this position is empty or has an error, so
-                # the caller's particle cannot supply a value here.
-                continue
-            if below_node.unexpanded is not None:
-                unexpanded[state_position] = below_node.unexpanded
-            # Even when occupancy was already known, the value may be unknown.
-            self._collect_caller_value(
-                state_position, below_particle, snapshot.values, values
-            )
-
-    @staticmethod
-    def _collect_caller_value(
-        position: chained_name.ChainedNameTuple,
-        particle: particle_info.ParticleInfo | None,
-        known_values: child_state.ChildStateStore[particle_info.ParticleValueState],
-        values: child_state.ChildValueMap,
-    ):
-        """Fill missing destruction-time value state from the caller."""
-        if (
-            particle is not None
-            and particle.qualities.value_type is not None
-            and particle.value_state is not None
-            and known_values.get(position) is None
-        ):
-            values[position] = particle.value_state
+            prefix_for_returned_keys=prefix_for_returned_keys,
+            excluded_keys=excluded_keys,
+        )
 
     def state_without_expanding(
         self, key: chained_name.PositionReferenceTuple

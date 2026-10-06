@@ -48,7 +48,6 @@ py_library(
         "//define/compiler/data_structures:trie",
         "//define/compiler/validator/reference_graph:action_contract",
         "//define/compiler/validator/reference_graph:position_occupancy",
-        "//define/compiler/validator/reference_graph/destruction:child_state",
         "@pypi//msgspec",
     ],
 )
@@ -68,7 +67,6 @@ py_library(
         "//define/compiler/validator/reference_graph:action_contract",
         "//define/compiler/validator/reference_graph:position_occupancy",
         "//define/compiler/validator/reference_graph:quality_assignment",
-        "//define/compiler/validator/reference_graph/destruction:child_state",
     ],
 )
 

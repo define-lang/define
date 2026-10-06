@@ -51,6 +51,7 @@ py_library(
     srcs = ["destroyer.py"],
     visibility = ["//define/compiler/validator/reference_graph:__pkg__"],
     deps = [
+        ":child_state",
         ":destruction_contract",
         ":destruction_walk",
         "//define/compiler:ast",
@@ -94,6 +95,7 @@ py_library(
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/validator:validation_result",
         "//define/compiler/validator/reference_graph:action_contract",
+        "//define/compiler/validator/reference_graph:position_occupancy",
         "//define/compiler/validator/reference_graph:reference_graph_validation_state",
         "//define/compiler/validator/reference_graph/callee_execution",
         "//define/compiler/validator/reference_graph/particles:particle_info",
