@@ -83,6 +83,9 @@ required-imports = ["from __future__ import annotations"]
 [tool.ruff.lint.flake8-type-checking]
 strict = true
 
+[tool.ruff.lint.flake8-bandit]
+check-typed-exception = true
+
 [tool.ruff.lint.extend-per-file-ignores]
 "**/*.py" = [
     "S603", # Allow subprocess calls without a shell.

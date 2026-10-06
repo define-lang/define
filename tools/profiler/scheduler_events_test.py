@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import pathlib
 import shutil
 import signal
 import subprocess
@@ -159,7 +160,14 @@ def test_tracepoint_availability_distinguishes_missing_and_readable(tmp_path: Pa
     assert tracepoint_access_error((tmp_path / "missing",)) == (
         "the kernel does not expose the required scheduler tracepoints"
     )
-    assert tracepoint_access_error((_trace_root(tmp_path),)) is None
+    trace_root = _trace_root(tmp_path)
+    assert tracepoint_access_error((trace_root,)) is None
+    with mock.patch.object(
+        pathlib.Path, "read_text", autospec=True, side_effect=PermissionError
+    ):
+        assert tracepoint_access_error((trace_root,)) == (
+            "scheduler tracepoints are not readable by the profiler user"
+        )
 
 
 # PRF-052: Independent causal evidence. PRF-053: Causal diagnostics.

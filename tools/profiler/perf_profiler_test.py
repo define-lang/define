@@ -177,13 +177,14 @@ def test_leaves_unresolved_native_launcher_unchanged(tmp_path: Path):
     launcher_path = tmp_path / "compiler"
     _ = launcher_path.write_bytes(b"\xff")
 
-    command = perf_profiler._profiled_command(  # pyright: ignore[reportPrivateUsage]
-        (str(launcher_path), "compile"),
-        tmp_path,
-        {"RUNFILES_DIR": str(tmp_path / "other.runfiles")},
-    )
+    for environment in ({}, {"RUNFILES_DIR": str(tmp_path / "other.runfiles")}):
+        command = perf_profiler._profiled_command(  # pyright: ignore[reportPrivateUsage]
+            (str(launcher_path), "compile"),
+            tmp_path,
+            environment,
+        )
 
-    assert command == (str(launcher_path), "compile")
+        assert command == (str(launcher_path), "compile")
 
 
 def test_leaves_native_launcher_without_environment_files_unchanged(tmp_path: Path):

@@ -68,13 +68,14 @@ def _tracepoint_access_error(
     # perf's own diagnostics vary across kernel-tool version combinations.
     permission_error: PermissionError | None = None
     for trace_root in trace_roots:
-        try:
-            for tracepoint_name in _TRACEPOINT_NAMES:
+        for tracepoint_name in _TRACEPOINT_NAMES:
+            try:
                 _ = (trace_root / tracepoint_name / "id").read_text()
-        except FileNotFoundError:
-            continue
-        except PermissionError as error:
-            permission_error = error
+            except FileNotFoundError:
+                break
+            except PermissionError as error:
+                permission_error = error
+                break
         else:
             return None
     if permission_error is not None:

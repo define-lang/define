@@ -8,11 +8,13 @@ import sys
 import threading
 from pathlib import Path
 from typing import TYPE_CHECKING
+from unittest import mock
 
 import click.testing
 
 from tools.profiler import (
     analyzer,
+    process_events,
     profiler,
     schema,
     test_helpers,
@@ -44,6 +46,22 @@ def _sampled_functions(
         for thread in observation["threads"]
         for frame_id in thread["stack"]
     }
+
+
+def test_termination_records_exit_status_when_target_has_already_exited():
+    target = subprocess.Popen(["/bin/sh", "-c", "exit 7"], text=True)
+    target_process = process_events.TargetProcess(
+        process=target,
+        process_file_descriptor=-1,
+        trace_attached=False,
+    )
+
+    with mock.patch.object(os, "killpg", autospec=True, side_effect=ProcessLookupError):
+        result = profiler._terminate_process_group(  # pyright: ignore[reportPrivateUsage]
+            target_process
+        )
+
+    assert result == (7, 0)
 
 
 def test_generated_dataclass_constructor_uses_class_name(tmp_path: Path):

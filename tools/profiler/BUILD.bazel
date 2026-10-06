@@ -180,6 +180,7 @@ py_test(
     },
     deps = [
         ":analyzer",
+        ":process_events",
         ":profiler",
         ":schema",
         ":test_helpers",

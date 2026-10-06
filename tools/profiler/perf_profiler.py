@@ -87,13 +87,11 @@ def _profiled_command(
         launcher_runfile: pathlib.Path | None = None
         if runfiles_directory is None:
             runfiles_path = launcher_path.with_name(launcher_path.name + ".runfiles")
-            try:
-                bazel_bin_index = launcher_path.parts.index("bazel-bin")
-            except ValueError:
-                pass
-            else:
+            launcher_parts = launcher_path.parts
+            if "bazel-bin" in launcher_parts:
+                bazel_bin_index = launcher_parts.index("bazel-bin")
                 launcher_runfile = pathlib.Path("_main").joinpath(
-                    *launcher_path.parts[bazel_bin_index + 1 :]
+                    *launcher_parts[bazel_bin_index + 1 :]
                 )
         else:
             runfiles_path = pathlib.Path(runfiles_directory)

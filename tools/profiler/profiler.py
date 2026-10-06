@@ -775,7 +775,8 @@ def _terminate_process_group(
         os.killpg(target.pid, signal.SIGTERM)
         os.kill(target.pid, signal.SIGCONT)
     except ProcessLookupError:
-        pass
+        # The target may exit between notification release and signaling.
+        return target.wait(), trace_pause_ns
     return target.wait(), trace_pause_ns
 
 
