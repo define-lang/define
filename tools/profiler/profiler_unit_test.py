@@ -624,13 +624,19 @@ def test_scheduled_exit_is_persisted_as_one_missed_observation(tmp_path: Path):
         ),
     ):
         result, target_exited = scheduled_observation(
-            target_process,
-            state,
+            profiler._CaptureSession(  # pyright: ignore[reportPrivateUsage]
+                target_process=target_process,
+                writer=profiler._ProfileWriter(io.StringIO()),  # pyright: ignore[reportPrivateUsage]
+                state=state,
+                expected_python=_attached_runtime().runtime["executable"],
+                attachment_timeout_seconds=1,
+                mean_interval_seconds=1,
+                launched_ns=100,
+                timer_file_descriptor=32,
+                event_file_descriptor=None,
+            ),
             processor,
             scheduled_interval_ns=250_000_000,
-            launched_ns=100,
-            timer_file_descriptor=32,
-            event_file_descriptor=None,
         )
 
     assert target_exited is True
@@ -672,14 +678,18 @@ def test_scheduled_exit_is_persisted_as_one_missed_observation(tmp_path: Path):
             ) as arm_schedule,
         ):
             sample_until_exit(
-                target_process,
-                writer,
-                sample_state,
+                profiler._CaptureSession(  # pyright: ignore[reportPrivateUsage]
+                    target_process=target_process,
+                    writer=writer,
+                    state=sample_state,
+                    expected_python=_attached_runtime().runtime["executable"],
+                    attachment_timeout_seconds=1,
+                    mean_interval_seconds=1,
+                    launched_ns=100,
+                    timer_file_descriptor=32,
+                    event_file_descriptor=None,
+                ),
                 _attached_runtime(),
-                mean_interval_seconds=1,
-                launched_ns=100,
-                timer_file_descriptor=32,
-                event_file_descriptor=None,
             )
 
     assert sample_state.total_pause_ns == 0
@@ -825,12 +835,18 @@ def test_observation_prepares_unwinder_before_stopping_target():
         ),
     ):
         captured = profiler._capture_observation(  # pyright: ignore[reportPrivateUsage]
-            _target_process(),
-            None,
+            profiler._CaptureSession(  # pyright: ignore[reportPrivateUsage]
+                target_process=_target_process(),
+                writer=profiler._ProfileWriter(io.StringIO()),  # pyright: ignore[reportPrivateUsage]
+                state=_capture_state(),
+                expected_python=_attached_runtime().runtime["executable"],
+                attachment_timeout_seconds=1,
+                mean_interval_seconds=1,
+                launched_ns=0,
+                timer_file_descriptor=32,
+                event_file_descriptor=None,
+            ),
             scheduled_interval_ns=10,
-            launched_ns=0,
-            total_pause_ns=0,
-            event_file_descriptor=None,
         )
 
     assert captured.unwinder is qualified_unwinder
@@ -849,6 +865,8 @@ def test_observation_records_stopped_capture_failure():
         "profiler._Unwinder",  # pyright: ignore[reportPrivateUsage]
         typing.cast("object", types.SimpleNamespace()),
     )
+    state = _capture_state()
+    state.retained_unwinder = retained_unwinder
     with (
         mock.patch.object(
             profiler,
@@ -865,12 +883,18 @@ def test_observation_records_stopped_capture_failure():
         ),
     ):
         captured = profiler._capture_observation(  # pyright: ignore[reportPrivateUsage]
-            _target_process(),
-            retained_unwinder,
+            profiler._CaptureSession(  # pyright: ignore[reportPrivateUsage]
+                target_process=_target_process(),
+                writer=profiler._ProfileWriter(io.StringIO()),  # pyright: ignore[reportPrivateUsage]
+                state=state,
+                expected_python=_attached_runtime().runtime["executable"],
+                attachment_timeout_seconds=1,
+                mean_interval_seconds=1,
+                launched_ns=0,
+                timer_file_descriptor=32,
+                event_file_descriptor=None,
+            ),
             scheduled_interval_ns=10,
-            launched_ns=0,
-            total_pause_ns=0,
-            event_file_descriptor=None,
         )
 
     assert isinstance(captured.result, dict)
@@ -982,13 +1006,19 @@ def test_scheduled_observation_raises_processor_failure():
         pytest.raises(profiler._ObservationProcessorError) as raised,  # pyright: ignore[reportPrivateUsage]
     ):
         _ = profiler._scheduled_observation(  # pyright: ignore[reportPrivateUsage]
-            _target_process(),
-            _capture_state(),
+            profiler._CaptureSession(  # pyright: ignore[reportPrivateUsage]
+                target_process=_target_process(),
+                writer=profiler._ProfileWriter(io.StringIO()),  # pyright: ignore[reportPrivateUsage]
+                state=_capture_state(),
+                expected_python=_attached_runtime().runtime["executable"],
+                attachment_timeout_seconds=1,
+                mean_interval_seconds=0.01,
+                launched_ns=0,
+                timer_file_descriptor=32,
+                event_file_descriptor=None,
+            ),
             processor,
             scheduled_interval_ns=10,
-            launched_ns=0,
-            timer_file_descriptor=32,
-            event_file_descriptor=None,
         )
 
     assert raised.value is expected_error
@@ -1185,14 +1215,18 @@ def test_next_deadline_is_armed_before_observation_handoff():
         ),
     ):
         profiler._sample_until_exit(  # pyright: ignore[reportPrivateUsage]
-            _target_process(),
-            profiler._ProfileWriter(io.StringIO()),  # pyright: ignore[reportPrivateUsage]
-            _capture_state(),
+            profiler._CaptureSession(  # pyright: ignore[reportPrivateUsage]
+                target_process=_target_process(),
+                writer=profiler._ProfileWriter(io.StringIO()),  # pyright: ignore[reportPrivateUsage]
+                state=_capture_state(),
+                expected_python=_attached_runtime().runtime["executable"],
+                attachment_timeout_seconds=1,
+                mean_interval_seconds=1,
+                launched_ns=0,
+                timer_file_descriptor=32,
+                event_file_descriptor=None,
+            ),
             _attached_runtime(),
-            mean_interval_seconds=1,
-            launched_ns=0,
-            timer_file_descriptor=32,
-            event_file_descriptor=None,
         )
 
     assert timeline == ["arm", "capture", "arm", "submit", "capture", "submit"]
@@ -1220,6 +1254,17 @@ def test_attached_capture_requires_a_python_stack(
         "device": 1,
         "inode": 2,
     }
+    session = profiler._CaptureSession(  # pyright: ignore[reportPrivateUsage]
+        target_process=target_process,
+        writer=writer,
+        state=state,
+        expected_python=expected_python,
+        attachment_timeout_seconds=1,
+        mean_interval_seconds=0.01,
+        launched_ns=5,
+        timer_file_descriptor=32,
+        event_file_descriptor=33,
+    )
     capture_attached_process = profiler._capture_attached_process  # pyright: ignore[reportPrivateUsage]
 
     with (
@@ -1245,17 +1290,7 @@ def test_attached_capture_requires_a_python_stack(
             autospec=True,
         ) as record_failure,
     ):
-        exit_status = capture_attached_process(
-            target_process,
-            writer,
-            state,
-            expected_python,
-            attachment_timeout_seconds=1,
-            mean_interval_seconds=0.01,
-            launched_ns=5,
-            timer_file_descriptor=32,
-            event_file_descriptor=33,
-        )
+        exit_status = capture_attached_process(session)
 
     assert exit_status == 4
     assert state.python_attached is True
@@ -1266,11 +1301,9 @@ def test_attached_capture_requires_a_python_stack(
     ]
     if records_failure:
         record_failure.assert_called_once_with(
-            writer,
-            state,
+            session,
             schema.CaptureFailureKind.TARGET_EXITED_BEFORE_VALID_STACK,
             "the target exited before a valid Python stack was observed",
-            5,
             python_observed=True,
         )
     else:

@@ -19,11 +19,13 @@ def test_generated_source_triggers_actions_before_unrelated_destruction(
     depth: int, position_depth: int, *, automatic: bool
 ):
     lines = gen.generate_source_lines(
-        3,
-        2,
-        depth,
-        position_depth=position_depth,
-        automatic_destruction=automatic,
+        gen.PendingGuaranteeOptions(
+            3,
+            2,
+            depth,
+            position_depth=position_depth,
+            automatic_destruction=automatic,
+        )
     )
     child_names = "".join(
         f"::position</child_{index}>" for index in range(position_depth - 1)
@@ -88,12 +90,14 @@ def test_generated_source_triggers_actions_before_unrelated_destruction(
 )
 def test_invalid_sizes(pending: int, destroyed: int, depth: int):
     with pytest.raises(ValueError, match="must be at least"):
-        _ = gen.generate_source_lines(pending, destroyed, depth)
+        _ = gen.generate_source_lines(
+            gen.PendingGuaranteeOptions(pending, destroyed, depth)
+        )
 
 
 def test_invalid_position_depth():
     with pytest.raises(ValueError, match="position_depth"):
-        _ = gen.generate_source_lines(position_depth=0)
+        _ = gen.generate_source_lines(gen.PendingGuaranteeOptions(position_depth=0))
 
 
 def test_cli(tmp_path: Path):

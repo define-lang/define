@@ -14,33 +14,37 @@ from tools.generators import generate_reference_graph_project as gen
 class TestGenerateProjectFiles:
     def test_too_few_layers_raises(self):
         with pytest.raises(ValueError, match="layers must be at least"):
-            gen.generate_project_files(layers=1)
+            gen.generate_project_files(gen.ProjectOptions(layers=1))
 
     def test_fewer_modules_than_layers_raises(self):
         with pytest.raises(ValueError, match="modules must be at least"):
-            gen.generate_project_files(modules=4, layers=8)
+            gen.generate_project_files(gen.ProjectOptions(modules=4, layers=8))
 
     def test_zero_fan_out_raises(self):
         with pytest.raises(ValueError, match="fan_out must be at least"):
-            gen.generate_project_files(fan_out=0)
+            gen.generate_project_files(gen.ProjectOptions(fan_out=0))
 
     def test_utility_fraction_out_of_range_raises(self):
         with pytest.raises(ValueError, match="utility_fraction must be in"):
-            gen.generate_project_files(utility_fraction=1.5)
+            gen.generate_project_files(gen.ProjectOptions(utility_fraction=1.5))
 
     def test_writes_one_file_per_module_plus_config_and_entry(self):
-        files = gen.generate_project_files(modules=40, layers=4)
+        files = gen.generate_project_files(gen.ProjectOptions(modules=40, layers=4))
         assert len(files) == 42
         assert ".define/project/config.defcl" in files
         assert "test.dfn" in files
 
     def test_same_seed_generates_identical_files(self):
-        first = gen.generate_project_files(modules=40, layers=4, seed=3)
-        second = gen.generate_project_files(modules=40, layers=4, seed=3)
+        first = gen.generate_project_files(
+            gen.ProjectOptions(modules=40, layers=4, seed=3)
+        )
+        second = gen.generate_project_files(
+            gen.ProjectOptions(modules=40, layers=4, seed=3)
+        )
         assert first == second
 
     def test_deepest_layer_definitions_reference_nothing(self):
-        files = gen.generate_project_files(modules=40, layers=4)
+        files = gen.generate_project_files(gen.ProjectOptions(modules=40, layers=4))
         assert files["lib/pkg39/m39.dfn"].endswith("m39>.\n")
 
 
@@ -109,7 +113,9 @@ class TestGeneratedProjectCompiles:
         reverse_references: bool,
     ):
         files = gen.generate_project_files(
-            modules=12, layers=3, reverse_references=reverse_references
+            gen.ProjectOptions(
+                modules=12, layers=3, reverse_references=reverse_references
+            )
         )
         for relative_path, content in files.items():
             file_path = tmp_path / relative_path
@@ -151,11 +157,13 @@ def test_structured_projects_load_every_definition(
     gen.write_project(
         output,
         gen.generate_project_files(
-            modules=modules,
-            shape=shape,
-            fan_out=3,
-            path_depth=2,
-            reverse_references=reverse_references,
+            gen.ProjectOptions(
+                modules=modules,
+                shape=shape,
+                fan_out=3,
+                path_depth=2,
+                reverse_references=reverse_references,
+            )
         ),
     )
     monkeypatch.chdir(output)
@@ -184,7 +192,7 @@ def test_structured_reference_patterns(
     shape: gen.Shape, fan_out: int, references: list[list[int]]
 ):
     files = gen.generate_project_files(
-        modules=len(references), shape=shape, fan_out=fan_out
+        gen.ProjectOptions(modules=len(references), shape=shape, fan_out=fan_out)
     )
     assert len(files) == len(references) + 2
     for index, targets in enumerate(references):
@@ -209,7 +217,9 @@ def test_depth_update_shape_references_all_positions_then_predecessors(
     modules: int, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     output = tmp_path / "project"
-    files = gen.generate_project_files(modules=modules, shape=gen.Shape.DEPTH_UPDATES)
+    files = gen.generate_project_files(
+        gen.ProjectOptions(modules=modules, shape=gen.Shape.DEPTH_UPDATES)
+    )
     assert files["test.dfn"].splitlines() == [
         f"define the potential action<{gen.DEFAULT_UNIVERSE_NAME}:/test> {{",
         "    it happens when {",
@@ -259,7 +269,9 @@ def test_invalid_project_shapes(
     shape: gen.Shape, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     output = tmp_path / "project"
-    gen.write_project(output, gen.generate_project_files(modules=4, shape=shape))
+    gen.write_project(
+        output, gen.generate_project_files(gen.ProjectOptions(modules=4, shape=shape))
+    )
     monkeypatch.chdir(output)
     result = (
         driver.Driver()
@@ -302,7 +314,7 @@ def test_new_cli_options(tmp_path: Path):
 def test_invalid_structured_sizes(modules: int, depth: int):
     with pytest.raises(ValueError, match="must be at least"):
         gen.generate_project_files(
-            modules=modules, path_depth=depth, shape=gen.Shape.CHAIN
+            gen.ProjectOptions(modules=modules, path_depth=depth, shape=gen.Shape.CHAIN)
         )
 
 
@@ -321,7 +333,9 @@ def test_cli_reverses_references_without_changing_the_graph(tmp_path: Path):
         ],
     )
     assert result.exit_code == 0
-    expected = gen.generate_project_files(modules=4, shape=gen.Shape.DEPTH_UPDATES)
+    expected = gen.generate_project_files(
+        gen.ProjectOptions(modules=4, shape=gen.Shape.DEPTH_UPDATES)
+    )
     expected["lib/pkg0/m0.dfn"] = (
         "define the potential position<mv:define-lang.org:bench:/lib/pkg0/m0> {\n"
         "    it may only contain particles where {\n"

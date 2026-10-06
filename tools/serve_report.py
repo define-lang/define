@@ -53,7 +53,7 @@ class ReportHandler(BaseHTTPRequestHandler):
         self.end_headers()
         _ = self.wfile.write(content)
 
-    def do_POST(self):
+    def do_POST(self):  # noqa: PLR0911 - Each invalid request ends at its specific guard.
         """Save a submission from the report."""
         if not self._has_valid_authority() or self.path != self.access_path + "submit":
             self.send_error(HTTPStatus.NOT_FOUND)

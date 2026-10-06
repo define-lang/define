@@ -258,21 +258,7 @@ def _same_particle_lines(depth: int, fan_out: int, fqun_prefix: str) -> list[str
     return lines
 
 
-def generate_source_lines(
-    depth: int = 20,
-    fan_out: int = 2,
-    shape: Shape = Shape.LOCAL,
-    fqun_prefix: str = DEFAULT_FQUN_PREFIX,
-) -> list[str]:
-    """Generate ``depth`` actions that each fill ``fan_out`` children and trigger the next action on each.
-
-    The source grows linearly with ``depth``, but the destroyed particle has
-    exponentially many transitive children.
-    """
-    if depth < 1 or fan_out < 1:
-        raise ValueError("depth and fan_out must be at least 1")
-    if shape == Shape.SAME_PARTICLE:
-        return _same_particle_lines(depth, fan_out, fqun_prefix)
+def _shape_definitions(shape: Shape, fqun_prefix: str) -> list[str]:
     lines: list[str] = []
     if shape in (
         Shape.DESTRUCTORS,
@@ -370,95 +356,132 @@ def generate_source_lines(
                 "}",
             ]
         )
+    return lines
+
+
+def _child_position_definitions(
+    level: int, fan_out: int, shape: Shape, fqun_prefix: str
+) -> list[str]:
+    lines: list[str] = []
+    for child in range(fan_out):
+        lines.extend(
+            [
+                f"define the potential position<{fqun_prefix}:/child_{level}_{child}> {{",
+                "    it may only contain particles where {",
+                f"        it has the action</fill_{level + 1}>.",
+            ]
+        )
+        if shape == Shape.DESTRUCTORS:
+            lines.append("        it has the action</cleanup>.")
+        if shape == Shape.ERROR:
+            lines.append("        it has the action</broken>.")
+        if shape == Shape.DEPENDENT_SIBLINGS:
+            lines.extend(
+                [
+                    "        it has the action</make_item>.",
+                    "        it has the action</clear_item>.",
+                ]
+            )
+        if _rearranges(shape):
+            lines.extend(
+                f"        it has the {quality}."
+                for quality in (
+                    "position</item>",
+                    "position</kept>",
+                    "position</done>",
+                )
+            )
+        lines.extend(["    }", "}"])
+    return lines
+
+
+def _fill_action_lines(
+    level: int, depth: int, fan_out: int, shape: Shape, fqun_prefix: str
+) -> list[str]:
+    lines: list[str] = []
+    lines.append(f"define the potential action<{fqun_prefix}:/fill_{level}> {{")
+    if level < depth:
+        lines.extend(
+            f"    it also assigns the position</child_{level}_{child}>."
+            for child in range(fan_out)
+        )
+    if _rearranges(shape):
+        lines.extend(
+            [
+                "    it also assigns the position</item>.",
+                "    it also assigns the position</kept>.",
+                "    it also assigns the action</stamp>.",
+            ]
+        )
+    lines.extend(
+        [
+            "    define the position<run>.",
+            "    it happens when {",
+            "        the position<run> has a particle.",
+            "    } and it does {",
+            "        destroy the particle in position<run>.",
+        ]
+    )
+    if _rearranges(shape):
+        lines.extend(
+            [
+                "        move the particle in position</item> to position</kept>.",
+                "        create a particle in action</stamp>::position<run>.",
+            ]
+        )
+    if level < depth:
+        for child in range(fan_out):
+            child_name = f"position</child_{level}_{child}>"
+            lines.append(f"        create a particle in {child_name}.")
+            if _rearranges(shape):
+                lines.append(
+                    f"        create a particle in {child_name}::position</item>."
+                )
+            lines.append(
+                f"        create a particle in {child_name}::action</fill_{level + 1}>::position<run>."
+            )
+            if shape == Shape.ERROR:
+                lines.append(
+                    f"        create a particle in {child_name}::action</broken>::position<run>."
+                )
+            if shape == Shape.DEPENDENT_SIBLINGS:
+                lines.extend(
+                    [
+                        f"        create a particle in {child_name}::action</make_item>::position<run>.",
+                        f"        create a particle in {child_name}::action</clear_item>::position<run>.",
+                    ]
+                )
+            if _rearranges(shape):
+                lines.append(
+                    f"        move the particle in {child_name}::position</kept> to {child_name}::position</done>."
+                )
+    lines.extend(["    }", "}"])
+    return lines
+
+
+def generate_source_lines(
+    depth: int = 20,
+    fan_out: int = 2,
+    shape: Shape = Shape.LOCAL,
+    fqun_prefix: str = DEFAULT_FQUN_PREFIX,
+) -> list[str]:
+    """Generate ``depth`` actions that each fill ``fan_out`` children and trigger the next action on each.
+
+    The source grows linearly with ``depth``, but the destroyed particle has
+    exponentially many transitive children.
+    """
+    if depth < 1 or fan_out < 1:
+        raise ValueError("depth and fan_out must be at least 1")
+    if shape == Shape.SAME_PARTICLE:
+        return _same_particle_lines(depth, fan_out, fqun_prefix)
+    lines = _shape_definitions(shape, fqun_prefix)
     # A single-file program must define each global name before referencing it.
     for level in reversed(range(1, depth + 1)):
         if level < depth:
-            for child in range(fan_out):
-                lines.extend(
-                    [
-                        f"define the potential position<{fqun_prefix}:/child_{level}_{child}> {{",
-                        "    it may only contain particles where {",
-                        f"        it has the action</fill_{level + 1}>.",
-                    ]
-                )
-                if shape == Shape.DESTRUCTORS:
-                    lines.append("        it has the action</cleanup>.")
-                if shape == Shape.ERROR:
-                    lines.append("        it has the action</broken>.")
-                if shape == Shape.DEPENDENT_SIBLINGS:
-                    lines.extend(
-                        [
-                            "        it has the action</make_item>.",
-                            "        it has the action</clear_item>.",
-                        ]
-                    )
-                if _rearranges(shape):
-                    lines.extend(
-                        f"        it has the {quality}."
-                        for quality in (
-                            "position</item>",
-                            "position</kept>",
-                            "position</done>",
-                        )
-                    )
-                lines.extend(["    }", "}"])
-        lines.append(f"define the potential action<{fqun_prefix}:/fill_{level}> {{")
-        if level < depth:
             lines.extend(
-                f"    it also assigns the position</child_{level}_{child}>."
-                for child in range(fan_out)
+                _child_position_definitions(level, fan_out, shape, fqun_prefix)
             )
-        if _rearranges(shape):
-            lines.extend(
-                [
-                    "    it also assigns the position</item>.",
-                    "    it also assigns the position</kept>.",
-                    "    it also assigns the action</stamp>.",
-                ]
-            )
-        lines.extend(
-            [
-                "    define the position<run>.",
-                "    it happens when {",
-                "        the position<run> has a particle.",
-                "    } and it does {",
-                "        destroy the particle in position<run>.",
-            ]
-        )
-        if _rearranges(shape):
-            lines.extend(
-                [
-                    "        move the particle in position</item> to position</kept>.",
-                    "        create a particle in action</stamp>::position<run>.",
-                ]
-            )
-        if level < depth:
-            for child in range(fan_out):
-                child_name = f"position</child_{level}_{child}>"
-                lines.append(f"        create a particle in {child_name}.")
-                if _rearranges(shape):
-                    lines.append(
-                        f"        create a particle in {child_name}::position</item>."
-                    )
-                lines.append(
-                    f"        create a particle in {child_name}::action</fill_{level + 1}>::position<run>."
-                )
-                if shape == Shape.ERROR:
-                    lines.append(
-                        f"        create a particle in {child_name}::action</broken>::position<run>."
-                    )
-                if shape == Shape.DEPENDENT_SIBLINGS:
-                    lines.extend(
-                        [
-                            f"        create a particle in {child_name}::action</make_item>::position<run>.",
-                            f"        create a particle in {child_name}::action</clear_item>::position<run>.",
-                        ]
-                    )
-                if _rearranges(shape):
-                    lines.append(
-                        f"        move the particle in {child_name}::position</kept> to {child_name}::position</done>."
-                    )
-        lines.extend(["    }", "}"])
+        lines.extend(_fill_action_lines(level, depth, fan_out, shape, fqun_prefix))
     lines.extend(_entry_lines(shape, fqun_prefix))
     return lines
 

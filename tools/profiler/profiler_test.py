@@ -268,11 +268,12 @@ def test_discarded_observation_does_not_retain_threads():
             profiler._InconsistentStackObservationError(  # pyright: ignore[reportPrivateUsage]
                 "thread identity changed"
             ),
-            scheduled_interval_ns=10,
-            launched_ns=20,
-            total_pause_ns=0,
-            pause_started_ns=30,
-            pause_ended_ns=40,
+            timing={
+                "scheduled_interval_ns": 10,
+                "target_running_ns": 10,
+                "pause_started_ns": 30,
+                "pause_ended_ns": 40,
+            },
             failure_kind=schema.ObservationFailureKind.INCONSISTENT_STACK,
         )
     finally:
@@ -292,56 +293,7 @@ def test_discarded_observation_does_not_retain_threads():
 # PRF-022: Launcher safety. PRF-025: Failure threshold.
 # PRF-027: Incremental persistence. PRF-028: Bounded storage.
 # PRF-041: Realistic tests. PRF-043: Analyzer at every checkpoint.
-def test_public_binaries_capture_and_analyze_target(tmp_path: Path):
-    profile_path = tmp_path / "profile.jsonl"
-    launcher_gate = tmp_path / "launcher-gate"
-    exit_gate = tmp_path / "exit-gate"
-    os.mkfifo(launcher_gate)
-    os.mkfifo(exit_gate)
-    event_read_file_descriptor, event_write_file_descriptor = os.pipe()
-    event_reader = test_helpers.ProfilerEventReader(event_read_file_descriptor)
-    capture_process = subprocess.Popen(
-        test_helpers.profile_command(
-            profile_path,
-            "PROFILER_EXIT_SOURCE",
-            mean_interval_seconds=0.01,
-            event_file_descriptor=event_write_file_descriptor,
-            launcher_gate=launcher_gate,
-            target_arguments=(str(exit_gate),),
-        ),
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        pass_fds=(event_write_file_descriptor,),
-    )
-    os.close(event_write_file_descriptor)
-    launcher_recorded = event_reader.wait_for(
-        "launcher-recorded",
-        timeout_seconds=10,
-    )
-    if launcher_recorded:
-        with launcher_gate.open("wb", buffering=0) as launcher_gate_stream:
-            _ = launcher_gate_stream.write(b"1\n")
-        with exit_gate.open("wb", buffering=0) as exit_gate_stream:
-            target_observed = event_reader.wait_for(
-                "successful-observation-persisted",
-                10,
-            )
-            if target_observed:
-                _ = exit_gate_stream.write(b"1")
-            else:
-                capture_process.terminate()
-    else:
-        target_observed = False
-        capture_process.terminate()
-    capture_stdout, capture_stderr = capture_process.communicate()
-    os.close(event_read_file_descriptor)
-
-    assert launcher_recorded
-    assert target_observed
-    test_helpers.assert_capture_summary(capture_stdout, profile_path)
-    assert capture_stderr == ""
-    assert capture_process.returncode == 0
+def _assert_complete_profile(profile_path: Path):
     profile = schema.load(profile_path)
     assert profile.complete is True
     assert profile.success is True
@@ -396,6 +348,59 @@ def test_public_binaries_capture_and_analyze_target(tmp_path: Path):
     profile_lines = profile_path.read_text(encoding="utf-8").splitlines()
     assert f'"process_id":{profile.process_id}' in profile_lines[0]
     assert '"record_type":"summary"' in profile_lines[-1]
+
+
+def test_public_binaries_capture_and_analyze_target(tmp_path: Path):
+    profile_path = tmp_path / "profile.jsonl"
+    launcher_gate = tmp_path / "launcher-gate"
+    exit_gate = tmp_path / "exit-gate"
+    os.mkfifo(launcher_gate)
+    os.mkfifo(exit_gate)
+    event_read_file_descriptor, event_write_file_descriptor = os.pipe()
+    event_reader = test_helpers.ProfilerEventReader(event_read_file_descriptor)
+    capture_process = subprocess.Popen(
+        test_helpers.profile_command(
+            profile_path,
+            "PROFILER_EXIT_SOURCE",
+            mean_interval_seconds=0.01,
+            event_file_descriptor=event_write_file_descriptor,
+            launcher_gate=launcher_gate,
+            target_arguments=(str(exit_gate),),
+        ),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        pass_fds=(event_write_file_descriptor,),
+    )
+    os.close(event_write_file_descriptor)
+    launcher_recorded = event_reader.wait_for(
+        "launcher-recorded",
+        timeout_seconds=10,
+    )
+    if launcher_recorded:
+        with launcher_gate.open("wb", buffering=0) as launcher_gate_stream:
+            _ = launcher_gate_stream.write(b"1\n")
+        with exit_gate.open("wb", buffering=0) as exit_gate_stream:
+            target_observed = event_reader.wait_for(
+                "successful-observation-persisted",
+                10,
+            )
+            if target_observed:
+                _ = exit_gate_stream.write(b"1")
+            else:
+                capture_process.terminate()
+    else:
+        target_observed = False
+        capture_process.terminate()
+    capture_stdout, capture_stderr = capture_process.communicate()
+    os.close(event_read_file_descriptor)
+
+    assert launcher_recorded
+    assert target_observed
+    test_helpers.assert_capture_summary(capture_stdout, profile_path)
+    assert capture_stderr == ""
+    assert capture_process.returncode == 0
+    _assert_complete_profile(profile_path)
     analysis_result = subprocess.run(
         [
             str(test_helpers.runfile("ANALYZER_BINARY")),
@@ -470,15 +475,9 @@ def test_uninterruptible_io_is_not_a_cross_thread_handoff():
 
 # PRF-047: Multi-threaded critical path. PRF-048: Critical-path fixture.
 # PRF-041: Realistic tests. PRF-043: Analyzer at every checkpoint.
-def test_wall_critical_path_recovers_cross_thread_handoffs(
-    capsys: pytest.CaptureFixture[str],
+def _assert_cross_thread_handoffs(
+    profile: schema.RawProfile, critical_path: wall_critical_path.Analysis
 ):
-    profile_path = test_helpers.runfile("PROFILER_CRITICAL_PATH_PROFILE")
-    profile = schema.load(profile_path)
-    assert profile.complete is True
-    assert profile.success is True
-    analysis = wall_analyzer.analyze(profile)
-    critical_path = analysis.critical_path
     python_started_ns = profile.lifecycle["python_observed_target_running_ns"]
     process_exited_ns = profile.lifecycle["exited_target_running_ns"]
     assert python_started_ns is not None
@@ -535,6 +534,18 @@ def test_wall_critical_path_recovers_cross_thread_handoffs(
         and segment.dependent_wait is not None
         for segment in critical_path.segments
     )
+
+
+def test_wall_critical_path_recovers_cross_thread_handoffs(
+    capsys: pytest.CaptureFixture[str],
+):
+    profile_path = test_helpers.runfile("PROFILER_CRITICAL_PATH_PROFILE")
+    profile = schema.load(profile_path)
+    assert profile.complete is True
+    assert profile.success is True
+    analysis = wall_analyzer.analyze(profile)
+    critical_path = analysis.critical_path
+    _assert_cross_thread_handoffs(profile, critical_path)
     wall_analyzer.emit_report(profile, analysis, len(critical_path.segments) + 1)
     detailed_report = capsys.readouterr().out
     assert "parallel off-path Thread" in detailed_report

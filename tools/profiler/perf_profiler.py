@@ -195,6 +195,31 @@ def _retain_native_objects(
     )
 
 
+def _retain_recorded_native_objects(
+    perf_executable: str,
+    profile_path: pathlib.Path,
+    runtime_map_path: pathlib.Path,
+):
+    buildids = subprocess.run(
+        (
+            perf_executable,
+            "buildid-list",
+            "-i",
+            os.fspath(profile_path),
+            "--with-hits",
+        ),
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    recorded_python_map, native_objects = _native_objects(
+        buildids.stdout, runtime_map_path
+    )
+    if not recorded_python_map:
+        raise RuntimeError("perf data does not reference the target's Python map")
+    _retain_native_objects(perf_executable, profile_path, native_objects)
+
+
 def capture(
     *,
     command: tuple[str, ...],
@@ -249,9 +274,10 @@ def capture(
         _ = diagnostics_file.seek(0)
         diagnostics = diagnostics_file.read()
         if not target_pid_path.is_file():
-            diagnostic = diagnostics.strip()
-            if diagnostic:
-                raise RuntimeError("perf could not launch the target:\n" + diagnostic)
+            if diagnostics.strip():
+                raise RuntimeError(
+                    "perf could not launch the target:\n" + diagnostics.strip()
+                )
             raise RuntimeError(
                 "perf record exited with status "
                 + f"{completed.returncode} before launching the target"
@@ -266,24 +292,7 @@ def capture(
         _ = shutil.copy2(runtime_map_path, python_map_path(profile_path))
         runtime_map_path.unlink()
         _ = shutil.move(recorded_data_path, profile_path)
-        buildids = subprocess.run(
-            (
-                perf_executable,
-                "buildid-list",
-                "-i",
-                os.fspath(profile_path),
-                "--with-hits",
-            ),
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-        recorded_python_map, native_objects = _native_objects(
-            buildids.stdout, runtime_map_path
-        )
-        if not recorded_python_map:
-            raise RuntimeError("perf data does not reference the target's Python map")
-        _retain_native_objects(perf_executable, profile_path, native_objects)
+        _retain_recorded_native_objects(perf_executable, profile_path, runtime_map_path)
 
     _ = diagnostics_path(profile_path).write_text(diagnostics, encoding="utf-8")
     profile_path.with_name(profile_path.name + ".inject.stderr").unlink(missing_ok=True)

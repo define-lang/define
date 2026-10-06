@@ -106,7 +106,7 @@ def gated_target_command(
     )
 
 
-def profile_command(
+def profile_command(  # noqa: PLR0913 - The optional controls are named at each test call.
     profile_path: Path,
     source_variable: str,
     *,

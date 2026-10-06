@@ -71,7 +71,7 @@ from tools.profiler import analyzer_model, perf_analyzer, schema, wall_analyzer
     show_default=True,
     help="Maximum rows, handoffs, and critical-path excerpts per section.",
 )
-def main(
+def main(  # noqa: PLR0913, PLR0917 - Click passes the declared command options.
     profile_path: pathlib.Path,
     thread_ids: tuple[int, ...],
     filename: str | None,

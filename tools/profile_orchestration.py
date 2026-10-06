@@ -40,6 +40,16 @@ class ProfileInvocation(msgspec.Struct, frozen=True):
     environment: dict[str, str]
 
 
+class _ProfileOptions(msgspec.Struct, frozen=True):
+    source_path: pathlib.Path | None
+    project: pathlib.Path | None
+    entry: str
+    out_path: pathlib.Path
+    max_threads: int
+    output_dir: pathlib.Path
+    profile_mode: str
+
+
 def chdir_to_build_workspace():
     """Resolve CLI paths from the workspace when invoked through Bazel."""
     # PRF-012: Orchestration boundary.
@@ -116,26 +126,21 @@ def record_profile(invocation: ProfileInvocation):
 
 
 def _profile_invocation(
-    *,
     workspace: pathlib.Path,
     compiler_path: pathlib.Path,
-    source_path: pathlib.Path | None,
-    project: pathlib.Path | None,
-    entry: str,
-    out_path: pathlib.Path,
-    max_threads: int,
-    output_dir: pathlib.Path,
-    profile_mode: str,
+    options: _ProfileOptions,
 ) -> ProfileInvocation:
     # PRF-012: Orchestration boundary. PRF-014: CPU mode.
-    if source_path is not None:
-        workload_path = source_path.absolute()
+    if options.source_path is not None:
+        workload_path = options.source_path.absolute()
         target_stdin_path: pathlib.Path | None = workload_path
         target_working_directory = workspace
         compiler_input: pathlib.Path | None = None
     else:
-        target_working_directory = typing.cast("pathlib.Path", project).absolute()
-        workload_path = target_working_directory / entry
+        target_working_directory = typing.cast(
+            "pathlib.Path", options.project
+        ).absolute()
+        workload_path = target_working_directory / options.entry
         target_stdin_path = None
         compiler_input = workload_path
 
@@ -143,21 +148,21 @@ def _profile_invocation(
         str(compiler_path),
         "compile",
         "--out",
-        str(output_dir),
+        str(options.output_dir),
         "--max-threads",
-        str(max_threads),
+        str(options.max_threads),
     ]
     if compiler_input is not None:
         target_command.append(str(compiler_input))
     return ProfileInvocation(
         profiler_command=(sys.executable, "-m", "tools.profiler"),
-        profiler_arguments=("--mode", profile_mode),
+        profiler_arguments=("--mode", options.profile_mode),
         profiler_working_directory=workspace,
         target_command=tuple(target_command),
         target_working_directory=target_working_directory,
         target_stdin_path=target_stdin_path,
         workload_path=workload_path,
-        profile_path=out_path.absolute(),
+        profile_path=options.out_path.absolute(),
         environment=_target_environment(),
     )
 
@@ -229,7 +234,7 @@ def _profile_invocation(
     type=_PATH,
     help="Code-generation directory. Defaults to a throwaway directory.",
 )
-def main(
+def main(  # noqa: PLR0913, PLR0917 - Click passes the declared command options.
     profile_mode: str,
     source_path: pathlib.Path | None,
     project: pathlib.Path | None,
@@ -255,14 +260,16 @@ def main(
         else:
             output_dir = output_dir.absolute()
         invocation = _profile_invocation(
-            workspace=workspace,
-            compiler_path=compiler_path,
-            source_path=source_path,
-            project=project,
-            entry=entry,
-            out_path=out_path,
-            max_threads=max_threads,
-            output_dir=output_dir,
-            profile_mode=profile_mode,
+            workspace,
+            compiler_path,
+            _ProfileOptions(
+                source_path=source_path,
+                project=project,
+                entry=entry,
+                out_path=out_path,
+                max_threads=max_threads,
+                output_dir=output_dir,
+                profile_mode=profile_mode,
+            ),
         )
         record_profile(invocation)

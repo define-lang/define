@@ -131,6 +131,58 @@ class _ThreadMetrics(msgspec.Struct):
     attributed: _OccupancyMetrics = msgspec.field(default_factory=_OccupancyMetrics)
 
 
+class _AttributionMetrics(msgspec.Struct):
+    cumulative: dict[int, _SpanMetrics] = msgspec.field(
+        default_factory=lambda: collections.defaultdict(_SpanMetrics)
+    )
+    self_functions: dict[analyzer_model.FunctionIdentity, _IntervalMetrics] = (
+        msgspec.field(default_factory=lambda: collections.defaultdict(_IntervalMetrics))
+    )
+    cumulative_functions: dict[analyzer_model.FunctionIdentity, _IntervalMetrics] = (
+        msgspec.field(default_factory=lambda: collections.defaultdict(_IntervalMetrics))
+    )
+    stack_paths: dict[tuple[analyzer_model.FunctionIdentity, ...], _SpanMetrics] = (
+        msgspec.field(default_factory=lambda: collections.defaultdict(_SpanMetrics))
+    )
+    relationships: dict[
+        tuple[analyzer_model.FunctionIdentity, analyzer_model.FunctionIdentity],
+        _OccupancyMetrics,
+    ] = msgspec.field(
+        default_factory=lambda: collections.defaultdict(_OccupancyMetrics)
+    )
+    threads: dict[int, _ThreadMetrics] = msgspec.field(default_factory=dict)
+    attributed: _OccupancyMetrics = msgspec.field(default_factory=_OccupancyMetrics)
+
+    def add_sample(
+        self,
+        sample: wall_model.ThreadSample,
+        functions: dict[int, analyzer_model.FunctionIdentity],
+        filters: analyzer_model.AnalysisFilters,
+    ):
+        thread_id = sample.identity.os_thread_id
+        if filters.thread_ids and thread_id not in filters.thread_ids:
+            return
+        thread = self.threads.get(thread_id)
+        if thread is None:
+            thread = _ThreadMetrics()
+            self.threads[thread_id] = thread
+        thread.occupancy.add(sample.interval)
+        if not sample.stack:
+            return
+        thread.attributed.add(sample.interval)
+        self.attributed.add(sample.interval)
+        leaf_function = functions[sample.stack[-1]]
+        self.self_functions[leaf_function].add(thread_id, sample.interval)
+        for frame_id in set(sample.stack):
+            self.cumulative[frame_id].add(thread_id, sample.interval)
+        stack_path = tuple(functions[frame_id] for frame_id in sample.stack)
+        for identity in set(stack_path):
+            self.cumulative_functions[identity].add(thread_id, sample.interval)
+        self.stack_paths[stack_path].add(thread_id, sample.interval)
+        for relationship in set(itertools.pairwise(stack_path)):
+            self.relationships[relationship].add(sample.interval)
+
+
 def _wall_union_update(
     prior_end_ns: int | None,
     interval: wall_model.Interval,
@@ -239,49 +291,12 @@ def analyze(
         frame_id: analyzer_model.function_identity(frame)
         for frame_id, frame in frames.items()
     }
-    cumulative_metrics: dict[int, _SpanMetrics] = collections.defaultdict(_SpanMetrics)
-    self_function_metrics: dict[analyzer_model.FunctionIdentity, _IntervalMetrics] = (
-        collections.defaultdict(_IntervalMetrics)
-    )
-    cumulative_function_metrics: dict[
-        analyzer_model.FunctionIdentity, _IntervalMetrics
-    ] = collections.defaultdict(_IntervalMetrics)
-    stack_path_metrics: dict[
-        tuple[analyzer_model.FunctionIdentity, ...], _SpanMetrics
-    ] = collections.defaultdict(_SpanMetrics)
-    relationship_metrics: dict[
-        tuple[analyzer_model.FunctionIdentity, analyzer_model.FunctionIdentity],
-        _OccupancyMetrics,
-    ] = collections.defaultdict(_OccupancyMetrics)
-    thread_metrics: dict[int, _ThreadMetrics] = {}
-    attributed_metrics = _OccupancyMetrics()
+    accumulated = _AttributionMetrics()
     for sample in samples:
-        thread_id = sample.identity.os_thread_id
-        if filters.thread_ids and thread_id not in filters.thread_ids:
-            continue
-        metrics = thread_metrics.get(thread_id)
-        if metrics is None:
-            metrics = _ThreadMetrics()
-            thread_metrics[thread_id] = metrics
-        metrics.occupancy.add(sample.interval)
-        if not sample.stack:
-            continue
-        metrics.attributed.add(sample.interval)
-        attributed_metrics.add(sample.interval)
-        leaf = sample.stack[-1]
-        leaf_function = functions[leaf]
-        self_function_metrics[leaf_function].add(thread_id, sample.interval)
-        for frame_id in set(sample.stack):
-            cumulative_metrics[frame_id].add(thread_id, sample.interval)
-        stack_path = tuple(functions[frame_id] for frame_id in sample.stack)
-        for identity in set(stack_path):
-            cumulative_function_metrics[identity].add(thread_id, sample.interval)
-        stack_path_metrics[stack_path].add(thread_id, sample.interval)
-        for relationship in set(itertools.pairwise(stack_path)):
-            relationship_metrics[relationship].add(sample.interval)
+        accumulated.add_sample(sample, functions, filters)
 
     relationship_rows: list[RelationshipRow] = []
-    for relationship, metrics in relationship_metrics.items():
+    for relationship, metrics in accumulated.relationships.items():
         caller, callee = relationship
         if filters.caller is not None and filters.caller not in caller.function:
             continue
@@ -318,7 +333,7 @@ def analyze(
                 attributed_occupancy_ns=metrics.attributed.wall_occupancy_ns,
                 sample_hits=metrics.occupancy.sample_hits,
             )
-            for thread_id, metrics in thread_metrics.items()
+            for thread_id, metrics in accumulated.threads.items()
         ),
         key=lambda row: (-row.occupancy_ns, row.os_thread_id),
     )
@@ -329,23 +344,23 @@ def analyze(
         if python_started_ns is not None and process_exited_ns is not None
         else 0
     )
-    attributed_wall_ns = attributed_metrics.wall_occupancy_ns
+    attributed_wall_ns = accumulated.attributed.wall_occupancy_ns
     return Analysis(
         cumulative_rows=_frame_rows(
-            cumulative_metrics,
+            accumulated.cumulative,
             frames,
             filters,
         ),
         self_function_rows=_function_rows(
-            self_function_metrics,
+            accumulated.self_functions,
             filters,
         ),
         cumulative_function_rows=_function_rows(
-            cumulative_function_metrics,
+            accumulated.cumulative_functions,
             filters,
         ),
         stack_path_rows=_stack_path_rows(
-            stack_path_metrics,
+            accumulated.stack_paths,
             filters,
         ),
         relationship_rows=relationship_rows,
@@ -384,9 +399,7 @@ def _stack_function_text(identity: analyzer_model.FunctionIdentity) -> str:
     )
 
 
-def emit_report(profile: schema.RawProfile, analysis: Analysis, limit: int) -> None:
-    """Print stable continuous-wall attribution tables and diagnostics."""
-    # PRF-020: Machine and human interfaces. PRF-043: Analyzer at every checkpoint.
+def _emit_report_header(profile: schema.RawProfile, analysis: Analysis):
     status = "successful" if profile.success else "unsuccessful"
     completeness = "complete" if profile.complete else "incomplete"
     print(f"Profile schema: {profile.schema_version}; {completeness}; {status}")
@@ -456,6 +469,12 @@ def emit_report(profile: schema.RawProfile, analysis: Analysis, limit: int) -> N
         "Resolution: sample hits are observations, not calls; failed observations "
         + "and lifecycle boundaries remain unattributed gaps."
     )
+
+
+def emit_report(profile: schema.RawProfile, analysis: Analysis, limit: int) -> None:
+    """Print stable continuous-wall attribution tables and diagnostics."""
+    # PRF-020: Machine and human interfaces. PRF-043: Analyzer at every checkpoint.
+    _emit_report_header(profile, analysis)
 
     wall_critical_path.emit_report(profile, analysis.critical_path, limit)
 

@@ -157,6 +157,47 @@ def test_analyze_report_omits_wildcard_case_that_only_raises(tmp_path: Path):
     assert len(explicit_exit_only) == 1
 
 
+@pytest.mark.parametrize(
+    ("case_pattern", "case_body"),
+    [
+        ("_ if value > 0", 'raise TypeError("unexpected value")'),
+        ("remaining", 'raise TypeError("unexpected value")'),
+        ("_", "return value"),
+    ],
+)
+def test_analyze_report_keeps_case_that_can_continue(
+    tmp_path: Path, case_pattern: str, case_body: str
+):
+    source_path = tmp_path / "example.py"
+    _ = source_path.write_text(
+        "def choose(value: int) -> int:\n"
+        + "    match value:\n"
+        + "        case 1:\n"
+        + "            return value\n"
+        + f"        case {case_pattern}:\n"
+        + f"            {case_body}\n"
+    )
+    report_path = tmp_path / "coverage.dat"
+    _ = report_path.write_text(
+        "SF:example.py\nBRDA:3,0,jump to line 5,0\nend_of_record\n"
+    )
+
+    actionable, low_value, explicit_exit_only = analyze_coverage.analyze_report(
+        report_path, tmp_path
+    )
+
+    assert actionable == [
+        analyze_coverage.UncoveredBranch(
+            source_file=Path("example.py"),
+            source_line=3,
+            description="jump to line 5",
+            target_line=5,
+        )
+    ]
+    assert low_value == []
+    assert explicit_exit_only == []
+
+
 def test_analyze_report_omits_branch_to_typing_assert_never(tmp_path: Path):
     source_path = tmp_path / "example.py"
     _ = source_path.write_text(

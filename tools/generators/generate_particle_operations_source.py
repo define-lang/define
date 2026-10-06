@@ -30,6 +30,7 @@ Run via:
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import click
@@ -48,6 +49,24 @@ DEFAULT_PODS = 4
 DEFAULT_RETRIGGERS = 2
 DEFAULT_INDEPENDENT_MOVE_BRANCHES = 1024
 DEFAULT_INDEPENDENT_MOVE_CHAIN_LENGTH = 1024
+
+
+@dataclass(frozen=True)
+class ParticleOperationOptions:
+    """Parameters of one generated Particle Operation workload."""
+
+    repetitions: int = DEFAULT_REPETITIONS
+    move_chain_length: int = DEFAULT_MOVE_CHAIN_LENGTH
+    tree_depth: int = DEFAULT_TREE_DEPTH
+    wide_children: int = DEFAULT_WIDE_CHILDREN
+    pods: int = DEFAULT_PODS
+    retriggers: int = DEFAULT_RETRIGGERS
+    independent_move_branches: int = DEFAULT_INDEPENDENT_MOVE_BRANCHES
+    independent_move_chain_length: int = DEFAULT_INDEPENDENT_MOVE_CHAIN_LENGTH
+    fqun_prefix: str = DEFAULT_FQUN_PREFIX
+
+
+DEFAULT_OPTIONS = ParticleOperationOptions()
 
 _MIN_REPETITIONS = 1
 _MIN_MOVE_CHAIN_LENGTH = 2
@@ -389,15 +408,14 @@ def _block_sink_pod(pod: int, retriggers: int) -> list[str]:
     return lines
 
 
-def _emit_main_action_header(
-    prefix: str,
-    repetitions: int,
-    move_chain_length: int,
-    wide_children: int,
-    pods: int,
-    independent_move_branches: int,
-    independent_move_chain_length: int,
-) -> list[str]:
+def _emit_main_action_header(options: ParticleOperationOptions) -> list[str]:
+    prefix = options.fqun_prefix
+    repetitions = options.repetitions
+    move_chain_length = options.move_chain_length
+    wide_children = options.wide_children
+    pods = options.pods
+    independent_move_branches = options.independent_move_branches
+    independent_move_chain_length = options.independent_move_chain_length
     name = _qualified(prefix, "/test")
     all_children = [_child_path(i) for i in range(wide_children)]
     lines = [
@@ -477,15 +495,7 @@ def _emit_entry_constructor(prefix: str) -> list[str]:
 
 
 def generate_source_lines(
-    repetitions: int = DEFAULT_REPETITIONS,
-    move_chain_length: int = DEFAULT_MOVE_CHAIN_LENGTH,
-    tree_depth: int = DEFAULT_TREE_DEPTH,
-    wide_children: int = DEFAULT_WIDE_CHILDREN,
-    pods: int = DEFAULT_PODS,
-    retriggers: int = DEFAULT_RETRIGGERS,
-    independent_move_branches: int = DEFAULT_INDEPENDENT_MOVE_BRANCHES,
-    independent_move_chain_length: int = DEFAULT_INDEPENDENT_MOVE_CHAIN_LENGTH,
-    fqun_prefix: str = DEFAULT_FQUN_PREFIX,
+    options: ParticleOperationOptions = DEFAULT_OPTIONS,
 ) -> list[str]:
     """Return the generated source as a list of lines (no trailing newlines).
 
@@ -493,6 +503,15 @@ def generate_source_lines(
     times; every family leaves each reused position in the state the next
     repetition expects, so repetitions compose cleanly.
     """
+    repetitions = options.repetitions
+    move_chain_length = options.move_chain_length
+    tree_depth = options.tree_depth
+    wide_children = options.wide_children
+    pods = options.pods
+    retriggers = options.retriggers
+    independent_move_branches = options.independent_move_branches
+    independent_move_chain_length = options.independent_move_chain_length
+    fqun_prefix = options.fqun_prefix
     if repetitions < _MIN_REPETITIONS:
         raise ValueError(
             f"repetitions must be at least {_MIN_REPETITIONS}, got {repetitions}"
@@ -540,17 +559,7 @@ def generate_source_lines(
     if pods > 0:
         lines.extend(_emit_worker_action(fqun_prefix))
         lines.extend(_emit_sink_action(fqun_prefix))
-    lines.extend(
-        _emit_main_action_header(
-            fqun_prefix,
-            repetitions,
-            move_chain_length,
-            wide_children,
-            pods,
-            independent_move_branches,
-            independent_move_chain_length,
-        )
-    )
+    lines.extend(_emit_main_action_header(options))
     if independent_move_branches > 0:
         lines.append(f"{_INNER_INDENT}# independent Move branches")
         lines.extend(
@@ -575,29 +584,10 @@ def generate_source_lines(
 
 
 def write_to_path(
-    output: Path,
-    repetitions: int = DEFAULT_REPETITIONS,
-    move_chain_length: int = DEFAULT_MOVE_CHAIN_LENGTH,
-    tree_depth: int = DEFAULT_TREE_DEPTH,
-    wide_children: int = DEFAULT_WIDE_CHILDREN,
-    pods: int = DEFAULT_PODS,
-    retriggers: int = DEFAULT_RETRIGGERS,
-    independent_move_branches: int = DEFAULT_INDEPENDENT_MOVE_BRANCHES,
-    independent_move_chain_length: int = DEFAULT_INDEPENDENT_MOVE_CHAIN_LENGTH,
-    fqun_prefix: str = DEFAULT_FQUN_PREFIX,
+    output: Path, options: ParticleOperationOptions = DEFAULT_OPTIONS
 ) -> int:
     """Write generated source to ``output``. Returns the number of lines written."""
-    lines = generate_source_lines(
-        repetitions=repetitions,
-        move_chain_length=move_chain_length,
-        tree_depth=tree_depth,
-        wide_children=wide_children,
-        pods=pods,
-        retriggers=retriggers,
-        independent_move_branches=independent_move_branches,
-        independent_move_chain_length=independent_move_chain_length,
-        fqun_prefix=fqun_prefix,
-    )
+    lines = generate_source_lines(options)
     return generator_io.write_lines(output, lines)
 
 
@@ -667,7 +657,7 @@ def write_to_path(
     show_default=True,
     help="Universe prefix for every definition.",
 )
-def main(
+def main(  # noqa: PLR0913, PLR0917 - Click passes the declared command options.
     output: Path,
     repetitions: int,
     move_chain_length: int,
@@ -688,15 +678,17 @@ def main(
     written = generator_cli.invoke(
         lambda: write_to_path(
             output,
-            repetitions=repetitions,
-            move_chain_length=move_chain_length,
-            tree_depth=tree_depth,
-            wide_children=wide_children,
-            pods=pods,
-            retriggers=retriggers,
-            independent_move_branches=independent_move_branches,
-            independent_move_chain_length=independent_move_chain_length,
-            fqun_prefix=fqun_prefix,
+            ParticleOperationOptions(
+                repetitions=repetitions,
+                move_chain_length=move_chain_length,
+                tree_depth=tree_depth,
+                wide_children=wide_children,
+                pods=pods,
+                retriggers=retriggers,
+                independent_move_branches=independent_move_branches,
+                independent_move_chain_length=independent_move_chain_length,
+                fqun_prefix=fqun_prefix,
+            ),
         )
     )
     generator_cli.report_written("lines", written, output)

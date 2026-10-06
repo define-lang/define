@@ -14,15 +14,14 @@ if typing.TYPE_CHECKING:
 def _sample(
     identity: wall_model.ThreadIdentity,
     observation_index: int,
-    start_ns: int,
-    end_ns: int,
+    interval: wall_model.Interval,
     state: str,
     stack: tuple[int, ...],
 ) -> wall_model.ThreadSample:
     return wall_model.ThreadSample(
         observation=wall_model.ObservationSample(
             observation_index=observation_index,
-            interval=wall_model.Interval(start_ns, end_ns),
+            interval=interval,
         ),
         identity=identity,
         pre_stop_state=state,
@@ -68,10 +67,10 @@ def _profile_with_observation_times(*target_running_times: int) -> schema.RawPro
 def test_wait_start_reaches_the_first_observation():
     downstream = wall_model.ThreadIdentity(11, 101)
     producer = wall_model.ThreadIdentity(12, 102)
-    first_wait = _sample(downstream, 0, 0, 10, "S", (1,))
-    second_wait = _sample(downstream, 1, 10, 20, "S", (1,))
-    producer_work = _sample(producer, 1, 10, 20, "R", (2,))
-    downstream_work = _sample(downstream, 2, 20, 30, "R", (1,))
+    first_wait = _sample(downstream, 0, wall_model.Interval(0, 10), "S", (1,))
+    second_wait = _sample(downstream, 1, wall_model.Interval(10, 20), "S", (1,))
+    producer_work = _sample(producer, 1, wall_model.Interval(10, 20), "R", (2,))
+    downstream_work = _sample(downstream, 2, wall_model.Interval(20, 30), "R", (1,))
 
     transitions = wall_critical_path._transitions(  # pyright: ignore[reportPrivateUsage]
         _profile_with_observation_times(5, 15, 25),
@@ -89,15 +88,17 @@ def test_wait_start_reaches_the_first_observation():
 def test_departed_candidate_uses_its_latest_working_sample():
     downstream = wall_model.ThreadIdentity(11, 101)
     producer = wall_model.ThreadIdentity(12, 102)
-    first_producer_sample = _sample(producer, 0, 0, 10, "R", (1,))
-    latest_producer_sample = _sample(producer, 1, 10, 20, "R", (2,))
+    first_producer_sample = _sample(producer, 0, wall_model.Interval(0, 10), "R", (1,))
+    latest_producer_sample = _sample(
+        producer, 1, wall_model.Interval(10, 20), "R", (2,)
+    )
     departed_candidates = wall_critical_path._departed_working_candidates  # pyright: ignore[reportPrivateUsage]
 
     candidates = departed_candidates(
         downstream,
         0,
         1,
-        {downstream: _sample(downstream, 2, 20, 30, "R", (3,))},
+        {downstream: _sample(downstream, 2, wall_model.Interval(20, 30), "R", (3,))},
         {producer: [first_producer_sample, latest_producer_sample]},
     )
 
@@ -114,10 +115,14 @@ def test_departed_candidates_exclude_work_before_wait_and_after_transition():
         downstream,
         1,
         1,
-        {downstream: _sample(downstream, 2, 20, 30, "R", (3,))},
+        {downstream: _sample(downstream, 2, wall_model.Interval(20, 30), "R", (3,))},
         {
-            earlier_producer: [_sample(earlier_producer, 0, 0, 10, "R", (1,))],
-            later_producer: [_sample(later_producer, 2, 20, 30, "R", (2,))],
+            earlier_producer: [
+                _sample(earlier_producer, 0, wall_model.Interval(0, 10), "R", (1,))
+            ],
+            later_producer: [
+                _sample(later_producer, 2, wall_model.Interval(20, 30), "R", (2,))
+            ],
         },
     )
 
@@ -128,9 +133,9 @@ def test_departed_candidates_exclude_work_before_wait_and_after_transition():
 def test_new_worker_uses_the_prior_stack_bearing_candidate():
     producer = wall_model.ThreadIdentity(11, 101)
     downstream = wall_model.ThreadIdentity(12, 102)
-    producer_before = _sample(producer, 0, 0, 10, "R", (1,))
-    producer_after = _sample(producer, 1, 10, 20, "R", (1,))
-    downstream_after = _sample(downstream, 1, 10, 20, "R", (2,))
+    producer_before = _sample(producer, 0, wall_model.Interval(0, 10), "R", (1,))
+    producer_after = _sample(producer, 1, wall_model.Interval(10, 20), "R", (1,))
+    downstream_after = _sample(downstream, 1, wall_model.Interval(10, 20), "R", (2,))
     transitions_for = wall_critical_path._transitions  # pyright: ignore[reportPrivateUsage]
 
     transitions = transitions_for(
@@ -157,8 +162,8 @@ def test_new_worker_uses_the_prior_stack_bearing_candidate():
 def test_new_waiting_worker_uses_the_prior_stack_bearing_candidate():
     producer = wall_model.ThreadIdentity(11, 101)
     downstream = wall_model.ThreadIdentity(12, 102)
-    producer_before = _sample(producer, 0, 0, 10, "R", (1,))
-    downstream_after = _sample(downstream, 1, 10, 20, "S", (2,))
+    producer_before = _sample(producer, 0, wall_model.Interval(0, 10), "R", (1,))
+    downstream_after = _sample(downstream, 1, wall_model.Interval(10, 20), "S", (2,))
     transitions_for = wall_critical_path._transitions  # pyright: ignore[reportPrivateUsage]
 
     transitions = transitions_for(
@@ -179,9 +184,11 @@ def test_scheduler_wake_resolves_an_ambiguous_sampled_transition():
     producer = wall_model.ThreadIdentity(11, 101)
     competing_worker = wall_model.ThreadIdentity(12, 102)
     downstream = wall_model.ThreadIdentity(13, 103)
-    producer_before = _sample(producer, 0, 0, 10, "R", (1,))
-    competing_before = _sample(competing_worker, 0, 0, 10, "R", (2,))
-    downstream_after = _sample(downstream, 1, 10, 20, "R", (3,))
+    producer_before = _sample(producer, 0, wall_model.Interval(0, 10), "R", (1,))
+    competing_before = _sample(
+        competing_worker, 0, wall_model.Interval(0, 10), "R", (2,)
+    )
+    downstream_after = _sample(downstream, 1, wall_model.Interval(10, 20), "R", (3,))
     samples = _samples(
         {
             producer: producer_before,
@@ -189,13 +196,21 @@ def test_scheduler_wake_resolves_an_ambiguous_sampled_transition():
         },
         {downstream: downstream_after},
     )
-    samples.scheduler_wakes.append(
-        wall_model.SchedulerWake(
-            kind="wakeup-new",
-            target_running_ns=8,
-            upstream_os_thread_id=producer.os_thread_id,
-            downstream_os_thread_id=downstream.os_thread_id,
-        )
+    samples.scheduler_wakes.extend(
+        [
+            wall_model.SchedulerWake(
+                kind="wakeup-new",
+                target_running_ns=7,
+                upstream_os_thread_id=competing_worker.os_thread_id,
+                downstream_os_thread_id=downstream.os_thread_id,
+            ),
+            wall_model.SchedulerWake(
+                kind="wakeup-new",
+                target_running_ns=8,
+                upstream_os_thread_id=producer.os_thread_id,
+                downstream_os_thread_id=downstream.os_thread_id,
+            ),
+        ]
     )
 
     transitions = wall_critical_path._transitions(  # pyright: ignore[reportPrivateUsage]
@@ -239,12 +254,20 @@ def test_latest_transition_can_include_an_exact_phase_boundary():
     downstream = wall_model.ThreadIdentity(12, 102)
     transition_type = wall_critical_path._Transition  # pyright: ignore[reportPrivateUsage]
     latest_transition = wall_critical_path._latest_transition  # pyright: ignore[reportPrivateUsage]
-    downstream_sample = _sample(downstream, 1, 10, 20, "R", (2,))
+    downstream_sample = _sample(downstream, 1, wall_model.Interval(10, 20), "R", (2,))
     transition = transition_type(
         target_running_ns=10,
         downstream_sample=downstream_sample,
         downstream_wait_ns=0,
-        candidates=(_sample(wall_model.ThreadIdentity(11, 101), 0, 0, 10, "R", (1,)),),
+        candidates=(
+            _sample(
+                wall_model.ThreadIdentity(11, 101),
+                0,
+                wall_model.Interval(0, 10),
+                "R",
+                (1,),
+            ),
+        ),
         evidence="sampled-transition",
     )
 
@@ -274,10 +297,14 @@ def test_ambiguous_worker_without_main_candidate_keeps_prior_path_uncertain():
     worker = wall_model.ThreadIdentity(12, 102)
     other_worker = wall_model.ThreadIdentity(13, 103)
     second_other_worker = wall_model.ThreadIdentity(14, 104)
-    worker_sample = _sample(worker, 1, 10, 20, "R", (2,))
-    other_worker_sample = _sample(other_worker, 0, 0, 10, "R", (3,))
-    second_other_worker_sample = _sample(second_other_worker, 0, 0, 10, "R", (4,))
-    terminal_sample = _sample(main_thread, 1, 20, 30, "R", (1,))
+    worker_sample = _sample(worker, 1, wall_model.Interval(10, 20), "R", (2,))
+    other_worker_sample = _sample(
+        other_worker, 0, wall_model.Interval(0, 10), "R", (3,)
+    )
+    second_other_worker_sample = _sample(
+        second_other_worker, 0, wall_model.Interval(0, 10), "R", (4,)
+    )
+    terminal_sample = _sample(main_thread, 1, wall_model.Interval(20, 30), "R", (1,))
     transition_type = wall_critical_path._Transition  # pyright: ignore[reportPrivateUsage]
     phases_and_handoffs = wall_critical_path._phases_and_handoffs  # pyright: ignore[reportPrivateUsage]
     profile = typing.cast(
@@ -331,7 +358,7 @@ def test_ambiguous_worker_without_main_candidate_keeps_prior_path_uncertain():
 # PRF-047: Multi-threaded critical path.
 def test_phase_without_an_overlapping_sample_is_uncertain():
     actor = wall_model.ThreadIdentity(11, 101)
-    boundary_sample = _sample(actor, 0, 0, 10, "R", (1,))
+    boundary_sample = _sample(actor, 0, wall_model.Interval(0, 10), "R", (1,))
     phase_type = wall_critical_path._Phase  # pyright: ignore[reportPrivateUsage]
     phase_segments = wall_critical_path._phase_segments  # pyright: ignore[reportPrivateUsage]
 

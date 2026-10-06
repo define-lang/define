@@ -123,27 +123,6 @@ def generate_source_lines(
     return lines
 
 
-def write_to_path(
-    output: Path,
-    actions: int = DEFAULT_ACTIONS,
-    chains_per_action: int = DEFAULT_CHAINS_PER_ACTION,
-    topology_groups: int = DEFAULT_TOPOLOGY_GROUPS,
-    topology_width: int = DEFAULT_TOPOLOGY_WIDTH,
-    fqun_prefix: str = DEFAULT_FQUN_PREFIX,
-) -> int:
-    """Write the generated source and return its line count."""
-    return generator_io.write_lines(
-        output,
-        generate_source_lines(
-            actions=actions,
-            chains_per_action=chains_per_action,
-            topology_groups=topology_groups,
-            topology_width=topology_width,
-            fqun_prefix=fqun_prefix,
-        ),
-    )
-
-
 @click.command()
 @click.option("--output", type=generator_cli.OUTPUT_FILE, required=True)
 @click.option(
@@ -171,7 +150,7 @@ def write_to_path(
     show_default=True,
 )
 @click.option("--fqun-prefix", default=DEFAULT_FQUN_PREFIX, show_default=True)
-def main(
+def main(  # noqa: PLR0913, PLR0917 - Click passes the declared command options.
     output: Path,
     actions: int,
     chains_per_action: int,
@@ -181,13 +160,15 @@ def main(
 ):
     """Generate many substantial actions and wide particle destructions."""
     written = generator_cli.invoke(
-        lambda: write_to_path(
+        lambda: generator_io.write_lines(
             output,
-            actions=actions,
-            chains_per_action=chains_per_action,
-            topology_groups=topology_groups,
-            topology_width=topology_width,
-            fqun_prefix=fqun_prefix,
+            generate_source_lines(
+                actions=actions,
+                chains_per_action=chains_per_action,
+                topology_groups=topology_groups,
+                topology_width=topology_width,
+                fqun_prefix=fqun_prefix,
+            ),
         )
     )
     generator_cli.report_written("lines", written, output)

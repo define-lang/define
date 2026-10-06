@@ -17,6 +17,8 @@ dependencies = [
 
 [tool.ruff.lint]
 select = ["ALL"]
+preview = true
+explicit-preview-rules = true
 ignore = [
   # Return annotations, including `-> None`, which this project omits.
   "ANN201",
@@ -25,11 +27,6 @@ ignore = [
   "ANN205",
   # Size and complexity limits with arbitrary thresholds.
   "C901",
-  "PLR0911",
-  "PLR0912",
-  "PLR0913",
-  "PLR0915",
-  "PLR0917",
   "CPY001", # Files do not carry copyright notices.
   # Conflict with the ruff formatter.
   "COM812",
@@ -53,8 +50,15 @@ ignore = [
   "ISC003", # Explicit string concatenation is allowed.
   "PERF401", # Loops are preferred over comprehensions that are not simple.
   "PLR2004", # Tests compare against literal values.
+  "PTH201", # Keep the existing current-directory path style until B5 is decided.
+  "S404", # Tooling deliberately imports subprocess to run commands.
 ]
 extend-select = [
+  "PLR0904", # Enforce size limits in vibe-coded sources; others opt out below.
+  "PLR0914",
+  "PLR0916",
+  "PLW0717",
+  "RUF031", # Parenthesize tuple subscripts.
   "W",  # pycodestyle warnings
   "I",  # isort
   "N",  # pep8-naming
@@ -100,6 +104,10 @@ allow-magic-value-types = []
 parenthesize-tuple-in-subscript = true
 
 [tool.ruff.lint.extend-per-file-ignores]
+"!{checks/**,tools/**,define/compiler/driver_fuzz_test.py}" = [
+    "PLR09", # Size limits apply to the vibe-coded sources above.
+    "PLW0717", # The same scope applies to the try-clause size limit.
+]
 "**/*.py" = [
     "S603", # Allow subprocess calls without a shell.
 ]

@@ -137,30 +137,17 @@ class SourceAnalysis:
                 end_line = cast("int", node.end_lineno)
                 if node.lineno <= branch.target_line <= end_line:
                     return True
-            elif (
-                isinstance(node, ast.Expr)
-                and node.lineno <= branch.target_line <= cast("int", node.end_lineno)
-                and _expression_calls(node, "typing", "assert_never")
-            ) or (
-                isinstance(node, ast.If)
-                and node.lineno == branch.source_line
-                and (
-                    _suite_only_exits_pytest(node.body, branch.target_line)
-                    or _suite_only_exits_pytest(node.orelse, branch.target_line)
-                )
+            elif isinstance(node, ast.Expr) and _expression_is_assert_never(
+                node, branch.target_line
             ):
                 return True
+            elif isinstance(node, ast.If) and node.lineno == branch.source_line:
+                if _suite_only_exits_pytest(
+                    node.body, branch.target_line
+                ) or _suite_only_exits_pytest(node.orelse, branch.target_line):
+                    return True
             elif isinstance(node, ast.match_case):
-                pattern = node.pattern
-                if (
-                    isinstance(pattern, ast.MatchAs)
-                    and pattern.pattern is None
-                    and pattern.name is None
-                    and node.guard is None
-                    and len(node.body) == 1
-                    and isinstance(node.body[0], ast.Raise)
-                    and pattern.lineno <= branch.target_line <= pattern.end_lineno
-                ):
+                if _case_is_final_raise(node, branch.target_line):
                     return True
         return False
 
@@ -189,6 +176,27 @@ class SourceAnalysis:
             ):
                 return True
         return False
+
+
+def _expression_is_assert_never(expression: ast.Expr, target_line: int) -> bool:
+    return expression.lineno <= target_line <= cast(
+        "int", expression.end_lineno
+    ) and _expression_calls(expression, "typing", "assert_never")
+
+
+def _case_is_final_raise(case: ast.match_case, target_line: int) -> bool:
+    pattern = case.pattern
+    if not isinstance(pattern, ast.MatchAs):
+        return False
+    if (
+        pattern.pattern is not None
+        or pattern.name is not None
+        or case.guard is not None
+    ):
+        return False
+    if len(case.body) != 1 or not isinstance(case.body[0], ast.Raise):
+        return False
+    return pattern.lineno <= target_line <= pattern.end_lineno
 
 
 def _suite_only_exits_pytest(statements: Sequence[ast.stmt], target_line: int) -> bool:

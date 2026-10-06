@@ -99,58 +99,37 @@ class Samples(msgspec.Struct):
             yield from observation.threads.values()
 
 
-def observation_intervals(profile: schema.RawProfile) -> Samples:
-    """Calculate and index lifecycle-bounded target-running wall samples."""
-    # PRF-003: Pause exclusion. PRF-004: No stale-stack reuse.
-    # PRF-005: Lifecycle-bounded attribution.
+def _observation_interval(
+    profile: schema.RawProfile,
+    index: int,
+    python_started_ns: int,
+    process_exited_ns: int | None,
+) -> Interval:
     observations = profile.observations
-    sampled_observations: list[ObservationSample] = []
-    by_identity: dict[ThreadIdentity, list[ThreadSample]] = {}
-    if not observations:
-        return Samples(sampled_observations, by_identity)
-    python_started_ns = profile.lifecycle["python_observed_target_running_ns"]
-    if python_started_ns is None:
-        return Samples(sampled_observations, by_identity)
-    process_exited_ns = profile.lifecycle["exited_target_running_ns"]
-    identities: dict[tuple[int, int], ThreadIdentity] = {}
-    for index, observation in enumerate(observations):
-        if observation["status"] != "successful":
-            continue
-        observation_time = observation["target_running_ns"]
-        if index == 0:
-            left_ns = max(
-                python_started_ns,
-                observation_time - observation["scheduled_interval_ns"] // 2,
-            )
-        else:
-            left_ns = (
-                observations[index - 1]["target_running_ns"] + observation_time
-            ) // 2
-        if index + 1 == len(observations):
-            right_ns = observation_time + observation["scheduled_interval_ns"] // 2
-            if process_exited_ns is not None:
-                right_ns = min(right_ns, process_exited_ns)
-        else:
-            right_ns = (
-                observation_time + observations[index + 1]["target_running_ns"]
-            ) // 2
-        interval = Interval(left_ns, right_ns)
-        observation_sample = ObservationSample(index, interval)
-        sampled_observations.append(observation_sample)
-        for thread in observation["threads"]:
-            identity_key = (thread["os_thread_id"], thread["start_time_ticks"])
-            identity = identities.get(identity_key)
-            if identity is None:
-                identity = ThreadIdentity(*identity_key)
-                identities[identity_key] = identity
-            sample = ThreadSample(
-                observation=observation_sample,
-                identity=identity,
-                pre_stop_state=thread["pre_stop_state"],
-                stack=tuple(thread["stack"]),
-            )
-            observation_sample.threads[identity] = sample
-            by_identity.setdefault(identity, []).append(sample)
+    observation = observations[index]
+    observation_time = observation["target_running_ns"]
+    if index == 0:
+        left_ns = max(
+            python_started_ns,
+            observation_time - observation["scheduled_interval_ns"] // 2,
+        )
+    else:
+        left_ns = (observations[index - 1]["target_running_ns"] + observation_time) // 2
+    if index + 1 == len(observations):
+        right_ns = observation_time + observation["scheduled_interval_ns"] // 2
+        if process_exited_ns is not None:
+            right_ns = min(right_ns, process_exited_ns)
+    else:
+        right_ns = (
+            observation_time + observations[index + 1]["target_running_ns"]
+        ) // 2
+    return Interval(left_ns, right_ns)
+
+
+def _scheduler_wakes(
+    profile: schema.RawProfile, python_started_ns: int
+) -> list[SchedulerWake]:
+    observations = profile.observations
     scheduler_wakes: list[SchedulerWake] = []
     python_observed_ns = typing.cast("int", profile.lifecycle["python_observed_ns"])
     pause_starts = [observation["pause_started_ns"] for observation in observations]
@@ -192,4 +171,47 @@ def observation_intervals(profile: schema.RawProfile) -> Samples:
             )
         )
     scheduler_wakes.sort(key=lambda event: event.target_running_ns)
-    return Samples(sampled_observations, by_identity, scheduler_wakes)
+    return scheduler_wakes
+
+
+def observation_intervals(profile: schema.RawProfile) -> Samples:
+    """Calculate and index lifecycle-bounded target-running wall samples."""
+    # PRF-003: Pause exclusion. PRF-004: No stale-stack reuse.
+    # PRF-005: Lifecycle-bounded attribution.
+    observations = profile.observations
+    sampled_observations: list[ObservationSample] = []
+    by_identity: dict[ThreadIdentity, list[ThreadSample]] = {}
+    if not observations:
+        return Samples(sampled_observations, by_identity)
+    python_started_ns = profile.lifecycle["python_observed_target_running_ns"]
+    if python_started_ns is None:
+        return Samples(sampled_observations, by_identity)
+    process_exited_ns = profile.lifecycle["exited_target_running_ns"]
+    identities: dict[tuple[int, int], ThreadIdentity] = {}
+    for index, observation in enumerate(observations):
+        if observation["status"] != "successful":
+            continue
+        observation_sample = ObservationSample(
+            index,
+            _observation_interval(profile, index, python_started_ns, process_exited_ns),
+        )
+        sampled_observations.append(observation_sample)
+        for thread in observation["threads"]:
+            identity_key = (thread["os_thread_id"], thread["start_time_ticks"])
+            identity = identities.get(identity_key)
+            if identity is None:
+                identity = ThreadIdentity(*identity_key)
+                identities[identity_key] = identity
+            sample = ThreadSample(
+                observation=observation_sample,
+                identity=identity,
+                pre_stop_state=thread["pre_stop_state"],
+                stack=tuple(thread["stack"]),
+            )
+            observation_sample.threads[identity] = sample
+            by_identity.setdefault(identity, []).append(sample)
+    return Samples(
+        sampled_observations,
+        by_identity,
+        _scheduler_wakes(profile, python_started_ns),
+    )

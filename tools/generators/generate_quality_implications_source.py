@@ -101,7 +101,7 @@ def generate_source_lines(
     "--assignments", type=generator_cli.POSITIVE_INTEGER, default=10, show_default=True
 )
 @click.option("--fqun-prefix", default=DEFAULT_FQUN_PREFIX, show_default=True)
-def main(
+def main(  # noqa: PLR0913, PLR0917 - Click passes the declared command options.
     output: Path,
     layers: int,
     width: int,

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import click
@@ -14,29 +15,32 @@ if TYPE_CHECKING:
 DEFAULT_FQUN_PREFIX = "mv:define-lang.org:pending_guarantees"
 
 
+@dataclass(frozen=True)
+class PendingGuaranteeOptions:
+    """Parameters of one generated pending-guarantee workload."""
+
+    pending_positions: int = 1000
+    destroyed_positions: int = 100
+    call_depth: int = 2
+    position_depth: int = 1
+    automatic_destruction: bool = False
+    fqun_prefix: str = DEFAULT_FQUN_PREFIX
+
+
+DEFAULT_OPTIONS = PendingGuaranteeOptions()
+
+
 def _chain(first: str, position_depth: int) -> str:
     return first + "".join(
         f"::position</child_{index}>" for index in range(position_depth - 1)
     )
 
 
-def generate_source_lines(
-    pending_positions: int = 1000,
-    destroyed_positions: int = 100,
-    call_depth: int = 2,
-    *,
-    position_depth: int = 1,
-    automatic_destruction: bool = False,
-    fqun_prefix: str = DEFAULT_FQUN_PREFIX,
-) -> list[str]:
-    """Generate repeated or batched destruction beside deferred implied-position changes."""
-    if pending_positions < 1 or destroyed_positions < 1:
-        raise ValueError("pending_positions and destroyed_positions must be at least 1")
-    if call_depth < 2:
-        raise ValueError("call_depth must be at least 2")
-    if position_depth < 1:
-        raise ValueError("position_depth must be at least 1")
-    lines = [f"define the potential position<{fqun_prefix}:/marker>."]
+def _stage_and_child_lines(lines: list[str], options: PendingGuaranteeOptions):
+    call_depth = options.call_depth
+    position_depth = options.position_depth
+    fqun_prefix = options.fqun_prefix
+    lines.append(f"define the potential position<{fqun_prefix}:/marker>.")
     for stage in reversed(range(call_depth)):
         lines.append(f"define the potential action<{fqun_prefix}:/stage_{stage}> {{")
         if stage == call_depth - 1:
@@ -75,10 +79,17 @@ def generate_source_lines(
         else:
             lines.append(f"        it has the position</child_{index + 1}>.")
         lines.extend(["    }", "}"])
+
+
+def _middle_action_lines(lines: list[str], options: PendingGuaranteeOptions):
+    pending_positions = options.pending_positions
+    destroyed_positions = options.destroyed_positions
+    position_depth = options.position_depth
+    automatic_destruction = options.automatic_destruction
+    fqun_prefix = options.fqun_prefix
     pending_quality = (
         "action</stage_0>" if position_depth == 1 else "position</child_0>"
     )
-    saved_quality = "position</marker>" if position_depth == 1 else "position</child_0>"
     lines.extend(
         [
             f"define the potential action<{fqun_prefix}:/middle> {{",
@@ -120,10 +131,17 @@ def generate_source_lines(
             )
         else:
             lines.append(f"        destroy the particle in position<victim_{index}>.")
+    lines.extend(["    }", "}"])
+
+
+def _test_action_lines(lines: list[str], options: PendingGuaranteeOptions):
+    pending_positions = options.pending_positions
+    destroyed_positions = options.destroyed_positions
+    position_depth = options.position_depth
+    fqun_prefix = options.fqun_prefix
+    saved_quality = "position</marker>" if position_depth == 1 else "position</child_0>"
     lines.extend(
         [
-            "    }",
-            "}",
             f"define the potential action<{fqun_prefix}:/test> {{",
             "    it also assigns the action</middle>.",
             "    it happens when {",
@@ -157,6 +175,22 @@ def generate_source_lines(
             ]
         )
     lines.extend(["    }", "}"])
+
+
+def generate_source_lines(
+    options: PendingGuaranteeOptions = DEFAULT_OPTIONS,
+) -> list[str]:
+    """Generate repeated or batched destruction beside deferred implied-position changes."""
+    if options.pending_positions < 1 or options.destroyed_positions < 1:
+        raise ValueError("pending_positions and destroyed_positions must be at least 1")
+    if options.call_depth < 2:
+        raise ValueError("call_depth must be at least 2")
+    if options.position_depth < 1:
+        raise ValueError("position_depth must be at least 1")
+    lines: list[str] = []
+    _stage_and_child_lines(lines, options)
+    _middle_action_lines(lines, options)
+    _test_action_lines(lines, options)
     return lines
 
 
@@ -186,7 +220,7 @@ def generate_source_lines(
     "--automatic-destruction/--explicit-destruction", default=False, show_default=True
 )
 @click.option("--fqun-prefix", default=DEFAULT_FQUN_PREFIX, show_default=True)
-def main(
+def main(  # noqa: PLR0913 - Click passes the declared command options.
     output: Path,
     pending_positions: int,
     destroyed_positions: int,
@@ -201,12 +235,14 @@ def main(
         lambda: generator_io.write_lines(
             output,
             generate_source_lines(
-                pending_positions,
-                destroyed_positions,
-                call_depth,
-                position_depth=position_depth,
-                automatic_destruction=automatic_destruction,
-                fqun_prefix=fqun_prefix,
+                PendingGuaranteeOptions(
+                    pending_positions=pending_positions,
+                    destroyed_positions=destroyed_positions,
+                    call_depth=call_depth,
+                    position_depth=position_depth,
+                    automatic_destruction=automatic_destruction,
+                    fqun_prefix=fqun_prefix,
+                )
             ),
         )
     )

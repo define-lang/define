@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import click
@@ -19,6 +20,22 @@ DEFAULT_CALL_DEPTH = 40
 DEFAULT_PASS_THROUGH_ACTIONS = 1
 DEFAULT_LOCAL_CHILDREN = 3
 DEFAULT_REPETITIONS = 2
+
+
+@dataclass(frozen=True)
+class DestructionContractOptions:
+    """Parameters of one generated Destruction Contract workload."""
+
+    callers: int = DEFAULT_CALLERS
+    call_depth: int = DEFAULT_CALL_DEPTH
+    pass_through_actions: int = DEFAULT_PASS_THROUGH_ACTIONS
+    local_children: int = DEFAULT_LOCAL_CHILDREN
+    repetitions: int = DEFAULT_REPETITIONS
+    shared_child_paths: bool = False
+    fqun_prefix: str = DEFAULT_FQUN_PREFIX
+
+
+DEFAULT_OPTIONS = DestructionContractOptions()
 
 _INDENT = "    "
 _INNER_INDENT = "        "
@@ -137,15 +154,15 @@ def _stage_next_action(
 
 
 def _emit_stage(
-    prefix: str,
+    options: DestructionContractOptions,
     caller: int,
     stage: int,
-    call_depth: int,
-    pass_through_actions: int,
-    local_children: int,
-    *,
-    shared_child_paths: bool,
 ) -> list[str]:
+    prefix = options.fqun_prefix
+    call_depth = options.call_depth
+    pass_through_actions = options.pass_through_actions
+    local_children = options.local_children
+    shared_child_paths = options.shared_child_paths
     next_action = _stage_next_action(caller, stage, call_depth, pass_through_actions)
     remaining_roots = _root_paths(
         caller,
@@ -189,16 +206,16 @@ def _emit_stage(
 
 
 def _emit_pass_through(
-    prefix: str,
+    options: DestructionContractOptions,
     caller: int,
     stage: int,
     index: int,
-    call_depth: int,
-    pass_through_actions: int,
-    local_children: int,
-    *,
-    shared_child_paths: bool,
 ) -> list[str]:
+    prefix = options.fqun_prefix
+    call_depth = options.call_depth
+    pass_through_actions = options.pass_through_actions
+    local_children = options.local_children
+    shared_child_paths = options.shared_child_paths
     if index + 1 < pass_through_actions:
         next_action = _pass_path(caller, stage, index + 1)
     elif stage + 1 < call_depth:
@@ -233,14 +250,14 @@ def _emit_pass_through(
 
 
 def _emit_entry_point(
-    prefix: str,
-    callers: int,
-    call_depth: int,
-    local_children: int,
-    repetitions: int,
-    *,
-    shared_child_paths: bool,
+    options: DestructionContractOptions,
 ) -> list[str]:
+    prefix = options.fqun_prefix
+    callers = options.callers
+    call_depth = options.call_depth
+    local_children = options.local_children
+    repetitions = options.repetitions
+    shared_child_paths = options.shared_child_paths
     lines = [f"define the potential action<{_qualified(prefix, '/test')}> {{"]
     for caller in range(callers):
         first_action = _stage_path(caller, 0)
@@ -285,16 +302,16 @@ def _emit_entry_point(
 
 
 def generate_source_lines(
-    callers: int = DEFAULT_CALLERS,
-    call_depth: int = DEFAULT_CALL_DEPTH,
-    pass_through_actions: int = DEFAULT_PASS_THROUGH_ACTIONS,
-    local_children: int = DEFAULT_LOCAL_CHILDREN,
-    repetitions: int = DEFAULT_REPETITIONS,
-    *,
-    shared_child_paths: bool = False,
-    fqun_prefix: str = DEFAULT_FQUN_PREFIX,
+    options: DestructionContractOptions = DEFAULT_OPTIONS,
 ) -> list[str]:
     """Return a real Define workload for Destruction Contract compilation."""
+    callers = options.callers
+    call_depth = options.call_depth
+    pass_through_actions = options.pass_through_actions
+    local_children = options.local_children
+    repetitions = options.repetitions
+    shared_child_paths = options.shared_child_paths
+    fqun_prefix = options.fqun_prefix
     positive_parameters = {
         "callers": callers,
         "call_depth": call_depth,
@@ -325,64 +342,28 @@ def generate_source_lines(
             for index in reversed(range(pass_through_actions)):
                 lines.extend(
                     _emit_pass_through(
-                        fqun_prefix,
+                        options,
                         caller,
                         stage,
                         index,
-                        call_depth,
-                        pass_through_actions,
-                        local_children,
-                        shared_child_paths=shared_child_paths,
                     )
                 )
             lines.extend(
                 _emit_stage(
-                    fqun_prefix,
+                    options,
                     caller,
                     stage,
-                    call_depth,
-                    pass_through_actions,
-                    local_children,
-                    shared_child_paths=shared_child_paths,
                 )
             )
-    lines.extend(
-        _emit_entry_point(
-            fqun_prefix,
-            callers,
-            call_depth,
-            local_children,
-            repetitions,
-            shared_child_paths=shared_child_paths,
-        )
-    )
+    lines.extend(_emit_entry_point(options))
     return lines
 
 
 def write_to_path(
-    output: Path,
-    callers: int = DEFAULT_CALLERS,
-    call_depth: int = DEFAULT_CALL_DEPTH,
-    pass_through_actions: int = DEFAULT_PASS_THROUGH_ACTIONS,
-    local_children: int = DEFAULT_LOCAL_CHILDREN,
-    repetitions: int = DEFAULT_REPETITIONS,
-    *,
-    shared_child_paths: bool = False,
-    fqun_prefix: str = DEFAULT_FQUN_PREFIX,
+    output: Path, options: DestructionContractOptions = DEFAULT_OPTIONS
 ) -> int:
     """Write generated source to ``output`` and return its line count."""
-    return generator_io.write_lines(
-        output,
-        generate_source_lines(
-            callers=callers,
-            call_depth=call_depth,
-            pass_through_actions=pass_through_actions,
-            local_children=local_children,
-            repetitions=repetitions,
-            shared_child_paths=shared_child_paths,
-            fqun_prefix=fqun_prefix,
-        ),
-    )
+    return generator_io.write_lines(output, generate_source_lines(options))
 
 
 @click.command()
@@ -436,7 +417,7 @@ def write_to_path(
     show_default=True,
     help="Universe prefix for every definition.",
 )
-def main(
+def main(  # noqa: PLR0913, PLR0917 - Click passes the declared command options.
     output: Path,
     callers: int,
     call_depth: int,
@@ -457,13 +438,15 @@ def main(
     written = generator_cli.invoke(
         lambda: write_to_path(
             output,
-            callers=callers,
-            call_depth=call_depth,
-            pass_through_actions=pass_through_actions,
-            local_children=local_children,
-            repetitions=repetitions,
-            shared_child_paths=shared_child_paths,
-            fqun_prefix=fqun_prefix,
+            DestructionContractOptions(
+                callers=callers,
+                call_depth=call_depth,
+                pass_through_actions=pass_through_actions,
+                local_children=local_children,
+                repetitions=repetitions,
+                shared_child_paths=shared_child_paths,
+                fqun_prefix=fqun_prefix,
+            ),
         )
     )
     generator_cli.report_written("lines", written, output)

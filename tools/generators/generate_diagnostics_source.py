@@ -79,7 +79,7 @@ def generate_source_lines(
     show_default=True,
     help="Spaces per indentation level; values other than four also cause filesystem indentation diagnostics.",
 )
-def main(
+def main(  # noqa: PLR0913, PLR0917 - Click passes the declared command options.
     output: Path,
     errors: int,
     name_length: int,

@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     ],
 )
 @pytest.mark.parametrize(("depth", "fan_out"), [(1, 1), (1, 3), (4, 1), (4, 2)])
-def test_valid_program(
+def test_valid_program(  # noqa: PLR0913, PLR0917 - Pytest supplies the parametrized values and fixture.
     shape: gen.Shape,
     additional_actions: int,
     additional_positions: int,

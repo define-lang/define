@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import enum
 import random
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import click
@@ -45,6 +46,24 @@ class Shape(enum.StrEnum):
     CONFIG_CHAIN = "config-chain"
 
 
+@dataclass(frozen=True)
+class ProjectOptions:
+    """Parameters of one generated reference-graph project."""
+
+    modules: int = DEFAULT_MODULES
+    layers: int = DEFAULT_LAYERS
+    fan_out: int = DEFAULT_FAN_OUT
+    utility_fraction: float = DEFAULT_UTILITY_FRACTION
+    seed: int = DEFAULT_SEED
+    universe_name: str = DEFAULT_UNIVERSE_NAME
+    shape: Shape = Shape.LAYERED
+    path_depth: int = 0
+    reverse_references: bool = False
+
+
+DEFAULT_OPTIONS = ProjectOptions()
+
+
 def _definition_path(index: int, path_depth: int = 0) -> str:
     return "/" + "directory/" * path_depth + f"lib/pkg{index % _PACKAGE_COUNT}/m{index}"
 
@@ -76,11 +95,12 @@ def _targets_for(
     generator: random.Random,
     index: int,
     layer: int,
-    layers: int,
     width: int,
-    fan_out: int,
-    utility_fraction: float,
+    options: ProjectOptions,
 ) -> list[int]:
+    layers = options.layers
+    fan_out = options.fan_out
+    utility_fraction = options.utility_fraction
     if layer >= layers - 1:
         return []
     utility_count = max(1, int(width * utility_fraction))
@@ -95,7 +115,28 @@ def _targets_for(
     return [target for target in dict.fromkeys(targets) if target != index]
 
 
-def _structured_targets(
+def _branching_targets(
+    shape: Shape, modules: int, fan_out: int
+) -> Iterator[Sequence[int]]:
+    start = 0
+    width = 1
+    while start + width < modules:
+        next_start = start + width
+        next_width = (
+            min(2 if shape == Shape.DIAMONDS else fan_out, modules - next_start)
+            if width == 1
+            else 1
+        )
+        targets = range(next_start, next_start + next_width)
+        for _ in range(width):
+            yield targets
+        start = next_start
+        width = next_width
+    for _ in range(width):
+        yield ()
+
+
+def _structured_targets(  # noqa: PLR0912 - Each case describes one reference shape.
     shape: Shape, modules: int, fan_out: int
 ) -> Iterator[Sequence[int]]:
     match shape:
@@ -124,22 +165,7 @@ def _structured_targets(
             for _ in range(modules):
                 yield (modules,)
         case Shape.DIAMONDS | Shape.BOTTLENECKS:
-            start = 0
-            width = 1
-            while start + width < modules:
-                next_start = start + width
-                next_width = (
-                    min(2 if shape == Shape.DIAMONDS else fan_out, modules - next_start)
-                    if width == 1
-                    else 1
-                )
-                targets = range(next_start, next_start + next_width)
-                for _ in range(width):
-                    yield targets
-                start = next_start
-                width = next_width
-            for _ in range(width):
-                yield ()
+            yield from _branching_targets(shape, modules, fan_out)
         case _:
             raise ValueError(f"Not a structured shape: {shape}")
 
@@ -192,19 +218,13 @@ def _config_chain(modules: int, universe_name: str, path_depth: int) -> dict[str
     return files
 
 
-def generate_project_files(
-    modules: int = DEFAULT_MODULES,
-    layers: int = DEFAULT_LAYERS,
-    fan_out: int = DEFAULT_FAN_OUT,
-    utility_fraction: float = DEFAULT_UTILITY_FRACTION,
-    seed: int = DEFAULT_SEED,
-    universe_name: str = DEFAULT_UNIVERSE_NAME,
-    shape: Shape = Shape.LAYERED,
-    path_depth: int = 0,
-    *,
-    reverse_references: bool = False,
-) -> dict[str, str]:
-    """Return every file of the project, keyed by its path below the project root."""
+def _validate_options(options: ProjectOptions):
+    modules = options.modules
+    layers = options.layers
+    fan_out = options.fan_out
+    utility_fraction = options.utility_fraction
+    shape = options.shape
+    path_depth = options.path_depth
     if modules < 1:
         raise ValueError("modules must be at least 1")
     if path_depth < 0:
@@ -217,6 +237,19 @@ def generate_project_files(
         raise ValueError(f"fan_out must be at least 1, got {fan_out}")
     if not 0 <= utility_fraction <= 1:
         raise ValueError(f"utility_fraction must be in [0, 1], got {utility_fraction}")
+
+
+def generate_project_files(options: ProjectOptions = DEFAULT_OPTIONS) -> dict[str, str]:
+    """Return every file of the project, keyed by its path below the project root."""
+    _validate_options(options)
+    modules = options.modules
+    layers = options.layers
+    fan_out = options.fan_out
+    seed = options.seed
+    universe_name = options.universe_name
+    shape = options.shape
+    path_depth = options.path_depth
+    reverse_references = options.reverse_references
     if shape == Shape.CONFIG_CHAIN:
         return _config_chain(modules, universe_name, path_depth)
 
@@ -235,10 +268,8 @@ def generate_project_files(
                 generator,
                 index,
                 index // width,
-                layers,
                 width,
-                fan_out,
-                utility_fraction,
+                options,
             )
             files[_file_path(index, path_depth)] = _definition(
                 universe_name,
@@ -373,7 +404,7 @@ def write_project(output: Path, files: dict[str, str]):
     show_default=True,
     help="Universe name for generated definitions.",
 )
-def main(
+def main(  # noqa: PLR0913, PLR0917 - Click passes the declared command options.
     output: Path,
     modules: int,
     layers: int,
@@ -407,15 +438,17 @@ def main(
     """
     files = generator_cli.invoke(
         lambda: generate_project_files(
-            modules=modules,
-            layers=layers,
-            fan_out=fan_out,
-            utility_fraction=utility_fraction,
-            seed=seed,
-            universe_name=universe_name,
-            shape=Shape(shape),
-            reverse_references=reverse_references,
-            path_depth=path_depth,
+            ProjectOptions(
+                modules=modules,
+                layers=layers,
+                fan_out=fan_out,
+                utility_fraction=utility_fraction,
+                seed=seed,
+                universe_name=universe_name,
+                shape=Shape(shape),
+                reverse_references=reverse_references,
+                path_depth=path_depth,
+            )
         )
     )
     generator_cli.invoke(lambda: write_project(output, files))

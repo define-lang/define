@@ -27,25 +27,27 @@ def _assert_parses_and_transforms(source: str) -> ast.Program:
 class TestGenerateSourceLines:
     def test_too_few_layers_raises(self):
         with pytest.raises(ValueError, match="layers must be at least"):
-            gen.generate_source_lines(layers=1)
+            gen.generate_source_lines(gen.GraphOptions(layers=1))
 
     def test_zero_width_raises(self):
         with pytest.raises(ValueError, match="width must be at least"):
-            gen.generate_source_lines(width=0)
+            gen.generate_source_lines(gen.GraphOptions(width=0))
 
     def test_fan_out_larger_than_width_raises(self):
         with pytest.raises(ValueError, match="fan_out must be in"):
-            gen.generate_source_lines(width=4, fan_out=5)
+            gen.generate_source_lines(gen.GraphOptions(width=4, fan_out=5))
 
     def test_destructor_fraction_out_of_range_raises(self):
         with pytest.raises(ValueError, match="destructor_fraction must be in"):
-            gen.generate_source_lines(destructor_fraction=2.0)
+            gen.generate_source_lines(gen.GraphOptions(destructor_fraction=2.0))
 
     def test_action_count_matches_layers_times_width(self):
         program = _assert_parses_and_transforms(
             "\n".join(
                 gen.generate_source_lines(
-                    layers=3, width=4, fan_out=2, destructor_fraction=0
+                    gen.GraphOptions(
+                        layers=3, width=4, fan_out=2, destructor_fraction=0
+                    )
                 )
             )
             + "\n"
@@ -57,7 +59,9 @@ class TestGenerateSourceLines:
         assert action_count == 3 * 4 + 1
 
     def test_output_exercises_call_graph_syntax(self):
-        source = "\n".join(gen.generate_source_lines(layers=3, width=3, fan_out=2))
+        source = "\n".join(
+            gen.generate_source_lines(gen.GraphOptions(layers=3, width=3, fan_out=2))
+        )
         assert "define the potential position" in source
         assert "define the potential action" in source
         assert "it may only contain particles where" in source
@@ -68,24 +72,28 @@ class TestGenerateSourceLines:
         assert "create a particle in position<out>::action</layer1_a0>::" in source
 
     def test_no_destructors_when_fraction_zero(self):
-        source = "\n".join(gen.generate_source_lines(destructor_fraction=0))
+        source = "\n".join(
+            gen.generate_source_lines(gen.GraphOptions(destructor_fraction=0))
+        )
         assert "this particle is being destroyed" not in source
         assert "marker_destructor" not in source
 
     def test_output_does_not_end_with_blank_line(self):
-        lines = gen.generate_source_lines(layers=2, width=1, fan_out=1)
+        lines = gen.generate_source_lines(
+            gen.GraphOptions(layers=2, width=1, fan_out=1)
+        )
         assert lines[-1] == "}"
 
 
 class TestWriteToPath:
     def test_writes_file_with_expected_line_count(self, tmp_path: Path):
         out = tmp_path / "graph.dfn"
-        written = gen.write_to_path(out, layers=3, width=3, fan_out=2)
+        written = gen.write_to_path(out, gen.GraphOptions(layers=3, width=3, fan_out=2))
         assert out.read_text(encoding="utf-8").count("\n") == written
 
     def test_written_file_parses_and_transforms_cleanly(self, tmp_path: Path):
         out = tmp_path / "graph.dfn"
-        gen.write_to_path(out, layers=4, width=4, fan_out=2)
+        gen.write_to_path(out, gen.GraphOptions(layers=4, width=4, fan_out=2))
         _assert_parses_and_transforms(out.read_text(encoding="utf-8"))
 
 
@@ -114,7 +122,9 @@ class TestFullDriver:
         source = (
             "\n".join(
                 gen.generate_source_lines(
-                    layers=3, width=3, fan_out=2, destructor_fraction=0.5
+                    gen.GraphOptions(
+                        layers=3, width=3, fan_out=2, destructor_fraction=0.5
+                    )
                 )
             )
             + "\n"
@@ -131,11 +141,13 @@ def test_bottleneck_layers(interval: int, expected: int):
     source = (
         "\n".join(
             gen.generate_source_lines(
-                layers=4,
-                width=3,
-                fan_out=3,
-                destructor_fraction=0,
-                bottleneck_every=interval,
+                gen.GraphOptions(
+                    layers=4,
+                    width=3,
+                    fan_out=3,
+                    destructor_fraction=0,
+                    bottleneck_every=interval,
+                )
             )
         )
         + "\n"
@@ -148,7 +160,7 @@ def test_bottleneck_layers(interval: int, expected: int):
 
 def test_negative_bottleneck_interval():
     with pytest.raises(ValueError, match="bottleneck_every"):
-        gen.generate_source_lines(bottleneck_every=-1)
+        gen.generate_source_lines(gen.GraphOptions(bottleneck_every=-1))
 
 
 def test_bottleneck_cli(tmp_path: Path):
@@ -175,7 +187,13 @@ def test_bottleneck_cli(tmp_path: Path):
         output.read_text()
         == "\n".join(
             gen.generate_source_lines(
-                layers=4, width=3, fan_out=3, destructor_fraction=0, bottleneck_every=2
+                gen.GraphOptions(
+                    layers=4,
+                    width=3,
+                    fan_out=3,
+                    destructor_fraction=0,
+                    bottleneck_every=2,
+                )
             )
         )
         + "\n"
@@ -186,7 +204,13 @@ def test_destructor_cascades():
     source = (
         "\n".join(
             gen.generate_source_lines(
-                layers=2, width=1, fan_out=1, destructor_fraction=1, destructor_depth=4
+                gen.GraphOptions(
+                    layers=2,
+                    width=1,
+                    fan_out=1,
+                    destructor_fraction=1,
+                    destructor_depth=4,
+                )
             )
         )
         + "\n"
@@ -200,7 +224,7 @@ def test_destructor_cascades():
 
 def test_invalid_destructor_depth():
     with pytest.raises(ValueError, match="destructor_depth"):
-        gen.generate_source_lines(destructor_depth=0)
+        gen.generate_source_lines(gen.GraphOptions(destructor_depth=0))
 
 
 def test_destructor_depth_cli(tmp_path: Path):
@@ -227,7 +251,13 @@ def test_destructor_depth_cli(tmp_path: Path):
         output.read_text()
         == "\n".join(
             gen.generate_source_lines(
-                layers=2, width=1, fan_out=1, destructor_fraction=1, destructor_depth=3
+                gen.GraphOptions(
+                    layers=2,
+                    width=1,
+                    fan_out=1,
+                    destructor_fraction=1,
+                    destructor_depth=3,
+                )
             )
         )
         + "\n"

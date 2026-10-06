@@ -216,7 +216,7 @@ def create_particle_references(draw: st.DrawFn) -> str:
     )
 
 
-def _action_block_with_name(
+def _action_block_with_name(  # noqa: PLR0913 - Callers name independent syntax variations.
     action_name: str,
     *,
     outer_locals: list[str],
@@ -264,7 +264,7 @@ def _action_block_with_name(
     return _join_lines(lines)
 
 
-def _action_with_block(
+def _action_with_block(  # noqa: PLR0913 - Callers name independent syntax variations.
     universe_name: str,
     rel_def_file: str,
     *,
@@ -421,6 +421,61 @@ def action_definitions_simple(draw: st.DrawFn) -> str:
     )
 
 
+def _draw_local_positions(draw: st.DrawFn, names: list[str], indent: str) -> list[str]:
+    locals_: list[str] = []
+    for local_name in names:
+        if draw(st.booleans()):
+            locals_.append(_local_position_simple(local_name, indent=indent))
+        else:
+            requirement_type = draw(st.sampled_from(["position", "action", "value"]))
+            requirement_name = draw(global_names())
+            locals_.append(
+                _local_position_with_requirements(
+                    local_name,
+                    [(requirement_type, requirement_name)],
+                    indent=indent,
+                )
+            )
+    return locals_
+
+
+def _draw_action_statements(draw: st.DrawFn, indent: str) -> list[str]:
+    statements: list[str] = []
+    create_count = draw(st.integers(min_value=0, max_value=4))
+    for _ in range(create_count):
+        position_reference = draw(create_particle_references())
+        statements.append(_create_particle_statement(position_reference, indent=indent))
+    move_count = draw(st.integers(min_value=0, max_value=4))
+    for _ in range(move_count):
+        from_reference = draw(create_particle_references())
+        to_reference = draw(create_particle_references())
+        statements.append(
+            _move_particle_statement(from_reference, to_reference, indent=indent)
+        )
+    value_setting_count = draw(st.integers(min_value=0, max_value=4))
+    for _ in range(value_setting_count):
+        target_position = draw(create_particle_references())
+        if draw(st.booleans()):
+            literal_name = draw(global_names())
+            content = draw(
+                st.text(alphabet='abc ABC0123 #<>:{}./"\\\n世界', max_size=100)
+            )
+            escaped = (
+                content.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
+            )
+            source = f'literal<{literal_name}>"{escaped}"'
+        else:
+            source = draw(create_particle_references())
+        statements.append(f"{indent}set the value of {target_position} to {source}.\n")
+    destroy_count = draw(st.integers(min_value=0, max_value=4))
+    for _ in range(destroy_count):
+        position_reference = draw(create_particle_references())
+        statements.append(
+            _destroy_particle_statement(position_reference, indent=indent)
+        )
+    return statements
+
+
 @st.composite
 def action_definitions_with_block(draw: st.DrawFn) -> str:
     name = draw(global_names())
@@ -440,70 +495,9 @@ def action_definitions_with_block(draw: st.DrawFn) -> str:
     split_idx = draw(st.integers(min_value=0, max_value=len(all_local_names)))
     outer_names = all_local_names[:split_idx]
     inner_names = all_local_names[split_idx:]
-    outer_locals: list[str] = []
-    inner_locals: list[str] = []
-    for local_name in outer_names:
-        if draw(st.booleans()):
-            outer_locals.append(_local_position_simple(local_name, indent=outer_indent))
-        else:
-            req_type = draw(st.sampled_from(["position", "action", "value"]))
-            req_name = draw(global_names())
-            outer_locals.append(
-                _local_position_with_requirements(
-                    local_name,
-                    [(req_type, req_name)],
-                    indent=outer_indent,
-                )
-            )
-    for local_name in inner_names:
-        if draw(st.booleans()):
-            inner_locals.append(_local_position_simple(local_name, indent=inner_indent))
-        else:
-            req_type = draw(st.sampled_from(["position", "action", "value"]))
-            req_name = draw(global_names())
-            inner_locals.append(
-                _local_position_with_requirements(
-                    local_name,
-                    [(req_type, req_name)],
-                    indent=inner_indent,
-                )
-            )
-    create_count = draw(st.integers(min_value=0, max_value=4))
-    for _ in range(create_count):
-        position_reference = draw(create_particle_references())
-        inner_locals.append(
-            _create_particle_statement(position_reference, indent=inner_indent)
-        )
-    move_count = draw(st.integers(min_value=0, max_value=4))
-    for _ in range(move_count):
-        from_ref = draw(create_particle_references())
-        to_ref = draw(create_particle_references())
-        inner_locals.append(
-            _move_particle_statement(from_ref, to_ref, indent=inner_indent)
-        )
-    value_setting_count = draw(st.integers(min_value=0, max_value=4))
-    for _ in range(value_setting_count):
-        target_position = draw(create_particle_references())
-        if draw(st.booleans()):
-            literal_name = draw(global_names())
-            content = draw(
-                st.text(alphabet='abc ABC0123 #<>:{}./"\\\n世界', max_size=100)
-            )
-            escaped = (
-                content.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
-            )
-            source = f'literal<{literal_name}>"{escaped}"'
-        else:
-            source = draw(create_particle_references())
-        inner_locals.append(
-            f"{inner_indent}set the value of {target_position} to {source}.\n"
-        )
-    destroy_count = draw(st.integers(min_value=0, max_value=4))
-    for _ in range(destroy_count):
-        position_reference = draw(create_particle_references())
-        inner_locals.append(
-            _destroy_particle_statement(position_reference, indent=inner_indent)
-        )
+    outer_locals = _draw_local_positions(draw, outer_names, outer_indent)
+    inner_locals = _draw_local_positions(draw, inner_names, inner_indent)
+    inner_locals.extend(_draw_action_statements(draw, inner_indent))
     trigger_condition_ref = draw(create_particle_references())
     inner_locals = list(draw(st.permutations(inner_locals)))
     return _action_block_with_name(
@@ -950,142 +944,174 @@ def _mutate_source(source: str, draw: st.DrawFn) -> str:
     return mutated
 
 
+def _mutate_source_span(source: str, draw: st.DrawFn, mutation: str) -> str:
+    start = draw(st.integers(min_value=0, max_value=len(source)))
+    if mutation == "truncate":
+        return source[:start]
+    end = start
+    if mutation == "replace_span":
+        end = draw(st.integers(min_value=start, max_value=len(source)))
+    fragment = draw(st.sampled_from(_SYNTAX_FRAGMENTS))
+    return source[:start] + fragment + source[end:]
+
+
+def _mutate_source_lines(source: str, draw: st.DrawFn, mutation: str) -> str:
+    lines = source.splitlines(keepends=True)
+    if not lines:
+        return source
+    index = draw(st.integers(min_value=0, max_value=len(lines) - 1))
+    if mutation == "duplicate_line":
+        lines.insert(index, lines[index])
+    elif mutation == "remove_line":
+        del lines[index]
+    elif mutation == "swap_lines":
+        other = draw(st.integers(min_value=0, max_value=len(lines) - 1))
+        lines[index], lines[other] = lines[other], lines[index]
+    else:
+        indentation = draw(st.sampled_from(["", " ", "   ", "        ", "\t", " \t"]))
+        lines[index] = indentation + lines[index].lstrip(" \t")
+    return "".join(lines)
+
+
+def _mutate_source_character(source: str, draw: st.DrawFn, mutation: str) -> str:
+    if mutation == "delete_char" and len(source) > 1:
+        index = draw(st.integers(min_value=0, max_value=len(source) - 1))
+        return source[:index] + source[index + 1 :]
+    if mutation in ("insert_char", "insert_unicode"):
+        index = draw(st.integers(min_value=0, max_value=len(source)))
+        if mutation == "insert_unicode":
+            character = draw(
+                st.sampled_from(["\u00e9", "\u00f1", "\u4e16", "\U0001f600"])
+            )
+        else:
+            character = draw(st.sampled_from(list("abcdef01234 \t\n<>{}.:/#")))
+        return source[:index] + character + source[index:]
+    if mutation == "replace_char" and source:
+        index = draw(st.integers(min_value=0, max_value=len(source) - 1))
+        character = draw(st.sampled_from(list("abcdef01234 \t\n<>{}.:/#")))
+        return source[:index] + character + source[index + 1 :]
+    if mutation == "swap_adjacent" and len(source) > 1:
+        index = draw(st.integers(min_value=0, max_value=len(source) - 2))
+        return source[:index] + source[index + 1] + source[index] + source[index + 2 :]
+    return source
+
+
+def _mutate_source_character_removal(
+    source: str, draw: st.DrawFn, mutation: str
+) -> str:
+    if mutation == "remove_newline":
+        removable = "\n"
+    elif mutation == "remove_angle_bracket":
+        removable = "<>"
+    else:
+        removable = ":.{}"
+    indices = [
+        index for index, character in enumerate(source) if character in removable
+    ]
+    if not indices:
+        return source
+    index = draw(st.sampled_from(indices))
+    return source[:index] + source[index + 1 :]
+
+
+def _mutate_source_condition(source: str, draw: st.DrawFn) -> str:
+    conditions = [
+        "this particle is created",
+        "this particle is being destroyed",
+        "the position<run> has a particle",
+    ]
+    present = [condition for condition in conditions if condition in source]
+    if not present:
+        return source
+    return source.replace(
+        draw(st.sampled_from(present)), draw(st.sampled_from(conditions)), 1
+    )
+
+
+def _mutate_source_keyword(source: str, draw: st.DrawFn) -> str:
+    keywords = [
+        "define",
+        "the",
+        "potential",
+        "position",
+        "action",
+        "literal",
+        "encoding",
+        "operation",
+        "encoding_operation",
+        "view",
+        "create a particle in",
+        "move the particle in",
+        "destroy the particle in",
+        "it happens when",
+        "and it does",
+        "it also assigns the",
+        "this particle is created",
+        "this particle is being destroyed",
+        "it may only contain particles where",
+        "it has the",
+    ]
+    present_keywords = [keyword for keyword in keywords if keyword in source]
+    if not present_keywords:
+        return source
+    keyword = draw(st.sampled_from(present_keywords))
+    indices: list[int] = []
+    start = 0
+    while (position := source.find(keyword, start)) != -1:
+        indices.append(position)
+        start = position + 1
+    if not indices:
+        return source
+    index = draw(st.sampled_from(indices))
+    return source[:index] + source[index + len(keyword) :]
+
+
+def _mutate_source_particle_statement_space(source: str, draw: st.DrawFn) -> str:
+    prefixes = [
+        "create a particle in ",
+        "move the particle in ",
+        "destroy the particle in ",
+    ]
+    present_prefixes = [prefix for prefix in prefixes if prefix in source]
+    if not present_prefixes:
+        return source
+    prefix = draw(st.sampled_from(present_prefixes))
+    return source.replace(prefix, prefix.rstrip(" "), 1)
+
+
 def _apply_source_mutation(source: str, draw: st.DrawFn, mutation: str) -> str:
-
     if mutation in ("insert_fragment", "replace_span", "truncate"):
-        start = draw(st.integers(min_value=0, max_value=len(source)))
-        if mutation == "truncate":
-            return source[:start]
-        end = start
-        if mutation == "replace_span":
-            end = draw(st.integers(min_value=start, max_value=len(source)))
-        fragment = draw(st.sampled_from(_SYNTAX_FRAGMENTS))
-        return source[:start] + fragment + source[end:]
-
-    if mutation in (
+        mutated = _mutate_source_span(source, draw, mutation)
+    elif mutation in (
         "duplicate_line",
         "remove_line",
         "swap_lines",
         "change_indentation",
     ):
-        lines = source.splitlines(keepends=True)
-        if not lines:
-            return source
-        index = draw(st.integers(min_value=0, max_value=len(lines) - 1))
-        if mutation == "duplicate_line":
-            lines.insert(index, lines[index])
-        elif mutation == "remove_line":
-            del lines[index]
-        elif mutation == "swap_lines":
-            other = draw(st.integers(min_value=0, max_value=len(lines) - 1))
-            lines[index], lines[other] = lines[other], lines[index]
-        else:
-            indentation = draw(
-                st.sampled_from(["", " ", "   ", "        ", "\t", " \t"])
-            )
-            lines[index] = indentation + lines[index].lstrip(" \t")
-        return "".join(lines)
-
-    if mutation == "replace_condition":
-        conditions = [
-            "this particle is created",
-            "this particle is being destroyed",
-            "the position<run> has a particle",
-        ]
-        present = [condition for condition in conditions if condition in source]
-        if present:
-            return source.replace(
-                draw(st.sampled_from(present)), draw(st.sampled_from(conditions)), 1
-            )
-
-    if mutation == "delete_char" and len(source) > 1:
-        idx = draw(st.integers(min_value=0, max_value=len(source) - 1))
-        return source[:idx] + source[idx + 1 :]
-
-    if mutation == "insert_char":
-        idx = draw(st.integers(min_value=0, max_value=len(source)))
-        char = draw(st.sampled_from(list("abcdef01234 \t\n<>{}.:/#")))
-        return source[:idx] + char + source[idx:]
-
-    if mutation == "replace_char" and len(source) > 0:
-        idx = draw(st.integers(min_value=0, max_value=len(source) - 1))
-        char = draw(st.sampled_from(list("abcdef01234 \t\n<>{}.:/#")))
-        return source[:idx] + char + source[idx + 1 :]
-
-    if mutation == "delete_keyword":
-        keywords = [
-            "define",
-            "the",
-            "potential",
-            "position",
-            "action",
-            "literal",
-            "encoding",
-            "operation",
-            "encoding_operation",
-            "view",
-            "create a particle in",
-            "move the particle in",
-            "destroy the particle in",
-            "it happens when",
-            "and it does",
-            "it also assigns the",
-            "this particle is created",
-            "this particle is being destroyed",
-            "it may only contain particles where",
-            "it has the",
-        ]
-        present_keywords = [keyword for keyword in keywords if keyword in source]
-        if not present_keywords:
-            return source
-        keyword = draw(st.sampled_from(present_keywords))
-        indices: list[int] = []
-        start = 0
-        while (pos := source.find(keyword, start)) != -1:
-            indices.append(pos)
-            start = pos + 1
-        if indices:
-            idx = draw(st.sampled_from(indices))
-            return source[:idx] + source[idx + len(keyword) :]
-
-    if mutation == "swap_adjacent" and len(source) > 1:
-        idx = draw(st.integers(min_value=0, max_value=len(source) - 2))
-        return source[:idx] + source[idx + 1] + source[idx] + source[idx + 2 :]
-
-    if mutation == "remove_newline" and "\n" in source:
-        indices = [i for i, c in enumerate(source) if c == "\n"]
-        idx = draw(st.sampled_from(indices))
-        return source[:idx] + source[idx + 1 :]
-
-    if mutation == "remove_angle_bracket":
-        indices = [i for i, c in enumerate(source) if c in "<>"]
-        if indices:
-            idx = draw(st.sampled_from(indices))
-            return source[:idx] + source[idx + 1 :]
-
-    if mutation == "remove_structural_char":
-        indices = [i for i, c in enumerate(source) if c in ":.{}"]
-        if indices:
-            idx = draw(st.sampled_from(indices))
-            return source[:idx] + source[idx + 1 :]
-
-    if mutation == "remove_particle_statement_space":
-        prefixes = [
-            "create a particle in ",
-            "move the particle in ",
-            "destroy the particle in ",
-        ]
-        present_prefixes = [prefix for prefix in prefixes if prefix in source]
-        if present_prefixes:
-            prefix = draw(st.sampled_from(present_prefixes))
-            return source.replace(prefix, prefix.rstrip(" "), 1)
-
-    if mutation == "insert_unicode":
-        idx = draw(st.integers(min_value=0, max_value=len(source)))
-        char = draw(st.sampled_from(["\u00e9", "\u00f1", "\u4e16", "\U0001f600"]))
-        return source[:idx] + char + source[idx:]
-
-    return source
+        mutated = _mutate_source_lines(source, draw, mutation)
+    elif mutation in (
+        "delete_char",
+        "insert_char",
+        "replace_char",
+        "swap_adjacent",
+        "insert_unicode",
+    ):
+        mutated = _mutate_source_character(source, draw, mutation)
+    elif mutation in (
+        "remove_newline",
+        "remove_angle_bracket",
+        "remove_structural_char",
+    ):
+        mutated = _mutate_source_character_removal(source, draw, mutation)
+    elif mutation == "replace_condition":
+        mutated = _mutate_source_condition(source, draw)
+    elif mutation == "delete_keyword":
+        mutated = _mutate_source_keyword(source, draw)
+    elif mutation == "remove_particle_statement_space":
+        mutated = _mutate_source_particle_statement_space(source, draw)
+    else:
+        mutated = source
+    return mutated
 
 
 @st.composite
@@ -1585,6 +1611,80 @@ def _build_potential_literal_project(
     )
 
 
+def _build_single_universe_project_case(
+    root_universe: str, project_kind: str
+) -> ProjectCase:
+    if project_kind == "same_universe_chain":
+        return _build_same_universe_chain_project(
+            root_universe, use_nested_entrypoint=False
+        )
+    if project_kind == "same_universe_nested_chain":
+        return _build_same_universe_chain_project(
+            root_universe, use_nested_entrypoint=True
+        )
+    if project_kind == "action_local_constraints":
+        return _build_action_local_constraints_project(root_universe)
+    if project_kind == "dual_type_reference":
+        return _build_dual_type_reference_project(root_universe)
+    if project_kind == "move_local":
+        return _build_move_particle_project(root_universe)
+    return _build_destroy_particle_project(root_universe)
+
+
+def _build_cross_universe_project_case(
+    root_universe: str, child_universe: str, project_kind: str
+) -> ProjectCase:
+    if project_kind == "cross_fqun":
+        return _build_cross_fqun_project(
+            root_universe, child_universe, nested_child=False
+        )
+    if project_kind == "cross_fqun_nested":
+        return _build_cross_fqun_project(
+            root_universe, child_universe, nested_child=True
+        )
+    if project_kind == "cross_fqun_action_statements":
+        return _build_cross_fqun_action_statements_project(
+            root_universe, child_universe
+        )
+    return _build_action_quality_implication_project(root_universe, child_universe)
+
+
+def _build_project_case(
+    draw: st.DrawFn, root_universe: str, child_universe: str, project_kind: str
+) -> ProjectCase:
+    if project_kind in (
+        "same_universe_chain",
+        "same_universe_nested_chain",
+        "action_local_constraints",
+        "dual_type_reference",
+        "move_local",
+        "destroy_local",
+    ):
+        return _build_single_universe_project_case(root_universe, project_kind)
+    if project_kind in (
+        "cross_fqun",
+        "cross_fqun_nested",
+        "cross_fqun_action_statements",
+        "action_quality_implication",
+    ):
+        return _build_cross_universe_project_case(
+            root_universe, child_universe, project_kind
+        )
+    if project_kind == "value_copy":
+        return _build_value_copy_project(
+            root_universe, copies=draw(st.integers(min_value=1, max_value=8))
+        )
+    if project_kind == "lifecycle":
+        return _build_lifecycle_project(
+            root_universe,
+            repetitions=draw(st.integers(min_value=1, max_value=8)),
+            explicit_destruction=draw(st.booleans()),
+        )
+    return _build_potential_literal_project(
+        draw, root_universe, child_universe, project_kind
+    )
+
+
 @st.composite
 def valid_project_cases(draw: st.DrawFn) -> ProjectCase:
     root_universe = draw(st.sampled_from(_VALID_ROOT_UNIVERSES))
@@ -1611,56 +1711,9 @@ def valid_project_cases(draw: st.DrawFn) -> ProjectCase:
         )
     )
     event(f"Project kind: {project_kind}")
-    if project_kind == "same_universe_chain":
-        project_case = _build_same_universe_chain_project(
-            root_universe, use_nested_entrypoint=False
-        )
-    elif project_kind == "same_universe_nested_chain":
-        project_case = _build_same_universe_chain_project(
-            root_universe, use_nested_entrypoint=True
-        )
-    elif project_kind == "action_local_constraints":
-        project_case = _build_action_local_constraints_project(root_universe)
-    elif project_kind == "dual_type_reference":
-        project_case = _build_dual_type_reference_project(root_universe)
-    elif project_kind == "cross_fqun":
-        project_case = _build_cross_fqun_project(
-            root_universe, child_universe, nested_child=False
-        )
-    elif project_kind == "cross_fqun_nested":
-        project_case = _build_cross_fqun_project(
-            root_universe, child_universe, nested_child=True
-        )
-    elif project_kind == "cross_fqun_action_statements":
-        project_case = _build_cross_fqun_action_statements_project(
-            root_universe, child_universe
-        )
-    elif project_kind == "move_local":
-        project_case = _build_move_particle_project(root_universe)
-    elif project_kind == "action_quality_implication":
-        project_case = _build_action_quality_implication_project(
-            root_universe, child_universe
-        )
-    elif project_kind == "value_copy":
-        project_case = _build_value_copy_project(
-            root_universe, copies=draw(st.integers(min_value=1, max_value=8))
-        )
-    elif project_kind == "lifecycle":
-        project_case = _build_lifecycle_project(
-            root_universe,
-            repetitions=draw(st.integers(min_value=1, max_value=8)),
-            explicit_destruction=draw(st.booleans()),
-        )
-    elif project_kind in (
-        "literal_same_file",
-        "literal_same_universe",
-        "literal_cross_fqun",
-    ):
-        project_case = _build_potential_literal_project(
-            draw, root_universe, child_universe, project_kind
-        )
-    else:
-        project_case = _build_destroy_particle_project(root_universe)
+    project_case = _build_project_case(
+        draw, root_universe, child_universe, project_kind
+    )
     if draw(st.booleans()):
         decorated_roots: list[ProjectRootCase] = []
         for root in project_case.roots:
@@ -1829,7 +1882,9 @@ _GLOBAL_NAME_CONTEXTS = [
 ]
 
 
-def _global_name_context_template(context: str) -> str:
+def _global_name_context_template(  # noqa: PLR0911, PLR0912 - Each context has its own source template.
+    context: str,
+) -> str:
     if context == "potential_literal_def":
         return (
             f"define the encoding<{_PROJECT_FQUN}:/test>.\n"
@@ -1962,7 +2017,9 @@ _LOCAL_NAME_CONTEXTS = [
 ]
 
 
-def _local_name_context_template(context: str) -> str:
+def _local_name_context_template(  # noqa: PLR0911 - Each context has its own source template.
+    context: str,
+) -> str:
     if context == "local_def_simple":
         return _action_with_block(
             _PROJECT_FQUN,

@@ -364,7 +364,7 @@ def _block_comment(step: int) -> list[str]:
 _BODY_BLOCK_COUNT = 11
 
 
-def _next_body_block(
+def _next_body_block(  # noqa: PLR0911 - Each branch returns one distinct body block.
     step: int, num_globals: int, num_actions: int, max_chain_length: int
 ) -> list[str]:
     """Return one self-contained, state-conserving block of body lines."""

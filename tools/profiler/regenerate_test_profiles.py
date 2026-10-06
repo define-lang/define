@@ -77,7 +77,7 @@ def _coordinate(
             _ = control_stream.write(b"1")
 
 
-def _capture_command(
+def _capture_command(  # noqa: PLR0913 - The optional capture controls are keyword-only.
     profile_path: Path,
     workload_path: Path,
     workspace: Path,
@@ -225,7 +225,7 @@ def _continuous_lifecycles_are_observed(profile: schema.RawProfile) -> bool:
     )
 
 
-def _regenerate_phased_profile(
+def _regenerate_phased_profile(  # noqa: PLR0913 - The interval override is named at call sites.
     testdata: Path,
     workspace: Path,
     name: str,

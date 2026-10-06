@@ -202,6 +202,41 @@ def test_import_analysis_resolves_generated_and_external_modules():
     )
 
 
+def test_repository_resolves_relative_and_absolute_py_proto_dependencies(
+    tmp_path: Path,
+):
+    package = tmp_path / "define" / "config"
+    package.mkdir(parents=True)
+    _ = (package / "BUILD.bazel").write_text(
+        'proto_library(name = "first", srcs = ["first.proto"])\n'
+        + 'proto_library(name = "second", srcs = ["second.proto"])\n'
+        + 'py_proto_library(name = "first_py", deps = [":first"])\n'
+        + 'py_proto_library(name = "second_py", deps = ["//define/config:second"])\n'
+    )
+
+    repository = check_python_deps.load_repository(tmp_path)
+
+    assert repository.module_owners == {
+        "define.config.first_pb2": "//define/config:first_py",
+        "define.config.second_pb2": "//define/config:second_py",
+    }
+
+
+def test_repository_ignores_proto_rules_without_one_matching_source(tmp_path: Path):
+    package = tmp_path / "define" / "config"
+    package.mkdir(parents=True)
+    _ = (package / "BUILD.bazel").write_text(
+        'proto_library(name = "empty", srcs = [])\n'
+        + 'py_proto_library(name = "empty_py", deps = [":empty"])\n'
+        + 'py_proto_library(name = "multiple_py", deps = [":empty", ":missing"])\n'
+        + 'py_proto_library(name = "missing_py", deps = [":missing"])\n'
+    )
+
+    repository = check_python_deps.load_repository(tmp_path)
+
+    assert repository.module_owners == {}
+
+
 def test_repository_analysis_updates_mixed_imports_and_conftest_deps(
     tmp_path: Path,
 ):

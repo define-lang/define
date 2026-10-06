@@ -452,6 +452,52 @@ def _derive_observation_data(profile: RawProfile) -> None:
     }
 
 
+def _apply_profile_record(profile: RawProfile, record_data: dict[str, object]) -> bool:
+    record_type = record_data.get("record_type")
+    if record_type == "runtime":
+        runtime_record = cast("RuntimeRecord", cast("object", record_data))
+        profile.python_runtime = runtime_record["python_runtime"]
+        profile.lifecycle["python_observed_ns"] = runtime_record["python_observed_ns"]
+        profile.lifecycle["python_observed_target_running_ns"] = runtime_record[
+            "python_observed_target_running_ns"
+        ]
+    elif record_type == "frame":
+        frame_record = cast("FrameRecord", cast("object", record_data))
+        profile.frames[frame_record["frame_id"]] = frame_record["frame"]
+    elif record_type == "observation":
+        observation = cast("ObservationRecord", cast("object", record_data))[
+            "observation"
+        ]
+        if observation["status"] != "successful":
+            observation["failure_kind"] = ObservationFailureKind(
+                observation["failure_kind"]
+            )
+        profile.observations.append(observation)
+    elif record_type == "scheduler-wake":
+        wake_record = cast("SchedulerWakeRecord", cast("object", record_data))
+        profile.scheduler_wake_events.append(wake_record["event"])
+    elif record_type == "causality-summary":
+        causality_record = cast("CausalitySummaryRecord", cast("object", record_data))
+        profile.causality = causality_record["causality"]
+    elif record_type == "failure":
+        failure = cast("FailureEventRecord", cast("object", record_data))["failure"]
+        failure["kind"] = CaptureFailureKind(failure["kind"])
+        profile.failures.append(failure)
+    elif record_type == "summary":
+        summary = cast("SummaryRecord", cast("object", record_data))
+        profile.lifecycle["exited_ns"] = summary["exited_ns"]
+        profile.lifecycle["exited_target_running_ns"] = summary[
+            "exited_target_running_ns"
+        ]
+        profile.compiler_exit_status = summary["compiler_exit_status"]
+        profile.diagnostics_status = summary["diagnostics_status"]
+        profile.interruption_signal = summary["interruption_signal"]
+        return True
+    else:
+        raise ValueError(f"unknown profile record type: {record_type!r}")
+    return False
+
+
 def load(profile_path: pathlib.Path) -> RawProfile:
     """Load a complete or incrementally persisted profile."""
     # PRF-027: Incremental persistence.
@@ -472,53 +518,8 @@ def load(profile_path: pathlib.Path) -> RawProfile:
     profile = _initial_profile(header)
     summary_seen = False
     for record_data in records:
-        record_type = record_data.get("record_type")
         if summary_seen:
             raise ValueError("profile contains records after its summary")
-        if record_type == "runtime":
-            runtime_record = cast("RuntimeRecord", cast("object", record_data))
-            profile.python_runtime = runtime_record["python_runtime"]
-            profile.lifecycle["python_observed_ns"] = runtime_record[
-                "python_observed_ns"
-            ]
-            profile.lifecycle["python_observed_target_running_ns"] = runtime_record[
-                "python_observed_target_running_ns"
-            ]
-        elif record_type == "frame":
-            frame_record = cast("FrameRecord", cast("object", record_data))
-            profile.frames[frame_record["frame_id"]] = frame_record["frame"]
-        elif record_type == "observation":
-            observation = cast("ObservationRecord", cast("object", record_data))[
-                "observation"
-            ]
-            if observation["status"] != "successful":
-                observation["failure_kind"] = ObservationFailureKind(
-                    observation["failure_kind"]
-                )
-            profile.observations.append(observation)
-        elif record_type == "scheduler-wake":
-            wake_record = cast("SchedulerWakeRecord", cast("object", record_data))
-            profile.scheduler_wake_events.append(wake_record["event"])
-        elif record_type == "causality-summary":
-            causality_record = cast(
-                "CausalitySummaryRecord", cast("object", record_data)
-            )
-            profile.causality = causality_record["causality"]
-        elif record_type == "failure":
-            failure = cast("FailureEventRecord", cast("object", record_data))["failure"]
-            failure["kind"] = CaptureFailureKind(failure["kind"])
-            profile.failures.append(failure)
-        elif record_type == "summary":
-            summary = cast("SummaryRecord", cast("object", record_data))
-            profile.lifecycle["exited_ns"] = summary["exited_ns"]
-            profile.lifecycle["exited_target_running_ns"] = summary[
-                "exited_target_running_ns"
-            ]
-            profile.compiler_exit_status = summary["compiler_exit_status"]
-            profile.diagnostics_status = summary["diagnostics_status"]
-            profile.interruption_signal = summary["interruption_signal"]
-            summary_seen = True
-        else:
-            raise ValueError(f"unknown profile record type: {record_type!r}")
+        summary_seen = _apply_profile_record(profile, record_data)
     _derive_observation_data(profile)
     return profile

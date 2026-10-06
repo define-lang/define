@@ -29,27 +29,27 @@ def _assert_parses_and_transforms(source: str) -> ast.Program:
 class TestGenerateSourceLines:
     def test_zero_repetitions_raises(self):
         with pytest.raises(ValueError, match="repetitions must be at least"):
-            gen.generate_source_lines(repetitions=0)
+            gen.generate_source_lines(gen.ParticleOperationOptions(repetitions=0))
 
     def test_too_short_move_chain_raises(self):
         with pytest.raises(ValueError, match="move_chain_length must be at least"):
-            gen.generate_source_lines(move_chain_length=1)
+            gen.generate_source_lines(gen.ParticleOperationOptions(move_chain_length=1))
 
     def test_too_shallow_tree_raises(self):
         with pytest.raises(ValueError, match="tree_depth must be at least"):
-            gen.generate_source_lines(tree_depth=1)
+            gen.generate_source_lines(gen.ParticleOperationOptions(tree_depth=1))
 
     def test_too_few_wide_children_raises(self):
         with pytest.raises(ValueError, match="wide_children must be at least"):
-            gen.generate_source_lines(wide_children=1)
+            gen.generate_source_lines(gen.ParticleOperationOptions(wide_children=1))
 
     def test_negative_pods_raises(self):
         with pytest.raises(ValueError, match="pods must be at least"):
-            gen.generate_source_lines(pods=-1)
+            gen.generate_source_lines(gen.ParticleOperationOptions(pods=-1))
 
     def test_zero_retriggers_raises(self):
         with pytest.raises(ValueError, match="retriggers must be at least"):
-            gen.generate_source_lines(retriggers=0)
+            gen.generate_source_lines(gen.ParticleOperationOptions(retriggers=0))
 
     @pytest.mark.parametrize("independent_move_branches", [-1, 1])
     def test_invalid_independent_move_branches_raises(
@@ -59,26 +59,32 @@ class TestGenerateSourceLines:
             ValueError, match="independent_move_branches must be zero or at least"
         ):
             gen.generate_source_lines(
-                independent_move_branches=independent_move_branches
+                gen.ParticleOperationOptions(
+                    independent_move_branches=independent_move_branches
+                )
             )
 
     def test_too_short_independent_move_chain_raises(self):
         with pytest.raises(
             ValueError, match="independent_move_chain_length must be at least"
         ):
-            gen.generate_source_lines(independent_move_chain_length=2)
+            gen.generate_source_lines(
+                gen.ParticleOperationOptions(independent_move_chain_length=2)
+            )
 
     def test_output_exercises_particle_operations(self):
         source = "\n".join(
             gen.generate_source_lines(
-                repetitions=2,
-                move_chain_length=3,
-                tree_depth=2,
-                wide_children=3,
-                pods=1,
-                retriggers=2,
-                independent_move_branches=2,
-                independent_move_chain_length=5,
+                gen.ParticleOperationOptions(
+                    repetitions=2,
+                    move_chain_length=3,
+                    tree_depth=2,
+                    wide_children=3,
+                    pods=1,
+                    retriggers=2,
+                    independent_move_branches=2,
+                    independent_move_chain_length=5,
+                )
             )
         )
         assert "move the particle in position<rung_0> to position<rung_1>." in source
@@ -130,10 +136,12 @@ class TestGenerateSourceLines:
     def test_no_pod_definitions_when_pods_zero(self):
         source = "\n".join(
             gen.generate_source_lines(
-                repetitions=1,
-                pods=0,
-                independent_move_branches=2,
-                independent_move_chain_length=3,
+                gen.ParticleOperationOptions(
+                    repetitions=1,
+                    pods=0,
+                    independent_move_branches=2,
+                    independent_move_chain_length=3,
+                )
             )
         )
         assert "worker" not in source
@@ -143,10 +151,12 @@ class TestGenerateSourceLines:
     def test_no_independent_move_branches_when_count_zero(self):
         source = "\n".join(
             gen.generate_source_lines(
-                repetitions=1,
-                pods=0,
-                independent_move_branches=0,
-                independent_move_chain_length=0,
+                gen.ParticleOperationOptions(
+                    repetitions=1,
+                    pods=0,
+                    independent_move_branches=0,
+                    independent_move_chain_length=0,
+                )
             )
         )
         assert "independent_" not in source
@@ -157,12 +167,14 @@ class TestWriteToPath:
         out = tmp_path / "opgraph.dfn"
         written = gen.write_to_path(
             out,
-            repetitions=2,
-            move_chain_length=3,
-            tree_depth=2,
-            wide_children=3,
-            independent_move_branches=2,
-            independent_move_chain_length=3,
+            gen.ParticleOperationOptions(
+                repetitions=2,
+                move_chain_length=3,
+                tree_depth=2,
+                wide_children=3,
+                independent_move_branches=2,
+                independent_move_chain_length=3,
+            ),
         )
         assert out.read_text(encoding="utf-8").count("\n") == written
 
@@ -170,12 +182,14 @@ class TestWriteToPath:
         out = tmp_path / "opgraph.dfn"
         gen.write_to_path(
             out,
-            repetitions=2,
-            move_chain_length=3,
-            tree_depth=2,
-            wide_children=3,
-            independent_move_branches=2,
-            independent_move_chain_length=3,
+            gen.ParticleOperationOptions(
+                repetitions=2,
+                move_chain_length=3,
+                tree_depth=2,
+                wide_children=3,
+                independent_move_branches=2,
+                independent_move_chain_length=3,
+            ),
         )
         _assert_parses_and_transforms(out.read_text(encoding="utf-8"))
 
@@ -214,14 +228,16 @@ class TestFullDriver:
         source = (
             "\n".join(
                 gen.generate_source_lines(
-                    repetitions=1,
-                    move_chain_length=2,
-                    tree_depth=2,
-                    wide_children=2,
-                    pods=1,
-                    retriggers=1,
-                    independent_move_branches=2,
-                    independent_move_chain_length=3,
+                    gen.ParticleOperationOptions(
+                        repetitions=1,
+                        move_chain_length=2,
+                        tree_depth=2,
+                        wide_children=2,
+                        pods=1,
+                        retriggers=1,
+                        independent_move_branches=2,
+                        independent_move_chain_length=3,
+                    )
                 )
             )
             + "\n"

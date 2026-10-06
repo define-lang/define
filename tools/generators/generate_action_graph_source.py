@@ -41,6 +41,7 @@ Run via:
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import click
@@ -55,6 +56,23 @@ DEFAULT_LAYERS = 22
 DEFAULT_WIDTH = 64
 DEFAULT_FAN_OUT = 32
 DEFAULT_DESTRUCTOR_FRACTION = 0.5
+
+
+@dataclass(frozen=True)
+class GraphOptions:
+    """Parameters of one generated action graph."""
+
+    layers: int = DEFAULT_LAYERS
+    width: int = DEFAULT_WIDTH
+    fan_out: int = DEFAULT_FAN_OUT
+    fqun_prefix: str = DEFAULT_FQUN_PREFIX
+    destructor_fraction: float = DEFAULT_DESTRUCTOR_FRACTION
+    bottleneck_every: int = 0
+    destructor_depth: int = 1
+
+
+DEFAULT_GRAPH_OPTIONS = GraphOptions()
+
 
 _MIN_LAYERS = 2
 _MIN_WIDTH = 1
@@ -235,15 +253,7 @@ def _emit_root(prefix: str, width: int) -> list[str]:
     return lines
 
 
-def generate_source_lines(
-    layers: int = DEFAULT_LAYERS,
-    width: int = DEFAULT_WIDTH,
-    fan_out: int = DEFAULT_FAN_OUT,
-    fqun_prefix: str = DEFAULT_FQUN_PREFIX,
-    destructor_fraction: float = DEFAULT_DESTRUCTOR_FRACTION,
-    bottleneck_every: int = 0,
-    destructor_depth: int = 1,
-) -> list[str]:
+def generate_source_lines(options: GraphOptions = DEFAULT_GRAPH_OPTIONS) -> list[str]:
     """Return the generated source as a list of lines (no trailing newlines).
 
     ``layers`` x ``width`` actions are emitted in ``layers`` fully-connected
@@ -251,6 +261,13 @@ def generate_source_lines(
     band. ``destructor_fraction`` of actions constrain ``src`` to carry a
     destructor.
     """
+    layers = options.layers
+    width = options.width
+    fan_out = options.fan_out
+    fqun_prefix = options.fqun_prefix
+    destructor_fraction = options.destructor_fraction
+    bottleneck_every = options.bottleneck_every
+    destructor_depth = options.destructor_depth
     if layers < _MIN_LAYERS:
         raise ValueError(f"layers must be at least {_MIN_LAYERS}, got {layers}")
     if width < _MIN_WIDTH:
@@ -307,26 +324,9 @@ def generate_source_lines(
     return lines[:-1]
 
 
-def write_to_path(
-    output: Path,
-    layers: int = DEFAULT_LAYERS,
-    width: int = DEFAULT_WIDTH,
-    fan_out: int = DEFAULT_FAN_OUT,
-    fqun_prefix: str = DEFAULT_FQUN_PREFIX,
-    destructor_fraction: float = DEFAULT_DESTRUCTOR_FRACTION,
-    bottleneck_every: int = 0,
-    destructor_depth: int = 1,
-) -> int:
+def write_to_path(output: Path, options: GraphOptions = DEFAULT_GRAPH_OPTIONS) -> int:
     """Write generated source to ``output``. Returns the number of lines written."""
-    lines = generate_source_lines(
-        layers=layers,
-        width=width,
-        fan_out=fan_out,
-        fqun_prefix=fqun_prefix,
-        destructor_fraction=destructor_fraction,
-        bottleneck_every=bottleneck_every,
-        destructor_depth=destructor_depth,
-    )
+    lines = generate_source_lines(options)
     return generator_io.write_lines(output, lines)
 
 
@@ -382,7 +382,7 @@ def write_to_path(
     show_default=True,
     help="Fraction of actions whose destroyed src carries a destructor.",
 )
-def main(
+def main(  # noqa: PLR0913, PLR0917 - Click passes the declared command options.
     output: Path,
     layers: int,
     width: int,
@@ -411,13 +411,15 @@ def main(
     written = generator_cli.invoke(
         lambda: write_to_path(
             output,
-            layers=layers,
-            width=width,
-            fan_out=fan_out,
-            fqun_prefix=fqun_prefix,
-            destructor_fraction=destructor_fraction,
-            bottleneck_every=bottleneck_every,
-            destructor_depth=destructor_depth,
+            GraphOptions(
+                layers=layers,
+                width=width,
+                fan_out=fan_out,
+                fqun_prefix=fqun_prefix,
+                destructor_fraction=destructor_fraction,
+                bottleneck_every=bottleneck_every,
+                destructor_depth=destructor_depth,
+            ),
         )
     )
     generator_cli.report_written("lines", written, output)

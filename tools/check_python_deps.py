@@ -186,6 +186,90 @@ def _package_label(package: Path, target: str) -> str:
     return f"//{package.as_posix()}:{target}"
 
 
+def _python_target(
+    call: ast.Call,
+    label: str,
+    rule_class: str,
+    build_file: Path,
+    lines: list[str],
+) -> PythonTarget:
+    package = build_file.parent
+    sources = _string_list(call, "srcs")
+    if len(sources) != 1:
+        raise ValueError(
+            f"{label} must have exactly one Python source, found {sources}"
+        )
+    if not sources[0].endswith((".py", ".pyi")):
+        raise ValueError(f"{label} source must be a Python file, found {sources[0]!r}")
+    return PythonTarget(
+        label=label,
+        rule_class=rule_class,
+        build_file=build_file,
+        source=package / sources[0].removeprefix(":"),
+        deps=_declared_deps(call, package),
+        kept_deps=_kept_deps(lines, call, package),
+        generated_source=sources[0].startswith(":"),
+    )
+
+
+def _py_proto_dependency(call: ast.Call, package: Path) -> str | None:
+    deps = _string_list(call, "deps")
+    if len(deps) != 1:
+        return None
+    dependency = deps[0]
+    if dependency.startswith(":"):
+        return _package_label(package, dependency[1:])
+    return dependency
+
+
+def _scan_build_file(
+    build_file: Path, repository: Path
+) -> tuple[list[PythonTarget], list[PyrightTarget], dict[str, Path], dict[str, str]]:
+    targets: list[PythonTarget] = []
+    pyright_targets: list[PyrightTarget] = []
+    proto_sources: dict[str, Path] = {}
+    py_proto_deps: dict[str, str] = {}
+    relative_build_file = build_file.relative_to(repository)
+    package = relative_build_file.parent
+    contents = build_file.read_text()
+    lines = contents.splitlines()
+    tree = ast.parse(contents, filename=str(relative_build_file))
+    for statement in tree.body:
+        if not isinstance(statement, ast.Expr) or not isinstance(
+            statement.value, ast.Call
+        ):
+            continue
+        call = statement.value
+        rule_class = _rule_name(call)
+        target_name = _string_value(call, "name")
+        if target_name is None:
+            continue
+        label = _package_label(package, target_name)
+        if rule_class == "proto_library":
+            sources = _string_list(call, "srcs")
+            if len(sources) == 1:
+                proto_sources[label] = package / sources[0]
+        elif rule_class == "py_proto_library":
+            dependency = _py_proto_dependency(call, package)
+            if dependency is not None:
+                py_proto_deps[label] = dependency
+        elif rule_class == "pyright_test" and not _has_keyword(call, "srcs"):
+            pyright_targets.append(
+                PyrightTarget(
+                    label=label,
+                    build_file=relative_build_file,
+                    deps=_declared_deps(call, package),
+                    kept_deps=_kept_deps(lines, call, package),
+                    include_subpackages=_has_tag(call, "include-subpackages"),
+                )
+            )
+        elif rule_class in PYTHON_RULE_CLASSES:
+            targets.append(
+                _python_target(call, label, rule_class, relative_build_file, lines)
+            )
+    return targets, pyright_targets, proto_sources, py_proto_deps
+
+
 def _load_targets(
     repository: Path,
 ) -> tuple[list[PythonTarget], list[PyrightTarget], dict[str, str]]:
@@ -200,63 +284,13 @@ def _load_targets(
             or "node_modules" in relative_build_file.parts
         ):
             continue
-        package = relative_build_file.parent
-        contents = build_file.read_text()
-        lines = contents.splitlines()
-        tree = ast.parse(contents, filename=str(relative_build_file))
-        for statement in tree.body:
-            if not isinstance(statement, ast.Expr) or not isinstance(
-                statement.value, ast.Call
-            ):
-                continue
-            call = statement.value
-            rule_class = _rule_name(call)
-            target_name = _string_value(call, "name")
-            if target_name is None:
-                continue
-            label = _package_label(package, target_name)
-            if rule_class == "proto_library":
-                sources = _string_list(call, "srcs")
-                if len(sources) == 1:
-                    proto_sources[label] = package / sources[0]
-            elif rule_class == "py_proto_library":
-                deps = _string_list(call, "deps")
-                if len(deps) == 1:
-                    dependency = deps[0]
-                    if dependency.startswith(":"):
-                        dependency = _package_label(package, dependency[1:])
-                    py_proto_deps[label] = dependency
-            elif rule_class == "pyright_test" and not _has_keyword(call, "srcs"):
-                pyright_targets.append(
-                    PyrightTarget(
-                        label=label,
-                        build_file=relative_build_file,
-                        deps=_declared_deps(call, package),
-                        kept_deps=_kept_deps(lines, call, package),
-                        include_subpackages=_has_tag(call, "include-subpackages"),
-                    )
-                )
-            elif rule_class in PYTHON_RULE_CLASSES:
-                sources = _string_list(call, "srcs")
-                if len(sources) != 1:
-                    raise ValueError(
-                        f"{label} must have exactly one Python source, found {sources}"
-                    )
-                if not sources[0].endswith((".py", ".pyi")):
-                    raise ValueError(
-                        f"{label} source must be a Python file, found {sources[0]!r}"
-                    )
-                targets.append(
-                    PythonTarget(
-                        label=label,
-                        rule_class=rule_class,
-                        build_file=relative_build_file,
-                        source=package / sources[0].removeprefix(":"),
-                        deps=_declared_deps(call, package),
-                        kept_deps=_kept_deps(lines, call, package),
-                        generated_source=sources[0].startswith(":"),
-                    )
-                )
+        found_targets, found_pyright, found_proto, found_py_proto = _scan_build_file(
+            build_file, repository
+        )
+        targets.extend(found_targets)
+        pyright_targets.extend(found_pyright)
+        proto_sources.update(found_proto)
+        py_proto_deps.update(found_py_proto)
 
     module_owners = {
         module_name(target.source): target.label
