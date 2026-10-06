@@ -159,10 +159,10 @@ class ParticleOperationValidator:
             )
         particle = self._tracker.get_occupant(source)
         value_state = particle.value_state
-        if value_state not in (
+        if value_state not in {
             particle_info.ParticleValueState.SET,
             particle_info.ParticleValueState.ERROR,
-        ):
+        }:
             validation_diagnostics.append(
                 diagnostics.UnsetValueDiagnostic(
                     location=source.location,
@@ -226,10 +226,10 @@ class ParticleOperationValidator:
         # view looking at it, which is reported instead.
         if not is_read or particle.qualities.value_type is None:
             return None
-        if particle.value_state not in (
+        if particle.value_state not in {
             particle_info.ParticleValueState.SET,
             particle_info.ParticleValueState.ERROR,
-        ):
+        }:
             self._tracker.mark_value_error(position)
             return diagnostics.UnsetValueDiagnostic(
                 location=position.location,

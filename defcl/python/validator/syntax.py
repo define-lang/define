@@ -130,11 +130,11 @@ class Parser:
 
         if e.char in _VALUE_POSITION_CHAR_ERRORS:
             prev_token = e.token_history[-1] if e.token_history else None
-            if prev_token is not None and prev_token.type in (
+            if prev_token is not None and prev_token.type in {
                 "COLON",
                 "INTEGER",
                 "FLOAT",
-            ):
+            }:
                 return _VALUE_POSITION_CHAR_ERRORS[e.char]
             return _FIELD_POSITION_CHAR_ERRORS[e.char]
 
@@ -151,7 +151,7 @@ class Parser:
             previous_token = e.token_history[-1]
             if previous_token is not None and previous_token.type == "FIELD_NAME":
                 val = str(previous_token)
-                if val in ("f", "d", "l") or (val[0] == "e" and val[1:].isdigit()):
+                if val in {"f", "d", "l"} or (val[0] == "e" and val[1:].isdigit()):
                     return dcl_exceptions.InvalidNumberFormatError
 
         return e.match_examples(

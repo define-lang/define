@@ -450,10 +450,10 @@ class DefinitionStructuralValidator:
         constraint_types: set[name_types.NameType] = set()
         for requirement in view.constraints.requirements:
             constraint = requirement.typed_global_name
-            if constraint.name_type in (
+            if constraint.name_type in {
                 name_types.NameType.POSITION,
                 name_types.NameType.ACTION,
-            ):
+            }:
                 self._diagnostics.append(
                     diagnostics.ViewQualityConstraintDiagnostic(
                         location=constraint.location,

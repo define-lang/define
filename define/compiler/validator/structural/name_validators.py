@@ -314,7 +314,7 @@ def _validate_authority_reserved(
         multiverse.name if multiverse else constants.DEFAULT_MULTIVERSE
     )
     if (
-        effective_multiverse in ("mv", constants.DEFAULT_MULTIVERSE)
+        effective_multiverse in {"mv", constants.DEFAULT_MULTIVERSE}
         and "." not in lowered_domain
     ):
         return [

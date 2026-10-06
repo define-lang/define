@@ -194,7 +194,7 @@ def raise_token_error(
 
     # This is just <> or < with nothing after it, while expecting a name.
     if ("GLOBAL_NAME_CONTENT" in e.accepts or "LOCAL_NAME_CONTENT" in e.accepts) and (
-        e.token.value == ">" or e.token.type in ("NEWLINE", "$END")
+        e.token.value == ">" or e.token.type in {"NEWLINE", "$END"}
     ):
         raise parser_exceptions.EmptyName(e, file_path)
 
@@ -269,10 +269,10 @@ def raise_token_error(
             )
         if e.token.type == "IT_ALSO_ASSIGNS_THE":
             raise parser_exceptions.QualityImplicationInWrongLocation(e, file_path)
-        if e.token.type in (
+        if e.token.type in {
             "IT_IS_READ",
             "IT_IS_WRITTEN",
-        ) and _is_in_view_definition(e):
+        } and _is_in_view_definition(e):
             raise parser_exceptions.InvalidViewDirectionStatementOrder(e, file_path)
         raise parser_exceptions.MissingCloseBrace(e, file_path)
 
@@ -422,7 +422,7 @@ def raise_token_error(
 
     # We are after the View Direction Statements of a view definition block.
     if "IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE" in e.accepts and _is_in_view_definition(e):
-        if e.token.type in ("IT_IS_READ", "IT_IS_WRITTEN"):
+        if e.token.type in {"IT_IS_READ", "IT_IS_WRITTEN"}:
             raise parser_exceptions.InvalidViewDirectionStatementOrder(e, file_path)
         raise parser_exceptions.InvalidViewDefinitionBlock(e, file_path)
 

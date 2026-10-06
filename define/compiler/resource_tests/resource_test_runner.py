@@ -56,7 +56,7 @@ class Measurement(msgspec.Struct):
         )
         if self.timed_out:
             raise WallDeadlineExceededError(description)
-        if self.returncode not in (expected_returncode, -signal.SIGXCPU):
+        if self.returncode not in {expected_returncode, -signal.SIGXCPU}:
             raise CommandFailedError(f"{description}\n{stderr}")
         # A known CPU regression must not conceal a new memory regression.
         if self.peak_rss_bytes > rss_bytes:

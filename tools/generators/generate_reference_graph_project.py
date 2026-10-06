@@ -279,7 +279,7 @@ def generate_project_files(options: ProjectOptions = DEFAULT_OPTIONS) -> dict[st
             )
         entry_targets = range(width)
     else:
-        if shape in (Shape.INDEPENDENT, Shape.MISSING):
+        if shape in {Shape.INDEPENDENT, Shape.MISSING}:
             entry_targets = range(modules)
         elif shape == Shape.FAN_IN:
             entry_targets = range(max(1, modules - 1))

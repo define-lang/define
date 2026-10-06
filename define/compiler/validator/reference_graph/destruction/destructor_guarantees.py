@@ -80,10 +80,10 @@ def check_destructor_guarantees(
             ):
                 # A particle whose value did not change is where it started.
                 # A change to the particle above it is reported on its own.
-                if guarantee.value_effect in (
+                if guarantee.value_effect in {
                     None,
                     particle_info.ParticleValueState.ERROR,
-                ):
+                }:
                     continue
                 validation_diagnostics.append(
                     diagnostics.DestructorChangesValueDiagnostic(

@@ -610,7 +610,7 @@ def _decorated_source(draw: st.DrawFn, source: str) -> str:
         body = line.rstrip("\n")
         if (
             body
-            and body[-1] in (".", "}", "{")
+            and body[-1] in {".", "}", "{"}
             and draw(st.integers(min_value=0, max_value=7)) == 0
         ):
             tag = draw(st.sampled_from(_TRAILING_COMMENT_TAGS))
@@ -636,7 +636,7 @@ def particle_operation_sequences(draw: st.DrawFn) -> list[str]:
             if empty_names:
                 kinds.append("move")
         kind = draw(st.sampled_from(kinds))
-        if kind in ("create", "move"):
+        if kind in {"create", "move"}:
             target = draw(st.sampled_from(empty_names))
             if target not in defined:
                 statements.append(_local_position_simple(target, indent="        "))
@@ -841,7 +841,7 @@ def syntactic_sources(draw: st.DrawFn) -> str:
             )
         )
         event(f"Definition kind: {kind}")
-        if kind in ["position_simple", "position"]:
+        if kind in {"position_simple", "position"}:
             defs.append(draw(position_definitions()))
         elif kind == "value":
             defs.append(f"define the potential value<{draw(global_names())}>.\n")
@@ -977,7 +977,7 @@ def _mutate_source_character(source: str, draw: st.DrawFn, mutation: str) -> str
     if mutation == "delete_char" and len(source) > 1:
         index = draw(st.integers(min_value=0, max_value=len(source) - 1))
         return source[:index] + source[index + 1 :]
-    if mutation in ("insert_char", "insert_unicode"):
+    if mutation in {"insert_char", "insert_unicode"}:
         index = draw(st.integers(min_value=0, max_value=len(source)))
         if mutation == "insert_unicode":
             character = draw(
@@ -1080,28 +1080,28 @@ def _mutate_source_particle_statement_space(source: str, draw: st.DrawFn) -> str
 
 
 def _apply_source_mutation(source: str, draw: st.DrawFn, mutation: str) -> str:
-    if mutation in ("insert_fragment", "replace_span", "truncate"):
+    if mutation in {"insert_fragment", "replace_span", "truncate"}:
         mutated = _mutate_source_span(source, draw, mutation)
-    elif mutation in (
+    elif mutation in {
         "duplicate_line",
         "remove_line",
         "swap_lines",
         "change_indentation",
-    ):
+    }:
         mutated = _mutate_source_lines(source, draw, mutation)
-    elif mutation in (
+    elif mutation in {
         "delete_char",
         "insert_char",
         "replace_char",
         "swap_adjacent",
         "insert_unicode",
-    ):
+    }:
         mutated = _mutate_source_character(source, draw, mutation)
-    elif mutation in (
+    elif mutation in {
         "remove_newline",
         "remove_angle_bracket",
         "remove_structural_char",
-    ):
+    }:
         mutated = _mutate_source_character_removal(source, draw, mutation)
     elif mutation == "replace_condition":
         mutated = _mutate_source_condition(source, draw)
@@ -1652,21 +1652,21 @@ def _build_cross_universe_project_case(
 def _build_project_case(
     draw: st.DrawFn, root_universe: str, child_universe: str, project_kind: str
 ) -> ProjectCase:
-    if project_kind in (
+    if project_kind in {
         "same_universe_chain",
         "same_universe_nested_chain",
         "action_local_constraints",
         "dual_type_reference",
         "move_local",
         "destroy_local",
-    ):
+    }:
         return _build_single_universe_project_case(root_universe, project_kind)
-    if project_kind in (
+    if project_kind in {
         "cross_fqun",
         "cross_fqun_nested",
         "cross_fqun_action_statements",
         "action_quality_implication",
-    ):
+    }:
         return _build_cross_universe_project_case(
             root_universe, child_universe, project_kind
         )
@@ -1838,7 +1838,7 @@ def _splice_name_bytes(template: str, name_bytes: bytes) -> bytes:
 @st.composite
 def _random_name_bytes(draw: st.DrawFn) -> bytes:
     data = draw(st.binary(min_size=1, max_size=80))
-    filtered = bytes(b for b in data if b not in (ord(">"), ord("\n"), ord("\r")))
+    filtered = bytes(b for b in data if b not in {ord(">"), ord("\n"), ord("\r")})
     if not filtered:
         return b"x"
     return filtered
@@ -1848,7 +1848,7 @@ def _random_name_bytes(draw: st.DrawFn) -> bytes:
 def _random_name_section_bytes(draw: st.DrawFn) -> bytes:
     data = draw(st.binary(min_size=1, max_size=20))
     filtered = bytes(
-        b for b in data if b not in (ord(">"), ord("\n"), ord("\r"), ord(":"))
+        b for b in data if b not in {ord(">"), ord("\n"), ord("\r"), ord(":")}
     )
     return filtered or b"x"
 
@@ -1857,7 +1857,7 @@ def _random_name_section_bytes(draw: st.DrawFn) -> bytes:
 def _random_path_segment_bytes(draw: st.DrawFn) -> bytes:
     data = draw(st.binary(min_size=1, max_size=20))
     filtered = bytes(
-        b for b in data if b not in (ord(">"), ord("\n"), ord("\r"), ord(":"), ord("/"))
+        b for b in data if b not in {ord(">"), ord("\n"), ord("\r"), ord(":"), ord("/")}
     )
     return filtered or b"x"
 
@@ -1898,7 +1898,7 @@ def _global_name_context_template(  # noqa: PLR0911, PLR0912 - Each context has 
             + f"    it has the encoding<{_NAME_MARKER}>.\n"
             + "}\n"
         )
-    if context in ("constructor", "destructor"):
+    if context in {"constructor", "destructor"}:
         return _action_block_with_name(
             _NAME_MARKER,
             trigger_kind="constructor" if context == "constructor" else "destructor",

@@ -54,10 +54,10 @@ def is_violated(
     return (
         occupancy == position_occupancy.PositionOccupancyState.OCCUPIED
         and value_state
-        not in (
+        not in {
             particle_info.ParticleValueState.SET,
             particle_info.ParticleValueState.ERROR,
-        )
+        }
     )
 
 

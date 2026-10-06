@@ -35,7 +35,7 @@ def parse_literal_content(
             )
         if escaped == "n":
             return "\n"
-        if escaped not in ('"', "\\"):
+        if escaped not in {'"', "\\"}:
             # The location is the escaped character after the backslash.
             raise parser_exceptions.InvalidLiteralEscape(
                 _position_for_offsets(token, match.start() + 1, match.end(), file_path),

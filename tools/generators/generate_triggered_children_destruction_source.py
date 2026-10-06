@@ -56,7 +56,7 @@ class Shape(enum.StrEnum):
 
 
 def _rearranges(shape: Shape) -> bool:
-    return shape in (Shape.REARRANGE, Shape.REARRANGE_DESTRUCTORS)
+    return shape in {Shape.REARRANGE, Shape.REARRANGE_DESTRUCTORS}
 
 
 def _position_with_fill(
@@ -260,11 +260,11 @@ def _same_particle_lines(depth: int, fan_out: int, fqun_prefix: str) -> list[str
 
 def _shape_definitions(shape: Shape, fqun_prefix: str) -> list[str]:
     lines: list[str] = []
-    if shape in (
+    if shape in {
         Shape.DESTRUCTORS,
         Shape.DEPENDENT_SIBLINGS,
         Shape.REARRANGE_DESTRUCTORS,
-    ):
+    }:
         lines.extend(
             [
                 f"define the potential action<{fqun_prefix}:/cleanup> {{",
