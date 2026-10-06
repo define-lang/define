@@ -1298,9 +1298,11 @@ class InferredRequirementViolationDiagnostic(Diagnostic):
     def render_message(self, sources: source_map.SourceMap, /) -> str:
         lines = ["This error happens because:"]
         for step in self.propagation_chain:
-            lines.append(f"  {self._format_propagation_step(step)}:")
-            lines.append(
-                textwrap.indent(sources.format_location(step.location), "    ")
+            lines.extend(
+                (
+                    f"  {self._format_propagation_step(step)}:",
+                    textwrap.indent(sources.format_location(step.location), "    "),
+                )
             )
         return self.message_format.format(self=self, propagation_chain="\n".join(lines))
 

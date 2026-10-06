@@ -239,9 +239,9 @@ class LoopCoverageCollector:
                     taken = "1"
                     covered_count += 1
                 lines.append(f"BRDA:{loop_line},1,{_COVERAGE_DESCRIPTION},{taken}")
-            lines.append(f"BRF:{len(loop_lines)}")
-            lines.append(f"BRH:{covered_count}")
-            lines.append("end_of_record")
+            lines.extend(
+                (f"BRF:{len(loop_lines)}", f"BRH:{covered_count}", "end_of_record")
+            )
 
         report = "\n".join(lines)
         if lines:

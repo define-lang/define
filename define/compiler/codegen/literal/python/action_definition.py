@@ -70,8 +70,9 @@ class ActionDefinitionGenerator:
         ).values()
         contract_methods: list[str] = []
         for name in contract_names:
-            contract_methods.append(naming.RUN_DESTRUCTORS_PREFIX + name)
-            contract_methods.append(naming.DESTROY_PREFIX + name)
+            contract_methods.extend(
+                (naming.RUN_DESTRUCTORS_PREFIX + name, naming.DESTROY_PREFIX + name)
+            )
         return action_context.ActionDefinitionContext(
             class_name=self._converter.class_name(definition.typed_name),
             module_name=module_name,

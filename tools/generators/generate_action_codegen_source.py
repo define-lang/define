@@ -46,8 +46,12 @@ def _emit_substantial_action(
         ]
     )
     for chain in range(chains_per_action):
-        lines.append(f"{_INNER_INDENT}create a particle in position<value_{chain}>.")
-        lines.append(f"{_INNER_INDENT}destroy the particle in position<value_{chain}>.")
+        lines.extend(
+            (
+                f"{_INNER_INDENT}create a particle in position<value_{chain}>.",
+                f"{_INNER_INDENT}destroy the particle in position<value_{chain}>.",
+            )
+        )
     lines.extend([f"{_OUTER_INDENT}}}", "}", ""])
     return lines
 

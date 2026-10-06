@@ -192,8 +192,12 @@ def _emit_action_body(target_paths: list[str]) -> list[str]:
     lines.append(f"{_INNER_INDENT}create a particle in position<out>.")
     for target_path in target_paths:
         chain = f"position<out>::action<{target_path}>"
-        lines.append(f"{_INNER_INDENT}create a particle in {chain}::position<src>.")
-        lines.append(f"{_INNER_INDENT}create a particle in {chain}::position<trigger>.")
+        lines.extend(
+            (
+                f"{_INNER_INDENT}create a particle in {chain}::position<src>.",
+                f"{_INNER_INDENT}create a particle in {chain}::position<trigger>.",
+            )
+        )
     lines.append(f"{_INNER_INDENT}destroy the particle in position<out>.")
     return lines
 
@@ -241,8 +245,12 @@ def _emit_root(prefix: str, width: int) -> list[str]:
     ]
     for target_path in target_paths:
         chain = f"position<out>::action<{target_path}>"
-        lines.append(f"{_INNER_INDENT}create a particle in {chain}::position<src>.")
-        lines.append(f"{_INNER_INDENT}create a particle in {chain}::position<trigger>.")
+        lines.extend(
+            (
+                f"{_INNER_INDENT}create a particle in {chain}::position<src>.",
+                f"{_INNER_INDENT}create a particle in {chain}::position<trigger>.",
+            )
+        )
     lines.extend(
         [
             f"{_OUTER_INDENT}}}",

@@ -1101,8 +1101,7 @@ class Fqun(ASTNode):
             parts: list[str] = []
             if self.multiverse is not None:
                 parts.append(self.multiverse.name)
-            parts.append(self.authority.name)
-            parts.append(self.universe.name)
+            parts.extend((self.authority.name, self.universe.name))
             value = ":".join(parts)
         # Interned to deduplicate across the many Fqun instances
         # sharing the same combination.

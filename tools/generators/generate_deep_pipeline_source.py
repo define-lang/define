@@ -172,8 +172,12 @@ def _emit_entry_point(
         pipeline_position = f"position<pipeline_{pipeline}>"
         first_record = f"{pipeline_position}::action<{first_action}>::position<record>"
         first_trigger = f"{pipeline_position}::action<{first_action}>::position<start>"
-        lines.append(f"{_INNER_INDENT}create a particle in {pipeline_position}.")
-        lines.append(f"{_INNER_INDENT}create a particle in {first_record}.")
+        lines.extend(
+            (
+                f"{_INNER_INDENT}create a particle in {pipeline_position}.",
+                f"{_INNER_INDENT}create a particle in {first_record}.",
+            )
+        )
         if satisfy_requirements:
             lines.append(
                 f"{_INNER_INDENT}create a particle in {first_record}::position<{_TEMPORARY_METADATA_POSITION}>."

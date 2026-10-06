@@ -288,8 +288,12 @@ def _append_formatted_branches(
 ):
     for branch in branches:
         origin = source_analysis.line(branch.source_file, branch.source_line)
-        output_lines.append(f"{branch.source_file}:{branch.source_line}:")
-        output_lines.append(f"  branch source: {origin}")
+        output_lines.extend(
+            (
+                f"{branch.source_file}:{branch.source_line}:",
+                f"  branch source: {origin}",
+            )
+        )
         if outcome := source_analysis.branch_outcome(branch):
             output_lines.append(f"  uncovered outcome: {outcome}")
         if branch.target_line is None:

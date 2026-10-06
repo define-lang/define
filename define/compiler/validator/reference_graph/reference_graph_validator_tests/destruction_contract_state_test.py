@@ -222,11 +222,11 @@ def test_large_child_states_share_extend_and_compact_from_source(
         # These Moves require a particle there and put it back, so each Action
         # knows its chosen children are occupied when it passes on the parent.
         for index in range(count):
-            lines.append(
-                f"        move the particle in position<run>::position</child{index}> to position<temporary>."
-            )
-            lines.append(
-                f"        move the particle in position<temporary> to position<run>::position</child{index}>."
+            lines.extend(
+                (
+                    f"        move the particle in position<run>::position</child{index}> to position<temporary>.",
+                    f"        move the particle in position<temporary> to position<run>::position</child{index}>.",
+                )
             )
         if stage:
             lines.append(

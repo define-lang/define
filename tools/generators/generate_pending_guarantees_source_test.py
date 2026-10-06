@@ -42,9 +42,11 @@ def test_generated_source_triggers_actions_before_unrelated_destruction(
         )
     for index in range(2):
         if automatic:
-            expected.append(f"        define the position<temporary_{index}>.")
-            expected.append(
-                f"        move the particle in position<victim_{index}> to position<temporary_{index}>."
+            expected.extend(
+                (
+                    f"        define the position<temporary_{index}>.",
+                    f"        move the particle in position<victim_{index}> to position<temporary_{index}>.",
+                )
             )
         else:
             expected.append(

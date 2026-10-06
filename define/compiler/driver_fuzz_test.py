@@ -259,8 +259,7 @@ def _action_block_with_name(  # noqa: PLR0913 - Callers name independent syntax 
     action_close = f"{indent}}}"
     if include_action_close_comment:
         action_close += " # action close comment"
-    lines.append(action_close)
-    lines.append("}")
+    lines.extend((action_close, "}"))
     return _join_lines(lines)
 
 
@@ -669,11 +668,13 @@ def valid_sources(draw: st.DrawFn) -> str:
     include_literal = draw(st.booleans())
     event(f"Single-file potential literal: {include_literal}")
     if include_literal:
-        fragments.append(f"define the encoding<{_PROJECT_FQUN}:/test>.\n")
-        fragments.append(
-            f"define the potential literal<{_PROJECT_FQUN}:/test> {{\n"
-            + "    it has the encoding</test>.\n"
-            + "}\n"
+        fragments.extend(
+            (
+                f"define the encoding<{_PROJECT_FQUN}:/test>.\n",
+                f"define the potential literal<{_PROJECT_FQUN}:/test> {{\n"
+                + "    it has the encoding</test>.\n"
+                + "}\n",
+            )
         )
     if draw(st.booleans()):
         requirements = draw(_valid_reference_options())
@@ -1432,11 +1433,11 @@ def _build_value_copy_project(universe_name: str, copies: int) -> ProjectCase:
         '        set the value of position<source> to literal</decimal>"5".\n',
     ]
     for _ in range(copies):
-        statements.append(
-            "        set the value of position<target> to position<source>.\n"
-        )
-        statements.append(
-            "        set the value of position<source> to position<target>.\n"
+        statements.extend(
+            (
+                "        set the value of position<target> to position<source>.\n",
+                "        set the value of position<source> to position<target>.\n",
+            )
         )
     # A value write is dead unless something uses the value, so the action
     # guarantees the final value on its own particle's implied position.
@@ -1822,8 +1823,12 @@ def _project_case_debug_text(project_case: ProjectCase) -> str:
         if root_case.local_deps:
             lines.append(f"deps={root_case.local_deps!r}")
         for rel_path, source in sorted(root_case.files.items()):
-            lines.append(f"--- {root_case.relative_path}/{rel_path}".replace("//", "/"))
-            lines.append(source.rstrip("\n"))
+            lines.extend(
+                (
+                    f"--- {root_case.relative_path}/{rel_path}".replace("//", "/"),
+                    source.rstrip("\n"),
+                )
+            )
     return "\n".join(lines)
 
 

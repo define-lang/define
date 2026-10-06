@@ -436,11 +436,11 @@ def _emit_main_action_header(fqun_path: str, num_actions: int) -> list[str]:
     )
     for i in range(num_actions):
         action_name = _short_global_name(i, is_action=True)
-        lines.append(
-            f"{_INNER_INDENT}create a particle in action<{action_name}>::position<_noop>."
-        )
-        lines.append(
-            f"{_INNER_INDENT}create a particle in action<{action_name}>::position<run>."
+        lines.extend(
+            (
+                f"{_INNER_INDENT}create a particle in action<{action_name}>::position<_noop>.",
+                f"{_INNER_INDENT}create a particle in action<{action_name}>::position<run>.",
+            )
         )
     return lines
 

@@ -63,6 +63,7 @@ ignore = [
 ]
 extend-select = [
   "D421", # Describe properties as values rather than actions.
+  "FURB113", # Batch consecutive list appends.
   "FURB118", # Prefer operator functions for simple sort keys.
   "PLR0904", # Enforce size limits in vibe-coded sources; others opt out below.
   "PLR0914",

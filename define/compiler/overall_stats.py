@@ -154,7 +154,6 @@ def format_stats(
     ]
 
     if mode == StatsMode.PER_FILE:
-        sections.append("")
-        sections.append(_format_per_file_section(results))
+        sections.extend(("", _format_per_file_section(results)))
 
     return "\n".join(sections) + "\n"
