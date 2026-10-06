@@ -650,7 +650,7 @@ class ParticleStateStore:
         """Record that this action triggered an action on a particle, and apply the action's Guarantees."""
         last_action = action.get_last_action()
         triggered_at = last_action.location
-        self._triggered[parent_particle, last_action.full_typed_name] = triggered_at
+        self._triggered[(parent_particle, last_action.full_typed_name)] = triggered_at
         action_parent_position = _action_parent_position_key(action)
         guaranteed_keys: list[chained_name.PositionReferenceTuple] = []
         # Each particle from the caller that the callee moved leaves its

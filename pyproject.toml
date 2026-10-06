@@ -90,6 +90,15 @@ strict = true
 [tool.ruff.lint.flake8-bandit]
 check-typed-exception = true
 
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.ruff.lint.pylint]
+allow-magic-value-types = []
+
+[tool.ruff.lint.ruff]
+parenthesize-tuple-in-subscript = true
+
 [tool.ruff.lint.extend-per-file-ignores]
 "**/*.py" = [
     "S603", # Allow subprocess calls without a shell.
