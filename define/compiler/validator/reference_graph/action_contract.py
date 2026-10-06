@@ -17,9 +17,9 @@ if typing.TYPE_CHECKING:
 
     from define.compiler import ast
     from define.compiler.validator.reference_graph import quality_assignment
-    from define.compiler.validator.reference_graph.destruction import child_state
     from define.compiler.validator.reference_graph.destruction import (
-        destruction_contract as destruction_contract_types,
+        child_state,
+        destruction_contract,
     )
 
 
@@ -419,7 +419,7 @@ class DestructionContracts:
 
     # Particles destroyed together share their destruction-time occupancy.
     child_state: ChildState
-    particles: list[destruction_contract_types.DestructionContract]
+    particles: list[destruction_contract.DestructionContract]
     # Callers repeatedly need membership checks while validating child positions.
     positions: set[chained_name.ChainedNameTuple] = field(
         default_factory=set, init=False

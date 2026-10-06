@@ -50,7 +50,7 @@ if typing.TYPE_CHECKING:
         reference_graph_validation_state,
     )
     from define.compiler.validator.reference_graph.destruction import (
-        destruction_contract as destruction_contract_types,
+        destruction_contract,
     )
 
 
@@ -703,7 +703,7 @@ class ActionDefinitionValidator:
     ) -> validation_result.ActionPostorderValidationResult:
         """Run post-order validation and return diagnostics, contract, and codegen input."""
         contract, guaranteed_particle_destructors = self._analyze_action_definition()
-        destruction_contracts: list[destruction_contract_types.DestructionContract] = []
+        destruction_contracts: list[destruction_contract.DestructionContract] = []
         for contracts in contract.destruction_contracts:
             destruction_contracts.extend(contracts.particles)
         return validation_result.ActionPostorderValidationResult(
