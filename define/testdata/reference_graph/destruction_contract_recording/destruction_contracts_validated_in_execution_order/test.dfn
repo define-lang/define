@@ -1,4 +1,4 @@
-# Destroying target1 then target2 in close_two, the caller verifies the two caller-attached destructors in that execution order, so the first diagnostic concerns target1.
+# Destroying target1 then target2 in close_two, the caller validates the two caller-attached destructors in that execution order, so the first diagnostic concerns target1.
 # target1 is destroyed before target2, so its diagnostic comes first.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {

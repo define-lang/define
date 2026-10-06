@@ -1,4 +1,4 @@
-# The children's verification in /middle must not suppress the parent's in /test.
+# The children's validation in /middle must not suppress the parent's in /test.
 define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the action</middle>.
     it happens when {

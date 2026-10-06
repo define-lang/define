@@ -1,4 +1,4 @@
-# Passing a caller-passed particle through mid, which does not know its destructor, re-records the Destruction Contract up to /test, which holds the required child state and verifies it satisfied.
+# Passing a caller-passed particle through mid, which does not know its destructor, re-records the Destruction Contract up to /test, which holds the required child state and validates it satisfied.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.

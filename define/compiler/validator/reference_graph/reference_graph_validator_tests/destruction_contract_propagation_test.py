@@ -123,7 +123,7 @@ def test_cascade_fires_caller_attached_destructors_of_parent_and_child(
     ]
 
 
-def test_cascade_verifies_child_destructor_requirement_violated(
+def test_cascade_validates_child_destructor_requirement_violated(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -190,7 +190,7 @@ def test_cascade_verifies_child_destructor_requirement_violated(
     ]
 
 
-def test_contract_re_records_through_unknowing_middle_and_top_verifies(
+def test_contract_re_records_through_unknowing_middle_and_top_validates(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -278,7 +278,7 @@ def test_contract_re_records_through_unknowing_middle_and_top_violates(
     ]
 
 
-def test_constructor_attaches_destructor_and_verifies_via_contract(
+def test_constructor_attaches_destructor_and_validates_via_contract(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -503,7 +503,7 @@ def test_middle_knows_destructor_but_not_child_state_requires_it_of_its_caller_v
     ]
 
 
-def test_required_position_error_in_child_state_skips_verification(
+def test_required_position_error_in_child_state_skips_validation(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -523,7 +523,7 @@ def test_required_position_error_in_child_state_skips_verification(
     ]
 
 
-def test_auto_destruction_re_records_through_middle_and_owner_verifies(
+def test_auto_destruction_re_records_through_middle_and_owner_validates(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -607,7 +607,7 @@ def test_auto_destruction_re_records_through_middle_and_owner_verifies(
     ]
 
 
-def test_cascade_re_records_through_middle_and_owner_verifies_parent_and_child(
+def test_cascade_re_records_through_middle_and_owner_validates_parent_and_child(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()

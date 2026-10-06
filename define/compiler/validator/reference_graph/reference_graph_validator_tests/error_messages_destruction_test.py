@@ -671,7 +671,7 @@ def test_destructor_cascade_through_action_format(
 #
 # These cover the new error stacks where the destroying action could NOT see a
 # caller-attached destructor and recorded a Destruction Contract that the
-# triggering action verifies. The chain identifies the constraint that assigned
+# triggering action validates. The chain identifies the constraint that assigned
 # the destructor before showing the Action Execution and destruction cascade.
 
 
@@ -762,7 +762,7 @@ def test_destruction_contract_requires_occupied_format(
 def test_destruction_contract_requires_empty_format(
     validate_project: ValidateProject,
 ):
-    """A caller-attached destructor requires its implied position</p2> empty; a blind filler (which knows only position</p2>) fills it, so /test verifies the empty-requirement violation with the fill site carried up from the contract."""
+    """A caller-attached destructor requires its implied position</p2> empty; a blind filler (which knows only position</p2>) fills it, so /test validates the empty-requirement violation with the fill site carried up from the contract."""
     files = {
         "p2.dfn": "define the potential position<my.domain.com:my_lib:/p2>.\n",
         "d.dfn": (

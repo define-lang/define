@@ -1,7 +1,7 @@
 # A particle carries one destructor close_file can see (declared on its target) and one it cannot (declared only on /test's my_file); the visible one surfaces through normal trigger propagation and the caller-attached one through the contract.
 # The visible destructor: close_file knows it, so its requirement propagates
 # with the destructor attached on close_file's own target (no my_file step).
-# The caller-attached destructor: close_file is blind to it, so /test verifies
+# The caller-attached destructor: close_file is blind to it, so /test validates
 # it through the contract, attributed to my_file.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {

@@ -1,4 +1,4 @@
-# Moving a caller-passed particle into a local position inside mid and destroying it there keys the Destruction Contract on the contracted origin (mid's interface), so the caller verifies its attached destructor against that origin.
+# Moving a caller-passed particle into a local position inside mid and destroying it there keys the Destruction Contract on the contracted origin (mid's interface), so the caller validates its attached destructor against that origin.
 # Surfaced via mid, which destroys the particle in its local position.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {

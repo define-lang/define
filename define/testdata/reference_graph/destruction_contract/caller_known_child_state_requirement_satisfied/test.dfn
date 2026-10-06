@@ -1,4 +1,4 @@
-# Verifying a caller-attached destructor close_file cannot see passes when /test filled the destructor's required position</file>.
+# Validating a caller-attached destructor close_file cannot see passes when /test filled the destructor's required position</file>.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.

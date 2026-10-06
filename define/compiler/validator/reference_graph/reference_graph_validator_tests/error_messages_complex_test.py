@@ -5,7 +5,7 @@ A particle carrying two destructors (d1, d2) is passed down a long chain of
 Action Executions and destroyed at the bottom, where both destructors fire with
 unmet requirements (p1 is filled, so d1's empty-requirement is violated; p2 is
 emptied, so d2's occupied-requirement is violated). The chain must trace every
-trigger hop from the verifying definition down to the destruction, the same way
+trigger hop from the validating definition down to the destruction, the same way
 ordinary requirement propagation does.
 
 Message format tests exist only for complex diagnostics, such as multi-line
@@ -203,7 +203,7 @@ _FILES = {
     ),
     # /outer moves the carrier out of its implied position</carrier> (where it
     # can still see d2) into outer_implied::incoming (which hides d2), so /outer
-    # is the first caller that must verify d2. It then triggers outer_implied.
+    # is the first caller that must validate d2. It then triggers outer_implied.
     "outer.dfn": (
         "define the potential action<my.domain.com:my_lib:/outer> {\n"
         "    it also assigns the action</holder>.\n"
@@ -244,7 +244,7 @@ def test_destruction_contract_traces_every_trigger_hop(
     validate_project: ValidateProject,
 ):
     result = validate_project(_FILES)
-    # Per the Destruction Contract rules, each destructor is verified by the first
+    # Per the Destruction Contract rules, each destructor is validated by the first
     # caller up the stack that knows it is on the particle: d1 by outer_implied
     # (whose incoming position declares it), and d2 by /outer (which moved the
     # particle out of holder::iface). So both destructors must fire
@@ -272,7 +272,7 @@ def test_destruction_contract_traces_every_trigger_hop(
     assert d1_diag.required_empty is True
 
     # d1 is hidden from every trigger position below outer_implied::incoming, so
-    # its contract is verified at outer_implied (the first caller that knows d1).
+    # its contract is validated at outer_implied (the first caller that knows d1).
     # The full chain must trace all four trigger hops down to 'do_destruction'.
     assert d1_diag.format(result.program_result.source_map) == textwrap.dedent("""\
         File "outer_implied.dfn", line 18, column 52
@@ -323,7 +323,7 @@ def test_destruction_contract_traces_every_trigger_hop(
                                      ^^^^^^^^^^^^^""")
 
     # d2 is invisible everywhere below position</carrier>, so the first caller
-    # that knows it is /outer. d2 must therefore be verified at /outer, with the
+    # that knows it is /outer. d2 must therefore be validated at /outer, with the
     # attachment traced back to the carrier constraint and the chain running
     # through every trigger hop down to 'do_destruction'.
     assert d2_diag.format(result.program_result.source_map) == textwrap.dedent("""\

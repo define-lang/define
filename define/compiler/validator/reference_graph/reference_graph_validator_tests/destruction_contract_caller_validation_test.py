@@ -33,7 +33,7 @@ _D = "action<my.domain.com:my_lib:/d>"
 _KEEP = "action<my.domain.com:my_lib:/keep>"
 
 
-def test_parent_verification_does_not_skip_child_destructor(
+def test_parent_validation_does_not_skip_child_destructor(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -104,7 +104,7 @@ def test_parent_verification_does_not_skip_child_destructor(
     assert all_diags[0].location.file_path == PurePosixPath("test.dfn")
 
 
-def test_propagated_child_verification_does_not_skip_parent_destructor(
+def test_propagated_child_validation_does_not_skip_parent_destructor(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()

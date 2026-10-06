@@ -104,7 +104,7 @@ def test_moved_in_contracted_origin_requirement_satisfied(
     ]
 
 
-def test_auto_destruction_records_contract_verified_by_caller(
+def test_auto_destruction_records_contract_validated_by_caller(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -267,7 +267,7 @@ def test_destroyer_destroys_implied_position_requirement_violated(
     ]
 
 
-def test_destruction_contracts_verified_in_execution_order(
+def test_destruction_contracts_validated_in_execution_order(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()

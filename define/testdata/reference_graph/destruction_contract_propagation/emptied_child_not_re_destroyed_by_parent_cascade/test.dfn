@@ -1,5 +1,5 @@
-# Destroying a child (the particle in target's plain position</c>) before the parent means the child's caller-attached destructor is verified once through the child's own destruction; the parent cascade finds position</c> recorded empty and does not run that destructor a second time.
-# Exactly one diagnostic: the child's destructor is verified through the
+# Destroying a child (the particle in target's plain position</c>) before the parent means the child's caller-attached destructor is validated once through the child's own destruction; the parent cascade finds position</c> recorded empty and does not run that destructor a second time.
+# Exactly one diagnostic: the child's destructor is validated through the
 # explicit destruction of target's position</c>, not a second time through
 # the parent's cascade (which skips the now-empty position</c>).
 define the potential action<my.domain.com:my_lib:/test> {

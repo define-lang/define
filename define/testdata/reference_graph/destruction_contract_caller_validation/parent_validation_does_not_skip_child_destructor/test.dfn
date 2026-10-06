@@ -1,4 +1,4 @@
-# The parent's verified Destructor cannot satisfy the child's different state.
+# The parent's validated Destructor cannot satisfy the child's different state.
 define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the action</destroyer>.
     it happens when {

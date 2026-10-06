@@ -1,4 +1,7 @@
-# close_file leaves the destructor's required position</file> in an error state before destroying, so the Child State records ERROR and the owner's verification short-circuits instead of falsely erroring.
+# Of two caller-attached destructors on one destroyed particle, only the one whose required position is empty produces a diagnostic; each is validated on its own.
+# destructor_a's position</a> was filled (line 20); only destructor_b fails.
+# The violation is observed at the line that triggered close_file (line 22).
+# Both destructors fire (and so get edges); only destructor_b is violated.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.
@@ -10,12 +13,14 @@ define the potential action<my.domain.com:my_lib:/test> {
         }
         define the position<my_file> {
             it may only contain particles where {
-                it has the position</file>.
-                it has the action</delete_file_destructor>.
+                it has the action</destructor_a>.
+                it has the action</destructor_b>.
+                it has the position</a>.
             }
         }
         create a particle in position<box>.
         create a particle in position<my_file>.
+        create a particle in position<my_file>::position</a>.
         move the particle in position<my_file> to position<box>::action</close_file>::position<target>.
         create a particle in position<box>::action</close_file>::position<run>.
     }

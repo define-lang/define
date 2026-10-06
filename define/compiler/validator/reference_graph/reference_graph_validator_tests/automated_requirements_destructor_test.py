@@ -424,7 +424,7 @@ def test_destructor_in_constructor_checks_interface_requirement_locally(
     ]
 
 
-def test_callee_attached_destructor_requirement_verified_at_owning_caller(
+def test_callee_attached_destructor_requirement_validated_at_owning_caller(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()

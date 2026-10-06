@@ -1,4 +1,4 @@
-# When the constructor fills the destructor's required position before handing the carrier to close_file, the caller-attached destructor verifies satisfied.
+# When the constructor fills the destructor's required position before handing the carrier to close_file, the caller-attached destructor validates satisfied.
 define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the position</carrier>.
     it happens when {

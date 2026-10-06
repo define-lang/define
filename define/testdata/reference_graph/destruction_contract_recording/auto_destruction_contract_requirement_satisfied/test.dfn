@@ -1,4 +1,4 @@
-# When the required position is filled before the particle is passed in, the auto-destruction-fired destructor verifies satisfied.
+# When the required position is filled before the particle is passed in, the auto-destruction-fired destructor validates satisfied.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.

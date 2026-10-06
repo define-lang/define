@@ -596,10 +596,10 @@ py_test(
 )
 
 py_test(
-    name = "destruction_contract_caller_verification_test",
+    name = "destruction_contract_caller_validation_test",
     size = "small",
-    srcs = ["destruction_contract_caller_verification_test.py"],
-    data = ["//define/testdata/reference_graph/destruction_contract_caller_verification"],
+    srcs = ["destruction_contract_caller_validation_test.py"],
+    data = ["//define/testdata/reference_graph/destruction_contract_caller_validation"],
     deps = [
         ":test_helpers",
         "//define/compiler:conftest",
@@ -1117,7 +1117,7 @@ pyright_test(
         ":dead_code_test",
         ":dead_value_write_test",
         ":destroy_particle_test",
-        ":destruction_contract_caller_verification_test",
+        ":destruction_contract_caller_validation_test",
         ":destruction_contract_propagation_test",
         ":destruction_contract_recording_test",
         ":destruction_contract_state_test",

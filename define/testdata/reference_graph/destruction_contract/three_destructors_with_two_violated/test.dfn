@@ -1,5 +1,5 @@
 # Of three caller-attached destructors with only position</a> filled, both destructor_c and destructor_b report violations (in firing order), while destructor_a is satisfied.
-# Destructors fire in reverse assignment order, so destructor_c is verified
+# Destructors fire in reverse assignment order, so destructor_c is validated
 # before destructor_b.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {

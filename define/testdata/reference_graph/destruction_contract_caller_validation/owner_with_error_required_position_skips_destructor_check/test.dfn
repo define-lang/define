@@ -1,4 +1,4 @@
-# When the owner leaves a destructor's required position in an error state (here by moving from it while empty), the destructor cannot be verified and is skipped rather than reported, so only the move-from-empty diagnostic surfaces.
+# When the owner leaves a destructor's required position in an error state (here by moving from it while empty), the destructor cannot be validated and is skipped rather than reported, so only the move-from-empty diagnostic surfaces.
 # The move-from-empty: the destructor's requirement on position</x> is error to
 # the owner, so it is skipped rather than reported as a violation.
 # close_file declares target's position</x> constraint but its own body never

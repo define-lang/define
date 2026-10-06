@@ -21,7 +21,7 @@ def action_graph(
 ) -> list[tuple[str, str]]:
     """List triggered actions in definition postorder and statement order.
 
-    Contract contributions precede the execution where they are verified.
+    Contract contributions precede the execution where they are validated.
     Repeated triggers produce repeated edges. Use action_graph_set only for
     reference-graph diamonds that make the order nondeterministic.
     """

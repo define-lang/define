@@ -1,4 +1,4 @@
-# When close_file's own target declares the destructor, close_file verifies it (propagating the requirement normally); the caller does not re-verify it through the Destruction Contract, so there is exactly one diagnostic.
+# When close_file's own target declares the destructor, close_file validates it (propagating the requirement normally); the caller does not re-validate it through the Destruction Contract, so there is exactly one diagnostic.
 # close_file knows the destructor (its target declares it), so the
 # requirement surfaces through normal trigger propagation: the destructor is
 # attached on close_file's own target rather than via /test's my_file.

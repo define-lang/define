@@ -348,7 +348,7 @@ def test_caller_known_empty_requirement_violated(
     ]
 
 
-def test_two_caller_attached_destructors_verified_independently(
+def test_two_caller_attached_destructors_validated_independently(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
@@ -551,7 +551,7 @@ def test_three_destructors_with_two_violated(
     ]
 
 
-def test_declared_quality_destructor_verified_once(
+def test_declared_quality_destructor_validated_once(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()

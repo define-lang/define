@@ -1,4 +1,4 @@
-# When the declared-quality destructor's required position is filled, close_file's verification passes and no diagnostic is produced.
+# When the declared-quality destructor's required position is filled, close_file's validation passes and no diagnostic is produced.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.

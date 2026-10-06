@@ -1,4 +1,4 @@
-# Verifying a caller-attached destructor close_file cannot see fails when /test left the destructor's required position</file> empty.
+# Validating a caller-attached destructor close_file cannot see fails when /test left the destructor's required position</file> empty.
 # The violation is observed at the line that triggered close_file.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {

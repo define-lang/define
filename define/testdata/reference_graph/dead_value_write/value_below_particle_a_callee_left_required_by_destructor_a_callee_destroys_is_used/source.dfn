@@ -1,7 +1,7 @@
 # action</make> leaves position</shell> with a particle in position</item>
 # below it. action</test> writes the value below that particle, then passes
 # position<box> to action</close>, which destroys it without knowing about
-# action</cleanup>. action</test> verifies action</cleanup> through the
+# action</cleanup>. action</test> validates action</cleanup> through the
 # Destruction Contract, which uses the value, so the write is not dead.
 define the potential position<my.domain.com:my_lib:/value> {
     it may only contain particles where {

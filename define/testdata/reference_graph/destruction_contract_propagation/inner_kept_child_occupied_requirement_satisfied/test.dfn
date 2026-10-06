@@ -1,4 +1,4 @@
-# The caller-attached destructor's required child stays occupied through the destruction, so verification passes.
+# The caller-attached destructor's required child stays occupied through the destruction, so validation passes.
 define the potential action<my.domain.com:my_lib:/test> {
     it happens when {
         this particle is created.
