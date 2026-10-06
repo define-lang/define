@@ -8,11 +8,15 @@ in the driver tests.
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from typing import TYPE_CHECKING
+from unittest.mock import patch
 
 import click.testing
 
 from define.compiler import constants, driver, main, overall_stats
+
+if TYPE_CHECKING:
+    from unittest.mock import MagicMock
 
 _USAGE_ERROR = 2
 _runner = click.testing.CliRunner()

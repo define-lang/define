@@ -6,9 +6,12 @@ import typing
 import pytest
 
 from define.compiler import ast
-from define.compiler.graphs import reference_graph_executor, reference_graph_order
+from define.compiler.graphs import reference_graph_executor
 from define.compiler.validator import test_helpers
 from define.compiler.validator.structural import program_validator
+
+if typing.TYPE_CHECKING:
+    from define.compiler.graphs import reference_graph_order
 
 _SOURCE = """\
 define the potential position<my.domain.com:lib:/base>.

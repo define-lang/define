@@ -9,13 +9,13 @@ from typing import ClassVar, Final
 
 import msgspec
 
-from define.compiler import ast, constants, name_types
+from define.compiler import constants, name_types
 from define.compiler.validator.reference_graph import action_contract
 
 if typing.TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from define.compiler import config
+    from define.compiler import ast, config
     from define.compiler.errors import source_map
 
 

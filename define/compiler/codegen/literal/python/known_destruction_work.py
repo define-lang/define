@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, final
 from define.compiler.codegen.literal.python import (
     naming,
     operation_labels,
-    position_expression,
     template_context,
 )
 
@@ -15,6 +14,9 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
     from define.compiler import ast
+    from define.compiler.codegen.literal.python import (
+        position_expression,
+    )
     from define.compiler.validator.reference_graph.destruction import (
         destruction_contract,
     )

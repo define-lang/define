@@ -10,12 +10,13 @@ from __future__ import annotations
 import queue
 import time
 import typing
-from concurrent.futures import Future, ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
 
 import msgspec
 
 if typing.TYPE_CHECKING:
     import pathlib
+    from concurrent.futures import Future
 
 from define.compiler import ast, config, constants
 from define.compiler.data_structures import define_path, typed_name_dict

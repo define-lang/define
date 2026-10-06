@@ -5,10 +5,12 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, final
 
 from define.compiler import ast, name_types
-from define.compiler.codegen.literal.python import naming, template_context
+from define.compiler.codegen.literal.python import template_context
 
 if TYPE_CHECKING:
     from collections.abc import Set as AbstractSet
+
+    from define.compiler.codegen.literal.python import naming
 
 
 @final

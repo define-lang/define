@@ -6,11 +6,12 @@ import os
 import queue
 import typing
 from collections import deque
-from concurrent.futures import Future, ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
 
 if typing.TYPE_CHECKING:
     from array import array
     from collections.abc import Callable
+    from concurrent.futures import Future
 
     from define.compiler import ast
     from define.compiler.graphs import reference_graph_order

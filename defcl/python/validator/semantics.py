@@ -5,13 +5,15 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 import lark_cython
-from google.protobuf import descriptor, message
+from google.protobuf import descriptor
 
 from defcl.python import exceptions
 from defcl.python.lark import lark_standalone
 
 if TYPE_CHECKING:
     import os
+
+    from google.protobuf import message
 
 
 def validate(

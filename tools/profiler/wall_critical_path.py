@@ -8,7 +8,10 @@ import typing
 
 import msgspec
 
-from tools.profiler import analyzer_model, schema, wall_model
+from tools.profiler import analyzer_model, wall_model
+
+if typing.TYPE_CHECKING:
+    from tools.profiler import schema
 
 
 class DependentWait(msgspec.Struct, frozen=True):

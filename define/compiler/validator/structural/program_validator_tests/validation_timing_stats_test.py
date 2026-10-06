@@ -6,10 +6,9 @@ Follow program validator test authoring rules in program_validator_tests/AGENTS.
 
 from __future__ import annotations
 
-from pathlib import Path, PurePosixPath
+from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
-from define.compiler.validator import stats
 from define.compiler.validator import test_helpers as validator_test_helpers
 from define.compiler.validator.structural import program_validator
 from define.compiler.validator.structural.program_validator_tests import (
@@ -17,7 +16,11 @@ from define.compiler.validator.structural.program_validator_tests import (
 )
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     import pytest
+
+    from define.compiler.validator import stats
 
 
 def _assert_overall_equals_phase_sum(timings: stats.ValidationTimingStats):

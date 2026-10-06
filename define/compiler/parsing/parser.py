@@ -5,11 +5,9 @@ from __future__ import annotations
 import typing
 from functools import cached_property
 
-import lark_cython
 import msgspec
 from lark_cython import standalone
 
-from define.compiler.errors import diagnostics as diagnostics_mod
 from define.compiler.errors import parser_exceptions
 from define.compiler.parsing import (
     indentation_validator,
@@ -22,7 +20,10 @@ from define.compiler.parsing.lark import lark_standalone
 if typing.TYPE_CHECKING:
     import pathlib
 
+    import lark_cython
+
     from define.compiler import ast
+    from define.compiler.errors import diagnostics as diagnostics_mod
 
 type ParseException = (
     parser_exceptions.DefineSyntaxError | lark_standalone.UnexpectedInput

@@ -9,7 +9,7 @@ messages or messages with many fields. Behavioral tests cover simple ones.
 from __future__ import annotations
 
 import textwrap
-from pathlib import Path, PurePosixPath
+from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler import config
@@ -19,6 +19,8 @@ from define.compiler.validator import test_helpers
 from define.compiler.validator.structural import program_validator
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     import pytest
 
     from define.compiler.conftest import ValidateProject

@@ -5,10 +5,12 @@ from __future__ import annotations
 import typing
 from functools import cached_property
 
-from define.compiler import ast, name_types
+from define.compiler import name_types
 
 if typing.TYPE_CHECKING:
     from collections.abc import Callable, Iterator, KeysView
+
+    from define.compiler import ast
 
     type _ImplicationsFor = Callable[
         [ast.GlobalTypedNameReference],

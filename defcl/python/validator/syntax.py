@@ -6,7 +6,6 @@ import pathlib
 from functools import cached_property
 from typing import TYPE_CHECKING
 
-import lark_cython
 from lark_cython import standalone
 
 from defcl.python import exceptions as dcl_exceptions
@@ -14,6 +13,8 @@ from defcl.python.lark import lark_standalone
 
 if TYPE_CHECKING:
     import os
+
+    import lark_cython
 
 _TOKEN_ERROR_EXAMPLES: dict[type[dcl_exceptions.DclTokenError], list[str]] = {
     dcl_exceptions.MissingColonError: [

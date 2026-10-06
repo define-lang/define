@@ -5,7 +5,10 @@ import typing
 
 import msgspec
 
-from tools.profiler import schema, wall_critical_path, wall_model
+from tools.profiler import wall_critical_path, wall_model
+
+if typing.TYPE_CHECKING:
+    from tools.profiler import schema
 
 
 def _sample(

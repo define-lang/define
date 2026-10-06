@@ -23,12 +23,14 @@ from define.compiler import (
 from define.compiler.data_structures import define_path, typed_name_dict
 from define.compiler.errors import diagnostics, exceptions, source_map
 from define.compiler.graphs import reference_graph
-from define.compiler.parsing import parser, parser_error_classification
+from define.compiler.parsing import parser_error_classification
 from define.compiler.validator import scope_tracker, stats, validation_result
 from define.compiler.validator.structural import name_validators
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
+
+    from define.compiler.parsing import parser
 
 
 class FileValidationContext(msgspec.Struct, frozen=True, dict=True):

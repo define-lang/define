@@ -10,7 +10,6 @@ from define.compiler import ast
 from define.compiler.errors import diagnostics
 from define.compiler.graphs import (
     reference_graph_executor,
-    reference_graph_order,
 )
 from define.compiler.validator import codegen_input, validation_result
 from define.compiler.validator.reference_graph import (
@@ -22,6 +21,9 @@ from define.compiler.validator.reference_graph import (
 
 if typing.TYPE_CHECKING:
     from define.compiler.data_structures import typed_name_dict
+    from define.compiler.graphs import (
+        reference_graph_order,
+    )
 
 
 def _requires_validation(

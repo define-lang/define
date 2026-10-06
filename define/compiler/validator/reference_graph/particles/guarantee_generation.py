@@ -6,7 +6,7 @@ import typing
 
 import msgspec
 
-from define.compiler import ast, chained_name
+from define.compiler import chained_name
 from define.compiler.validator.reference_graph import (
     action_contract,
     position_occupancy,
@@ -14,6 +14,7 @@ from define.compiler.validator.reference_graph import (
 from define.compiler.validator.reference_graph.particles import particle_info
 
 if typing.TYPE_CHECKING:
+    from define.compiler import ast
     from define.compiler.validator.reference_graph.particles import (
         particle_state_store,
     )

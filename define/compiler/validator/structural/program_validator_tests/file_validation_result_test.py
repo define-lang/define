@@ -7,7 +7,7 @@ Follow program validator test authoring rules in program_validator_tests/AGENTS.
 from __future__ import annotations
 
 import hashlib
-from pathlib import Path, PurePosixPath
+from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler import config
@@ -20,6 +20,8 @@ from define.compiler.validator.structural.program_validator_tests import (
 )
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     import pytest
 
 

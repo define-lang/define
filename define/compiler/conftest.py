@@ -4,17 +4,22 @@
 
 from __future__ import annotations
 
-from pathlib import Path, PurePosixPath
-from typing import Protocol, cast
+from pathlib import PurePosixPath
+from typing import TYPE_CHECKING, Protocol, cast
 
 import msgspec
 import pytest
 
 from define.compiler.parsing import parser
-from define.compiler.validator import test_helpers, validation_result
+from define.compiler.validator import test_helpers
 from define.compiler.validator.reference_graph import reference_graph_validator
 from define.compiler.validator.structural import program_validator
 from define.testdata import path_resolver
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from define.compiler.validator import validation_result
 
 _PARSER = parser.Parser()
 

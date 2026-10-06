@@ -5,10 +5,13 @@ from __future__ import annotations
 import re
 import string
 import typing
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 
 from define.compiler import ast, constants
 from define.compiler.errors import diagnostics
+
+if typing.TYPE_CHECKING:
+    from pathlib import PurePosixPath
 
 _RESERVED_WORDS_DIR = Path(__file__).parent.parent.parent.parent / "reserved_words"
 

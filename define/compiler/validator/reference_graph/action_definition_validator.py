@@ -22,8 +22,6 @@ from define.compiler.validator.reference_graph import (
     particle_operation_validator,
     position_occupancy,
     position_quality_resolver,
-    quality_assignment,
-    reference_graph_validation_state,
 )
 from define.compiler.validator.reference_graph.callee_execution import (
     callee_execution,
@@ -38,9 +36,6 @@ from define.compiler.validator.reference_graph.destruction import (
     destructor_guarantees,
     guaranteed_particle_destruction,
 )
-from define.compiler.validator.reference_graph.destruction import (
-    destruction_contract as destruction_contract_types,
-)
 from define.compiler.validator.reference_graph.particles import (
     particle_info,
     particle_tracker,
@@ -50,6 +45,13 @@ if typing.TYPE_CHECKING:
     from collections.abc import Collection, Iterator, Sequence
 
     from define.compiler.data_structures import typed_name_dict
+    from define.compiler.validator.reference_graph import (
+        quality_assignment,
+        reference_graph_validation_state,
+    )
+    from define.compiler.validator.reference_graph.destruction import (
+        destruction_contract as destruction_contract_types,
+    )
 
 
 class ActionDefinitionValidator:

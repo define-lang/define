@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import typing
 
-from define.compiler import ast, constants, literal_parsers
+from define.compiler import constants, literal_parsers
 from define.compiler.errors import diagnostics
 from define.compiler.validator import codegen_input
 
 if typing.TYPE_CHECKING:
     from collections.abc import Callable
 
+    from define.compiler import ast
     from define.compiler.data_structures import typed_name_dict
     from define.compiler.validator import validation_result
 

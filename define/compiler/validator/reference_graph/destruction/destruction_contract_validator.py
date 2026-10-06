@@ -8,13 +8,11 @@ import msgspec
 
 from define.compiler.validator.reference_graph import (
     action_contract,
-    reference_graph_validation_state,
 )
 from define.compiler.validator.reference_graph.callee_execution import (
     callee_execution,
 )
 from define.compiler.validator.reference_graph.destruction import (
-    child_state,
     destruction_contract,
     destruction_walk,
 )
@@ -25,6 +23,12 @@ if typing.TYPE_CHECKING:
     from define.compiler import ast, chained_name
     from define.compiler.data_structures import typed_name_dict
     from define.compiler.validator import validation_result
+    from define.compiler.validator.reference_graph import (
+        reference_graph_validation_state,
+    )
+    from define.compiler.validator.reference_graph.destruction import (
+        child_state,
+    )
     from define.compiler.validator.reference_graph.particles import (
         particle_info,
         particle_tracker,

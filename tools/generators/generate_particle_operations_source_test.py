@@ -1,14 +1,20 @@
 # pyright: reportUnusedCallResult=false
 from __future__ import annotations
 
-from pathlib import Path, PurePosixPath
+from pathlib import PurePosixPath
+from typing import TYPE_CHECKING
 
 import click.testing
 import pytest
 
-from define.compiler import ast, driver
+from define.compiler import driver
 from define.compiler.parsing import parser
 from tools.generators import generate_particle_operations_source as gen
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from define.compiler import ast
 
 
 def _assert_parses_and_transforms(source: str) -> ast.Program:

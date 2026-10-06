@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from define.compiler import ast, config
+from define.compiler import config
 from define.compiler.data_structures import define_path, typed_name_dict
 from define.compiler.errors import diagnostics, exceptions, parser_exceptions
 from define.compiler.parsing import parser
@@ -20,6 +20,7 @@ from define.compiler.validator import validation_result
 from define.compiler.validator.structural import file_validator
 
 if TYPE_CHECKING:
+    from define.compiler import ast
     from define.compiler.graphs import reference_graph
 
 

@@ -6,7 +6,7 @@ import typing
 
 import msgspec
 
-from define.compiler import ast, chained_name
+from define.compiler import chained_name
 from define.compiler.data_structures import trie
 from define.compiler.validator.reference_graph import (
     action_contract,
@@ -17,6 +17,8 @@ from define.compiler.validator.reference_graph.particles import particle_info
 
 if typing.TYPE_CHECKING:
     from collections.abc import Collection, Iterator, Sequence
+
+    from define.compiler import ast
 
 
 class PositionState(msgspec.Struct):

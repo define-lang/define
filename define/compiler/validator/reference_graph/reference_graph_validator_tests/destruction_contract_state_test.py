@@ -8,7 +8,6 @@ import pytest
 
 from define.compiler import chained_name
 from define.compiler.validator.reference_graph import (
-    action_contract,
     position_occupancy,
     reference_graph_validation_state,
 )
@@ -20,6 +19,9 @@ if typing.TYPE_CHECKING:
     from collections.abc import Iterator
 
     from define.compiler import ast, conftest
+    from define.compiler.validator.reference_graph import (
+        action_contract,
+    )
 
 
 def _chain(*names: str) -> chained_name.ChainedNameTuple:

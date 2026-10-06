@@ -5,13 +5,15 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from define.compiler.codegen.literal.python import (
-    naming,
     template_context,
     value_types,
 )
 
 if TYPE_CHECKING:
     from define.compiler import ast
+    from define.compiler.codegen.literal.python import (
+        naming,
+    )
 
 
 class PositionDefinitionGenerator:

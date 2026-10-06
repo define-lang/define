@@ -6,7 +6,7 @@ import typing
 
 import msgspec
 
-from define.compiler import ast, chained_name
+from define.compiler import chained_name
 from define.compiler.validator.reference_graph.particles import (
     guarantee_generation,
     interface_arrival_tracker,
@@ -22,6 +22,7 @@ if typing.TYPE_CHECKING:
         Sequence,
     )
 
+    from define.compiler import ast
     from define.compiler.validator.reference_graph import (
         action_contract,
         position_occupancy,

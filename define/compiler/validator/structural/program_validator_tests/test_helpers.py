@@ -2,15 +2,19 @@
 
 from __future__ import annotations
 
-from pathlib import Path, PurePosixPath
+from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from define.compiler.parsing import parser
-from define.compiler.validator import test_helpers, validation_result
+from define.compiler.validator import test_helpers
 from define.compiler.validator.structural import program_validator
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     import pytest
+
+    from define.compiler.validator import validation_result
 
 _PARSER = parser.Parser()
 

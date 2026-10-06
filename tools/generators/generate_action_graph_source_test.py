@@ -1,7 +1,8 @@
 # pyright: reportUnusedCallResult=false
 from __future__ import annotations
 
-from pathlib import Path, PurePosixPath
+from pathlib import PurePosixPath
+from typing import TYPE_CHECKING
 
 import click.testing
 import pytest
@@ -9,6 +10,9 @@ import pytest
 from define.compiler import ast, driver
 from define.compiler.parsing import parser
 from tools.generators import generate_action_graph_source as gen
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def _assert_parses_and_transforms(source: str) -> ast.Program:

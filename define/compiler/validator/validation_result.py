@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 
 import msgspec
 
-from define.compiler.errors import diagnostics, exceptions, source_map
+from define.compiler.errors import exceptions
 from define.compiler.parsing.lark import lark_standalone
 
 if typing.TYPE_CHECKING:
@@ -15,6 +15,7 @@ if typing.TYPE_CHECKING:
 
     from define.compiler import ast
     from define.compiler.data_structures import define_path, typed_name_dict
+    from define.compiler.errors import diagnostics, source_map
     from define.compiler.graphs import reference_graph, reference_graph_order
     from define.compiler.validator import codegen_input, stats
     from define.compiler.validator.reference_graph import action_contract
