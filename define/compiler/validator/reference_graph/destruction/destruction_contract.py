@@ -8,6 +8,7 @@ import msgspec
 
 if TYPE_CHECKING:
     from define.compiler import ast, chained_name
+    from define.compiler.validator.reference_graph import quality_assignment
 
 
 class DestructionFact(msgspec.Struct, frozen=True, eq=False):
@@ -22,12 +23,22 @@ class DestructionFact(msgspec.Struct, frozen=True, eq=False):
     destroyed_position_in_destroyer: ast.PositionReference
 
 
-class PropagatedDestruction(msgspec.Struct, eq=False):
-    """A destruction expressed through an action's contracted position."""
+class DestructionContract(msgspec.Struct, frozen=True, eq=False):
+    """Records that an action destroyed a caller-passed particle in a contracted position (DLP 41).
+
+    Callers higher in the stack use this to validate destructors they attach
+    that the destroying action could not see.
+    """
 
     destruction_fact: DestructionFact
     # The contracted origin, as a chained name within the action exposing it.
     contracted_position: ast.PositionReference
+    # The position in the shared snapshot stays fixed when a caller expresses
+    # the particle's contracted origin from its own perspective.
+    position_in_child_state: chained_name.ChainedNameTuple
+    # Validation belongs to a particle, not just a quality: different child
+    # particles can have the same Destructor assigned to them.
+    validated_destructors: quality_assignment.QualityAssignments
 
 
 class RunGuaranteedParticleDestructors(msgspec.Struct):
@@ -81,26 +92,26 @@ class DestructionContribution(msgspec.Struct):
     """What one action adds to the generated code of one Simultaneous Transitive Destruction."""
 
     work: KnownDestructionWork = msgspec.field(default_factory=KnownDestructionWork)
-    # The destructions of particles from this action's caller, each in a
-    # Destruction Contract through which the callers add what they know.
-    caller_particle_destructions: list[PropagatedDestruction] = msgspec.field(
+    # One for each destroyed particle from this action's caller, children
+    # first, through which the callers add what they know.
+    destruction_contracts: list[DestructionContract] = msgspec.field(
         default_factory=list
     )
 
     def has_contribution(self) -> bool:
         """Return whether this action adds anything to the destruction."""
-        return self.work.has_work() or bool(self.caller_particle_destructions)
+        return self.work.has_work() or bool(self.destruction_contracts)
 
     def extend(self, other: DestructionContribution):
         """Add the contribution of ``other``, to a destruction of other particles at the same moment, after this contribution."""
         self.work.extend(other.work)
-        self.caller_particle_destructions.extend(other.caller_particle_destructions)
+        self.destruction_contracts.extend(other.destruction_contracts)
 
 
 class DestructionConnection(msgspec.Struct):
     """What a caller adds to one callee destruction."""
 
-    callee_destruction: PropagatedDestruction
+    callee_destruction_contract: DestructionContract
     # Positions in its work are from the perspective of the particle the
     # callee destroyed. None when the caller adds nothing.
     contribution: DestructionContribution | None = None

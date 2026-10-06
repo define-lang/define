@@ -703,21 +703,16 @@ class ActionDefinitionValidator:
     ) -> validation_result.ActionPostorderValidationResult:
         """Run post-order validation and return diagnostics, contract, and codegen input."""
         contract, guaranteed_particle_destructors = self._analyze_action_definition()
-        propagated_destructions: list[
-            destruction_contract_types.PropagatedDestruction
-        ] = []
+        destruction_contracts: list[destruction_contract_types.DestructionContract] = []
         for contracts in contract.destruction_contracts:
-            for destruction_contract in contracts.particles:
-                propagated_destructions.append(
-                    destruction_contract.propagated_destruction
-                )
+            destruction_contracts.extend(contracts.particles)
         return validation_result.ActionPostorderValidationResult(
             diagnostics=self._diagnostics,
             contract=contract,
             codegen_input=codegen_input.ActionCodegenInput(
                 definition=self._definition,
                 steps=self._steps,
-                propagated_destructions=propagated_destructions,
+                destruction_contracts=destruction_contracts,
                 guaranteed_particle_destructors=guaranteed_particle_destructors,
             ),
         )

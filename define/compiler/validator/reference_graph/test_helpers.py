@@ -75,7 +75,7 @@ def _destruction_contract_edges(
         contribution = connection.contribution
         if contribution is None:
             continue
-        destroyer = connection.callee_destruction.destruction_fact.destroying_definition.typed_name
+        destroyer = connection.callee_destruction_contract.destruction_fact.destroying_definition.typed_name
         for destructor in contribution.work.destructors:
             yield (
                 destroyer.source_typed_name,

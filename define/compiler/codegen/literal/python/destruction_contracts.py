@@ -31,7 +31,7 @@ class DestructionContractsGenerator:
         self,
         converter: naming.NameConverter,
         positions: position_expression.PositionExpressionBuilder,
-        contract_names: dict[destruction_contract.PropagatedDestruction, str],
+        contract_names: dict[destruction_contract.DestructionContract, str],
         class_names: naming.LocalNameAllocator,
         *,
         trace_operations: bool,
@@ -65,12 +65,12 @@ class DestructionContractsGenerator:
         """Generate the contribution class needed by an action execution."""
         connections = execution.destruction_connections
         callee_names = self._converter.destruction_method_names(
-            connection.callee_destruction for connection in connections
+            connection.callee_destruction_contract for connection in connections
         )
         methods: list[template_context.DestructionContractMethod] = []
         forwarded_methods: list[str] = []
         for connection in connections:
-            name = callee_names[connection.callee_destruction]
+            name = callee_names[connection.callee_destruction_contract]
             forwarding = self._forwarded_contributions(connection)
             for kind in (
                 template_context.StatementKind.RUN_CONTRACT_DESTRUCTORS,
@@ -108,7 +108,7 @@ class DestructionContractsGenerator:
                     else:
                         statements = self._work.destroy_statements(
                             contribution.work,
-                            connection.callee_destruction.destruction_fact.destroying_definition.typed_name,
+                            connection.callee_destruction_contract.destruction_fact.destroying_definition.typed_name,
                             from_contract_particle=True,
                         )
                 if forwarded or statements:
@@ -145,9 +145,9 @@ class DestructionContractsGenerator:
         contribution = connection.contribution
         if contribution is None:
             return forwarded
-        callee_position = connection.callee_destruction.destruction_fact.destroyed_position_in_destroyer
-        for destruction in contribution.caller_particle_destructions:
-            position = destruction.destruction_fact.destroyed_position_in_destroyer
+        callee_position = connection.callee_destruction_contract.destruction_fact.destroyed_position_in_destroyer
+        for caller_contract in contribution.destruction_contracts:
+            position = caller_contract.destruction_fact.destroyed_position_in_destroyer
             # A caller can discover a contracted child of a particle already
             # covered by the callee's contract. Forward through that callee
             # contribution, passing the child's actual particle.
@@ -157,5 +157,5 @@ class DestructionContractsGenerator:
                 if suffix
                 else None
             )
-            forwarded.append((self._contract_names[destruction], relative))
+            forwarded.append((self._contract_names[caller_contract], relative))
         return forwarded

@@ -118,7 +118,7 @@ class ActionCodegenInput(msgspec.Struct):
 
     definition: ast.ActionDefinition
     steps: list[ActionStep]
-    propagated_destructions: list[destruction_contract.PropagatedDestruction]
+    destruction_contracts: list[destruction_contract.DestructionContract]
     # One entry for each of the action's contracted positions where
     # Destructors run for what it left.
     guaranteed_particle_destructors: list[GuaranteedParticleDestructors]

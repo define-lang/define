@@ -435,15 +435,15 @@ class NameConverter:
 
     @staticmethod
     def destruction_method_names(
-        destructions: Iterable[destruction_contract.PropagatedDestruction],
-    ) -> dict[destruction_contract.PropagatedDestruction, str]:
+        contracts: Iterable[destruction_contract.DestructionContract],
+    ) -> dict[destruction_contract.DestructionContract, str]:
         """Allocate contribution names from each particle's contracted origin."""
-        names: dict[destruction_contract.PropagatedDestruction, str] = {}
+        names: dict[destruction_contract.DestructionContract, str] = {}
         occurrences: dict[str, int] = {}
-        for destruction in destructions:
-            candidate = _chained_name_part(destruction.contracted_position)
+        for contract in contracts:
+            candidate = _chained_name_part(contract.contracted_position)
             occurrence = occurrences.get(candidate, 0) + 1
             occurrences[candidate] = occurrence
             # Separate invocations can propagate the same Destruction Fact.
-            names[destruction] = _with_occurrence(candidate, occurrence)
+            names[contract] = _with_occurrence(candidate, occurrence)
         return names

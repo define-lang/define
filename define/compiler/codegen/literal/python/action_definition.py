@@ -64,9 +64,8 @@ class ActionDefinitionGenerator:
             )
         module_name = self._converter.module_name(definition.typed_name.name_content)
         generated.imports.discard(module_name)
-        propagated_destructions = self._action_input.propagated_destructions
         contract_names = self._converter.destruction_method_names(
-            propagated_destructions
+            self._action_input.destruction_contracts
         ).values()
         contract_methods: list[str] = []
         for name in contract_names:

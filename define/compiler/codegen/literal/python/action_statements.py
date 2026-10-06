@@ -131,9 +131,9 @@ class ActionStatementsGenerator:
             local_position_names,
             self._action_input.definition.interface_positions_by_name.keys(),
         )
-        propagated_destructions = self._action_input.propagated_destructions
+        action_destruction_contracts = self._action_input.destruction_contracts
         contract_names = self._converter.destruction_method_names(
-            propagated_destructions
+            action_destruction_contracts
         )
         action_path = (
             self._action_input.definition.typed_name.name_content.path.relative_path
@@ -143,7 +143,7 @@ class ActionStatementsGenerator:
         _ = self._class_names.allocate(
             self._converter.class_name(self._action_input.definition.typed_name)
         )
-        if propagated_destructions:
+        if action_destruction_contracts:
             _ = self._class_names.allocate(
                 self._converter.destruction_contract_class_name(action_path)
             )
@@ -296,7 +296,7 @@ class ActionStatementsGenerator:
         self,
         destruction: codegen_input.Destruction,
         positions: position_expression.PositionExpressionBuilder,
-        contract_names: dict[destruction_contract.PropagatedDestruction, str],
+        contract_names: dict[destruction_contract.DestructionContract, str],
         work: known_destruction_work.KnownDestructionWorkGenerator,
     ) -> list[template_context.ActionStatementContext]:
         # TODO: Investigate running each particle's Destructors, completing each
@@ -314,9 +314,11 @@ class ActionStatementsGenerator:
             ),
             (template_context.DestroyContractChildrenContext, naming.DESTROY_PREFIX),
         ):
-            for propagated in destruction.contribution.caller_particle_destructions:
-                name = contract_names[propagated]
-                position = propagated.destruction_fact.destroyed_position_in_destroyer
+            for caller_contract in destruction.contribution.destruction_contracts:
+                name = contract_names[caller_contract]
+                position = (
+                    caller_contract.destruction_fact.destroyed_position_in_destroyer
+                )
                 statements.append(
                     context_type(
                         position=positions.build(position),

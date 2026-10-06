@@ -80,12 +80,9 @@ def _assert_shared_state_with_independent_facts(
     (contracts,) = action.destruction_contracts
     first, second = contracts.particles
     assert contracts.propagation is not None
-    assert (
-        first.propagated_destruction.destruction_fact
-        is not second.propagated_destruction.destruction_fact
-    )
-    first_fact = first.propagated_destruction.destruction_fact
-    second_fact = second.propagated_destruction.destruction_fact
+    assert first.destruction_fact is not second.destruction_fact
+    first_fact = first.destruction_fact
+    second_fact = second.destruction_fact
     assert first_fact.destroying_definition is second_fact.destroying_definition
     assert (
         first_fact.directly_destroyed_position
@@ -94,9 +91,7 @@ def _assert_shared_state_with_independent_facts(
     assert first_fact.is_automatic == second_fact.is_automatic
     positions: list[tuple[str, ...]] = []
     for contract in contracts.particles:
-        positions.append(
-            contract.propagated_destruction.contracted_position.canonical_chained_name_tuple
-        )
+        positions.append(contract.contracted_position.canonical_chained_name_tuple)
         assert contract.validated_destructors.assignments == ()
     assert sorted(positions) == [
         _chain("position<run>"),
@@ -115,20 +110,15 @@ def test_automatic_destruction_snapshots_each_target_before_destructors(
     ].destruction_contracts
     child, first = first_contracts.particles
     (second,) = second_contracts.particles
-    assert (
-        first.propagated_destruction.contracted_position.canonical_chained_name_tuple
-        == _chain("position<first>")
+    assert first.contracted_position.canonical_chained_name_tuple == _chain(
+        "position<first>"
     )
-    assert (
-        child.propagated_destruction.contracted_position.canonical_chained_name_tuple
-        == (
-            "position<first>",
-            "position<my.domain.com:my_lib:/child>",
-        )
+    assert child.contracted_position.canonical_chained_name_tuple == (
+        "position<first>",
+        "position<my.domain.com:my_lib:/child>",
     )
-    assert (
-        second.propagated_destruction.contracted_position.canonical_chained_name_tuple
-        == _chain("position<second>")
+    assert second.contracted_position.canonical_chained_name_tuple == _chain(
+        "position<second>"
     )
     assert first_contracts.child_state is not second_contracts.child_state
     child_position = _chain("position<my.domain.com:my_lib:/child>")
@@ -154,13 +144,11 @@ def test_automatic_destruction_with_unrelated_pending_guarantees(
     ].destruction_contracts
     (first_particle,) = first.particles
     (second_particle,) = second.particles
-    assert (
-        first_particle.propagated_destruction.contracted_position.canonical_chained_name_tuple
-        == _chain("position<first>")
+    assert first_particle.contracted_position.canonical_chained_name_tuple == _chain(
+        "position<first>"
     )
-    assert (
-        second_particle.propagated_destruction.contracted_position.canonical_chained_name_tuple
-        == _chain("position<second>")
+    assert second_particle.contracted_position.canonical_chained_name_tuple == _chain(
+        "position<second>"
     )
     assert first.child_state is not second.child_state
     marker = _chain("position<my.domain.com:my_lib:/marker>")
@@ -318,9 +306,8 @@ def test_caller_passed_child_of_local_parent_keeps_its_contract(
         "action<my.domain.com:my_lib:/middle>"
     ].destruction_contracts
     (contract,) = contracts.particles
-    assert (
-        contract.propagated_destruction.contracted_position.canonical_chained_name_tuple
-        == _chain("position<run>")
+    assert contract.contracted_position.canonical_chained_name_tuple == _chain(
+        "position<run>"
     )
     assert contract.position_in_child_state == (
         "position<my.domain.com:my_lib:/child>",
@@ -345,13 +332,11 @@ def test_shared_state_uses_each_moved_particles_own_origin(
         "action<my.domain.com:my_lib:/middle>"
     ].destruction_contracts
     child, parent = contracts.particles
-    assert (
-        parent.propagated_destruction.contracted_position.canonical_chained_name_tuple
-        == _chain("position<run>")
+    assert parent.contracted_position.canonical_chained_name_tuple == _chain(
+        "position<run>"
     )
-    assert (
-        child.propagated_destruction.contracted_position.canonical_chained_name_tuple
-        == _chain("position<incoming>")
+    assert child.contracted_position.canonical_chained_name_tuple == _chain(
+        "position<incoming>"
     )
     assert contracts.positions == {
         parent.position_in_child_state,
@@ -400,17 +385,12 @@ def test_repeated_executions_keep_distinct_shared_histories(
     (first_particle,) = first.particles
     (second_particle,) = second.particles
     assert first.particles is not second.particles
-    assert (
-        first_particle.propagated_destruction.destruction_fact
-        is second_particle.propagated_destruction.destruction_fact
+    assert first_particle.destruction_fact is second_particle.destruction_fact
+    assert first_particle.contracted_position.canonical_chained_name_tuple == _chain(
+        "position<run>"
     )
-    assert (
-        first_particle.propagated_destruction.contracted_position.canonical_chained_name_tuple
-        == _chain("position<run>")
-    )
-    assert (
-        second_particle.propagated_destruction.contracted_position.canonical_chained_name_tuple
-        == _chain("position<second>")
+    assert second_particle.contracted_position.canonical_chained_name_tuple == _chain(
+        "position<second>"
     )
     assert first.child_state is second.child_state
     assert first.propagation is not None

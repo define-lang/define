@@ -139,10 +139,6 @@ class WalkedDestruction(msgspec.Struct):
     contribution: destruction_contract.DestructionContribution = msgspec.field(
         default_factory=destruction_contract.DestructionContribution
     )
-    # Children first: one for each destroyed particle from the caller.
-    destruction_contracts: list[action_contract.DestructionContract] = msgspec.field(
-        default_factory=list
-    )
     # Parents first, and in quality order on each particle.
     destructors: list[DestructorOnDestroyedParticle] = msgspec.field(
         default_factory=list
@@ -328,17 +324,13 @@ class _Walk:
         walked: WalkedDestruction,
     ):
         """Add the Destruction Contract of ``particle``, which is from the caller, with ``validated_destructors``, every Destructor on it that this action or one below it validates."""
-        contract = action_contract.DestructionContract(
-            propagated_destruction=destruction_contract.PropagatedDestruction(
+        walked.contribution.destruction_contracts.append(
+            destruction_contract.DestructionContract(
                 destruction_fact=destruction_fact,
                 contracted_position=particle.origin_position,
-            ),
-            position_in_child_state=position_in_child_state,
-            validated_destructors=validated_destructors,
-        )
-        walked.destruction_contracts.append(contract)
-        walked.contribution.caller_particle_destructions.append(
-            contract.propagated_destruction
+                position_in_child_state=position_in_child_state,
+                validated_destructors=validated_destructors,
+            )
         )
 
     def _this_action_destroys(

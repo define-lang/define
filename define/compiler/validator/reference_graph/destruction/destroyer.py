@@ -125,7 +125,7 @@ class Destroyer:
                         destructor_on_destroyed_particle, auto_destruction_target
                     )
                 )
-            if walked.destruction_contracts:
+            if walked.contribution.destruction_contracts:
                 # The Child State is the state immediately before destruction
                 # begins. Validating the Destructors further down records their
                 # requirements, which changes what this action knows about the
@@ -133,7 +133,7 @@ class Destroyer:
                 destruction_contracts.append(
                     action_contract.DestructionContracts(
                         child_state=self._tracker.snapshot_child_state(position),
-                        particles=walked.destruction_contracts,
+                        particles=walked.contribution.destruction_contracts,
                     )
                 )
         validation_diagnostics: list[diagnostics.Diagnostic] = []

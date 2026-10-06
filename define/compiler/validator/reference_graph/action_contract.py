@@ -413,29 +413,13 @@ class ChildState(msgspec.Struct, frozen=True):
         return False, None
 
 
-class DestructionContract(msgspec.Struct, frozen=True):
-    """Records that an action destroyed a caller-passed particle in a contracted position (DLP 41).
-
-    Callers higher in the stack use this to validate destructors they attach
-    that the destroying action could not see.
-    """
-
-    propagated_destruction: destruction_contract_types.PropagatedDestruction
-    # The position in the shared snapshot stays fixed when a caller expresses
-    # the particle's contracted origin from its own perspective.
-    position_in_child_state: chained_name.ChainedNameTuple
-    # Validation belongs to a particle, not just a quality: different child
-    # particles can have the same Destructor assigned to them.
-    validated_destructors: quality_assignment.QualityAssignments
-
-
 @dataclass(frozen=True, slots=True)
 class DestructionContracts:
     """Contracts for particles sharing destruction-time state and propagation history."""
 
     # Particles destroyed together share their destruction-time occupancy.
     child_state: ChildState
-    particles: list[DestructionContract]
+    particles: list[destruction_contract_types.DestructionContract]
     # Callers repeatedly need membership checks while validating child positions.
     positions: set[chained_name.ChainedNameTuple] = field(
         default_factory=set, init=False

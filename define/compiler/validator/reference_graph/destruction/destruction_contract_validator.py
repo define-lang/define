@@ -100,14 +100,10 @@ class DestructionContractValidator:
         connections: list[destruction_contract.DestructionConnection] = []
         for callee_contract in callee_contracts.particles:
             connection = destruction_contract.DestructionConnection(
-                callee_destruction=callee_contract.propagated_destruction,
+                callee_destruction_contract=callee_contract,
             )
             result.connections.append(connection)
-            position = (
-                callee_contract.propagated_destruction.contracted_position.in_caller(
-                    action_chain
-                )
-            )
+            position = callee_contract.contracted_position.in_caller(action_chain)
             # The action's requirement check already handles missing or
             # error-state particles, so there is nothing more to add here.
             particle = self._tracker.get_occupancy_info(position).occupant
@@ -127,7 +123,7 @@ class DestructionContractValidator:
                 destruction_walk.DestructionRoot(
                     position=position,
                     particle=particle,
-                    destruction_fact=callee_contract.propagated_destruction.destruction_fact,
+                    destruction_fact=callee_contract.destruction_fact,
                     position_in_child_state=callee_contract.position_in_child_state,
                     validated_destructors=callee_contract.validated_destructors,
                 )
@@ -147,13 +143,13 @@ class DestructionContractValidator:
             particles,
             trigger,
         )
-        destruction_contracts: list[action_contract.DestructionContract] = []
+        destruction_contracts: list[destruction_contract.DestructionContract] = []
         for root, connection in zip(contracted_roots, connections, strict=True):
             walked = self._walker.walk(root, state)
             result.destructor_executions.extend(
                 _destructor_executions(root, walked, state)
             )
-            destruction_contracts.extend(walked.destruction_contracts)
+            destruction_contracts.extend(walked.contribution.destruction_contracts)
             if walked.contribution.has_contribution():
                 connection.contribution = walked.contribution
         if destruction_contracts:
