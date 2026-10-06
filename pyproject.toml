@@ -35,6 +35,11 @@ ignore = [
   "D203",
   "D213",
   "D413", # A blank line before closing docstring quotes adds no value here.
+  # Project docstrings do not use Returns, Yields, or Raises sections.
+  "DOC201",
+  "DOC402",
+  "DOC501",
+  "DOC502",
   # The formatter owns line length, and Define source is never split across
   # Python lines.
   "E501",
@@ -59,6 +64,7 @@ extend-select = [
   "PLR0916",
   "PLW0717",
   "RUF031", # Parenthesize tuple subscripts.
+  "RUF067", # Keep handwritten package initializers free of executable definitions.
   "W",  # pycodestyle warnings
   "I",  # isort
   "N",  # pep8-naming
@@ -132,6 +138,7 @@ parenthesize-tuple-in-subscript = true
     "I001", # Import ordering depends on isort first-party config of the target project.
     "I002", # Generated code does not inherit this project's required imports.
     "N801", # Generated code may produce non-CapWords class names.
+    "RUF067", # Generated code is emitted into package `__init__.py` modules.
 ]
 "**/testdata/**/expected_trace/**/*.py" = [
     "A001", # Generated class names may intentionally match Python built-ins.
@@ -145,6 +152,7 @@ parenthesize-tuple-in-subscript = true
     "I001", # Import ordering depends on isort first-party config of the target project.
     "I002", # Generated code does not inherit this project's required imports.
     "N801", # Generated code may produce non-CapWords class names.
+    "RUF067", # Generated code is emitted into package `__init__.py` modules.
 ]
 "**/*_test.py" = [
     "S101", # Allow assert statements.
