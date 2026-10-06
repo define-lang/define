@@ -41,6 +41,18 @@ def _strip_discard[Items, Result](
     return wrapper
 
 
+def _strip_discard_static[Items, Result](
+    method: Callable[[list[Items]], Result],
+) -> Callable[[list[Items]], Result]:
+    """Filter ``Discard`` out of a static rule callback's items."""
+
+    @functools.wraps(method)
+    def wrapper(items: list[Items]) -> Result:
+        return method([item for item in items if item is not _DISCARD])
+
+    return wrapper
+
+
 class _ParseContext(threading.local):
     """Per-parse, per-thread context for the shared inline transformer."""
 
@@ -211,9 +223,10 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
             location=self._location(start=keyword, end=block.block_close),
         )
 
-    @_strip_discard
+    @staticmethod
+    @_strip_discard_static
     def potential_literal_definition_block(
-        self, items: list[ast.GlobalTypedNameReference | lark_cython.Token]
+        items: list[ast.GlobalTypedNameReference | lark_cython.Token],
     ) -> _PotentialLiteralBlockData:
         """Transform a potential literal definition block."""
         return _PotentialLiteralBlockData(
@@ -221,9 +234,10 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
             block_close=cast("lark_cython.Token", items[1]),
         )
 
-    @_strip_discard
+    @staticmethod
+    @_strip_discard_static
     def encoding_constraint(
-        self, items: list[lark_cython.Token | ast.GlobalTypedNameReference]
+        items: list[lark_cython.Token | ast.GlobalTypedNameReference],
     ) -> ast.GlobalTypedNameReference:
         """Transform the encoding reference of a potential literal."""
         return cast("ast.GlobalTypedNameReference", items[1])
@@ -271,9 +285,9 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
             location=self._location(start=keyword, end=block.block_close),
         )
 
-    @_strip_discard
+    @staticmethod
+    @_strip_discard_static
     def operation_definition_block(
-        self,
         items: list[
             lark_cython.Token | ast.ViewDefinition | tuple[ast.OperationStatement, ...]
         ],
@@ -307,9 +321,9 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
             location=self._location(start=keyword, end=block.block_close),
         )
 
-    @_strip_discard
+    @staticmethod
+    @_strip_discard_static
     def view_definition_block(
-        self,
         items: list[lark_cython.Token | ast.PositionConstraintBlock],
     ) -> _ViewDefinitionBlockData:
         """Bundle the view direction and constraint block with the outer ``}`` token.
@@ -325,9 +339,10 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
             block_close=cast("lark_cython.Token", items[-1]),
         )
 
-    @_strip_discard
+    @staticmethod
+    @_strip_discard_static
     def operation_statements_block(
-        self, items: list[lark_cython.Token | ast.OperationStatement]
+        items: list[lark_cython.Token | ast.OperationStatement],
     ) -> tuple[ast.OperationStatement, ...]:
         """Collect the statements of an operation statements block.
 
@@ -363,9 +378,10 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
             location=self._location_with_terminator(start=keyword, end=operation),
         )
 
-    @_strip_discard
+    @staticmethod
+    @_strip_discard_static
     def operation_arguments_block(
-        self, items: list[lark_cython.Token | ast.OperationArgumentStatement]
+        items: list[lark_cython.Token | ast.OperationArgumentStatement],
     ) -> _OperationArgumentsBlockData:
         """Bundle the argument statements with the block's ``}`` token."""
         return _OperationArgumentsBlockData(
@@ -488,7 +504,8 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
             location=self._location(start=keyword, end=block_data.block_close),
         )
 
-    def terminator(self, _items: list[object]) -> object:
+    @staticmethod
+    def terminator(_items: list[object]) -> object:
         """Remove terminator trees from the parse tree."""
         return _DISCARD
 
@@ -499,23 +516,28 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
     # The tokens below are the exception -- they never anchor a location,
     # so they are discarded.
 
-    def TO(self, _token: lark_cython.Token) -> object:  # noqa: N802
+    @staticmethod
+    def TO(_token: lark_cython.Token) -> object:  # noqa: N802
         """Discard the 'to' keyword token."""
         return _DISCARD
 
-    def LOOKING_AT(self, _token: lark_cython.Token) -> object:  # noqa: N802
+    @staticmethod
+    def LOOKING_AT(_token: lark_cython.Token) -> object:  # noqa: N802
         """Discard the 'looking at' keyword token."""
         return _DISCARD
 
-    def CHAIN_SEPARATOR(self, _token: lark_cython.Token) -> object:  # noqa: N802
+    @staticmethod
+    def CHAIN_SEPARATOR(_token: lark_cython.Token) -> object:  # noqa: N802
         """Discard chain separator tokens."""
         return _DISCARD
 
-    def SPACE_AND_OPEN_BRACE(self, _token: lark_cython.Token) -> object:  # noqa: N802
+    @staticmethod
+    def SPACE_AND_OPEN_BRACE(_token: lark_cython.Token) -> object:  # noqa: N802
         """Discard opening braces."""
         return _DISCARD
 
-    def NEWLINE(self, _token: lark_cython.Token) -> object:  # noqa: N802
+    @staticmethod
+    def NEWLINE(_token: lark_cython.Token) -> object:  # noqa: N802
         """Drop newline tokens from the parse tree."""
         return _DISCARD
 
@@ -543,9 +565,9 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
             location=self._location_for_bare_definition(start=keyword, name=local_name),
         )
 
-    @_strip_discard
+    @staticmethod
+    @_strip_discard_static
     def local_position_definition_block(
-        self,
         items: list[lark_cython.Token | ast.PositionConstraintBlock],
     ) -> _LocalPositionBlockData:
         """Bundle the inner constraint block with the outer ``}`` token.
@@ -557,9 +579,9 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
             block_close=cast("lark_cython.Token", items[1]),
         )
 
-    @_strip_discard
+    @staticmethod
+    @_strip_discard_static
     def potential_position_definition_block(
-        self,
         items: list[
             lark_cython.Token
             | ast.QualityImplicationStatement
@@ -638,27 +660,33 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
             ),
         )
 
-    def POSITION_OR_ACTION(self, token: lark_cython.Token) -> name_types.NameType:  # noqa: N802
+    @staticmethod
+    def POSITION_OR_ACTION(token: lark_cython.Token) -> name_types.NameType:  # noqa: N802
         """Transform a name-type token into a NameType enum."""
         return name_types.NameType(token.value)
 
-    def VALUE(self, _token: lark_cython.Token) -> name_types.NameType:  # noqa: N802
+    @staticmethod
+    def VALUE(_token: lark_cython.Token) -> name_types.NameType:  # noqa: N802
         """Transform the value name type."""
         return name_types.NameType.VALUE
 
-    def ENCODING(self, _token: lark_cython.Token) -> name_types.NameType:  # noqa: N802
+    @staticmethod
+    def ENCODING(_token: lark_cython.Token) -> name_types.NameType:  # noqa: N802
         """Transform the encoding name type."""
         return name_types.NameType.ENCODING
 
-    def OPERATION(self, _token: lark_cython.Token) -> name_types.NameType:  # noqa: N802
+    @staticmethod
+    def OPERATION(_token: lark_cython.Token) -> name_types.NameType:  # noqa: N802
         """Transform the operation name type."""
         return name_types.NameType.OPERATION
 
-    def ENCODING_OPERATION(self, _token: lark_cython.Token) -> name_types.NameType:  # noqa: N802
+    @staticmethod
+    def ENCODING_OPERATION(_token: lark_cython.Token) -> name_types.NameType:  # noqa: N802
         """Transform the encoding operation name type."""
         return name_types.NameType.ENCODING_OPERATION
 
-    def VIEW(self, _token: lark_cython.Token) -> name_types.NameType:  # noqa: N802
+    @staticmethod
+    def VIEW(_token: lark_cython.Token) -> name_types.NameType:  # noqa: N802
         """Transform the view name type."""
         return name_types.NameType.VIEW
 
@@ -677,9 +705,9 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
             location=ast.SourceLocation.from_definition_name(name_content, name_type),
         )
 
-    @_strip_discard
+    @staticmethod
+    @_strip_discard_static
     def typed_local_name_reference(
-        self,
         items: list[name_types.NameType | ast.LocalNameContent],
     ) -> ast.LocalTypedNameReference:
         """Transform typed local name references."""
@@ -872,9 +900,9 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
             location=self._location(start=keyword, end=close_brace),
         )
 
-    @_strip_discard
+    @staticmethod
+    @_strip_discard_static
     def action_definition_block(
-        self,
         items: list[
             lark_cython.Token
             | ast.QualityImplicationStatement
@@ -906,8 +934,9 @@ class DefineTransformer(lark_standalone.Transformer[lark_cython.Token, ast.Progr
             block_close=close_brace,
         )
 
-    @_strip_discard
-    def definition(self, items: list[ast.GlobalDefinition]) -> ast.GlobalDefinition:
+    @staticmethod
+    @_strip_discard_static
+    def definition(items: list[ast.GlobalDefinition]) -> ast.GlobalDefinition:
         """Unwrap the definition wrapper rule."""
         return items[0]
 

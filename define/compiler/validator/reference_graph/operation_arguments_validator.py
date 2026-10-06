@@ -157,8 +157,8 @@ class OperationArgumentsValidator:
             return None
         return typing.cast("ast.OperationDefinition", definition_result.definition)
 
+    @staticmethod
     def _collect_arguments(
-        self,
         statement: ast.OperationExecutionStatement,
         executed: ast.OperationDefinition,
         operation_name: str,
@@ -190,8 +190,8 @@ class OperationArgumentsValidator:
             arguments[index] = argument
         return arguments
 
+    @staticmethod
     def _check_argument_order(
-        self,
         arguments: dict[int, ast.OperationArgumentStatement],
         executed: ast.OperationDefinition,
         operation_name: str,
@@ -217,8 +217,8 @@ class OperationArgumentsValidator:
                 return
             latest_index = index
 
+    @staticmethod
     def _check_missing_arguments(
-        self,
         statement: ast.OperationExecutionStatement,
         arguments: dict[int, ast.OperationArgumentStatement],
         executed: ast.OperationDefinition,

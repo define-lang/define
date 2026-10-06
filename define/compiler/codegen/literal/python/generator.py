@@ -302,7 +302,8 @@ class PythonLiteralCodeGenerator:
         self._write_init_files(package_dirs, output_dir)
         self._write_entry_point(entry_definition, output_dir)
 
-    def _write_init_files(self, package_dirs: set[Path], output_dir: Path):
+    @staticmethod
+    def _write_init_files(package_dirs: set[Path], output_dir: Path):
         """Write empty __init__.py files for intermediate packages."""
         needed_dirs: set[Path] = set()
         for package_dir in package_dirs:
@@ -317,8 +318,8 @@ class PythonLiteralCodeGenerator:
             if not init_file.exists():
                 _ = init_file.write_text(_PACKAGE_INIT)
 
+    @staticmethod
     def _write_entry_point(
-        self,
         context: action_context.ActionDefinitionContext,
         output_dir: Path,
     ):

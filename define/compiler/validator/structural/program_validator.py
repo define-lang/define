@@ -463,8 +463,8 @@ class ProgramStructuralValidator:
                 )
             ]
 
+    @staticmethod
     def _strip_cross_universe_refs(
-        self,
         result: validation_result.FileValidationResult,
     ):
         """Strip cross-universe edges after total config failure.

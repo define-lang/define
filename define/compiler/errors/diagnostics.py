@@ -1306,7 +1306,8 @@ class InferredRequirementViolationDiagnostic(Diagnostic):
             )
         return self.message_format.format(self=self, propagation_chain="\n".join(lines))
 
-    def _format_propagation_step(self, step: action_contract.PropagationStep) -> str:
+    @staticmethod
+    def _format_propagation_step(step: action_contract.PropagationStep) -> str:
         """Render a propagation step as a human-readable label line."""
         match step.kind:
             case action_contract.PropagationKind.DIRECT_INFERENCE:

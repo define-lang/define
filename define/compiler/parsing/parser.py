@@ -121,8 +121,8 @@ class Parser:
         diags = self._indentation_diagnostics(source, exception, file_path)
         return ParseResult(tree=tree, diagnostics=diags, exception=exception)
 
+    @staticmethod
     def _run_lark_parser(
-        self,
         lark: lark_standalone.Lark,
         source: str,
         file_path: pathlib.PurePosixPath | None,
@@ -138,8 +138,8 @@ class Parser:
             parser_error_classification.raise_character_error(e, file_path)
             raise
 
+    @staticmethod
     def _indentation_diagnostics(
-        self,
         source: str,
         exception: ParseException | None,
         file_path: pathlib.PurePosixPath | None,

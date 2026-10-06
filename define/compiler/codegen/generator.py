@@ -16,8 +16,8 @@ if TYPE_CHECKING:
 class CodeGenerator:
     """Generates code for Define programs."""
 
+    @staticmethod
     def generate(
-        self,
         codegen_input: codegen_input_types.CodegenInput,
         entry_action: ast.ActionDefinition,
         output_dir: Path,

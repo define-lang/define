@@ -332,8 +332,8 @@ class ActionStatementsGenerator:
         )
         return statements
 
+    @staticmethod
     def _run(
-        self,
         execution: codegen_input.ActionExecution,
         positions: position_expression.PositionExpressionBuilder,
         contracts: destruction_contracts.DestructionContractsGenerator,

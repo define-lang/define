@@ -319,8 +319,8 @@ class _Walk:
             return
         self._add_particle(position, found, position_in_child_state, walked)
 
+    @staticmethod
     def _add_destruction_contract(
-        self,
         particle: particle_info.ParticleInfo,
         destruction_fact: destruction_contract.DestructionFact,
         position_in_child_state: chained_name.ChainedNameTuple,

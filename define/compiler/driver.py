@@ -197,8 +197,8 @@ class Driver:
             max_threads=max_threads,
         )
 
+    @staticmethod
     def _complete_validation(
-        self,
         program_result: validation_result.ProgramValidationResult,
         *,
         max_threads: int | None = None,

@@ -181,8 +181,8 @@ class FileStructuralValidator:
             definition_results=definition_results,
         )
 
+    @staticmethod
     def _load_file(
-        self,
         path: define_path.DefinePath,
     ) -> tuple[str, bytes | None, validation_result.AnyValidationException | None]:
         """Load a Define source file and return its source, digest, and syntax errors."""
