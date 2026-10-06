@@ -63,6 +63,7 @@ ignore = [
 ]
 extend-select = [
   "D421", # Describe properties as values rather than actions.
+  "FURB118", # Prefer operator functions for simple sort keys.
   "PLR0904", # Enforce size limits in vibe-coded sources; others opt out below.
   "PLR0914",
   "PLR0916",
@@ -140,6 +141,7 @@ parenthesize-tuple-in-subscript = true
     "D107", # Generated code doesn't need __init__ docstrings.
     "FBT001", # Encoding Operation functions take boolean values positionally, like any other value.
     "FBT003", # Boolean literals are passed to Encoding Operation functions positionally, like any other value.
+    "FURB118", # Generated operation functions retain their source definitions.
     "I001", # Import ordering depends on isort first-party config of the target project.
     "I002", # Generated code does not inherit this project's required imports.
     "N801", # Generated code may produce non-CapWords class names.
@@ -155,6 +157,7 @@ parenthesize-tuple-in-subscript = true
     "D107", # Generated code doesn't need __init__ docstrings.
     "FBT001", # Encoding Operation functions take boolean values positionally, like any other value.
     "FBT003", # Boolean literals are passed to Encoding Operation functions positionally, like any other value.
+    "FURB118", # Generated operation functions retain their source definitions.
     "I001", # Import ordering depends on isort first-party config of the target project.
     "I002", # Generated code does not inherit this project's required imports.
     "N801", # Generated code may produce non-CapWords class names.

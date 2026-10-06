@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import bisect
 import dataclasses
+import operator
 import typing
 
 import msgspec
@@ -143,7 +144,7 @@ def _scheduler_wakes(
         )
     for event in sorted(
         profile.scheduler_wake_events,
-        key=lambda event: event["host_monotonic_ns"],
+        key=operator.itemgetter("host_monotonic_ns"),
     ):
         host_monotonic_ns = event["host_monotonic_ns"]
         if host_monotonic_ns < python_observed_ns:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import operator
 import typing
 
 import msgspec
@@ -414,7 +415,7 @@ class ParticleTracker:
         )
         # This sort keeps multiple diagnostics on the same line/column in deterministic
         # order, and only fires in the error path.
-        occupied_positions.sort(key=lambda occupied_position: occupied_position[0])
+        occupied_positions.sort(key=operator.itemgetter(0))
         return occupied_positions
 
     def _mark_interface_arrivals_passed_to_callee(
